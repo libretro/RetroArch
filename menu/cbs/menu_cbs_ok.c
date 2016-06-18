@@ -2953,9 +2953,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_REMAP_FILE_SAVE_GAME:
             BIND_ACTION_OK(cbs, action_ok_remap_file_save_game);
             break;
-         case MENU_LABEL_CONTENT_COLLECTION_LIST:
-            BIND_ACTION_OK(cbs, action_ok_content_collection_list);
-            break;
          case MENU_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
             break;
