@@ -118,7 +118,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data);
 int retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len);
 
+#ifdef HAVE_MENU
 enum rarch_content_type retroarch_path_is_media_type(const char *path);
+#endif
 
 const char *retroarch_get_current_savefile_dir(void);
 

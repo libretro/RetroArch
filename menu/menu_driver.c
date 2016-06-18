@@ -999,6 +999,54 @@ enum menu_file_type menu_hash_to_file_type(uint32_t hash)
          return MENU_FILE_SHA1;
       case MENU_VALUE_MD5:
          return MENU_FILE_MD5;
+#ifdef HAVE_FFMPEG
+      case MENU_VALUE_FILE_OGM:
+         return MENU_FILE_OGM;
+      case MENU_VALUE_FILE_MKV:
+         return MENU_FILE_MKV;
+      case MENU_VALUE_FILE_AVI:
+         return MENU_FILE_AVI;
+      case MENU_VALUE_FILE_MP4:
+         return MENU_FILE_MP4;
+      case MENU_VALUE_FILE_FLV:
+         return MENU_FILE_FLV;
+      case MENU_VALUE_FILE_WEBM:
+         return MENU_FILE_WEBM;
+      case MENU_VALUE_FILE_3GP:
+         return MENU_FILE_3GP;
+      case MENU_VALUE_FILE_F4F:
+         return MENU_FILE_F4F;
+      case MENU_VALUE_FILE_F4V:
+         return MENU_FILE_F4V;
+      case MENU_VALUE_FILE_MOV:
+         return MENU_FILE_MOV;
+      case MENU_VALUE_FILE_WMV:
+         return MENU_FILE_WMV;
+      case MENU_VALUE_FILE_MP3:
+         return MENU_FILE_MP3;
+      case MENU_VALUE_FILE_M4A:
+         return MENU_FILE_M4A;
+      case MENU_VALUE_FILE_OGG:
+         return MENU_FILE_OGG;
+      case MENU_VALUE_FILE_FLAC:
+         return MENU_FILE_FLAC;
+      case MENU_VALUE_FILE_WAV:
+         return MENU_FILE_WAV;
+#endif
+#ifdef HAVE_IMAGEVIEWER
+      case MENU_VALUE_FILE_JPG:
+      case MENU_VALUE_FILE_JPG_CAPS:
+      case MENU_VALUE_FILE_JPEG:
+      case MENU_VALUE_FILE_JPEG_CAPS:
+         return MENU_FILE_JPEG;
+      case MENU_VALUE_FILE_PNG:
+      case MENU_VALUE_FILE_PNG_CAPS:
+         return MENU_FILE_PNG;
+      case MENU_VALUE_FILE_TGA:
+         return MENU_FILE_TGA;
+      case MENU_VALUE_FILE_BMP:
+         return MENU_FILE_BMP;
+#endif
       default:
          break;
    }

@@ -544,51 +544,46 @@ const char *retroarch_get_current_savefile_dir(void)
    return ret;
 }
 
-
+#ifdef HAVE_MENU
 enum rarch_content_type retroarch_path_is_media_type(const char *path)
 {
-   uint32_t hash_ext = msg_hash_calculate(path_get_extension(path));
-
-   switch (hash_ext)
+   switch (menu_hash_to_file_type(msg_hash_calculate(path_get_extension(path))))
    {
 #ifdef HAVE_FFMPEG
-      case MENU_VALUE_FILE_OGM:
-      case MENU_VALUE_FILE_MKV:
-      case MENU_VALUE_FILE_AVI:
-      case MENU_VALUE_FILE_MP4:
-      case MENU_VALUE_FILE_FLV:
-      case MENU_VALUE_FILE_WEBM:
-      case MENU_VALUE_FILE_3GP:
-      case MENU_VALUE_FILE_F4F:
-      case MENU_VALUE_FILE_F4V:
-      case MENU_VALUE_FILE_MOV:
-      case MENU_VALUE_FILE_WMV:
+      case MENU_FILE_OGM:
+      case MENU_FILE_MKV:
+      case MENU_FILE_AVI:
+      case MENU_FILE_MP4:
+      case MENU_FILE_FLV:
+      case MENU_FILE_WEBM:
+      case MENU_FILE_3GP:
+      case MENU_FILE_F4F:
+      case MENU_FILE_F4V:
+      case MENU_FILE_MOV:
+      case MENU_FILE_WMV:
          return RARCH_CONTENT_MOVIE;
-      case MENU_VALUE_FILE_MP3:
-      case MENU_VALUE_FILE_M4A:
-      case MENU_VALUE_FILE_OGG:
-      case MENU_VALUE_FILE_FLAC:
-      case MENU_VALUE_FILE_WAV:
+      case MENU_FILE_MP3:
+      case MENU_FILE_M4A:
+      case MENU_FILE_OGG:
+      case MENU_FILE_FLAC:
+      case MENU_FILE_WAV:
          return RARCH_CONTENT_MUSIC;
 #endif
 #ifdef HAVE_IMAGEVIEWER
-      case MENU_VALUE_FILE_JPG:
-      case MENU_VALUE_FILE_JPG_CAPS:
-      case MENU_VALUE_FILE_JPEG:
-      case MENU_VALUE_FILE_JPEG_CAPS:
-      case MENU_VALUE_FILE_PNG:
-      case MENU_VALUE_FILE_PNG_CAPS:
-      case MENU_VALUE_FILE_TGA:
-      case MENU_VALUE_FILE_BMP:
+      case MENU_FILE_JPEG:
+      case MENU_FILE_PNG:
+      case MENU_FILE_TGA:
+      case MENU_FILE_BMP:
          return RARCH_CONTENT_IMAGE;
 #endif
-      case 0:
+      case MENU_FILE_NONE:
       default:
          break;
    }
 
    return RARCH_CONTENT_NONE;
 }
+#endif
 
 #define FFMPEG_RECORD_ARG "r:"
 
@@ -1285,13 +1280,13 @@ bool retroarch_main_init(int argc, char *argv[])
    runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
 
    {
+#ifdef HAVE_MENU
       settings_t *settings = config_get_ptr();
 
       if (settings && (settings->multimedia.builtin_mediaplayer_enable ||
-            settings->multimedia.builtin_imageviewer_enable))
+               settings->multimedia.builtin_imageviewer_enable))
       {
          char *fullpath    = NULL;
-
          if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
          {
 #if defined(HAVE_FFMPEG) || defined(HAVE_IMAGEVIEWER)
@@ -1323,6 +1318,7 @@ bool retroarch_main_init(int argc, char *argv[])
             }
          }
       }
+#endif
    }
    
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
