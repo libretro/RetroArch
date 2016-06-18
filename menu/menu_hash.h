@@ -1812,8 +1812,6 @@ enum menu_hash_enums
 #define MENU_LABEL_CUSTOM_BIND                                                 0x1e84b3fcU
 #define MENU_LABEL_CUSTOM_BIND_ALL                                             0x79ac14f4U
 #define MENU_LABEL_CUSTOM_BIND_DEFAULTS                                        0xe88f7b13U
-#define MENU_LABEL_SAVESTATE                                                   0x3a4849b5U
-#define MENU_LABEL_LOADSTATE                                                   0xa39eb286U
 #define MENU_LABEL_UNDOLOADSTATE                                               0x464aaf5cU
 #define MENU_LABEL_UNDOSAVESTATE                                               0xdcf4468bU
 #define MENU_LABEL_RESUME_CONTENT                                              0xd9f088b0U
