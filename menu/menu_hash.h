@@ -1671,8 +1671,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
-#define MENU_LABEL_AUDIO_BLOCK_FRAMES                                          0xa85a655eU
-
 #define MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW                                 0x7eefdf52U
 
 #define MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND                               0x7051d870U
