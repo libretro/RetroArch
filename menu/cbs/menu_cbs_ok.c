@@ -152,6 +152,22 @@ int generic_action_ok_displaylist_push(const char *path,
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST;
          break;
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
+         if (menu)
+         {
+            menu_path    = menu->scratch2_buf;
+            content_path = menu->scratch_buf;
+         }
+         if (content_path)
+            fill_pathname_join(detect_content_path, menu_path, content_path,
+                  sizeof(detect_content_path));
+
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE;
+         info_path          = path;
+         info.type          = type;
+         info.directory_ptr = idx;
+         break;
       case ACTION_OK_DL_OPEN_ARCHIVE:
          if (menu)
          {
@@ -162,19 +178,9 @@ int generic_action_ok_displaylist_push(const char *path,
             fill_pathname_join(detect_content_path, menu_path, content_path,
                   sizeof(detect_content_path));
 
-         switch (action_type)
-         {
-            case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
-               info_label = menu_hash_to_str_enum(
-                     MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
-               info.enum_idx = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE;
-               break;
-            case ACTION_OK_DL_OPEN_ARCHIVE:
-               info_label = menu_hash_to_str_enum(
-                     MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN);
-               info.enum_idx = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN;
-               break;
-         }
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN;
          info_path          = path;
          info.type          = type;
          info.directory_ptr = idx;
@@ -307,23 +313,25 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label = label;
          break;
       case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE;
+
+         if (!string_is_empty(path))
+            strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
+         if (!string_is_empty(menu_path))
+            strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
+         break;
       case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         switch (action_type)
-         {
-            case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
-               info_label    = menu_hash_to_str_enum(
-                     MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE);
-               info.enum_idx = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE;
-               break;
-            case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
-               info_label    = menu_hash_to_str_enum(
-                     MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION);
-               info.enum_idx = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION;
-               break;
-         }
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION;
 
          if (!string_is_empty(path))
             strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
