@@ -3052,20 +3052,32 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             break;
          case MENU_FILE_CORE:
-            switch (menu_label_hash)
+            if (cbs && cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
             {
-               case MENU_LABEL_DEFERRED_CORE_LIST:
-                  BIND_ACTION_OK(cbs, action_ok_load_core_deferred);
-                  break;
-               case MENU_LABEL_DEFERRED_CORE_LIST_SET:
-                  BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
-                  break;
-               case MENU_LABEL_CORE_LIST:
-                  BIND_ACTION_OK(cbs, action_ok_load_core);
-                  break;
-               case MENU_LABEL_CORE_UPDATER_LIST:
-                  BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
-                  break;
+               switch (cbs->enum_idx)
+               {
+                  case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
+                     BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
+                     break;
+                  case MENU_ENUM_LABEL_UNKNOWN:
+                  default:
+                     break;
+               }
+            }
+            else
+            {
+               switch (menu_label_hash)
+               {
+                  case MENU_LABEL_DEFERRED_CORE_LIST:
+                     BIND_ACTION_OK(cbs, action_ok_load_core_deferred);
+                     break;
+                  case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+                     BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
+                     break;
+                  case MENU_LABEL_CORE_LIST:
+                     BIND_ACTION_OK(cbs, action_ok_load_core);
+                     break;
+               }
             }
             break;
          case MENU_FILE_DOWNLOAD_CORE_CONTENT:

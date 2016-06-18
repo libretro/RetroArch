@@ -1376,9 +1376,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
 
-
-#define MENU_LABEL_DOWNLOAD_CORE_CONTENT                                       0xc63b1d3fU
-
 /* Scan values */
 #define MENU_LABEL_SCAN_THIS_DIRECTORY                                         0x6921b775U
 #define MENU_LABEL_SCAN_DIRECTORY                                              0x57de303eU
@@ -1681,7 +1678,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
-#define MENU_LABEL_CORE_UPDATER_LIST                                           0xe12f4ee3U
 #define MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE                           0xa3d605f5U
 #define MENU_LABEL_CORE_UPDATER_BUILDBOT_URL                                   0xe9ad8448U
 #define MENU_LABEL_BUILDBOT_ASSETS_URL                                         0x1895c71eU
