@@ -1362,12 +1362,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_VALUE_ACCOUNTS_LIST_END                                     0x3d559522U
 
-#define MENU_LABEL_DEBUG_PANEL_ENABLE                                          0xbad176a1U
-
-
-#define MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT                                0xec5a348bU
-
-#define MENU_LABEL_WELCOME_TO_RETROARCH                                        0xbcff0b3cU
 
 #define MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST                            0xb4f82700U
 
@@ -1390,28 +1384,13 @@ enum menu_hash_enums
 #define MENU_LABEL_NETWORK_INFORMATION                                         0x73ae3cb4U
 #define MENU_LABEL_DEBUG_INFORMATION                                           0xeb0d82b1U
 
-#define MENU_LABEL_USE_BUILTIN_PLAYER                                          0x9927ca74U
-
 #define MENU_LABEL_CONTENT_SETTINGS                                            0xe789f7f6U
-
-#define MENU_LABEL_FRAME_THROTTLE_ENABLE                                       0xbe52e701U
 
 #define MENU_LABEL_CORE_ENABLE                                                 0x2f37fe48U
 
-
 #define MENU_LABEL_RESET                                                       0x10474288U
-#define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
-#define MENU_LABEL_HOLD_FAST_FORWARD                                           0xebe2e4cdU
-#define MENU_LABEL_PAUSE_TOGGLE                                                0x557634e4U
 
 #define MENU_LABEL_PAUSE_LIBRETRO                                              0xf954afb9U
-
-/* UI settings */
-
-#define MENU_LABEL_UI_MENUBAR_ENABLE                                           0x1ddc5492U
-#define MENU_LABEL_UI_COMPANION_ENABLE                                         0xb2d7a20cU
-#define MENU_LABEL_UI_SETTINGS                                                 0xf8da6ef4U
-#define MENU_LABEL_UI_COMPANION_START_ON_BOOT                                  0x36b23782U
 
 #define MENU_LABEL_ARCHIVE_MODE                                                0x7fac00cbU
 #define MENU_LABEL_USE_THIS_DIRECTORY                                          0xc51d351dU
@@ -1456,7 +1435,6 @@ enum menu_hash_enums
 #define MENU_LABEL_XMB_SHADOWS_ENABLE                                          0xd0fcc82aU
 #define MENU_LABEL_XMB_RIBBON_ENABLE                                           0x8e89c3edU
 
-#define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
 #define MENU_LABEL_SSH_ENABLE                                                  0xd9854a79U
 #define MENU_LABEL_SAMBA_ENABLE                                                0x379e15efU
 #define MENU_LABEL_BLUETOOTH_ENABLE                                            0xbac1e1e1U
@@ -1542,7 +1520,6 @@ enum menu_hash_enums
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
 /* Netplay settings */
-#define MENU_LABEL_NETPLAY_ENABLE                                              0x607fbd68U
 #define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
 #define MENU_LABEL_NETPLAY_NICKNAME                                            0x52204787U
 #define MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT                                   0xd87bbba9U
@@ -1777,6 +1754,11 @@ enum menu_hash_enums
 #define MENU_LABEL_LOAD_ARCHIVE                                                0xc3834e66U
 
 /* Help */
+#define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
+#define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
+#define MENU_LABEL_HOLD_FAST_FORWARD                                           0xebe2e4cdU
+#define MENU_LABEL_PAUSE_TOGGLE                                                0x557634e4U
+#define MENU_LABEL_WELCOME_TO_RETROARCH                                        0xbcff0b3cU
 #define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
 #define MENU_LABEL_HELP_LIST                                                   0x006af669U
 #define MENU_LABEL_HELP_WHAT_IS_A_CORE                                         0x83fcbc44U
@@ -1787,6 +1769,7 @@ enum menu_hash_enums
 #define MENU_LABEL_TURBO                                                       0x107434f1U
 #define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
+#define MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT                                0xec5a348bU
 
 #define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
 #define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
