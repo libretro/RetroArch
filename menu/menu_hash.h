@@ -1314,9 +1314,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_CHEEVOS_DESCRIPTION                                         0x7e00e0f5U
 
-
-#define MENU_LABEL_STATE_SLOT                                                  0x27b67f67U
-
 #define MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN                                    0x5a56139bU
 
 #define MENU_LABEL_INPUT_SETTINGS                                              0x78b4a7c5U
