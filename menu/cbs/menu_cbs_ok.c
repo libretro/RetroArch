@@ -2849,20 +2849,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_CUSTOM_BIND_ALL:
             BIND_ACTION_OK(cbs, action_ok_lookup_setting);
             break;
-         case MENU_LABEL_RESUME_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_resume_content);
-            break;
-         case MENU_LABEL_RESTART_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_restart_content);
-            break;
-         case MENU_LABEL_TAKE_SCREENSHOT:
-            BIND_ACTION_OK(cbs, action_ok_screenshot);
-            break;
          case MENU_LABEL_QUIT_RETROARCH:
             BIND_ACTION_OK(cbs, action_ok_quit);
-            break;
-         case MENU_LABEL_CLOSE_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_close_content);
             break;
          case MENU_LABEL_SAVE_NEW_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_save_new_config);
@@ -2927,9 +2915,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
             break;
-         case MENU_LABEL_INPUT_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_input_settings_list);
-            break;
          case MENU_LABEL_PLAYLIST_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_playlist_settings_list);
             break;
@@ -2938,29 +2923,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
-            break;
-         case MENU_LABEL_SHADER_OPTIONS:
-         case MENU_VALUE_INPUT_SETTINGS:
-         case MENU_LABEL_CORE_OPTIONS:
-         case MENU_LABEL_CORE_CHEAT_OPTIONS:
-         case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-         case MENU_LABEL_CORE_INFORMATION:
-         case MENU_LABEL_SYSTEM_INFORMATION:
-         case MENU_LABEL_NETWORK_INFORMATION:
-         case MENU_LABEL_DEBUG_INFORMATION:
-         case MENU_LABEL_ACHIEVEMENT_LIST:
-         case MENU_LABEL_DISK_OPTIONS:
-         case MENU_LABEL_SETTINGS:
-         case MENU_LABEL_FRONTEND_COUNTERS:
-         case MENU_LABEL_CORE_COUNTERS:
-         case MENU_LABEL_MANAGEMENT:
-         case MENU_LABEL_ONLINE_UPDATER:
-         case MENU_LABEL_LOAD_CONTENT_LIST:
-         case MENU_LABEL_ADD_CONTENT_LIST:
-         case MENU_LABEL_HELP_LIST:
-         case MENU_LABEL_INFORMATION_LIST:
-         case MENU_LABEL_CONTENT_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
          case MENU_LABEL_SCAN_FILE:
          case MENU_LABEL_SCAN_DIRECTORY:
@@ -2999,9 +2961,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             BIND_ACTION_OK(cbs, action_ok_content_collection_list);
-            break;
-         case MENU_LABEL_CORE_LIST:
-            BIND_ACTION_OK(cbs, action_ok_core_list);
             break;
          case MENU_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
