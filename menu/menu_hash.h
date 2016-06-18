@@ -1898,10 +1898,6 @@ enum menu_hash_enums
 #define MENU_VALUE_CORE                                                        0x6a167f7fU
 #define MENU_VALUE_CURSOR                                                      0x57bba8b4U
 #define MENU_VALUE_FILE                                                        0x6a496536U
-#define MENU_VALUE_MISSING                                                     0x28536c3fU
-#define MENU_VALUE_PRESENT                                                     0x23432826U
-#define MENU_VALUE_OPTIONAL                                                    0x27bfc4abU
-#define MENU_VALUE_REQUIRED                                                    0x979b1a66U
 #define MENU_VALUE_RDB                                                         0x0b00f54eU
 #define MENU_VALUE_DIR                                                         0x0af95f55U
 #define MENU_VALUE_NO_CORE                                                     0x7d5472cbU
