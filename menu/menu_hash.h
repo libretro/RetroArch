@@ -1447,8 +1447,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_MOUSE_ENABLE                                                0x1240fa88U
 
-#define MENU_LABEL_SHOW_ADVANCED_SETTINGS                                      0xbc6ac8dfU
-
 #define MENU_LABEL_POINTER_ENABLE                                              0xf051a7a0U
 
 #define MENU_LABEL_RESET                                                       0x10474288U
