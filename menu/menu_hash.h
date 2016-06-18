@@ -1715,7 +1715,6 @@ enum menu_hash_enums
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_START_CORE                                                  0xb0b6ae5bU
 #define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
-#define MENU_LABEL_VALUE_CORE_UPDATER_LIST                                     0x0372767dU
 #define MENU_LABEL_CORE_UPDATER_LIST                                           0xe12f4ee3U
 #define MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE                           0xa3d605f5U
 #define MENU_LABEL_CORE_UPDATER_BUILDBOT_URL                                   0xe9ad8448U
