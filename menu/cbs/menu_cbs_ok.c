@@ -2843,27 +2843,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_CUSTOM_BIND_ALL:
             BIND_ACTION_OK(cbs, action_ok_lookup_setting);
             break;
-         case MENU_LABEL_HELP:
-            BIND_ACTION_OK(cbs, action_ok_help);
-            break;
-         case MENU_LABEL_HELP_CONTROLS:
-            BIND_ACTION_OK(cbs, action_ok_help_controls);
-            break;
-         case MENU_LABEL_HELP_WHAT_IS_A_CORE:
-            BIND_ACTION_OK(cbs, action_ok_help_what_is_a_core);
-            break;
-         case MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD:
-            BIND_ACTION_OK(cbs, action_ok_help_change_virtual_gamepad);
-            break;
-         case MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-            BIND_ACTION_OK(cbs, action_ok_help_audio_video_troubleshooting);
-            break;
-         case MENU_LABEL_HELP_SCANNING_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_help_scanning_content);
-            break;
-         case MENU_LABEL_HELP_LOADING_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_help_load_content);
-            break;
          case MENU_LABEL_VIDEO_SHADER_PASS:
             BIND_ACTION_OK(cbs, action_ok_shader_pass);
             break;
