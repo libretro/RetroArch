@@ -1666,6 +1666,10 @@ enum menu_hash_enums
 
 /* Directory settings */
 
+#define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
+#define MENU_LABEL_OSK_OVERLAY_DIRECTORY                                       0xcce86287U
+#define MENU_LABEL_RECORDING_OUTPUT_DIRECTORY                                  0x30bece06U
+#define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
 #define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
 #define MENU_LABEL_AUDIO_FILTER_DIR                                            0x4bd96ebaU
 #define MENU_LABEL_VIDEO_SHADER_DIR                                            0x30f53b10U
@@ -1678,6 +1682,14 @@ enum menu_hash_enums
 #define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
 #define MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY                                0x62f975b8U
 #define MENU_LABEL_THUMBNAILS_DIRECTORY                                        0xdea77410U
+#define MENU_LABEL_RGUI_BROWSER_DIRECTORY                                      0xa86cba73U
+#define MENU_LABEL_CONTENT_DATABASE_DIRECTORY                                  0x6b443f80U
+#define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU
+#define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x8ba5ee54U
+#define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
+#define MENU_LABEL_RGUI_CONFIG_DIRECTORY                                       0x0cb3e005U
+#define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
+#define MENU_LABEL_CACHE_DIRECTORY                                             0x851dfb8dU
 
 /* RDB settings */
 
@@ -1752,21 +1764,8 @@ enum menu_hash_enums
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
 #define MENU_LABEL_LOAD_OPEN_ZIP                                               0x8aa3c068U
 #define MENU_LABEL_CUSTOM_RATIO                                                0xf038731eU
-#define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
-#define MENU_LABEL_OSK_OVERLAY_DIRECTORY                                       0xcce86287U
-#define MENU_LABEL_RECORDING_OUTPUT_DIRECTORY                                  0x30bece06U
-#define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
-#define MENU_LABEL_RGUI_BROWSER_DIRECTORY                                      0xa86cba73U
-#define MENU_LABEL_CONTENT_DATABASE_DIRECTORY                                  0x6b443f80U
-#define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU
-#define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x8ba5ee54U
-#define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
-
-#define MENU_LABEL_RGUI_CONFIG_DIRECTORY                                       0x0cb3e005U
-#define MENU_LABEL_ASSETS_DIRECTORY                                            0xde1ae8ecU
-#define MENU_LABEL_CACHE_DIRECTORY                                             0x851dfb8dU
 #define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
 #define MENU_LABEL_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS                          0xa6de9ba6U
@@ -1816,17 +1815,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC                 0x60031d7aU
 #define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT                                 0x74b36f11U
 #define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC                            0xac947056U
-
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS                                   0x7c05810eU
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP                         0x8c2f7b00U
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN                       0x55f0f413U
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM                           0x40e50edbU
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK                              0xd834d89eU
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START                             0xe00df0fbU
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO                              0xd838e6f9U
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU                       0x98159c23U
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT                              0xd83d6830U
-#define MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD                   0xe408c2ffU
 
 /* Main menu */
 #define MENU_LABEL_START_NET_RETROPAD                                          0xf2ae670dU
