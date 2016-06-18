@@ -1574,12 +1574,6 @@ enum menu_hash_enums
 #define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
 #define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
 
-#define MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX                                  0xfad6ab2fU
-#define MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX                                  0x3616e4d0U
-#define MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX                                  0x71571e71U
-#define MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX                                  0xac975812U
-#define MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX                                  0xe7d791b3U
-
 #define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
 
 #define MENU_LABEL_REWIND_ENABLE                                               0x9761e074U
