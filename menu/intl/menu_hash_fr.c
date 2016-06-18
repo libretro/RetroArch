@@ -64,7 +64,7 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Demander";
       case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
-         return "Réglages de confidentialité";
+         return "Confidentialité";
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
@@ -72,19 +72,19 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
          return "Pas de compteurs de performance.";
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
-         return "Réglages des pilotes";
+         return "Pilotes";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
-         return "Réglages des configurations";
+         return "Configurations";
       case MENU_ENUM_LABEL_VALUE_CORE_SETTINGS:
-         return "Réglages des coeurs";
+         return "Coeurs";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS:
-         return "Réglages vidéo";
+         return "Vidéo";
       case MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS:
-         return "Réglages des logs";
+         return "Journaux";
       case MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS:
-         return "Réglages des sauvegardes";
+         return "Sauvegardes";
       case MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS:
-         return "Réglages du rembobinage";
+         return "Rembobinage";
       case MENU_ENUM_LABEL_VALUE_SHADER:
          return "Shader";
       case MENU_ENUM_LABEL_VALUE_CHEAT:
@@ -280,7 +280,9 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
          return "Taux de ralentissement";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "Configuration unique au coeur";
+         return "Avoir une configuration par-coeur";
+      case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
+         return "Options du coeur par-jeu";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Charger les fichiers d'override automatiquement";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
@@ -306,7 +308,7 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
          return "Tronquer l'overscan (Reload)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
-         return "Indice de format d'image";
+         return "Rapport d'aspect";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
          return "Format d'image automatique";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT:
@@ -338,9 +340,9 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE:
          return "Compteurs de performance";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
-         return "Niveau de log des coeurs";
+         return "Verbosité des journaux des coeurs";
       case MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY:
-         return "Niveaux des logs";
+         return "Verbosité des journaux";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
          return "Charger automatiquement les savestates";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
@@ -435,12 +437,12 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
          return "<Choisir ce dossier>";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Exécuter le contenu";
-      case MENU_ENUM_LABEL_VALUE_DISK_OPTIONS: /* UPDATE/FIXME */
-         return "Options de disques";
+      case MENU_ENUM_LABEL_VALUE_DISK_OPTIONS:
+         return "Disques";
       case MENU_ENUM_LABEL_VALUE_CORE_OPTIONS:
          return "Options";
-      case MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS: /* UPDATE/FIXME */
-         return "Options de triche";
+      case MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS:
+         return "Triche";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Capturer l écran";
       case MENU_ENUM_LABEL_VALUE_RESUME:
@@ -467,8 +469,8 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
          return "Gestion de la base de données";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Gestion des curseurs";
-      case MENU_ENUM_LABEL_VALUE_MAIN_MENU: /* TODO/FIXME - translate */
-         return "Main Menu";
+      case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
+         return "Menu principal";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Réglages";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:
@@ -553,10 +555,10 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
          return "Fond d'écran dynamique";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
          return "Vignettes";
-      case MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* TODO/FIXME */
-         return "Options de remap d'entrées du coeur";
+      case MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
+         return "Remap d'entrées";
       case MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS:
-         return "Options de shaders";
+         return "Shaders";
       case MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS:
          return "Aucun paramètres.";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
@@ -772,37 +774,37 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_STATUS:
          return "Statut";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
-         return "Réglages audio";
+         return "Audio";
       case MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS:
-         return "Réglages des entrées";
+         return "Entrées";
       case MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
-         return "Réglages des messages d'info";
+         return "Messages d'info";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
-         return "Réglages d'overlays";
+         return "Overlays";
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
-         return "Réglages du menu";
+         return "Menu";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
-         return "Réglages multimédia";
+         return "Multimédia";
       case MENU_ENUM_LABEL_VALUE_UI_SETTINGS:
-         return "Réglages interface graphique";
+         return "Interface graphique";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Réglages du navigateur de fichiers";
+         return "Navigateur de fichiers";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Réglages des mises à jour";
+         return "Mises à jour";
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
-         return "Réglages du réseau";
+         return "Réseau";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Réglages des playlists";
+         return "Playlists";
       case MENU_ENUM_LABEL_VALUE_USER_SETTINGS:
-         return "Réglages utilisateur";
+         return "Utilisateur";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS:
-         return "Réglages des dossiers";
+         return "Dossiers";
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
-         return "Réglages de capture video";
+         return "Capture video";
       case MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
          return "Pas d'informations disponibles.";
       case MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS:
-         return "Réglages des entrées utilisateur %u";
+         return "Entrées utilisateur %u";
       case MENU_ENUM_LABEL_VALUE_LANG_ENGLISH:
          return "Anglais";
       case MENU_ENUM_LABEL_VALUE_LANG_JAPANESE:
@@ -834,13 +836,62 @@ const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
          return "Stick analogique droite";
       case MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS:
-         return "Réglages des racourcis d'entrées";
+         return "Racourcis d'entrées";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
-         return "Réglages de la vitesse d'affichage";
+         return "Vitesse d'affichage";
       case MENU_ENUM_LABEL_VALUE_SEARCH:
          return "Recherche :";
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
          return "Utiliser le lecteur d'image embarqué";
+      case MENU_ENUM_LABEL_VALUE_HELP_LIST:
+         return "Aide";
+      case MENU_ENUM_LABEL_VALUE_START_CORE:
+         return "Démarrer le coeur";
+      case MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD:
+         return "Mode manette à distance";
+      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
+         return "Sauvegarder la configuration actuelle";
+      case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
+         return "Réglages";
+      case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
+         return "Historique";
+      case MENU_ENUM_LABEL_VALUE_ADD_TAB:
+         return "Scanner";
+      case MENU_ENUM_LABEL_VALUE_DEBUG_PANEL_ENABLE:
+         return "Activer le panneau de débogage";
+      case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "Cacher l'overlay dans le menu";
+      case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
+         return "Taille de l'historique";
+      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST:
+         return "Comptes en ligne";
+      case MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER:
+         return "Filtre linéaire";
+      case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
+         return "XMB : Zoom";
+      case MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR:
+         return "XMB : Transparence";
+      case MENU_ENUM_LABEL_VALUE_XMB_FONT:
+         return "XMB : Police";
+      case MENU_ENUM_LABEL_VALUE_XMB_THEME:
+         return "XMB : Theme";
+      case MENU_ENUM_LABEL_VALUE_XMB_GRADIENT:
+         return "Dégradé de font d'écran";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
+         return "Ombres pour les icones";
+      case MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE:
+         return "Font d'écran animé";
+      case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE:
+         return "Manette réseau";
+      case MENU_ENUM_LABEL_VALUE_RUN:
+         return "Lancer";
+      case MENU_ENUM_LABEL_VALUE_STATE_SLOT:
+         return "Slot de savestate";
+
+      case MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE:
+         return "Annuler charger une savestate";
+      case MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE:
+         return "Annuler sauvegarder une savestate";
       default:
          break;
    }
