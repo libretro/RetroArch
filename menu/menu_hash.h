@@ -1438,7 +1438,6 @@ enum menu_hash_enums
 
 /* Video settings */
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
-#define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
 #define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
 #define MENU_LABEL_VIDEO_REFRESH_RATE                                          0x56ccabf5U
 #define MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN                                   0x6436d6f8U
@@ -1450,8 +1449,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
 #define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
 #define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
-#define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
-#define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
 #define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
 #define MENU_LABEL_VIDEO_HARD_SYNC_FRAMES                                      0xce0ece13U
 #define MENU_LABEL_VIDEO_FRAME_DELAY                                           0xd4aa9df4U
@@ -1467,7 +1464,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VIDEO_SOFT_FILTER                                           0x92819a46U
 #define MENU_LABEL_VIDEO_POST_FILTER_RECORD                                    0xa7b6e724U
 #define MENU_LABEL_VIDEO_VI_WIDTH                                              0x6e4a6d3aU
-#define MENU_LABEL_VIDEO_FORCE_ASPECT                                          0x8bbf9329U
 #define MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO                                     0xa7c31991U
 #define MENU_LABEL_VIDEO_ASPECT_RATIO_INDEX                                    0x3b01a19aU
 #define MENU_LABEL_VIDEO_VFILTER                                               0x664f8397U
@@ -1732,6 +1728,9 @@ enum menu_hash_enums
 #define MENU_LABEL_LOAD_ARCHIVE                                                0xc3834e66U
 
 /* Help */
+#define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
+#define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
+#define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
 #define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
 #define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U
 #define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
