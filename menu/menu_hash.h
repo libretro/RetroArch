@@ -1429,8 +1429,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
 
 #define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
-#define MENU_LABEL_INPUT_HOTKEY_BINDS                                          0x1b7ef2d7U
-
 
 #define MENU_LABEL_FRAME_THROTTLE_ENABLE                                       0xbe52e701U
 
