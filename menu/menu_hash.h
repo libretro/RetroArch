@@ -1635,7 +1635,6 @@ enum menu_hash_enums
 #define MENU_LABEL_THUMBNAILS_DIRECTORY                                        0xdea77410U
 
 #define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
-#define MENU_LABEL_INPUT_MAX_USERS                                             0x2720206bU
 #define MENU_LABEL_INPUT_REMAP_BINDS_ENABLE                                    0x536dcafeU
 #define MENU_LABEL_INPUT_AXIS_THRESHOLD                                        0xe95c2095U
 #define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
