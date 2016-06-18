@@ -593,9 +593,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
                BIND_ACTION_RIGHT(cbs, action_right_shader_num_passes);
                break;
-            case MENU_LABEL_CHEAT_NUM_PASSES:
-               BIND_ACTION_RIGHT(cbs, action_right_cheat_num_passes);
-               break;
             case MENU_LABEL_SCREEN_RESOLUTION:
                BIND_ACTION_RIGHT(cbs, action_right_video_resolution);
                break;

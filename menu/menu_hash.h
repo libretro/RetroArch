@@ -1682,7 +1682,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VIDEO_SHADER_FILTER_PASS                                    0x1906c38dU
 #define MENU_LABEL_VIDEO_SHADER_SCALE_PASS                                     0x18f7b82fU
 #define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
-#define MENU_LABEL_CHEAT_NUM_PASSES                                            0x1910eb87U
 
 
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U

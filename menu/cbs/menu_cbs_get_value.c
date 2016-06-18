@@ -1485,10 +1485,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_thumbnails);
             break;
-         case MENU_LABEL_CHEAT_NUM_PASSES:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_cheat_num_passes);
-            break;
          case MENU_LABEL_REMAP_FILE_LOAD:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_remap_file_load);
