@@ -1467,8 +1467,6 @@ enum menu_hash_enums
 #define MENU_LABEL_USE_THIS_DIRECTORY                                          0xc51d351dU
 #define MENU_LABEL_SAVE_STATE                                                  0x3a4849b5U
 #define MENU_LABEL_LOAD_STATE                                                  0xa39eb286U
-#define MENU_LABEL_UNDO_LOAD_STATE                                             0x464aaf5cU
-#define MENU_LABEL_UNDO_SAVE_STATE                                             0xdcf4468bU
 #define MENU_LABEL_REWIND                                                      0x1931d5aeU
 #define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
 #define MENU_LABEL_CHEAT_INDEX_MINUS                                           0x57f58b6cU
