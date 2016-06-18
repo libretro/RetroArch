@@ -901,7 +901,7 @@ static int generic_action_ok(const char *path,
    switch (id)
    {
       case ACTION_OK_LOAD_WALLPAPER:
-         flush_type = 49;
+         flush_type = MENU_SETTINGS;
          if (path_file_exists(action_path))
          {
             settings_t            *settings = config_get_ptr();
@@ -986,13 +986,13 @@ static int generic_action_ok(const char *path,
             goto error;
          break;
       case ACTION_OK_APPEND_DISK_IMAGE:
-         flush_type = 49;
+         flush_type = MENU_SETTINGS;
          command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
          command_event(CMD_EVENT_RESUME, NULL);
          break;
       case ACTION_OK_SET_DIRECTORY:
       case ACTION_OK_SET_PATH:
-         flush_type = 49;
+         flush_type = MENU_SETTINGS;
          {
             rarch_setting_t *setting = menu_setting_find(menu_label);
 
@@ -2873,12 +2873,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_record_configfile);
             break;
 #ifdef HAVE_NETWORKING
-         case MENU_LABEL_DOWNLOAD_CORE_CONTENT:
-            BIND_ACTION_OK(cbs, action_ok_core_content_list);
-            break;
-         case MENU_LABEL_CORE_UPDATER_LIST:
-            BIND_ACTION_OK(cbs, action_ok_core_updater_list);
-            break;
          case MENU_LABEL_UPDATE_LAKKA:
             BIND_ACTION_OK(cbs, action_ok_lakka_list);
             break;
