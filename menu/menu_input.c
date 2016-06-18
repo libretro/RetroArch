@@ -1341,8 +1341,15 @@ unsigned menu_input_frame_retropad(retro_input_t input,
          ti_next = true;
       }
 
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
+      {
+         input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+         ti_char = 64;
+         ti_next = false;
+      }
+
       /* send return key to close keyboard input window */
-      if (trigger_input & (UINT64_C(1) << settings->menu_cancel_btn))
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
       trigger_input = 0;
