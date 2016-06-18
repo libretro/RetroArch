@@ -26,6 +26,10 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CPU_ARCHITECTURE:
+         return "system_information_cpu_architecture";
+      case MENU_ENUM_LABEL_CPU_CORES:
+         return "system_information_cpu_cores";
       case MENU_ENUM_LABEL_NO_ITEMS:
          return "no_items";
       case MENU_ENUM_LABEL_SETTINGS_TAB:
@@ -848,6 +852,20 @@ const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+         return "Edge Magazine Rating";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW:
+         return "Edge Magazine Review";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+         return "Famitsu Magazine Rating";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING:
+         return "TGDB Rating";
+      case MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE:
+         return "CPU Architecture:";
+      case MENU_ENUM_LABEL_VALUE_CPU_CORES:
+         return "CPU Cores:";
+      case MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS:
+         return "Internal storage status";
       case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
          return "..";
       case MENU_ENUM_LABEL_VALUE_RUN:

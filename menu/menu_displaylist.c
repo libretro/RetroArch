@@ -666,7 +666,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #ifdef ANDROID
    bool perms = test_permissions(internal_storage_path);
 
-   snprintf(tmp, sizeof(tmp), "%s: %s", "Internal storage status",
+   snprintf(tmp, sizeof(tmp), "%s: %s", menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS),
          perms ? "read-write" : "read-only");
    menu_entries_add_enum(info->list, tmp, "",
          MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -691,7 +691,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       char cpu_arch_str[PATH_MAX_LENGTH] = {0};
       char cpu_text_str[PATH_MAX_LENGTH] = {0};
       enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
-      strlcpy(cpu_text_str, "CPU Architecture: ", sizeof(cpu_text_str));
+      strlcpy(cpu_text_str, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE), sizeof(cpu_text_str));
 
       switch (arch)
       {
@@ -724,17 +724,20 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
       snprintf(cpu_str, sizeof(cpu_str), "%s %s", cpu_text_str, cpu_arch_str);
 
-      menu_entries_add_enum(info->list, cpu_str, "",
-            MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      menu_entries_add_enum(info->list, cpu_str,
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_CPU_ARCHITECTURE),
+            MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    {
       char cpu_str[PATH_MAX_LENGTH] = {0};
       unsigned         amount_cores = cpu_features_get_core_amount();
 
-      snprintf(cpu_str, sizeof(cpu_str), "CPU Cores: %d\n", amount_cores);
-      menu_entries_add_enum(info->list, cpu_str, "",
-            MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+      snprintf(cpu_str, sizeof(cpu_str),
+            "%s %d\n", menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CPU_CORES), amount_cores);
+      menu_entries_add_enum(info->list, cpu_str,
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_CPU_CORES),
+            MENU_ENUM_LABEL_CPU_CORES, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
 
@@ -1902,7 +1905,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->tgdb_rating)
       {
-         if (create_string_list_rdb_entry_int("TGDB Rating",
+         if (create_string_list_rdb_entry_int(
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING),
                   menu_hash_to_str_enum(MENU_ENUM_LABEL_RDB_ENTRY_TGDB_RATING),
                   db_info_entry->tgdb_rating,
                   info->path, info->list) == -1)
@@ -1910,7 +1914,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->famitsu_magazine_rating)
       {
-         if (create_string_list_rdb_entry_int("Famitsu Magazine Rating",
+         if (create_string_list_rdb_entry_int(
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING),
                   menu_hash_to_str_enum(MENU_ENUM_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING),
                   db_info_entry->famitsu_magazine_rating,
                   info->path, info->list) == -1)
@@ -1918,14 +1923,16 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->edge_magazine_review)
       {
-         if (create_string_list_rdb_entry_string("Edge Magazine Review",
+         if (create_string_list_rdb_entry_string(
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW),
                   menu_hash_to_str_enum(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW),
                   db_info_entry->edge_magazine_review, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->edge_magazine_rating)
       {
-         if (create_string_list_rdb_entry_int("Edge Magazine Rating",
+         if (create_string_list_rdb_entry_int(
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING),
                   menu_hash_to_str_enum(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING),
                   db_info_entry->edge_magazine_rating,
                   info->path, info->list) == -1)
