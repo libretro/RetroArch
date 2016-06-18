@@ -47,6 +47,7 @@ int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
 
    switch (label_hash)
    {
+      case 0:
       default:
          BIND_ACTION_REFRESH(cbs, action_refresh_default);
          break;

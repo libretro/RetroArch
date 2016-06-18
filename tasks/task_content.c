@@ -1840,6 +1840,7 @@ bool task_push_content_load_default(
    /* Fork core? */
    switch (mode)
    {
+      case 0:
       default:
          if (!frontend_driver_set_fork(FRONTEND_FORK_CORE))
             return false;
