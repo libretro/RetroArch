@@ -1942,17 +1942,9 @@ static int action_ok_lookup_setting(const char *path,
 
 
 #ifdef HAVE_NETWORKING
-enum
-{
-   ACTION_OK_NETWORK_CORE_CONTENT_LIST = 0,
-   ACTION_OK_NETWORK_CORE_UPDATER_LIST,
-   ACTION_OK_NETWORK_THUMBNAILS_UPDATER_LIST,
-   ACTION_OK_NETWORK_LAKKA_LIST
-};
-
 static int generic_action_ok_network(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned type_id)
+      enum menu_hash_enums enum_idx)
 {
    char url_path[PATH_MAX_LENGTH] = {0};
    settings_t *settings           = config_get_ptr();
@@ -1968,42 +1960,44 @@ static int generic_action_ok_network(const char *path,
 
    command_event(CMD_EVENT_NETWORK_INIT, NULL);
 
-   switch (type_id)
+   switch (enum_idx)
    {
-      case ACTION_OK_NETWORK_CORE_CONTENT_LIST:
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
          fill_pathname_join(url_path, settings->network.buildbot_assets_url,
                "cores/gw/.index", sizeof(url_path));
-         url_label = "cb_core_content_list";
-         type_id2 = ACTION_OK_DL_CORE_CONTENT_LIST;
-         callback = cb_net_generic;
+         url_label = menu_hash_to_str_enum(enum_idx);
+         type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
+         callback  = cb_net_generic;
          break;
-      case ACTION_OK_NETWORK_CORE_UPDATER_LIST:
+      case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
          fill_pathname_join(url_path, settings->network.buildbot_url,
                ".index-extended", sizeof(url_path));
-         url_label = "cb_core_updater_list";
+         url_label = menu_hash_to_str_enum(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
-         callback = cb_net_generic;
+         callback  = cb_net_generic;
          break;
-      case ACTION_OK_NETWORK_THUMBNAILS_UPDATER_LIST:
+      case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
                "http://thumbnailpacks.libretro.com",
                ".index", sizeof(url_path));
-         url_label = "cb_thumbnails_updater_list";
+         url_label = menu_hash_to_str_enum(enum_idx);
          type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
-         callback = cb_net_generic;
+         callback  = cb_net_generic;
          break;
 #ifdef HAVE_LAKKA
-      case ACTION_OK_NETWORK_LAKKA_LIST:
+      case MENU_ENUM_LABEL_CB_LAKKA_LIST:
          /* TODO unhardcode this path */
          fill_pathname_join(url_path, "http://mirror.lakka.tv/nightly",
                LAKKA_PROJECT, sizeof(url_path));
          fill_pathname_join(url_path, url_path,
                ".index", sizeof(url_path));
-         url_label = "cb_lakka_list";
+         url_label = menu_hash_to_str_enum(enum_idx);
          type_id2  = ACTION_OK_DL_LAKKA_LIST;
-         callback = cb_net_generic;
+         callback  = cb_net_generic;
          break;
 #endif
+      default:
+         break;
    }
 
    task_push_http_transfer(url_path, false, url_label, callback, NULL);
@@ -2016,28 +2010,28 @@ static int action_ok_core_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_network(path, label, type, idx, entry_idx,
-         ACTION_OK_NETWORK_CORE_CONTENT_LIST);
+         MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
 } 
 
 static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_network(path, label, type, idx, entry_idx,
-         ACTION_OK_NETWORK_CORE_UPDATER_LIST);
+         MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST);
 }
 
 static int action_ok_thumbnails_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_network(path, label, type, idx, entry_idx,
-         ACTION_OK_NETWORK_THUMBNAILS_UPDATER_LIST);
+         MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST);
 }
 
 static int action_ok_lakka_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_network(path, label, type, idx, entry_idx,
-         ACTION_OK_NETWORK_LAKKA_LIST);
+         MENU_ENUM_LABEL_CB_LAKKA_LIST);
 }
 
 #endif
