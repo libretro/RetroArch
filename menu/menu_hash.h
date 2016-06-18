@@ -1302,7 +1302,6 @@ enum menu_hash_enums
 #define CB_THUMBNAILS_UPDATER_DOWNLOAD                                         0xf4ee156bU
 #define CB_CORE_THUMBNAILS_DOWNLOAD                                            0xc9d6519fU
 
-
 /* Deferred */
 
 #define MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST                            0x364dfa2bU
@@ -1370,7 +1369,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_DEBUG_PANEL_ENABLE                                          0xbad176a1U
 
-#define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
 
 #define MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT                                0xec5a348bU
 
@@ -1415,9 +1413,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_CORE_ENABLE                                                 0x2f37fe48U
 
-#define MENU_LABEL_MOUSE_ENABLE                                                0x1240fa88U
-
-#define MENU_LABEL_POINTER_ENABLE                                              0xf051a7a0U
 
 #define MENU_LABEL_RESET                                                       0x10474288U
 #define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
@@ -1461,7 +1456,13 @@ enum menu_hash_enums
 #define MENU_LABEL_SCREENSHOT                                                  0x9a37f083U
 #define MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE                                0xdf5c6d33U
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
+#define MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE                                  0x459fcb0dU
 
+/* Menu settings */
+#define MENU_LABEL_DYNAMIC_WALLPAPER                                           0xf011ccabU
+#define MENU_LABEL_MOUSE_ENABLE                                                0x1240fa88U
+#define MENU_LABEL_POINTER_ENABLE                                              0xf051a7a0U
+#define MENU_LABEL_THUMBNAILS                                                  0x0a3ec67cU
 #define MENU_LABEL_TITLE_COLOR                                                 0x10059879U
 #define MENU_LABEL_TIMEDATE_ENABLE                                             0xd3adcbecU
 #define MENU_LABEL_ENTRY_NORMAL_COLOR                                          0x5154ffd1U
@@ -1469,7 +1470,6 @@ enum menu_hash_enums
 #define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
 #define MENU_LABEL_SAVESTATE_AUTO_LOAD                                         0xf6f1028cU
 #define MENU_LABEL_SAVESTATE_AUTO_INDEX                                        0xd4da8b84U
-#define MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE                                  0x459fcb0dU
 #define MENU_LABEL_DPI_OVERRIDE_ENABLE                                         0xb4bf52c7U
 #define MENU_LABEL_DPI_OVERRIDE_VALUE                                          0x543a3efdU
 #define MENU_LABEL_XMB_SCALE_FACTOR                                            0x0177E8DF1
@@ -1479,6 +1479,7 @@ enum menu_hash_enums
 #define MENU_LABEL_XMB_GRADIENT                                                0x18e63099U
 #define MENU_LABEL_XMB_SHADOWS_ENABLE                                          0xd0fcc82aU
 #define MENU_LABEL_XMB_RIBBON_ENABLE                                           0x8e89c3edU
+
 #define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
@@ -1489,9 +1490,6 @@ enum menu_hash_enums
 #define MENU_LABEL_SORT_SAVESTATES_ENABLE                                      0x66ff2495U
 #define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
 #define MENU_LABEL_KEYBOARD_OVERLAY_PRESET                                     0x11f1c582U
-
-#define MENU_LABEL_DYNAMIC_WALLPAPER                                           0xf011ccabU
-#define MENU_LABEL_THUMBNAILS                                                  0x0a3ec67cU
 
 #define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
 
@@ -1675,7 +1673,6 @@ enum menu_hash_enums
 #define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
 #define MENU_LABEL_LOCATION_ALLOW                                              0xf089275cU
 
-#define MENU_LABEL_TURBO                                                       0x107434f1U
 
 /* Directory settings */
 
@@ -1814,7 +1811,9 @@ enum menu_hash_enums
 #define MENU_LABEL_HELP_SCANNING_CONTENT                                       0x1dec52b8U
 #define MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD                                 0x6e66ef07U
 #define MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING                            0xd44d395cU
+#define MENU_LABEL_TURBO                                                       0x107434f1U
 
+#define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
 #define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
 #define MENU_LABEL_VALUE_HELP_LOADING_CONTENT                                  0x70bab027U
 #define MENU_LABEL_VALUE_HELP_LIST                                             0x6c57426aU
