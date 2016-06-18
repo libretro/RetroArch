@@ -2828,12 +2828,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (hash)
       {
-         case MENU_LABEL_START_CORE:
-            BIND_ACTION_OK(cbs, action_ok_start_core);
-            break;
-         case MENU_LABEL_START_NET_RETROPAD:
-            BIND_ACTION_OK(cbs, action_ok_start_net_retropad_core);
-            break;
          case MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE:
             BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);
             break;
@@ -2929,11 +2923,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DETECT_CORE_LIST_OK:
             BIND_ACTION_OK(cbs, action_ok_file_load_detect_core);
-            break;
-         case MENU_LABEL_LOAD_CONTENT_HISTORY:
-         case MENU_LABEL_CURSOR_MANAGER_LIST:
-         case MENU_LABEL_DATABASE_MANAGER_LIST:
-            BIND_ACTION_OK(cbs, action_ok_push_generic_list);
             break;
          case MENU_LABEL_SHADER_APPLY_CHANGES:
             BIND_ACTION_OK(cbs, action_ok_shader_apply_changes);
