@@ -26,6 +26,10 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD:
+         return "cb_thumbnails_updater_download";
+      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
+         return "cb_core_thumbnails_download";
       case MENU_ENUM_LABEL_CONTENT_ACTIONS:
          return "content_actions";
       case MENU_ENUM_LABEL_CPU_ARCHITECTURE:
