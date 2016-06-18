@@ -407,7 +407,7 @@ const char *menu_hash_to_str_it_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION:
          return "Rotazione";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
-         return "Abiita Screenshot GPU";
+         return "Abilita Screenshot GPU";
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
          return "Riduci Overscan (Riavvia)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
@@ -541,7 +541,7 @@ const char *menu_hash_to_str_it_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
          return "Frequenza personalizzata";
       case MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY:
-         return "<Usa questo directory>";
+         return "<Usa questa directory>";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Avvia contenuto";
       case MENU_ENUM_LABEL_VALUE_DISK_OPTIONS: /* UPDATE/FIXME */
@@ -1102,7 +1102,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                      " \n"
                      "questo driver richiede un'attiva TTY. Gli eventi \n"
                      "della tastiera sono letti direttamente dal TTY che \n"
-                     "che lo rende più semplice, ma non tanto flessibile quanto udev. \n" "Mouse, ecc, non sono supportati. \n"
+                     "che lo rende più semplice, ma non tanto flessibile quanto udev. \n" "Mouse, ecc., non sono supportati. \n"
                      " \n"
                      "Questo driver usa la più vecchia API per il joystick \n"
                      "(/dev/input/js*).");
@@ -1214,18 +1214,18 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                snprintf(s, len,
                      "Exynos-G2D Video Driver. \n"
                      " \n"
-                     "This is a low-level Exynos video driver. \n"
-                     "Uses the G2D block in Samsung Exynos SoC \n"
-                     "for blit operations. \n"
-                     " \n"
-                     "Performance for software rendered cores \n"
-                     "should be optimal.");
+                     "Questo è un driver video Exynos a basso livello. \n"
+                     "Usa il blocco G2D nei SoC Samsung Exynos \n"
+                     "per operazioni blit. \n"
+                      " \n"
+                      "Le performance per i core renderizzati via software \n"
+                      "dovrebbero essere ottimali.");
                break;
             case MENU_LABEL_VIDEO_DRIVER_SUNXI:
                snprintf(s, len,
                      "Driver video Sunxi-G2D. \n"
                      " \n"
-                     "Questo è un driver video Sunxi a bsso livello. \n"
+                     "Questo è un driver video Sunxi a basso livello. \n"
                      "Usa il blocco G2D nei Soc Allwinner.");
                break;
             default:
@@ -1280,18 +1280,18 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "Il menù degli shader è aggiornato di conseguenza. \n"
                " \n"
                "Se la CGP usa metodi di scala che non sono \n"
-               "semplici, (i.e. scala fonte, stessa scala \n"
+               "semplici, (es. scala fonte, stessa scala \n"
                "fattore per X/Y), il fattore di scala mostrato \n"
-               "nel menù potrebbe essere non corretto."
+               "nel menù potrebbe non essere corretto."
                );
          break;
       case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
          snprintf(s, len,
                "Scala per questo passaggio. \n"
                " \n"
-               "Il fattore di scala accumula, i.e. 2x \n"
+               "Il fattore di scala accumula, es. 2x \n"
                "per il primo passaggio e 2x per il secondo \n"
-               "passaggio darà un scala totale di 4x. \n"
+               "passaggio darà una scala totale di 4x. \n"
                " \n"
                "Se c'è un fattore di scala per l'ultimo \n"
                "passaggio, il risultato è allungare lo \n"
@@ -1338,7 +1338,7 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "Percorso allo shader. \n"
                " \n"
                "Tutti gli shaders devono essere dello stesso \n"
-               "tipo (i.e. CG, GLSL or HLSL). \n"
+               "tipo (es. CG, GLSL or HLSL). \n"
                " \n"
                "Imposta la Directory Shader per stabilire dove \n"
                "il browser comincia a cercare gli \n"
