@@ -1668,8 +1668,9 @@ enum menu_hash_enums
 #define MENU_LABEL_AUTOSAVE_INTERVAL                                           0xecc87351U
 #define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
 
-
 #define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
+
+/* Privacy settings */
 
 #define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
 #define MENU_LABEL_LOCATION_ALLOW                                              0xf089275cU
@@ -1799,8 +1800,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_USER_LANGUAGE                                               0x33ebaa27U
 #define MENU_LABEL_USER_SETTINGS                                               0xcdc9a8f5U
-
-#define MENU_LABEL_USE_BUILTIN_IMAGE_VIEWER                                    0x5203b5bbU
 
 #define MENU_LABEL_OPEN_ARCHIVE                                                0x78c0ca58U
 #define MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE                                    0x92442638U
