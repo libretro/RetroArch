@@ -2882,12 +2882,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_ACCOUNTS_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_list);
             break;
-         case MENU_LABEL_PLAYLIST_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_playlist_settings_list);
-            break;
-         case MENU_LABEL_INPUT_HOTKEY_BINDS:
-            BIND_ACTION_OK(cbs, action_ok_push_input_hotkey_binds_list);
-            break;
          case MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
             BIND_ACTION_OK(cbs, action_ok_push_accounts_cheevos_list);
             break;
