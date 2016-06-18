@@ -26,10 +26,30 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
-      case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD:
-         return "cb_thumbnails_updater_download";
+      case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
+         return "cb_update_cheats";
+      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
+         return "cb_update_overlays";
+      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
+         return "cb_update_databases";
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
+         return "cb_update_shaders_glsl";
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
+         return "cb_update_shaders_cg";
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
          return "cb_core_thumbnails_download";
+      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
+         return "cb_update_core_info_files";
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
+         return "cb_core_content_download";
+      case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
+         return "cb_lakka_download";
+      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
+         return "cb_update_assets";
+      case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
+         return "cb_update_autoconfig_profiles";
+      case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD:
+         return "cb_thumbnails_updater_download";
       case MENU_ENUM_LABEL_CONTENT_ACTIONS:
          return "content_actions";
       case MENU_ENUM_LABEL_CPU_ARCHITECTURE:
