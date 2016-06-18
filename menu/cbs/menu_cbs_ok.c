@@ -2849,12 +2849,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_CUSTOM_BIND_ALL:
             BIND_ACTION_OK(cbs, action_ok_lookup_setting);
             break;
-         case MENU_LABEL_QUIT_RETROARCH:
-            BIND_ACTION_OK(cbs, action_ok_quit);
-            break;
-         case MENU_LABEL_SAVE_NEW_CONFIG:
-            BIND_ACTION_OK(cbs, action_ok_save_new_config);
-            break;
          case MENU_LABEL_HELP:
             BIND_ACTION_OK(cbs, action_ok_help);
             break;
@@ -2965,38 +2959,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
             break;
-         case MENU_LABEL_CONFIGURATIONS:
-            BIND_ACTION_OK(cbs, action_ok_configurations_list);
-            break;
          case MENU_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);
-            break;
-         case MENU_LABEL_UPDATE_ASSETS:
-            BIND_ACTION_OK(cbs, action_ok_update_assets);
-            break;
-         case MENU_LABEL_UPDATE_CORE_INFO_FILES:
-            BIND_ACTION_OK(cbs, action_ok_update_core_info_files);
-            break;
-         case MENU_LABEL_UPDATE_OVERLAYS:
-            BIND_ACTION_OK(cbs, action_ok_update_overlays);
-            break;
-         case MENU_LABEL_UPDATE_DATABASES:
-            BIND_ACTION_OK(cbs, action_ok_update_databases);
-            break;
-         case MENU_LABEL_UPDATE_GLSL_SHADERS:
-            BIND_ACTION_OK(cbs, action_ok_update_shaders_glsl);
-            break;
-         case MENU_LABEL_UPDATE_CG_SHADERS:
-            BIND_ACTION_OK(cbs, action_ok_update_shaders_cg);
-            break;
-         case MENU_LABEL_UPDATE_CHEATS:
-            BIND_ACTION_OK(cbs, action_ok_update_cheats);
-            break;
-         case MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES:
-            BIND_ACTION_OK(cbs, action_ok_update_autoconfig_profiles);
-            break;
-         case MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID:
-            BIND_ACTION_OK(cbs, action_ok_update_autoconfig_profiles_hid);
             break;
          default:
             return -1;
