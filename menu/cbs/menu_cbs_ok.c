@@ -2868,9 +2868,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_CORE_UPDATER_LIST:
             BIND_ACTION_OK(cbs, action_ok_core_updater_list);
             break;
-         case MENU_LABEL_THUMBNAILS_UPDATER_LIST:
-            BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_list);
-            break;
          case MENU_LABEL_UPDATE_LAKKA:
             BIND_ACTION_OK(cbs, action_ok_lakka_list);
             break;

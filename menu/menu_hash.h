@@ -1386,17 +1386,7 @@ enum menu_hash_enums
 
 /* Online updater settings */
 
-#define MENU_LABEL_THUMBNAILS_UPDATER_LIST                                     0xff70176bU
-#define MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID                              0x1e94ee4dU
-#define MENU_LABEL_UPDATE_ASSETS                                               0x37fa42daU
 #define MENU_LABEL_UPDATE_LAKKA                                                0x19b51eebU
-#define MENU_LABEL_UPDATE_CHEATS                                               0x3bd5c83fU
-#define MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES                                  0xddfcf979U
-#define MENU_LABEL_UPDATE_DATABASES                                            0x158ee0cfU
-#define MENU_LABEL_UPDATE_OVERLAYS                                             0xd25d221cU
-#define MENU_LABEL_UPDATE_CG_SHADERS                                           0x9473991aU
-#define MENU_LABEL_UPDATE_GLSL_SHADERS                                         0x2413b762U
-#define MENU_LABEL_UPDATE_CORE_INFO_FILES                                      0x620d758dU
 
 /* Information settings */
 
