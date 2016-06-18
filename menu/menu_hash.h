@@ -1459,14 +1459,7 @@ enum menu_hash_enums
 #define MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE                                  0x459fcb0dU
 
 /* Menu settings */
-#define MENU_LABEL_DYNAMIC_WALLPAPER                                           0xf011ccabU
-#define MENU_LABEL_MOUSE_ENABLE                                                0x1240fa88U
-#define MENU_LABEL_POINTER_ENABLE                                              0xf051a7a0U
 #define MENU_LABEL_THUMBNAILS                                                  0x0a3ec67cU
-#define MENU_LABEL_TITLE_COLOR                                                 0x10059879U
-#define MENU_LABEL_TIMEDATE_ENABLE                                             0xd3adcbecU
-#define MENU_LABEL_ENTRY_NORMAL_COLOR                                          0x5154ffd1U
-#define MENU_LABEL_ENTRY_HOVER_COLOR                                           0x4143cfccU
 #define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
 #define MENU_LABEL_SAVESTATE_AUTO_LOAD                                         0xf6f1028cU
 #define MENU_LABEL_SAVESTATE_AUTO_INDEX                                        0xd4da8b84U
