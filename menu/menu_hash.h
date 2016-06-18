@@ -1906,7 +1906,6 @@ enum menu_hash_enums
 #define MENU_VALUE_CRC                                                         0x0b88671dU
 #define MENU_VALUE_MORE                                                        0x0b877cafU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
-#define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
 #define MENU_VALUE_ON                                                          0x005974c2U
 #define MENU_VALUE_OFF                                                         0x0b880c40U
 #define MENU_VALUE_COMP                                                        0x6a166ba5U
