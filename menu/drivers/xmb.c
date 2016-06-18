@@ -3081,13 +3081,16 @@ static int deferred_push_content_actions(menu_displaylist_info_t *info)
 static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs,
       uint32_t label_hash)
 {
-   switch (label_hash)
+   if (cbs && cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
    {
-      case MENU_LABEL_CONTENT_ACTIONS:
-         cbs->action_deferred_push = deferred_push_content_actions;
-         break;
-      default:
-         return -1;
+      switch (cbs->enum_idx)
+      {
+         case MENU_ENUM_LABEL_CONTENT_ACTIONS:
+            cbs->action_deferred_push = deferred_push_content_actions;
+            break;
+         default:
+            return -1;
+      }
    }
 
    return 0;

@@ -54,6 +54,8 @@ enum menu_hash_enums
    MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    MENU_ENUM_LABEL_PARENT_DIRECTORY,
 
+   MENU_ENUM_LABEL_CONTENT_ACTIONS,
+
    MENU_ENUM_LABEL_RUN,
 
    MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD,
@@ -821,7 +823,6 @@ enum menu_hash_enums
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
    MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,
    MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-   MENU_ENUM_LABEL_CONTENT_ACTIONS,
    MENU_ENUM_LABEL_DETECT_CORE_LIST,
    MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST,
    MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
@@ -1701,7 +1702,6 @@ enum menu_hash_enums
 #define MENU_LABEL_NETWORK_REMOTE_ENABLE                                       0x99cd4420U
 #define MENU_LABEL_NETWORK_REMOTE_PORT                                         0x9aef9e18U
 
-#define MENU_LABEL_CONTENT_ACTIONS                                             0xa0d76970U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_START_CORE                                                  0xb0b6ae5bU

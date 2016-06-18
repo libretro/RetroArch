@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CONTENT_ACTIONS:
+         return "content_actions";
       case MENU_ENUM_LABEL_CPU_ARCHITECTURE:
          return "system_information_cpu_architecture";
       case MENU_ENUM_LABEL_CPU_CORES:
