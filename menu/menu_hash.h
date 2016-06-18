@@ -1431,8 +1431,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
 
-#define MENU_LABEL_NO_SETTINGS_FOUND                                           0xabf77040U
-
 #define MENU_LABEL_VIDEO_FONT_ENABLE                                           0x697d9b58U
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
 #define MENU_LABEL_VIDEO_FONT_SIZE                                             0xd0e03a8cU
