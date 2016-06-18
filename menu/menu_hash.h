@@ -1347,11 +1347,6 @@ enum menu_hash_enums
 
 /* Cheevos settings */
 
-#define MENU_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE                                0xf71b3b16U
-#define MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL                                     0xa1ae28f0U
-#define MENU_LABEL_CHEEVOS_ENABLE                                              0x2748f998U
-#define MENU_LABEL_CHEEVOS_USERNAME                                            0x6ce57e31U
-#define MENU_LABEL_CHEEVOS_PASSWORD                                            0x86c38d24U
 #define MENU_LABEL_CHEEVOS_DESCRIPTION                                         0x7e00e0f5U
 
 /* Playlist settings */
