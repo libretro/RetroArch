@@ -1308,9 +1308,12 @@ enum menu_hash_enums
 
 #define MENU_LABEL_CHEEVOS_ENABLE                                              0x2748f998U
 
-#define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
+#define MENU_LABEL_CHEEVOS_USERNAME                                            0x6ce57e31U
+#define MENU_LABEL_CHEEVOS_PASSWORD                                            0x86c38d24U
 
 #define MENU_LABEL_CHEEVOS_DESCRIPTION                                         0x7e00e0f5U
+
+#define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
 
 #define MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN                                    0x5a56139bU
 
@@ -1323,8 +1326,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_DEFERRED_USER_BINDS_LIST                                    0x28c5750eU
 
-#define MENU_LABEL_CHEEVOS_USERNAME                                            0x6ce57e31U
-#define MENU_LABEL_CHEEVOS_PASSWORD                                            0x86c38d24U
 
 #define MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD                                   0x45cf62e3U
 
@@ -1420,19 +1421,10 @@ enum menu_hash_enums
 
 #define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
 
-#define MENU_LABEL_VIDEO_FONT_ENABLE                                           0x697d9b58U
-#define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
-#define MENU_LABEL_VIDEO_FONT_SIZE                                             0xd0e03a8cU
-#define MENU_LABEL_VIDEO_MESSAGE_POS_X                                         0xa133c368U
-#define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
 
 #define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
 
 #define MENU_LABEL_FRAME_THROTTLE_ENABLE                                       0xbe52e701U
-
-#define MENU_LABEL_VIDEO_FILTER_FLICKER                                        0x2e21eba0U
-
-#define MENU_LABEL_VIDEO_SOFT_FILTER                                           0x92819a46U
 
 #define MENU_LABEL_CORE_ENABLE                                                 0x2f37fe48U
 
@@ -1460,7 +1452,6 @@ enum menu_hash_enums
 #define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
 #define MENU_LABEL_CHEAT_INDEX_MINUS                                           0x57f58b6cU
 #define MENU_LABEL_CHEAT_INDEX_PLUS                                            0x678542a4U
-#define MENU_LABEL_AUDIO_ENABLE                                                0x28614f5dU
 #define MENU_LABEL_SCREENSHOT_DIRECTORY                                        0x552612d7U
 #define MENU_LABEL_SHADER_NEXT                                                 0x54d359baU
 #define MENU_LABEL_SHADER_PREV                                                 0x54d4a758U
@@ -1475,37 +1466,26 @@ enum menu_hash_enums
 #define MENU_LABEL_R_X_MINUS                                                   0x78cb50f9U
 #define MENU_LABEL_R_Y_MINUS                                                   0xc5c58dbaU
 #define MENU_LABEL_R_Y_PLUS                                                    0x63173332U
-#define MENU_LABEL_VIDEO_SWAP_INTERVAL                                         0x5673ff9aU
-#define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
 #define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U
 #define MENU_LABEL_BLOCK_SRAM_OVERWRITE                                        0xc4e88d08U
-#define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
 #define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
 #define MENU_LABEL_GAME_SPECIFIC_OPTIONS                                       0x142ec90fU
 #define MENU_LABEL_AUTO_OVERRIDES_ENABLE                                       0x35ff91b6U
 #define MENU_LABEL_AUTO_REMAPS_ENABLE                                          0x98c8f98bU
 #define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
-#define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
-#define MENU_LABEL_VIDEO_HARD_SYNC_FRAMES                                      0xce0ece13U
-#define MENU_LABEL_VIDEO_FRAME_DELAY                                           0xd4aa9df4U
 #define MENU_LABEL_SCREENSHOT                                                  0x9a37f083U
 #define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
 #define MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE                                0xdf5c6d33U
-#define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
 
 #define MENU_LABEL_TITLE_COLOR                                                 0x10059879U
 #define MENU_LABEL_TIMEDATE_ENABLE                                             0xd3adcbecU
 #define MENU_LABEL_ENTRY_NORMAL_COLOR                                          0x5154ffd1U
 #define MENU_LABEL_ENTRY_HOVER_COLOR                                           0x4143cfccU
-#define MENU_LABEL_AUDIO_SYNC                                                  0xe0cd6bd3U
-#define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
-#define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
 #define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
 #define MENU_LABEL_SAVESTATE_AUTO_LOAD                                         0xf6f1028cU
 #define MENU_LABEL_SAVESTATE_AUTO_INDEX                                        0xd4da8b84U
 #define MENU_LABEL_SYSTEM_DIRECTORY                                            0x35a6fb9eU
-#define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
 #define MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE                                  0x459fcb0dU
 #define MENU_LABEL_DPI_OVERRIDE_ENABLE                                         0xb4bf52c7U
 #define MENU_LABEL_DPI_OVERRIDE_VALUE                                          0x543a3efdU
@@ -1520,8 +1500,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
 #define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
-#define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
-#define MENU_LABEL_AUDIO_LATENCY                                               0x32695386U
 #define MENU_LABEL_NETPLAY_ENABLE                                              0x607fbd68U
 #define MENU_LABEL_SSH_ENABLE                                                  0xd9854a79U
 #define MENU_LABEL_SAMBA_ENABLE                                                0x379e15efU
@@ -1545,9 +1523,12 @@ enum menu_hash_enums
 #define MENU_LABEL_THUMBNAILS                                                  0x0a3ec67cU
 
 #define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
-#define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
 #define MENU_LABEL_INPUT_OVERLAY_ENABLE                                        0xc7b21d5cU
 #define MENU_LABEL_INPUT_OSK_OVERLAY_ENABLE                                    0x7f8339c8U
+
+#define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
+#define MENU_LABEL_VIDEO_FILTER_DIR                                            0x67603f1fU
+#define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
 #define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
 #define MENU_LABEL_VIDEO_REFRESH_RATE                                          0x56ccabf5U
 #define MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN                                   0x6436d6f8U
@@ -1557,11 +1538,68 @@ enum menu_hash_enums
 #define MENU_LABEL_VIDEO_SMOOTH                                                0x3aabbb35U
 #define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
 #define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
+#define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
+#define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
+#define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
+#define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
+#define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
+#define MENU_LABEL_VIDEO_HARD_SYNC_FRAMES                                      0xce0ece13U
+#define MENU_LABEL_VIDEO_FRAME_DELAY                                           0xd4aa9df4U
+#define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
+#define MENU_LABEL_VIDEO_SWAP_INTERVAL                                         0x5673ff9aU
+#define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
+#define MENU_LABEL_VIDEO_FONT_ENABLE                                           0x697d9b58U
+#define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
+#define MENU_LABEL_VIDEO_FONT_SIZE                                             0xd0e03a8cU
+#define MENU_LABEL_VIDEO_MESSAGE_POS_X                                         0xa133c368U
+#define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
+#define MENU_LABEL_VIDEO_FILTER_FLICKER                                        0x2e21eba0U
+#define MENU_LABEL_VIDEO_SOFT_FILTER                                           0x92819a46U
+#define MENU_LABEL_VIDEO_POST_FILTER_RECORD                                    0xa7b6e724U
+#define MENU_LABEL_VIDEO_VI_WIDTH                                              0x6e4a6d3aU
+#define MENU_LABEL_VIDEO_FORCE_ASPECT                                          0x8bbf9329U
+#define MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO                                     0xa7c31991U
+#define MENU_LABEL_VIDEO_ASPECT_RATIO_INDEX                                    0x3b01a19aU
+#define MENU_LABEL_VIDEO_VFILTER                                               0x664f8397U
+#define MENU_LABEL_VIDEO_GPU_RECORD                                            0xb6059a65U
+#define MENU_LABEL_VIDEO_SHARED_CONTEXT                                        0x7d7dad16U
+#define MENU_LABEL_VIDEO_GAMMA                                                 0x08a951beU
+#define MENU_LABEL_VIDEO_ALLOW_ROTATE                                          0x2880f0e8U
 
+#define MENU_LABEL_VIDEO_DRIVER                                                0x1805a5e7U
+#define MENU_LABEL_VIDEO_DRIVER_GL                                             0x005977f8U
+#define MENU_LABEL_VIDEO_DRIVER_SDL2                                           0x7c9dd69aU
+#define MENU_LABEL_VIDEO_DRIVER_SDL1                                           0x0b88a968U
+#define MENU_LABEL_VIDEO_DRIVER_D3D                                            0x0b886340U
+#define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
+#define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
+
+#define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
+#define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
+#define MENU_LABEL_VIDEO_SHADER_FILTER_PASS                                    0x1906c38dU
+#define MENU_LABEL_VIDEO_SHADER_SCALE_PASS                                     0x18f7b82fU
+#define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
+#define MENU_LABEL_VIDEO_SHADER_DIR                                            0x30f53b10U
+#define MENU_LABEL_VIDEO_SHADER_PARAMETERS                                     0x9895c3e5U
+#define MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS                              0xd18158d7U
+#define MENU_LABEL_VIDEO_SHADER_PASS                                           0x4fa31028U
+#define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
+
+#define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
+#define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
+#define MENU_LABEL_AUDIO_OUTPUT_RATE                                           0x477b97b9U
+#define MENU_LABEL_AUDIO_FILTER_DIR                                            0x4bd96ebaU
 #define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
 #define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
-
+#define MENU_LABEL_AUDIO_ENABLE                                                0x28614f5dU
+#define MENU_LABEL_AUDIO_SYNC                                                  0xe0cd6bd3U
+#define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
+#define MENU_LABEL_AUDIO_LATENCY                                               0x32695386U
 #define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
+
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
 #define MENU_LABEL_REWIND_ENABLE                                               0x9761e074U
 #define MENU_LABEL_ENABLE_HOTKEY                                               0xc04037bfU
@@ -1584,17 +1622,6 @@ enum menu_hash_enums
 #define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
 #define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
 
-#define MENU_LABEL_VIDEO_DRIVER                                                0x1805a5e7U
-#define MENU_LABEL_VIDEO_DRIVER_GL                                             0x005977f8U
-#define MENU_LABEL_VIDEO_DRIVER_SDL2                                           0x7c9dd69aU
-#define MENU_LABEL_VIDEO_DRIVER_SDL1                                           0x0b88a968U
-#define MENU_LABEL_VIDEO_DRIVER_D3D                                            0x0b886340U
-#define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
-#define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
-
-#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
-#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
-#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
 #define MENU_LABEL_SAVEFILE_DIRECTORY                                          0x92773488U
 #define MENU_LABEL_SAVESTATE_DIRECTORY                                         0x90551289U
@@ -1606,9 +1633,6 @@ enum menu_hash_enums
 #define MENU_LABEL_INPUT_AXIS_THRESHOLD                                        0xe95c2095U
 #define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
 
-#define MENU_LABEL_VIDEO_GAMMA                                                 0x08a951beU
-
-#define MENU_LABEL_VIDEO_ALLOW_ROTATE                                          0x2880f0e8U
 
 #define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
 #define MENU_LABEL_LOCATION_ALLOW                                              0xf089275cU
@@ -1645,11 +1669,6 @@ enum menu_hash_enums
 #define MENU_LABEL_RDB_ENTRY_MD5                                               0xdf3c7f93U
 #define MENU_LABEL_RDB_ENTRY_CRC32                                             0x9fae330aU
 
-#define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
-#define MENU_LABEL_VIDEO_SHADER_FILTER_PASS                                    0x1906c38dU
-#define MENU_LABEL_VIDEO_SHADER_SCALE_PASS                                     0x18f7b82fU
-#define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
-
 
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
@@ -1665,6 +1684,7 @@ enum menu_hash_enums
 #define MENU_LABEL_NETWORK_REMOTE_ENABLE                                       0x99cd4420U
 #define MENU_LABEL_NETWORK_REMOTE_PORT                                         0x9aef9e18U
 
+
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
@@ -1672,7 +1692,6 @@ enum menu_hash_enums
 #define MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE                           0xa3d605f5U
 #define MENU_LABEL_CORE_UPDATER_BUILDBOT_URL                                   0xe9ad8448U
 #define MENU_LABEL_BUILDBOT_ASSETS_URL                                         0x1895c71eU
-#define MENU_LABEL_VIDEO_SHARED_CONTEXT                                        0x7d7dad16U
 #define MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN                                      0x78579f70U
 #define MENU_LABEL_NAVIGATION_WRAPAROUND                                       0xe76ad251U
 #define MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE       0xea48426bU
@@ -1718,8 +1737,6 @@ enum menu_hash_enums
 #define MENU_LABEL_DEBUG_INFORMATION                                           0xeb0d82b1U
 #define MENU_LABEL_ACHIEVEMENT_LIST                                            0x7b90fc49U
 #define MENU_LABEL_CORE_INFORMATION                                            0xb638e0d3U
-#define MENU_LABEL_VIDEO_SHADER_PARAMETERS                                     0x9895c3e5U
-#define MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS                              0xd18158d7U
 #define MENU_LABEL_DISK_OPTIONS                                                0xc61ab5fbU
 #define MENU_LABEL_CORE_OPTIONS                                                0xf65e60f9U
 #define MENU_LABEL_DISK_CYCLE_TRAY_STATUS                                      0x3035cdc1U
@@ -1730,8 +1747,6 @@ enum menu_hash_enums
 #define MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS                                0x7836a8caU
 #define MENU_LABEL_DATABASE_MANAGER_LIST                                       0x7f853d8fU
 #define MENU_LABEL_CURSOR_MANAGER_LIST                                         0xa969e378U
-#define MENU_LABEL_VIDEO_SHADER_PASS                                           0x4fa31028U
-#define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
 #define MENU_LABEL_CHEAT_FILE_LOAD                                             0x57336148U
 #define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
 #define MENU_LABEL_MESSAGE                                                     0xbe463eeaU
@@ -1743,23 +1758,18 @@ enum menu_hash_enums
 #define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
 #define MENU_LABEL_CHEAT_DATABASE_PATH                                         0x01388b8aU
 #define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
-#define MENU_LABEL_AUDIO_OUTPUT_RATE                                           0x477b97b9U
 #define MENU_LABEL_OSK_OVERLAY_DIRECTORY                                       0xcce86287U
 #define MENU_LABEL_RECORDING_OUTPUT_DIRECTORY                                  0x30bece06U
 #define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
-#define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
-#define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
 #define MENU_LABEL_RGUI_BROWSER_DIRECTORY                                      0xa86cba73U
 #define MENU_LABEL_CONTENT_DATABASE_DIRECTORY                                  0x6b443f80U
 #define MENU_LABEL_PLAYLIST_DIRECTORY                                          0x6361820bU
 #define MENU_LABEL_CORE_ASSETS_DIRECTORY                                       0x8ba5ee54U
 #define MENU_LABEL_CONTENT_DIRECTORY                                           0x7738dc14U
 #define MENU_LABEL_INPUT_REMAPPING_DIRECTORY                                   0x5233c20bU
-#define MENU_LABEL_VIDEO_SHADER_DIR                                            0x30f53b10U
-#define MENU_LABEL_VIDEO_FILTER_DIR                                            0x67603f1fU
-#define MENU_LABEL_AUDIO_FILTER_DIR                                            0x4bd96ebaU
+
 #define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
 #define MENU_LABEL_LIBRETRO_INFO_PATH                                          0xe552b25fU
 #define MENU_LABEL_RGUI_CONFIG_DIRECTORY                                       0x0cb3e005U
@@ -1786,27 +1796,15 @@ enum menu_hash_enums
 #define MENU_LABEL_CUSTOM_BIND_DEFAULTS                                        0xe88f7b13U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
-#define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U
 #define MENU_LABEL_OSK_ENABLE                                                  0x8e208498U
-#define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
 #define MENU_LABEL_EXIT_EMULATOR                                               0x86d5d467U
 #define MENU_LABEL_COLLECTION                                                  0x5fea5991U
 #define MENU_LABEL_USER_LANGUAGE                                               0x33ebaa27U
 #define MENU_LABEL_NETPLAY_NICKNAME                                            0x52204787U
-#define MENU_LABEL_VIDEO_VI_WIDTH                                              0x6e4a6d3aU
 
-#define MENU_LABEL_VIDEO_FORCE_ASPECT                                          0x8bbf9329U
-
-#define MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO                                     0xa7c31991U
-
-#define MENU_LABEL_VIDEO_ASPECT_RATIO_INDEX                                    0x3b01a19aU
-
-#define MENU_LABEL_VIDEO_VFILTER                                               0x664f8397U
-
-#define MENU_LABEL_VIDEO_GPU_RECORD                                            0xb6059a65U
 
 #define MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY                                 0x8343eff4U
 
@@ -1814,7 +1812,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_RECORD_PATH                                                 0x016d7afaU
 
-#define MENU_LABEL_VIDEO_POST_FILTER_RECORD                                    0xa7b6e724U
 
 #define MENU_LABEL_RECORD_ENABLE                                               0x1654e22aU
 
