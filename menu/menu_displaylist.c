@@ -664,9 +664,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    menu_entries_add_enum(info->list, tmp, "", MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
 #ifdef ANDROID
-   bool perms = test_permissions(sdcard_dir);
+   bool perms = test_permissions(internal_storage_path);
 
-   snprintf(tmp, sizeof(tmp), "%s: %s", "Internal SD card status",
+   snprintf(tmp, sizeof(tmp), "%s: %s", "Internal storage status",
          perms ? "read-write" : "read-only");
    menu_entries_add_enum(info->list, tmp, "",
          MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);

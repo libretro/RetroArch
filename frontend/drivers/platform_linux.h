@@ -46,7 +46,8 @@
 
 bool test_permissions(const char *path);
 
-char sdcard_dir[PATH_MAX_LENGTH];
+char internal_storage_path[PATH_MAX_LENGTH];
+char internal_storage_app_path[PATH_MAX_LENGTH];
 
 struct android_app;
 
