@@ -1296,6 +1296,19 @@ enum menu_hash_enums
 
 #define CB_THUMBNAILS_UPDATER_DOWNLOAD                                         0xf4ee156bU
 #define CB_CORE_THUMBNAILS_DOWNLOAD                                            0xc9d6519fU
+#define CB_CORE_UPDATER_DOWNLOAD                                               0x7412da7dU
+#define CB_CORE_UPDATER_LIST                                                   0x32fd4f01U
+#define CB_UPDATE_ASSETS                                                       0xbf85795eU
+#define CB_UPDATE_CORE_INFO_FILES                                              0xe6084091U
+#define CB_UPDATE_AUTOCONFIG_PROFILES                                          0x28ada67dU
+#define CB_UPDATE_CHEATS                                                       0xc360fec3U
+#define CB_UPDATE_OVERLAYS                                                     0x699009a0U
+#define CB_UPDATE_DATABASES                                                    0x931eb8d3U
+#define CB_UPDATE_SHADERS_GLSL                                                 0x0121a186U
+#define CB_UPDATE_SHADERS_CG                                                   0xc93a53feU
+#define CB_CORE_CONTENT_LIST                                                   0xebc51227U
+#define CB_CORE_CONTENT_DOWNLOAD                                               0x03b3c0a3U
+#define CB_LAKKA_DOWNLOAD                                                      0x54eaa904U
 
 /* Deferred */
 
