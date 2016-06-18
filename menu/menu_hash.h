@@ -1882,13 +1882,9 @@ enum menu_hash_enums
 
 #define CB_CORE_THUMBNAILS_DOWNLOAD                                            0xc9d6519fU
 
-#define MENU_LABEL_DRIVER_SETTINGS                                             0x1d9550e1U
-
 #define MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST                               0xaa5efefcU
 #define MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST                                0x83c65827U
 #define MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST                                0x5bba25e2U
-
-#define MENU_LABEL_VIDEO_SETTINGS                                              0x38b3db2cU
 
 #define MENU_VALUE_FILE_WEBM                                                   0x7ca00b50U
 #define MENU_VALUE_FILE_F4F                                                    0x0b886be5U

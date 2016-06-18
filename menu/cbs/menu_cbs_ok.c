@@ -2930,12 +2930,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_INPUT_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_input_settings_list);
             break;
-         case MENU_LABEL_DRIVER_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_driver_settings_list);
-            break;
-         case MENU_LABEL_VIDEO_SETTINGS:
-            BIND_ACTION_OK(cbs, action_ok_push_video_settings_list);
-            break;
          case MENU_LABEL_PLAYLIST_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_playlist_settings_list);
             break;
