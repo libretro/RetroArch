@@ -1386,11 +1386,7 @@ enum menu_hash_enums
 
 #define MENU_LABEL_CONTENT_SETTINGS                                            0xe789f7f6U
 
-#define MENU_LABEL_CORE_ENABLE                                                 0x2f37fe48U
-
 #define MENU_LABEL_RESET                                                       0x10474288U
-
-#define MENU_LABEL_PAUSE_LIBRETRO                                              0xf954afb9U
 
 #define MENU_LABEL_ARCHIVE_MODE                                                0x7fac00cbU
 #define MENU_LABEL_USE_THIS_DIRECTORY                                          0xc51d351dU
@@ -1418,9 +1414,7 @@ enum menu_hash_enums
 #define MENU_LABEL_AUTO_REMAPS_ENABLE                                          0x98c8f98bU
 #define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
 #define MENU_LABEL_SCREENSHOT                                                  0x9a37f083U
-#define MENU_LABEL_THREADED_DATA_RUNLOOP_ENABLE                                0xdf5c6d33U
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
-#define MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE                                  0x459fcb0dU
 
 /* Menu settings */
 #define MENU_LABEL_THUMBNAILS                                                  0x0a3ec67cU
