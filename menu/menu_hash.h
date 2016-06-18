@@ -1451,8 +1451,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_POINTER_ENABLE                                              0xf051a7a0U
 
-#define MENU_LABEL_COLLAPSE_SUBGROUPS_ENABLE                                   0x585ad75bU
-
 #define MENU_LABEL_RESET                                                       0x10474288U
 #define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
 #define MENU_LABEL_HOLD_FAST_FORWARD                                           0xebe2e4cdU
