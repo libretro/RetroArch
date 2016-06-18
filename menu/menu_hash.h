@@ -1582,10 +1582,6 @@ enum menu_hash_enums
 #define MENU_LABEL_AUTOSAVE_INTERVAL                                           0xecc87351U
 #define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
 
-#define MENU_LABEL_AUDIO_DRIVER                                                0x26594002U
-
-#define MENU_LABEL_JOYPAD_DRIVER                                               0xab124146U
-
 #define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
 #define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
 #define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
@@ -1597,14 +1593,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VIDEO_DRIVER_D3D                                            0x0b886340U
 #define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
 #define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
-
-#define MENU_LABEL_LOCATION_DRIVER                                             0x09189689U
-
-#define MENU_LABEL_MENU_DRIVER                                                 0xd607fb05U
-
-#define MENU_LABEL_CAMERA_DRIVER                                               0xf25db959U
-
-#define MENU_LABEL_RECORD_DRIVER                                               0x144cd2cfU
 
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
