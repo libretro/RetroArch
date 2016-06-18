@@ -721,9 +721,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
-         case MENU_ENUM_LABEL_MAIN_MENU:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_group_settings);
-            break;
          case MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_database_manager_list);
             break;
