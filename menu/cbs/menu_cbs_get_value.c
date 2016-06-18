@@ -1473,10 +1473,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_state);
             break;
-         case MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_poll_type_behavior);
-            break;
          case MENU_LABEL_XMB_THEME:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_xmb_theme);
@@ -1488,10 +1484,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_LABEL_THUMBNAILS:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_thumbnails);
-            break;
-         case MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_toggle_gamepad_combo);
             break;
          case MENU_LABEL_CHEAT_NUM_PASSES:
             BIND_ACTION_GET_VALUE(cbs,

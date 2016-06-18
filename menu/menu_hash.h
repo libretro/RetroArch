@@ -1299,9 +1299,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_MENU_THROTTLE_FRAMERATE                                     0x9a8681c5U
 
-#define MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR                                    0x8360107bU
-
-
 #define MENU_LABEL_UI_COMPANION_ENABLE                                         0xb2d7a20cU
 
 #define MENU_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE                                0xf71b3b16U
@@ -1383,8 +1380,6 @@ enum menu_hash_enums
 #define MENU_LABEL_DEFERRED_ARCHIVE_OPEN                                       0xfa0938b8U
 
 #define MENU_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE                            0x60bacd04U
-
-#define MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO                             0xc5b7aa47U
 
 #define MENU_LABEL_INPUT_OVERLAY_HIDE_IN_MENU                                  0xf09e230aU
 
@@ -1706,8 +1701,6 @@ enum menu_hash_enums
 #define MENU_LABEL_NETWORK_REMOTE_ENABLE                                       0x99cd4420U
 #define MENU_LABEL_NETWORK_REMOTE_PORT                                         0x9aef9e18U
 
-#define MENU_LABEL_HISTORY_LIST_ENABLE                                         0xe1c2ae78U
-#define MENU_LABEL_CONTENT_HISTORY_SIZE                                        0x6f24c38bU
 #define MENU_LABEL_CONTENT_ACTIONS                                             0xa0d76970U
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
