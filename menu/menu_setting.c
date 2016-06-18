@@ -2279,6 +2279,13 @@ const char *menu_setting_get_values(rarch_setting_t *setting)
    return setting->values;
 }
 
+enum menu_hash_enums menu_setting_get_enum_idx(rarch_setting_t *setting)
+{
+   if (!setting)
+      return MENU_ENUM_LABEL_UNKNOWN;
+   return setting->enum_idx;
+}
+
 const char *menu_setting_get_name(rarch_setting_t *setting)
 {
    if (!setting)
