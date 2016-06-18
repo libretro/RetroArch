@@ -1448,8 +1448,6 @@ enum menu_hash_enums
 #define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
 #define MENU_LABEL_SAVESTATE_AUTO_LOAD                                         0xf6f1028cU
 #define MENU_LABEL_SAVESTATE_AUTO_INDEX                                        0xd4da8b84U
-#define MENU_LABEL_DPI_OVERRIDE_ENABLE                                         0xb4bf52c7U
-#define MENU_LABEL_DPI_OVERRIDE_VALUE                                          0x543a3efdU
 #define MENU_LABEL_XMB_SCALE_FACTOR                                            0x0177E8DF1
 #define MENU_LABEL_XMB_ALPHA_FACTOR                                            0x01049C5CF
 #define MENU_LABEL_XMB_FONT                                                    0x0ECA56CA2
@@ -1458,8 +1456,6 @@ enum menu_hash_enums
 #define MENU_LABEL_XMB_SHADOWS_ENABLE                                          0xd0fcc82aU
 #define MENU_LABEL_XMB_RIBBON_ENABLE                                           0x8e89c3edU
 
-#define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
-#define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
 #define MENU_LABEL_SSH_ENABLE                                                  0xd9854a79U
 #define MENU_LABEL_SAMBA_ENABLE                                                0x379e15efU
@@ -1651,7 +1647,6 @@ enum menu_hash_enums
 #define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
 #define MENU_LABEL_LOCATION_ALLOW                                              0xf089275cU
 
-
 /* Directory settings */
 
 #define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
@@ -1790,6 +1785,8 @@ enum menu_hash_enums
 #define MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD                                 0x6e66ef07U
 #define MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING                            0xd44d395cU
 #define MENU_LABEL_TURBO                                                       0x107434f1U
+#define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
+#define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 
 #define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
 #define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
