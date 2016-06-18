@@ -1316,8 +1316,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN                                    0x5a56139bU
 
-#define MENU_LABEL_INPUT_SETTINGS                                              0x78b4a7c5U
-
 #define MENU_LABEL_PLAYLIST_SETTINGS_BEGIN                                     0x80a8d2cbU
 #define MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST                             0x9518e0c7U
 
@@ -1685,7 +1683,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
-#define MENU_LABEL_START_CORE                                                  0xb0b6ae5bU
 #define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
 #define MENU_LABEL_CORE_UPDATER_LIST                                           0xe12f4ee3U
 #define MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE                           0xa3d605f5U
