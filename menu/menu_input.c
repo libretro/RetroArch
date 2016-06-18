@@ -1313,8 +1313,6 @@ unsigned menu_input_frame_retropad(retro_input_t input,
 
    if (menu_input->keyboard.display)
    {
-      settings_t *settings = config_get_ptr();
-
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          if (ti_char > 32)
