@@ -1917,11 +1917,18 @@ static uint64_t frontend_linux_get_mem_total(void)
    return pageSize * totalNumPages;
 }
 
-static uint64_t frontend_linux_get_mem_used(void)
+static uint64_t frontend_linux_get_mem_free(void)
 {
    uint64_t pageSize      = sysconf(_SC_PAGESIZE);
    uint64_t availNumPages = sysconf(_SC_AVPHYS_PAGES);
-   return pageSize * availNumPages;
+   return availNumPages * pageSize;
+}
+
+static uint64_t frontend_linux_get_mem_used(void)
+{
+   uint64_t free_mem  = frontend_linux_get_mem_free();
+   uint64_t total_mem = frontend_linux_get_mem_total();
+   return total_mem - free_mem;
 }
 
 frontend_ctx_driver_t frontend_ctx_linux = {
