@@ -1586,7 +1586,7 @@ static void command_event_save_state(const char *path,
       strlcpy(buf, path, sizeof(buf));
       snprintf(buf, sizeof(buf), "%s", path);
       path_remove_extension(buf);
-      strlcat(buf, ".last", sizeof(buf));
+      snprintf(buf, sizeof(buf), "%s.last", buf);
 
       if (!content_rename_state(path, buf))
       {
