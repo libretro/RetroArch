@@ -1808,10 +1808,6 @@ enum menu_hash_enums
 #define MENU_LABEL_CUSTOM_BIND                                                 0x1e84b3fcU
 #define MENU_LABEL_CUSTOM_BIND_ALL                                             0x79ac14f4U
 #define MENU_LABEL_CUSTOM_BIND_DEFAULTS                                        0xe88f7b13U
-#define MENU_LABEL_RESUME_CONTENT                                              0xd9f088b0U
-#define MENU_LABEL_RESTART_CONTENT                                             0x1ea2e224U
-#define MENU_LABEL_RESTART_RETROARCH                                           0xb57d3d73U
-#define MENU_LABEL_TAKE_SCREENSHOT                                             0x6786e867U
 #define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
 #define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
 #define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U

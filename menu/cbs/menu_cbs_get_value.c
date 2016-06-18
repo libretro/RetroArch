@@ -1545,10 +1545,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_LABEL_CORE_COUNTERS:
          case MENU_LABEL_DATABASE_MANAGER_LIST:
          case MENU_LABEL_CURSOR_MANAGER_LIST:
-         case MENU_LABEL_RESTART_CONTENT:
          case MENU_LABEL_CLOSE_CONTENT:
-         case MENU_LABEL_RESUME_CONTENT:
-         case MENU_LABEL_TAKE_SCREENSHOT:
          case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          case MENU_LABEL_CORE_INFORMATION:
          case MENU_LABEL_SYSTEM_INFORMATION:
