@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CORE_SETTINGS:
+         return "core_settings";
       case MENU_ENUM_LABEL_CB_MENU_WALLPAPER:
          return "cb_menu_wallpaper";
       case MENU_ENUM_LABEL_CB_LAKKA_LIST:
@@ -188,6 +190,8 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
          return "deferred_driver_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
          return "deferred_audio_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
+         return "deferred_core_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
          return "deferred_video_settings_list";
       case MENU_ENUM_LABEL_ACCOUNTS_LIST:

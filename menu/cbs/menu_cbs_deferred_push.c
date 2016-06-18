@@ -104,6 +104,11 @@ static int deferred_push_driver_settings_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_DRIVER_SETTINGS_LIST);
 }
 
+static int deferred_push_core_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_CORE_SETTINGS_LIST);
+}
+
 static int deferred_push_video_settings_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_VIDEO_SETTINGS_LIST);
@@ -598,6 +603,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs, 
       const char *label, uint32_t label_hash)
 {
+   if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
+      return 0;
+   }
+
    if (strstr(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
@@ -824,6 +835,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
                break;
             case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
             case MENU_ENUM_LABEL_DETECT_CORE_LIST:
