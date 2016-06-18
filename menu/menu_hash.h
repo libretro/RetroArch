@@ -1437,7 +1437,6 @@ enum menu_hash_enums
 #define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
 #define MENU_LABEL_KEYBOARD_OVERLAY_PRESET                                     0x11f1c582U
 
-#define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
 
 /* Video settings */
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
@@ -1501,12 +1500,8 @@ enum menu_hash_enums
 #define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
 #define MENU_LABEL_AUDIO_OUTPUT_RATE                                           0x477b97b9U
-#define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
 #define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
-#define MENU_LABEL_AUDIO_ENABLE                                                0x28614f5dU
-#define MENU_LABEL_AUDIO_SYNC                                                  0xe0cd6bd3U
 #define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
-#define MENU_LABEL_AUDIO_LATENCY                                               0x32695386U
 #define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
 
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
@@ -1524,11 +1519,7 @@ enum menu_hash_enums
 #define MENU_LABEL_NETPLAY_MODE                                                0xc1cf6506U
 
 /* Input settings */
-#define MENU_LABEL_INPUT_OVERLAY_ENABLE                                        0xc7b21d5cU
-#define MENU_LABEL_INPUT_OVERLAY_HIDE_IN_MENU                                  0xf09e230aU
 #define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
-#define MENU_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE                            0x60bacd04U
-#define MENU_LABEL_INPUT_SETTINGS_BEGIN                                        0xddee308bU
 #define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
 
 #define MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN                                    0x5a56139bU
@@ -1544,7 +1535,6 @@ enum menu_hash_enums
 #define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
 #define MENU_LABEL_INPUT_REMAP_BINDS_ENABLE                                    0x536dcafeU
 #define MENU_LABEL_INPUT_AXIS_THRESHOLD                                        0xe95c2095U
-#define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
 #define MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW                                 0x7eefdf52U
 #define MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND                               0x7051d870U
 #define MENU_LABEL_INPUT_BIND_MODE                                             0x90281b55U
@@ -1611,7 +1601,6 @@ enum menu_hash_enums
 #define MENU_LABEL_AUTOSAVE_INTERVAL                                           0xecc87351U
 #define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
 
-#define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
 
 /* Privacy settings */
 
@@ -1679,10 +1668,9 @@ enum menu_hash_enums
 
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
-#define MENU_LABEL_STDIN_CMD_ENABLE                                            0x665069c0U
-
 /* Network settings */
 
+#define MENU_LABEL_STDIN_CMD_ENABLE                                            0x665069c0U
 #define MENU_LABEL_NETWORK_CMD_ENABLE                                          0xfdf03a08U
 #define MENU_LABEL_NETWORK_CMD_PORT                                            0xc1b9e0a6U
 #define MENU_LABEL_NETWORK_REMOTE_ENABLE                                       0x99cd4420U
@@ -1748,6 +1736,10 @@ enum menu_hash_enums
 #define MENU_LABEL_LOAD_ARCHIVE                                                0xc3834e66U
 
 /* Help */
+#define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
+#define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
+#define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
+#define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
 #define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
 #define MENU_LABEL_HOLD_FAST_FORWARD                                           0xebe2e4cdU
