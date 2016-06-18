@@ -1406,13 +1406,11 @@ enum menu_hash_enums
 #define MENU_LABEL_R_X_MINUS                                                   0x78cb50f9U
 #define MENU_LABEL_R_Y_MINUS                                                   0xc5c58dbaU
 #define MENU_LABEL_R_Y_PLUS                                                    0x63173332U
-#define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U
 #define MENU_LABEL_BLOCK_SRAM_OVERWRITE                                        0xc4e88d08U
 #define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
 #define MENU_LABEL_GAME_SPECIFIC_OPTIONS                                       0x142ec90fU
 #define MENU_LABEL_AUTO_OVERRIDES_ENABLE                                       0x35ff91b6U
 #define MENU_LABEL_AUTO_REMAPS_ENABLE                                          0x98c8f98bU
-#define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
 #define MENU_LABEL_SCREENSHOT                                                  0x9a37f083U
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
 
@@ -1501,8 +1499,6 @@ enum menu_hash_enums
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
 #define MENU_LABEL_AUDIO_OUTPUT_RATE                                           0x477b97b9U
 #define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
-#define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
-#define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
 
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
@@ -1736,6 +1732,10 @@ enum menu_hash_enums
 #define MENU_LABEL_LOAD_ARCHIVE                                                0xc3834e66U
 
 /* Help */
+#define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
+#define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U
+#define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
+#define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
 #define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
 #define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
 #define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
