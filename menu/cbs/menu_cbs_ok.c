@@ -48,7 +48,7 @@ enum
 
 typedef struct
 {
-   uint32_t type_hash;
+   enum menu_hash_enums enum_idx;
    char path[PATH_MAX_LENGTH];
 } menu_file_transfer_t;
 
@@ -1555,39 +1555,39 @@ static void cb_generic_download(void *task_data,
    /* we have to determine dir_path at the time of writting or else
     * we'd run into races when the user changes the setting during an
     * http transfer. */
-   switch (transf->type_hash)
+   switch (transf->enum_idx)
    {
-      case CB_CORE_THUMBNAILS_DOWNLOAD:
+      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
          dir_path = settings->directory.thumbnails;
          break;
-      case CB_CORE_UPDATER_DOWNLOAD:
+      case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
          dir_path = settings->directory.libretro;
          break;
-      case CB_CORE_CONTENT_DOWNLOAD:
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->directory.core_assets;
          break;
-      case CB_UPDATE_CORE_INFO_FILES:
+      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
          dir_path = settings->path.libretro_info;
          break;
-      case CB_UPDATE_ASSETS:
+      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
          dir_path = settings->directory.assets;
          break;
-      case CB_UPDATE_AUTOCONFIG_PROFILES:
+      case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
          dir_path = settings->directory.autoconfig;
          break;
-      case CB_UPDATE_DATABASES:
+      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
          dir_path = settings->path.content_database;
          break;
-      case CB_UPDATE_OVERLAYS:
+      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
          dir_path = settings->directory.overlay;
          break;
-      case CB_UPDATE_CHEATS:
+      case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
          dir_path = settings->path.cheat_database;
          break;
-      case CB_UPDATE_SHADERS_CG:
-      case CB_UPDATE_SHADERS_GLSL:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
       {
-         const char *dirname = transf->type_hash == CB_UPDATE_SHADERS_CG ?
+         const char *dirname = transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG ?
                   "shaders_cg" : "shaders_glsl";
 
          fill_pathname_join(shaderdir,
@@ -1601,12 +1601,12 @@ static void cb_generic_download(void *task_data,
          dir_path = shaderdir;
          break;
       }
-      case CB_LAKKA_DOWNLOAD:
+      case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
          dir_path = LAKKA_UPDATE_DIR;
          break;
       default:
-         RARCH_WARN("Unknown transfer type '%u' bailing out.\n",
-               transf->type_hash);
+         RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
+               menu_hash_to_str_enum(transf->enum_idx));
          break;
    }
 
@@ -1651,17 +1651,19 @@ static void cb_generic_download(void *task_data,
    if (string_is_equal_noncase(file_ext, "zip"))
    {
       if (!task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
-            cb_decompressed, (void*)(uintptr_t)transf->type_hash))
+            cb_decompressed, (void*)(uintptr_t)menu_hash_calculate(menu_hash_to_str_enum(transf->enum_idx))))
       {
         err = "Decompression failed.";
         goto finish;
       }
    }
 #else
-   switch (transf->type_hash)
+   switch (transf->enum_idx)
    {
-      case CB_CORE_UPDATER_DOWNLOAD:
+      case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
          command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+         break;
+      default:
          break;
    }
 #endif
@@ -1745,8 +1747,8 @@ static int action_ok_download_generic(const char *path,
 
    fill_pathname_join(s3, s, path, sizeof(s3));
 
-   transf = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
-   transf->type_hash = menu_hash_calculate(menu_hash_to_str_enum(enum_idx));
+   transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+   transf->enum_idx = enum_idx;
    strlcpy(transf->path, path, sizeof(transf->path));
 
    task_push_http_transfer(s3, false, menu_hash_to_str_enum(enum_idx), cb_generic_download, transf);
