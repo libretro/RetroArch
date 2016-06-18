@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CB_MENU_WALLPAPER:
+         return "cb_menu_wallpaper";
       case MENU_ENUM_LABEL_CB_LAKKA_LIST:
          return "cb_lakka_list";
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
