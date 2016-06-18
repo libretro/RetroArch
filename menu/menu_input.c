@@ -1239,6 +1239,8 @@ static unsigned menu_input_frame_build(retro_input_t trigger_input)
    return menu_input_frame_pointer(&ret);
 }
 
+unsigned ti_char = 64;
+bool ti_next = false;
 unsigned menu_input_frame_retropad(retro_input_t input,
       retro_input_t trigger_input)
 {
@@ -1312,6 +1314,32 @@ unsigned menu_input_frame_retropad(retro_input_t input,
    if (menu_input->keyboard.display)
    {
       settings_t *settings = config_get_ptr();
+
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      {
+         if (ti_char > 32)
+            ti_char--;
+         if (! ti_next)
+            input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+         input_keyboard_event(true, ti_char, ti_char, 0, RETRO_DEVICE_KEYBOARD);
+         ti_next = false;
+      }
+
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
+      {
+         if (ti_char < 125)
+            ti_char++;
+         if (! ti_next)
+            input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+         input_keyboard_event(true, ti_char, ti_char, 0, RETRO_DEVICE_KEYBOARD);
+         ti_next = false;
+      }
+
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
+      {
+         ti_char = 64;
+         ti_next = true;
+      }
 
       /* send return key to close keyboard input window */
       if (trigger_input & (UINT64_C(1) << settings->menu_cancel_btn))
