@@ -1306,8 +1306,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL                                     0xa1ae28f0U
 
-
-
 #define MENU_LABEL_CHEEVOS_ENABLE                                              0x2748f998U
 
 #define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
@@ -1819,9 +1817,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VIDEO_POST_FILTER_RECORD                                    0xa7b6e724U
 
 #define MENU_LABEL_RECORD_ENABLE                                               0x1654e22aU
-
-#define MENU_LABEL_VALUE_YES                                                   0x957cbc05U
-#define MENU_LABEL_VALUE_NO                                                    0x521b0c11U
 
 #define MENU_LABEL_USE_BUILTIN_IMAGE_VIEWER                                    0x5203b5bbU
 
