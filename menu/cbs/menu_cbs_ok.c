@@ -1687,7 +1687,7 @@ finish:
 
 static int action_ok_download_generic(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      const char *type_msg)
+      enum menu_hash_enums enum_idx)
 {
 #ifdef HAVE_NETWORKING
    char s[PATH_MAX_LENGTH]      = {0};
@@ -1697,43 +1697,59 @@ static int action_ok_download_generic(const char *path,
 
    fill_pathname_join(s, settings->network.buildbot_assets_url,
          "frontend", sizeof(s));
-   if (string_is_equal(type_msg, "cb_core_content_download"))
-      fill_pathname_join(s, settings->network.buildbot_assets_url,
-            "cores/gw", sizeof(s));
+
+   switch (enum_idx)
+   {
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
+         fill_pathname_join(s, settings->network.buildbot_assets_url,
+               "cores/gw", sizeof(s));
+         break;
+      case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
 #ifdef HAVE_LAKKA
-   /* TODO unhardcode this path*/
-   else if (string_is_equal(type_msg, "cb_lakka_download"))
-      fill_pathname_join(s, "http://mirror.lakka.tv/nightly",
-            LAKKA_PROJECT, sizeof(s));
+         /* TODO unhardcode this path*/
+         fill_pathname_join(s, "http://mirror.lakka.tv/nightly",
+               LAKKA_PROJECT, sizeof(s));
 #endif
-   else if (string_is_equal(type_msg, "cb_update_assets"))
-      path = "assets.zip";
-   else if (string_is_equal(type_msg, "cb_update_autoconfig_profiles"))
-      path = "autoconfig.zip";
-   else if (string_is_equal(type_msg, "cb_update_core_info_files"))
-      path = "info.zip";
-   else if (string_is_equal(type_msg, "cb_update_cheats"))
-      path = "cheats.zip";
-   else if (string_is_equal(type_msg, "cb_update_overlays"))
-      path = "overlays.zip";
-   else if (string_is_equal(type_msg, "cb_update_databases"))
-      path = "database-rdb.zip";
-   else if (string_is_equal(type_msg, "cb_update_shaders_glsl"))
-      path = "shaders_glsl.zip";
-   else if (string_is_equal(type_msg, "cb_update_shaders_cg"))
-      path = "shaders_cg.zip";
-   else if (string_is_equal(type_msg, "cb_core_thumbnails_download"))
-      strlcpy(s, "http://thumbnailpacks.libretro.com", sizeof(s));
-   else
-      strlcpy(s, settings->network.buildbot_url, sizeof(s));
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
+         path = "assets.zip";
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
+         path = "autoconfig.zip";
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
+         path = "info.zip";
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
+         path = "cheats.zip";
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
+         path = "overlays.zip";
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
+         path = "database-rdb.zip";
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
+         path = "shaders_glsl.zip";
+         break;
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
+         path = "shaders_cg.zip";
+         break;
+      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
+         strlcpy(s, "http://thumbnailpacks.libretro.com", sizeof(s));
+         break;
+      default:
+         strlcpy(s, settings->network.buildbot_url, sizeof(s));
+         break;
+   }
 
    fill_pathname_join(s3, s, path, sizeof(s3));
 
    transf = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
-   transf->type_hash = menu_hash_calculate(type_msg);
+   transf->type_hash = menu_hash_calculate(menu_hash_to_str_enum(enum_idx));
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   task_push_http_transfer(s3, false, type_msg, cb_generic_download, transf);
+   task_push_http_transfer(s3, false, menu_hash_to_str_enum(enum_idx), cb_generic_download, transf);
 #endif
    return 0;
 }
@@ -1742,98 +1758,91 @@ static int action_ok_core_content_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_core_content_download");
+         MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD);
 }
 
 static int action_ok_core_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_core_thumbnails_download");
+         MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD);
 }
 
 static int action_ok_thumbnails_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_thumbnails_updater_download");
+         MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD);
 }
 
 static int action_ok_core_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_core_updater_download");
+         MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD);
 }
 
 static int action_ok_lakka_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_lakka_download");
+         MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD);
 }
 
 static int action_ok_update_assets(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_update_assets");
+         MENU_ENUM_LABEL_CB_UPDATE_ASSETS);
 }
 
 static int action_ok_update_core_info_files(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_update_core_info_files");
+         MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES);
 }
 
 static int action_ok_update_overlays(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_update_overlays");
+         MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS);
 }
 
 static int action_ok_update_shaders_cg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_update_shaders_cg");
+         MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG);
 }
 
 static int action_ok_update_shaders_glsl(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_update_shaders_glsl");
+         MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL);
 }
 
 static int action_ok_update_databases(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_update_databases");
+         MENU_ENUM_LABEL_CB_UPDATE_DATABASES);
 }
 
 static int action_ok_update_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_update_cheats");
+         MENU_ENUM_LABEL_CB_UPDATE_CHEATS);
 }
 
 static int action_ok_update_autoconfig_profiles(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_update_autoconfig_profiles");
-}
-
-static int action_ok_update_autoconfig_profiles_hid(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
-         "cb_update_autoconfig_profiles_hid");
+         MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES);
 }
 
 static int action_ok_disk_cycle_tray_status(const char *path,
@@ -2816,9 +2825,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
             BIND_ACTION_OK(cbs, action_ok_update_autoconfig_profiles);
-            break;
-         case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID:
-            BIND_ACTION_OK(cbs, action_ok_update_autoconfig_profiles_hid);
             break;
          default:
             return -1;

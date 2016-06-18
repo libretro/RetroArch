@@ -26,6 +26,10 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
+         return "cb_core_thumbnails_download";
+      case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
+         return "cb_core_updater_download";
       case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
          return "cb_update_cheats";
       case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
@@ -36,8 +40,6 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
          return "cb_update_shaders_glsl";
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
          return "cb_update_shaders_cg";
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         return "cb_core_thumbnails_download";
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
          return "cb_update_core_info_files";
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
