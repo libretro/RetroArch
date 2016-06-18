@@ -1401,8 +1401,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VALUE_UPDATE_CORE_INFO_FILES                                0xba274810U
 #define MENU_LABEL_UPDATE_CORE_INFO_FILES                                      0x620d758dU
 
-#define MENU_VALUE_SEARCH                                                      0xd0d5febbU
-
 #define MENU_LABEL_DEFERRED_CORE_CONTENT_LIST                                  0x76150c63U
 #define MENU_LABEL_DEFERRED_LAKKA_LIST                                         0x3db437c4U
 
@@ -1423,19 +1421,6 @@ enum menu_hash_enums
 
 #define MENU_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID                              0x1e94ee4dU
 #define MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID                        0x524f4590U
-
-#define MENU_VALUE_DONT_CARE                                                   0x19da07bcU
-#define MENU_VALUE_LINEAR                                                      0xc0d12dc0U
-#define MENU_VALUE_NEAREST                                                     0x6ab2b0b7U
-#define MENU_VALUE_UNKNOWN                                                     0x9b3bb635U
-#define MENU_VALUE_USER                                                        0x7c8da264U
-#define MENU_VALUE_CHEAT                                                       0x0cf62beaU
-#define MENU_VALUE_SHADER                                                      0xd10c0cfcU
-#define MENU_VALUE_DIRECTORY_CONTENT                                           0x89a45bd9U
-#define MENU_VALUE_DIRECTORY_NONE                                              0x9996c10fU
-#define MENU_VALUE_DIRECTORY_DEFAULT                                           0xdcc3a2e4U
-#define MENU_VALUE_NOT_AVAILABLE                                               0x0b880503U
-#define MENU_VALUE_ASK_ARCHIVE                                                 0x0b87d6a4U
 
 #define MENU_LABEL_UPDATE_ASSETS                                               0x37fa42daU
 #define MENU_LABEL_VALUE_UPDATE_ASSETS                                         0x0fdf0b1bU
@@ -1892,49 +1877,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VALUE_CHEAT_NUM_PASSES                                      0x8024fa39U
 #define MENU_LABEL_CHEAT_NUM_PASSES                                            0x1910eb87U
 
-#define MENU_VALUE_NO_DISK                                                     0x7d54e5cdU
-
-#define MENU_VALUE_MD5                                                         0x0b888fabU
-#define MENU_VALUE_SHA1                                                        0x7c9de632U
-#define MENU_VALUE_CRC                                                         0x0b88671dU
-#define MENU_VALUE_MORE                                                        0x0b877cafU
-#define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
-#define MENU_VALUE_SETTINGS_TAB                                                0x6548d16dU
-#define MENU_VALUE_HISTORY_TAB                                                 0xea9b0ceeU
-#define MENU_VALUE_ADD_TAB                                                     0x7fb20225U
-#define MENU_VALUE_PLAYLISTS_TAB                                               0x092d3161U
-#define MENU_VALUE_MAIN_MENU                                                   0x1625971fU   
-#define MENU_LABEL_VALUE_SETTINGS                                              0x8aca3ff6U
-#define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
-#define MENU_VALUE_ON                                                          0x005974c2U
-#define MENU_VALUE_OFF                                                         0x0b880c40U
-#define MENU_VALUE_TRUE                                                        0x7c9e9fe5U
-#define MENU_VALUE_FALSE                                                       0x0f6bcef0U
-#define MENU_VALUE_COMP                                                        0x6a166ba5U
-#define MENU_VALUE_MUSIC                                                       0xc4a73997U
-#define MENU_VALUE_IMAGE                                                       0xbab7ebf9U
-#define MENU_VALUE_MOVIE                                                       0xc43c4bf6U
-#define MENU_VALUE_CORE                                                        0x6a167f7fU
-#define MENU_VALUE_CURSOR                                                      0x57bba8b4U
-#define MENU_VALUE_FILE                                                        0x6a496536U
-#define MENU_VALUE_MISSING                                                     0x28536c3fU
-#define MENU_VALUE_PRESENT                                                     0x23432826U
-#define MENU_VALUE_OPTIONAL                                                    0x27bfc4abU
-#define MENU_VALUE_REQUIRED                                                    0x979b1a66U
-#define MENU_VALUE_RDB                                                         0x0b00f54eU
-#define MENU_VALUE_DIR                                                         0x0af95f55U
-#define MENU_VALUE_NO_CORE                                                     0x7d5472cbU
-#define MENU_VALUE_GLSLP                                                       0x0f840c87U
-#define MENU_VALUE_CGP                                                         0x0b8865bfU
-#define MENU_VALUE_GLSL                                                        0x7c976537U
-#define MENU_VALUE_HLSL                                                        0x7c97f198U
-#define MENU_VALUE_HLSLP                                                       0x0f962508U
-#define MENU_VALUE_CG                                                          0x0059776fU
-#define MENU_VALUE_SLANG                                                       0x105ce63aU
-#define MENU_VALUE_SLANGP                                                      0x1bf9adeaU
-
-#define MENU_VALUE_RETROPAD                                                    0x9e6703e6U
-#define MENU_VALUE_RETROKEYBOARD                                               0x9d8b6ea2U
 
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 #define MENU_LABEL_VALUE_SYSTEM_BGM_ENABLE                                     0x9025dea7U
@@ -2275,9 +2217,6 @@ enum menu_hash_enums
 #define MENU_LABEL_RECORD_ENABLE                                               0x1654e22aU
 #define MENU_LABEL_VALUE_RECORD_ENABLE                                         0xee39aa6bU
 
-#define MENU_VALUE_SECONDS                                                     0x8b0028d4U
-#define MENU_VALUE_STATUS                                                      0xd1e57929U
-
 #define MENU_LABEL_VALUE_CORE_INFO_CORE_NAME                                   0x2a031110U
 #define MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL                                  0x6a40d38fU
 #define MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME                                 0xaff88f0cU
@@ -2359,30 +2298,6 @@ enum menu_hash_enums
 #define MENU_LABEL_VALUE_YES                                                   0x957cbc05U
 #define MENU_LABEL_VALUE_NO                                                    0x521b0c11U
 
-#define MENU_VALUE_BACK                                                        0x7c825df6U
-#define MENU_VALUE_DISABLED                                                    0xe326e01dU
-#define MENU_VALUE_PORT                                                        0x7c8ad52aU
-
-#define MENU_VALUE_LEFT_ANALOG                                                 0xd168d0e2U
-#define MENU_VALUE_RIGHT_ANALOG                                                0xf9244335U
-
-#define MENU_VALUE_LANG_ENGLISH                                                0xcb4e554fU
-#define MENU_VALUE_LANG_JAPANESE                                               0xfde6f60cU
-#define MENU_VALUE_LANG_FRENCH                                                 0xb3704d9bU
-#define MENU_VALUE_LANG_SPANISH                                                0x053c7edbU
-#define MENU_VALUE_LANG_GERMAN                                                 0xb4e1541fU
-#define MENU_VALUE_LANG_ITALIAN                                                0x0cc9a6c7U
-#define MENU_VALUE_LANG_DUTCH                                                  0x0d0fa55dU
-#define MENU_VALUE_LANG_PORTUGUESE                                             0x2a19df58U
-#define MENU_VALUE_LANG_RUSSIAN                                                0xc53481eaU
-#define MENU_VALUE_LANG_KOREAN                                                 0xbeeac9a5U
-#define MENU_VALUE_LANG_CHINESE_TRADITIONAL                                    0x43f172d0U
-#define MENU_VALUE_LANG_CHINESE_SIMPLIFIED                                     0x1ae5ee5bU
-#define MENU_VALUE_LANG_ESPERANTO                                              0x1a933a76U
-#define MENU_VALUE_LANG_POLISH                                                 0xca915dd4U
-
-#define MENU_VALUE_NONE                                                        0x7c89bbd5U
-
 #define MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE                              0xbae2c7f6U
 
 #define MENU_LABEL_VALUE_INPUT_USER_BINDS                                      0x75fda711U
@@ -2459,6 +2374,37 @@ enum menu_hash_enums
 #define MENU_VALUE_FILE_PNG_CAPS                                               0x0b88118aU
 #define MENU_VALUE_FILE_TGA                                                    0x0b88ae01U
 #define MENU_VALUE_FILE_BMP                                                    0x0b886244U
+
+#define MENU_VALUE_MD5                                                         0x0b888fabU
+#define MENU_VALUE_SHA1                                                        0x7c9de632U
+#define MENU_VALUE_CRC                                                         0x0b88671dU
+#define MENU_VALUE_MORE                                                        0x0b877cafU
+#define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
+#define MENU_VALUE_INPUT_SETTINGS                                              0xddd30846U
+#define MENU_VALUE_ON                                                          0x005974c2U
+#define MENU_VALUE_OFF                                                         0x0b880c40U
+#define MENU_VALUE_COMP                                                        0x6a166ba5U
+#define MENU_VALUE_MUSIC                                                       0xc4a73997U
+#define MENU_VALUE_IMAGE                                                       0xbab7ebf9U
+#define MENU_VALUE_MOVIE                                                       0xc43c4bf6U
+#define MENU_VALUE_CORE                                                        0x6a167f7fU
+#define MENU_VALUE_CURSOR                                                      0x57bba8b4U
+#define MENU_VALUE_FILE                                                        0x6a496536U
+#define MENU_VALUE_MISSING                                                     0x28536c3fU
+#define MENU_VALUE_PRESENT                                                     0x23432826U
+#define MENU_VALUE_OPTIONAL                                                    0x27bfc4abU
+#define MENU_VALUE_REQUIRED                                                    0x979b1a66U
+#define MENU_VALUE_RDB                                                         0x0b00f54eU
+#define MENU_VALUE_DIR                                                         0x0af95f55U
+#define MENU_VALUE_NO_CORE                                                     0x7d5472cbU
+#define MENU_VALUE_GLSLP                                                       0x0f840c87U
+#define MENU_VALUE_CGP                                                         0x0b8865bfU
+#define MENU_VALUE_GLSL                                                        0x7c976537U
+#define MENU_VALUE_HLSL                                                        0x7c97f198U
+#define MENU_VALUE_HLSLP                                                       0x0f962508U
+#define MENU_VALUE_CG                                                          0x0059776fU
+#define MENU_VALUE_SLANG                                                       0x105ce63aU
+#define MENU_VALUE_SLANGP                                                      0x1bf9adeaU
 
 const char *menu_hash_to_str_de_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
