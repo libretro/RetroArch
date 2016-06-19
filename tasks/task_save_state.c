@@ -228,6 +228,6 @@ bool content_rename_state(const char *origin, const char *dest)
    if (!ret)
       return true;
 
-   RARCH_LOG ("Error %d renaming file %s", ret, origin);
+   RARCH_LOG("Error %d renaming file %s\n", ret, origin);
    return false;
 }
