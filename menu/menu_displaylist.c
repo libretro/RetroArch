@@ -851,12 +851,12 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                   memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
-                  "Memory (in megabytes) : %1u/%1u MB",
+                  "Memory (in megabytes) : %lu/%lu MB",
                   bytes_to_mb(memory_used),
                   bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
-                  "Memory (in gigabytes) : %1u/%1u GB",
+                  "Memory (in gigabytes) : %lu/%lu GB",
                   bytes_to_gb(memory_used),
                   bytes_to_gb(memory_total)
                   );

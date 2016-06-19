@@ -197,7 +197,7 @@ static bool command_read_ram(const char *arg)
    cheevos_var_t var;
    const uint8_t * data;
    unsigned nbytes;
-   int i;
+   unsigned i;
    char reply[256];
    char *reply_at = NULL;
 
