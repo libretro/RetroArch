@@ -142,7 +142,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
       case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
          {
             size_t i = 0, ptr;
-            bool scrolled_down     = false;
             size_t *ptr_out        = (size_t*)&selection_ptr;
             size_t  menu_list_size = menu_entries_get_size();
 
