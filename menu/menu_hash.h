@@ -171,13 +171,6 @@ RETRO_BEGIN_DECLS
 
 /* Netplay settings */
 #define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
-#define MENU_LABEL_NETPLAY_NICKNAME                                            0x52204787U
-#define MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT                                   0xd87bbba9U
-#define MENU_LABEL_NETPLAY_DELAY_FRAMES                                        0x86b2c48dU
-#define MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE                               0x6f9a9440U
-#define MENU_LABEL_NETPLAY_TCP_UDP_PORT                                        0x98407774U
-#define MENU_LABEL_NETPLAY_IP_ADDRESS                                          0xac9a53ffU
-#define MENU_LABEL_NETPLAY_MODE                                                0xc1cf6506U
 
 /* Input settings */
 #define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
@@ -186,15 +179,11 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN                                    0x5a56139bU
 #define MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE                                 0xe6736fc3U
 #define MENU_LABEL_INPUT_ICADE_ENABLE                                          0xcd534dd0U
-#define MENU_LABEL_INPUT_HOTKEY_SETTINGS                                       0x1cb39c19U
 #define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
 #define MENU_LABEL_INPUT_DUTY_CYCLE                                            0xec787129U
 #define MENU_LABEL_INPUT_BIND_DEVICE_ID                                        0xd1ea94ecU
 #define MENU_LABEL_INPUT_BIND_DEVICE_TYPE                                      0xf6e9f041U
-#define MENU_LABEL_INPUT_REMAP_BINDS_ENABLE                                    0x536dcafeU
 #define MENU_LABEL_INPUT_AXIS_THRESHOLD                                        0xe95c2095U
-#define MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW                                 0x7eefdf52U
-#define MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND                               0x7051d870U
 
 #define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
 
