@@ -139,12 +139,9 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
 #define MENU_LABEL_SAVESTATE_AUTO_LOAD                                         0xf6f1028cU
 #define MENU_LABEL_SAVESTATE_AUTO_INDEX                                        0xd4da8b84U
-#define MENU_LABEL_XMB_SCALE_FACTOR                                            0x0177E8DF1
-#define MENU_LABEL_XMB_ALPHA_FACTOR                                            0x01049C5CF
 #define MENU_LABEL_XMB_FONT                                                    0x0ECA56CA2
 #define MENU_LABEL_XMB_THEME                                                   0x824c5a7eU
 #define MENU_LABEL_XMB_GRADIENT                                                0x18e63099U
-#define MENU_LABEL_XMB_SHADOWS_ENABLE                                          0xd0fcc82aU
 #define MENU_LABEL_XMB_RIBBON_ENABLE                                           0x8e89c3edU
 
 #define MENU_LABEL_SSH_ENABLE                                                  0xd9854a79U
@@ -153,52 +150,14 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_SORT_SAVEFILES_ENABLE                                       0xed0d0df4U
 #define MENU_LABEL_SORT_SAVESTATES_ENABLE                                      0x66ff2495U
 #define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
-#define MENU_LABEL_KEYBOARD_OVERLAY_PRESET                                     0x11f1c582U
 
 
 /* Video settings */
-#define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
-#define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
-#define MENU_LABEL_VIDEO_REFRESH_RATE                                          0x56ccabf5U
-#define MENU_LABEL_VIDEO_WINDOWED_FULLSCREEN                                   0x6436d6f8U
-#define MENU_LABEL_VIDEO_FORCE_SRGB_DISABLE                                    0x0a7b68aaU
-#define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
-#define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
-#define MENU_LABEL_VIDEO_SMOOTH                                                0x3aabbb35U
-#define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
-#define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
-#define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
-#define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
-#define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
-#define MENU_LABEL_VIDEO_HARD_SYNC_FRAMES                                      0xce0ece13U
-#define MENU_LABEL_VIDEO_FRAME_DELAY                                           0xd4aa9df4U
-#define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
-#define MENU_LABEL_VIDEO_SWAP_INTERVAL                                         0x5673ff9aU
-#define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
-#define MENU_LABEL_VIDEO_FONT_ENABLE                                           0x697d9b58U
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
-#define MENU_LABEL_VIDEO_FONT_SIZE                                             0xd0e03a8cU
-#define MENU_LABEL_VIDEO_MESSAGE_POS_X                                         0xa133c368U
-#define MENU_LABEL_VIDEO_MESSAGE_POS_Y                                         0xa133c369U
-#define MENU_LABEL_VIDEO_FILTER_FLICKER                                        0x2e21eba0U
-#define MENU_LABEL_VIDEO_SOFT_FILTER                                           0x92819a46U
-#define MENU_LABEL_VIDEO_POST_FILTER_RECORD                                    0xa7b6e724U
 #define MENU_LABEL_VIDEO_VI_WIDTH                                              0x6e4a6d3aU
-#define MENU_LABEL_VIDEO_ASPECT_RATIO_AUTO                                     0xa7c31991U
-#define MENU_LABEL_VIDEO_ASPECT_RATIO_INDEX                                    0x3b01a19aU
 #define MENU_LABEL_VIDEO_VFILTER                                               0x664f8397U
-#define MENU_LABEL_VIDEO_GPU_RECORD                                            0xb6059a65U
-#define MENU_LABEL_VIDEO_SHARED_CONTEXT                                        0x7d7dad16U
 #define MENU_LABEL_VIDEO_GAMMA                                                 0x08a951beU
-#define MENU_LABEL_VIDEO_ALLOW_ROTATE                                          0x2880f0e8U
 
-#define MENU_LABEL_VIDEO_DRIVER                                                0x1805a5e7U
-#define MENU_LABEL_VIDEO_DRIVER_GL                                             0x005977f8U
-#define MENU_LABEL_VIDEO_DRIVER_SDL2                                           0x7c9dd69aU
-#define MENU_LABEL_VIDEO_DRIVER_SDL1                                           0x0b88a968U
-#define MENU_LABEL_VIDEO_DRIVER_D3D                                            0x0b886340U
-#define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
-#define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
 
 #define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
 #define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
@@ -209,16 +168,6 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS                              0xd18158d7U
 #define MENU_LABEL_VIDEO_SHADER_PASS                                           0x4fa31028U
 #define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
-
-/* Audio settings */
-#define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
-#define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
-#define MENU_LABEL_AUDIO_OUTPUT_RATE                                           0x477b97b9U
-#define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
-
-#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
-#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
-#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
 /* Netplay settings */
 #define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
@@ -242,17 +191,12 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_INPUT_DUTY_CYCLE                                            0xec787129U
 #define MENU_LABEL_INPUT_BIND_DEVICE_ID                                        0xd1ea94ecU
 #define MENU_LABEL_INPUT_BIND_DEVICE_TYPE                                      0xf6e9f041U
-#define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
-#define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
-#define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
 #define MENU_LABEL_INPUT_REMAP_BINDS_ENABLE                                    0x536dcafeU
 #define MENU_LABEL_INPUT_AXIS_THRESHOLD                                        0xe95c2095U
 #define MENU_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW                                 0x7eefdf52U
 #define MENU_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND                               0x7051d870U
-#define MENU_LABEL_INPUT_BIND_MODE                                             0x90281b55U
 
 #define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
-#define MENU_LABEL_INPUT_OSK_OVERLAY_ENABLE                                    0x7f8339c8U
 
 /* Record settings */
 
@@ -270,19 +214,6 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_CHEAT_TOGGLE                                                0xe515e0cbU
 #define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
 #define MENU_LABEL_CHEAT_APPLY_CHANGES                                         0xde88aa27U
-
-/* Rewind settings */
-
-#define MENU_LABEL_REWIND_ENABLE                                               0x9761e074U
-#define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
-
-/* Overlay settings */
-
-#define MENU_LABEL_OVERLAY_AUTOLOAD_PREFERRED                                  0xc9298cbdU
-#define MENU_LABEL_OVERLAY_PRESET                                              0x24e24796U
-#define MENU_LABEL_OVERLAY_OPACITY                                             0xc466fbaeU
-#define MENU_LABEL_OVERLAY_SCALE                                               0x2dce2a3dU
-#define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
 
 /* Disk settings */
 
@@ -308,21 +239,12 @@ RETRO_BEGIN_DECLS
 
 /* Libretro settings */
 #define MENU_LABEL_LIBRETRO_LOG_LEVEL                                          0x57971ac0U
-#define MENU_LABEL_LIBRETRO_INFO_PATH                                          0xe552b25fU
-
-#define MENU_LABEL_AUTOSAVE_INTERVAL                                           0xecc87351U
-#define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
-
-
-/* Privacy settings */
-
-#define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
-#define MENU_LABEL_LOCATION_ALLOW                                              0xf089275cU
 
 /* Directory settings */
 
 #define MENU_LABEL_CURSOR_DIRECTORY                                            0xdee8d377U
 #define MENU_LABEL_OSK_OVERLAY_DIRECTORY                                       0xcce86287U
+#define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
 #define MENU_LABEL_RECORDING_OUTPUT_DIRECTORY                                  0x30bece06U
 #define MENU_LABEL_RECORDING_CONFIG_DIRECTORY                                  0x3c3f274bU
 #define MENU_LABEL_LIBRETRO_DIR_PATH                                           0x1af1eb72U
@@ -380,14 +302,6 @@ RETRO_BEGIN_DECLS
 
 #define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
-/* Network settings */
-
-#define MENU_LABEL_STDIN_CMD_ENABLE                                            0x665069c0U
-#define MENU_LABEL_NETWORK_CMD_ENABLE                                          0xfdf03a08U
-#define MENU_LABEL_NETWORK_CMD_PORT                                            0xc1b9e0a6U
-#define MENU_LABEL_NETWORK_REMOTE_ENABLE                                       0x99cd4420U
-#define MENU_LABEL_NETWORK_REMOTE_PORT                                         0x9aef9e18U
-
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
 #define MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE                           0xa3d605f5U
@@ -413,13 +327,10 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_DATABASE_MANAGER_LIST                                       0x7f853d8fU
 #define MENU_LABEL_CURSOR_MANAGER_LIST                                         0xa969e378U
 #define MENU_LABEL_REMAP_FILE_LOAD                                             0x9c2799b8U
-#define MENU_LABEL_MESSAGE                                                     0xbe463eeaU
 #define MENU_LABEL_INFO_SCREEN                                                 0xd97853d0U
-#define MENU_LABEL_LOAD_OPEN_ZIP                                               0x8aa3c068U
 #define MENU_LABEL_CUSTOM_RATIO                                                0xf038731eU
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
-#define MENU_LABEL_JOYPAD_AUTOCONFIG_DIR                                       0x2f4822d8U
 #define MENU_LABEL_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS                          0xa6de9ba6U
 #define MENU_LABEL_PLAYLIST_SETTINGS                                           0xdb3e0e07U
@@ -438,15 +349,58 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_EXIT_EMULATOR                                               0x86d5d467U
 #define MENU_LABEL_COLLECTION                                                  0x5fea5991U
 
-#define MENU_LABEL_USER_LANGUAGE                                               0x33ebaa27U
-#define MENU_LABEL_USER_SETTINGS                                               0xcdc9a8f5U
-
 #define MENU_LABEL_OPEN_ARCHIVE                                                0x78c0ca58U
 #define MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE                                    0x92442638U
 #define MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE                                    0x681f2f46U
 #define MENU_LABEL_LOAD_ARCHIVE                                                0xc3834e66U
 
 /* Help */
+#define MENU_LABEL_REWIND_ENABLE                                               0x9761e074U
+#define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
+
+#define MENU_LABEL_LIBRETRO_INFO_PATH                                          0xe552b25fU
+
+#define MENU_LABEL_AUTOSAVE_INTERVAL                                           0xecc87351U
+
+#define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
+
+#define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
+#define MENU_LABEL_LOCATION_ALLOW                                              0xf089275cU
+
+#define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
+
+#define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
+#define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
+#define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
+
+#define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
+#define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
+#define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
+
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
+#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
+
+#define MENU_LABEL_VIDEO_DRIVER                                                0x1805a5e7U
+#define MENU_LABEL_VIDEO_DRIVER_GL                                             0x005977f8U
+#define MENU_LABEL_VIDEO_DRIVER_SDL2                                           0x7c9dd69aU
+#define MENU_LABEL_VIDEO_DRIVER_SDL1                                           0x0b88a968U
+#define MENU_LABEL_VIDEO_DRIVER_D3D                                            0x0b886340U
+#define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
+#define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
+#define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
+#define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
+#define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
+#define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
+#define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
+#define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
+#define MENU_LABEL_VIDEO_HARD_SYNC_FRAMES                                      0xce0ece13U
+#define MENU_LABEL_VIDEO_FRAME_DELAY                                           0xd4aa9df4U
+#define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
+#define MENU_LABEL_VIDEO_SWAP_INTERVAL                                         0x5673ff9aU
+#define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
+#define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
+#define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
 #define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
 #define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
 #define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
@@ -475,6 +429,7 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 #define MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT                                0xec5a348bU
 
+#define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
 #define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
 #define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
 #define MENU_LABEL_VALUE_HELP_LOADING_CONTENT                                  0x70bab027U
@@ -489,7 +444,6 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC                            0xac947056U
 
 /* Main menu */
-#define MENU_LABEL_START_NET_RETROPAD                                          0xf2ae670dU
 #define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
 #define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
 #define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
