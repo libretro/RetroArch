@@ -323,7 +323,7 @@ static int action_start_lookup_setting(unsigned type, const char *label)
 static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
       uint32_t hash)
 {
-   if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+   if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {

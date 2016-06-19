@@ -558,21 +558,13 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             {
                case ID_M_LOAD_CORE:
                   extensions  = "Libretro core (.dll)\0*.dll\0\All Files\0*.*\0";
-#ifdef HAVE_MENU
-                  title       = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_LIST);
-#else
-                  title       = "Load Core";
-#endif
+                  title       = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
                   initial_dir = settings->directory.libretro;
                   break;
                case ID_M_LOAD_CONTENT:
                   extensions  = "All Files\0*.*\0\0";
-#ifdef HAVE_MENU
-                  title       = menu_hash_to_str_enum(
+                  title       = msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
-#else
-                  title       = "Load Content";
-#endif
                   initial_dir = settings->directory.menu_content;
                   break;
             }

@@ -96,7 +96,7 @@ static void menu_action_setting_disp_set_label_configurations(
       fill_pathname_base(s, global->path.config,
             len);
    else
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT), len);
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT), len);
 }
 
 static void menu_action_setting_disp_set_label_shader_filter_pass(
@@ -130,15 +130,15 @@ static void menu_action_setting_disp_set_label_shader_filter_pass(
   switch (shader->pass[pass].filter)
   {
      case 0:
-        strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DONT_CARE),
+        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE),
               len);
         break;
      case 1:
-        strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LINEAR),
+        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LINEAR),
               len);
         break;
      case 2:
-        strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NEAREST),
+        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NEAREST),
               len);
         break;
   }
@@ -159,7 +159,7 @@ static void menu_action_setting_disp_set_label_filter(
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-   strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
    if (settings && *settings->path.softfilter_plugin)
       fill_short_pathname_representation(s,
@@ -240,7 +240,7 @@ static void menu_action_setting_disp_set_label_shader_pass(
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
-   strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
@@ -273,9 +273,9 @@ static void menu_action_setting_disp_set_label_shader_default_filter(
       return;
 
    if (settings->video.smooth)
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LINEAR), len); 
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LINEAR), len); 
    else
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NEAREST), len);
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NEAREST), len);
 }
 
 static void menu_action_setting_disp_set_label_shader_parameter(
@@ -377,7 +377,7 @@ static void menu_action_setting_disp_set_label_shader_scale_pass(
    scale_value = shader->pass[pass].fbo.scale_x;
 
    if (!scale_value)
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
    else
       snprintf(s, len, "%ux", scale_value);
 #endif
@@ -475,10 +475,10 @@ static void menu_action_setting_disp_set_label_cheat(
       snprintf(s, len, "%s : (%s)",
             (cheat_manager_get_code(cheat_index) != NULL)
             ? cheat_manager_get_code(cheat_index) : 
-            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
             cheat_manager_get_code_state(cheat_index) ? 
-            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ON) :
-            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_OFF)
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON) :
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)
             );
    *w = 19;
    strlcpy(s2, path, len2);
@@ -800,7 +800,7 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
    current = control->get_image_index();
 
    if (current >= images)
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_DISK), len);
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_DISK), len);
    else
       snprintf(s, len, "%u", current + 1);
 }
@@ -868,7 +868,7 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
          snprintf(s, len, "%ux%u", width, height);
    }
    else
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
 
 static void menu_action_setting_generic_disp_set_label(
@@ -1355,7 +1355,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 static int menu_cbs_init_bind_get_string_representation_compare_label(
       menu_file_list_cbs_t *cbs, uint32_t label_hash)
 {
-   if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+   if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {
@@ -1707,7 +1707,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+   if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {

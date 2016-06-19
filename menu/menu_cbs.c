@@ -47,7 +47,7 @@ void menu_cbs_init(void *data,
    const char *menu_label        = NULL;
    uint32_t label_hash           = 0;
    uint32_t menu_label_hash      = 0;
-   enum menu_hash_enums enum_idx = MENU_ENUM_LABEL_UNKNOWN;
+   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
    file_list_t *list             = (file_list_t*)data;
    if (!list)
       return;
@@ -78,8 +78,8 @@ void menu_cbs_init(void *data,
    repr_label = (!string_is_empty(label)) ? label : path;
 
 #ifdef DEBUG_LOG
-   if (cbs && cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
-      RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, menu_hash_to_str_enum(cbs->enum_idx));
+   if (cbs && cbs->enum_idx != MSG_UNKNOWN)
+      RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, msg_hash_to_str(cbs->enum_idx));
 #endif
 
    menu_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);

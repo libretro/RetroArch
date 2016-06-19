@@ -134,39 +134,39 @@ static int action_iterate_help(menu_handle_t *menu,
 
                   s2,
 
-                  menu_hash_to_str_enum(
+                  msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),
                   desc[0],
 
-                  menu_hash_to_str_enum(
+                  msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),
                   desc[1],
 
-                  menu_hash_to_str_enum(
+                  msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),
                   desc[2],
 
-                  menu_hash_to_str_enum(
+                  msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
                   desc[3],
 
-                  menu_hash_to_str_enum(
+                  msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),
                   desc[4],
 
-                  menu_hash_to_str_enum(
+                  msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START),
                   desc[5],
 
-                  menu_hash_to_str_enum(
+                  msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),
                   desc[6],
 
-                  menu_hash_to_str_enum(
+                  msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),
                   desc[7],
 
-                  menu_hash_to_str_enum(
+                  msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD),
                   desc[8]
 
@@ -273,7 +273,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    int ret                        = 0;
    uint32_t label_hash            = 0;
    uint32_t hash                  = 0;
-   enum menu_hash_enums enum_idx  = MENU_ENUM_LABEL_UNKNOWN;
+   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    menu_handle_t *menu            = (menu_handle_t*)data;
    file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
@@ -367,7 +367,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
             info.list = menu_stack;
             strlcpy(info.label,
-                  menu_hash_to_str_enum(MENU_ENUM_LABEL_HELP),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP),
                   sizeof(info.label));
             info.enum_idx = MENU_ENUM_LABEL_HELP;
 
@@ -401,7 +401,7 @@ bool generic_menu_init_list(void *data)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
-         menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
+         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
    info.enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
 
    menu_entries_add_enum(menu_stack, info.path,

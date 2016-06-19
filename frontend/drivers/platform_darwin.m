@@ -651,9 +651,9 @@ static int frontend_darwin_parse_drive_list(void *data)
    CFSearchPathForDirectoriesInDomains(CFDocumentDirectory, CFUserDomainMask, 1, home_dir_buf, sizeof(home_dir_buf));
 
    menu_entries_add_enum(list,
-         home_dir_buf, "", MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         home_dir_buf, "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list, "/", "",
-         MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
 
    ret = 0;
 

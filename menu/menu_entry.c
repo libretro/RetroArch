@@ -294,7 +294,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
       if (cbs->action_get_value && use_representation)
       {
-         enum menu_hash_enums enum_idx = MENU_ENUM_LABEL_UNKNOWN;
+         enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
          const char *label             = NULL;
          menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
 

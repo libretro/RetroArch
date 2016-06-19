@@ -1276,7 +1276,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.flags        = SL_FLAG_ALLOW_EMPTY_LIST;
    info.enum_idx     = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
    strlcpy(info.label,
-         menu_hash_to_str_enum(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
+         msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
          sizeof(info.label));
    strlcpy(info.path,
          settings->directory.playlist,
@@ -1511,7 +1511,7 @@ static void xmb_populate_entries(void *data,
 
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node, 
-      enum menu_hash_enums enum_idx, unsigned type, bool active)
+      enum msg_hash_enums enum_idx, unsigned type, bool active)
 {
    switch (enum_idx)
    {
@@ -2980,31 +2980,31 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
          {
             case XMB_SYSTEM_TAB_MAIN:
                menu_stack->list[stack_size - 1].label =
-                  strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU));
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
                menu_stack->list[stack_size - 1].type =
                   MENU_SETTINGS;
                break;
             case XMB_SYSTEM_TAB_SETTINGS:
                menu_stack->list[stack_size - 1].label =
-                  strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_SETTINGS_TAB));
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
                menu_stack->list[stack_size - 1].type =
                   MENU_SETTINGS_TAB;
                break;
             case XMB_SYSTEM_TAB_HISTORY:
                menu_stack->list[stack_size - 1].label =
-                  strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB));
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
                menu_stack->list[stack_size - 1].type =
                   MENU_HISTORY_TAB;
                break;
             case XMB_SYSTEM_TAB_ADD:
                menu_stack->list[stack_size - 1].label =
-                  strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_ADD_TAB));
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB));
                menu_stack->list[stack_size - 1].type =
                   MENU_ADD_TAB;
                break;
             default:
                menu_stack->list[stack_size - 1].label =
-                  strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU));
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU));
                menu_stack->list[stack_size - 1].type =
                   MENU_SETTING_HORIZONTAL_MENU;
                break;
@@ -3081,7 +3081,7 @@ static int deferred_push_content_actions(menu_displaylist_info_t *info)
 static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs,
       uint32_t label_hash)
 {
-   if (cbs && cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+   if (cbs && cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {
@@ -3195,7 +3195,7 @@ static bool xmb_menu_init_list(void *data)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
-         menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
+         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
    info.enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
 
    menu_entries_add_enum(menu_stack, info.path,

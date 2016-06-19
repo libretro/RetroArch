@@ -389,7 +389,7 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
    const char *path              = NULL;
    const char *entry_label       = NULL;
    menu_file_list_cbs_t *cbs     = NULL;
-   enum menu_hash_enums enum_idx = MENU_ENUM_LABEL_UNKNOWN;
+   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
@@ -420,7 +420,7 @@ int menu_entries_get_title(char *s, size_t len)
    unsigned menu_type            = 0;
    const char *path              = NULL;
    const char *label             = NULL;
-   enum menu_hash_enums enum_idx = MENU_ENUM_LABEL_UNKNOWN;
+   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
    menu_file_list_cbs_t *cbs = menu_entries_get_last_stack_actiondata();
    
    if (!cbs)
@@ -458,7 +458,7 @@ int menu_entries_get_core_title(char *s, size_t len)
    if (string_is_empty(core_name) && info)
       core_name = info->info.library_name;
    if (string_is_empty(core_name))
-      core_name = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_CORE);
+      core_name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
 
    if (!core_version && info)
       core_version = info->info.library_version;
@@ -535,14 +535,14 @@ void menu_entries_add(file_list_t *list, const char *path, const char *label,
 
    file_list_set_actiondata(list, idx, cbs);
 
-   cbs->enum_idx = MENU_ENUM_LABEL_UNKNOWN ;
+   cbs->enum_idx = MSG_UNKNOWN;
    cbs->setting  = menu_setting_find(label);
 
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
 void menu_entries_add_enum(file_list_t *list, const char *path, const char *label,
-      enum menu_hash_enums enum_idx,
+      enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
    menu_ctx_list_t list_info;
@@ -578,7 +578,7 @@ void menu_entries_add_enum(file_list_t *list, const char *path, const char *labe
 }
 
 void menu_entries_prepend(file_list_t *list, const char *path, const char *label,
-      enum menu_hash_enums enum_idx,
+      enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
    menu_ctx_list_t list_info;
@@ -624,7 +624,7 @@ menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 }
 
 void menu_entries_get_last_stack(const char **path, const char **label,
-      unsigned *file_type, enum menu_hash_enums *enum_idx, size_t *entry_idx)
+      unsigned *file_type, enum msg_hash_enums *enum_idx, size_t *entry_idx)
 {
    menu_file_list_cbs_t *cbs      = NULL;
    menu_list_t *menu_list         = NULL;

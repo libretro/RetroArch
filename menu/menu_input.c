@@ -282,7 +282,7 @@ static int menu_input_key_bind_set_mode_common(
          info.directory_ptr       = selection;
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
          strlcpy(info.label,
-               menu_hash_to_str_enum(MENU_ENUM_LABEL_CUSTOM_BIND), sizeof(info.label));
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND), sizeof(info.label));
 
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
             menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
@@ -298,7 +298,7 @@ static int menu_input_key_bind_set_mode_common(
          info.directory_ptr       = selection;
          info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
          strlcpy(info.label,
-               menu_hash_to_str_enum(MENU_ENUM_LABEL_CUSTOM_BIND_ALL),
+               msg_hash_to_str(MENU_ENUM_LABEL_CUSTOM_BIND_ALL),
                sizeof(info.label));
 
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
@@ -563,7 +563,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
          input_config_bind_map_get_desc(
          menu_input->binds.begin - MENU_SETTINGS_BIND_BEGIN),
          timeout,
-         menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SECONDS));
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
 
    /* binds.begin is updated in keyboard_press callback. */
    if (menu_input->binds.begin > menu_input->binds.last)
@@ -660,7 +660,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
                return false;
 
             menu_input->keyboard.display = true;
-            menu_input_keyboard_label    = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SEARCH);
+            menu_input_keyboard_label    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
             menu_input_keyboard_buffer   =
                input_keyboard_start_line(menu, menu_input_search_cb);
          }

@@ -27,6 +27,7 @@
 #include "../input/input_driver.h"
 
 #include "menu_hash.h"
+#include "../msg_hash.h"
 
 RETRO_BEGIN_DECLS
 
@@ -291,7 +292,7 @@ int menu_setting_set(unsigned type, const char *label,
  **/
 rarch_setting_t *menu_setting_find(const char *label);
 
-rarch_setting_t *menu_setting_find_enum(enum menu_hash_enums enum_idx);
+rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
 
 /**
  * setting_set_with_string_representation:
@@ -340,7 +341,7 @@ enum setting_type menu_setting_get_type(rarch_setting_t *setting);
 
 enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting);
 
-enum menu_hash_enums menu_setting_get_enum_idx(rarch_setting_t *setting);
+enum msg_hash_enums menu_setting_get_enum_idx(rarch_setting_t *setting);
 
 const char *menu_setting_get_values(rarch_setting_t *setting);
 
@@ -394,7 +395,7 @@ void settings_data_list_current_add_free_flags(
 void menu_settings_list_current_add_enum_idx(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      enum menu_hash_enums enum_idx);
+      enum msg_hash_enums enum_idx);
 
 bool menu_setting_free(void *data);
 

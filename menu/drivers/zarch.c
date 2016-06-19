@@ -1129,11 +1129,11 @@ static bool zarch_menu_init_list(void *data)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
-         menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
+         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
    info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
    menu_entries_add_enum(menu_stack,
-         info.path, info.label, MENU_ENUM_LABEL_UNKNOWN, info.type, info.flags, 0);
+         info.path, info.label, MENU_ENUM_LABEL_HISTORY_TAB, info.type, info.flags, 0);
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
 

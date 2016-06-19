@@ -476,11 +476,11 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_DOWNLOAD_THUMBNAIL_CONTENT:
          case MENU_FILE_SCAN_DIRECTORY:
          case MENU_SETTING_GROUP:
-            if (  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB))   ||
-                  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
-                  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_ADD_TAB)) ||
-                  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
-                  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_SETTINGS_TAB))
+            if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
+                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
+                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)) ||
+                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
+                  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB))
                   )
             {
                BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
@@ -510,7 +510,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
    {
       const char *parent_group   = menu_setting_get_parent_group(cbs->setting);
 
-      if (string_is_equal(parent_group, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU)) 
+      if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) 
                && (menu_setting_get_type(cbs->setting) == ST_GROUP))
       {
          BIND_ACTION_RIGHT(cbs, action_right_scroll);
@@ -541,7 +541,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
    }
    else
    {
-      if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+      if (cbs->enum_idx != MSG_UNKNOWN)
       {
          switch (cbs->enum_idx)
          {
@@ -565,9 +565,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_NO_ITEMS:
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
-               if (  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU))       ||
-                     string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
-                     string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+               if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))       ||
+                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
+                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
                   )
                {
                   BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
@@ -597,9 +597,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                BIND_ACTION_RIGHT(cbs, action_right_video_resolution);
                break;
             case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
-               if (  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU))   ||
-                     string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
-                     string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+               if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))   ||
+                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
+                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
                   )
                {
                   BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
@@ -626,12 +626,12 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
     
    if (type == MENU_SETTING_NO_ITEM)
    {
-      if (  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB))   ||
-            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
-            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_ADD_TAB)) ||
-            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU)) ||
-            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
-            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_SETTINGS_TAB))
+      if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
+            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
+            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)) ||
+            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) ||
+            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
+            string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB))
          )
       {
             BIND_ACTION_RIGHT(cbs, action_right_mainmenu);

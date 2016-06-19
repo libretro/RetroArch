@@ -603,24 +603,24 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs, 
       const char *label, uint32_t label_hash)
 {
-   if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST)))
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
       return 0;
    }
 
-   if (strstr(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+   if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
    }
    else if (strstr(label,
-            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rpl_entry_actions);
    }
    else
    {
-      if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+      if (cbs->enum_idx != MSG_UNKNOWN)
       {
          switch (cbs->enum_idx)
          {

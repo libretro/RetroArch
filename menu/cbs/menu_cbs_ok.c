@@ -48,7 +48,7 @@ enum
 
 typedef struct
 {
-   enum menu_hash_enums enum_idx;
+   enum msg_hash_enums enum_idx;
    char path[PATH_MAX_LENGTH];
 } menu_file_transfer_t;
 
@@ -125,7 +125,7 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *info_label   = NULL;
    const char          *info_path    = NULL;
    menu_handle_t            *menu    = NULL;
-   enum menu_hash_enums enum_idx     = MENU_ENUM_LABEL_UNKNOWN;
+   enum msg_hash_enums enum_idx      = MSG_UNKNOWN;
    global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
    file_list_t        *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -147,7 +147,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx; 
          info_path          = label;
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST;
          break;
@@ -161,7 +161,7 @@ int generic_action_ok_displaylist_push(const char *path,
             fill_pathname_join(detect_content_path, menu_path, content_path,
                   sizeof(detect_content_path));
 
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE;
          info_path          = path;
@@ -178,7 +178,7 @@ int generic_action_ok_displaylist_push(const char *path,
             fill_pathname_join(detect_content_path, menu_path, content_path,
                   sizeof(detect_content_path));
 
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN;
          info_path          = path;
@@ -192,7 +192,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_RPL_ENTRY:
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
-         info_label = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+         info_label = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
          info.enum_idx           = MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS;
          info.directory_ptr      = idx;
          rpl_entry_selection_ptr = idx;
@@ -200,7 +200,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          info.directory_ptr = idx;
          info_path          = settings->directory.audio_filter;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
          info.enum_idx      = MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN;
          break;
       case ACTION_OK_DL_SHADER_PASS:
@@ -291,7 +291,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_RDB_ENTRY:
          fill_pathname_join_delim(tmp,
-               menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
+               msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
                path, '|', sizeof(tmp));
 
          info.directory_ptr = idx;
@@ -316,7 +316,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE;
 
@@ -329,7 +329,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION;
 
@@ -362,7 +362,7 @@ int generic_action_ok_displaylist_push(const char *path,
 
          info.directory_ptr = idx;
          info_path          = tmp;
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST;
          break;
@@ -372,7 +372,7 @@ int generic_action_ok_displaylist_push(const char *path,
 
          info.directory_ptr = idx;
          info_path          = tmp;
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST;
          break;
@@ -381,7 +381,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST;
          break;
@@ -390,7 +390,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST;
          break;
@@ -399,7 +399,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(
+         info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST;
          break;
@@ -408,20 +408,20 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST;
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST:
          info.directory_ptr = idx;
          info_path          = settings->directory.libretro;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_CORE_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_LIST;
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr                 = idx;
          rdb_entry_start_game_selection_ptr = idx;
          info_path                          = settings->directory.libretro;
-         info_label                         = menu_hash_to_str_enum(
+         info_label                         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET);
          info.enum_idx                      = MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET;
          break;
@@ -429,70 +429,70 @@ int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST;
          break;
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST;
          break;
       case ACTION_OK_DL_DRIVER_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST;
          break;
       case ACTION_OK_DL_CORE_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST;
          break;
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST;
          break;
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST;
          break;
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST;
          break;
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST;
          break;
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST;
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
          dl_type            = DISPLAYLIST_CONTENT_SETTINGS;
          info.list          = selection_buf;
-         info_path          = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS);
-         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_CONTENT_SETTINGS);
+         info_path          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS);
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS);
          info.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
          menu_entries_add_enum(menu_stack, info_path, info_label,
                MENU_ENUM_LABEL_CONTENT_SETTINGS,
@@ -522,7 +522,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    char new_core_path[PATH_MAX_LENGTH] = {0};
    char menu_path_new[PATH_MAX_LENGTH] = {0};
    int ret                             = 0;
-   enum menu_hash_enums enum_idx       = MENU_ENUM_LABEL_UNKNOWN;
+   enum msg_hash_enums enum_idx        = MSG_UNKNOWN;
    const char *menu_path               = NULL;
    const char *menu_label              = NULL;
    menu_handle_t *menu                 = NULL;
@@ -537,11 +537,11 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
    if (string_is_equal(menu_label,
-            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
    else if (string_is_equal(menu_label,
-            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
 
@@ -898,12 +898,12 @@ enum
 
 static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned id, enum menu_hash_enums flush_id)
+      unsigned id, enum msg_hash_enums flush_id)
 {
    char action_path[PATH_MAX_LENGTH] = {0};
    unsigned flush_type               = 0;
    int ret                           = 0;
-   enum menu_hash_enums enum_idx     = MENU_ENUM_LABEL_UNKNOWN;
+   enum msg_hash_enums enum_idx      = MSG_UNKNOWN;
    const char             *menu_path = NULL;
    const char            *menu_label = NULL;
    const char *flush_char            = NULL;
@@ -930,7 +930,7 @@ static int generic_action_ok(const char *path,
             strlcpy(settings->path.menu_wallpaper,
                   action_path, sizeof(settings->path.menu_wallpaper));
             task_push_image_load(action_path, 
-                  menu_hash_to_str_enum(MENU_ENUM_LABEL_CB_MENU_WALLPAPER),
+                  msg_hash_to_str(MENU_ENUM_LABEL_CB_MENU_WALLPAPER),
                   menu_display_handle_wallpaper_upload, NULL);
          }
          break;
@@ -963,7 +963,7 @@ static int generic_action_ok(const char *path,
          {
             struct video_shader      *shader  = NULL;
             menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET, &shader);
-            flush_char = menu_hash_to_str_enum(flush_id);
+            flush_char = msg_hash_to_str(flush_id);
             menu_shader_manager_set_preset(shader,
                   video_shader_parse_type(action_path, RARCH_SHADER_NONE),
                   action_path);
@@ -973,7 +973,7 @@ static int generic_action_ok(const char *path,
          {
             struct video_shader      *shader  = NULL;
             menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET, &shader);
-            flush_char = menu_hash_to_str_enum(flush_id);
+            flush_char = msg_hash_to_str(flush_id);
             strlcpy(
                   shader->pass[hack_shader_pass].source.path,
                   action_path,
@@ -985,7 +985,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
          {
             global_t *global = global_get_ptr();
-            flush_char = menu_hash_to_str_enum(flush_id);
+            flush_char = msg_hash_to_str(flush_id);
             strlcpy(global->record.config, action_path,
                   sizeof(global->record.config));
          }
@@ -993,14 +993,14 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_REMAPPING_FILE:
          {
             config_file_t *conf = config_file_new(action_path);
-            flush_char = menu_hash_to_str_enum(flush_id);
+            flush_char = msg_hash_to_str(flush_id);
 
             if (conf)
                input_remapping_load_file(conf, action_path);
          }
          break;
       case ACTION_OK_LOAD_CHEAT_FILE:
-         flush_char = menu_hash_to_str_enum(flush_id);
+         flush_char = msg_hash_to_str(flush_id);
          cheat_manager_free();
 
          if (!cheat_manager_load(action_path))
@@ -1026,7 +1026,7 @@ static int generic_action_ok(const char *path,
          }
          break;
       default:
-         flush_char = menu_hash_to_str_enum(flush_id);
+         flush_char = msg_hash_to_str(flush_id);
          break;
    }
 
@@ -1042,7 +1042,7 @@ static int action_ok_set_path(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_SET_PATH, MENU_ENUM_LABEL_UNKNOWN);
+         ACTION_OK_SET_PATH, MSG_UNKNOWN);
 }
 
 static int action_ok_menu_wallpaper_load(const char *path,
@@ -1050,28 +1050,28 @@ static int action_ok_menu_wallpaper_load(const char *path,
 {
 
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_WALLPAPER, MENU_ENUM_LABEL_UNKNOWN);
+         ACTION_OK_LOAD_WALLPAPER, MSG_UNKNOWN);
 }
 
 static int action_ok_load_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_CORE, MENU_ENUM_LABEL_UNKNOWN);
+         ACTION_OK_LOAD_CORE, MSG_UNKNOWN);
 }
 
 static int action_ok_config_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_CONFIG_FILE, MENU_ENUM_LABEL_UNKNOWN);
+         ACTION_OK_LOAD_CONFIG_FILE, MSG_UNKNOWN);
 }
 
 static int action_ok_disk_image_append(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_APPEND_DISK_IMAGE, MENU_ENUM_LABEL_UNKNOWN);
+         ACTION_OK_APPEND_DISK_IMAGE, MSG_UNKNOWN);
 }
 
 static int action_ok_cheat_file_load(const char *path,
@@ -1112,9 +1112,9 @@ static int action_ok_shader_pass_load(const char *path,
 
 static int  generic_action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      enum menu_hash_enums id, enum menu_help_type id2)
+      enum msg_hash_enums id, enum menu_help_type id2)
 {
-   const char               *lbl  = menu_hash_to_str_enum(id);
+   const char               *lbl  = msg_hash_to_str(id);
    menu_handle_t            *menu = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
@@ -1305,7 +1305,7 @@ int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(NULL, label, type, idx, entry_idx,
-         ACTION_OK_SET_DIRECTORY, MENU_ENUM_LABEL_UNKNOWN);
+         ACTION_OK_SET_DIRECTORY, MSG_UNKNOWN);
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -1462,9 +1462,9 @@ static int action_ok_file_load(const char *path,
 
    if (
          string_is_equal(menu_label,
-            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
          string_is_equal(menu_label,
-            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
       )
    {
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
@@ -1636,7 +1636,7 @@ static void cb_generic_download(void *task_data,
          break;
       default:
          RARCH_WARN("Unknown transfer type '%s' bailing out.\n",
-               menu_hash_to_str_enum(transf->enum_idx));
+               msg_hash_to_str(transf->enum_idx));
          break;
    }
 
@@ -1681,7 +1681,7 @@ static void cb_generic_download(void *task_data,
    if (string_is_equal_noncase(file_ext, "zip"))
    {
       if (!task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
-            cb_decompressed, (void*)(uintptr_t)menu_hash_calculate(menu_hash_to_str_enum(transf->enum_idx))))
+            cb_decompressed, (void*)(uintptr_t)menu_hash_calculate(msg_hash_to_str(transf->enum_idx))))
       {
         err = "Decompression failed.";
         goto finish;
@@ -1719,7 +1719,7 @@ finish:
 
 static int action_ok_download_generic(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      enum menu_hash_enums enum_idx)
+      enum msg_hash_enums enum_idx)
 {
 #ifdef HAVE_NETWORKING
    char s[PATH_MAX_LENGTH]      = {0};
@@ -1781,7 +1781,7 @@ static int action_ok_download_generic(const char *path,
    transf->enum_idx = enum_idx;
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   task_push_http_transfer(s3, false, menu_hash_to_str_enum(enum_idx), cb_generic_download, transf);
+   task_push_http_transfer(s3, false, msg_hash_to_str(enum_idx), cb_generic_download, transf);
 #endif
    return 0;
 }
@@ -1974,7 +1974,7 @@ static int action_ok_lookup_setting(const char *path,
 #ifdef HAVE_NETWORKING
 static int generic_action_ok_network(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      enum menu_hash_enums enum_idx)
+      enum msg_hash_enums enum_idx)
 {
    char url_path[PATH_MAX_LENGTH] = {0};
    settings_t *settings           = config_get_ptr();
@@ -1995,14 +1995,14 @@ static int generic_action_ok_network(const char *path,
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
          fill_pathname_join(url_path, settings->network.buildbot_assets_url,
                "cores/gw/.index", sizeof(url_path));
-         url_label = menu_hash_to_str_enum(enum_idx);
+         url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
          callback  = cb_net_generic;
          break;
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
          fill_pathname_join(url_path, settings->network.buildbot_url,
                ".index-extended", sizeof(url_path));
-         url_label = menu_hash_to_str_enum(enum_idx);
+         url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
          callback  = cb_net_generic;
          break;
@@ -2010,7 +2010,7 @@ static int generic_action_ok_network(const char *path,
          fill_pathname_join(url_path,
                "http://thumbnailpacks.libretro.com",
                ".index", sizeof(url_path));
-         url_label = menu_hash_to_str_enum(enum_idx);
+         url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
          callback  = cb_net_generic;
          break;
@@ -2021,7 +2021,7 @@ static int generic_action_ok_network(const char *path,
                LAKKA_PROJECT, sizeof(url_path));
          fill_pathname_join(url_path, url_path,
                ".index", sizeof(url_path));
-         url_label = menu_hash_to_str_enum(enum_idx);
+         url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_LAKKA_LIST;
          callback  = cb_net_generic;
          break;
@@ -2113,7 +2113,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    strlcpy(new_path, rdb, sizeof(new_path));
 
    fill_pathname_join_delim(new_label, 
-         menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
          str_list->elems[0].data, '_',
          sizeof(new_label));
 
@@ -2627,7 +2627,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+   if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {
@@ -3083,14 +3083,14 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             break;
          case MENU_FILE_CORE:
-            if (cbs && cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+            if (cbs && cbs->enum_idx != MSG_UNKNOWN)
             {
                switch (cbs->enum_idx)
                {
                   case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
                      BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
                      break;
-                  case MENU_ENUM_LABEL_UNKNOWN:
+                  case MSG_UNKNOWN:
                   default:
                      break;
                }

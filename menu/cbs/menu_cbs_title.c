@@ -74,7 +74,7 @@ static int action_get_title_remap_file_load(const char *path, const char *label,
 static int action_get_title_help(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_HELP_LIST), len);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_LIST), len);
    return 0;
 }
 
@@ -87,7 +87,7 @@ static int action_get_title_overlay(const char *path, const char *label,
 static int action_get_title_video_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER), path, len);
 }
 
 static int action_get_title_cheat_directory(const char *path, const char *label, 
@@ -99,19 +99,19 @@ static int action_get_title_cheat_directory(const char *path, const char *label,
 static int action_get_title_core_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH), path, len);
 }
 
 static int action_get_title_core_info_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH), path, len);
 }
 
 static int action_get_title_audio_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
 }
 
 static int action_get_title_font_path(const char *path, const char *label, 
@@ -273,18 +273,18 @@ static int action_get_title_default(const char *path, const char *label,
 static int action_get_title_group_settings(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU)))
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU), len);
-   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB)))
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
-   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_SETTINGS_TAB)))
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB), len);
-   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB), len);
-   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_ADD_TAB)))
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ADD_TAB), len);
-   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
-      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU), len);
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TAB), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU), len);
    else
    {
       char elem0[PATH_MAX_LENGTH]    = {0};
@@ -317,224 +317,224 @@ static int action_get_title_group_settings(const char *path, const char *label,
 static int action_get_user_accounts_cheevos_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
    return 0;
 }
 
 static int action_get_download_core_content_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT), len);
    return 0;
 }
 
 static int action_get_user_accounts_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST), len);
    return 0;
 }
 
 static int action_get_core_information_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), len);
    return 0;
 }
 
 static int action_get_core_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_LIST), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST), len);
    return 0;
 }
 
 static int action_get_online_updater_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER), len);
    return 0;
 }
 
 static int action_get_online_thumbnails_updater_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST), len);
    return 0;
 }
 
 static int action_get_core_updater_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST), len);
    return 0;
 }
 
 static int action_get_add_content_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST), len);
    return 0;
 }
 
 static int action_get_core_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS), len);
    return 0;
 }
 
 static int action_get_load_recent_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY), len);
    return 0;
 }
 
 static int action_get_quick_menu_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS), len);
    return 0;
 }
 
 static int action_get_input_remapping_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS), len);
    return 0;
 }
 
 static int action_get_shader_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), len);
    return 0;
 }
 
 static int action_get_disk_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS), len);
    return 0;
 }
 
 static int action_get_frontend_counters_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS), len);
    return 0;
 }
 
 static int action_get_core_counters_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS), len);
    return 0;
 }
 
 static int action_get_playlist_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS), len);
    return 0;
 }
 
 static int action_get_input_hotkey_binds_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS), len);
    return 0;
 }
 
 static int action_get_driver_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), len);
    return 0;
 }
 
 static int action_get_core_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), len);
    return 0;
 }
 
 static int action_get_video_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS), len);
    return 0;
 }
 
 static int action_get_audio_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS), len);
    return 0;
 }
 
 static int action_get_input_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS), len);
    return 0;
 }
 
 static int action_get_core_cheat_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS), len);
    return 0;
 }
 
 static int action_get_load_content_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST), len);
    return 0;
 }
 
 static int action_get_cursor_manager_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER), len);
    return 0;
 }
 
 static int action_get_database_manager_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER), len);
    return 0;
 }
 
 static int action_get_system_information_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION), len);
    return 0;
 }
 
 static int action_get_network_information_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION), len);
    return 0;
 }
 
 static int action_get_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS), len);
    return 0;
 }
 
 static int action_get_title_information_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INFORMATION_LIST), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INFORMATION_LIST), len);
    return 0;
 }
 
@@ -644,31 +644,31 @@ static int action_get_title_recording_output_directory(const char *path, const c
 static int action_get_title_video_shader_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR), path, len);
 }
 
 static int action_get_title_audio_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
 }
 
 static int action_get_title_video_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR), path, len);
 }
 
 static int action_get_title_savefile_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY), path, len);
 }
 
 static int action_get_title_overlay_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY), path, len);
 }
 
 static int action_get_title_system_directory(const char *path, const char *label, 
@@ -680,13 +680,13 @@ static int action_get_title_system_directory(const char *path, const char *label
 static int action_get_title_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY), path, len);
 }
 
 static int action_get_title_extraction_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY), path, len);
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY), path, len);
 }
 
 static int action_get_title_menu(const char *path, const char *label, 
@@ -716,7 +716,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    {
       const char *parent_group   = menu_setting_get_parent_group(cbs->setting);
 
-      if (string_is_equal(parent_group, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU)) 
+      if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) 
             && menu_setting_get_type(cbs->setting) == ST_GROUP)
       {
          BIND_ACTION_GET_TITLE(cbs, action_get_title_group_settings);
@@ -724,13 +724,13 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST)))
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_core_settings_list);
       return 0;
    }
 
-   if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+   if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {
