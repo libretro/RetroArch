@@ -1606,6 +1606,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.group                     = parent_name;
    result.parent_group              = parent_group;
    result.values                    = NULL;
+   result.subgroup                  = NULL;
 
    result.index                     = 0;
    result.index_offset              = 0;
