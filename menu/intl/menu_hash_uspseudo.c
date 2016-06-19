@@ -113,7 +113,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                );
          break;
       case MENU_LABEL_INPUT_DRIVER:
-         driver_hash = menu_hash_calculate(settings->input.driver);
+         driver_hash = msg_hash_calculate(settings->input.driver);
 
          switch (driver_hash)
          {
@@ -205,7 +205,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                );
          break;
       case MENU_LABEL_VIDEO_DRIVER:
-         driver_hash = menu_hash_calculate(settings->video.driver);
+         driver_hash = msg_hash_calculate(settings->video.driver);
 
          switch (driver_hash)
          {
@@ -283,7 +283,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                );
          break;
       case MENU_LABEL_AUDIO_RESAMPLER_DRIVER:
-         driver_hash = menu_hash_calculate(settings->audio.resampler);
+         driver_hash = msg_hash_calculate(settings->audio.resampler);
 
          switch (driver_hash)
          {

@@ -589,7 +589,7 @@ static int action_ok_file_load_with_detect_core_carchive(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   uint32_t hash_label      = menu_hash_calculate(label);
+   uint32_t hash_label      = msg_hash_calculate(label);
 
    fill_pathname_join_delim(detect_content_path, detect_content_path, path,
          '#', sizeof(detect_content_path));
@@ -604,7 +604,7 @@ static int action_ok_file_load_with_detect_core_carchive(
 static int action_ok_file_load_with_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   uint32_t hash_label      = menu_hash_calculate(label);
+   uint32_t hash_label      = msg_hash_calculate(label);
 
    type  = 0;
    label = NULL;
@@ -753,7 +753,7 @@ static int action_ok_playlist_entry(const char *path,
    const char *core_name            = NULL;
    playlist_t *tmp_playlist         = NULL;
    menu_handle_t *menu              = NULL;
-   uint32_t hash_label              = menu_hash_calculate(label);
+   uint32_t hash_label              = msg_hash_calculate(label);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -1681,7 +1681,7 @@ static void cb_generic_download(void *task_data,
    if (string_is_equal_noncase(file_ext, "zip"))
    {
       if (!task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
-            cb_decompressed, (void*)(uintptr_t)menu_hash_calculate(msg_hash_to_str(transf->enum_idx))))
+            cb_decompressed, (void*)(uintptr_t)msg_hash_calculate(msg_hash_to_str(transf->enum_idx))))
       {
         err = "Decompression failed.";
         goto finish;
@@ -2607,7 +2607,7 @@ static int is_rdb_entry(uint32_t label_hash)
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t hash, const char *elem0)
 {
-   uint32_t elem0_hash      = menu_hash_calculate(elem0);
+   uint32_t elem0_hash      = msg_hash_calculate(elem0);
 
    if (!string_is_empty(elem0) && (is_rdb_entry(elem0_hash) == 0))
    {

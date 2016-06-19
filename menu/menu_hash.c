@@ -68,8 +68,3 @@ int menu_hash_get_help(uint32_t hash, char *s, size_t len)
 
    return menu_hash_get_help_us(hash, s, len);
 }
-
-uint32_t menu_hash_calculate(const char *s)
-{
-   return djb2_calculate(s);
-}

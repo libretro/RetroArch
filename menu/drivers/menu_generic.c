@@ -286,7 +286,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
       return 0;
 
    menu->menu_state.msg[0]   = '\0';
-   hash                      = menu_hash_calculate(label);
+   hash                      = msg_hash_calculate(label);
    iterate_type              = action_iterate_type(hash);
 
    if (     action != MENU_ACTION_NOOP
@@ -333,7 +333,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             {
                char needle[PATH_MAX_LENGTH] = {0};
                strlcpy(needle, menu_setting_get_name(setting), sizeof(needle));
-               label_hash       = menu_hash_calculate(needle);
+               label_hash       = msg_hash_calculate(needle);
             }
 
             ret = menu_hash_get_help(label_hash, 

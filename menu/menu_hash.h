@@ -575,8 +575,6 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len);
 
 int menu_hash_get_help(uint32_t hash, char *s, size_t len);
 
-uint32_t menu_hash_calculate(const char *s);
-
 RETRO_END_DECLS
 
 #endif

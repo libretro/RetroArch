@@ -1699,7 +1699,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       }
       else
       {
-         enum menu_file_type entry_type = menu_hash_to_file_type(menu_hash_calculate(entry.value));
+         enum menu_file_type entry_type = menu_hash_to_file_type(msg_hash_calculate(entry.value));
 
          switch (entry_type)
          {

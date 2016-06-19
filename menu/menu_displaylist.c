@@ -1789,7 +1789,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             if (tmp_str_list->size > 1)
                strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
 
-            switch (menu_hash_to_file_type(menu_hash_calculate(elem1)))
+            switch (menu_hash_to_file_type(msg_hash_calculate(elem1)))
             {
                case MENU_FILE_CRC:
                   if (string_is_equal(crc_str, elem0))
@@ -3091,7 +3091,7 @@ static int menu_displaylist_parse_generic(
    core_info_list_t *list       = NULL;
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
-   uint32_t hash_label          = menu_hash_calculate(info->label);
+   uint32_t hash_label          = msg_hash_calculate(info->label);
 
    core_info_get_list(&list);
 
@@ -3494,7 +3494,7 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
 
    if (info->need_push)
    {
-      info->label_hash = menu_hash_calculate(info->label);
+      info->label_hash = msg_hash_calculate(info->label);
       menu_driver_ctl(RARCH_MENU_CTL_POPULATE_ENTRIES, info);
       ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
    }

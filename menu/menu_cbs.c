@@ -68,8 +68,8 @@ void menu_cbs_init(void *data,
    if (!label || !menu_label)
       goto error;
 
-   label_hash      = menu_hash_calculate(label);
-   menu_label_hash = menu_hash_calculate(menu_label);
+   label_hash      = msg_hash_calculate(label);
+   menu_label_hash = msg_hash_calculate(menu_label);
 
 #ifdef DEBUG_LOG
    RARCH_LOG("\n");

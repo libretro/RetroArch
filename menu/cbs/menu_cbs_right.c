@@ -526,7 +526,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       label_setting[0] = '\0';
       snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
 
-      label_setting_hash = menu_hash_calculate(label_setting);
+      label_setting_hash = msg_hash_calculate(label_setting);
 
       if (label_hash != label_setting_hash)
          continue;
