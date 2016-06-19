@@ -711,6 +711,9 @@ static void fft_context_destroy(glfft_t *fft)
 
 extern "C" void glfft_free(glfft_t *fft)
 {
+   if (!fft)
+      return;
+
    fft_context_destroy(fft);
    if (fft)
       free(fft);
