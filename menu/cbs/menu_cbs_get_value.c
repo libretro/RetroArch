@@ -1594,88 +1594,88 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_core_option_create);
             break;
-         case MENU_FILE_CORE:
+         case FILE_TYPE_CORE:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_core);
             break;
-         case MENU_FILE_PLAIN:
+         case FILE_TYPE_PLAIN:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_plain);
             break;
-         case MENU_FILE_MOVIE:
+         case FILE_TYPE_MOVIE:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_movie);
             break;
-         case MENU_FILE_MUSIC:
+         case FILE_TYPE_MUSIC:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_music);
             break;
-         case MENU_FILE_IMAGE:
+         case FILE_TYPE_IMAGE:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_image);
             break;
-         case MENU_FILE_IMAGEVIEWER:
+         case FILE_TYPE_IMAGEVIEWER:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_imageviewer);
             break;
-         case MENU_FILE_USE_DIRECTORY:
+         case FILE_TYPE_USE_DIRECTORY:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_use_directory);
             break;
-         case MENU_FILE_DIRECTORY:
+         case FILE_TYPE_DIRECTORY:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_directory);
             break;
-         case MENU_FILE_PARENT_DIRECTORY:
+         case FILE_TYPE_PARENT_DIRECTORY:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_parent_directory);
             break;
-         case MENU_FILE_CARCHIVE:
+         case FILE_TYPE_CARCHIVE:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_carchive);
             break;
-         case MENU_FILE_OVERLAY:
+         case FILE_TYPE_OVERLAY:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_overlay);
             break;
-         case MENU_FILE_FONT:
+         case FILE_TYPE_FONT:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_font);
             break;
-         case MENU_FILE_SHADER:
+         case FILE_TYPE_SHADER:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_shader);
             break;
-         case MENU_FILE_SHADER_PRESET:
+         case FILE_TYPE_SHADER_PRESET:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_shader_preset);
             break;
-         case MENU_FILE_CONFIG:
+         case FILE_TYPE_CONFIG:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_config);
             break;
-         case MENU_FILE_IN_CARCHIVE:
+         case FILE_TYPE_IN_CARCHIVE:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_in_carchive);
             break;
-         case MENU_FILE_VIDEOFILTER:
-         case MENU_FILE_AUDIOFILTER:
+         case FILE_TYPE_VIDEOFILTER:
+         case FILE_TYPE_AUDIOFILTER:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_filter);
             break;
-         case MENU_FILE_DOWNLOAD_CORE:
+         case FILE_TYPE_DOWNLOAD_CORE:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_url_core);
             break;
-         case MENU_FILE_RDB:
+         case FILE_TYPE_RDB:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_rdb);
             break;
-         case MENU_FILE_CURSOR:
+         case FILE_TYPE_CURSOR:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_cursor);
             break;
-         case MENU_FILE_CHEAT:
+         case FILE_TYPE_CHEAT:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_file_cheat);
             break;

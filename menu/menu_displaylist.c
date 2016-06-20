@@ -75,7 +75,7 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
             MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-            MENU_FILE_NONE, 0, 0);
+            FILE_TYPE_NONE, 0, 0);
       return;
    }
 
@@ -107,7 +107,7 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
       switch (type)
       {
-         case MENU_FILE_DOWNLOAD_CORE:
+         case FILE_TYPE_DOWNLOAD_CORE:
             {
                settings_t *settings      = config_get_ptr();
 
@@ -140,7 +140,7 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
             }
             break;
          default:
-         case MENU_FILE_NONE:
+         case FILE_TYPE_NONE:
             break;
       }
 
@@ -168,7 +168,7 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
             MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-            MENU_FILE_NONE, 0, 0);
+            FILE_TYPE_NONE, 0, 0);
       return;
    }
 
@@ -216,7 +216,7 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
 
       switch (type)
       {
-         case MENU_FILE_DOWNLOAD_CORE:
+         case FILE_TYPE_DOWNLOAD_CORE:
             {
                settings_t *settings      = config_get_ptr();
 
@@ -248,7 +248,7 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
                }
             }
             break;
-         case MENU_FILE_NONE:
+         case FILE_TYPE_NONE:
          default:
             break;
       }
@@ -1536,13 +1536,13 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       if (!path)
          menu_entries_add_enum(info->list, fill_buf, path_playlist,
-               MSG_UNKNOWN, MENU_FILE_PLAYLIST_ENTRY, 0, i);
+               MSG_UNKNOWN, FILE_TYPE_PLAYLIST_ENTRY, 0, i);
       else if (is_history)
          menu_entries_add_enum(info->list, fill_buf,
-               path, MSG_UNKNOWN, MENU_FILE_RPL_ENTRY, 0, i);
+               path, MSG_UNKNOWN, FILE_TYPE_RPL_ENTRY, 0, i);
       else
          menu_entries_add_enum(info->list, label,
-               path, MSG_UNKNOWN, MENU_FILE_RPL_ENTRY, 0, i);
+               path, MSG_UNKNOWN, FILE_TYPE_RPL_ENTRY, 0, i);
    }
 
    return 0;
@@ -1568,7 +1568,7 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
          msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET),
          MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
-         MENU_FILE_PATH, 0, 0);
+         FILE_TYPE_PATH, 0, 0);
    menu_entries_add_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS),
          msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS),
@@ -1791,15 +1791,15 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
             switch (msg_hash_to_file_type(msg_hash_calculate(elem1)))
             {
-               case MENU_FILE_CRC:
+               case FILE_TYPE_CRC:
                   if (string_is_equal(crc_str, elem0))
                      match_found = true;
                   break;
-               case MENU_FILE_SHA1:
+               case FILE_TYPE_SHA1:
                   if (string_is_equal(db_info_entry->sha1, elem0))
                      match_found = true;
                   break;
-               case MENU_FILE_MD5:
+               case FILE_TYPE_MD5:
                   if (string_is_equal(db_info_entry->md5, elem0))
                      match_found = true;
                   break;
@@ -2111,7 +2111,7 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
    {
       if (!string_is_empty(db_list->list[i].name))
          menu_entries_add_enum(list, db_list->list[i].name,
-               path, MSG_UNKNOWN, MENU_FILE_RDB_ENTRY, 0, 0);
+               path, MSG_UNKNOWN, FILE_TYPE_RDB_ENTRY, 0, 0);
    }
 
    database_info_list_free(db_list);
@@ -2731,7 +2731,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
       menu_entries_add_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN),
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
-            MENU_ENUM_LABEL_RUN, MENU_FILE_PLAYLIST_ENTRY, 0, idx);
+            MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
@@ -2748,7 +2748,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
       strlcat(db_path, ".rdb", sizeof(db_path));
 
       menu_entries_add_enum(info->list, label,
-            db_path, MSG_UNKNOWN, MENU_FILE_RDB_ENTRY, 0, idx);
+            db_path, MSG_UNKNOWN, FILE_TYPE_RDB_ENTRY, 0, idx);
    }
 
    return 0;
@@ -3099,7 +3099,7 @@ static int menu_displaylist_parse_generic(
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_add_enum(info->list, "/", "",
-               MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
       return 0;
    }
 
@@ -3124,14 +3124,14 @@ static int menu_displaylist_parse_generic(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
             MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
-            MENU_FILE_SCAN_DIRECTORY, 0 ,0);
+            FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
 
    if (push_dir)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
             MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
-            MENU_FILE_USE_DIRECTORY, 0 ,0);
+            FILE_TYPE_USE_DIRECTORY, 0 ,0);
 
    if (!horizontal && hash_label != MENU_LABEL_CORE_LIST)
    {
@@ -3144,7 +3144,7 @@ static int menu_displaylist_parse_generic(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
                info->path,
                MENU_ENUM_LABEL_PARENT_DIRECTORY,
-               MENU_FILE_PARENT_DIRECTORY, 0, 0);
+               FILE_TYPE_PARENT_DIRECTORY, 0, 0);
       }
    }
 
@@ -3194,18 +3194,18 @@ static int menu_displaylist_parse_generic(
       bool is_dir;
       char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
-      enum menu_file_type file_type = MENU_FILE_NONE;
+      enum menu_file_type file_type = FILE_TYPE_NONE;
 
       switch (str_list->elems[i].attr.i)
       {
          case RARCH_DIRECTORY:
-            file_type = MENU_FILE_DIRECTORY;
+            file_type = FILE_TYPE_DIRECTORY;
             break;
          case RARCH_COMPRESSED_ARCHIVE:
-            file_type = MENU_FILE_CARCHIVE;
+            file_type = FILE_TYPE_CARCHIVE;
             break;
          case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
-            file_type = MENU_FILE_IN_CARCHIVE;
+            file_type = FILE_TYPE_IN_CARCHIVE;
             break;
          case RARCH_PLAIN_FILE:
          default:
@@ -3217,7 +3217,7 @@ static int menu_displaylist_parse_generic(
                   /* in case of deferred_core_list we have to interpret
                    * every archive as an archive to disallow instant loading
                    */
-                  file_type = MENU_FILE_CARCHIVE;
+                  file_type = FILE_TYPE_CARCHIVE;
                   break;
                }
             }
@@ -3225,7 +3225,7 @@ static int menu_displaylist_parse_generic(
             break;
       }
 
-      is_dir = (file_type == MENU_FILE_DIRECTORY);
+      is_dir = (file_type == FILE_TYPE_DIRECTORY);
 
       if (!is_dir)
       {
@@ -3245,11 +3245,11 @@ static int menu_displaylist_parse_generic(
       {
          case MENU_LABEL_CONTENT_COLLECTION_LIST:
             if (is_dir && !horizontal)
-               file_type = MENU_FILE_DIRECTORY;
+               file_type = FILE_TYPE_DIRECTORY;
             else if (is_dir && horizontal)
                continue;
             else
-               file_type = MENU_FILE_PLAYLIST_COLLECTION;
+               file_type = FILE_TYPE_PLAYLIST_COLLECTION;
             break;
          case MENU_LABEL_CORE_LIST:
 #ifndef HAVE_DYNAMIC
@@ -3269,10 +3269,10 @@ static int menu_displaylist_parse_generic(
             }
 #endif
             /* Compressed cores are unsupported */
-            if (file_type == MENU_FILE_CARCHIVE)
+            if (file_type == FILE_TYPE_CARCHIVE)
                continue;
 
-            file_type = is_dir ? MENU_FILE_DIRECTORY : MENU_FILE_CORE;
+            file_type = is_dir ? FILE_TYPE_DIRECTORY : FILE_TYPE_CORE;
             break;
       }
 
@@ -3284,20 +3284,20 @@ static int menu_displaylist_parse_generic(
             case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG
                if (settings->multimedia.builtin_mediaplayer_enable)
-                  file_type = MENU_FILE_MOVIE;
+                  file_type = FILE_TYPE_MOVIE;
 #endif
                break;
             case RARCH_CONTENT_MUSIC:
 #ifdef HAVE_FFMPEG
                if (settings->multimedia.builtin_mediaplayer_enable)
-                  file_type = MENU_FILE_MUSIC;
+                  file_type = FILE_TYPE_MUSIC;
 #endif
                break;
             case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER
                if (settings->multimedia.builtin_imageviewer_enable
                      && hash_label != MENU_LABEL_MENU_WALLPAPER)
-                  file_type = MENU_FILE_IMAGEVIEWER;
+                  file_type = FILE_TYPE_IMAGEVIEWER;
 #endif
             default:
                break;
@@ -3348,7 +3348,7 @@ static int menu_displaylist_parse_generic(
                      i, &path, NULL, &type, NULL,
                      NULL);
 
-               if (type != MENU_FILE_CORE)
+               if (type != FILE_TYPE_CORE)
                   continue;
 
                fill_pathname_join(core_path, dir, path, sizeof(core_path));
@@ -4426,7 +4426,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORE_CONTENT:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf,
-               core_len, MENU_FILE_DOWNLOAD_CORE_CONTENT);
+               core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT);
          info->need_push    = true;
          info->need_refresh = true;
 #endif
@@ -4434,7 +4434,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORES_UPDATER:
 #ifdef HAVE_NETWORKING
          print_buf_lines_extended(info->list, core_buf,
-               core_len, MENU_FILE_DOWNLOAD_CORE);
+               core_len, FILE_TYPE_DOWNLOAD_CORE);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -4443,7 +4443,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_THUMBNAILS_UPDATER:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf,
-               core_len, MENU_FILE_DOWNLOAD_THUMBNAIL_CONTENT);
+               core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -4452,7 +4452,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_LAKKA:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf,
-               core_len, MENU_FILE_DOWNLOAD_LAKKA);
+               core_len, FILE_TYPE_DOWNLOAD_LAKKA);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -4615,13 +4615,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   {
                      case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
                         menu_entries_add_enum(info->list, cores_paths->elems[i].data, "",
-                              MSG_UNKNOWN, MENU_FILE_CORE, 0, 0);
+                              MSG_UNKNOWN, FILE_TYPE_CORE, 0, 0);
                         break;
                      default:
                         menu_entries_add_enum(info->list, cores_paths->elems[i].data,
                               msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK),
                               MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
-                              MENU_FILE_CORE, 0, 0);
+                              FILE_TYPE_CORE, 0, 0);
                         break;
                   }
 
@@ -4691,7 +4691,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASES:
-         info->type_default = MENU_FILE_RDB;
+         info->type_default = FILE_TYPE_RDB;
          strlcpy(info->exts, "rdb", sizeof(info->exts));
          strlcpy(info->path, settings->path.content_database, sizeof(info->path));
          break;
@@ -4726,69 +4726,69 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASE_CURSORS:
-         info->type_default = MENU_FILE_CURSOR;
+         info->type_default = FILE_TYPE_CURSOR;
          strlcpy(info->exts, "dbc", sizeof(info->exts));
          strlcpy(info->path, settings->directory.cursor, sizeof(info->path));
          break;
       case DISPLAYLIST_DATABASE_PLAYLISTS:
-         info->type_default = MENU_FILE_PLAIN;
+         info->type_default = FILE_TYPE_PLAIN;
          strlcpy(info->exts, "lpl", sizeof(info->exts));
          break;
       case DISPLAYLIST_CORES:
          {
             char ext_name[PATH_MAX_LENGTH] = {0};
 
-            info->type_default = MENU_FILE_PLAIN;
+            info->type_default = FILE_TYPE_PLAIN;
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
                strlcpy(info->exts, ext_name, sizeof(info->exts));
          }
          break;
       case DISPLAYLIST_CONFIG_FILES:
-         info->type_default = MENU_FILE_CONFIG;
+         info->type_default = FILE_TYPE_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_SHADER_PRESET:
-         info->type_default = MENU_FILE_SHADER_PRESET;
+         info->type_default = FILE_TYPE_SHADER_PRESET;
          strlcpy(info->exts, "cgp|glslp|slangp", sizeof(info->exts));
          break;
       case DISPLAYLIST_SHADER_PASS:
-         info->type_default = MENU_FILE_SHADER;
+         info->type_default = FILE_TYPE_SHADER;
          strlcpy(info->exts, "cg|glsl|slang", sizeof(info->exts));
          break;
       case DISPLAYLIST_VIDEO_FILTERS:
-         info->type_default = MENU_FILE_VIDEOFILTER;
+         info->type_default = FILE_TYPE_VIDEOFILTER;
          strlcpy(info->exts, "filt", sizeof(info->exts));
          break;
       case DISPLAYLIST_IMAGES:
-         info->type_default = MENU_FILE_IMAGE;
+         info->type_default = FILE_TYPE_IMAGE;
          strlcpy(info->exts, "png|jpg|jpeg|bmp|tga", sizeof(info->exts));
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
-         info->type_default = MENU_FILE_AUDIOFILTER;
+         info->type_default = FILE_TYPE_AUDIOFILTER;
          strlcpy(info->exts, "dsp", sizeof(info->exts));
          break;
       case DISPLAYLIST_CHEAT_FILES:
-         info->type_default = MENU_FILE_CHEAT;
+         info->type_default = FILE_TYPE_CHEAT;
          strlcpy(info->exts, "cht", sizeof(info->exts));
          break;
       case DISPLAYLIST_CONTENT_HISTORY:
-         info->type_default = MENU_FILE_PLAIN;
+         info->type_default = FILE_TYPE_PLAIN;
          strlcpy(info->exts, "lpl", sizeof(info->exts));
          break;
       case DISPLAYLIST_FONTS:
-         info->type_default = MENU_FILE_FONT;
+         info->type_default = FILE_TYPE_FONT;
          strlcpy(info->exts, "ttf", sizeof(info->exts));
          break;
       case DISPLAYLIST_OVERLAYS:
-         info->type_default = MENU_FILE_OVERLAY;
+         info->type_default = FILE_TYPE_OVERLAY;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_RECORD_CONFIG_FILES:
-         info->type_default = MENU_FILE_RECORD_CONFIG;
+         info->type_default = FILE_TYPE_RECORD_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_REMAP_FILES:
-         info->type_default = MENU_FILE_REMAP;
+         info->type_default = FILE_TYPE_REMAP;
          strlcpy(info->exts, "rmp", sizeof(info->exts));
          break;
       default:

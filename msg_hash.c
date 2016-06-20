@@ -139,102 +139,102 @@ enum menu_file_type msg_hash_to_file_type(uint32_t hash)
       case FILE_HASH_ZIP:
       case FILE_HASH_ZIP_UPP:
       case FILE_HASH_APK:
-         return MENU_FILE_COMPRESSED;
+         return FILE_TYPE_COMPRESSED;
       case MENU_VALUE_MORE:
-         return MENU_FILE_MORE;
+         return FILE_TYPE_MORE;
       case MENU_VALUE_CORE:
-         return MENU_FILE_CORE;
+         return FILE_TYPE_CORE;
       case MENU_VALUE_RDB:
-         return MENU_FILE_RDB;
+         return FILE_TYPE_RDB;
       case MENU_VALUE_CURSOR:
-         return MENU_FILE_CURSOR;
+         return FILE_TYPE_CURSOR;
       case MENU_VALUE_FILE:
-         return MENU_FILE_PLAIN;
+         return FILE_TYPE_PLAIN;
       case MENU_VALUE_DIR:
-         return MENU_FILE_DIRECTORY;
+         return FILE_TYPE_DIRECTORY;
       case MENU_VALUE_MUSIC:
-         return MENU_FILE_MUSIC;
+         return FILE_TYPE_MUSIC;
       case MENU_VALUE_IMAGE:
-         return MENU_FILE_IMAGE;
+         return FILE_TYPE_IMAGE;
       case MENU_VALUE_MOVIE:
-         return MENU_FILE_MOVIE;
+         return FILE_TYPE_MOVIE;
       case MENU_VALUE_ON:
-         return MENU_FILE_BOOL_ON;
+         return FILE_TYPE_BOOL_ON;
       case MENU_VALUE_OFF:
-         return MENU_FILE_BOOL_OFF;
+         return FILE_TYPE_BOOL_OFF;
       case MENU_VALUE_GLSL:
-         return MENU_FILE_SHADER_GLSL;
+         return FILE_TYPE_SHADER_GLSL;
       case MENU_VALUE_HLSL:
-         return MENU_FILE_SHADER_HLSL;
+         return FILE_TYPE_SHADER_HLSL;
       case MENU_VALUE_CG:
-         return MENU_FILE_SHADER_HLSL;
+         return FILE_TYPE_SHADER_HLSL;
       case MENU_VALUE_SLANG:
-         return MENU_FILE_SHADER_SLANG;
+         return FILE_TYPE_SHADER_SLANG;
       case MENU_VALUE_GLSLP:
-         return MENU_FILE_SHADER_PRESET_GLSLP;
+         return FILE_TYPE_SHADER_PRESET_GLSLP;
       case MENU_VALUE_HLSLP:
-         return MENU_FILE_SHADER_PRESET_HLSLP;
+         return FILE_TYPE_SHADER_PRESET_HLSLP;
       case MENU_VALUE_CGP:
-         return MENU_FILE_SHADER_PRESET_HLSLP;
+         return FILE_TYPE_SHADER_PRESET_HLSLP;
       case MENU_VALUE_SLANGP:
-         return MENU_FILE_SHADER_PRESET_SLANGP;
+         return FILE_TYPE_SHADER_PRESET_SLANGP;
       case MENU_VALUE_CRC:
-         return MENU_FILE_CRC;
+         return FILE_TYPE_CRC;
       case MENU_VALUE_SHA1:
-         return MENU_FILE_SHA1;
+         return FILE_TYPE_SHA1;
       case MENU_VALUE_MD5:
-         return MENU_FILE_MD5;
+         return FILE_TYPE_MD5;
 #ifdef HAVE_FFMPEG
       case MENU_VALUE_FILE_OGM:
-         return MENU_FILE_OGM;
+         return FILE_TYPE_OGM;
       case MENU_VALUE_FILE_MKV:
-         return MENU_FILE_MKV;
+         return FILE_TYPE_MKV;
       case MENU_VALUE_FILE_AVI:
-         return MENU_FILE_AVI;
+         return FILE_TYPE_AVI;
       case MENU_VALUE_FILE_MP4:
-         return MENU_FILE_MP4;
+         return FILE_TYPE_MP4;
       case MENU_VALUE_FILE_FLV:
-         return MENU_FILE_FLV;
+         return FILE_TYPE_FLV;
       case MENU_VALUE_FILE_WEBM:
-         return MENU_FILE_WEBM;
+         return FILE_TYPE_WEBM;
       case MENU_VALUE_FILE_3GP:
-         return MENU_FILE_3GP;
+         return FILE_TYPE_3GP;
       case MENU_VALUE_FILE_F4F:
-         return MENU_FILE_F4F;
+         return FILE_TYPE_F4F;
       case MENU_VALUE_FILE_F4V:
-         return MENU_FILE_F4V;
+         return FILE_TYPE_F4V;
       case MENU_VALUE_FILE_MOV:
-         return MENU_FILE_MOV;
+         return FILE_TYPE_MOV;
       case MENU_VALUE_FILE_WMV:
-         return MENU_FILE_WMV;
+         return FILE_TYPE_WMV;
       case MENU_VALUE_FILE_MP3:
-         return MENU_FILE_MP3;
+         return FILE_TYPE_MP3;
       case MENU_VALUE_FILE_M4A:
-         return MENU_FILE_M4A;
+         return FILE_TYPE_M4A;
       case MENU_VALUE_FILE_OGG:
-         return MENU_FILE_OGG;
+         return FILE_TYPE_OGG;
       case MENU_VALUE_FILE_FLAC:
-         return MENU_FILE_FLAC;
+         return FILE_TYPE_FLAC;
       case MENU_VALUE_FILE_WAV:
-         return MENU_FILE_WAV;
+         return FILE_TYPE_WAV;
 #endif
 #ifdef HAVE_IMAGEVIEWER
       case MENU_VALUE_FILE_JPG:
       case MENU_VALUE_FILE_JPG_CAPS:
       case MENU_VALUE_FILE_JPEG:
       case MENU_VALUE_FILE_JPEG_CAPS:
-         return MENU_FILE_JPEG;
+         return FILE_TYPE_JPEG;
       case MENU_VALUE_FILE_PNG:
       case MENU_VALUE_FILE_PNG_CAPS:
-         return MENU_FILE_PNG;
+         return FILE_TYPE_PNG;
       case MENU_VALUE_FILE_TGA:
-         return MENU_FILE_TGA;
+         return FILE_TYPE_TGA;
       case MENU_VALUE_FILE_BMP:
-         return MENU_FILE_BMP;
+         return FILE_TYPE_BMP;
 #endif
       default:
          break;
    }
 
-   return MENU_FILE_NONE;
+   return FILE_TYPE_NONE;
 }

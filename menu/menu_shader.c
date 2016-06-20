@@ -86,9 +86,9 @@ void menu_shader_manager_init(menu_handle_t *menu)
 
    switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(settings->path.shader))))
    {
-      case MENU_FILE_SHADER_PRESET_GLSLP:
-      case MENU_FILE_SHADER_PRESET_CGP:
-      case MENU_FILE_SHADER_PRESET_SLANGP:
+      case FILE_TYPE_SHADER_PRESET_GLSLP:
+      case FILE_TYPE_SHADER_PRESET_CGP:
+      case FILE_TYPE_SHADER_PRESET_SLANGP:
          conf = config_file_new(settings->path.shader);
          if (conf)
          {
@@ -101,9 +101,9 @@ void menu_shader_manager_init(menu_handle_t *menu)
             config_file_free(conf);
          }
          break;
-      case MENU_FILE_SHADER_GLSL:
-      case MENU_FILE_SHADER_CG:
-      case MENU_FILE_SHADER_SLANG:
+      case FILE_TYPE_SHADER_GLSL:
+      case FILE_TYPE_SHADER_CG:
+      case FILE_TYPE_SHADER_SLANG:
          strlcpy(shader->pass[0].source.path, settings->path.shader,
                sizeof(shader->pass[0].source.path));
          shader->passes = 1;

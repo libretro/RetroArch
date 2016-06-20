@@ -272,7 +272,7 @@ static bool menu_entries_elem_is_dir(file_list_t *list,
 
    menu_entries_get_at_offset(list, offset, NULL, NULL, &type, NULL, NULL);
 
-   return type == MENU_FILE_DIRECTORY;
+   return type == FILE_TYPE_DIRECTORY;
 }
 
 /**

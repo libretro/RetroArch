@@ -551,24 +551,24 @@ static void mui_render_label_value(mui_handle_t *mui,
    {
       switch (msg_hash_to_file_type(msg_hash_calculate(value)))
       {
-         case MENU_FILE_COMPRESSED:
-         case MENU_FILE_MORE:
-         case MENU_FILE_CORE:
-         case MENU_FILE_RDB:
-         case MENU_FILE_CURSOR:
-         case MENU_FILE_PLAIN:
-         case MENU_FILE_DIRECTORY:
-         case MENU_FILE_MUSIC:
-         case MENU_FILE_IMAGE:
-         case MENU_FILE_MOVIE:
+         case FILE_TYPE_COMPRESSED:
+         case FILE_TYPE_MORE:
+         case FILE_TYPE_CORE:
+         case FILE_TYPE_RDB:
+         case FILE_TYPE_CURSOR:
+         case FILE_TYPE_PLAIN:
+         case FILE_TYPE_DIRECTORY:
+         case FILE_TYPE_MUSIC:
+         case FILE_TYPE_IMAGE:
+         case FILE_TYPE_MOVIE:
             break;
-         case MENU_FILE_BOOL_ON:
+         case FILE_TYPE_BOOL_ON:
             if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
             else
                do_draw_text = true;
             break;
-         case MENU_FILE_BOOL_OFF:
+         case FILE_TYPE_BOOL_OFF:
             if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
             else

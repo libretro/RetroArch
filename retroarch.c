@@ -569,33 +569,33 @@ enum rarch_content_type retroarch_path_is_media_type(const char *path)
    switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(path))))
    {
 #ifdef HAVE_FFMPEG
-      case MENU_FILE_OGM:
-      case MENU_FILE_MKV:
-      case MENU_FILE_AVI:
-      case MENU_FILE_MP4:
-      case MENU_FILE_FLV:
-      case MENU_FILE_WEBM:
-      case MENU_FILE_3GP:
-      case MENU_FILE_F4F:
-      case MENU_FILE_F4V:
-      case MENU_FILE_MOV:
-      case MENU_FILE_WMV:
+      case FILE_TYPE_OGM:
+      case FILE_TYPE_MKV:
+      case FILE_TYPE_AVI:
+      case FILE_TYPE_MP4:
+      case FILE_TYPE_FLV:
+      case FILE_TYPE_WEBM:
+      case FILE_TYPE_3GP:
+      case FILE_TYPE_F4F:
+      case FILE_TYPE_F4V:
+      case FILE_TYPE_MOV:
+      case FILE_TYPE_WMV:
          return RARCH_CONTENT_MOVIE;
-      case MENU_FILE_MP3:
-      case MENU_FILE_M4A:
-      case MENU_FILE_OGG:
-      case MENU_FILE_FLAC:
-      case MENU_FILE_WAV:
+      case FILE_TYPE_MP3:
+      case FILE_TYPE_M4A:
+      case FILE_TYPE_OGG:
+      case FILE_TYPE_FLAC:
+      case FILE_TYPE_WAV:
          return RARCH_CONTENT_MUSIC;
 #endif
 #ifdef HAVE_IMAGEVIEWER
-      case MENU_FILE_JPEG:
-      case MENU_FILE_PNG:
-      case MENU_FILE_TGA:
-      case MENU_FILE_BMP:
+      case FILE_TYPE_JPEG:
+      case FILE_TYPE_PNG:
+      case FILE_TYPE_TGA:
+      case FILE_TYPE_BMP:
          return RARCH_CONTENT_IMAGE;
 #endif
-      case MENU_FILE_NONE:
+      case FILE_TYPE_NONE:
       default:
          break;
    }

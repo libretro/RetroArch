@@ -2430,7 +2430,7 @@ int menu_setting_set_flags(rarch_setting_t *setting)
       case ST_ACTION:
          return MENU_SETTING_ACTION;
       case ST_PATH:
-         return MENU_FILE_PATH;
+         return FILE_TYPE_PATH;
       case ST_GROUP:
          return MENU_SETTING_GROUP;
       case ST_SUB_GROUP:

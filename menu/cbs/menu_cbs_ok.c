@@ -235,13 +235,13 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          break;
       case ACTION_OK_DL_DOWNLOADS_DIR:
-         info.type          = MENU_FILE_DIRECTORY;
+         info.type          = FILE_TYPE_DIRECTORY;
          info.directory_ptr = idx;
          info_path          = settings->directory.core_assets;
          info_label         = label;
          break;
       case ACTION_OK_DL_CONTENT_LIST:
-         info.type          = MENU_FILE_DIRECTORY;
+         info.type          = FILE_TYPE_DIRECTORY;
          info.directory_ptr = idx;
          info_path          = settings->directory.menu_content;
          info_label         = label;
@@ -1475,7 +1475,7 @@ static int action_ok_file_load(const char *path,
    if (menu_setting_get_type(setting) == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
 
-   if (type == MENU_FILE_IN_CARCHIVE)
+   if (type == FILE_TYPE_IN_CARCHIVE)
       fill_pathname_join_delim(full_path_new, menu_path_new, path,
             '#',sizeof(full_path_new));
    else
@@ -2995,7 +2995,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
-         case MENU_FILE_PLAYLIST_ENTRY:
+         case FILE_TYPE_PLAYLIST_ENTRY:
             if (label_hash == MENU_LABEL_COLLECTION)
             {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
@@ -3003,25 +3003,25 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             else
                BIND_ACTION_OK(cbs, action_ok_playlist_entry);
             break;
-         case MENU_FILE_RPL_ENTRY:
+         case FILE_TYPE_RPL_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_rpl_entry);
             break;
-         case MENU_FILE_PLAYLIST_COLLECTION:
+         case FILE_TYPE_PLAYLIST_COLLECTION:
             BIND_ACTION_OK(cbs, action_ok_playlist_collection);
             break;
-         case MENU_FILE_CONTENTLIST_ENTRY:
+         case FILE_TYPE_CONTENTLIST_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_push_generic_list);
             break;
-         case MENU_FILE_CHEAT:
+         case FILE_TYPE_CHEAT:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_load);
             break;
-         case MENU_FILE_RECORD_CONFIG:
+         case FILE_TYPE_RECORD_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_record_configfile_load);
             break;
-         case MENU_FILE_REMAP:
+         case FILE_TYPE_REMAP:
             BIND_ACTION_OK(cbs, action_ok_remap_file_load);
             break;
-         case MENU_FILE_SHADER_PRESET:
+         case FILE_TYPE_SHADER_PRESET:
             switch (menu_label_hash)
             {
                case MENU_LABEL_SCAN_FILE:
@@ -3031,7 +3031,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   break;
             }
             break;
-         case MENU_FILE_SHADER:
+         case FILE_TYPE_SHADER:
             switch (menu_label_hash)
             {
                case MENU_LABEL_SCAN_FILE:
@@ -3041,7 +3041,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   break;
             }
             break;
-         case MENU_FILE_IMAGE:
+         case FILE_TYPE_IMAGE:
             switch (menu_label_hash)
             {
                case MENU_LABEL_SCAN_FILE:
@@ -3051,24 +3051,24 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   break;
             }
             break;
-         case MENU_FILE_USE_DIRECTORY:
+         case FILE_TYPE_USE_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_path_use_directory);
             break;
 #ifdef HAVE_LIBRETRODB
-         case MENU_FILE_SCAN_DIRECTORY:
+         case FILE_TYPE_SCAN_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_path_scan_directory);
             break;
 #endif
-         case MENU_FILE_CONFIG:
+         case FILE_TYPE_CONFIG:
             BIND_ACTION_OK(cbs, action_ok_config_load);
             break;
-         case MENU_FILE_PARENT_DIRECTORY:
+         case FILE_TYPE_PARENT_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_parent_directory_push);
             break;
-         case MENU_FILE_DIRECTORY:
+         case FILE_TYPE_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_directory_push);
             break;
-         case MENU_FILE_CARCHIVE:
+         case FILE_TYPE_CARCHIVE:
             switch (menu_label_hash)
             {
                case MENU_LABEL_DETECT_CORE_LIST:
@@ -3081,7 +3081,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   break;
             }
             break;
-         case MENU_FILE_CORE:
+         case FILE_TYPE_CORE:
             if (cbs && cbs->enum_idx != MSG_UNKNOWN)
             {
                switch (cbs->enum_idx)
@@ -3110,24 +3110,24 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                }
             }
             break;
-         case MENU_FILE_DOWNLOAD_CORE_CONTENT:
+         case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_core_content_download);
             break;
-         case MENU_FILE_DOWNLOAD_THUMBNAIL_CONTENT:
+         case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_core_content_thumbnails);
             break;
-         case MENU_FILE_DOWNLOAD_CORE:
+         case FILE_TYPE_DOWNLOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_core_updater_download);
             break;
-         case MENU_FILE_DOWNLOAD_THUMBNAIL:
+         case FILE_TYPE_DOWNLOAD_THUMBNAIL:
             BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_download);
             break;
-         case MENU_FILE_DOWNLOAD_LAKKA:
+         case FILE_TYPE_DOWNLOAD_LAKKA:
             BIND_ACTION_OK(cbs, action_ok_lakka_download);
             break;
-         case MENU_FILE_DOWNLOAD_CORE_INFO:
+         case FILE_TYPE_DOWNLOAD_CORE_INFO:
             break;
-         case MENU_FILE_RDB:
+         case FILE_TYPE_RDB:
             switch (menu_label_hash)
             {
                case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
@@ -3139,10 +3139,10 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   break;
             }
             break;
-         case MENU_FILE_RDB_ENTRY:
+         case FILE_TYPE_RDB_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_rdb_entry);
             break;
-         case MENU_FILE_CURSOR:
+         case FILE_TYPE_CURSOR:
             switch (menu_label_hash)
             {
                case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
@@ -3153,16 +3153,16 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   break;
             }
             break;
-         case MENU_FILE_FONT:
-         case MENU_FILE_OVERLAY:
-         case MENU_FILE_AUDIOFILTER:
-         case MENU_FILE_VIDEOFILTER:
+         case FILE_TYPE_FONT:
+         case FILE_TYPE_OVERLAY:
+         case FILE_TYPE_AUDIOFILTER:
+         case FILE_TYPE_VIDEOFILTER:
             BIND_ACTION_OK(cbs, action_ok_set_path);
             break;
 #ifdef HAVE_COMPRESSION
-         case MENU_FILE_IN_CARCHIVE:
+         case FILE_TYPE_IN_CARCHIVE:
 #endif
-         case MENU_FILE_PLAIN:
+         case FILE_TYPE_PLAIN:
             switch (menu_label_hash)
             {
 #ifdef HAVE_LIBRETRODB
@@ -3174,7 +3174,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                case MENU_LABEL_DETECT_CORE_LIST:
                case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
 #ifdef HAVE_COMPRESSION
-                  if (type == MENU_FILE_IN_CARCHIVE)
+                  if (type == FILE_TYPE_IN_CARCHIVE)
                   {
                      BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
                   }
@@ -3192,8 +3192,8 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   break;
             }
             break;
-         case MENU_FILE_MOVIE:
-         case MENU_FILE_MUSIC:
+         case FILE_TYPE_MOVIE:
+         case FILE_TYPE_MUSIC:
 #ifdef HAVE_FFMPEG
             switch (menu_label_hash)
             {
@@ -3205,7 +3205,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
 #endif
             break;
-         case MENU_FILE_IMAGEVIEWER:
+         case FILE_TYPE_IMAGEVIEWER:
             switch (menu_label_hash)
             {
                case MENU_LABEL_SCAN_FILE:

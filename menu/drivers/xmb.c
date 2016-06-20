@@ -1271,7 +1271,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.list         = xmb->horizontal_list;
    info.menu_list    = NULL;
    info.type         = 0;
-   info.type_default = MENU_FILE_PLAIN;
+   info.type_default = FILE_TYPE_PLAIN;
    info.flags        = SL_FLAG_ALLOW_EMPTY_LIST;
    info.enum_idx     = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
    strlcpy(info.label,
@@ -1542,29 +1542,29 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
    switch(type)
    {
-      case MENU_FILE_DIRECTORY:
+      case FILE_TYPE_DIRECTORY:
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
-      case MENU_FILE_PLAIN:
+      case FILE_TYPE_PLAIN:
          return xmb->textures.list[XMB_TEXTURE_FILE];
-      case MENU_FILE_RPL_ENTRY:
+      case FILE_TYPE_RPL_ENTRY:
          if (core_node)
             return core_node->content_icon;
          return xmb->textures.list[XMB_TEXTURE_FILE];
-      case MENU_FILE_CARCHIVE:
+      case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
-      case MENU_FILE_MUSIC:
+      case FILE_TYPE_MUSIC:
          return xmb->textures.list[XMB_TEXTURE_MUSIC];
-      case MENU_FILE_IMAGEVIEWER:
+      case FILE_TYPE_IMAGEVIEWER:
          return xmb->textures.list[XMB_TEXTURE_IMAGE];
-      case MENU_FILE_MOVIE:
+      case FILE_TYPE_MOVIE:
          return xmb->textures.list[XMB_TEXTURE_MOVIE];
-      case MENU_FILE_CORE:
+      case FILE_TYPE_CORE:
          return xmb->textures.list[XMB_TEXTURE_CORE];
-      case MENU_FILE_RDB:
+      case FILE_TYPE_RDB:
          return xmb->textures.list[XMB_TEXTURE_RDB];
-      case MENU_FILE_CURSOR:
+      case FILE_TYPE_CURSOR:
          return xmb->textures.list[XMB_TEXTURE_CURSOR];
-      case MENU_FILE_PLAYLIST_ENTRY:
+      case FILE_TYPE_PLAYLIST_ENTRY:
       case MENU_SETTING_ACTION_RUN:
          return xmb->textures.list[XMB_TEXTURE_RUN];
       case MENU_SETTING_ACTION_CLOSE:
@@ -1573,7 +1573,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_SETTING_ACTION_LOADSTATE:
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
-      case MENU_FILE_RDB_ENTRY:
+      case FILE_TYPE_RDB_ENTRY:
       case MENU_SETTING_ACTION_CORE_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
       case MENU_SETTING_ACTION_CORE_OPTIONS:
@@ -1675,7 +1675,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       menu_entry_get(&entry, 0, i, list, true);
 
 
-      if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
+      if (entry.type == FILE_TYPE_CONTENTLIST_ENTRY)
          fill_short_pathname_representation(entry.path, entry.path,
                sizeof(entry.path));
 
@@ -1700,24 +1700,24 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       {
          switch (msg_hash_to_file_type(msg_hash_calculate(entry.value)))
          {
-            case MENU_FILE_COMPRESSED:
-            case MENU_FILE_MORE:
-            case MENU_FILE_CORE:
-            case MENU_FILE_RDB:
-            case MENU_FILE_CURSOR:
-            case MENU_FILE_PLAIN:
-            case MENU_FILE_DIRECTORY:
-            case MENU_FILE_MUSIC:
-            case MENU_FILE_IMAGE:
-            case MENU_FILE_MOVIE:
+            case FILE_TYPE_COMPRESSED:
+            case FILE_TYPE_MORE:
+            case FILE_TYPE_CORE:
+            case FILE_TYPE_RDB:
+            case FILE_TYPE_CURSOR:
+            case FILE_TYPE_PLAIN:
+            case FILE_TYPE_DIRECTORY:
+            case FILE_TYPE_MUSIC:
+            case FILE_TYPE_IMAGE:
+            case FILE_TYPE_MOVIE:
                break;
-            case MENU_FILE_BOOL_ON:
+            case FILE_TYPE_BOOL_ON:
                if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
                   texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
                else
                   do_draw_text = true;
                break;
-            case MENU_FILE_BOOL_OFF:
+            case FILE_TYPE_BOOL_OFF:
                if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
                   texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
                else

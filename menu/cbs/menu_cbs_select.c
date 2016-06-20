@@ -164,10 +164,10 @@ static int menu_cbs_init_bind_select_compare_type(
    {
       switch (type)
       {
-         case MENU_FILE_DIRECTORY:
+         case FILE_TYPE_DIRECTORY:
             BIND_ACTION_SELECT(cbs, action_select_directory);
             break;
-         case MENU_FILE_USE_DIRECTORY:
+         case FILE_TYPE_USE_DIRECTORY:
             BIND_ACTION_SELECT(cbs, action_select_path_use_directory);
             break;
          default:

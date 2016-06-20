@@ -386,7 +386,7 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-   info->type_default = MENU_FILE_PLAIN;
+   info->type_default = FILE_TYPE_PLAIN;
 
    switch (id)
    {
@@ -1084,7 +1084,7 @@ static int menu_cbs_init_bind_deferred_push_compare_type(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_category);
    }
-   else if (type == MENU_FILE_PLAYLIST_COLLECTION)
+   else if (type == FILE_TYPE_PLAYLIST_COLLECTION)
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_collection);
    }

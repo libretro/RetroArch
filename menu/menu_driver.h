@@ -173,7 +173,7 @@ enum rarch_menu_ctl_state
 
 enum menu_settings_type
 {
-   MENU_SETTINGS_NONE       = MENU_FILE_TYPE_T_LAST + 1,
+   MENU_SETTINGS_NONE       = FILE_TYPE_LAST + 1,
    MENU_SETTINGS,
    MENU_SETTINGS_TAB,
    MENU_HISTORY_TAB,
