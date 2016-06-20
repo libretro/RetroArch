@@ -260,7 +260,8 @@ bool task_push_decompress(
 
    /* ZIP or APK only */
    if (!path_file_exists(source_file) || 
-         !menu_hash_to_file_type(msg_hash_calculate(path_get_extension(source_file))))
+         menu_hash_to_file_type(msg_hash_calculate(path_get_extension(source_file))) 
+         != MENU_FILE_COMPRESSED)
    {
       RARCH_WARN("[decompress] File '%s' does not exist or is not a compressed file.\n",
             source_file);
