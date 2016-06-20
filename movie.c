@@ -84,7 +84,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
    if (fread(header, sizeof(uint32_t), 4, handle->file) != 4)
    {
-      RARCH_ERR("Couldn't read movie header.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_COULD_NOT_READ_MOVIE_HEADER));
       return false;
    }
 
@@ -100,7 +100,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
    content_get_crc(&content_crc_ptr);
 
    if (swap_if_big32(header[CRC_INDEX]) != *content_crc_ptr)
-      RARCH_WARN("CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.\n");
+      RARCH_WARN("%s.\n", msg_hash_to_str(MSG_CRC32_CHECKSUM_MISMATCH));
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
 
@@ -129,7 +129,8 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
          core_unserialize(&serial_info);
       }
       else
-         RARCH_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
+         RARCH_WARN("%s\n",
+               msg_hash_to_str(MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION));
    }
 
    handle->min_file_pos = sizeof(header) + state_size;

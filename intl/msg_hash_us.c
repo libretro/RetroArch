@@ -1982,8 +1982,18 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Reverting savefile directory to";
       case MSG_REVERTING_SAVESTATE_DIRECTORY_TO:
          return "Reverting savestate directory to";
+      case MSG_COULD_NOT_READ_MOVIE_HEADER:
+         return "Could not read movie header.";
+      case MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION:
+         return "Movie format seems to have a different serializer version. Will most likely fail.";
+      case MSG_CRC32_CHECKSUM_MISMATCH:
+         return "CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.";
       case MSG_ERROR_PARSING_ARGUMENTS:
          return "Error parsing arguments.";
+      case MSG_FAILED_TO_PATCH:
+         return "Failed to patch";
+      case MSG_CONTENT_PATCHED_SUCCESSFULLY_IN:
+         return "Content patched successfully";
       case MSG_FATAL_ERROR_RECEIVED_IN:
          return "Fatal error received in";
       case MSG_MOVIE_RECORD_STOPPED:

@@ -29,6 +29,7 @@
 #include <retro_stat.h>
 #include <string/stdstring.h>
 
+#include "msg_hash.h"
 #include "patch.h"
 #include "runloop.h"
 #include "verbosity.h"
@@ -548,11 +549,15 @@ static bool apply_patch_content(uint8_t **buf,
 
    if (err == PATCH_SUCCESS)
    {
-      RARCH_LOG("Content patched successfully (%s).\n", patch_desc);
+      RARCH_LOG("%s (%s).\n",
+            msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
+            patch_desc);
       success = true;
    }
    else
-      RARCH_ERR("Failed to patch %s: Error #%u\n", patch_desc,
+      RARCH_ERR("%s %s: Error #%u\n",
+            msg_hash_to_str(MSG_FAILED_TO_PATCH),
+            patch_desc,
             (unsigned)err);
 
    if (success)
