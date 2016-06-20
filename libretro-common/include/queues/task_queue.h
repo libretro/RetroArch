@@ -182,8 +182,6 @@ typedef struct task_retriever_data
    task_retriever_info_t *list;
 } task_retriever_data_t;
 
-void task_queue_push_progress(retro_task_t *task);
-
 bool task_queue_ctl(enum task_queue_ctl_state state, void *data);
 
 void *task_queue_retriever_info_next(task_retriever_info_t **link);

@@ -129,7 +129,6 @@ OBJ += frontend/frontend.o \
        runloop.o \
 		 libretro-common/algorithms/mismatch.o \
        libretro-common/queues/task_queue.o \
-       tasks/tasks_internal.o \
        tasks/task_content.o \
 		 tasks/task_save_ram.o \
 		 tasks/task_save_state.o \

@@ -756,7 +756,6 @@ RETROARCH
 #include "../retroarch.c"
 #include "../runloop.c"
 #include "../libretro-common/queues/task_queue.c"
-#include "../tasks/tasks_internal.c"
 
 #include "../msg_hash.c"
 #ifdef HAVE_LANGEXTRA

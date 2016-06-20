@@ -52,7 +52,6 @@ struct retro_task_impl
 static task_queue_t tasks_running  = {NULL, NULL};
 static task_queue_t tasks_finished = {NULL, NULL};
 
-#ifndef RARCH_INTERNAL
 static void task_queue_msg_push(unsigned prio, unsigned duration,
       bool flush, const char *fmt, ...)
 {
@@ -66,7 +65,7 @@ static void task_queue_msg_push(unsigned prio, unsigned duration,
    /* print something here */
 }
 
-void task_queue_push_progress(retro_task_t *task)
+static void task_queue_push_progress(retro_task_t *task)
 {
    if (task->title)
    {
@@ -88,7 +87,6 @@ void task_queue_push_progress(retro_task_t *task)
       }
    }
 }
-#endif
 
 static void task_queue_put(task_queue_t *queue, retro_task_t *task)
 {
@@ -114,7 +112,6 @@ static retro_task_t *task_queue_get(task_queue_t *queue)
 
    return task;
 }
-
 
 static void retro_task_internal_gather(void)
 {
