@@ -46,275 +46,6 @@ static void sanitize_to_string(char *s, const char *label, size_t len)
    replace_chars(s, '_', ' ');
 }
 
-static int fill_title(char *s, const char *title, const char *path, size_t len)
-{
-   fill_pathname_join_delim(s, title, path, ' ', len);
-   return 0;
-}
-
-static int action_get_title_disk_image_append(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Disk Append", path, len);
-}
-
-static int action_get_title_cheat_file_load(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Cheat File", path, len);
-}
-
-static int action_get_title_remap_file_load(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Remap File", path, len);
-}
-
-static int action_get_title_help(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_LIST), len);
-   return 0;
-}
-
-static int action_get_title_overlay(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Overlay", path, len);
-}
-
-static int action_get_title_video_filter(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER), path, len);
-}
-
-static int action_get_title_cheat_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH), path, len);
-}
-
-static int action_get_title_core_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH), path, len);
-}
-
-static int action_get_title_core_info_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH), path, len);
-}
-
-static int action_get_title_audio_filter(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
-}
-
-static int action_get_title_font_path(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Font", path, len);
-}
-
-static int action_get_xmb_font_path(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Font", path, len);
-}
-
-static int action_get_title_video_shader_preset(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Shader Preset", path, len);
-}
-
-static int action_get_title_generic(char *s, size_t len, const char *path,
-      const char *text)
-{
-   struct string_list *list_path    = NULL;
-   
-   if (!string_is_empty(path))
-      list_path = string_split(path, "|");
-
-   if (list_path)
-   {
-      char elem0_path[PATH_MAX_LENGTH] = {0};
-      if (list_path->size > 0)
-         strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
-      string_list_free(list_path);
-      snprintf(s, len, "%s - %s", text,
-            (string_is_empty(elem0_path)) ? "" : path_basename(elem0_path));
-   }
-   else
-      strlcpy(s, "N/A", len);
-
-   return 0;
-}
-
-static int action_get_title_deferred_database_manager_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION));
-}
-
-static int action_get_title_deferred_cursor_manager_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List");
-}
-
-static int action_get_title_list_rdb_entry_developer(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Developer ");
-}
-
-static int action_get_title_list_rdb_entry_publisher(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Publisher ");
-}
-
-static int action_get_title_list_rdb_entry_origin(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Origin ");
-}
-
-static int action_get_title_list_rdb_entry_franchise(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Franchise ");
-}
-
-static int action_get_title_list_rdb_entry_edge_magazine_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Edge Magazine Rating ");
-}
-
-static int action_get_title_list_rdb_entry_edge_magazine_issue(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Edge Magazine Issue ");
-}
-
-static int action_get_title_list_rdb_entry_releasedate_by_month(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Releasedate By Month ");
-}
-
-static int action_get_title_list_rdb_entry_releasedate_by_year(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Releasedate By Year ");
-}
-
-static int action_get_title_list_rdb_entry_esrb_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: ESRB Rating ");
-}
-
-static int action_get_title_list_rdb_entry_database_info(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Info ");
-}
-
-static int action_get_title_list_rdb_entry_elspa_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Databsae Cursor List - Filter: ELSPA Rating ");
-}
-
-static int action_get_title_list_rdb_entry_pegi_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: PEGI Rating ");
-}
-
-static int action_get_title_list_rdb_entry_cero_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: CERO Rating ");
-}
-
-static int action_get_title_list_rdb_entry_bbfc_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: BBFC Rating ");
-}
-
-static int action_get_title_list_rdb_entry_max_users(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Max Users ");
-}
-
-static int action_get_title_deferred_core_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Supported Cores", path, len);
-}
-
-static int action_get_title_default(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   snprintf(s, len, "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT), path);
-   return 0;
-}
-
-static int action_get_title_group_settings(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TAB), len);
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU), len);
-   else
-   {
-      char elem0[PATH_MAX_LENGTH]    = {0};
-      char elem1[PATH_MAX_LENGTH]    = {0};
-      struct string_list *list_label = string_split(label, "|");
-
-      if (list_label)
-      {
-         if (list_label->size > 0)
-         {
-            strlcpy(elem0, list_label->elems[0].data, sizeof(elem0));
-            if (list_label->size > 1)
-               strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
-         }
-         string_list_free(list_label);
-      }
-
-      strlcpy(s, elem0, len);
-
-      if (!string_is_empty(elem1))
-      {
-         strlcat(s, " - ", len);
-         strlcat(s, elem1, len);
-      }
-   }
-
-   return 0;
-}
-
 static int action_get_user_accounts_cheevos_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -546,6 +277,91 @@ static int action_get_title_action_generic(const char *path, const char *label,
    return 0;
 }
 
+static int fill_title(char *s, const char *title, const char *path, size_t len)
+{
+   fill_pathname_join_delim(s, title, path, ' ', len);
+   return 0;
+}
+
+static int action_get_title_disk_image_append(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, "Disk Append", path, len);
+}
+
+static int action_get_title_cheat_file_load(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, "Cheat File", path, len);
+}
+
+static int action_get_title_remap_file_load(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, "Remap File", path, len);
+}
+
+static int action_get_title_overlay(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, "Overlay", path, len);
+}
+
+static int action_get_title_video_filter(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER), path, len);
+}
+
+static int action_get_title_cheat_directory(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH), path, len);
+}
+
+static int action_get_title_core_directory(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH), path, len);
+}
+
+static int action_get_title_core_info_directory(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH), path, len);
+}
+
+static int action_get_title_audio_filter(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
+}
+
+static int action_get_title_font_path(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, "Font", path, len);
+}
+
+static int action_get_xmb_font_path(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, "Font", path, len);
+}
+
+static int action_get_title_video_shader_preset(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, "Shader Preset", path, len);
+}
+
+static int action_get_title_deferred_core_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, "Supported Cores", path, len);
+}
+
 static int action_get_title_configurations(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -712,6 +528,191 @@ static int action_get_title_menu(const char *path, const char *label,
    return fill_title(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS), path, len);
 }
+
+static int action_get_title_help(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_LIST), len);
+   return 0;
+}
+
+static int action_get_title_generic(char *s, size_t len, const char *path,
+      const char *text)
+{
+   struct string_list *list_path    = NULL;
+   
+   if (!string_is_empty(path))
+      list_path = string_split(path, "|");
+
+   if (list_path)
+   {
+      char elem0_path[PATH_MAX_LENGTH] = {0};
+      if (list_path->size > 0)
+         strlcpy(elem0_path, list_path->elems[0].data, sizeof(elem0_path));
+      string_list_free(list_path);
+      snprintf(s, len, "%s - %s", text,
+            (string_is_empty(elem0_path)) ? "" : path_basename(elem0_path));
+   }
+   else
+      strlcpy(s, "N/A", len);
+
+   return 0;
+}
+
+static int action_get_title_deferred_database_manager_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION));
+}
+
+static int action_get_title_deferred_cursor_manager_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List");
+}
+
+static int action_get_title_list_rdb_entry_developer(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Developer ");
+}
+
+static int action_get_title_list_rdb_entry_publisher(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Publisher ");
+}
+
+static int action_get_title_list_rdb_entry_origin(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Origin ");
+}
+
+static int action_get_title_list_rdb_entry_franchise(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Franchise ");
+}
+
+static int action_get_title_list_rdb_entry_edge_magazine_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Edge Magazine Rating ");
+}
+
+static int action_get_title_list_rdb_entry_edge_magazine_issue(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Edge Magazine Issue ");
+}
+
+static int action_get_title_list_rdb_entry_releasedate_by_month(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Releasedate By Month ");
+}
+
+static int action_get_title_list_rdb_entry_releasedate_by_year(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Releasedate By Year ");
+}
+
+static int action_get_title_list_rdb_entry_esrb_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: ESRB Rating ");
+}
+
+static int action_get_title_list_rdb_entry_database_info(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Info ");
+}
+
+static int action_get_title_list_rdb_entry_elspa_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Databsae Cursor List - Filter: ELSPA Rating ");
+}
+
+static int action_get_title_list_rdb_entry_pegi_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: PEGI Rating ");
+}
+
+static int action_get_title_list_rdb_entry_cero_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: CERO Rating ");
+}
+
+static int action_get_title_list_rdb_entry_bbfc_rating(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: BBFC Rating ");
+}
+
+static int action_get_title_list_rdb_entry_max_users(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Max Users ");
+}
+
+static int action_get_title_default(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT), path);
+   return 0;
+}
+
+static int action_get_title_group_settings(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TAB), len);
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU), len);
+   else
+   {
+      char elem0[PATH_MAX_LENGTH]    = {0};
+      char elem1[PATH_MAX_LENGTH]    = {0};
+      struct string_list *list_label = string_split(label, "|");
+
+      if (list_label)
+      {
+         if (list_label->size > 0)
+         {
+            strlcpy(elem0, list_label->elems[0].data, sizeof(elem0));
+            if (list_label->size > 1)
+               strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
+         }
+         string_list_free(list_label);
+      }
+
+      strlcpy(s, elem0, len);
+
+      if (!string_is_empty(elem1))
+      {
+         strlcat(s, " - ", len);
+         strlcat(s, elem1, len);
+      }
+   }
+
+   return 0;
+}
+
 
 static int action_get_title_input_settings(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
