@@ -277,6 +277,11 @@ static int deferred_push_core_content_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_CORE_CONTENT);
 }
 
+static int deferred_push_core_content_dirs_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_CORE_CONTENT_DIRS);
+}
+
 static int deferred_push_lakka_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_LAKKA);
@@ -661,6 +666,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST:
 #ifdef HAVE_NETWORKING
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
+#endif
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST:
+#ifdef HAVE_NETWORKING
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_dirs_list);
 #endif
                break;
             case MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST:

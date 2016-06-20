@@ -2035,6 +2035,13 @@ static int action_ok_core_content_list(const char *path,
          MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
 } 
 
+static int action_ok_core_content_dirs_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_network(path, label, type, idx, entry_idx,
+         MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST);
+} 
+
 static int action_ok_core_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2691,6 +2698,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_NETWORKING
          case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_core_content_list);
+            break;
+         case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS:
+            BIND_ACTION_OK(cbs, action_ok_core_content_dirs_list);
             break;
          case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
             BIND_ACTION_OK(cbs, action_ok_core_updater_list);

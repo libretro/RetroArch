@@ -1354,6 +1354,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "deferred_lakka_list";
       case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT:
          return "download_core_content";
+      case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS:
+         return "download_core_content_dirs";
       case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
          return "scan_this_directory";
       case MENU_ENUM_LABEL_SCAN_FILE:

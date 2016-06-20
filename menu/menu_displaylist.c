@@ -3674,6 +3674,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_DATABASE_QUERY:
       case DISPLAYLIST_OPTIONS_SHADERS:
       case DISPLAYLIST_CORE_CONTENT:
+      case DISPLAYLIST_CORE_CONTENT_DIRS:
       case DISPLAYLIST_PLAYLIST_COLLECTION:
       case DISPLAYLIST_HISTORY:
       case DISPLAYLIST_OPTIONS_DISK:
@@ -4424,6 +4425,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_CORE_CONTENT:
+#ifdef HAVE_NETWORKING
+         print_buf_lines(info->list, core_buf,
+               core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT);
+         info->need_push    = true;
+         info->need_refresh = true;
+#endif
+         break;
+      case DISPLAYLIST_CORE_CONTENT_DIRS:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf,
                core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT);
