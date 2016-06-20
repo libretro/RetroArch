@@ -19,6 +19,30 @@ const char *file_path_str(enum file_path_enum enum_idx)
 {
    switch (enum_idx)
    {
+      case FILE_PATH_INDEX_URL:
+         return ".index";
+      case FILE_PATH_INDEX_EXTENDED_URL:
+         return ".index-extended";
+      case FILE_PATH_CORE_THUMBNAILS_URL:
+         return "http://thumbnailpacks.libretro.com";
+      case FILE_PATH_LAKKA_URL:
+         return "http://mirror.lakka.tv/nightly";
+      case FILE_PATH_SHADERS_GLSL_ZIP:
+         return "shaders_glsl.zip";
+      case FILE_PATH_SHADERS_CG_ZIP:
+         return "shaders_cg.zip";
+      case FILE_PATH_DATABASE_RDB_ZIP:
+         return "database-rdb.zip";
+      case FILE_PATH_OVERLAYS_ZIP:
+         return "overlays.zip";
+      case FILE_PATH_CORE_INFO_ZIP:
+         return "info.zip";
+      case FILE_PATH_CHEATS_ZIP:
+         return "cheats.zip";
+      case FILE_PATH_ASSETS_ZIP:
+         return "assets.zip";
+      case FILE_PATH_AUTOCONFIG_ZIP:
+         return "autoconfig.zip";
       case FILE_PATH_CONTENT_HISTORY:
          return "content_history.lpl";
       case FILE_PATH_CORE_OPTIONS_CONFIG:

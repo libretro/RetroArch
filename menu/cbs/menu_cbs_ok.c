@@ -1713,36 +1713,36 @@ static int action_ok_download_generic(const char *path,
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
 #ifdef HAVE_LAKKA
          /* TODO unhardcode this path*/
-         fill_pathname_join(s, "http://mirror.lakka.tv/nightly",
+         fill_pathname_join(s, file_path_str(FILE_PATH_LAKKA_URL),
                LAKKA_PROJECT, sizeof(s));
 #endif
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
-         path = "assets.zip";
+         path = file_path_str(FILE_PATH_ASSETS_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
-         path = "autoconfig.zip";
+         path = file_path_str(FILE_PATH_AUTOCONFIG_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
-         path = "info.zip";
+         path = file_path_str(FILE_PATH_CORE_INFO_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
-         path = "cheats.zip";
+         path = file_path_str(FILE_PATH_CHEATS_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
-         path = "overlays.zip";
+         path = file_path_str(FILE_PATH_OVERLAYS_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
-         path = "database-rdb.zip";
+         path = file_path_str(FILE_PATH_DATABASE_RDB_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
-         path = "shaders_glsl.zip";
+         path = file_path_str(FILE_PATH_SHADERS_GLSL_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
-         path = "shaders_cg.zip";
+         path = file_path_str(FILE_PATH_SHADERS_CG_ZIP);
          break;
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         strlcpy(s, "http://thumbnailpacks.libretro.com", sizeof(s));
+         strlcpy(s, file_path_str(FILE_PATH_CORE_THUMBNAILS_URL), sizeof(s));
          break;
       default:
          strlcpy(s, settings->network.buildbot_url, sizeof(s));
@@ -1975,15 +1975,15 @@ static int generic_action_ok_network(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
          fill_pathname_join(url_path, settings->network.buildbot_url,
-               ".index-extended", sizeof(url_path));
+               file_path_str(FILE_PATH_INDEX_EXTENDED_URL), sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
          callback  = cb_net_generic;
          break;
       case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
-               "http://thumbnailpacks.libretro.com",
-               ".index", sizeof(url_path));
+               file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
+               file_path_str(FILE_PATH_INDEX_URL), sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
          callback  = cb_net_generic;
@@ -1991,10 +1991,12 @@ static int generic_action_ok_network(const char *path,
 #ifdef HAVE_LAKKA
       case MENU_ENUM_LABEL_CB_LAKKA_LIST:
          /* TODO unhardcode this path */
-         fill_pathname_join(url_path, "http://mirror.lakka.tv/nightly",
+         fill_pathname_join(url_path, 
+               file_path_str(FILE_PATH_LAKKA_URL),
                LAKKA_PROJECT, sizeof(url_path));
          fill_pathname_join(url_path, url_path,
-               ".index", sizeof(url_path));
+               file_path_str(FILE_PATH_INDEX_URL),
+               sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_LAKKA_LIST;
          callback  = cb_net_generic;
