@@ -564,7 +564,6 @@ const char *retroarch_get_current_savefile_dir(void)
    return ret;
 }
 
-#ifdef HAVE_MENU
 enum rarch_content_type retroarch_path_is_media_type(const char *path)
 {
    switch (menu_hash_to_file_type(msg_hash_calculate(path_get_extension(path))))
@@ -603,7 +602,6 @@ enum rarch_content_type retroarch_path_is_media_type(const char *path)
 
    return RARCH_CONTENT_NONE;
 }
-#endif
 
 #define FFMPEG_RECORD_ARG "r:"
 
@@ -1301,7 +1299,6 @@ bool retroarch_main_init(int argc, char *argv[])
    runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
 
    {
-#ifdef HAVE_MENU
       settings_t *settings = config_get_ptr();
 
       if (settings && (settings->multimedia.builtin_mediaplayer_enable ||
@@ -1339,7 +1336,6 @@ bool retroarch_main_init(int argc, char *argv[])
             }
          }
       }
-#endif
    }
    
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
