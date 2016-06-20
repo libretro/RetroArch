@@ -661,9 +661,9 @@ static int content_file_compressed_read(
       if (*length != -1)
          ret = 1;
    }
+#endif
 
    string_list_free(str_list);
-#endif
    return ret;
 
 error:
