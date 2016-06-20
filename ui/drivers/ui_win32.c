@@ -41,11 +41,8 @@
 #include <retro_inline.h>
 #include <file/file_path.h>
 
-#ifdef HAVE_MENU
-#include "../../menu/menu_hash.h"
-#endif
-
 #include "../ui_companion_driver.h"
+#include "../../msg_hash.h"
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../../gfx/video_context_driver.h"
