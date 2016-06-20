@@ -223,7 +223,7 @@ enum menu_file_type msg_hash_to_file_type(uint32_t hash)
       case MENU_VALUE_HLSL:
          return FILE_TYPE_SHADER_HLSL;
       case MENU_VALUE_CG:
-         return FILE_TYPE_SHADER_HLSL;
+         return FILE_TYPE_SHADER_CG;
       case MENU_VALUE_SLANG:
          return FILE_TYPE_SHADER_SLANG;
       case MENU_VALUE_GLSLP:
@@ -231,7 +231,7 @@ enum menu_file_type msg_hash_to_file_type(uint32_t hash)
       case MENU_VALUE_HLSLP:
          return FILE_TYPE_SHADER_PRESET_HLSLP;
       case MENU_VALUE_CGP:
-         return FILE_TYPE_SHADER_PRESET_HLSLP;
+         return FILE_TYPE_SHADER_PRESET_CGP;
       case MENU_VALUE_SLANGP:
          return FILE_TYPE_SHADER_PRESET_SLANGP;
       case MENU_VALUE_CRC:
