@@ -25,7 +25,8 @@
 enum file_path_enum
 {
    FILE_PATH_UNKNOWN = 0,
-   FILE_PATH_CONTENT_HISTORY
+   FILE_PATH_CONTENT_HISTORY,
+   FILE_PATH_MAIN_CONFIG
 };
 
 enum application_special_type

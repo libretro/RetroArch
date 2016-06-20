@@ -1127,7 +1127,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    strlcpy(g_defaults.dir.core, "D:", sizeof(g_defaults.dir.core));
    strlcpy(g_defaults.dir.core_info, "D:", sizeof(g_defaults.dir.core_info));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.core,
-         "retroarch.cfg", sizeof(g_defaults.path.config));
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
    fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
          "savestates", sizeof(g_defaults.dir.savestate));
    fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,

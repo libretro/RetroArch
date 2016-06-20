@@ -941,7 +941,7 @@ static config_file_t *open_default_config_file(void)
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
    fill_pathname_resolve_relative(conf_path, app_path,
-         "retroarch.cfg", sizeof(conf_path));
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
 
    conf = config_file_new(conf_path);
 
@@ -951,7 +951,7 @@ static config_file_t *open_default_config_file(void)
             sizeof(application_data)))
       {
          fill_pathname_join(conf_path, application_data,
-               "retroarch.cfg", sizeof(conf_path));
+               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
          conf = config_file_new(conf_path);
       }
    }
@@ -969,7 +969,7 @@ static config_file_t *open_default_config_file(void)
          /* Since this is a clean config file, we can
           * safely use config_save_on_exit. */
          fill_pathname_resolve_relative(conf_path, app_path,
-               "retroarch.cfg", sizeof(conf_path));
+               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
          config_set_bool(conf, "config_save_on_exit", true);
          saved = config_file_write(conf, conf_path);
       }
@@ -993,7 +993,7 @@ static config_file_t *open_default_config_file(void)
    path_mkdir(application_data);
 
    fill_pathname_join(conf_path, application_data,
-         "retroarch.cfg", sizeof(conf_path));
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
    conf = config_file_new(conf_path);
 
    if (!conf)
@@ -1027,7 +1027,7 @@ static config_file_t *open_default_config_file(void)
    if (has_application_data)
    {
       fill_pathname_join(conf_path, application_data,
-            "retroarch.cfg", sizeof(conf_path));
+            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
    }
@@ -1051,7 +1051,7 @@ static config_file_t *open_default_config_file(void)
 
       fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
 
-      fill_pathname_join(conf_path, conf_path, "retroarch.cfg", sizeof(conf_path));
+      fill_pathname_join(conf_path, conf_path, file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
 
       if (path_mkdir(basedir))
       {
@@ -1059,7 +1059,7 @@ static config_file_t *open_default_config_file(void)
          char skeleton_conf[PATH_MAX_LENGTH] = {0};
 
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
-               "retroarch.cfg", sizeof(skeleton_conf));
+               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(skeleton_conf));
          conf = config_file_new(skeleton_conf);
          if (conf)
             RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);

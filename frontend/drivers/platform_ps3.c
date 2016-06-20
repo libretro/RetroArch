@@ -33,6 +33,7 @@
 #endif
 
 #include "../frontend_driver.h"
+#include "../../file_path_special.h"
 #include "../../defines/ps3_defines.h"
 #include "../../defaults.h"
 #include "../../verbosity.h"
@@ -221,7 +222,7 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       fill_pathname_join(g_defaults.dir.shader,  g_defaults.dir.core,
             "shaders_cg", sizeof(g_defaults.dir.shader));
       fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
-            "retroarch.cfg",  sizeof(g_defaults.path.config));
+            file_path_str(FILE_PATH_MAIN_CONFIG),  sizeof(g_defaults.path.config));
       fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
             "overlays", sizeof(g_defaults.dir.overlay));
       fill_pathname_join(g_defaults.dir.assets,   g_defaults.dir.core,

@@ -425,17 +425,3 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
          break;
    }
 }
-
-const char *file_path_str(enum file_path_enum enum_idx)
-{
-   switch (enum_idx)
-   {
-      case FILE_PATH_CONTENT_HISTORY:
-         return "content_history.lpl";
-      case FILE_PATH_UNKNOWN:
-      default:
-         break;
-   }
-
-   return "null";
-}
