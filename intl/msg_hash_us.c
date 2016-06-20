@@ -1978,6 +1978,16 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "RetroArch";
       case MSG_LIBRETRO_FRONTEND:
          return "Frontend for libretro";
+      case MSG_LOADING:
+         return "Loading";
+      case MSG_FAILED_TO_LOAD:
+         return "Failed to load";
+      case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
+         return "Libretro core requires content, but nothing was provided.";
+      case MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT:
+         return "Content loading skipped. Implementation will load it on its own.";
+      case MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT:
+         return "Libretro core requires special content, but none were provided.";
       case MSG_REVERTING_SAVEFILE_DIRECTORY_TO:
          return "Reverting savefile directory to";
       case MSG_REVERTING_SAVESTATE_DIRECTORY_TO:
