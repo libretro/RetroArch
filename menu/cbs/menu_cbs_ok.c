@@ -2285,13 +2285,9 @@ static int action_ok_start_core(const char *path,
 {
    /* No content needed for this core, load core immediately. */
    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
-   {
-      content_ctx_info_t content_info = {0};
-      task_push_content_load_default(NULL, NULL,
-            &content_info, CORE_TYPE_PLAIN,
-            CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU,
-            NULL, NULL);
-   }
+      return generic_action_ok_file_load(NULL, NULL, label, type, idx,
+            entry_idx, CORE_TYPE_PLAIN,
+            CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU);
 
    return 0;
 }
