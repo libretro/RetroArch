@@ -1980,6 +1980,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Frontend for libretro";
       case MSG_LOADING:
          return "Loading";
+      case MSG_VERSION_OF_LIBRETRO_API:
+         return "Version of libretro API";
+      case MSG_COMPILED_AGAINST_API:
+         return "Compiled against API";
       case MSG_FAILED_TO_LOAD:
          return "Failed to load";
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
