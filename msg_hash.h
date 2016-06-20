@@ -103,6 +103,9 @@ enum menu_file_type
    FILE_TYPE_TGA,
    FILE_TYPE_BMP,
 
+   FILE_TYPE_CUE,
+   FILE_TYPE_ISO,
+
    FILE_TYPE_LAST
 };
 

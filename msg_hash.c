@@ -181,6 +181,12 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_SLANG                                                       0x105ce63aU
 #define MENU_VALUE_SLANGP                                                      0x1bf9adeaU
 
+#define HASH_EXTENSION_ZIP             0x0b88c7d8U
+#define HASH_EXTENSION_CUE             0x0b886782U
+#define HASH_EXTENSION_CUE_UPPERCASE   0x0b87db22U
+#define HASH_EXTENSION_ISO             0x0b8880d0U
+#define HASH_EXTENSION_ISO_UPPERCASE   0x0b87f470U
+
 enum menu_file_type msg_hash_to_file_type(uint32_t hash)
 {
    switch (hash)
@@ -282,6 +288,12 @@ enum menu_file_type msg_hash_to_file_type(uint32_t hash)
       case MENU_VALUE_FILE_BMP:
          return FILE_TYPE_BMP;
 #endif
+      case HASH_EXTENSION_CUE:
+      case HASH_EXTENSION_CUE_UPPERCASE:
+         return FILE_TYPE_CUE;
+      case HASH_EXTENSION_ISO:
+      case HASH_EXTENSION_ISO_UPPERCASE:
+         return FILE_TYPE_ISO;
       default:
          break;
    }
