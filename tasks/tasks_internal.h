@@ -27,6 +27,7 @@
 
 #include "../content.h"
 #include "../core_type.h"
+#include "../msg_hash.h"
 
 RETRO_BEGIN_DECLS
 
@@ -85,7 +86,8 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
 task_retriever_info_t *http_task_get_transfer_list(void);
 #endif
 
-bool task_push_image_load(const char *fullpath, const char *type,
+bool task_push_image_load(const char *fullpath,
+      enum msg_hash_enums enum_idx,
       retro_task_callback_t cb, void *userdata);
 
 #ifdef HAVE_LIBRETRODB
