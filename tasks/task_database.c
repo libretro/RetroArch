@@ -31,6 +31,7 @@
 #include "../list_special.h"
 #include "../msg_hash.h"
 #include "../playlist.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 
 #define CB_DB_SCAN_FILE                0x70ce56d2U

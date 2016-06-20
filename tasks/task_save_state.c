@@ -31,7 +31,9 @@
 #include <file/file_path.h>
 
 #include "../core.h"
+#include "../configuration.h"
 #include "../msg_hash.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
 

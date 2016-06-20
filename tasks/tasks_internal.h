@@ -23,12 +23,14 @@
 
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
+#include <formats/image.h>
 
 #include "../content.h"
 #include "../core_type.h"
-#include "../runloop.h"
 
 RETRO_BEGIN_DECLS
+
+typedef int (*transfer_cb_t)(void *data, size_t len);
 
 enum content_mode_load
 {
@@ -74,6 +76,7 @@ typedef struct nbio_handle
    msg_queue_t *msg_queue;
    unsigned status;
 } nbio_handle_t;
+
 
 #ifdef HAVE_NETWORKING
 void *task_push_http_transfer(const char *url, bool mute, const char *type,
