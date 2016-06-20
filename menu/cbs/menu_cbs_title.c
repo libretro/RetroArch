@@ -158,7 +158,8 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
 static int action_get_title_deferred_database_manager_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return action_get_title_generic(s, len, path, "Database Selection");
+   return action_get_title_generic(s, len, path,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION));
 }
 
 static int action_get_title_deferred_cursor_manager_list(const char *path, const char *label, 
@@ -575,7 +576,8 @@ static int action_get_title_dynamic_wallpapers_directory(const char *path, const
 static int action_get_title_core_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "Core Assets Dir", path, len);
+   return fill_title(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR), path, len);
 }
 
 static int action_get_title_config_directory(const char *path, const char *label, 
@@ -616,7 +618,8 @@ static int action_get_title_browser_directory(const char *path, const char *labe
 static int action_get_title_content_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, "Content Dir", path, len);
+   return fill_title(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_DIR), path, len);
 }
 
 static int action_get_title_screenshot_directory(const char *path, const char *label, 

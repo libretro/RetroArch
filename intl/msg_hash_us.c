@@ -2416,6 +2416,12 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "<None>";
       case MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE:
          return "N/A";
+      case MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION:
+         return "Database Selection";
+      case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR:
+         return "Core Assets Dir";
+      case MENU_ENUM_LABEL_VALUE_CONTENT_DIR:
+         return "Content Dir";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
          return "Input Remapping Dir";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
