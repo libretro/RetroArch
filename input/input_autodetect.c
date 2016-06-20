@@ -73,7 +73,7 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       autoconfig_params_t *params)
 {
-   int tmp_int;
+   int tmp_int                        = 0;
    char ident[PATH_MAX_LENGTH]        = {0};
    char input_driver[PATH_MAX_LENGTH] = {0};
    int                      input_vid = 0;
