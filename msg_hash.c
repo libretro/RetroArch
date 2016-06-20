@@ -131,6 +131,56 @@ uint32_t msg_hash_calculate(const char *s)
 #define FILE_HASH_ZIP_UPP     0x0b883b78U
 #define FILE_HASH_APK         0x0b885e61U
 
+#define MENU_VALUE_FILE_WEBM                                                   0x7ca00b50U
+#define MENU_VALUE_FILE_F4F                                                    0x0b886be5U
+#define MENU_VALUE_FILE_F4V                                                    0x0b886bf5U
+#define MENU_VALUE_FILE_OGM                                                    0x0b8898c8U
+#define MENU_VALUE_FILE_MKV                                                    0x0b8890d3U
+#define MENU_VALUE_FILE_AVI                                                    0x0b885f25U
+#define MENU_VALUE_FILE_M4A                                                    0x0b8889a7U
+#define MENU_VALUE_FILE_3GP                                                    0x0b87998fU
+#define MENU_VALUE_FILE_MP4                                                    0x0b889136U
+#define MENU_VALUE_FILE_MP3                                                    0x0b889135U
+#define MENU_VALUE_FILE_FLAC                                                   0x7c96d67bU
+#define MENU_VALUE_FILE_OGG                                                    0x0b8898c2U
+#define MENU_VALUE_FILE_FLV                                                    0x0b88732dU
+#define MENU_VALUE_FILE_WAV                                                    0x0b88ba13U
+#define MENU_VALUE_FILE_MOV                                                    0x0b889157U
+#define MENU_VALUE_FILE_WMV                                                    0x0b88bb9fU
+
+#define MENU_VALUE_FILE_JPG                                                    0x0b8884a6U
+#define MENU_VALUE_FILE_JPEG                                                   0x7c99198bU
+#define MENU_VALUE_FILE_JPG_CAPS                                               0x0b87f846U
+#define MENU_VALUE_FILE_JPEG_CAPS                                              0x7c87010bU
+#define MENU_VALUE_FILE_PNG                                                    0x0b889deaU
+#define MENU_VALUE_FILE_PNG_CAPS                                               0x0b88118aU
+#define MENU_VALUE_FILE_TGA                                                    0x0b88ae01U
+#define MENU_VALUE_FILE_BMP                                                    0x0b886244U
+
+#define MENU_VALUE_MD5                                                         0x0b888fabU
+#define MENU_VALUE_SHA1                                                        0x7c9de632U
+#define MENU_VALUE_CRC                                                         0x0b88671dU
+#define MENU_VALUE_MORE                                                        0x0b877cafU
+#define MENU_VALUE_ON                                                          0x005974c2U
+#define MENU_VALUE_OFF                                                         0x0b880c40U
+#define MENU_VALUE_COMP                                                        0x6a166ba5U
+#define MENU_VALUE_MUSIC                                                       0xc4a73997U
+#define MENU_VALUE_IMAGE                                                       0xbab7ebf9U
+#define MENU_VALUE_MOVIE                                                       0xc43c4bf6U
+#define MENU_VALUE_CORE                                                        0x6a167f7fU
+#define MENU_VALUE_CURSOR                                                      0x57bba8b4U
+#define MENU_VALUE_FILE                                                        0x6a496536U
+#define MENU_VALUE_RDB                                                         0x0b00f54eU
+#define MENU_VALUE_DIR                                                         0x0af95f55U
+#define MENU_VALUE_GLSLP                                                       0x0f840c87U
+#define MENU_VALUE_CGP                                                         0x0b8865bfU
+#define MENU_VALUE_GLSL                                                        0x7c976537U
+#define MENU_VALUE_HLSL                                                        0x7c97f198U
+#define MENU_VALUE_HLSLP                                                       0x0f962508U
+#define MENU_VALUE_CG                                                          0x0059776fU
+#define MENU_VALUE_SLANG                                                       0x105ce63aU
+#define MENU_VALUE_SLANGP                                                      0x1bf9adeaU
+
 enum menu_file_type msg_hash_to_file_type(uint32_t hash)
 {
    switch (hash)
