@@ -21,6 +21,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
    {
       case FILE_PATH_INDEX_URL:
          return ".index";
+      case FILE_PATH_INDEX_DIRS_URL:
+         return ".index-dirs";
       case FILE_PATH_INDEX_EXTENDED_URL:
          return ".index-extended";
       case FILE_PATH_CORE_THUMBNAILS_URL:
