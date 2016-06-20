@@ -127,9 +127,6 @@ uint32_t msg_hash_calculate(const char *s)
    return djb2_calculate(s);
 }
 
-#define FILE_HASH_ZIP         0x0b88c7d8U
-#define FILE_HASH_ZIP_UPP     0x0b883b78U
-#define FILE_HASH_APK         0x0b885e61U
 
 #define MENU_VALUE_FILE_WEBM                                                   0x7ca00b50U
 #define MENU_VALUE_FILE_F4F                                                    0x0b886be5U
@@ -181,19 +178,22 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_SLANG                                                       0x105ce63aU
 #define MENU_VALUE_SLANGP                                                      0x1bf9adeaU
 
-#define HASH_EXTENSION_ZIP             0x0b88c7d8U
-#define HASH_EXTENSION_CUE             0x0b886782U
-#define HASH_EXTENSION_CUE_UPPERCASE   0x0b87db22U
-#define HASH_EXTENSION_ISO             0x0b8880d0U
-#define HASH_EXTENSION_ISO_UPPERCASE   0x0b87f470U
+#define FILE_HASH_APK                                                          0x0b885e61U
+
+#define HASH_EXTENSION_ZIP                                                     0x0b88c7d8U
+#define HASH_EXTENSION_ZIP_UPP                                                 0x0b883b78U
+#define HASH_EXTENSION_CUE                                                     0x0b886782U
+#define HASH_EXTENSION_CUE_UPPERCASE                                           0x0b87db22U
+#define HASH_EXTENSION_ISO                                                     0x0b8880d0U
+#define HASH_EXTENSION_ISO_UPPERCASE                                           0x0b87f470U
 
 enum menu_file_type msg_hash_to_file_type(uint32_t hash)
 {
    switch (hash)
    {
       case MENU_VALUE_COMP:
-      case FILE_HASH_ZIP:
-      case FILE_HASH_ZIP_UPP:
+      case HASH_EXTENSION_ZIP:
+      case HASH_EXTENSION_ZIP_UPP:
       case FILE_HASH_APK:
          return FILE_TYPE_COMPRESSED;
       case MENU_VALUE_MORE:
