@@ -1984,6 +1984,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Reverting savestate directory to";
       case MSG_COULD_NOT_READ_MOVIE_HEADER:
          return "Could not read movie header.";
+      case MSG_FAILED_TO_OPEN_LIBRETRO_CORE:
+         return "Failed to open libretro core";
+      case MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER:
+         return "Could not find any next driver";
       case MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION:
          return "Movie format seems to have a different serializer version. Will most likely fail.";
       case MSG_CRC32_CHECKSUM_MISMATCH:

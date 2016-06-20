@@ -190,7 +190,9 @@ bool driver_find_next(const char *label, char *s, size_t len)
       find_driver_nonempty(label, i + 1, s, len);
    else
    {
-      RARCH_WARN("Couldn't find any next driver (current one: \"%s\").\n", s);
+      RARCH_WARN("%s (current one: \"%s\").\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER),
+            s);
       return false;
    }
    return true;
