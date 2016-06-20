@@ -158,17 +158,17 @@ bool cheat_manager_save(const char *path)
       char code_key[256]   = {0};
       char enable_key[256] = {0};
 
-      snprintf(key, sizeof(key), "cheat%u", i);
-      snprintf(desc_key, sizeof(desc_key), "cheat%u_desc", i);
-      snprintf(code_key, sizeof(code_key), "cheat%u_code", i);
+      snprintf(key,        sizeof(key),        "cheat%u",        i);
+      snprintf(desc_key,   sizeof(desc_key),   "cheat%u_desc",   i);
+      snprintf(code_key,   sizeof(code_key),   "cheat%u_code",   i);
       snprintf(enable_key, sizeof(enable_key), "cheat%u_enable", i);
 
       if (handle->cheats[i].desc)
-         config_set_string(conf, desc_key, handle->cheats[i].desc);
+         config_set_string(conf, desc_key,   handle->cheats[i].desc);
       else
-         config_set_string(conf, desc_key, handle->cheats[i].code);
-      config_set_string(conf, code_key, handle->cheats[i].code);
-      config_set_bool(conf, enable_key, handle->cheats[i].state);
+         config_set_string(conf, desc_key,   handle->cheats[i].code);
+      config_set_string(conf,    code_key,   handle->cheats[i].code);
+      config_set_bool(conf,      enable_key, handle->cheats[i].state);
    }
 
    ret = config_file_write(conf, cheats_file);
@@ -237,9 +237,9 @@ bool cheat_manager_load(const char *path)
       char *tmp            = NULL;
       bool tmp_bool        = false;
 
-      snprintf(key, sizeof(key), "cheat%u", i);
-      snprintf(desc_key, sizeof(desc_key), "cheat%u_desc", i);
-      snprintf(code_key, sizeof(code_key), "cheat%u_code", i);
+      snprintf(key,        sizeof(key),        "cheat%u",        i);
+      snprintf(desc_key,   sizeof(desc_key),   "cheat%u_desc",   i);
+      snprintf(code_key,   sizeof(code_key),   "cheat%u_code",   i);
       snprintf(enable_key, sizeof(enable_key), "cheat%u_enable", i);
 
       if (config_get_string(conf, desc_key, &tmp))
