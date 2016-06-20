@@ -174,68 +174,6 @@ static int deferred_push_database_manager_list_deferred(
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 }
 
-static int deferred_push_cursor_manager_list_deferred(
-      menu_displaylist_info_t *info)
-{
-   char rdb_path[PATH_MAX_LENGTH] = {0};
-   int ret                        = -1;
-   char *query                    = NULL;
-   char *rdb                      = NULL;
-   settings_t *settings           = config_get_ptr();
-   config_file_t *conf            = config_file_new(info->path);
-
-   if (!conf || !settings)
-      goto end;
-
-   if (!config_get_string(conf, "query", &query))
-      goto end;
-
-   if (!config_get_string(conf, "rdb", &rdb))
-      goto end;
-
-   fill_pathname_join(rdb_path, settings->path.content_database,
-         rdb, sizeof(rdb_path));
-
-   strlcpy(info->path_b, info->path, sizeof(info->path_b));
-   strlcpy(info->path,   rdb_path,   sizeof(info->path));
-   strlcpy(info->path_c,    query,   sizeof(info->path_c));
-
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
-
-end:
-   if (conf)
-      config_file_free(conf);
-   free(rdb);
-   free(query);
-   return ret;
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_subsearch(
-      menu_displaylist_info_t *info)
-{
-   int ret                       = -1;
-#ifdef HAVE_LIBRETRODB
-   char query[PATH_MAX_LENGTH]   = {0};
-   struct string_list *str_list  = string_split(info->path, "|"); 
-
-   database_info_build_query(query, sizeof(query),
-         info->label, str_list->elems[0].data);
-
-   if (string_is_empty(query))
-      goto end;
-
-   strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
-   strlcpy(info->path_c, query, sizeof(info->path_c));
-
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
-
-end:
-   string_list_free(str_list);
-#endif
-   return ret;
-}
-
 static int deferred_push_video_shader_preset_parameters(
       menu_displaylist_info_t *info)
 {
@@ -355,6 +293,69 @@ static int deferred_archive_action(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_ARCHIVE_ACTION);
 }
+
+static int deferred_push_cursor_manager_list_deferred(
+      menu_displaylist_info_t *info)
+{
+   char rdb_path[PATH_MAX_LENGTH] = {0};
+   int ret                        = -1;
+   char *query                    = NULL;
+   char *rdb                      = NULL;
+   settings_t *settings           = config_get_ptr();
+   config_file_t *conf            = config_file_new(info->path);
+
+   if (!conf || !settings)
+      goto end;
+
+   if (!config_get_string(conf, "query", &query))
+      goto end;
+
+   if (!config_get_string(conf, "rdb", &rdb))
+      goto end;
+
+   fill_pathname_join(rdb_path, settings->path.content_database,
+         rdb, sizeof(rdb_path));
+
+   strlcpy(info->path_b, info->path, sizeof(info->path_b));
+   strlcpy(info->path,   rdb_path,   sizeof(info->path));
+   strlcpy(info->path_c,    query,   sizeof(info->path_c));
+
+   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+
+end:
+   if (conf)
+      config_file_free(conf);
+   free(rdb);
+   free(query);
+   return ret;
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_subsearch(
+      menu_displaylist_info_t *info)
+{
+   int ret                       = -1;
+#ifdef HAVE_LIBRETRODB
+   char query[PATH_MAX_LENGTH]   = {0};
+   struct string_list *str_list  = string_split(info->path, "|"); 
+
+   database_info_build_query(query, sizeof(query),
+         info->label, str_list->elems[0].data);
+
+   if (string_is_empty(query))
+      goto end;
+
+   strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
+   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
+   strlcpy(info->path_c, query, sizeof(info->path_c));
+
+   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+
+end:
+   string_list_free(str_list);
+#endif
+   return ret;
+}
+
 
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
