@@ -144,13 +144,7 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_XMB_GRADIENT                                                0x18e63099U
 #define MENU_LABEL_XMB_RIBBON_ENABLE                                           0x8e89c3edU
 
-#define MENU_LABEL_SSH_ENABLE                                                  0xd9854a79U
-#define MENU_LABEL_SAMBA_ENABLE                                                0x379e15efU
-#define MENU_LABEL_BLUETOOTH_ENABLE                                            0xbac1e1e1U
-#define MENU_LABEL_SORT_SAVEFILES_ENABLE                                       0xed0d0df4U
-#define MENU_LABEL_SORT_SAVESTATES_ENABLE                                      0x66ff2495U
 #define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
-
 
 /* Video settings */
 #define MENU_LABEL_VIDEO_FONT_PATH                                             0xd0de729eU
@@ -260,13 +254,8 @@ RETRO_BEGIN_DECLS
 /* RDB settings */
 
 #define MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE                               0x8888c5acU
-#define MENU_LABEL_RDB_ENTRY_ANALOG                                            0x9081c2ffU
-#define MENU_LABEL_RDB_ENTRY_RUMBLE                                            0xb8ae8ad4U
-#define MENU_LABEL_RDB_ENTRY_COOP                                              0x7c953ff6U
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
-#define MENU_LABEL_RDB_ENTRY_DESCRIPTION                                       0x26aa1f71U
 #define MENU_LABEL_RDB_ENTRY_GENRE                                             0x9fefab3eU
-#define MENU_LABEL_RDB_ENTRY_NAME                                              0xc6ccf92eU
 #define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
 #define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
 #define MENU_LABEL_RDB_ENTRY_ORIGIN                                            0xb176aad5U
@@ -279,17 +268,10 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_RDB_ENTRY_CERO_RATING                                       0x9d436f5aU
 #define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING                              0x9735f631U
 #define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE                               0xd5706415U
-#define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW                              0x977f6fdeU
 #define MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING                           0x01a50315U
-#define MENU_LABEL_RDB_ENTRY_TGDB_RATING                                       0x225a9d72U
 #define MENU_LABEL_RDB_ENTRY_RELEASE_MONTH                                     0xad2f2c54U
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
 #define MENU_LABEL_RDB_ENTRY_MAX_USERS                                         0xfae91cc4U
-#define MENU_LABEL_RDB_ENTRY_SHA1                                              0xc6cfd31aU
-#define MENU_LABEL_RDB_ENTRY_MD5                                               0xdf3c7f93U
-#define MENU_LABEL_RDB_ENTRY_CRC32                                             0x9fae330aU
-
-#define MENU_LABEL_SYSTEM_BGM_ENABLE                                           0x9287a1c5U
 
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
