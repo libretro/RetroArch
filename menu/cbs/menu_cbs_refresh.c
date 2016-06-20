@@ -15,7 +15,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_hash.h"
 
 #ifndef BIND_ACTION_REFRESH
 #define BIND_ACTION_REFRESH(cbs, name) \

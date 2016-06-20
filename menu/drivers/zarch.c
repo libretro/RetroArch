@@ -44,7 +44,6 @@
 #include "../menu_entry.h"
 #include "../menu_display.h"
 #include "../menu_navigation.h"
-#include "../menu_hash.h"
 #include "../../retroarch.h"
 
 #include "../../gfx/font_driver.h"

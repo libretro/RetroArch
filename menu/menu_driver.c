@@ -24,7 +24,6 @@
 #include "menu_cbs.h"
 #include "menu_display.h"
 #include "menu_navigation.h"
-#include "menu_hash.h"
 #include "menu_shader.h"
 
 #include "../content.h"

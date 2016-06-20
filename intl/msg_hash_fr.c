@@ -30,6 +30,24 @@
 /* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
 extern const char force_iso_8859_1[sizeof("äÄöÖßüÜ")==7+1 ? 1 : -1];
 
+int menu_hash_get_help_fr(uint32_t hash, char *s, size_t len)
+{
+   int ret = 0;
+   /* If this one throws errors, stop sledgehammering square pegs into round holes and */
+   /* READ THE COMMENTS at the top of the file. */
+   (void)sizeof(force_iso_8859_1);
+
+   switch (hash)
+   {
+      case 0:
+      default:
+         ret = -1;
+         break;
+   }
+
+   return ret;
+}
+
 const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
 {
    switch (msg)

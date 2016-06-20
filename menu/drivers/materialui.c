@@ -33,7 +33,6 @@
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 #include "../menu_navigation.h"
-#include "../menu_hash.h"
 #include "../menu_display.h"
 
 #include "../../core_info.h"

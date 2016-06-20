@@ -26,7 +26,6 @@
 #include "../command.h"
 #include "../input/input_driver.h"
 
-#include "menu_hash.h"
 #include "../msg_hash.h"
 
 RETRO_BEGIN_DECLS

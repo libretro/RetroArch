@@ -21,7 +21,6 @@
 #include "../menu_animation.h"
 #include "../menu_cbs.h"
 #include "../menu_shader.h"
-#include "../menu_hash.h"
 
 #include "../../input/input_autodetect.h"
 #include "../../input/input_config.h"

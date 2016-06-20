@@ -22,7 +22,6 @@
 #include <retro_common_api.h>
 #include <lists/file_list.h>
 
-#include "menu_hash.h"
 #include "../msg_hash.h"
 
 #ifndef COLLECTION_SIZE

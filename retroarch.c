@@ -76,7 +76,6 @@
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_content.h"
-#include "menu/menu_hash.h"
 #endif
 
 #include "config.features.h"

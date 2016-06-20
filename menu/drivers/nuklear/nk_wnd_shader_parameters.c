@@ -27,7 +27,6 @@
 #include <lists/string_list.h>
 
 #include "../../menu_driver.h"
-#include "../../menu_hash.h"
 
 #include "../../../gfx/common/gl_common.h"
 #include "../../../core_info.h"

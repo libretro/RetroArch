@@ -29,7 +29,6 @@
 #include "nk_menu.h"
 
 #include "../../menu_driver.h"
-#include "../../menu_hash.h"
 #include "../../frontend/frontend_driver.h"
 
 static bool assets_loaded;

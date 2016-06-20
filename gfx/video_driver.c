@@ -42,7 +42,6 @@
 #include "../msg_hash.h"
 
 #ifdef HAVE_MENU
-#include "../menu/menu_hash.h"
 #include "../menu/menu_setting.h"
 #endif
 

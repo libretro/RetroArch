@@ -21,7 +21,6 @@
 #include <file/file_path.h>
 
 #include "menu_driver.h"
-#include "menu_hash.h"
 #include "menu_shader.h"
 #include "../configuration.h"
 #include "../runloop.h"

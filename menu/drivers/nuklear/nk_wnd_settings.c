@@ -27,7 +27,6 @@
 #include <lists/string_list.h>
 
 #include "../../menu_driver.h"
-#include "../../menu_hash.h"
 
 void nk_wnd_settings(nk_menu_handle_t *nk)
 {

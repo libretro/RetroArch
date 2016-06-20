@@ -21,7 +21,6 @@
 #include <boolean.h>
 
 #include "menu_entries.h"
-#include "menu_hash.h"
 
 enum
 {

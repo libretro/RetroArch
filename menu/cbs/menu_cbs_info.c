@@ -18,7 +18,6 @@
 #include "../menu_driver.h"
 #include "../menu_navigation.h"
 #include "../menu_cbs.h"
-#include "../menu_hash.h"
 
 #ifndef BIND_ACTION_INFO
 #define BIND_ACTION_INFO(cbs, name) \

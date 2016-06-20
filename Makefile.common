@@ -486,20 +486,8 @@ ifeq ($(HAVE_MENU_COMMON), 1)
       PSEUDO_NS :=
    endif
 
-ifeq ($(HAVE_LANGEXTRA), 1)
-OBJ +=	 menu/intl/menu_hash_de.o \
-          menu/intl/menu_hash_es.o \
-          menu/intl/menu_hash_eo.o \
-          menu/intl/menu_hash_fr.o \
-          menu/intl/menu_hash_it.o \
-          menu/intl/menu_hash_nl.o \
-          menu/intl/menu_hash_pl.o \
-          menu/intl/menu_hash_pt.o
-endif
-   OBJ += menu/menu_hash.o \
-          menu/menu_driver.o \
+   OBJ += menu/menu_driver.o \
           menu/menu_content.o \
-          menu/intl/menu_hash_us$(PSEUDO_NS).o \
           menu/menu_input.o \
           menu/menu_entry.o \
           menu/menu_entries.o \
