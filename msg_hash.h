@@ -1904,8 +1904,6 @@ enum msg_hash_enums
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
 
-#define MENU_VALUE_NO_CORE                                                     0x7d5472cbU
-
 const char *msg_hash_to_str(enum msg_hash_enums msg);
 
 const char *msg_hash_to_str_fr(enum msg_hash_enums msg);

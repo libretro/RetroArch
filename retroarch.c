@@ -413,6 +413,8 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
    }
 }
 
+#define MENU_VALUE_NO_CORE 0x7d5472cbU
+
 static void retroarch_set_paths_redirect(void)
 {
    char current_savestate_dir[PATH_MAX_LENGTH] = {0};
