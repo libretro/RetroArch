@@ -177,8 +177,10 @@ static void retroarch_print_version(void)
 {
    char str[PATH_MAX_LENGTH] = {0};
 
-   fprintf(stderr, "%s: Frontend for libretro -- v%s",
-         msg_hash_to_str(MSG_PROGRAM), PACKAGE_VERSION);
+   fprintf(stderr, "%s: %s -- v%s",
+         msg_hash_to_str(MSG_PROGRAM),
+         msg_hash_to_str(MSG_LIBRETRO_FRONTEND),
+         PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
    printf(" -- %s --\n", retroarch_git_version);
 #endif
@@ -403,10 +405,7 @@ static void retroarch_set_paths_redirect(void)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (!global)
-   {
-      RARCH_WARN("retroarch_set_paths_redirect was sent a NULL \"global\" pointer.");
       return;
-   }
 
    if (info->info.library_name &&
          !string_is_empty(info->info.library_name))
@@ -448,7 +447,8 @@ static void retroarch_set_paths_redirect(void)
             path_mkdir(current_savefile_dir);
             if(!path_is_directory(current_savefile_dir))
             {
-               RARCH_LOG("Reverting savefile directory to %s\n",
+               RARCH_LOG("%s %s\n",
+                     msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
                      global->dir.savefile);
 
                strlcpy(current_savefile_dir,
@@ -476,7 +476,8 @@ static void retroarch_set_paths_redirect(void)
             path_mkdir(current_savestate_dir);
             if(!path_is_directory(current_savestate_dir))
             {
-               RARCH_LOG("Reverting savestate directory to %s\n",
+               RARCH_LOG("%s %s\n",
+                     msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
                      global->dir.savestate);
                strlcpy(current_savestate_dir,
                      global->dir.savestate,
@@ -1022,7 +1023,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_fail(1, "retroarch_parse_input()");
 
          default:
-            RARCH_ERR("Error parsing arguments.\n");
+            RARCH_ERR("%s\n", msg_hash_to_str(MSG_ERROR_PARSING_ARGUMENTS));
             retroarch_fail(1, "retroarch_parse_input()");
       }
    }
@@ -1250,7 +1251,8 @@ bool retroarch_main_init(int argc, char *argv[])
 
    if (setjmp(error_sjlj_context) > 0)
    {
-      RARCH_ERR("Fatal error received in: \"%s\"\n", error_string);
+      RARCH_ERR("%s: \"%s\"\n",
+            msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN), error_string);
       return false;
    }
 

@@ -1976,6 +1976,16 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
    {
       case MSG_PROGRAM:
          return "RetroArch";
+      case MSG_LIBRETRO_FRONTEND:
+         return "Frontend for libretro";
+      case MSG_REVERTING_SAVEFILE_DIRECTORY_TO:
+         return "Reverting savefile directory to";
+      case MSG_REVERTING_SAVESTATE_DIRECTORY_TO:
+         return "Reverting savestate directory to";
+      case MSG_ERROR_PARSING_ARGUMENTS:
+         return "Error parsing arguments.";
+      case MSG_FATAL_ERROR_RECEIVED_IN:
+         return "Fatal error received in";
       case MSG_MOVIE_RECORD_STOPPED:
          return "Stopping movie record.";
       case MSG_MOVIE_PLAYBACK_ENDED:
