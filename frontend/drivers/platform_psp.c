@@ -370,14 +370,14 @@ static int frontend_psp_parse_drive_list(void *data)
 
 #ifdef VITA
    menu_entries_add_enum(list,
-         "cache0:/", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "cache0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #else
    menu_entries_add_enum(list,
-         "ms0:/", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "ms0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         "ef0:/", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "ef0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         "host0:/", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "host0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 #endif
 

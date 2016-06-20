@@ -1368,18 +1368,18 @@ static int frontend_xdk_parse_drive_list(void *data)
 
 #if defined(_XBOX1)
    menu_entries_add_enum(list,
-         "C:", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "C:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         "D:", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "D:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         "E:", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "E:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         "F:", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "F:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         "G:", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "G:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #elif defined(_XBOX360)
    menu_entries_add_enum(list,
-         "game:", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "game:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 #endif
 

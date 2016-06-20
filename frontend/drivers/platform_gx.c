@@ -466,14 +466,14 @@ static int frontend_gx_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 #ifdef HW_RVL
    menu_entries_add_enum(list,
-         "sd:/", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "sd:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         "usb:/", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "usb:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #endif
    menu_entries_add_enum(list,
-         "carda:/", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "carda:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         "cardb:/", "", MSG_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+         "cardb:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
    return 0;
