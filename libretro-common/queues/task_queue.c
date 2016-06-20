@@ -63,6 +63,13 @@ static void task_queue_msg_push(unsigned prio, unsigned duration,
    va_end(ap);
 
    /* print something here */
+
+#ifdef RARCH_INTERNAL
+   /* TODO/FIXME - ugly */
+   extern void runloop_msg_queue_push(const char *msg, unsigned prio,
+         unsigned duration, bool flush);
+   runloop_msg_queue_push(buf, prio, duration, flush);
+#endif
 }
 
 static void task_queue_push_progress(retro_task_t *task)
