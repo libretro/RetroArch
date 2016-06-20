@@ -22,6 +22,7 @@
 
 #include "configuration.h"
 
+
 int menu_hash_get_help(uint32_t hash, char *s, size_t len)
 {
    int ret = -1;
@@ -126,11 +127,18 @@ uint32_t msg_hash_calculate(const char *s)
    return djb2_calculate(s);
 }
 
+#define FILE_HASH_ZIP         0x0b88c7d8U
+#define FILE_HASH_ZIP_UPP     0x0b883b78U
+#define FILE_HASH_APK         0x0b885e61U
+
 enum menu_file_type menu_hash_to_file_type(uint32_t hash)
 {
    switch (hash)
    {
       case MENU_VALUE_COMP:
+      case FILE_HASH_ZIP:
+      case FILE_HASH_ZIP_UPP:
+      case FILE_HASH_APK:
          return MENU_FILE_COMPRESSED;
       case MENU_VALUE_MORE:
          return MENU_FILE_MORE;
