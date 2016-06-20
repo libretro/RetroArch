@@ -499,7 +499,6 @@ static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
 {
    char msg[128]               = {0};
    const char *shader          = NULL;
-   const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 
    if (!dir_list || !dir_list->list)
@@ -521,9 +520,8 @@ static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
       return;
 
    shader   = dir_list->list->elems[dir_list->ptr].data;
-   ext      = path_get_extension(shader);
 
-   switch (msg_hash_to_file_type(msg_hash_calculate(ext)))
+   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(shader))))
    {
       case FILE_TYPE_SHADER_GLSL:
       case FILE_TYPE_SHADER_PRESET_GLSLP:
