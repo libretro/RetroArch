@@ -1715,6 +1715,11 @@ static int action_ok_download_generic(const char *path,
 
    switch (enum_idx)
    {
+      case MENU_ENUM_LABEL_CB_DOWNLOAD_URL:
+         fill_pathname_join(s, label,
+               path, sizeof(s));
+         enum_idx = MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD;
+         break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          fill_pathname_join(s, settings->network.buildbot_assets_url,
                "cores/gw", sizeof(s));
@@ -1788,6 +1793,13 @@ static int action_ok_thumbnails_updater_download(const char *path,
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD);
+}
+
+static int action_ok_download_url(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
+         MENU_ENUM_LABEL_CB_DOWNLOAD_URL);
 }
 
 static int action_ok_core_updater_download(const char *path,
@@ -3096,6 +3108,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_DOWNLOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_core_updater_download);
+            break;
+         case FILE_TYPE_DOWNLOAD_URL:
+            BIND_ACTION_OK(cbs, action_ok_download_url);
             break;
          case FILE_TYPE_DOWNLOAD_THUMBNAIL:
             BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_download);

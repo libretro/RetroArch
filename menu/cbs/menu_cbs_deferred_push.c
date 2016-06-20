@@ -614,6 +614,13 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
+   {
+#ifdef HAVE_NETWORKING
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_dirs_list);
+#endif
+      return 0;
+   }
 
    if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
