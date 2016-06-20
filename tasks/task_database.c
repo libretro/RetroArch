@@ -34,9 +34,6 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
-#define CB_DB_SCAN_FILE                0x70ce56d2U
-#define CB_DB_SCAN_FOLDER              0xde2bef8eU
-
 #define HASH_EXTENSION_ZIP             0x0b88c7d8U
 #define HASH_EXTENSION_CUE             0x0b886782U
 #define HASH_EXTENSION_CUE_UPPERCASE   0x0b87db22U
