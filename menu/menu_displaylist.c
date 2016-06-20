@@ -30,6 +30,7 @@
 #include "../database_info.h"
 #endif
 
+#include "../file_path_special.h"
 #include "../defaults.h"
 #include "../managers/cheat_manager.h"
 #include "../managers/core_option_manager.h"
@@ -4458,7 +4459,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #endif
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
-         if (string_is_equal(info->path, "content_history.lpl"))
+         if (string_is_equal(info->path, file_path_str(FILE_PATH_CONTENT_HISTORY)))
          {
             if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
                return menu_displaylist_push_list_process(info);

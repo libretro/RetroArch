@@ -22,6 +22,12 @@
 
 #include <boolean.h>
 
+enum file_path_enum
+{
+   FILE_PATH_UNKNOWN = 0,
+   FILE_PATH_CONTENT_HISTORY
+};
+
 enum application_special_type
 {
    APPLICATION_SPECIAL_NONE = 0,
@@ -38,6 +44,8 @@ enum application_special_type
    APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT,
    APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_ICONS
 };
+
+const char *file_path_str(enum file_path_enum enum_idx);
 
 bool fill_pathname_application_data(char *s, size_t len);
 
