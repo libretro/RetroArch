@@ -131,7 +131,7 @@ uint32_t msg_hash_calculate(const char *s)
 #define FILE_HASH_ZIP_UPP     0x0b883b78U
 #define FILE_HASH_APK         0x0b885e61U
 
-enum menu_file_type menu_hash_to_file_type(uint32_t hash)
+enum menu_file_type msg_hash_to_file_type(uint32_t hash)
 {
    switch (hash)
    {

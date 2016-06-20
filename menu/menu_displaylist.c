@@ -1789,7 +1789,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             if (tmp_str_list->size > 1)
                strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
 
-            switch (menu_hash_to_file_type(msg_hash_calculate(elem1)))
+            switch (msg_hash_to_file_type(msg_hash_calculate(elem1)))
             {
                case MENU_FILE_CRC:
                   if (string_is_equal(crc_str, elem0))

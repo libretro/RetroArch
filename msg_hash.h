@@ -2013,7 +2013,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len);
 
 int menu_hash_get_help(uint32_t hash, char *s, size_t len);
 
-enum menu_file_type menu_hash_to_file_type(uint32_t hash);
+enum menu_file_type msg_hash_to_file_type(uint32_t hash);
 
 uint32_t msg_hash_calculate(const char *s);
 

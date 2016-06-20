@@ -84,7 +84,7 @@ void menu_shader_manager_init(menu_handle_t *menu)
             sizeof(menu->default_slangp));
    }
 
-   switch (menu_hash_to_file_type(msg_hash_calculate(path_get_extension(settings->path.shader))))
+   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(settings->path.shader))))
    {
       case MENU_FILE_SHADER_PRESET_GLSLP:
       case MENU_FILE_SHADER_PRESET_CGP:

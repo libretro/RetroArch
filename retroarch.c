@@ -566,7 +566,7 @@ const char *retroarch_get_current_savefile_dir(void)
 
 enum rarch_content_type retroarch_path_is_media_type(const char *path)
 {
-   switch (menu_hash_to_file_type(msg_hash_calculate(path_get_extension(path))))
+   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(path))))
    {
 #ifdef HAVE_FFMPEG
       case MENU_FILE_OGM:
