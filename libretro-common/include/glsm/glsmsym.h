@@ -95,6 +95,7 @@ RETRO_BEGIN_DECLS
 #define glUniform2fv                rglUniform2fv
 #define glUniform3f                 rglUniform3f
 #define glUniform3fv                rglUniform3fv
+#define glUniform4i                 rglUniform4i
 #define glUniform4f                 rglUniform4f
 #define glUniform4fv                rglUniform4fv
 #define glUniform1ui                rglUniform1ui
@@ -298,6 +299,7 @@ void rglUniform2i(GLint location, GLint v0, GLint v1);
 void rglUniform2fv(GLint location, GLsizei count, const GLfloat *value);
 void rglUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
 void rglUniform3fv(GLint location, GLsizei count, const GLfloat *value);
+void rglUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3);
 void rglUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
 void rglUniform4fv(GLint location, GLsizei count, const GLfloat *value);
 void rglBlendFunc(GLenum sfactor, GLenum dfactor);

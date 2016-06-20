@@ -1468,6 +1468,17 @@ void rglUniform3fv(GLint location, GLsizei count, const GLfloat *value)
  * Category: Shaders
  *
  * Core in:
+ * OpenGL    : 2.0
+ */
+void rglUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3)
+{
+   glUniform4i(location, v0, v1, v2, v3);
+}
+
+/*
+ * Category: Shaders
+ *
+ * Core in:
  * OpenGL    : 2.0 
  */
 void rglUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
@@ -2059,7 +2070,6 @@ static bool glsm_state_ctx_destroy(void *data)
    if (gl_state.bind_textures.ids)
       free(gl_state.bind_textures.ids);
    gl_state.bind_textures.ids = NULL;
-   return true;
 }
 
 static bool glsm_state_ctx_init(void *data)
