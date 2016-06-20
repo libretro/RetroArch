@@ -2419,7 +2419,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
          return "Input Remapping Dir";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Input Device Autoconfig Dir";
+         return "Autoconfig Dir";
       case MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
          return "Recording Config Dir";
       case MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
