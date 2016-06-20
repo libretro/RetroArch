@@ -387,6 +387,15 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST;
          break;
+      case ACTION_OK_DL_CORE_CONTENT_DIRS_LIST:
+         dl_type            = DISPLAYLIST_PENDING_CLEAR;
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST;
+         break;
       case ACTION_OK_DL_CORE_CONTENT_LIST:
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          info.type          = type;
@@ -1966,6 +1975,13 @@ static int generic_action_ok_network(const char *path,
 
    switch (enum_idx)
    {
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST:
+         fill_pathname_join(url_path, settings->network.buildbot_assets_url,
+               "cores/.index-dirs", sizeof(url_path));
+         url_label = msg_hash_to_str(enum_idx);
+         type_id2  = ACTION_OK_DL_CORE_CONTENT_DIRS_LIST;
+         callback  = cb_net_generic;
+         break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
          fill_pathname_join(url_path, settings->network.buildbot_assets_url,
                "cores/gw/.index", sizeof(url_path));

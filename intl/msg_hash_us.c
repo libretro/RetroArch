@@ -1118,6 +1118,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "cb_core_updater_list";
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
          return "cb_core_content_list";
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST:
+         return "cb_core_content_dirs_list";
       case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
          return "cb_core_thumbnails_download";
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD:
@@ -1346,6 +1348,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "update_core_info_files";
       case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST:
          return "deferred_core_content_list";
+      case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST:
+         return "deferred_core_content_dirs_list";
       case MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST:
          return "deferred_lakka_list";
       case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT:
