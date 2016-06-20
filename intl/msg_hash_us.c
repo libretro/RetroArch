@@ -21,6 +21,7 @@
 
 #include "../msg_hash.h"
 #include "../configuration.h"
+#include "../verbosity.h"
 
 int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
 {
@@ -3235,6 +3236,9 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
          return "Toggle Keyboard";
       default:
+#if 0
+         RARCH_LOG("Unimplemented: [%d]\n", msg);
+#endif
          break;
    }
 
