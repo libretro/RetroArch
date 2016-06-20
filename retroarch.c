@@ -120,56 +120,76 @@ static void retroarch_print_features(void)
 {
    puts("");
    puts("Features:");
-   _PSUPP(libretrodb, "LibretroDB", "LibretroDB support");
-   _PSUPP(command, "Command", "Command interface support");
+
+   _PSUPP(libretrodb,      "LibretroDB",      "LibretroDB support");
+   _PSUPP(command,         "Command",         "Command interface support");
    _PSUPP(network_command, "Network Command", "Network Command interface "
          "support");
-   _PSUPP(sdl, "SDL", "SDL input/audio/video drivers");
-   _PSUPP(sdl2, "SDL2", "SDL2 input/audio/video drivers");
-   _PSUPP(x11, "X11", "X11 input/video drivers");
-   _PSUPP(wayland, "wayland", "Wayland input/video drivers");
-   _PSUPP(thread, "Threads", "Threading support");
-   _PSUPP(vulkan, "Vulkan", "Vulkan driver");
-   _PSUPP(opengl, "OpenGL", "OpenGL driver");
-   _PSUPP(opengles, "OpenGL ES", "OpenGL ES driver");
-   _PSUPP(xvideo, "XVideo", "Video driver");
-   _PSUPP(udev, "UDEV", "UDEV/EVDEV input driver support");
-   _PSUPP(egl, "EGL",   "video context driver");
-   _PSUPP(kms, "KMS",   "video context driver");
-   _PSUPP(vg, "OpenVG", "video context driver");
-   _PSUPP(coreaudio, "CoreAudio", "Audio driver");
-   _PSUPP(alsa, "ALSA", "Audio driver");
-   _PSUPP(oss, "OSS", "Audio driver");
-   _PSUPP(jack, "Jack", "Audio driver");
-   _PSUPP(rsound, "RSound", "Audio driver");
-   _PSUPP(roar, "RoarAudio", "Audio driver");
-   _PSUPP(pulse, "PulseAudio", "Audio driver");
-   _PSUPP(dsound, "DirectSound", "Audio driver");
-   _PSUPP(xaudio, "XAudio2", "Audio driver");
-   _PSUPP(al, "OpenAL", "Audio driver");
-   _PSUPP(sl, "OpenSL", "Audio driver");
-   _PSUPP(7zip, "7zip", "7zip support");
-   _PSUPP(zlib, "zlib", ".zip extraction");
-   _PSUPP(dylib, "External", "External filter and plugin support");
-   _PSUPP(cg, "Cg", "Fragment/vertex shader driver");
-   _PSUPP(glsl, "GLSL", "Fragment/vertex shader driver");
-   _PSUPP(glsl, "HLSL", "Fragment/vertex shader driver");
-   _PSUPP(libxml2, "libxml2", "libxml2 XML parsing");
-   _PSUPP(sdl_image, "SDL_image", "SDL_image image loading");
-   _PSUPP(rpng, "rpng", "PNG image loading/encoding");
-   _PSUPP(rpng, "rjpeg", "JPEG image loading");
-   _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
-   _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libretro library");
-   _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
-   _PSUPP(freetype, "FreeType", "TTF font rendering driver");
-   _PSUPP(coretext, "CoreText", "TTF font rendering driver (for OSX and/or iOS)");
-   _PSUPP(netplay, "Netplay", "Peer-to-peer netplay");
-   _PSUPP(python, "Python", "Script support in shaders");
-   _PSUPP(libusb, "Libusb", "Libusb support");
-   _PSUPP(cocoa, "Cocoa", "Cocoa UI companion support (for OSX and/or iOS)");
-   _PSUPP(qt, "QT", "QT UI companion support");
-   _PSUPP(avfoundation, "AVFoundation", "Camera driver");
-   _PSUPP(v4l2, "Video4Linux2", "Camera driver");
+
+   _PSUPP(sdl,             "SDL",             "SDL input/audio/video drivers");
+   _PSUPP(sdl2,            "SDL2",            "SDL2 input/audio/video drivers");
+   _PSUPP(x11,             "X11",             "X11 input/video drivers");
+   _PSUPP(wayland,         "wayland",         "Wayland input/video drivers");
+   _PSUPP(thread,          "Threads",         "Threading support");
+
+   _PSUPP(vulkan,          "Vulkan",          "Vulkan video driver");
+   _PSUPP(opengl,          "OpenGL",          "OpenGL   video driver support");
+   _PSUPP(opengles,        "OpenGL ES",       "OpenGLES video driver support");
+   _PSUPP(xvideo,          "XVideo",          "Video driver");
+   _PSUPP(udev,            "UDEV",            "UDEV/EVDEV input driver support");
+   _PSUPP(egl,             "EGL",             "Video context driver");
+   _PSUPP(kms,             "KMS",             "Video context driver");
+   _PSUPP(vg,              "OpenVG",          "Video context driver");
+
+   _PSUPP(coreaudio,       "CoreAudio",       "Audio driver");
+   _PSUPP(alsa,            "ALSA",            "Audio driver");
+   _PSUPP(oss,             "OSS",             "Audio driver");
+   _PSUPP(jack,            "Jack",            "Audio driver");
+   _PSUPP(rsound,          "RSound",          "Audio driver");
+   _PSUPP(roar,            "RoarAudio",       "Audio driver");
+   _PSUPP(pulse,           "PulseAudio",      "Audio driver");
+   _PSUPP(dsound,          "DirectSound",     "Audio driver");
+   _PSUPP(xaudio,          "XAudio2",         "Audio driver");
+   _PSUPP(al,              "OpenAL",          "Audio driver");
+   _PSUPP(sl,              "OpenSL",          "Audio driver");
+
+   _PSUPP(7zip,            "7zip",            "7zip extraction support");
+   _PSUPP(zlib,            "zlib",            ".zip extraction support");
+
+   _PSUPP(dylib,           "External",        "External filter and plugin support");
+
+   _PSUPP(cg,              "Cg",              "Fragment/vertex shader driver");
+   _PSUPP(glsl,            "GLSL",            "Fragment/vertex shader driver");
+   _PSUPP(glsl,            "HLSL",            "Fragment/vertex shader driver");
+
+   _PSUPP(libxml2,         "libxml2",         "libxml2 XML parsing");
+
+   _PSUPP(sdl_image,       "SDL_image",       "SDL_image image loading");
+   _PSUPP(rpng,            "rpng",            "PNG image loading/encoding");
+   _PSUPP(rpng,            "rjpeg",           "JPEG image loading");
+
+   _PSUPP(fbo,             "FBO",             "OpenGL render-to-texture "
+                                              "(multi-pass shaders)");
+   
+   _PSUPP(dynamic,         "Dynamic",         "Dynamic run-time loading of "
+                                              "libretro library");
+   _PSUPP(ffmpeg,          "FFmpeg",          "On-the-fly recording of gameplay "
+                                              "with libavcodec");
+
+   _PSUPP(freetype,        "FreeType",        "TTF font rendering driver");
+   _PSUPP(coretext,        "CoreText",        "TTF font rendering driver "
+                                              "(for OSX and/or iOS)");
+   _PSUPP(netplay,         "Netplay",         "Peer-to-peer netplay");
+   _PSUPP(python,          "Python",          "Script support in shaders");
+
+   _PSUPP(libusb,          "Libusb",          "Libusb support");
+
+   _PSUPP(cocoa,           "Cocoa",           "Cocoa UI companion support "
+                                              "(for OSX and/or iOS)");
+
+   _PSUPP(qt,              "QT",              "QT UI companion support");
+   _PSUPP(avfoundation,    "AVFoundation",    "Camera driver");
+   _PSUPP(v4l2,            "Video4Linux2",    "Camera driver");
 }
 #undef _PSUPP
 
