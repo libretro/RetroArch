@@ -1430,7 +1430,6 @@ static int action_ok_file_load(const char *path,
    const char *menu_path               = NULL;
    rarch_setting_t *setting            = NULL;
    menu_handle_t *menu                 = NULL;
-   content_ctx_info_t content_info     = {0};
    file_list_t  *menu_stack            = menu_entries_get_menu_stack_ptr(0);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
