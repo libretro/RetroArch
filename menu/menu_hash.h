@@ -116,7 +116,6 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_SHADER_NEXT                                                 0x54d359baU
 #define MENU_LABEL_SHADER_PREV                                                 0x54d4a758U
 #define MENU_LABEL_FRAME_ADVANCE                                               0xd80302a1U
-#define MENU_LABEL_FPS_SHOW                                                    0x5ea1e10eU
 #define MENU_LABEL_MOVIE_RECORD_TOGGLE                                         0xa2d2ff04U
 #define MENU_LABEL_L_X_PLUS                                                    0xd7370d4bU
 #define MENU_LABEL_L_X_MINUS                                                   0xbde0aaf3U
@@ -129,8 +128,6 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_BLOCK_SRAM_OVERWRITE                                        0xc4e88d08U
 #define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
 #define MENU_LABEL_GAME_SPECIFIC_OPTIONS                                       0x142ec90fU
-#define MENU_LABEL_AUTO_OVERRIDES_ENABLE                                       0x35ff91b6U
-#define MENU_LABEL_AUTO_REMAPS_ENABLE                                          0x98c8f98bU
 #define MENU_LABEL_SCREENSHOT                                                  0x9a37f083U
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
 
@@ -255,7 +252,6 @@ RETRO_BEGIN_DECLS
 
 #define MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE                               0x8888c5acU
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
-#define MENU_LABEL_RDB_ENTRY_GENRE                                             0x9fefab3eU
 #define MENU_LABEL_RDB_ENTRY_PUBLISHER                                         0x4d7bcdfbU
 #define MENU_LABEL_RDB_ENTRY_DEVELOPER                                         0x06f61093U
 #define MENU_LABEL_RDB_ENTRY_ORIGIN                                            0xb176aad5U
@@ -275,16 +271,7 @@ RETRO_BEGIN_DECLS
 
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
-#define MENU_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE                           0xa3d605f5U
-#define MENU_LABEL_CORE_UPDATER_BUILDBOT_URL                                   0xe9ad8448U
-#define MENU_LABEL_BUILDBOT_ASSETS_URL                                         0x1895c71eU
-#define MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN                                      0x78579f70U
-#define MENU_LABEL_NAVIGATION_WRAPAROUND                                       0xe76ad251U
-#define MENU_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE       0xea48426bU
-#define MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE                         0x593d2623U
 #define MENU_LABEL_CLOSE_CONTENT                                               0x4b622170U
-#define MENU_LABEL_SHUTDOWN                                                    0xfc460361U
-#define MENU_LABEL_REBOOT                                                      0x19266b70U
 #define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
 #define MENU_LABEL_MANAGEMENT                                                  0x2516c88aU
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
