@@ -39,12 +39,6 @@
 #include "../../system.h"
 #include "../../lakka.h"
 
-enum
-{
-   ACTION_OK_FFMPEG = 0,
-   ACTION_OK_IMAGEVIEWER
-};
-
 typedef struct
 {
    enum msg_hash_enums enum_idx;
@@ -1387,7 +1381,7 @@ static int action_ok_deferred_list_stub(const char *path,
 
 static int generic_action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      enum rarch_core_type action_type, unsigned id)
+      enum rarch_core_type action_type, enum content_mode_load content_enum_idx)
 {
    char new_path[PATH_MAX_LENGTH]  = {0};
    content_ctx_info_t content_info = {0};
@@ -1399,27 +1393,12 @@ static int generic_action_ok_file_load(const char *path,
    fill_pathname_join(new_path, menu_path, path,
          sizeof(new_path));
 
-   switch (id)
-   {
-      case ACTION_OK_FFMPEG:
-         task_push_content_load_default(
-               NULL, new_path,
-               &content_info,
-               action_type,
-               CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU,
-               NULL, NULL);
-         break;
-      case ACTION_OK_IMAGEVIEWER:
-         task_push_content_load_default(
-               NULL, new_path,
-               &content_info,
-               action_type,
-               CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU,
-               NULL, NULL);
-         break;
-      default:
-         break;
-   }
+   task_push_content_load_default(
+         NULL, new_path,
+         &content_info,
+         action_type,
+         content_enum_idx,
+         NULL, NULL);
 
    return 0;
 }
@@ -1429,7 +1408,7 @@ static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_file_load(path, label, type, idx,
-         entry_idx, CORE_TYPE_FFMPEG, ACTION_OK_FFMPEG);
+         entry_idx, CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU);
 }
 #endif
 
@@ -1437,7 +1416,7 @@ static int action_ok_file_load_imageviewer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_file_load(path, label, type, idx,
-         entry_idx, CORE_TYPE_IMAGEVIEWER, ACTION_OK_IMAGEVIEWER);
+         entry_idx, CORE_TYPE_IMAGEVIEWER, CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU);
 }
 
 static int action_ok_file_load(const char *path,
