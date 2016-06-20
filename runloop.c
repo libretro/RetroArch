@@ -42,6 +42,7 @@
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"
+#include "file_path_special.h"
 #include "managers/core_option_manager.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
@@ -1131,7 +1132,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!*options_path && *global->path.config)
             {
                fill_pathname_resolve_relative(buf, global->path.config,
-                     "retroarch-core-options.cfg", sizeof(buf));
+                     file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
                options_path = buf;
             }
 

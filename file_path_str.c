@@ -21,6 +21,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
    {
       case FILE_PATH_CONTENT_HISTORY:
          return "content_history.lpl";
+      case FILE_PATH_CORE_OPTIONS_CONFIG:
+         return "retroarch-core-options.cfg";
       case FILE_PATH_MAIN_CONFIG:
          return "retroarch.cfg";
       case FILE_PATH_UNKNOWN:
