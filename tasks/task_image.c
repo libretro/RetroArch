@@ -32,9 +32,6 @@
 #include "tasks_internal.h"
 #include "../verbosity.h"
 
-#define CB_MENU_WALLPAPER     0xb476e505U
-#define CB_MENU_THUMBNAIL     0x82f93a21U
-
 enum image_status_enum
 {
    IMAGE_STATUS_POLL = 0,
