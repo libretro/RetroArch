@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "../../libretro_vulkan.h"
+#include "../../libretro-common/include/libretro_vulkan.h"
 #include "shaders/triangle.vert.inc"
 #include "shaders/triangle.frag.inc"
 
