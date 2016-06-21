@@ -40,7 +40,7 @@ enum file_path_enum
    FILE_PATH_CORE_THUMBNAILS_URL,
    FILE_PATH_INDEX_DIRS_URL,
    FILE_PATH_INDEX_URL,
-   FILE_PATH_INDEX_EXTENDED_URL,
+   FILE_PATH_INDEX_EXTENDED_URL
 };
 
 enum application_special_type

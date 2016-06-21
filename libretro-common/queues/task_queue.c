@@ -55,6 +55,10 @@ static task_queue_t tasks_finished = {NULL, NULL};
 static void task_queue_msg_push(unsigned prio, unsigned duration,
       bool flush, const char *fmt, ...)
 {
+#ifdef RARCH_INTERNAL
+   extern void runloop_msg_queue_push(const char *msg, unsigned prio,
+         unsigned duration, bool flush);
+#endif
    char buf[1024];
    va_list ap;
    
@@ -66,8 +70,6 @@ static void task_queue_msg_push(unsigned prio, unsigned duration,
 
 #ifdef RARCH_INTERNAL
    /* TODO/FIXME - ugly */
-   extern void runloop_msg_queue_push(const char *msg, unsigned prio,
-         unsigned duration, bool flush);
    runloop_msg_queue_push(buf, prio, duration, flush);
 #endif
 }

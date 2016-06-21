@@ -9,7 +9,9 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
-//#define HAVE_STB_IMAGE
+#if 0
+#define HAVE_STB_IMAGE
+#endif
 
 #ifdef HAVE_STB_IMAGE
 #define STB_IMAGE_IMPLEMENTATION
