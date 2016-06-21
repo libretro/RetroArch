@@ -1822,7 +1822,8 @@ finish:
 
 
 static int action_ok_download_generic(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      const char *label, const char *menu_label,
+      unsigned type, size_t idx, size_t entry_idx,
       enum msg_hash_enums enum_idx)
 {
 #ifdef HAVE_NETWORKING
@@ -1844,8 +1845,7 @@ static int action_ok_download_generic(const char *path,
          cb = cb_generic_dir_download;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
-         fill_pathname_join(s, settings->network.buildbot_assets_url,
-               "cores/gw", sizeof(s));
+         strlcpy(s, menu_label, sizeof(s));
          break;
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
 #ifdef HAVE_LAKKA
@@ -1900,98 +1900,104 @@ static int action_ok_download_generic(const char *path,
 static int action_ok_core_content_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   const char *menu_path   = NULL;
+   const char *menu_label  = NULL;
+   enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
+
+   return action_ok_download_generic(path, label, menu_path, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD);
 }
 
 static int action_ok_core_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD);
 }
 
 static int action_ok_thumbnails_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD);
 }
 
 static int action_ok_download_url(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_DOWNLOAD_URL);
 }
 
 static int action_ok_core_updater_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD);
 }
 
 static int action_ok_lakka_download(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD);
 }
 
 static int action_ok_update_assets(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_UPDATE_ASSETS);
 }
 
 static int action_ok_update_core_info_files(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES);
 }
 
 static int action_ok_update_overlays(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS);
 }
 
 static int action_ok_update_shaders_cg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG);
 }
 
 static int action_ok_update_shaders_glsl(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL);
 }
 
 static int action_ok_update_databases(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_UPDATE_DATABASES);
 }
 
 static int action_ok_update_cheats(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_UPDATE_CHEATS);
 }
 
 static int action_ok_update_autoconfig_profiles(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return action_ok_download_generic(path, label, type, idx, entry_idx,
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES);
 }
 
