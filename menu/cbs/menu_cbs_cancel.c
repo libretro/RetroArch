@@ -42,8 +42,6 @@ static int action_cancel_core_content(const char *path,
 static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t hash, const char *elem0, const char *menu_label)
 {
-   uint32_t elem0_hash      = msg_hash_calculate(elem0);
-
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST)))
    {
       BIND_ACTION_CANCEL(cbs, action_cancel_core_content);

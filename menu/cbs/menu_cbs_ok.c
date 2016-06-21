@@ -1663,7 +1663,6 @@ static void cb_generic_dir_download(void *task_data,
       void *user_data, const char *err)
 {
    menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
-   http_transfer_data_t        *data     = (http_transfer_data_t*)task_data;
 
    generic_action_ok_network(transf->path, transf->path, 0, 0, 0,
          MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
