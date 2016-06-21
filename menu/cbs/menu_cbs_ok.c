@@ -1700,6 +1700,117 @@ finish:
 }
 #endif
 
+#ifdef HAVE_NETWORKING
+static int generic_action_ok_network(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      enum msg_hash_enums enum_idx)
+{
+   char url_path[PATH_MAX_LENGTH] = {0};
+   settings_t *settings           = config_get_ptr();
+   unsigned type_id2              = 0;
+   const char *url_label          = NULL;
+   retro_task_callback_t callback = NULL;
+   bool refresh                   = true;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+
+   if (string_is_empty(settings->network.buildbot_url))
+      return menu_cbs_exit();
+
+   command_event(CMD_EVENT_NETWORK_INIT, NULL);
+
+   switch (enum_idx)
+   {
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST:
+         fill_pathname_join(url_path, settings->network.buildbot_assets_url,
+               "cores/.index-dirs", sizeof(url_path));
+         url_label = msg_hash_to_str(enum_idx);
+         type_id2  = ACTION_OK_DL_CORE_CONTENT_DIRS_LIST;
+         callback  = cb_net_generic;
+         break;
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
+         fill_pathname_join(url_path, settings->network.buildbot_assets_url,
+               "cores/gw/.index", sizeof(url_path));
+         url_label = msg_hash_to_str(enum_idx);
+         type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
+         callback  = cb_net_generic;
+         break;
+      case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
+         fill_pathname_join(url_path, settings->network.buildbot_url,
+               file_path_str(FILE_PATH_INDEX_EXTENDED_URL), sizeof(url_path));
+         url_label = msg_hash_to_str(enum_idx);
+         type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
+         callback  = cb_net_generic;
+         break;
+      case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
+         fill_pathname_join(url_path,
+               file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
+               file_path_str(FILE_PATH_INDEX_URL), sizeof(url_path));
+         url_label = msg_hash_to_str(enum_idx);
+         type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
+         callback  = cb_net_generic;
+         break;
+#ifdef HAVE_LAKKA
+      case MENU_ENUM_LABEL_CB_LAKKA_LIST:
+         /* TODO unhardcode this path */
+         fill_pathname_join(url_path, 
+               file_path_str(FILE_PATH_LAKKA_URL),
+               LAKKA_PROJECT, sizeof(url_path));
+         fill_pathname_join(url_path, url_path,
+               file_path_str(FILE_PATH_INDEX_URL),
+               sizeof(url_path));
+         url_label = msg_hash_to_str(enum_idx);
+         type_id2  = ACTION_OK_DL_LAKKA_LIST;
+         callback  = cb_net_generic;
+         break;
+#endif
+      default:
+         break;
+   }
+
+   task_push_http_transfer(url_path, false, url_label, callback, NULL);
+
+   return generic_action_ok_displaylist_push(path,
+         label, type, idx, entry_idx, type_id2);
+}
+
+static int action_ok_core_content_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_network(path, label, type, idx, entry_idx,
+         MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
+} 
+
+static int action_ok_core_content_dirs_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_network(path, label, type, idx, entry_idx,
+         MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST);
+} 
+
+static int action_ok_core_updater_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_network(path, label, type, idx, entry_idx,
+         MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST);
+}
+
+static int action_ok_thumbnails_updater_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_network(path, label, type, idx, entry_idx,
+         MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST);
+}
+
+static int action_ok_lakka_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_network(path, label, type, idx, entry_idx,
+         MENU_ENUM_LABEL_CB_LAKKA_LIST);
+}
+
+#endif
+
 static int action_ok_download_generic(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum msg_hash_enums enum_idx)
@@ -1713,13 +1824,14 @@ static int action_ok_download_generic(const char *path,
    fill_pathname_join(s, settings->network.buildbot_assets_url,
          "frontend", sizeof(s));
 
+
    switch (enum_idx)
    {
       case MENU_ENUM_LABEL_CB_DOWNLOAD_URL:
          fill_pathname_join(s, label,
                path, sizeof(s));
-         enum_idx = MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD;
-         break;
+         return generic_action_ok_network(s, label, type, idx, entry_idx,
+               MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          fill_pathname_join(s, settings->network.buildbot_assets_url,
                "cores/gw", sizeof(s));
@@ -1966,116 +2078,6 @@ static int action_ok_lookup_setting(const char *path,
 }
 
 
-#ifdef HAVE_NETWORKING
-static int generic_action_ok_network(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx,
-      enum msg_hash_enums enum_idx)
-{
-   char url_path[PATH_MAX_LENGTH] = {0};
-   settings_t *settings           = config_get_ptr();
-   unsigned type_id2              = 0;
-   const char *url_label          = NULL;
-   retro_task_callback_t callback = NULL;
-   bool refresh                   = true;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-
-   if (string_is_empty(settings->network.buildbot_url))
-      return menu_cbs_exit();
-
-   command_event(CMD_EVENT_NETWORK_INIT, NULL);
-
-   switch (enum_idx)
-   {
-      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST:
-         fill_pathname_join(url_path, settings->network.buildbot_assets_url,
-               "cores/.index-dirs", sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_CORE_CONTENT_DIRS_LIST;
-         callback  = cb_net_generic;
-         break;
-      case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
-         fill_pathname_join(url_path, settings->network.buildbot_assets_url,
-               "cores/gw/.index", sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
-         callback  = cb_net_generic;
-         break;
-      case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
-         fill_pathname_join(url_path, settings->network.buildbot_url,
-               file_path_str(FILE_PATH_INDEX_EXTENDED_URL), sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
-         callback  = cb_net_generic;
-         break;
-      case MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST:
-         fill_pathname_join(url_path,
-               file_path_str(FILE_PATH_CORE_THUMBNAILS_URL),
-               file_path_str(FILE_PATH_INDEX_URL), sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
-         callback  = cb_net_generic;
-         break;
-#ifdef HAVE_LAKKA
-      case MENU_ENUM_LABEL_CB_LAKKA_LIST:
-         /* TODO unhardcode this path */
-         fill_pathname_join(url_path, 
-               file_path_str(FILE_PATH_LAKKA_URL),
-               LAKKA_PROJECT, sizeof(url_path));
-         fill_pathname_join(url_path, url_path,
-               file_path_str(FILE_PATH_INDEX_URL),
-               sizeof(url_path));
-         url_label = msg_hash_to_str(enum_idx);
-         type_id2  = ACTION_OK_DL_LAKKA_LIST;
-         callback  = cb_net_generic;
-         break;
-#endif
-      default:
-         break;
-   }
-
-   task_push_http_transfer(url_path, false, url_label, callback, NULL);
-
-   return generic_action_ok_displaylist_push(path,
-         label, type, idx, entry_idx, type_id2);
-}
-
-static int action_ok_core_content_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
-} 
-
-static int action_ok_core_content_dirs_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST);
-} 
-
-static int action_ok_core_updater_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST);
-}
-
-static int action_ok_thumbnails_updater_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST);
-}
-
-static int action_ok_lakka_list(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CB_LAKKA_LIST);
-}
-
-#endif
 
 
 static int action_ok_rdb_entry_submenu(const char *path,
