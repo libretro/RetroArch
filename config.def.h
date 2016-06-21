@@ -411,6 +411,8 @@ static const bool disable_composition = false;
 /* Video VSYNC (recommended) */
 static const bool vsync = true;
 
+static const unsigned max_swapchain_images = 3;
+
 /* Attempts to hard-synchronize CPU and GPU.
  * Can reduce latency at cost of performance. */
 static const bool hard_sync = false;

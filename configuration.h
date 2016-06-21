@@ -55,6 +55,7 @@ typedef struct settings
       bool vsync;
       bool hard_sync;
       bool black_frame_insertion;
+      unsigned max_swapchain_images;
       unsigned swap_interval;
       unsigned hard_sync_frames;
       unsigned frame_delay;

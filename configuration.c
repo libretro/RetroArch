@@ -495,6 +495,7 @@ static void config_set_defaults(void)
    settings->video.fullscreen_y          = fullscreen_y;
    settings->video.disable_composition   = disable_composition;
    settings->video.vsync                 = vsync;
+   settings->video.max_swapchain_images  = max_swapchain_images;
    settings->video.hard_sync             = hard_sync;
    settings->video.hard_sync_frames      = hard_sync_frames;
    settings->video.frame_delay           = frame_delay;
@@ -1291,6 +1292,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE (conf, settings, video.monitor_index, "video_monitor_index");
    CONFIG_GET_BOOL_BASE(conf, settings, video.disable_composition, "video_disable_composition");
    CONFIG_GET_BOOL_BASE(conf, settings, video.vsync, "video_vsync");
+   CONFIG_GET_INT_BASE(conf, settings, video.max_swapchain_images, "video_max_swapchain_images");
    CONFIG_GET_BOOL_BASE(conf, settings, video.hard_sync, "video_hard_sync");
 
 #ifdef HAVE_MENU
@@ -2658,6 +2660,8 @@ bool config_save_file(const char *path)
 
 
    config_set_bool(conf,  "video_vsync", settings->video.vsync);
+   config_set_int(conf,   "video_max_swapchain_images",
+         settings->video.max_swapchain_images);
    config_set_bool(conf,  "video_hard_sync", settings->video.hard_sync);
    config_set_int(conf,   "video_hard_sync_frames",
          settings->video.hard_sync_frames);

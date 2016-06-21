@@ -1105,6 +1105,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
+         return "video_max_swapchain_images";
       case MENU_ENUM_LABEL_CORE_SETTINGS:
          return "core_settings";
       case MENU_ENUM_LABEL_CB_MENU_WALLPAPER:
@@ -1997,6 +1999,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Compiled against API";
       case MSG_FAILED_TO_LOAD:
          return "Failed to load";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES:
+         return "Max swapchain images";
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
          return "Libretro core requires content, but nothing was provided.";
       case MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT:

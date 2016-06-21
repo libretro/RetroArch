@@ -5249,6 +5249,21 @@ static bool setting_append_list(
 
          CONFIG_UINT(
                list, list_info,
+               &settings->video.max_swapchain_images,
+               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES),
+               max_swapchain_images,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
+
+         CONFIG_UINT(
+               list, list_info,
                &settings->video.swap_interval,
                msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL),
