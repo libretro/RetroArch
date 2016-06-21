@@ -2826,8 +2826,8 @@ static int menu_displaylist_parse_add_content_list(
 #ifdef HAVE_NETWORKING
    menu_entries_add_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
-         msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT),
-         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT,
+         msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
+         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
