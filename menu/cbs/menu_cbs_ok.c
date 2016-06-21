@@ -1579,8 +1579,8 @@ static int generic_action_ok_network(const char *path,
          callback  = cb_net_generic;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
-         fill_pathname_join(url_path, settings->network.buildbot_assets_url,
-               "cores/gw/.index", sizeof(url_path));
+         fill_pathname_join(url_path, path,
+               file_path_str(FILE_PATH_INDEX_URL), sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
          callback  = cb_net_generic;
