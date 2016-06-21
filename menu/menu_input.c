@@ -824,12 +824,8 @@ static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
       uint64_t input_mouse, unsigned action)
 {
-   size_t selection;
    int ret                  = 0;
    menu_input_t *menu_input = menu_input_get_ptr();
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-
 
    if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_BUTTON_L))
    {
@@ -849,8 +845,7 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_BUTTON_R))
    {
-      menu_entries_pop_stack(&selection, 0, 1);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+      menu_entry_go_back();
    }
 
    if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_WHEEL_DOWN))
@@ -917,11 +912,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
          /* Back button */
          if ((unsigned)menu_input_mouse_state(MENU_MOUSE_X_AXIS) < header_height)
-         {
-            menu_entries_pop_stack(&selection, 0, 1);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
-            return 0;
-         }
+            return menu_entry_go_back();
+
          if ((menu_input->mouse.ptr == selection) && cbs && cbs->action_select)
          {
             BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L_TOGGLE);
@@ -1037,7 +1029,6 @@ static int menu_input_pointer_post_iterate(
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection;
    static bool pointer_oldpressed[2];
    static bool pointer_oldback  = false;
    static int16_t start_x       = 0;
@@ -1050,8 +1041,6 @@ static int menu_input_pointer_post_iterate(
    bool check_overlay           = settings ? !settings->menu.pointer.enable : false;
 
    if (!menu_input || !settings)
-      return -1;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
 
 #ifdef HAVE_OVERLAY
@@ -1144,8 +1133,7 @@ static int menu_input_pointer_post_iterate(
       if (!pointer_oldback)
       {
          pointer_oldback = true;
-         menu_entries_pop_stack(&selection, 0, 1);
-         menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+         menu_entry_go_back();
       }
    }
 
