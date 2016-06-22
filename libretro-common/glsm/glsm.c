@@ -21,6 +21,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <glsym/glsym.h>
 #include <glsm/glsm.h>
 
@@ -28,7 +29,7 @@ struct gl_cached_state
 {
    struct
    {
-      GLuint ids[MAX_TEXTURE];
+      GLuint *ids;
    } bind_textures;
 
 #ifndef HAVE_OPENGLES
@@ -176,6 +177,7 @@ struct gl_cached_state
    int cap_translate[SGL_CAP_MAX];
 };
 
+static GLint glsm_max_textures;
 static struct retro_hw_render_callback hw_render;
 static struct gl_cached_state gl_state;
 
@@ -1466,6 +1468,17 @@ void rglUniform3fv(GLint location, GLsizei count, const GLfloat *value)
  * Category: Shaders
  *
  * Core in:
+ * OpenGL    : 2.0
+ */
+void rglUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3)
+{
+   glUniform4i(location, v0, v1, v2, v3);
+}
+
+/*
+ * Category: Shaders
+ *
+ * Core in:
  * OpenGL    : 2.0 
  */
 void rglUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
@@ -1822,10 +1835,10 @@ void *rglFenceSync(GLenum condition, GLbitfield flags)
  * OpenGL    : 3.2
  * OpenGLES  : 3.0
  */
-void rglWaitSync(void *sync, GLbitfield flags, GLuint64 timeout)
+void rglWaitSync(void *sync, GLbitfield flags, uint64_t timeout)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-   glWaitSync((GLsync)sync, flags, timeout);
+   glWaitSync((GLsync)sync, flags, (GLuint64)timeout);
 #endif
 }
 
@@ -1852,6 +1865,10 @@ static void glsm_state_setup(void)
 
    for (i = 0; i < MAX_ATTRIB; i++)
       gl_state.vertex_attrib_pointer.enabled[i] = 0;
+
+   glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &glsm_max_textures);
+
+   gl_state.bind_textures.ids           = (GLuint*)calloc(glsm_max_textures, sizeof(GLuint));
 
    gl_state.framebuf                    = hw_render.get_current_framebuffer();
    gl_state.cullface.mode               = GL_BACK;
@@ -1978,7 +1995,7 @@ static void glsm_state_bind(void)
             gl_state.stencilfunc.ref,
             gl_state.stencilfunc.mask);
 
-   for (i = 0; i < MAX_TEXTURE; i ++)
+   for (i = 0; i < glsm_max_textures; i ++)
    {
       glActiveTexture(GL_TEXTURE0 + i);
       glBindTexture(GL_TEXTURE_2D, gl_state.bind_textures.ids[i]);
@@ -2001,51 +2018,30 @@ static void glsm_state_unbind(void)
          glDisable(gl_state.cap_translate[i]);
    }
 
-   glBlendFunc(GL_ONE, GL_ZERO);
+   gl_state.blendfunc.used = false;
+   gl_state.colormask.used = false;
+   gl_state.blendfunc_separate.used = false;
+   gl_state.cullface.used = false;
+   gl_state.depthmask.used = false;
+   gl_state.polygonoffset.used = false;
+   gl_state.scissor.used = false;
+   gl_state.depthrange.used = false;
+   gl_state.stencilmask.used = false;
+   gl_state.frontface.used = false;
+   gl_state.depthfunc.used = false;
+   gl_state.stencilop.used = false;
+   gl_state.stencilfunc.used = false;
 
-   if (gl_state.colormask.used)
-      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-   if (gl_state.blendfunc_separate.used)
-      glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
-
-   if (gl_state.cullface.used)
-      glCullFace(GL_BACK);
-
-   if (gl_state.depthmask.used)
-      glDepthMask(GL_TRUE);
-
-   if (gl_state.polygonoffset.used)
-      glPolygonOffset(0, 0);
-
-   glUseProgram(0);
-   glClearColor(0,0,0,0.0f);
-
-   if (gl_state.depthrange.used)
-      rglDepthRange(0, 1);
-
-   glStencilMask(1);
-   glFrontFace(GL_CCW);
-   if (gl_state.depthfunc.used)
-      glDepthFunc(GL_LESS);
-
-   if (gl_state.stencilop.used)
-      glStencilOp(GL_KEEP,GL_KEEP, GL_KEEP);
-
-   if (gl_state.stencilfunc.used)
-      glStencilFunc(GL_ALWAYS,0,1);
-
-   /* Clear textures */
-   for (i = 0; i < MAX_TEXTURE; i ++)
-   {
-      glActiveTexture(GL_TEXTURE0 + i);
-      glBindTexture(GL_TEXTURE_2D, 0);
-   }
    glActiveTexture(GL_TEXTURE0);
 
-   for (i = 0; i < MAX_ATTRIB; i ++)
-      glDisableVertexAttribArray(i);
-
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0);
+}
+
+static bool glsm_state_ctx_destroy(void *data)
+{
+   if (gl_state.bind_textures.ids)
+      free(gl_state.bind_textures.ids);
+   gl_state.bind_textures.ids = NULL;
 }
 
 static bool glsm_state_ctx_init(void *data)
@@ -2116,6 +2112,9 @@ bool glsm_ctl(enum glsm_state_ctl state, void *data)
          break;
       case GLSM_CTL_STATE_CONTEXT_RESET:
          rglgen_resolve_symbols(hw_render.get_proc_address);
+         break;
+      case GLSM_CTL_STATE_CONTEXT_DESTROY:
+         glsm_state_ctx_destroy(data);
          break;
       case GLSM_CTL_STATE_CONTEXT_INIT:
          return glsm_state_ctx_init(data);

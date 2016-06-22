@@ -52,10 +52,13 @@ struct retro_task_impl
 static task_queue_t tasks_running  = {NULL, NULL};
 static task_queue_t tasks_finished = {NULL, NULL};
 
-#ifndef RARCH_INTERNAL
 static void task_queue_msg_push(unsigned prio, unsigned duration,
       bool flush, const char *fmt, ...)
 {
+#ifdef RARCH_INTERNAL
+   extern void runloop_msg_queue_push(const char *msg, unsigned prio,
+         unsigned duration, bool flush);
+#endif
    char buf[1024];
    va_list ap;
    
@@ -64,9 +67,14 @@ static void task_queue_msg_push(unsigned prio, unsigned duration,
    va_end(ap);
 
    /* print something here */
+
+#ifdef RARCH_INTERNAL
+   /* TODO/FIXME - ugly */
+   runloop_msg_queue_push(buf, prio, duration, flush);
+#endif
 }
 
-void task_queue_push_progress(retro_task_t *task)
+static void task_queue_push_progress(retro_task_t *task)
 {
    if (task->title)
    {
@@ -88,7 +96,6 @@ void task_queue_push_progress(retro_task_t *task)
       }
    }
 }
-#endif
 
 static void task_queue_put(task_queue_t *queue, retro_task_t *task)
 {
@@ -114,7 +121,6 @@ static retro_task_t *task_queue_get(task_queue_t *queue)
 
    return task;
 }
-
 
 static void retro_task_internal_gather(void)
 {

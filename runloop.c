@@ -42,6 +42,7 @@
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"
+#include "file_path_special.h"
 #include "managers/core_option_manager.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
@@ -75,13 +76,6 @@
 #else
 #define DEFAULT_EXT ""
 #endif
-
-#define SHADER_EXT_GLSL      0x7c976537U
-#define SHADER_EXT_GLSLP     0x0f840c87U
-#define SHADER_EXT_CG        0x0059776fU
-#define SHADER_EXT_CGP       0x0b8865bfU
-#define SHADER_EXT_SLANG     0x105ce63aU
-#define SHADER_EXT_SLANGP    0x1bf9adeaU
 
 #define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2], id) 
 
@@ -503,10 +497,8 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
 static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
       bool pressed_next, bool pressed_prev)
 {
-   uint32_t ext_hash           = 0;
    char msg[128]               = {0};
    const char *shader          = NULL;
-   const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 
    if (!dir_list || !dir_list->list)
@@ -528,21 +520,19 @@ static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
       return;
 
    shader   = dir_list->list->elems[dir_list->ptr].data;
-   ext      = path_get_extension(shader);
-   ext_hash = msg_hash_calculate(ext);
 
-   switch (ext_hash)
+   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(shader))))
    {
-      case SHADER_EXT_GLSL:
-      case SHADER_EXT_GLSLP:
+      case FILE_TYPE_SHADER_GLSL:
+      case FILE_TYPE_SHADER_PRESET_GLSLP:
          type = RARCH_SHADER_GLSL;
          break;
-      case SHADER_EXT_SLANG:
-      case SHADER_EXT_SLANGP:
+      case FILE_TYPE_SHADER_SLANG:
+      case FILE_TYPE_SHADER_PRESET_SLANGP:
          type = RARCH_SHADER_SLANG;
          break;
-      case SHADER_EXT_CG:
-      case SHADER_EXT_CGP:
+      case FILE_TYPE_SHADER_CG:
+      case FILE_TYPE_SHADER_PRESET_CGP:
          type = RARCH_SHADER_CG;
          break;
       default:
@@ -1131,7 +1121,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!*options_path && *global->path.config)
             {
                fill_pathname_resolve_relative(buf, global->path.config,
-                     "retroarch-core-options.cfg", sizeof(buf));
+                     file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
                options_path = buf;
             }
 

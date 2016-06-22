@@ -9,7 +9,9 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
+#if 0
 #define HAVE_STB_IMAGE
+#endif
 
 #ifdef HAVE_STB_IMAGE
 #define STB_IMAGE_IMPLEMENTATION
@@ -394,9 +396,10 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
       /* RGBA > XRGB8888 */
       struct retro_system_av_info info;
 
-      uint32_t *buf = &image_buffer[0];
+#ifdef HAVE_STB_IMAGE
       int x, y;
-      
+      uint32_t *buf = &image_buffer[0];
+
       for (y = 0; y < image_height; y++)
       {
          for (x = 0; x < image_width; x++, buf++)
@@ -421,6 +424,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
             }
          }
       }
+#endif
 
       IMAGE_CORE_PREFIX(retro_get_system_av_info)(&info);
 

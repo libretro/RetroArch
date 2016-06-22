@@ -241,7 +241,8 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 
    if (!lib)
    {
-      RARCH_ERR("Failed to open libretro core: \"%s\"\n",
+      RARCH_ERR("%s: \"%s\"\n",
+            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
             path);
       RARCH_ERR("Error(s): %s\n", dylib_error());
       return NULL;

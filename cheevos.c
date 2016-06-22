@@ -2075,8 +2075,8 @@ bool cheevos_load(const void *data)
    
    cheevos_locals.loaded = 0;
    
-   /* Just return OK if cheevos are disabled, the core doesn't support cheevos, or info is NULL. */
-   if (!settings->cheevos.enable || !cheevos_locals.core_supports || !info)
+   /* Just return OK if the core doesn't support cheevos, or info is NULL. */
+   if (!cheevos_locals.core_supports || !info)
       return true;
    
    cheevos_locals.meminfo[0].id = RETRO_MEMORY_SYSTEM_RAM;
@@ -2091,8 +2091,11 @@ bool cheevos_load(const void *data)
    cheevos_locals.meminfo[3].id = RETRO_MEMORY_RTC;
    core_get_memory(&cheevos_locals.meminfo[3]);
    
-   /* The the supported extensions as a hint to what method we should use. */
+   /* Bail out if cheevos are disabled. But set the above anyways, command_read_ram needs it. */
+   if (!settings->cheevos.enable)
+      return true;
    
+   /* Use the supported extensions as a hint to what method we should use. */
    core_get_system_info(&sysinfo);
    
    for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
@@ -2185,9 +2188,13 @@ void cheevos_populate_menu(void *data)
    settings_t *settings          = config_get_ptr();
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
    
-   menu_entries_add(info->list, "Unlocked Achievements:",
-         "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
-   menu_entries_add(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_add_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS),
+         msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS),
+         MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
+         MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_add_enum(info->list, "", "", MSG_UNKNOWN,
+         MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
 
    cheevo = cheevos_locals.core.cheevos;
    end    = cheevos_locals.core.cheevos + cheevos_locals.core.count;
@@ -2195,8 +2202,9 @@ void cheevos_populate_menu(void *data)
    for (i = 0; cheevo < end; i++, cheevo++)
    {
       if (!cheevo->active)
-         menu_entries_add(info->list, cheevo->title,
-               cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         menu_entries_add_enum(info->list, cheevo->title,
+               cheevo->description, MSG_UNKNOWN, 
+               MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
    if (settings->cheevos.test_unofficial)
@@ -2208,15 +2216,21 @@ void cheevos_populate_menu(void *data)
       for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
          if (!cheevo->active)
-            menu_entries_add(info->list, cheevo->title,
-                  cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+            menu_entries_add_enum(info->list, cheevo->title,
+                  cheevo->description, MSG_UNKNOWN,
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
    
-   menu_entries_add(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
-   menu_entries_add(info->list, "Locked Achievements:", "",
+   menu_entries_add_enum(info->list, "", "", MSG_UNKNOWN,
          MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
-   menu_entries_add(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_add_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS),
+         msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS),
+         MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS,
+         MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_add_enum(info->list, "", "", MSG_UNKNOWN,
+         MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
 
    cheevo = cheevos_locals.core.cheevos;
    end    = cheevos_locals.core.cheevos + cheevos_locals.core.count;
@@ -2224,8 +2238,9 @@ void cheevos_populate_menu(void *data)
    for (i = 0; cheevo < end; i++, cheevo++)
    {
       if (cheevo->active)
-         menu_entries_add(info->list, cheevo->title,
-               cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         menu_entries_add_enum(info->list, cheevo->title,
+               cheevo->description, MSG_UNKNOWN,
+               MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
    if (settings->cheevos.test_unofficial)
@@ -2237,8 +2252,9 @@ void cheevos_populate_menu(void *data)
       for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
          if (cheevo->active)
-            menu_entries_add(info->list, cheevo->title,
-                  cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+            menu_entries_add_enum(info->list, cheevo->title,
+                  cheevo->description, MSG_UNKNOWN, 
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
 #endif

@@ -24,10 +24,10 @@
 #include "menu_cbs.h"
 #include "menu_display.h"
 #include "menu_navigation.h"
-#include "menu_hash.h"
 #include "menu_shader.h"
 
 #include "../content.h"
+#include "../configuration.h"
 #include "../dynamic.h"
 #include "../core_info.h"
 #include "../retroarch.h"
@@ -37,6 +37,7 @@
 #include "../list_special.h"
 #include "../tasks/tasks_internal.h"
 #include "../ui/ui_companion_driver.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {

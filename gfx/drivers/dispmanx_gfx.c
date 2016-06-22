@@ -118,7 +118,7 @@ struct dispmanx_video
    int menu_pitch; 
    /* Both main and menu surfaces are going to have the same aspect,
     * so we keep it here for future reference. */
-   float aspect;
+   float aspect_ratio;
 };
 
 /* If no free page is available when called, wait for a page flip. */
@@ -327,6 +327,15 @@ static void dispmanx_surface_update(void *data, const void *frame,
    slock_unlock(_dispvars->pending_mutex);
 }
 
+/* Enable/disable bilinear filtering. */
+static void dispmanx_set_scaling (bool bilinear_filter)
+{
+      if (bilinear_filter)
+         vc_gencmd_send( "%s", "scaling_kernel 0 -2 -6 -8 -10 -8 -3 2 18 50 82 119 155 187 213 227 227 213 187 155 119 82 50 18 2 -3 -8 -10 -8 -6 -2 0 0");
+      else
+         vc_gencmd_send( "%s", "scaling_kernel 0 0 0 0 0 0 0 0 1 1 1 1 255 255 255 255 255 255 255 255 1 1 1 1 0 0 0 0 0 0 0 0 1");
+}
+
 static void dispmanx_blank_console (void *data)
 {
    /* Note that a 2-pixels array is needed to accomplish console blanking because with 1-pixel
@@ -378,7 +387,7 @@ static void *dispmanx_gfx_init(const video_info_t *video,
     * call seq when a core is loaded is gfx_init()->set_aspect()->gfx_frame()
     * and we don't want the main surface to be setup in set_aspect() 
     * before we get to gfx_frame(). */
-   _dispvars->aspect = video_driver_get_aspect_ratio();
+   _dispvars->aspect_ratio = video_driver_get_aspect_ratio();
 
    /* Initialize the rest of the mutexes and conditions. */
    _dispvars->vsync_condition  = scond_new();
@@ -394,9 +403,12 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 
    if (input && input_data)
       *input = NULL;
+   
+   /* Enable/disable dispmanx bilinear filtering. */ 
+   settings_t *settings         = config_get_ptr();
+   dispmanx_set_scaling(settings->video.smooth);
 
    dispmanx_blank_console(_dispvars);
-
    return _dispvars;
 }
 
@@ -404,21 +416,24 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg)
 {
    struct dispmanx_video *_dispvars = data;
+   float aspect = video_driver_get_aspect_ratio();
 
-   if (width != _dispvars->core_width || height != _dispvars->core_height)
+   if (width != _dispvars->core_width || height != _dispvars->core_height || _dispvars->aspect_ratio != aspect)
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
          return true;
 
-      _dispvars->core_width  = width;
-      _dispvars->core_height = height;
-      _dispvars->core_pitch  = pitch;
+      _dispvars->core_width    = width;
+      _dispvars->core_height   = height;
+      _dispvars->core_pitch    = pitch;
+      _dispvars->aspect_ratio  = aspect;
 
       if (_dispvars->main_surface != NULL) 
          dispmanx_surface_free(_dispvars, &_dispvars->main_surface);
 
-      /* We need to recreate the main surface. */
+      /* Internal resolution or ratio has changed, so we need 
+       * to recreate the main surface. */
       dispmanx_surface_setup(_dispvars, 
             width, 
             height, 
@@ -426,10 +441,16 @@ static bool dispmanx_gfx_frame(void *data, const void *frame, unsigned width,
             _dispvars->rgb32 ? 32 : 16,
             _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
             255,
-            _dispvars->aspect, 
+            _dispvars->aspect_ratio, 
             3,
             0,
             &_dispvars->main_surface);
+  
+      /* We need to recreate the menu surface too, if it exists already, so we 
+       * free it and let dispmanx_set_texture_frame() recreate it as it detects it's NULL.*/ 
+      if (_dispvars->menu_active && _dispvars->menu_surface) {
+         dispmanx_surface_free(_dispvars, &_dispvars->menu_surface);
+      }
    }
 
    if (_dispvars->menu_active)
@@ -462,7 +483,7 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
    if (!_dispvars->menu_active)
       return;
 
-   /* If menu is active in this frame but out menu surface is NULL, we allocate a new one.*/
+   /* If menu is active in this frame but our menu surface is NULL, we allocate a new one.*/
    if (_dispvars->menu_surface == NULL)
    {
       _dispvars->menu_width  = width;
@@ -473,10 +494,10 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
             width, 
             height, 
             _dispvars->menu_pitch, 
-            rgb32 ? 32 : 16,
+            16,
             VC_IMAGE_RGBA16,
             210,
-            _dispvars->aspect, 
+            _dispvars->aspect_ratio, 
             3,
             0,
             &_dispvars->menu_surface);
@@ -562,45 +583,32 @@ static bool dispmanx_gfx_read_viewport(void *data, uint8_t *buffer)
 
 static void dispmanx_set_aspect_ratio (void *data, unsigned aspect_ratio_idx) 
 {
-   struct dispmanx_video *_dispvars = data;
-   /* Here we obtain the new aspect ratio. */
-   float new_aspect = aspectratio_lut[aspect_ratio_idx].value;
-   if (_dispvars->aspect != new_aspect)
-   { 
-      _dispvars->aspect = new_aspect;
-      if (_dispvars->main_surface != NULL)
-         dispmanx_surface_free(_dispvars, &_dispvars->main_surface);
+   /* Due to RetroArch setting the data pointer to NULL internally
+    * on core change, data is going to be NULL here after we load
+    * a new core from the GUI, so we can't count on accessing it 
+    * to store the aspect ratio we are going to use, so we tell RA 
+    * to keep track of the new aspect ratio and we get it in gfx_frame()
+    * with video_driver_get_aspect_ratio() to find out if it has changed. */   
+   
+   switch (aspect_ratio_idx)
+   {
+      case ASPECT_RATIO_SQUARE:
+         video_driver_set_viewport_square_pixel();
+         break;
 
-      dispmanx_surface_setup(_dispvars, 
-            _dispvars->core_width, 
-            _dispvars->core_height, 
-            _dispvars->core_pitch,
-            _dispvars->rgb32 ? 32 : 16,
-            _dispvars->rgb32 ? VC_IMAGE_XRGB8888 : VC_IMAGE_RGB565,
-            255,
-            _dispvars->aspect, 
-            3,
-            0,
-            &_dispvars->main_surface); 
+      case ASPECT_RATIO_CORE:
+         video_driver_set_viewport_core();
+         break;
 
-      if (_dispvars->menu_active)
-      {
-         if (_dispvars->menu_surface != NULL)
-            dispmanx_surface_free(_dispvars, &_dispvars->menu_surface);
+      case ASPECT_RATIO_CONFIG:
+         video_driver_set_viewport_config();
+         break;
 
-         dispmanx_surface_setup(_dispvars, 
-               _dispvars->menu_width, 
-               _dispvars->menu_height, 
-               _dispvars->menu_pitch,
-               16,
-               VC_IMAGE_RGBA16,
-               210,
-               _dispvars->aspect, 
-               3,
-               0,
-               &_dispvars->menu_surface);
-      }
+      default:
+         break;
    }
+
+   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 }
 
 static const video_poke_interface_t dispmanx_poke_interface = {

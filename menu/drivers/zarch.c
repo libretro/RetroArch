@@ -44,7 +44,6 @@
 #include "../menu_entry.h"
 #include "../menu_display.h"
 #include "../menu_navigation.h"
-#include "../menu_hash.h"
 #include "../../retroarch.h"
 
 #include "../../gfx/font_driver.h"
@@ -1007,7 +1006,7 @@ static void *zarch_init(void **userdata)
 
    if (!string_is_empty(settings->path.menu_wallpaper))
       task_push_image_load(settings->path.menu_wallpaper,
-            "cb_menu_wallpaper",
+            MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
             menu_display_handle_wallpaper_upload, NULL);
 
    matrix_4x4_ortho(&zui->mvp, 0, 1, 1, 0, 0, 1);
@@ -1092,7 +1091,8 @@ static void zarch_context_reset(void *data)
    zarch_context_bg_destroy(zui);
 
    task_push_image_load(settings->path.menu_wallpaper,
-         "cb_menu_wallpaper", menu_display_handle_wallpaper_upload, NULL);
+         MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
+         menu_display_handle_wallpaper_upload, NULL);
 
    menu_display_allocate_white_texture();
 
@@ -1129,10 +1129,11 @@ static bool zarch_menu_init_list(void *data)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
-         menu_hash_to_str(MENU_VALUE_HISTORY_TAB), sizeof(info.label));
+         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
+   info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
-   menu_entries_add(menu_stack,
-         info.path, info.label, info.type, info.flags, 0);
+   menu_entries_add_enum(menu_stack,
+         info.path, info.label, MENU_ENUM_LABEL_HISTORY_TAB, info.type, info.flags, 0);
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
 

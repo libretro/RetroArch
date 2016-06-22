@@ -378,8 +378,12 @@ bool core_load(void)
 bool core_verify_api_version(void)
 {
    unsigned api_version = core.retro_api_version();
-   RARCH_LOG("Version of libretro API: %u\n", api_version);
-   RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
+   RARCH_LOG("%s: %u\n", 
+         msg_hash_to_str(MSG_VERSION_OF_LIBRETRO_API),
+         api_version);
+   RARCH_LOG("%s: %u\n",    
+         msg_hash_to_str(MSG_COMPILED_AGAINST_API),
+         RETRO_API_VERSION);
 
    if (api_version != RETRO_API_VERSION)
    {

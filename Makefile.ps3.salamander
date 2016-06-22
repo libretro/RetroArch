@@ -33,6 +33,7 @@ PPU_SRCS		= frontend/frontend_salamander.c \
 				  libretro-common/compat/compat_strl.c \
 				  libretro-common/streams/file_stream.c \
 				  libretro-common/file/config_file.c \
+				  file_path_str.c \
 				  verbosity.c
 
 ifeq ($(HAVE_LOGGER), 1)

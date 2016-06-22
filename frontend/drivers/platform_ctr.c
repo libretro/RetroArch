@@ -81,7 +81,7 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.video_filter, g_defaults.dir.port,
          "filters", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
-         "retroarch.cfg", sizeof(g_defaults.path.config));
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 }
 
 static void frontend_ctr_deinit(void *data)
@@ -255,8 +255,8 @@ static int frontend_ctr_parse_drive_list(void *data)
    if (!list)
       return -1;
 
-   menu_entries_add(list,
-         "sdmc:/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "sdmc:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
    return 0;

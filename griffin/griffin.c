@@ -653,6 +653,7 @@ FILE
 ============================================================ */
 #include "../libretro-common/file/file_path.c"
 #include "../file_path_special.c"
+#include "../file_path_str.c"
 #include "../libretro-common/lists/dir_list.c"
 #include "../libretro-common/lists/string_list.c"
 #include "../libretro-common/lists/file_list.c"
@@ -755,7 +756,6 @@ RETROARCH
 #include "../retroarch.c"
 #include "../runloop.c"
 #include "../libretro-common/queues/task_queue.c"
-#include "../tasks/tasks_internal.c"
 
 #include "../msg_hash.c"
 #ifdef HAVE_LANGEXTRA
@@ -846,7 +846,6 @@ MENU
 ============================================================ */
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
-#include "../menu/menu_hash.c"
 #include "../menu/menu_input.c"
 #include "../menu/menu_entry.c"
 #include "../menu/menu_entries.c"
@@ -873,21 +872,6 @@ MENU
 #include "../menu/menu_display.c"
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
-
-#ifdef HAVE_LANGEXTRA
-#include "../menu/intl/menu_hash_de.c"
-#include "../menu/intl/menu_hash_es.c"
-#include "../menu/intl/menu_hash_eo.c"
-#include "../menu/intl/menu_hash_fr.c"
-#include "../menu/intl/menu_hash_it.c"
-#include "../menu/intl/menu_hash_nl.c"
-#include "../menu/intl/menu_hash_pl.c"
-#include "../menu/intl/menu_hash_pt.c"
-#ifdef HAVE_UTF8
-#include "../menu/intl/menu_hash_ru.c"
-#endif
-#endif
-#include "../menu/intl/menu_hash_us.c"
 
 #include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"

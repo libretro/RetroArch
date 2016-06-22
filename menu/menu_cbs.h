@@ -21,21 +21,6 @@
 #include <boolean.h>
 
 #include "menu_entries.h"
-#include "menu_hash.h"
-
-#define CB_CORE_UPDATER_DOWNLOAD       0x7412da7dU
-#define CB_CORE_UPDATER_LIST           0x32fd4f01U
-#define CB_UPDATE_ASSETS               0xbf85795eU
-#define CB_UPDATE_CORE_INFO_FILES      0xe6084091U
-#define CB_UPDATE_AUTOCONFIG_PROFILES  0x28ada67dU
-#define CB_UPDATE_CHEATS               0xc360fec3U
-#define CB_UPDATE_OVERLAYS             0x699009a0U
-#define CB_UPDATE_DATABASES            0x931eb8d3U
-#define CB_UPDATE_SHADERS_GLSL         0x0121a186U
-#define CB_UPDATE_SHADERS_CG           0xc93a53feU
-#define CB_CORE_CONTENT_LIST           0xebc51227U
-#define CB_CORE_CONTENT_DOWNLOAD       0x03b3c0a3U
-#define CB_LAKKA_DOWNLOAD              0x54eaa904U
 
 enum
 {
@@ -54,6 +39,10 @@ enum
    ACTION_OK_DL_PUSH_DEFAULT,
    ACTION_OK_DL_DOWNLOADS_DIR,
    ACTION_OK_DL_INPUT_SETTINGS_LIST,
+   ACTION_OK_DL_DRIVER_SETTINGS_LIST,
+   ACTION_OK_DL_VIDEO_SETTINGS_LIST,
+   ACTION_OK_DL_AUDIO_SETTINGS_LIST,
+   ACTION_OK_DL_CORE_SETTINGS_LIST,
    ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST,
    ACTION_OK_DL_PLAYLIST_SETTINGS_LIST,
    ACTION_OK_DL_ACCOUNTS_LIST,
@@ -78,6 +67,7 @@ enum
    ACTION_OK_DL_CORE_UPDATER_LIST,
    ACTION_OK_DL_THUMBNAILS_UPDATER_LIST,
    ACTION_OK_DL_CORE_CONTENT_LIST,
+   ACTION_OK_DL_CORE_CONTENT_DIRS_LIST,
    ACTION_OK_DL_DEFERRED_CORE_LIST,
    ACTION_OK_DL_DEFERRED_CORE_LIST_SET,
    ACTION_OK_DL_CONTENT_SETTINGS
@@ -169,7 +159,7 @@ int menu_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1,
+      const char *elem0, const char *elem1, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash);
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,

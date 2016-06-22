@@ -72,8 +72,7 @@ static char screenshot_dir[PATH_MAX_LENGTH];
 static char downloads_dir[PATH_MAX_LENGTH];
 static char apk_dir[PATH_MAX_LENGTH];
 static char app_dir[PATH_MAX_LENGTH];
-static char internal_storage_path[PATH_MAX_LENGTH];
-static char internal_storage_app_path[PATH_MAX_LENGTH];
+
 #else
 static const char *proc_apm_path                   = "/proc/apm";
 static const char *proc_acpi_battery_path          = "/proc/acpi/battery";
@@ -542,12 +541,14 @@ bool test_permissions(const char *path)
    char buf[PATH_MAX_LENGTH];
    bool ret;
 
-   RARCH_LOG("Testing permissions for %s\n",path);
+   __android_log_print(ANDROID_LOG_INFO,
+      "RetroArch", "Testing permissions for %s\n",path);
 
    fill_pathname_join(buf, path, ".retroarch", sizeof(buf));
    ret = path_mkdir(buf);
 
-   RARCH_LOG("Create %s in %s %s\n", buf, path, ret ? "true" : "false");
+   __android_log_print(ANDROID_LOG_INFO,
+      "RetroArch", "Create %s in %s %s\n", buf, path, ret ? "true" : "false");
 
    if(ret)
       rmdir(buf);
@@ -1173,7 +1174,6 @@ static void frontend_linux_get_os(char *s,
 static void frontend_linux_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
-   char base_path[PATH_MAX] = {0};
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX] = {0};
@@ -1204,12 +1204,14 @@ static void frontend_linux_get_env(int *argc,
 
    frontend_android_get_version(&major, &minor, &rel);
 
-   RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n",
+   __android_log_print(ANDROID_LOG_INFO,
+      "RetroArch", "[ENV] Android version (major : %d, minor : %d, rel : %d)\n",
          major, minor, rel);
 
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
-   RARCH_LOG("Checking arguments passed from intent ...\n");
+   __android_log_print(ANDROID_LOG_INFO,
+      "RetroArch", "[ENV] Checking arguments passed from intent ...\n");
 
    /* Config file. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
@@ -1224,7 +1226,8 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(config_path, argv, sizeof(config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("[ENV]: config file: [%s]\n", config_path);
+      __android_log_print(ANDROID_LOG_INFO,
+         "RetroArch", "[ENV]: config file: [%s]\n", config_path);
       if (args && *config_path)
          args->config_path = config_path;
    }
@@ -1241,7 +1244,8 @@ static void frontend_linux_get_env(int *argc,
             sizeof(android_app->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("[ENV]: current IME: [%s]\n", android_app->current_ime);
+      __android_log_print(ANDROID_LOG_INFO,
+         "RetroArch", "[ENV]: current IME: [%s]\n", android_app->current_ime);
    }
 
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
@@ -1254,7 +1258,8 @@ static void frontend_linux_get_env(int *argc,
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("[ENV]: used: [%s].\n", used ? "true" : "false");
+      __android_log_print(ANDROID_LOG_INFO,
+         "RetroArch", "[ENV]: used: [%s].\n", used ? "true" : "false");
    }
 
    /* LIBRETRO. */
@@ -1271,7 +1276,8 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(core_path, argv, sizeof(core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("[ENV]: libretro path: [%s]\n", core_path);
+      __android_log_print(ANDROID_LOG_INFO,
+         "RetroArch", "[ENV]: libretro path: [%s]\n", core_path);
       if (args && *core_path)
          args->libretro_path = core_path;
    }
@@ -1293,7 +1299,8 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(path))
       {
-         RARCH_LOG("[ENV]: auto-start game [%s]\n", path);
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV]: auto-start game [%s]\n", path);
          if (args && *path)
             args->content_path = path;
       }
@@ -1315,7 +1322,9 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(internal_storage_path))
       {
-         RARCH_LOG("[ENV]: internal storage location: [%s]\n", internal_storage_path);
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV]: android internal storage location: [%s]\n",
+            internal_storage_path);
       }
    }
 
@@ -1335,7 +1344,9 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(screenshot_dir))
       {
-         RARCH_LOG("[ENV]: picture folder location [%s]\n", screenshot_dir);
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV]: android picture folder location [%s]\n",
+            screenshot_dir);
       }
    }
 
@@ -1355,7 +1366,9 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(downloads_dir))
       {
-         RARCH_LOG("[ENV]: download folder location [%s]\n", downloads_dir);
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV]: android download folder location [%s]\n",
+            downloads_dir);
       }
    }
 
@@ -1374,7 +1387,8 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(apk_dir))
       {
-         RARCH_LOG("[ENV]: APK location [%s]\n", apk_dir);
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV]: APK location [%s]\n", apk_dir);
       }
    }
 
@@ -1393,7 +1407,9 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(internal_storage_app_path))
       {
-         RARCH_LOG("[ENV]: external files location [%s]\n", internal_storage_app_path);
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV]: android external files location [%s]\n",
+            internal_storage_app_path);
       }
    }
 
@@ -1429,7 +1445,8 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(app_dir))
       {
-         RARCH_LOG("[ENV]: application location: [%s]\n", app_dir);
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV]: application location: [%s]\n", app_dir);
          if (args && *app_dir)
          {
             char buf[PATH_MAX_LENGTH] = {0};
@@ -1474,7 +1491,9 @@ static void frontend_linux_get_env(int *argc,
                path_mkdir(g_defaults.dir.core_assets);
             }
 
-            RARCH_LOG("[ENV]: default download folder: [%s]", g_defaults.dir.core_assets);
+            __android_log_print(ANDROID_LOG_INFO,
+               "RetroArch", "[ENV]: default download folder: [%s]",
+               g_defaults.dir.core_assets);
 
             if(*screenshot_dir && test_permissions(screenshot_dir))
             {
@@ -1488,7 +1507,9 @@ static void frontend_linux_get_env(int *argc,
                path_mkdir(g_defaults.dir.screenshot);
             }
 
-            RARCH_LOG("[ENV]: default screenshot folder: [%s]", g_defaults.dir.screenshot);
+            __android_log_print(ANDROID_LOG_INFO,
+               "RetroArch", "[ENV]: default screenshot folder: [%s]",
+               g_defaults.dir.screenshot);
 
             switch (perms)
             {
@@ -1598,9 +1619,15 @@ static void frontend_linux_get_env(int *argc,
             fill_pathname_join(buf, internal_storage_app_path, "system", sizeof(buf));
             path_mkdir(buf);
 
-            RARCH_LOG("[ENV]: default savefile folder: [%s]",   g_defaults.dir.sram);
-            RARCH_LOG("[ENV]: default savestate folder: [%s]",  g_defaults.dir.savestate);
-            RARCH_LOG("[ENV]: default system folder: [%s]",     g_defaults.dir.system);
+            __android_log_print(ANDROID_LOG_INFO,
+               "RetroArch", "[ENV]: default savefile folder: [%s]",
+               g_defaults.dir.sram);
+            __android_log_print(ANDROID_LOG_INFO,
+               "RetroArch", "[ENV]: default savestate folder: [%s]",
+               g_defaults.dir.savestate);
+            __android_log_print(ANDROID_LOG_INFO,
+               "RetroArch", "[ENV]: default system folder: [%s]",
+               g_defaults.dir.system);
          }
       }
    }
@@ -1632,6 +1659,7 @@ static void frontend_linux_get_env(int *argc,
       snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
 
 #else
+   char base_path[PATH_MAX] = {0};
    const char *xdg          = getenv("XDG_CONFIG_HOME");
    const char *home         = getenv("HOME");
 
@@ -1799,16 +1827,18 @@ static int frontend_android_parse_drive_list(void *data)
 {
    file_list_t *list = (file_list_t*)data;
 
-   // MENU_FILE_DIRECTORY is not working with labels, placeholders for now
-   menu_entries_add(list,
-         app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         internal_storage_app_path, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         internal_storage_path, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
+   /* FILE_TYPE_DIRECTORY is not working with labels, placeholders for now */
+   menu_entries_add_enum(list,
+         app_dir, "Application Dir", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         internal_storage_app_path, "External Application Dir", MSG_UNKNOWN,
+         FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         internal_storage_path, "Internal Memory",
+         MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 
-   menu_entries_add(list, "/", "",
-         MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list, "/", "",
+         MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 
    return 0;
 }
@@ -1882,16 +1912,49 @@ static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
 
 static uint64_t frontend_linux_get_mem_total(void)
 {
-   long pages     = sysconf(_SC_PHYS_PAGES);
-   long page_size = sysconf(_SC_PAGE_SIZE);
-   return pages * page_size;
+   FILE* data = fopen("/proc/meminfo", "r");
+   if (!data)
+      return 0;
+
+   char line[256];
+   uint64_t total = 0;
+   while (fgets(line, sizeof(line), data)) {
+      if (sscanf(line, "MemTotal: %lu kB", &total) == 1) {
+         fclose(data);
+         total *= 1024;
+         return total;
+      }
+   }
+
+   fclose(data);
+   return 0;
 }
 
 static uint64_t frontend_linux_get_mem_used(void)
 {
-   long pages     = sysconf(_SC_AVPHYS_PAGES);
-   long page_size = sysconf(_SC_PAGE_SIZE);
-   return pages * page_size;
+   FILE* data = fopen("/proc/meminfo", "r");
+   if (!data)
+      return 0;
+
+   uint64_t total    = 0;
+   uint64_t freemem  = 0;
+   uint64_t buffers  = 0;
+   uint64_t cached   = 0;
+
+   char line[256];
+   while (fgets(line, sizeof(line), data)) {
+      if (sscanf(line, "MemTotal: %lu kB", &total)  == 1)
+         total   *= 1024;
+      if (sscanf(line, "MemFree: %lu kB", &freemem) == 1)
+         freemem *= 1024;
+      if (sscanf(line, "Buffers: %lu kB", &buffers) == 1)
+         buffers *= 1024;
+      if (sscanf(line, "Cached: %lu kB", &cached)   == 1)
+         cached  *= 1024;
+   }
+
+   fclose(data);
+   return total - freemem - buffers - cached;
 }
 
 frontend_ctx_driver_t frontend_ctx_linux = {

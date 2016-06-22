@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <string/stdstring.h>
+
 #include "cocoa_common.h"
 #include "../ui_cocoa.h"
 #include "../../ui_companion_driver.h"

@@ -250,7 +250,6 @@ bool task_push_decompress(
    char tmp[PATH_MAX_LENGTH]  = {0};
    decompress_state_t *s      = NULL;
    retro_task_t *t            = NULL;
-   bool is_compressed         = false;
 
    if (string_is_empty(target_dir) || string_is_empty(source_file))
    {
@@ -260,11 +259,9 @@ bool task_push_decompress(
    }
 
    /* ZIP or APK only */
-   is_compressed  = string_is_equal(path_get_extension(source_file), "zip");
-   is_compressed  = is_compressed || 
-      string_is_equal(path_get_extension(source_file), "apk");
-
-   if (!path_file_exists(source_file) || !is_compressed)
+   if (!path_file_exists(source_file) || 
+         msg_hash_to_file_type(msg_hash_calculate(path_get_extension(source_file))) 
+         != FILE_TYPE_COMPRESSED)
    {
       RARCH_WARN("[decompress] File '%s' does not exist or is not a compressed file.\n",
             source_file);

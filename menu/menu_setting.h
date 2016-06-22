@@ -26,6 +26,8 @@
 #include "../command.h"
 #include "../input/input_driver.h"
 
+#include "../msg_hash.h"
+
 RETRO_BEGIN_DECLS
 
 enum setting_type
@@ -50,6 +52,7 @@ enum setting_type
 
 enum setting_flags
 {
+   SD_FLAG_NONE           = 0,
    SD_FLAG_PATH_DIR       = (1 << 0),
    SD_FLAG_PATH_FILE      = (1 << 1),
    SD_FLAG_ALLOW_EMPTY    = (1 << 2),
@@ -72,7 +75,6 @@ enum settings_free_flags
 enum menu_setting_ctl_state
 {
    MENU_SETTING_CTL_NONE = 0,
-   MENU_SETTING_CTL_FREE,
    MENU_SETTING_CTL_NEW,
    MENU_SETTING_CTL_IS_OF_PATH_TYPE,
    MENU_SETTING_CTL_ACTION_RIGHT
@@ -167,7 +169,10 @@ bool CONFIG_BOOL(
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler);
+      change_handler_t change_handler,
+      change_handler_t read_handler,
+      uint32_t flags
+      );
 
 bool CONFIG_INT(
       rarch_setting_t **list,
@@ -286,6 +291,8 @@ int menu_setting_set(unsigned type, const char *label,
  **/
 rarch_setting_t *menu_setting_find(const char *label);
 
+rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
+
 /**
  * setting_set_with_string_representation:
  * @setting            : pointer to setting
@@ -332,6 +339,8 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 enum setting_type menu_setting_get_type(rarch_setting_t *setting);
 
 enum setting_type menu_setting_get_browser_selection_type(rarch_setting_t *setting);
+
+enum msg_hash_enums menu_setting_get_enum_idx(rarch_setting_t *setting);
 
 const char *menu_setting_get_values(rarch_setting_t *setting);
 
@@ -381,6 +390,13 @@ void settings_data_list_current_add_free_flags(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned values);
+
+void menu_settings_list_current_add_enum_idx(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum msg_hash_enums enum_idx);
+
+bool menu_setting_free(void *data);
 
 bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data);
 

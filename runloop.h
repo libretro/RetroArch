@@ -127,8 +127,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_SYSTEM_INFO_FREE
 };
 
-typedef int (*transfer_cb_t)(void *data, size_t len);
-
 typedef struct rarch_dir_list rarch_dir_list_t;
 
 typedef struct rarch_dir

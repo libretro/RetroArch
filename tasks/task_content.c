@@ -661,9 +661,9 @@ static int content_file_compressed_read(
       if (*length != -1)
          ret = 1;
    }
+#endif
 
    string_list_free(str_list);
-#endif
    return ret;
 
 error:
@@ -1126,8 +1126,6 @@ static bool load_content_from_compressed_archive(
       return false;
    }
 
-   RARCH_LOG("New path is: [%s]\n", new_path);
-
    string_list_append(additional_path_allocs, new_path, attributes);
    info[i].path = 
       additional_path_allocs->elems[additional_path_allocs->size -1 ].data;
@@ -1171,8 +1169,8 @@ static bool load_content(
 
       if (require_content && string_is_empty(path))
       {
-         RARCH_LOG("libretro core requires content, "
-               "but nothing was provided.\n");
+         RARCH_LOG("%s\n",
+               msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
          return false;
       }
 
@@ -1188,8 +1186,8 @@ static bool load_content(
       }
       else
       {
-         RARCH_LOG("Content loading skipped. Implementation will"
-               " load it on its own.\n");
+         RARCH_LOG("%s\n",
+               msg_hash_to_str(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
 
 #ifdef HAVE_COMPRESSION
          if (!load_content_from_compressed_archive(
@@ -1245,8 +1243,8 @@ static const struct retro_subsystem_info *init_content_file_subsystem(
 
    if (special->num_roms && !global->subsystem_fullpaths)
    {
-      RARCH_ERR("libretro core requires special content, "
-            "but none were provided.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
       goto error;
    }
    else if (special->num_roms && special->num_roms
@@ -1603,7 +1601,9 @@ static bool task_load_content(content_ctx_info_t *content_info,
       /** Show loading OSD message */
       if (*fullpath)
       {
-         snprintf(msg, sizeof(msg), "INFO - Loading %s ...", name);
+         snprintf(msg, sizeof(msg), "%s %s ...", 
+               msg_hash_to_str(MSG_LOADING),
+               name);
          runloop_msg_queue_push(msg, 1, 1, false);
       }
    }
@@ -1649,7 +1649,9 @@ error:
    {
       if (!string_is_empty(fullpath) && !string_is_empty(name))
       {
-         snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
+         snprintf(msg, sizeof(msg), "%s %s.\n",
+               msg_hash_to_str(MSG_FAILED_TO_LOAD),
+               name);
          runloop_msg_queue_push(msg, 1, 90, false);
       }
    }
@@ -1713,6 +1715,7 @@ bool task_push_content_load_default(
    /* First we determine if we are loading from a menu */
    switch (mode)
    {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
 #if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #endif
@@ -1782,6 +1785,7 @@ bool task_push_content_load_default(
    /* Set libretro core path */
    switch (mode)
    {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
@@ -1822,16 +1826,29 @@ bool task_push_content_load_default(
    /* Load core */
    switch (mode)
    {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
+#ifdef HAVE_DYNAMIC
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
          break;
       default:
          break;
    }
+
+#ifndef HAVE_DYNAMIC
+   /* Fork core? */
+   switch (mode)
+   {
+      case 0:
+      default:
+         if (!frontend_driver_set_fork(FRONTEND_FORK_CORE))
+            return false;
+         break;
+   }
+#endif
 
    /* Preliminary stuff that has to be done before we 
     * load the actual content. Can differ per mode. */
@@ -1897,6 +1914,8 @@ bool task_push_content_load_default(
 #if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #endif
+         break;
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          break;
       default:
 #ifdef HAVE_MENU

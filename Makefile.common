@@ -129,7 +129,6 @@ OBJ += frontend/frontend.o \
        runloop.o \
 		 libretro-common/algorithms/mismatch.o \
        libretro-common/queues/task_queue.o \
-       tasks/tasks_internal.o \
        tasks/task_content.o \
 		 tasks/task_save_ram.o \
 		 tasks/task_save_state.o \
@@ -150,6 +149,7 @@ OBJ += frontend/frontend.o \
        libretro-common/file/nbio/nbio_stdio.o \
        libretro-common/file/file_path.o \
        file_path_special.o \
+       file_path_str.o \
        libretro-common/hash/rhash.o \
        audio/audio_driver.o \
        input/input_driver.o \
@@ -486,20 +486,8 @@ ifeq ($(HAVE_MENU_COMMON), 1)
       PSEUDO_NS :=
    endif
 
-ifeq ($(HAVE_LANGEXTRA), 1)
-OBJ +=	 menu/intl/menu_hash_de.o \
-          menu/intl/menu_hash_es.o \
-          menu/intl/menu_hash_eo.o \
-          menu/intl/menu_hash_fr.o \
-          menu/intl/menu_hash_it.o \
-          menu/intl/menu_hash_nl.o \
-          menu/intl/menu_hash_pl.o \
-          menu/intl/menu_hash_pt.o
-endif
-   OBJ += menu/menu_hash.o \
-          menu/menu_driver.o \
+   OBJ += menu/menu_driver.o \
           menu/menu_content.o \
-          menu/intl/menu_hash_us$(PSEUDO_NS).o \
           menu/menu_input.o \
           menu/menu_entry.o \
           menu/menu_entries.o \
@@ -728,6 +716,16 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       endif
    endif
 
+ifeq ($(HAVE_FFMPEG), 1)
+ifneq ($(C89_BUILD), 1)
+ifneq ($(C90_BUILD), 1)
+ifneq ($(HAVE_GLES), 1)
+   OBJ += cores/libretro-ffmpeg/fft/fft.o
+   DEFINES += -Ideps -DHAVE_GL_FFT
+endif
+endif
+endif
+endif
 
    ifeq ($(HAVE_GLES), 1)
       LIBS += $(GLES_LIBS)
@@ -1087,6 +1085,8 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
           cores/libretro-ffmpeg/ffmpeg_core.o
+
+
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
    DEFINES += -Wno-deprecated-declarations -DHAVE_FFMPEG -Iffmpeg

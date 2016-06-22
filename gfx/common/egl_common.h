@@ -18,6 +18,10 @@
 
 #include <signal.h>
 
+#ifdef HAVE_GBM
+/* presense or absense of this include makes egl.h change NativeWindowType between gbm_device* and _XDisplay* */
+#include <gbm.h>
+#endif
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 

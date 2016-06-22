@@ -42,7 +42,6 @@
 #include "../msg_hash.h"
 
 #ifdef HAVE_MENU
-#include "../menu/menu_hash.h"
 #include "../menu/menu_setting.h"
 #endif
 
@@ -1186,33 +1185,36 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 #if defined(GEKKO) || defined(__CELLOS_LV2__)
    CONFIG_ACTION(
          list, list_info,
-         menu_hash_to_str(MENU_LABEL_SCREEN_RESOLUTION),
-         menu_hash_to_str(MENU_LABEL_VALUE_SCREEN_RESOLUTION),
+         msg_hash_to_str(MENU_ENUM_LABEL_SCREEN_RESOLUTION),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION),
          group_info,
          subgroup_info,
          parent_group);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SCREEN_RESOLUTION);
 #endif
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
          list, list_info,
          &global->console.screen.pal60_enable,
-         menu_hash_to_str(MENU_LABEL_PAL60_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_PAL60_ENABLE),
+         msg_hash_to_str(MENU_ENUM_LABEL_PAL60_ENABLE),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PAL60_ENABLE),
          false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
          group_info,
          subgroup_info,
          parent_group,
          general_write_handler,
-         general_read_handler);
+         general_read_handler,
+         SD_FLAG_NONE);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PAL60_ENABLE);
 #endif
 #if defined(GEKKO) || defined(_XBOX360)
    CONFIG_UINT(
          list, list_info,
          &global->console.screen.gamma_correction,
-         menu_hash_to_str(MENU_LABEL_VIDEO_GAMMA),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GAMMA),
+         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_GAMMA),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA),
          0,
          group_info,
          subgroup_info,
@@ -1233,32 +1235,35 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          true);
    settings_data_list_current_add_flags(list, list_info,
          SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_GAMMA);
 #endif
 #if defined(_XBOX1) || defined(HW_RVL)
    CONFIG_BOOL(
          list, list_info,
          &global->console.softfilter_enable,
-         menu_hash_to_str(MENU_LABEL_VIDEO_SOFT_FILTER),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SOFT_FILTER),
+         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SOFT_FILTER),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER),
          false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
          group_info,
          subgroup_info,
          parent_group,
          general_write_handler,
-         general_read_handler);
+         general_read_handler,
+         SD_FLAG_NONE);
    menu_settings_list_current_add_cmd(
          list,
          list_info,
          CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SOFT_FILTER);
 #endif
 #ifdef _XBOX1
    CONFIG_UINT(
          list, list_info,
          &settings->video.swap_interval,
-         menu_hash_to_str(MENU_LABEL_VIDEO_FILTER_FLICKER),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER_FLICKER),
+         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER),
          0,
          group_info,
          subgroup_info,
@@ -1266,6 +1271,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER);
 #endif
 #endif
 }

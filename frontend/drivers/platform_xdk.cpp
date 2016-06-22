@@ -1127,7 +1127,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    strlcpy(g_defaults.dir.core, "D:", sizeof(g_defaults.dir.core));
    strlcpy(g_defaults.dir.core_info, "D:", sizeof(g_defaults.dir.core_info));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.core,
-         "retroarch.cfg", sizeof(g_defaults.path.config));
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
    fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
          "savestates", sizeof(g_defaults.dir.savestate));
    fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
@@ -1367,19 +1367,19 @@ static int frontend_xdk_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
 #if defined(_XBOX1)
-   menu_entries_add(list,
-         "C:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         "D:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         "E:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         "F:", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         "G:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "C:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "D:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "E:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "F:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "G:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #elif defined(_XBOX360)
-   menu_entries_add(list,
-         "game:", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "game:", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 #endif
 

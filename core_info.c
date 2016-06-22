@@ -103,7 +103,7 @@ static void core_info_list_resolve_all_firmware(
 
          snprintf(path_key, sizeof(path_key), "firmware%u_path", c);
          snprintf(desc_key, sizeof(desc_key), "firmware%u_desc", c);
-         snprintf(opt_key, sizeof(opt_key), "firmware%u_opt", c);
+         snprintf(opt_key,  sizeof(opt_key),  "firmware%u_opt",  c);
 
          config_get_string(config, path_key, &info->firmware[c].path);
          config_get_string(config, desc_key, &info->firmware[c].desc);

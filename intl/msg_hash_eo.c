@@ -13,7 +13,25 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <string.h>
+
 #include "../msg_hash.h"
+
+int menu_hash_get_help_eo(uint32_t hash, char *s, size_t len)
+{
+   int ret = 0;
+
+   switch (hash)
+   {
+      case 0:
+      default:
+         ret = -1;
+         break;
+   }
+
+   return ret;
+}
 
 const char *msg_hash_to_str_eo(enum msg_hash_enums msg)
 {

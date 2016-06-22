@@ -22,6 +22,8 @@
 #include <retro_common_api.h>
 #include <lists/file_list.h>
 
+#include "../msg_hash.h"
+
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
 #endif
@@ -30,16 +32,19 @@ RETRO_BEGIN_DECLS
 
 enum menu_displaylist_parse_type
 {
-   PARSE_NONE           = (1 << 0),
-   PARSE_GROUP          = (1 << 1),
-   PARSE_ACTION         = (1 << 2),
-   PARSE_ONLY_INT       = (1 << 3),
-   PARSE_ONLY_UINT      = (1 << 4),
-   PARSE_ONLY_BOOL      = (1 << 5),
-   PARSE_ONLY_FLOAT     = (1 << 6),
-   PARSE_ONLY_BIND      = (1 << 7),
-   PARSE_ONLY_GROUP     = (1 << 8),
-   PARSE_SUB_GROUP      = (1 << 9) 
+   PARSE_NONE                = (1 << 0),
+   PARSE_GROUP               = (1 << 1),
+   PARSE_ACTION              = (1 << 2),
+   PARSE_ONLY_INT            = (1 << 3),
+   PARSE_ONLY_UINT           = (1 << 4),
+   PARSE_ONLY_BOOL           = (1 << 5),
+   PARSE_ONLY_FLOAT          = (1 << 6),
+   PARSE_ONLY_BIND           = (1 << 7),
+   PARSE_ONLY_GROUP          = (1 << 8),
+   PARSE_ONLY_STRING         = (1 << 9),
+   PARSE_ONLY_PATH           = (1 << 10),
+   PARSE_ONLY_STRING_OPTIONS = (1 << 11),
+   PARSE_SUB_GROUP           = (1 << 12) 
 };
 
 enum menu_displaylist_ctl_state
@@ -50,7 +55,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_HELP_SCREEN_LIST,
    DISPLAYLIST_MAIN_MENU,
    DISPLAYLIST_GENERIC,
-   DISPLAYLIST_SETTING,
+   DISPLAYLIST_SETTING_ENUM,
    DISPLAYLIST_SETTINGS,
    DISPLAYLIST_SETTINGS_ALL,
    DISPLAYLIST_HORIZONTAL,
@@ -95,6 +100,10 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_ACHIEVEMENT_LIST,
    DISPLAYLIST_USER_BINDS_LIST,
    DISPLAYLIST_ACCOUNTS_LIST,
+   DISPLAYLIST_DRIVER_SETTINGS_LIST,
+   DISPLAYLIST_VIDEO_SETTINGS_LIST,
+   DISPLAYLIST_AUDIO_SETTINGS_LIST,
+   DISPLAYLIST_CORE_SETTINGS_LIST,
    DISPLAYLIST_INPUT_SETTINGS_LIST,
    DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST,
    DISPLAYLIST_PLAYLIST_SETTINGS_LIST,
@@ -113,6 +122,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_ARCHIVE_ACTION,
    DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE,
    DISPLAYLIST_CORE_CONTENT,
+   DISPLAYLIST_CORE_CONTENT_DIRS,
    DISPLAYLIST_PROCESS,
    DISPLAYLIST_PUSH_ONTO_STACK,
    DISPLAYLIST_PENDING_CLEAR
@@ -138,6 +148,7 @@ typedef struct menu_displaylist_info
    unsigned type_default;
    size_t directory_ptr;
    unsigned flags;
+   enum msg_hash_enums enum_idx;
    rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
@@ -146,6 +157,7 @@ typedef struct menu_displaylist_ctx_parse_entry
    void *data;
    menu_displaylist_info_t *info;
    const char *info_label;
+   enum msg_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
    bool add_empty_entry;
 } menu_displaylist_ctx_parse_entry_t;

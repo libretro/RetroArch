@@ -37,7 +37,6 @@
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 #include "../menu_navigation.h"
-#include "../menu_hash.h"
 #include "../menu_display.h"
 
 #include "../../core_info.h"
@@ -365,7 +364,8 @@ static void nk_menu_context_reset(void *data)
    wimp_context_bg_destroy(nk);
    nk_menu_context_reset_textures(nk, iconpath);
 
-   task_push_image_load(settings->path.menu_wallpaper, "cb_menu_wallpaper",
+   task_push_image_load(settings->path.menu_wallpaper,
+         MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
          menu_display_handle_wallpaper_upload, NULL);
 }
 
@@ -388,10 +388,12 @@ static bool nk_menu_init_list(void *data)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
-         menu_hash_to_str(MENU_VALUE_HISTORY_TAB), sizeof(info.label));
+         msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
+   info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
-   menu_entries_add(menu_stack,
-         info.path, info.label, info.type, info.flags, 0);
+   menu_entries_add_enum(menu_stack,
+         info.path, info.label, MSG_UNKNOWN, 
+         info.type, info.flags, 0);
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
 

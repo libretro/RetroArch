@@ -22,6 +22,27 @@
 
 #include <boolean.h>
 
+enum file_path_enum
+{
+   FILE_PATH_UNKNOWN = 0,
+   FILE_PATH_CONTENT_HISTORY,
+   FILE_PATH_MAIN_CONFIG,
+   FILE_PATH_CORE_OPTIONS_CONFIG,
+   FILE_PATH_ASSETS_ZIP,
+   FILE_PATH_AUTOCONFIG_ZIP,
+   FILE_PATH_CORE_INFO_ZIP,
+   FILE_PATH_OVERLAYS_ZIP,
+   FILE_PATH_DATABASE_RDB_ZIP,
+   FILE_PATH_SHADERS_GLSL_ZIP,
+   FILE_PATH_SHADERS_CG_ZIP,
+   FILE_PATH_CHEATS_ZIP,
+   FILE_PATH_LAKKA_URL,
+   FILE_PATH_CORE_THUMBNAILS_URL,
+   FILE_PATH_INDEX_DIRS_URL,
+   FILE_PATH_INDEX_URL,
+   FILE_PATH_INDEX_EXTENDED_URL
+};
+
 enum application_special_type
 {
    APPLICATION_SPECIAL_NONE = 0,
@@ -38,6 +59,8 @@ enum application_special_type
    APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT,
    APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_ICONS
 };
+
+const char *file_path_str(enum file_path_enum enum_idx);
 
 bool fill_pathname_application_data(char *s, size_t len);
 

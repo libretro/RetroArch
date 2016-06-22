@@ -160,6 +160,7 @@ static bool image_texture_internal_gx_convert_texture32(
 static bool image_texture_load_internal(
       enum image_type_enum type,
       void *ptr,
+      size_t len,
       struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
@@ -184,7 +185,7 @@ static bool image_texture_load_internal(
    do
    {
       ret = image_transfer_process(img, type,
-            (uint32_t**)&out_img->pixels, 0, &out_img->width,
+            (uint32_t**)&out_img->pixels, len, &out_img->width,
             &out_img->height);
    }while(ret == IMAGE_PROCESS_NEXT);
 
@@ -299,7 +300,7 @@ bool image_texture_load(struct texture_image *out_img,
 
       if (image_texture_load_internal(
                image_texture_convert_fmt_to_type(fmt),
-               ptr,out_img,
+               ptr, file_len, out_img,
                a_shift, r_shift, g_shift, b_shift))
          goto success;
    }

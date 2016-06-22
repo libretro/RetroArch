@@ -495,6 +495,7 @@ static void config_set_defaults(void)
    settings->video.fullscreen_y          = fullscreen_y;
    settings->video.disable_composition   = disable_composition;
    settings->video.vsync                 = vsync;
+   settings->video.max_swapchain_images  = max_swapchain_images;
    settings->video.hard_sync             = hard_sync;
    settings->video.hard_sync_frames      = hard_sync_frames;
    settings->video.frame_delay           = frame_delay;
@@ -941,7 +942,7 @@ static config_file_t *open_default_config_file(void)
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
    fill_pathname_resolve_relative(conf_path, app_path,
-         "retroarch.cfg", sizeof(conf_path));
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
 
    conf = config_file_new(conf_path);
 
@@ -951,7 +952,7 @@ static config_file_t *open_default_config_file(void)
             sizeof(application_data)))
       {
          fill_pathname_join(conf_path, application_data,
-               "retroarch.cfg", sizeof(conf_path));
+               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
          conf = config_file_new(conf_path);
       }
    }
@@ -969,7 +970,7 @@ static config_file_t *open_default_config_file(void)
          /* Since this is a clean config file, we can
           * safely use config_save_on_exit. */
          fill_pathname_resolve_relative(conf_path, app_path,
-               "retroarch.cfg", sizeof(conf_path));
+               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
          config_set_bool(conf, "config_save_on_exit", true);
          saved = config_file_write(conf, conf_path);
       }
@@ -993,7 +994,7 @@ static config_file_t *open_default_config_file(void)
    path_mkdir(application_data);
 
    fill_pathname_join(conf_path, application_data,
-         "retroarch.cfg", sizeof(conf_path));
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
    conf = config_file_new(conf_path);
 
    if (!conf)
@@ -1027,7 +1028,7 @@ static config_file_t *open_default_config_file(void)
    if (has_application_data)
    {
       fill_pathname_join(conf_path, application_data,
-            "retroarch.cfg", sizeof(conf_path));
+            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
    }
@@ -1051,7 +1052,7 @@ static config_file_t *open_default_config_file(void)
 
       fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
 
-      fill_pathname_join(conf_path, conf_path, "retroarch.cfg", sizeof(conf_path));
+      fill_pathname_join(conf_path, conf_path, file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
 
       if (path_mkdir(basedir))
       {
@@ -1059,7 +1060,7 @@ static config_file_t *open_default_config_file(void)
          char skeleton_conf[PATH_MAX_LENGTH] = {0};
 
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
-               "retroarch.cfg", sizeof(skeleton_conf));
+               file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(skeleton_conf));
          conf = config_file_new(skeleton_conf);
          if (conf)
             RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
@@ -1291,6 +1292,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE (conf, settings, video.monitor_index, "video_monitor_index");
    CONFIG_GET_BOOL_BASE(conf, settings, video.disable_composition, "video_disable_composition");
    CONFIG_GET_BOOL_BASE(conf, settings, video.vsync, "video_vsync");
+   CONFIG_GET_INT_BASE(conf, settings, video.max_swapchain_images, "video_max_swapchain_images");
    CONFIG_GET_BOOL_BASE(conf, settings, video.hard_sync, "video_hard_sync");
 
 #ifdef HAVE_MENU
@@ -1559,14 +1561,14 @@ static bool config_load_file(const char *path, bool set_defaults)
          fill_pathname_resolve_relative(
                settings->path.content_history,
                global->path.config,
-               "content_history.lpl",
+               file_path_str(FILE_PATH_CONTENT_HISTORY),
                sizeof(settings->path.content_history));
       }
       else
       {
          fill_pathname_join(settings->path.content_history,
                settings->directory.content_history,
-               "content_history.lpl",
+               file_path_str(FILE_PATH_CONTENT_HISTORY),
                sizeof(settings->path.content_history));
       }
    }
@@ -2658,6 +2660,8 @@ bool config_save_file(const char *path)
 
 
    config_set_bool(conf,  "video_vsync", settings->video.vsync);
+   config_set_int(conf,   "video_max_swapchain_images",
+         settings->video.max_swapchain_images);
    config_set_bool(conf,  "video_hard_sync", settings->video.hard_sync);
    config_set_int(conf,   "video_hard_sync_frames",
          settings->video.hard_sync_frames);

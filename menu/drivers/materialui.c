@@ -33,7 +33,6 @@
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 #include "../menu_navigation.h"
-#include "../menu_hash.h"
 #include "../menu_display.h"
 
 #include "../../core_info.h"
@@ -510,7 +509,6 @@ static void mui_render_label_value(mui_handle_t *mui,
    int ticker_limit                = 0;
    uintptr_t texture_switch        = 0;
    bool do_draw_text               = false;
-   uint32_t hash_value             = 0;
    size_t usable_width             = width - (mui->margin * 2);
 
    if (value_len * mui->glyph_width > usable_width / 2)
@@ -535,8 +533,6 @@ static void mui_render_label_value(mui_handle_t *mui,
    mui_draw_text(mui->margin, y + mui->line_height / 2,
          width, height, label_str, color, TEXT_ALIGN_LEFT);
 
-   hash_value = menu_hash_calculate(value);
-
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
@@ -553,35 +549,26 @@ static void mui_render_label_value(mui_handle_t *mui,
    }
    else
    {
-      switch (hash_value)
+      switch (msg_hash_to_file_type(msg_hash_calculate(value)))
       {
-         case MENU_VALUE_COMP:
+         case FILE_TYPE_COMPRESSED:
+         case FILE_TYPE_MORE:
+         case FILE_TYPE_CORE:
+         case FILE_TYPE_RDB:
+         case FILE_TYPE_CURSOR:
+         case FILE_TYPE_PLAIN:
+         case FILE_TYPE_DIRECTORY:
+         case FILE_TYPE_MUSIC:
+         case FILE_TYPE_IMAGE:
+         case FILE_TYPE_MOVIE:
             break;
-         case MENU_VALUE_MORE:
-            break;
-         case MENU_VALUE_CORE:
-            break;
-         case MENU_VALUE_RDB:
-            break;
-         case MENU_VALUE_CURSOR:
-            break;
-         case MENU_VALUE_FILE:
-            break;
-         case MENU_VALUE_DIR:
-            break;
-         case MENU_VALUE_MUSIC:
-            break;
-         case MENU_VALUE_IMAGE:
-            break;
-         case MENU_VALUE_MOVIE:
-            break;
-         case MENU_VALUE_ON:
+         case FILE_TYPE_BOOL_ON:
             if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
             else
                do_draw_text = true;
             break;
-         case MENU_VALUE_OFF:
+         case FILE_TYPE_BOOL_OFF:
             if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
             else
@@ -703,7 +690,7 @@ static int mui_get_core_title(char *s, size_t len)
    }
 
    if (string_is_empty(core_name))
-      core_name    = menu_hash_to_str(MENU_VALUE_NO_CORE);
+      core_name    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
    if (!core_version)
       core_version = "";
 
@@ -1229,7 +1216,8 @@ static void mui_context_reset(void *data)
    menu_display_allocate_white_texture();
    mui_context_reset_textures(mui);
 
-   task_push_image_load(settings->path.menu_wallpaper, "cb_menu_wallpaper",
+   task_push_image_load(settings->path.menu_wallpaper, 
+         MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
          menu_display_handle_wallpaper_upload, NULL);
 }
 
@@ -1267,19 +1255,19 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
    {
       case MUI_SYSTEM_TAB_MAIN:
          menu_stack->list[stack_size - 1].label = 
-            strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
+            strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
          menu_stack->list[stack_size - 1].type = 
             MENU_SETTINGS;
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
          menu_stack->list[stack_size - 1].label = 
-            strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
+            strdup(msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
          menu_stack->list[stack_size - 1].type = 
             MENU_PLAYLISTS_TAB;
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
          menu_stack->list[stack_size - 1].label = 
-            strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
+            strdup(msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
          menu_stack->list[stack_size - 1].type = 
             MENU_SETTINGS;
          break;
@@ -1347,22 +1335,25 @@ static int mui_list_push(void *data, void *userdata,
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_entries_add(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
-               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
+         menu_entries_add_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT),
+               msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT),
+               MENU_ENUM_LABEL_LOAD_CONTENT,
                MENU_SETTING_ACTION, 0, 0);
 
          core_info_get_list(&list);
          if (core_info_list_num_info_files(list))
          {
-            menu_entries_add(info->list,
-                  menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
-                  menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
+            menu_entries_add_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST),
+                  MENU_ENUM_LABEL_DETECT_CORE_LIST,
                   MENU_SETTING_ACTION, 0, 0);
 
-            menu_entries_add(info->list,
-                  menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                  menu_hash_to_str(MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+            menu_entries_add_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
                   MENU_SETTING_ACTION, 0, 0);
          }
 
@@ -1380,62 +1371,62 @@ static int mui_list_push(void *data, void *userdata,
 
          if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          {
-            entry.info_label      = menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS);
-            menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+            entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
+            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
          }
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_START_CORE);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_START_NET_RETROPAD);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_START_NET_RETROPAD;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
 #ifndef HAVE_DYNAMIC
          if (frontend_driver_has_fork())
 #endif
          {
-            entry.info_label      = menu_hash_to_str(MENU_LABEL_CORE_LIST);
-            menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+            entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
+            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
          }
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
 #if defined(HAVE_NETWORKING)
 #if defined(HAVE_LIBRETRODB)
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_INFORMATION_LIST);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #ifndef HAVE_DYNAMIC
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_CONFIGURATIONS);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_SAVE_NEW_CONFIG;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_HELP_LIST);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #if !defined(IOS)
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
 #if defined(HAVE_LAKKA)
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_SHUTDOWN);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
          info->need_push    = true;
          ret = 0;
@@ -1459,28 +1450,27 @@ static int mui_pointer_tap(void *userdata,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection, idx;
-   unsigned header_height, width, height, i;
-   bool scroll                = false;
+   size_t selection;
+   unsigned width, height;
+   unsigned header_height, i;
    mui_handle_t *mui          = (mui_handle_t*)userdata;
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    if (!mui)
       return 0;
 
-   video_driver_get_size(&width, &height);
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
    header_height = menu_display_get_header_height();
+   video_driver_get_size(&width, &height);
 
    if (y < header_height)
    {
-      menu_entries_pop_stack(&selection, 0, 1);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
    }
    else if (y > height - mui->tabs_height)
    {
+      file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+      file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
       for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
       {
          unsigned tab_width = width / (MUI_SYSTEM_TAB_END + 1);
@@ -1500,6 +1490,9 @@ static int mui_pointer_tap(void *userdata,
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
+      size_t idx;
+      bool scroll                = false;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
       if (ptr == selection && cbs && cbs->action_select)
          return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 

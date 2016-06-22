@@ -25,7 +25,6 @@
 #include "../menu_display.h"
 #include "../menu_displaylist.h"
 #include "../menu_navigation.h"
-#include "../menu_hash.h"
 #include "../menu_entries.h"
 
 #include "../../configuration.h"
@@ -134,40 +133,40 @@ static int action_iterate_help(menu_handle_t *menu,
 
                   s2,
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),
                   desc[0],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),
                   desc[1],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),
                   desc[2],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
                   desc[3],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),
                   desc[4],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START),
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START),
                   desc[5],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),
                   desc[6],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),
                   desc[7],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD),
+                  msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD),
                   desc[8]
 
                   );
@@ -269,15 +268,16 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    size_t selection;
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
-   const char *label          = NULL;
-   int ret                    = 0;
-   uint32_t label_hash        = 0;
-   uint32_t hash              = 0;
-   menu_handle_t *menu        = (menu_handle_t*)data;
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   const char *label              = NULL;
+   int ret                        = 0;
+   uint32_t label_hash            = 0;
+   uint32_t hash                  = 0;
+   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
+   menu_handle_t *menu            = (menu_handle_t*)data;
+   file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
 
-   menu_entries_get_last_stack(NULL, &label, NULL, NULL);
+   menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
 
    if (!menu)
       return 0;
@@ -285,7 +285,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
       return 0;
 
    menu->menu_state.msg[0]   = '\0';
-   hash                      = menu_hash_calculate(label);
+   hash                      = msg_hash_calculate(label);
    iterate_type              = action_iterate_type(hash);
 
    if (     action != MENU_ACTION_NOOP
@@ -332,7 +332,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             {
                char needle[PATH_MAX_LENGTH] = {0};
                strlcpy(needle, menu_setting_get_name(setting), sizeof(needle));
-               label_hash       = menu_hash_calculate(needle);
+               label_hash       = msg_hash_calculate(needle);
             }
 
             ret = menu_hash_get_help(label_hash, 
@@ -366,8 +366,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
             info.list = menu_stack;
             strlcpy(info.label,
-                  menu_hash_to_str(MENU_LABEL_HELP),
+                  msg_hash_to_str(MENU_ENUM_LABEL_HELP),
                   sizeof(info.label));
+            info.enum_idx = MENU_ENUM_LABEL_HELP;
 
             menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
          }
@@ -399,10 +400,13 @@ bool generic_menu_init_list(void *data)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
-         menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
+         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
+   info.enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
 
-   menu_entries_add(menu_stack, info.path,
-         info.label, info.type, info.flags, 0);
+   menu_entries_add_enum(menu_stack, info.path,
+         info.label,
+         MENU_ENUM_LABEL_MAIN_MENU,
+         info.type, info.flags, 0);
 
    info.list  = selection_buf;
 

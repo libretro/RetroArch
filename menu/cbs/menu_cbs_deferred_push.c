@@ -84,6 +84,11 @@ static int deferred_push_rdb_collection(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_PLAYLIST_COLLECTION);
 }
 
+static int deferred_main_menu_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_MAIN_MENU);
+}
+
 static int deferred_user_binds_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_USER_BINDS_LIST);
@@ -92,6 +97,26 @@ static int deferred_user_binds_list(menu_displaylist_info_t *info)
 static int deferred_push_accounts_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_ACCOUNTS_LIST);
+}
+
+static int deferred_push_driver_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_DRIVER_SETTINGS_LIST);
+}
+
+static int deferred_push_core_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_CORE_SETTINGS_LIST);
+}
+
+static int deferred_push_video_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_VIDEO_SETTINGS_LIST);
+}
+
+static int deferred_push_audio_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_AUDIO_SETTINGS_LIST);
 }
 
 static int deferred_push_input_settings_list(menu_displaylist_info_t *info)
@@ -147,68 +172,6 @@ static int deferred_push_database_manager_list_deferred(
    info->path_c[0] = '\0';
 
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
-}
-
-static int deferred_push_cursor_manager_list_deferred(
-      menu_displaylist_info_t *info)
-{
-   char rdb_path[PATH_MAX_LENGTH] = {0};
-   int ret                        = -1;
-   char *query                    = NULL;
-   char *rdb                      = NULL;
-   settings_t *settings           = config_get_ptr();
-   config_file_t *conf            = config_file_new(info->path);
-
-   if (!conf || !settings)
-      goto end;
-
-   if (!config_get_string(conf, "query", &query))
-      goto end;
-
-   if (!config_get_string(conf, "rdb", &rdb))
-      goto end;
-
-   fill_pathname_join(rdb_path, settings->path.content_database,
-         rdb, sizeof(rdb_path));
-
-   strlcpy(info->path_b, info->path, sizeof(info->path_b));
-   strlcpy(info->path,   rdb_path,   sizeof(info->path));
-   strlcpy(info->path_c,    query,   sizeof(info->path_c));
-
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
-
-end:
-   if (conf)
-      config_file_free(conf);
-   free(rdb);
-   free(query);
-   return ret;
-}
-
-static int deferred_push_cursor_manager_list_deferred_query_subsearch(
-      menu_displaylist_info_t *info)
-{
-   int ret                       = -1;
-#ifdef HAVE_LIBRETRODB
-   char query[PATH_MAX_LENGTH]   = {0};
-   struct string_list *str_list  = string_split(info->path, "|"); 
-
-   database_info_build_query(query, sizeof(query),
-         info->label, str_list->elems[0].data);
-
-   if (string_is_empty(query))
-      goto end;
-
-   strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
-   strlcpy(info->path_c, query, sizeof(info->path_c));
-
-   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
-
-end:
-   string_list_free(str_list);
-#endif
-   return ret;
 }
 
 static int deferred_push_video_shader_preset_parameters(
@@ -314,6 +277,11 @@ static int deferred_push_core_content_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_CORE_CONTENT);
 }
 
+static int deferred_push_core_content_dirs_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_CORE_CONTENT_DIRS);
+}
+
 static int deferred_push_lakka_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_LAKKA);
@@ -330,6 +298,69 @@ static int deferred_archive_action(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_ARCHIVE_ACTION);
 }
+
+static int deferred_push_cursor_manager_list_deferred(
+      menu_displaylist_info_t *info)
+{
+   char rdb_path[PATH_MAX_LENGTH] = {0};
+   int ret                        = -1;
+   char *query                    = NULL;
+   char *rdb                      = NULL;
+   settings_t *settings           = config_get_ptr();
+   config_file_t *conf            = config_file_new(info->path);
+
+   if (!conf || !settings)
+      goto end;
+
+   if (!config_get_string(conf, "query", &query))
+      goto end;
+
+   if (!config_get_string(conf, "rdb", &rdb))
+      goto end;
+
+   fill_pathname_join(rdb_path, settings->path.content_database,
+         rdb, sizeof(rdb_path));
+
+   strlcpy(info->path_b, info->path, sizeof(info->path_b));
+   strlcpy(info->path,   rdb_path,   sizeof(info->path));
+   strlcpy(info->path_c,    query,   sizeof(info->path_c));
+
+   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+
+end:
+   if (conf)
+      config_file_free(conf);
+   free(rdb);
+   free(query);
+   return ret;
+}
+
+static int deferred_push_cursor_manager_list_deferred_query_subsearch(
+      menu_displaylist_info_t *info)
+{
+   int ret                       = -1;
+#ifdef HAVE_LIBRETRODB
+   char query[PATH_MAX_LENGTH]   = {0};
+   struct string_list *str_list  = string_split(info->path, "|"); 
+
+   database_info_build_query(query, sizeof(query),
+         info->label, str_list->elems[0].data);
+
+   if (string_is_empty(query))
+      goto end;
+
+   strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
+   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
+   strlcpy(info->path_c, query, sizeof(info->path_c));
+
+   ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
+
+end:
+   string_list_free(str_list);
+#endif
+   return ret;
+}
+
 
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
@@ -361,7 +392,7 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
-   info->type_default = MENU_FILE_PLAIN;
+   info->type_default = FILE_TYPE_PLAIN;
 
    switch (id)
    {
@@ -578,228 +609,485 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs, 
       const char *label, uint32_t label_hash)
 {
-   if (strstr(label, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
+   {
+#ifdef HAVE_NETWORKING
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_dirs_list);
+#endif
+      return 0;
+   }
+
+   if (strstr(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
    }
    else if (strstr(label,
-            menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rpl_entry_actions);
    }
    else
    {
-      switch (label_hash)
+      if (cbs->enum_idx != MSG_UNKNOWN)
       {
-         case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_user_binds_list);
-            break;
-         case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_list);
-            break;
-         case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);
-            break;
-         case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
-            break;
-         case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
-            break;
-         case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action_detect_core);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_ACTION:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open_detect_core);
-            break;
-         case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open);
-            break;
-         case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
+         switch (cbs->enum_idx)
+         {
+            case MENU_ENUM_LABEL_MAIN_MENU:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_main_menu_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_user_binds_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action_detect_core);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open_detect_core);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST:
 #ifdef HAVE_NETWORKING
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
 #endif
-            break;
-         case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST:
 #ifdef HAVE_NETWORKING
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_dirs_list);
 #endif
-            break;
-         case MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST:
 #ifdef HAVE_NETWORKING
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
 #endif
-            break;
-         case MENU_LABEL_DEFERRED_LAKKA_LIST:
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
 #ifdef HAVE_NETWORKING
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_lakka_list);
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
 #endif
-            break;
-         case MENU_LABEL_LOAD_CONTENT_HISTORY:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_history_list);
-            break;
-         case MENU_LABEL_DATABASE_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
-            break;
-         case MENU_LABEL_CURSOR_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list);
-            break;
-         case MENU_LABEL_CHEAT_FILE_LOAD:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load);
-            break;
-         case MENU_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
-            break;
-         case MENU_LABEL_RECORD_CONFIG:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
-            break;
-         case MENU_LABEL_SHADER_OPTIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
-            break;
-         case MENU_LABEL_ONLINE_UPDATER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_options);
-            break;
-         case MENU_LABEL_CONTENT_SETTINGS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);
-            break;
-         case MENU_LABEL_ADD_CONTENT_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_content_list);
-            break;
-         case MENU_LABEL_LOAD_CONTENT_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
-            break;
-         case MENU_LABEL_INFORMATION_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
-            break;
-         case MENU_LABEL_MANAGEMENT:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
-            break;
-         case MENU_LABEL_HELP_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_help);
-            break;
-         case MENU_LABEL_DEFERRED_CORE_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list_deferred);
-            break;
-         case MENU_LABEL_DEFERRED_CORE_LIST_SET:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_collection_list_deferred);
-            break;
-         case MENU_LABEL_DEFERRED_VIDEO_FILTER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
-            break;
-         case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list_deferred);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
-            break;
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
-         case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_subsearch);
-            break;
-         case MENU_LABEL_CORE_INFORMATION:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
-            break;
-         case MENU_LABEL_SYSTEM_INFORMATION:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_system_information);
-            break;
-         case MENU_LABEL_NETWORK_INFORMATION:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_network_information);
-            break;
-         case MENU_LABEL_DEBUG_INFORMATION:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_debug_information);
-            break;
-         case MENU_LABEL_ACHIEVEMENT_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);
-            break;
-         case MENU_LABEL_CORE_COUNTERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_counters);
-            break;
-         case MENU_LABEL_FRONTEND_COUNTERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frontend_counters);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_parameters);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_parameters);
-            break;
-         case MENU_LABEL_SETTINGS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
-            break;
-         case MENU_LABEL_CORE_OPTIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_options);
-            break;
-         case MENU_LABEL_CORE_CHEAT_OPTIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);
-            break;
-         case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
-            break;
-         case MENU_LABEL_CORE_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list);
-            break;
-         case MENU_LABEL_CONTENT_COLLECTION_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
-            break;
-         case MENU_LABEL_CONFIGURATIONS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PRESET:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PASS:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_pass);
-            break;
-         case MENU_LABEL_VIDEO_FILTER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
-            break;
-         case MENU_LABEL_MENU_WALLPAPER:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_images);
-            break;
-         case MENU_LABEL_AUDIO_DSP_PLUGIN:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_dsp_plugin);
-            break;
-         case MENU_LABEL_INPUT_OVERLAY:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
-            break;
-         case MENU_LABEL_INPUT_OSK_OVERLAY:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_osk_overlay);
-            break;
-         case MENU_LABEL_VIDEO_FONT_PATH:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
-            break;
-         case MENU_LABEL_XMB_FONT:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_xmb_font_path);
-            break;
-         case MENU_LABEL_CONTENT_HISTORY_PATH:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);
-            break;
-         case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         case MENU_LABEL_DETECT_CORE_LIST:
-            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
-            break;
-         default:
-            return -1;
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST:
+#ifdef HAVE_NETWORKING
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_lakka_list);
+#endif
+               break;
+            case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_history_list);
+               break;
+            case MENU_ENUM_LABEL_DATABASE_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
+               break;
+            case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list);
+               break;
+            case MENU_ENUM_LABEL_CHEAT_FILE_LOAD:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load);
+               break;
+            case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
+               break;
+            case MENU_ENUM_LABEL_RECORD_CONFIG:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
+               break;
+            case MENU_ENUM_LABEL_SHADER_OPTIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
+               break;
+            case MENU_ENUM_LABEL_ONLINE_UPDATER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_options);
+               break;
+            case MENU_ENUM_LABEL_CONTENT_SETTINGS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);
+               break;
+            case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_content_list);
+               break;
+            case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
+               break;
+            case MENU_ENUM_LABEL_INFORMATION_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
+               break;
+            case MENU_ENUM_LABEL_MANAGEMENT:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
+               break;
+            case MENU_ENUM_LABEL_HELP_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_help);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CORE_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list_deferred);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_collection_list_deferred);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_VIDEO_FILTER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list_deferred);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
+            case MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_subsearch);
+               break;
+            case MENU_ENUM_LABEL_CORE_INFORMATION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
+               break;
+            case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_system_information);
+               break;
+            case MENU_ENUM_LABEL_NETWORK_INFORMATION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_network_information);
+               break;
+            case MENU_ENUM_LABEL_DEBUG_INFORMATION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_debug_information);
+               break;
+            case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);
+               break;
+            case MENU_ENUM_LABEL_CORE_COUNTERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_counters);
+               break;
+            case MENU_ENUM_LABEL_FRONTEND_COUNTERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frontend_counters);
+               break;
+            case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_parameters);
+               break;
+            case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_parameters);
+               break;
+            case MENU_ENUM_LABEL_SETTINGS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
+               break;
+            case MENU_ENUM_LABEL_CORE_OPTIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_options);
+               break;
+            case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);
+               break;
+            case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
+               break;
+            case MENU_ENUM_LABEL_CORE_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list);
+               break;
+            case MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
+               break;
+            case MENU_ENUM_LABEL_CONFIGURATIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);
+               break;
+            case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset);
+               break;
+            case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_pass);
+               break;
+            case MENU_ENUM_LABEL_VIDEO_FILTER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
+               break;
+            case MENU_ENUM_LABEL_MENU_WALLPAPER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_images);
+               break;
+            case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_dsp_plugin);
+               break;
+            case MENU_ENUM_LABEL_INPUT_OVERLAY:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
+               break;
+            case MENU_ENUM_LABEL_INPUT_OSK_OVERLAY:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_osk_overlay);
+               break;
+            case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
+               break;
+            case MENU_ENUM_LABEL_XMB_FONT:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_xmb_font_path);
+               break;
+            case MENU_ENUM_LABEL_CONTENT_HISTORY_PATH:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+            case MENU_ENUM_LABEL_DETECT_CORE_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
+               break;
+            default:
+               return -1;
+         }
+      }
+      else
+      {
+         switch (label_hash)
+         {
+            case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_user_binds_list);
+               break;
+            case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_list);
+               break;
+            case MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_driver_settings_list);
+               break;
+            case MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_settings_list);
+               break;
+            case MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
+               break;
+            case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);
+               break;
+            case MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_playlist_settings_list);
+               break;
+            case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_hotkey_binds_list);
+               break;
+            case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_accounts_cheevos_list);
+               break;
+            case MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action_detect_core);
+               break;
+            case MENU_LABEL_DEFERRED_ARCHIVE_ACTION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_action);
+               break;
+            case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open_detect_core);
+               break;
+            case MENU_LABEL_DEFERRED_ARCHIVE_OPEN:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_archive_open);
+               break;
+            case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
+#ifdef HAVE_NETWORKING
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_content_list);
+#endif
+               break;
+            case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
+#ifdef HAVE_NETWORKING
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
+#endif
+               break;
+            case MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
+#ifdef HAVE_NETWORKING
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
+#endif
+               break;
+            case MENU_LABEL_DEFERRED_LAKKA_LIST:
+#ifdef HAVE_NETWORKING
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_lakka_list);
+#endif
+               break;
+            case MENU_LABEL_LOAD_CONTENT_HISTORY:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_history_list);
+               break;
+            case MENU_LABEL_DATABASE_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list);
+               break;
+            case MENU_LABEL_CURSOR_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list);
+               break;
+            case MENU_LABEL_CHEAT_FILE_LOAD:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cheat_file_load);
+               break;
+            case MENU_LABEL_REMAP_FILE_LOAD:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_remap_file_load);
+               break;
+            case MENU_LABEL_RECORD_CONFIG:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_record_configfile);
+               break;
+            case MENU_LABEL_SHADER_OPTIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_shader_options);
+               break;
+            case MENU_LABEL_ONLINE_UPDATER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_options);
+               break;
+            case MENU_LABEL_CONTENT_SETTINGS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);
+               break;
+            case MENU_LABEL_ADD_CONTENT_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_content_list);
+               break;
+            case MENU_LABEL_LOAD_CONTENT_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_load_content_list);
+               break;
+            case MENU_LABEL_INFORMATION_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_information_list);
+               break;
+            case MENU_LABEL_MANAGEMENT:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_management_options);
+               break;
+            case MENU_LABEL_HELP_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_help);
+               break;
+            case MENU_LABEL_DEFERRED_CORE_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list_deferred);
+               break;
+            case MENU_LABEL_DEFERRED_CORE_LIST_SET:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_collection_list_deferred);
+               break;
+            case MENU_LABEL_DEFERRED_VIDEO_FILTER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
+               break;
+            case MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_database_manager_list_deferred);
+               break;
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred);
+               break;
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ENHANCEMENT_HW:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ESRB_RATING:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_BBFC_RATING:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ELSPA_RATING:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PEGI_RATING:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_CERO_RATING:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_MAX_USERS:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEMONTH:
+            case MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_RELEASEYEAR:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_cursor_manager_list_deferred_query_subsearch);
+               break;
+            case MENU_LABEL_CORE_INFORMATION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_information);
+               break;
+            case MENU_LABEL_SYSTEM_INFORMATION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_system_information);
+               break;
+            case MENU_LABEL_NETWORK_INFORMATION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_network_information);
+               break;
+            case MENU_LABEL_DEBUG_INFORMATION:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_debug_information);
+               break;
+            case MENU_LABEL_ACHIEVEMENT_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);
+               break;
+            case MENU_LABEL_CORE_COUNTERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_counters);
+               break;
+            case MENU_LABEL_FRONTEND_COUNTERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_frontend_counters);
+               break;
+            case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset_parameters);
+               break;
+            case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_parameters);
+               break;
+            case MENU_LABEL_SETTINGS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_settings);
+               break;
+            case MENU_LABEL_CORE_OPTIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_options);
+               break;
+            case MENU_LABEL_CORE_CHEAT_OPTIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_cheat_options);
+               break;
+            case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_input_remapping_options);
+               break;
+            case MENU_LABEL_CORE_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_list);
+               break;
+            case MENU_LABEL_CONTENT_COLLECTION_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_collection_list);
+               break;
+            case MENU_LABEL_CONFIGURATIONS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_configurations);
+               break;
+            case MENU_LABEL_VIDEO_SHADER_PRESET:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_preset);
+               break;
+            case MENU_LABEL_VIDEO_SHADER_PASS:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_shader_pass);
+               break;
+            case MENU_LABEL_VIDEO_FILTER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_filter);
+               break;
+            case MENU_LABEL_MENU_WALLPAPER:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_images);
+               break;
+            case MENU_LABEL_AUDIO_DSP_PLUGIN:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_dsp_plugin);
+               break;
+            case MENU_LABEL_INPUT_OVERLAY:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
+               break;
+            case MENU_LABEL_INPUT_OSK_OVERLAY:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_osk_overlay);
+               break;
+            case MENU_LABEL_VIDEO_FONT_PATH:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
+               break;
+            case MENU_LABEL_XMB_FONT:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_xmb_font_path);
+               break;
+            case MENU_LABEL_CONTENT_HISTORY_PATH:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);
+               break;
+            case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+            case MENU_LABEL_DETECT_CORE_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
+               break;
+            default:
+               return -1;
+         }
       }
    }
 
@@ -814,7 +1102,7 @@ static int menu_cbs_init_bind_deferred_push_compare_type(
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_category);
    }
-   else if (type == MENU_FILE_PLAYLIST_COLLECTION)
+   else if (type == FILE_TYPE_PLAYLIST_COLLECTION)
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_collection);
    }

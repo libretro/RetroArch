@@ -245,6 +245,7 @@ static bool gfx_ctx_drm_queue_flip(void)
 static void gfx_ctx_drm_swap_buffers(void *data)
 {
    gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   settings_t    *settings = config_get_ptr();
 
    switch (drm_api)
    {
@@ -269,12 +270,11 @@ static void gfx_ctx_drm_swap_buffers(void *data)
 
    waiting_for_flip = gfx_ctx_drm_queue_flip();
 
-   if (gbm_surface_has_free_buffers(g_gbm_surface))
+   /* Triple-buffered page flips */
+   if (settings->video.max_swapchain_images >= 3 &&
+         gbm_surface_has_free_buffers(g_gbm_surface))
       return;
 
-   /* We have to wait for this flip to finish. 
-    * This shouldn't happen as we have triple buffered page-flips. */
-   RARCH_WARN("[KMS]: Triple buffering is not working correctly ...\n");
    gfx_ctx_drm_wait_flip(true);  
 }
 

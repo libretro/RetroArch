@@ -23,12 +23,15 @@
 
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
+#include <formats/image.h>
 
 #include "../content.h"
 #include "../core_type.h"
-#include "../runloop.h"
+#include "../msg_hash.h"
 
 RETRO_BEGIN_DECLS
+
+typedef int (*transfer_cb_t)(void *data, size_t len);
 
 enum content_mode_load
 {
@@ -36,6 +39,7 @@ enum content_mode_load
    CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
    CONTENT_MODE_LOAD_FROM_CLI,
    CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU,
+   CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
@@ -74,6 +78,7 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
+
 #ifdef HAVE_NETWORKING
 void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
@@ -81,7 +86,8 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
 task_retriever_info_t *http_task_get_transfer_list(void);
 #endif
 
-bool task_push_image_load(const char *fullpath, const char *type,
+bool task_push_image_load(const char *fullpath,
+      enum msg_hash_enums enum_idx,
       retro_task_callback_t cb, void *userdata);
 
 #ifdef HAVE_LIBRETRODB

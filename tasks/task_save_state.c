@@ -31,7 +31,9 @@
 #include <file/file_path.h>
 
 #include "../core.h"
+#include "../configuration.h"
 #include "../msg_hash.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
 
@@ -460,7 +462,7 @@ bool content_rename_state(const char *origin, const char *dest)
    if (!ret)
       return true;
 
-   RARCH_LOG ("Error %d renaming file %s", ret, origin);
+   RARCH_LOG("Error %d renaming file %s\n", ret, origin);
    return false;
 }
 

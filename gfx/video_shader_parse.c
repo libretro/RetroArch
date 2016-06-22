@@ -26,6 +26,7 @@
 #include <streams/file_stream.h>
 
 #include "../general.h"
+#include "../msg_hash.h"
 #include "../verbosity.h"
 #include "video_shader_parse.h"
 
@@ -921,19 +922,23 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback)
 {
-   const char *ext = NULL;
-
    if (!path)
       return fallback;
 
-   ext = path_get_extension(path);
-
-   if (string_is_equal(ext, "cg") || string_is_equal(ext, "cgp"))
-      return RARCH_SHADER_CG;
-   else if (string_is_equal(ext, "glslp") || string_is_equal(ext, "glsl"))
-      return RARCH_SHADER_GLSL;
-   else if (string_is_equal(ext, "slangp") || string_is_equal(ext, "slang"))
-      return RARCH_SHADER_SLANG;
+   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(path))))
+   {
+      case FILE_TYPE_SHADER_CG:
+      case FILE_TYPE_SHADER_PRESET_CGP:
+         return RARCH_SHADER_CG;
+      case FILE_TYPE_SHADER_GLSL:
+      case FILE_TYPE_SHADER_PRESET_GLSLP:
+         return RARCH_SHADER_GLSL;
+      case FILE_TYPE_SHADER_SLANG:
+      case FILE_TYPE_SHADER_PRESET_SLANGP:
+         return RARCH_SHADER_SLANG;
+      default:
+         break;
+   }
 
    return fallback;
 }

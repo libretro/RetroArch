@@ -149,32 +149,23 @@ struct cmd_action_map
 };
 
 #ifdef HAVE_COMMAND
-#define COMMAND_EXT_GLSL         0x7c976537U
-#define COMMAND_EXT_GLSLP        0x0f840c87U
-#define COMMAND_EXT_CG           0x0059776fU
-#define COMMAND_EXT_CGP          0x0b8865bfU
-#define COMMAND_EXT_SLANG        0x105ce63aU
-#define COMMAND_EXT_SLANGP       0x1bf9adeaU
-
 static bool command_set_shader(const char *arg)
 {
    char msg[256];
    enum rarch_shader_type type = RARCH_SHADER_NONE;
-   const char             *ext = path_get_extension(arg);
-   uint32_t ext_hash           = msg_hash_calculate(ext);
 
-   switch (ext_hash)
+   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(arg))))
    {
-      case COMMAND_EXT_GLSL:
-      case COMMAND_EXT_GLSLP:
+      case FILE_TYPE_SHADER_GLSL:
+      case FILE_TYPE_SHADER_PRESET_GLSLP:
          type = RARCH_SHADER_GLSL;
          break;
-      case COMMAND_EXT_CG:
-      case COMMAND_EXT_CGP:
+      case FILE_TYPE_SHADER_CG:
+      case FILE_TYPE_SHADER_PRESET_CGP:
          type = RARCH_SHADER_CG;
          break;
-      case COMMAND_EXT_SLANG:
-      case COMMAND_EXT_SLANGP:
+      case FILE_TYPE_SHADER_SLANG:
+      case FILE_TYPE_SHADER_PRESET_SLANGP:
          type = RARCH_SHADER_SLANG;
          break;
       default:
@@ -197,7 +188,7 @@ static bool command_read_ram(const char *arg)
    cheevos_var_t var;
    const uint8_t * data;
    unsigned nbytes;
-   int i;
+   unsigned i;
    char reply[256];
    char *reply_at = NULL;
 
@@ -224,7 +215,6 @@ static bool command_read_ram(const char *arg)
       strcpy(reply_at, " -1\n");
       command_reply(reply, reply_at+strlen(" -1\n") - reply);
    }
-
 
    return true;
 }

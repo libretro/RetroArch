@@ -50,7 +50,7 @@ static void frontend_qnx_get_environment_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
    fill_pathname_join(g_defaults.path.config, "app/native",
-         "retroarch.cfg", sizeof(g_defaults.path.config));
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
    fill_pathname_join(g_defaults.dir.shader, "app/native",
          "shaders_glsl", sizeof(g_defaults.dir.shader));
    fill_pathname_join(g_defaults.dir.overlay, "app/native",
