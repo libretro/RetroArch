@@ -412,17 +412,22 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 
 static void cocoagl_gfx_ctx_update_window_title(void *data)
 {
-   static char buf_fps[128]   = {0};
-   settings_t *settings       = config_get_ptr();
 #if defined(HAVE_COCOA)
-   static char buf[128]       = {0};
    ui_window_cocoa_t view;
-   const ui_window_t *window  = ui_companion_driver_get_window_ptr();
-
+   const ui_window_t *window  = NULL;
+#endif
+   static char buf_fps[128]   = {0};
+   static char buf[128]       = {0};
+   settings_t *settings       = config_get_ptr();
+    
+   video_monitor_get_fps(buf, sizeof(buf),
+                         buf_fps, sizeof(buf_fps));
+    
+#if defined(HAVE_COCOA)
+   window    = ui_companion_driver_get_window_ptr();
    view.data = (CocoaView*)nsview_get_ptr();
 
-   if (window && video_monitor_get_fps(buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps)))
+   if (window)
        window->set_title(&view, buf);
 #endif
     if (settings->fps_show)
