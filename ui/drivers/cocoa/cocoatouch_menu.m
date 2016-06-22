@@ -32,6 +32,7 @@
 
 #ifdef HAVE_MENU
 #include "../../../menu/menu_entry.h"
+#include "../../../menu/menu_navigation.h"
 #include "../../../menu/drivers/menu_generic.h"
 #endif
 
@@ -761,9 +762,15 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)menuBack
 {
+#ifdef HAVE_MENU
    size_t selection;
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-   menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+   menu_entry_t entry = {{0}};
+    
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, & selection);
+    
+   menu_entry_get(&entry, 0, selection, NULL, false);
+   menu_entry_action(&entry, selection, MENU_ACTION_CANCEL);
+#endif
 }
 
 @end
