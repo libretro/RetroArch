@@ -1912,23 +1912,49 @@ static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
 
 static uint64_t frontend_linux_get_mem_total(void)
 {
-   uint64_t pageSize      = sysconf(_SC_PAGESIZE);
-   uint64_t totalNumPages = sysconf(_SC_PHYS_PAGES);
-   return pageSize * totalNumPages;
-}
+   FILE* data = fopen("/proc/meminfo", "r");
+   if (!data)
+      return 0;
 
-static uint64_t frontend_linux_get_mem_free(void)
-{
-   uint64_t pageSize      = sysconf(_SC_PAGESIZE);
-   uint64_t availNumPages = sysconf(_SC_AVPHYS_PAGES);
-   return availNumPages * pageSize;
+   char line[256];
+   uint64_t total = 0;
+   while (fgets(line, sizeof(line), data)) {
+      if (sscanf(line, "MemTotal: %lu kB", &total) == 1) {
+         fclose(data);
+         total *= 1024;
+         return total;
+      }
+   }
+
+   fclose(data);
+   return 0;
 }
 
 static uint64_t frontend_linux_get_mem_used(void)
 {
-   uint64_t free_mem  = frontend_linux_get_mem_free();
-   uint64_t total_mem = frontend_linux_get_mem_total();
-   return total_mem - free_mem;
+   FILE* data = fopen("/proc/meminfo", "r");
+   if (!data)
+      return 0;
+
+   uint64_t total    = 0;
+   uint64_t freemem  = 0;
+   uint64_t buffers  = 0;
+   uint64_t cached   = 0;
+
+   char line[256];
+   while (fgets(line, sizeof(line), data)) {
+      if (sscanf(line, "MemTotal: %lu kB", &total)  == 1)
+         total   *= 1024;
+      if (sscanf(line, "MemFree: %lu kB", &freemem) == 1)
+         freemem *= 1024;
+      if (sscanf(line, "Buffers: %lu kB", &buffers) == 1)
+         buffers *= 1024;
+      if (sscanf(line, "Cached: %lu kB", &cached)   == 1)
+         cached  *= 1024;
+   }
+
+   fclose(data);
+   return total - freemem - buffers - cached;
 }
 
 frontend_ctx_driver_t frontend_ctx_linux = {
