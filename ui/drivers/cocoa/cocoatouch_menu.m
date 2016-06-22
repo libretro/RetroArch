@@ -761,7 +761,9 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)menuBack
 {
-  menu_entry_go_back();
+   size_t selection;
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+   menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
 }
 
 @end

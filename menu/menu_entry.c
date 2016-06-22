@@ -33,18 +33,6 @@
  * notify_list_loaded on the UI companion.
  */
 
-/* Clicks the back button */
-int menu_entry_go_back(void)
-{
-   size_t new_selection_ptr;
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
-   menu_entries_pop_stack(&new_selection_ptr, 0, 1);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
-
-   return 0;
-}
-
 enum menu_entry_type menu_entry_get_type(uint32_t i)
 {
    rarch_setting_t *setting  = menu_entries_get_setting(i);

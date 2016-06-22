@@ -53,8 +53,6 @@ typedef struct menu_entry
    unsigned spacing;
 } menu_entry_t;
 
-int menu_entry_go_back(void);
-
 enum menu_entry_type menu_entry_get_type(uint32_t i);
 
 void menu_entry_get_path(uint32_t i, char  *s, size_t len);

@@ -17,6 +17,7 @@
 #include <string/stdstring.h>
 
 #include "../menu_driver.h"
+#include "../menu_navigation.h"
 #include "../menu_cbs.h"
 #include "../../msg_hash.h"
 
@@ -26,10 +27,17 @@
    cbs->action_cancel_ident = #name;
 #endif
 
+/* Clicks the back button */
 static int action_cancel_pop_default(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   return menu_entry_go_back();
+   size_t new_selection_ptr;
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
+   menu_entries_pop_stack(&new_selection_ptr, 0, 1);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
+
+   return 0;
 }
 
 static int action_cancel_core_content(const char *path,

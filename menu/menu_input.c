@@ -1128,8 +1128,10 @@ static int menu_input_pointer_post_iterate(
    {
       if (!pointer_oldback)
       {
+         size_t selection;
          pointer_oldback = true;
-         menu_entry_go_back();
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+         menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
       }
    }
 
