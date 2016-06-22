@@ -3221,20 +3221,20 @@ static int xmb_pointer_tap(void *userdata,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   size_t selection, idx;
-   unsigned header_height;
-   bool scroll              = false;
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-   header_height = menu_display_get_header_height();
+   size_t selection;
+   unsigned header_height = menu_display_get_header_height();
 
    if (y < header_height)
    {
-      menu_entries_pop_stack(&selection, 0, 1);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      return menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
    }
    else if (ptr <= (menu_entries_get_size() - 1))
    {
+      size_t idx;
+      bool scroll              = false;
+
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
       if (ptr == selection && cbs && cbs->action_select)
          return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
 
