@@ -845,7 +845,9 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_BUTTON_R))
    {
-      menu_entry_go_back();
+      size_t selection;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
    }
 
    if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_WHEEL_DOWN))
@@ -900,19 +902,13 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       if (!mouse_oldleft)
       {
          size_t selection;
-         unsigned header_height;
          menu_input_t *menu_input = menu_input_get_ptr();
 
          menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-         header_height = menu_display_get_header_height();
 
          BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L);
 
          mouse_oldleft = true;
-
-         /* Back button */
-         if ((unsigned)menu_input_mouse_state(MENU_MOUSE_X_AXIS) < header_height)
-            return menu_entry_go_back();
 
          if ((menu_input->mouse.ptr == selection) && cbs && cbs->action_select)
          {
