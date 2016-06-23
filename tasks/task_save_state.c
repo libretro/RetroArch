@@ -68,14 +68,13 @@ struct sram_block
 bool content_undo_load_state()
 {
    unsigned i;
-   //ssize_t size;
    retro_ctx_serialize_info_t serial_info;
+   size_t temp_data_size;
+   void* temp_data           = NULL;
    unsigned num_blocks       = 0;
-   //void *buf                 = NULL;
    struct sram_block *blocks = NULL;
    settings_t *settings      = config_get_ptr();
    global_t *global          = global_get_ptr();
-   //bool ret                  = filestream_read_file(path, &buf, &size);
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
@@ -138,8 +137,8 @@ bool content_undo_load_state()
    }
    
    /* We need to make a temporary copy of the buffer, to allow the swap below */
-   void* temp_data = malloc(undo_load_buf.size);
-   size_t temp_data_size = undo_load_buf.size;
+   temp_data = malloc(undo_load_buf.size);
+   temp_data_size = undo_load_buf.size;
    memcpy(temp_data, undo_load_buf.data, undo_load_buf.size);
 
    serial_info.data_const = temp_data;

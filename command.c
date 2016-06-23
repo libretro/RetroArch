@@ -2088,9 +2088,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_DEINIT:
          {
+            struct retro_hw_render_callback *hwr = NULL;
             content_reset_savestate_backups();
-            struct retro_hw_render_callback *hwr =
-               video_driver_get_hw_context();
+            hwr = video_driver_get_hw_context();
             command_event_deinit_core(true);
 
             if (hwr)

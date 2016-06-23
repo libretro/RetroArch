@@ -1912,14 +1912,16 @@ static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
 
 static uint64_t frontend_linux_get_mem_total(void)
 {
-   FILE* data = fopen("/proc/meminfo", "r");
+   char line[256];
+   uint64_t total = 0;
+   FILE    * data = fopen("/proc/meminfo", "r");
    if (!data)
       return 0;
 
-   char line[256];
-   uint64_t total = 0;
-   while (fgets(line, sizeof(line), data)) {
-      if (sscanf(line, "MemTotal: " STRING_REP_ULONG " kB", &total) == 1) {
+   while (fgets(line, sizeof(line), data))
+   {
+      if (sscanf(line, "MemTotal: " STRING_REP_ULONG " kB", &total) == 1)
+      {
          fclose(data);
          total *= 1024;
          return total;
@@ -1932,16 +1934,15 @@ static uint64_t frontend_linux_get_mem_total(void)
 
 static uint64_t frontend_linux_get_mem_used(void)
 {
-   FILE* data = fopen("/proc/meminfo", "r");
-   if (!data)
-      return 0;
-
+   char line[256];
    uint64_t total    = 0;
    uint64_t freemem  = 0;
    uint64_t buffers  = 0;
    uint64_t cached   = 0;
+   FILE* data = fopen("/proc/meminfo", "r");
+   if (!data)
+      return 0;
 
-   char line[256];
    while (fgets(line, sizeof(line), data))
    {
       if (sscanf(line, "MemTotal: " STRING_REP_ULONG " kB", &total)  == 1)
