@@ -85,28 +85,17 @@ static int task_database_iterate_start(database_info_handle_t *db,
 {
    char msg[128] = {0};
 
-#ifdef _WIN32
    snprintf(msg, sizeof(msg),
-         "%Iu/%Iu: %s %s...\n",
+         STRING_REP_ULONG "/" STRING_REP_ULONG ": %s %s...\n",
+#if defined(_WIN32) || defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
          db->list_ptr,
          db->list->size,
-         msg_hash_to_str(MSG_SCANNING),
-         name);
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
-   snprintf(msg, sizeof(msg),
-         "%zu/%zu: %s %s...\n",
-         db->list_ptr,
-         db->list->size,
-         msg_hash_to_str(MSG_SCANNING),
-         name);
 #else
-   snprintf(msg, sizeof(msg),
-         "%lu/%lu: %s %s...\n",
          (unsigned long)db->list_ptr,
          (unsigned long)db->list->size,
+#endif
          msg_hash_to_str(MSG_SCANNING),
          name);
-#endif
 
    if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true);
