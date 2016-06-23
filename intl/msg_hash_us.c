@@ -2120,7 +2120,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MSG_RESET:
          return "Reset";
       case MSG_FAILED_TO_LOAD_STATE:
-         return "Nothing to undo.";
+         return "Failed to load state from";
       case MSG_FAILED_TO_SAVE_STATE_TO:
          return "Failed to save state to";
       case MSG_FAILED_TO_UNDO_LOAD_STATE:
