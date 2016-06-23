@@ -148,9 +148,9 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Impossible de charger la savestate à partir de";
       case MSG_FAILED_TO_SAVE_STATE_TO:
          return "Impossible de sauvegarder la savestate vers";
-      case MSG_FAILED_TO_LOAD_UNDO:
+      case MSG_FAILED_TO_UNDO_LOAD_STATE:
          return "Aucun savestate de retour arrière trouvé";
-      case MSG_FAILED_TO_SAVE_UNDO:
+      case MSG_FAILED_TO_UNDO_SAVE_STATE:
          return "Impossible de sauvegarder les informations de savestate de retour arrière";
       case MSG_FAILED_TO_SAVE_SRAM:
          return "Impossible de sauvegarder la SRAM";
