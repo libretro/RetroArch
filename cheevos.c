@@ -2193,7 +2193,7 @@ void cheevos_populate_menu(void *data)
          msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS),
          MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
          MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
-   menu_entries_add_enum(info->list, "", "", MSG_UNKNOWN,
+   menu_entries_add_enum(info->list, "", "", MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
          MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
 
    cheevo = cheevos_locals.core.cheevos;
@@ -2229,7 +2229,7 @@ void cheevos_populate_menu(void *data)
          msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS),
          MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS,
          MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
-   menu_entries_add_enum(info->list, "", "", MSG_UNKNOWN,
+   menu_entries_add_enum(info->list, "", "", MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS,
          MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
 
    cheevo = cheevos_locals.core.cheevos;
