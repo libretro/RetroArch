@@ -190,10 +190,11 @@ void egl_install_sighandlers(void)
 }
 
 bool egl_init_context(egl_ctx_data_t *egl,
-      NativeDisplayType display,
+      void *display_data,
       EGLint *major, EGLint *minor,
      EGLint *n, const EGLint *attrib_ptr)
 {
+   NativeDisplayType display = (NativeDisplayType)display_data;
    egl->dpy = eglGetDisplay(display);
    if (!egl->dpy)
    {
@@ -237,9 +238,9 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
    return true;
 }
 
-bool egl_create_surface(egl_ctx_data_t *egl, NativeWindowType native_window)
+bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 {
-   egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, native_window, NULL);
+   egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, (NativeWindowType)native_window, NULL);
 
    if (egl->surf == EGL_NO_SURFACE)
       return false;
