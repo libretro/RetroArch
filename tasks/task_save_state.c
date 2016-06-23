@@ -472,9 +472,9 @@ bool content_rename_state(const char *origin, const char *dest)
 * As it is, when e.g. closing Gambatte, we get the same printf message 4 times.
 *
 */
-bool content_reset_savestate_backups()
+bool content_reset_savestate_backups(void)
 {
-   printf("Resetting undo buffers.\n");
+   RARCH_LOG("Resetting undo buffers.\n");
 
    if (undo_save_buf.data)
    {
