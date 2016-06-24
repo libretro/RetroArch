@@ -29,6 +29,7 @@
 typedef struct
 {
    roar_vs_t *vss;
+   bool is_paused;
    bool nonblocking;
    bool is_paused;
 } roar_t;
