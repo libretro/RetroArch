@@ -1842,10 +1842,11 @@ bool task_push_content_load_default(
    /* Fork core? */
    switch (mode)
    {
-      case 0:
-      default:
+	  case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          if (!frontend_driver_set_fork(FRONTEND_FORK_CORE))
             return false;
+         break;
+      default:
          break;
    }
 #endif
