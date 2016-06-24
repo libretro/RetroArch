@@ -24,11 +24,13 @@
 
 #include "../audio_driver.h"
 #include "../../configuration.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
    roar_vs_t *vss;
    bool nonblocking;
+   bool is_paused;
 } roar_t;
 
 static void *ra_init(const char *device, unsigned rate, unsigned latency)
