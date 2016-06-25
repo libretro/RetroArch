@@ -38,6 +38,7 @@ RETRO_BEGIN_DECLS
 
 typedef struct retro_input
 {
+   unsigned type;
    uint64_t state;
 } retro_input_t;
 
