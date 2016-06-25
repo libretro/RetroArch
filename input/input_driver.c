@@ -253,7 +253,7 @@ float input_sensor_get_input(unsigned port, unsigned id)
 static retro_input_t input_driver_keys_pressed(void)
 {
    unsigned key;
-   retro_input_t                ret = 0;
+   retro_input_t                ret = {0};
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
@@ -287,7 +287,7 @@ static retro_input_t input_driver_keys_pressed(void)
 #endif
 
       if (state)
-         ret |= (UINT64_C(1) << key);
+         ret.state |= (UINT64_C(1) << key);
    }
    return ret;
 }
@@ -580,14 +580,14 @@ retro_input_t input_keys_pressed(void)
 {
    unsigned i, key;
    const struct retro_keybind *binds[MAX_USERS];
-   retro_input_t             ret = 0;
+   retro_input_t             ret = {0};
    settings_t *settings          = config_get_ptr();
 
    for (i = 0; i < MAX_USERS; i++)
       binds[i] = settings->input.binds[i];
 
    if (!current_input || !current_input_data)
-      return 0;
+      return ret;
 
    input_driver_turbo_btns.count++;
 

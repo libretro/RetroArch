@@ -1199,31 +1199,31 @@ static unsigned menu_input_frame_build(retro_input_t trigger_input)
    settings_t *settings = config_get_ptr();
    unsigned ret         = MENU_ACTION_NOOP;
 
-   if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
+   if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       ret = MENU_ACTION_UP;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
+   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       ret = MENU_ACTION_DOWN;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT))
+   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT))
       ret = MENU_ACTION_LEFT;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       ret = MENU_ACTION_RIGHT;
-   else if (trigger_input & (UINT64_C(1) << settings->menu_scroll_up_btn))
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_scroll_up_btn))
       ret = MENU_ACTION_SCROLL_UP;
-   else if (trigger_input & (UINT64_C(1) << settings->menu_scroll_down_btn))
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_scroll_down_btn))
       ret = MENU_ACTION_SCROLL_DOWN;
-   else if (trigger_input & (UINT64_C(1) << settings->menu_cancel_btn))
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_cancel_btn))
       ret = MENU_ACTION_CANCEL;
-   else if (trigger_input & (UINT64_C(1) << settings->menu_ok_btn))
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_ok_btn))
       ret = MENU_ACTION_OK;
-   else if (trigger_input & (UINT64_C(1) << settings->menu_search_btn))
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_search_btn))
       ret = MENU_ACTION_SEARCH;
-   else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
+   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
       ret = MENU_ACTION_SCAN;
-   else if (trigger_input & (UINT64_C(1) << settings->menu_default_btn))
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_default_btn))
       ret = MENU_ACTION_START;
-   else if (trigger_input & (UINT64_C(1) << settings->menu_info_btn))
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_info_btn))
       ret = MENU_ACTION_INFO;
-   else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
+   else if (trigger_input.state & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
 
    return menu_input_frame_pointer(&ret);
@@ -1252,7 +1252,7 @@ unsigned menu_input_frame_retropad(retro_input_t input,
    /* don't run anything first frame, only capture held inputs
     * for old_input_state. */
 
-   if (input)
+   if (input.state)
    {
       if (!first_held)
       {
@@ -1263,19 +1263,19 @@ unsigned menu_input_frame_retropad(retro_input_t input,
 
       if (menu_input->delay.count >= menu_input->delay.timer)
       {
-         retro_input_t input_repeat = 0;
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_UP);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_DOWN);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_LEFT);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_B);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_A);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_L);
-         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_R);
+         retro_input_t input_repeat = {0};
+         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_UP);
+         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_DOWN);
+         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_LEFT);
+         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_B);
+         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_A);
+         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_L);
+         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_R);
 
-         set_scroll     = true;
-         first_held     = false;
-         trigger_input |= input & input_repeat;
+         set_scroll           = true;
+         first_held           = false;
+         trigger_input.state |= input.state & input_repeat.state;
 
          menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
                &new_scroll_accel);
@@ -1308,7 +1308,7 @@ unsigned menu_input_frame_retropad(retro_input_t input,
       static unsigned ti_char = 64;
       static bool ti_next     = false;
 
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          if (ti_char > 32)
             ti_char--;
@@ -1318,7 +1318,7 @@ unsigned menu_input_frame_retropad(retro_input_t input,
          ti_next = false;
       }
 
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
+      if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       {
          if (ti_char < 125)
             ti_char++;
@@ -1328,13 +1328,13 @@ unsigned menu_input_frame_retropad(retro_input_t input,
          ti_next = false;
       }
 
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
+      if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
       {
          ti_char = 64;
          ti_next = true;
       }
 
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
+      if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
       {
          input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
          ti_char = 64;
@@ -1342,10 +1342,10 @@ unsigned menu_input_frame_retropad(retro_input_t input,
       }
 
       /* send return key to close keyboard input window */
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START))
+      if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
-      trigger_input = 0;
+      trigger_input.state = 0;
    }
 
    return menu_input_frame_build(trigger_input);

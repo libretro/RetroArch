@@ -77,12 +77,12 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2], id) 
+#define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2].state, id) 
 
-#define runloop_cmd_press(cmd, id)     BIT64_GET(cmd->state[0], id)
-#define runloop_cmd_pressed(cmd, id)   BIT64_GET(cmd->state[1], id)
+#define runloop_cmd_press(cmd, id)     BIT64_GET(cmd->state[0].state, id)
+#define runloop_cmd_pressed(cmd, id)   BIT64_GET(cmd->state[1].state, id)
 #ifdef HAVE_MENU
-#define runloop_cmd_menu_press(cmd)   (BIT64_GET(cmd->state[2], RARCH_MENU_TOGGLE) || \
+#define runloop_cmd_menu_press(cmd)   (BIT64_GET(cmd->state[2].state, RARCH_MENU_TOGGLE) || \
                                       runloop_cmd_get_state_menu_toggle_button_combo( \
                                             settings, cmd->state[0], \
                                             cmd->state[1], cmd->state[2]))
@@ -317,19 +317,19 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
       case 0:
          return false;
       case 1:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_Y))
+         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_Y))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case 2:
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_L3))
+         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_L3))
             return false;
-         if (!BIT64_GET(input, RETRO_DEVICE_ID_JOYPAD_R3))
+         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_R3))
             return false;
          break;
    }
@@ -1300,10 +1300,10 @@ int runloop_iterate(unsigned *sleep_ms)
    unsigned i;
    event_cmd_state_t    cmd;
    retro_time_t current, target, to_sleep_ms;
+   static retro_input_t last_input              = {0};
    event_cmd_state_t   *cmd_ptr                 = &cmd;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
-   static retro_input_t last_input              = 0;
    settings_t *settings                         = config_get_ptr();
 
    cmd.state[1]                                 = last_input;
@@ -1330,14 +1330,14 @@ int runloop_iterate(unsigned *sleep_ms)
    if (input_driver_is_flushing_input())
    {
       input_driver_unset_flushing_input();
-      if (cmd.state[0])
+      if (cmd.state[0].state)
       {
-         cmd.state[0] = 0;
+         cmd.state[0].state = 0;
 
          /* If core was paused before entering menu, evoke
           * pause toggle to wake it up. */
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
-            BIT64_SET(cmd.state[0], RARCH_PAUSE_TOGGLE);
+            BIT64_SET(cmd.state[0].state, RARCH_PAUSE_TOGGLE);
          input_driver_set_flushing_input();
       }
    }
@@ -1368,7 +1368,7 @@ int runloop_iterate(unsigned *sleep_ms)
       runloop_frame_time.callback(delta);
    }
 
-   cmd.state[2]      = cmd.state[0] & ~cmd.state[1];  /* trigger  */
+   cmd.state[2].state      = cmd.state[0].state & ~cmd.state[1].state;  /* trigger  */
 
    if (runloop_cmd_triggered(cmd_ptr, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
