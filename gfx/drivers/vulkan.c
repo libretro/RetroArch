@@ -110,7 +110,6 @@ static void vulkan_init_render_pass(
    subpass.pColorAttachments    = &color_ref;
 
    /* Finally, create the renderpass. */
-   rp_info.sType                = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
    rp_info.attachmentCount      = 1;
    rp_info.pAttachments         = &attachment;
    rp_info.subpassCount         = 1;
@@ -129,13 +128,14 @@ static void vulkan_init_framebuffers(
 
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      VkImageViewCreateInfo view;
-      VkFramebufferCreateInfo info;
+      VkImageViewCreateInfo view =
+      { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+      VkFramebufferCreateInfo info =
+      { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 
       vk->swapchain[i].backbuffer.image    = vk->context->swapchain_images[i];
 
       /* Create an image view which we can render into. */
-      view.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
       view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
       view.format                          = vk->context->swapchain_format;
       view.image                           = vk->swapchain[i].backbuffer.image;
@@ -153,7 +153,6 @@ static void vulkan_init_framebuffers(
             &view, NULL, &vk->swapchain[i].backbuffer.view);
 
       /* Create the framebuffer */
-      info.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
       info.renderPass      = vk->render_pass;
       info.attachmentCount = 1;
       info.pAttachments    = &vk->swapchain[i].backbuffer.view;
@@ -408,6 +407,9 @@ static void vulkan_init_pipelines(
 
       VKFUNC(vkCreateGraphicsPipelines)(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->display.pipelines[4 + i]);
+
+      VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[0].module, NULL);
+      VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[1].module, NULL);
    }
 }
 
@@ -441,9 +443,9 @@ static void vulkan_init_command_buffers(vk_t *vk)
 
 static void vulkan_init_samplers(vk_t *vk)
 {
-   VkSamplerCreateInfo info;
+   VkSamplerCreateInfo info =
+   { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
 
-   info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
    info.magFilter               = VK_FILTER_NEAREST;
    info.minFilter               = VK_FILTER_NEAREST;
    info.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
@@ -833,7 +835,8 @@ static uint32_t vulkan_get_sync_index_mask(void *handle)
 static void vulkan_set_image(void *handle,
       const struct retro_vulkan_image *image,
       uint32_t num_semaphores,
-      const VkSemaphore *semaphores)
+      const VkSemaphore *semaphores,
+      uint32_t src_queue_family)
 {
    unsigned i;
    vk_t *vk              = (vk_t*)handle;
@@ -853,6 +856,9 @@ static void vulkan_set_image(void *handle,
 
       for (i = 0; i < vk->hw.num_semaphores; i++)
          vk->hw.wait_dst_stages[i] = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+      vk->hw.valid_semaphore = true;
+      vk->hw.src_queue_family = src_queue_family;
    }
 }
 
@@ -1446,6 +1452,7 @@ static bool vulkan_frame(void *data, const void *frame,
    static struct retro_perf_counter copy_frame   = {0};
    static struct retro_perf_counter swapbuffers  = {0};
    static struct retro_perf_counter queue_submit = {0};
+   bool waits_for_semaphores                     = false;
 
    VkCommandBufferBeginInfo begin_info           = { 
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1487,6 +1494,26 @@ static bool vulkan_frame(void *data, const void *frame,
    memset(&vk->tracker, 0, sizeof(vk->tracker));
 
    vulkan_flush_caches(vk);
+
+   waits_for_semaphores = vk->hw.enable && frame &&
+                          !vk->hw.num_cmd && vk->hw.valid_semaphore;
+
+   if (waits_for_semaphores &&
+       vk->hw.src_queue_family != VK_QUEUE_FAMILY_IGNORED &&
+       vk->hw.src_queue_family != vk->context->graphics_queue_index)
+   {
+      retro_assert(vk->hw.image);
+
+      /* Acquire ownership of image from other queue family. */
+      vulkan_transfer_image_ownership(vk->cmd,
+            vk->hw.image->create_info.image,
+            vk->hw.image->image_layout,
+            /* Create a dependency chain from semaphore wait. */
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            vk->hw.src_queue_family, vk->context->graphics_queue_index);
+   }
 
    /* Upload texture */
    performance_counter_start(&copy_frame);
@@ -1717,6 +1744,21 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
    }
 
+   if (waits_for_semaphores &&
+       vk->hw.src_queue_family != VK_QUEUE_FAMILY_IGNORED &&
+       vk->hw.src_queue_family != vk->context->graphics_queue_index)
+   {
+      retro_assert(vk->hw.image);
+
+      /* Release ownership of image back to other queue family. */
+      vulkan_transfer_image_ownership(vk->cmd,
+            vk->hw.image->create_info.image,
+            vk->hw.image->image_layout,
+            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            vk->context->graphics_queue_index, vk->hw.src_queue_family);
+   }
+
    performance_counter_start(&end_cmd);
    VKFUNC(vkEndCommandBuffer)(vk->cmd);
    performance_counter_stop(&end_cmd);
@@ -1739,11 +1781,14 @@ static bool vulkan_frame(void *data, const void *frame,
       submit_info.pCommandBuffers    = &vk->cmd;
    }
 
-   if (vk->hw.enable && frame && !vk->hw.num_cmd)
+   if (waits_for_semaphores)
    {
       submit_info.waitSemaphoreCount = vk->hw.num_semaphores;
       submit_info.pWaitSemaphores    = vk->hw.semaphores;
       submit_info.pWaitDstStageMask  = vk->hw.wait_dst_stages;
+
+      /* Consume the semaphores. */
+      vk->hw.valid_semaphore = false;
    }
 
    submit_info.signalSemaphoreCount  = 

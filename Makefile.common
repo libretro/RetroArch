@@ -48,6 +48,11 @@ ifeq ($(GL_DEBUG), 1)
    CXXFLAGS += -DGL_DEBUG
 endif
 
+ifeq ($(VULKAN_DEBUG), 1)
+   CFLAGS += -DVULKAN_DEBUG
+   CXXFLAGS += -DVULKAN_DEBUG
+endif
+
 ifeq ($(HAVE_HARD_FLOAT), 1)
    DEFINES += -mfloat-abi=hard
 endif

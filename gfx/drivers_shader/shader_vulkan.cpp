@@ -1643,7 +1643,7 @@ void Pass::build_commands(
 
    if (reflection.ubo_stage_mask)
    {
-      set_uniform_buffer(sets[sync_index], 0,
+      set_uniform_buffer(sets[sync_index], reflection.ubo_binding,
             common->ubo->get_buffer(),
             ubo_offset, reflection.ubo_size);
    }
