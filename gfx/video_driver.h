@@ -312,6 +312,8 @@ bool video_driver_owns_driver(void);
 bool video_driver_is_hw_context(void);
 void video_driver_deinit_hw_context(void);
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
+const struct retro_hw_render_context_negotiation_interface *video_driver_get_context_negotiation_interface(void);
+void video_driver_set_context_negotiation_interface(const struct retro_hw_render_context_negotiation_interface *iface);
 void video_driver_set_video_cache_context(void);
 void video_driver_unset_video_cache_context(void);
 bool video_driver_is_video_cache_context(void);

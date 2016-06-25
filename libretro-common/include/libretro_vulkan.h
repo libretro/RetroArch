@@ -51,20 +51,27 @@ typedef void (*retro_vulkan_wait_sync_index_t)(void *handle);
 typedef void (*retro_vulkan_lock_queue_t)(void *handle);
 typedef void (*retro_vulkan_unlock_queue_t)(void *handle);
 
+typedef const VkApplicationInfo *(*retro_vulkan_get_application_info_t)(void);
+
 struct retro_vulkan_context
 {
    VkPhysicalDevice gpu;
    VkDevice device;
    VkQueue queue;
    uint32_t queue_family_index;
+   VkQueue presentation_queue;
+   uint32_t presentation_queue_family_index;
 };
 
-typedef void *(*retro_vulkan_create_device_t)(
+typedef bool (*retro_vulkan_create_device_t)(
       struct retro_vulkan_context *context,
       VkInstance instance,
-      PFN_vkGetInstanceProcAddr get_proc_addr,
+      VkSurfaceKHR surface,
+      PFN_vkGetInstanceProcAddr get_instance_proc_addr,
       const char **required_device_extensions,
       unsigned num_required_device_extensions,
+      const char **required_device_layers,
+      unsigned num_required_device_layers,
       const VkPhysicalDeviceFeatures *required_features);
 
 typedef void (*retro_vulkan_destroy_handle_t)(void *data);
@@ -79,12 +86,31 @@ typedef void (*retro_vulkan_destroy_handle_t)(void *data);
 struct retro_hw_render_context_negotiation_interface_vulkan
 {
    /* Must be set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN. */
-   enum retro_hw_render_interface_type interface_type;
+   enum retro_hw_render_context_negotiation_interface_type interface_type;
    /* Must be set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION. */
    unsigned interface_version;
 
+   /* If non-NULL, returns a VkApplicationInfo struct that the frontend can use instead of
+    * its "default" application info.
+    */
+   retro_vulkan_get_application_info_t get_application_info;
+
+   /* If non-NULL, the libretro core will choose one or more physical devices,
+    * create one or more logical devices and create one or more queues.
+    * The core must prepare a designated PhysicalDevice, Device, Queue and queue family index
+    * which the frontend will use for its internal operation.
+    *
+    * The frontend will request certain extensions and layers for a device which is created.
+    * The core must ensure that the queue and queue_family_index support GRAPHICS and COMPUTE.
+    *
+    * If presentation to "surface" is supported on the queue, presentation_queue must be equal to queue.
+    * If not, a second queue must be provided in presentation_queue and presentation_queue_index.
+    *
+    * The core is free to set its own queue priorities.
+    * Device provided to frontend is owned by the frontend, but any additional device resources must be freed by core
+    * in either destroy_context callback or retro_unload_game().
+    */
    retro_vulkan_create_device_t create_device;
-   retro_vulkan_destroy_handle_t destroy_handle;
 };
 
 struct retro_hw_render_interface_vulkan
@@ -107,11 +133,6 @@ struct retro_hw_render_interface_vulkan
     * - Fixing this in general is TODO for an eventual libretro v2.
     */
    void *handle;
-
-   /* An opaque handle that is used to pass data from context negotiation interface
-    * to the hardware interface.
-    */
-   void *core_handle;
 
    /* The Vulkan instance the context is using. */
    VkInstance instance;
