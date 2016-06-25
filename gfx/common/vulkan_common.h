@@ -108,6 +108,10 @@ typedef struct vulkan_context
 
    slock_t *queue_lock;
 
+#ifdef VULKAN_DEBUG
+   VkDebugReportCallbackEXT debug_callback;
+#endif
+
    /* Used by screenshot to get blits with correct colorspace. */
    bool swapchain_is_srgb;
 } vulkan_context_t;

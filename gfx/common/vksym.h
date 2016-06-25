@@ -260,6 +260,12 @@ typedef struct vulkan_context_fp
 #ifdef HAVE_MIR
    PFN_vkCreateMirSurfaceKHR                     vkCreateMirSurfaceKHR;
 #endif
+
+#ifdef VULKAN_DEBUG
+   PFN_vkCreateDebugReportCallbackEXT            vkCreateDebugReportCallbackEXT;
+   PFN_vkDebugReportMessageEXT                   vkDebugReportMessageEXT;
+   PFN_vkDestroyDebugReportCallbackEXT           vkDestroyDebugReportCallbackEXT;
+#endif
 } vulkan_context_fp_t;
 
 extern vulkan_context_fp_t vkcfp;

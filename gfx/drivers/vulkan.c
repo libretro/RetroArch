@@ -110,7 +110,6 @@ static void vulkan_init_render_pass(
    subpass.pColorAttachments    = &color_ref;
 
    /* Finally, create the renderpass. */
-   rp_info.sType                = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
    rp_info.attachmentCount      = 1;
    rp_info.pAttachments         = &attachment;
    rp_info.subpassCount         = 1;
@@ -129,13 +128,14 @@ static void vulkan_init_framebuffers(
 
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      VkImageViewCreateInfo view;
-      VkFramebufferCreateInfo info;
+      VkImageViewCreateInfo view =
+      { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+      VkFramebufferCreateInfo info =
+      { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 
       vk->swapchain[i].backbuffer.image    = vk->context->swapchain_images[i];
 
       /* Create an image view which we can render into. */
-      view.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
       view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
       view.format                          = vk->context->swapchain_format;
       view.image                           = vk->swapchain[i].backbuffer.image;
@@ -153,7 +153,6 @@ static void vulkan_init_framebuffers(
             &view, NULL, &vk->swapchain[i].backbuffer.view);
 
       /* Create the framebuffer */
-      info.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
       info.renderPass      = vk->render_pass;
       info.attachmentCount = 1;
       info.pAttachments    = &vk->swapchain[i].backbuffer.view;
@@ -441,9 +440,9 @@ static void vulkan_init_command_buffers(vk_t *vk)
 
 static void vulkan_init_samplers(vk_t *vk)
 {
-   VkSamplerCreateInfo info;
+   VkSamplerCreateInfo info =
+   { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
 
-   info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
    info.magFilter               = VK_FILTER_NEAREST;
    info.minFilter               = VK_FILTER_NEAREST;
    info.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
