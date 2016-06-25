@@ -403,14 +403,6 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
             msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
             global->name.savestate);
    }
-
-   /* If this is already set,
-    * do not overwrite it as this was initialized before in
-    * a menu or otherwise. */
-   if (string_is_empty(settings->directory.system))
-   {
-      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
-   }
 }
 
 #define MENU_VALUE_NO_CORE 0x7d5472cbU
