@@ -955,6 +955,27 @@ struct retro_hw_render_interface
                                             * This must be called before the first call to retro_run.
                                             */
 
+enum retro_hw_render_context_negotiation_interface_type
+{
+   RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN = 0,
+   RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_DUMMY = INT_MAX
+};
+
+/* Base struct. All retro_hw_render_context_negotiation_interface_* types
+ * contain at least these fields. */
+struct retro_hw_render_context_negotiation_interface
+{
+   enum retro_hw_render_context_negotiation_interface_type interface_type;
+   unsigned interface_version;
+};
+#define RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE (43 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const struct retro_hw_render_context_negotiation_interface * --
+                                            * Sets an interface which lets the libretro core negotiate with frontend how a context is created.
+                                            * The semantics of this interface depends on which API is used in SET_HW_RENDER earlier.
+                                            * This interface will be used when the frontend is trying to create a HW rendering context,
+                                            * so it will be used after SET_HW_RENDER, but before the context_reset callback.
+                                            */
+
 #define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
 #define RETRO_MEMDESC_ALIGN_2   (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */

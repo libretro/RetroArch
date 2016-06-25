@@ -83,8 +83,10 @@ LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/spir2cross \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/SPIRV-Cross
 
+LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
 LOCAL_SRC_FILES += $(RARCH_DIR)/deps/glslang/glslang.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SpvBuilder.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/Logger.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SPVRemapper.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/InReadableOrder.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/doc.cpp \
@@ -93,7 +95,14 @@ LOCAL_SRC_FILES += $(RARCH_DIR)/deps/glslang/glslang.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/OGLCompilersDLL/InitializeDll.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/GenericCodeGen/Link.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/GenericCodeGen/CodeGen.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/hlsl/hlslGrammar.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/hlsl/hlslOpMap.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/hlsl/hlslTokenStream.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/hlsl/hlslScanContext.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/hlsl/hlslParseHelper.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/hlsl/hlslParseables.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/Intermediate.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/propagateNoContraction.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/glslang_tab.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/Versions.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/RemoveTree.cpp \

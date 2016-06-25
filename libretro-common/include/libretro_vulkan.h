@@ -26,7 +26,8 @@
 #include <libretro.h>
 #include <vulkan/vulkan.h>
 
-#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 2
+#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 3
+#define RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION 1
 
 struct retro_vulkan_image
 {
@@ -38,7 +39,9 @@ struct retro_vulkan_image
 typedef void (*retro_vulkan_set_image_t)(void *handle,
       const struct retro_vulkan_image *image,
       uint32_t num_semaphores,
-      const VkSemaphore *semaphores);
+      const VkSemaphore *semaphores,
+      uint32_t src_queue_family);
+
 typedef uint32_t (*retro_vulkan_get_sync_index_t)(void *handle);
 typedef uint32_t (*retro_vulkan_get_sync_index_mask_t)(void *handle);
 typedef void (*retro_vulkan_set_command_buffers_t)(void *handle,
@@ -48,12 +51,41 @@ typedef void (*retro_vulkan_wait_sync_index_t)(void *handle);
 typedef void (*retro_vulkan_lock_queue_t)(void *handle);
 typedef void (*retro_vulkan_unlock_queue_t)(void *handle);
 
+struct retro_vulkan_context
+{
+   VkPhysicalDevice gpu;
+   VkDevice device;
+   VkQueue queue;
+   uint32_t queue_family_index;
+};
+
+typedef void *(*retro_vulkan_create_device_t)(
+      struct retro_vulkan_context *context,
+      VkInstance instance,
+      PFN_vkGetInstanceProcAddr get_proc_addr,
+      const char **required_device_extensions,
+      unsigned num_required_device_extensions,
+      const VkPhysicalDeviceFeatures *required_features);
+
+typedef void (*retro_vulkan_destroy_handle_t)(void *data);
+
 /* Note on thread safety:
  * The Vulkan API is heavily designed around multi-threading, and
  * the libretro interface for it should also be threading friendly.
  * A core should be able to build command buffers and submit 
  * command buffers to the GPU from any thread.
  */
+
+struct retro_hw_render_context_negotiation_interface_vulkan
+{
+   /* Must be set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN. */
+   enum retro_hw_render_interface_type interface_type;
+   /* Must be set to RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION. */
+   unsigned interface_version;
+
+   retro_vulkan_create_device_t create_device;
+   retro_vulkan_destroy_handle_t destroy_handle;
+};
 
 struct retro_hw_render_interface_vulkan
 {
@@ -75,6 +107,11 @@ struct retro_hw_render_interface_vulkan
     * - Fixing this in general is TODO for an eventual libretro v2.
     */
    void *handle;
+
+   /* An opaque handle that is used to pass data from context negotiation interface
+    * to the hardware interface.
+    */
+   void *core_handle;
 
    /* The Vulkan instance the context is using. */
    VkInstance instance;
@@ -104,6 +141,15 @@ struct retro_hw_render_interface_vulkan
     * If num_semaphores is non-zero, the frontend will wait for the 
     * semaphores provided to be signaled before using the results further 
     * in the pipeline.
+    *
+    * Semaphores provided by a single call to set_image will only be
+    * waited for once (waiting for a semaphore resets it).
+    * E.g. set_image, video_refresh, and then another
+    * video_refresh without set_image,
+    * but same image will only wait for semaphores once.
+    *
+    * For this reason, ownership transfer will only occur if semaphores
+    * are waited on for a particular frame in the frontend.
     *
     * Using semaphores is optional for synchronization purposes, 
     * but if not using
@@ -163,7 +209,41 @@ struct retro_hw_render_interface_vulkan
     * retro_video_refresh_t should be extended if frame duping is used 
     * so that the frontend can reuse the older pointer.
     *
-    * If frame duping is used, the frontend will not wait for any semaphores.
+    * The image itself however, must not be touched by the core until
+    * wait_sync_index has been completed later. The frontend may perform
+    * layout transitions on the image, so even read-only access is not defined.
+    * The exception to read-only rule is if GENERAL layout is used for the image.
+    * In this case, the frontend is not allowed to perform any layout transitions,
+    * so concurrent reads from core and frontend are allowed.
+    *
+    * If frame duping is used, or if set_command_buffers is used,
+    * the frontend will not wait for any semaphores.
+    *
+    * The src_queue_family is used to specify which queue family
+    * the image is currently owned by. If using multiple queue families
+    * (e.g. async compute), the frontend will need to acquire ownership of the
+    * image before rendering with it and release the image afterwards.
+    *
+    * If src_queue_family is equal to the queue family (queue_index),
+    * no ownership transfer will occur.
+    * Similarly, if src_queue_family is VK_QUEUE_FAMILY_IGNORED,
+    * no ownership transfer will occur.
+    *
+    * The frontend will always release ownership back to src_queue_family.
+    * Waiting for frontend to complete with wait_sync_index() ensures that
+    * the frontend has released ownership back to the application.
+    * Note that in Vulkan, transfering ownership is a two-part process.
+    *
+    * Example frame:
+    *  - core releases ownership from src_queue_index to queue_index with VkImageMemoryBarrier.
+    *  - core calls set_image with src_queue_index.
+    *  - Frontend will acquire the image with src_queue_index -> queue_index as well, completing the ownership transfer.
+    *  - Frontend renders the frame.
+    *  - Frontend releases ownership with queue_index -> src_queue_index.
+    *  - Next time image is used, core must acquire ownership from queue_index ...
+    *
+    * Since the frontend releases ownership, we cannot necessarily dupe the frame because
+    * the core needs to make the roundtrip of ownership transfer.
     */
    retro_vulkan_set_image_t set_image;
 

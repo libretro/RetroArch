@@ -598,6 +598,9 @@ void menu_display_allocate_white_texture(void)
    ti.height = 1;
    ti.pixels = (uint32_t*)&white_data;
 
+   if (menu_display_white_texture)
+      video_driver_texture_unload(&menu_display_white_texture);
+
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST, &menu_display_white_texture);
 }

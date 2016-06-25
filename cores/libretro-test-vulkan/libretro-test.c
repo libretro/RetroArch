@@ -933,6 +933,7 @@ static void vulkan_test_deinit(void)
 
    VKFUNC(vkDestroyRenderPass)(device, vk.render_pass, NULL);
    VKFUNC(vkDestroyPipeline)(device, vk.pipeline, NULL);
+   VKFUNC(vkDestroyDescriptorSetLayout)(device, vk.set_layout, NULL);
    VKFUNC(vkDestroyPipelineLayout)(device, vk.pipeline_layout, NULL);
 
    VKFUNC(vkFreeMemory)(device, vk.vbo.memory, NULL);
@@ -967,7 +968,7 @@ void retro_run(void)
 
    vk.index = vulkan->get_sync_index(vulkan->handle);
    vulkan_test_render();
-   vulkan->set_image(vulkan->handle, &vk.images[vk.index], 0, NULL);
+   vulkan->set_image(vulkan->handle, &vk.images[vk.index], 0, NULL, VK_QUEUE_FAMILY_IGNORED);
    vulkan->set_command_buffers(vulkan->handle, 1, &vk.cmd[vk.index]);
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, BASE_WIDTH, BASE_HEIGHT, 0);
 }
