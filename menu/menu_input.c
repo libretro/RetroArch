@@ -125,6 +125,7 @@ typedef struct menu_input
    } delay;
 } menu_input_t;
 
+static bool menu_block_main_input = false;
 static unsigned           bind_port;
 
 static menu_input_t *menu_input_get_ptr(void)
@@ -143,6 +144,10 @@ void menu_input_key_end_line(void)
 
    /* Avoid triggering states on pressing return. */
    input_driver_set_flushing_input();
+
+#if 0
+   menu_block_main_input = false;
+#endif
 }
 
 static void menu_input_search_cb(void *userdata, const char *str)
@@ -1224,8 +1229,7 @@ static unsigned menu_input_frame_build(retro_input_t trigger_input)
    return menu_input_frame_pointer(&ret);
 }
 
-unsigned ti_char = 64;
-bool ti_next = false;
+
 unsigned menu_input_frame_retropad(retro_input_t input,
       retro_input_t trigger_input)
 {
@@ -1236,6 +1240,9 @@ unsigned menu_input_frame_retropad(retro_input_t input,
    bool set_scroll                         = false;
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = menu_input_get_ptr();
+
+   if (menu_block_main_input)
+      return 0;
 
    if (!menu_input)
       return 0;
@@ -1298,6 +1305,9 @@ unsigned menu_input_frame_retropad(retro_input_t input,
 
    if (menu_input->keyboard.display)
    {
+      static unsigned ti_char = 64;
+      static bool ti_next     = false;
+
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          if (ti_char > 32)
