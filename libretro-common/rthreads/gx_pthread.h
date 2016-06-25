@@ -191,4 +191,6 @@ static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
    return LWP_CondDestroy(*cond);
 }
 
+extern int pthread_equal(pthread_t t1, pthread_t t2);
+
 #endif
