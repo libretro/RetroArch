@@ -21,13 +21,19 @@
 #include <utility>
 #include <string.h>
 #include <math.h>
-#include "../drivers/vulkan_shaders/opaque.vert.inc"
-#include "../drivers/vulkan_shaders/opaque.frag.inc"
 #include "../video_shader_driver.h"
 #include "../../verbosity.h"
 #include "slang_reflection.hpp"
 
 using namespace std;
+
+static const uint32_t opaque_vert[] =
+#include "../drivers/vulkan_shaders/opaque.vert.inc"
+;
+
+static const uint32_t opaque_frag[] =
+#include "../drivers/vulkan_shaders/opaque.frag.inc"
+;
 
 static void image_layout_transition(
       VkCommandBuffer cmd, VkImage image,
@@ -2008,11 +2014,11 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    chain->set_pass_info(0, pass_info);
 
    chain->set_shader(0, VK_SHADER_STAGE_VERTEX_BIT,
-         (const uint32_t*)opaque_vert_spv,
-         opaque_vert_spv_len / sizeof(uint32_t));
+         opaque_vert,
+         sizeof(opaque_vert) / sizeof(uint32_t));
    chain->set_shader(0, VK_SHADER_STAGE_FRAGMENT_BIT,
-         (const uint32_t*)opaque_frag_spv,
-         opaque_frag_spv_len / sizeof(uint32_t));
+         opaque_frag,
+         sizeof(opaque_frag) / sizeof(uint32_t));
 
    if (!chain->init())
       return nullptr;
@@ -2241,13 +2247,13 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
       chain->set_shader(shader->passes,
             VK_SHADER_STAGE_VERTEX_BIT,
-            (const uint32_t*)opaque_vert_spv,
-            opaque_vert_spv_len / sizeof(uint32_t));
+            opaque_vert,
+            sizeof(opaque_vert) / sizeof(uint32_t));
 
       chain->set_shader(shader->passes,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            (const uint32_t*)opaque_frag_spv,
-            opaque_frag_spv_len / sizeof(uint32_t));
+            opaque_frag,
+            sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
    chain->set_shader_preset(move(shader));

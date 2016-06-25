@@ -28,13 +28,6 @@
 #include <libretro.h>
 
 #include "../common/vulkan_common.h"
-#include "vulkan_shaders/alpha_blend.vert.inc"
-#include "vulkan_shaders/alpha_blend.frag.inc"
-#include "vulkan_shaders/font.frag.inc"
-#include "vulkan_shaders/ribbon.vert.inc"
-#include "vulkan_shaders/ribbon.frag.inc"
-#include "vulkan_shaders/ribbon_simple.vert.inc"
-#include "vulkan_shaders/ribbon_simple.frag.inc"
 
 #include "../../driver.h"
 #include "../../record/record_driver.h"
@@ -202,6 +195,34 @@ static void vulkan_init_pipeline_layout(
 static void vulkan_init_pipelines(
       vk_t *vk)
 {
+   static const uint32_t alpha_blend_vert[] =
+#include "vulkan_shaders/alpha_blend.vert.inc"
+      ;
+
+   static const uint32_t alpha_blend_frag[] =
+#include "vulkan_shaders/alpha_blend.frag.inc"
+      ;
+
+   static const uint32_t font_frag[] =
+#include "vulkan_shaders/font.frag.inc"
+      ;
+
+   static const uint32_t ribbon_vert[] =
+#include "vulkan_shaders/ribbon.vert.inc"
+      ;
+
+   static const uint32_t ribbon_frag[] =
+#include "vulkan_shaders/ribbon.frag.inc"
+      ;
+
+   static const uint32_t ribbon_simple_vert[] =
+#include "vulkan_shaders/ribbon_simple.vert.inc"
+      ;
+
+   static const uint32_t ribbon_simple_frag[] =
+#include "vulkan_shaders/ribbon_simple.frag.inc"
+      ;
+
    unsigned i;
    VkPipelineInputAssemblyStateCreateInfo input_assembly = { 
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
@@ -313,8 +334,8 @@ static void vulkan_init_pipelines(
    pipe.renderPass                      = vk->render_pass;
    pipe.layout                          = vk->pipelines.layout;
 
-   module_info.codeSize                 = alpha_blend_vert_spv_len;
-   module_info.pCode                    = (const uint32_t*)alpha_blend_vert_spv;
+   module_info.codeSize                 = sizeof(alpha_blend_vert);
+   module_info.pCode                    = alpha_blend_vert;
    shader_stages[0].stage               = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName               = "main";
    VKFUNC(vkCreateShaderModule)(vk->context->device,
@@ -330,8 +351,8 @@ static void vulkan_init_pipelines(
    blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
 
    /* Glyph pipeline */
-   module_info.codeSize                 = font_frag_spv_len;
-   module_info.pCode                    = (const uint32_t*)font_frag_spv;
+   module_info.codeSize                 = sizeof(font_frag);
+   module_info.pCode                    = font_frag;
    shader_stages[1].stage               = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName               = "main";
    VKFUNC(vkCreateShaderModule)(vk->context->device,
@@ -342,8 +363,8 @@ static void vulkan_init_pipelines(
    VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[1].module, NULL);
 
    /* Alpha-blended pipeline. */
-   module_info.codeSize   = alpha_blend_frag_spv_len;
-   module_info.pCode      = (const uint32_t*)alpha_blend_frag_spv;
+   module_info.codeSize   = sizeof(alpha_blend_frag);
+   module_info.pCode      = alpha_blend_frag;
    shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName = "main";
    VKFUNC(vkCreateShaderModule)(vk->context->device,
@@ -371,13 +392,13 @@ static void vulkan_init_pipelines(
    {
       if (i & 2)
       {
-         module_info.codeSize   = ribbon_simple_vert_spv_len;
-         module_info.pCode      = (const uint32_t*)ribbon_simple_vert_spv;
+         module_info.codeSize   = sizeof(ribbon_simple_vert);
+         module_info.pCode      = ribbon_simple_vert;
       }
       else
       {
-         module_info.codeSize   = ribbon_vert_spv_len;
-         module_info.pCode      = (const uint32_t*)ribbon_vert_spv;
+         module_info.codeSize   = sizeof(ribbon_vert);
+         module_info.pCode      = ribbon_vert;
       }
 
       shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -387,13 +408,13 @@ static void vulkan_init_pipelines(
 
       if (i & 2)
       {
-         module_info.codeSize   = ribbon_simple_frag_spv_len;
-         module_info.pCode      = (const uint32_t*)ribbon_simple_frag_spv;
+         module_info.codeSize   = sizeof(ribbon_simple_frag);
+         module_info.pCode      = ribbon_simple_frag;
       }
       else
       {
-         module_info.codeSize   = ribbon_frag_spv_len;
-         module_info.pCode      = (const uint32_t*)ribbon_frag_spv;
+         module_info.codeSize   = sizeof(ribbon_frag);
+         module_info.pCode      = ribbon_frag;
       }
 
       shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
