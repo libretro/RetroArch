@@ -104,6 +104,31 @@ uint32_t vulkan_find_memory_type_fallback(
          device_reqs, host_reqs_second, 0);
 }
 
+void vulkan_transfer_image_ownership(VkCommandBuffer cmd,
+      VkImage image, VkImageLayout layout,
+      VkPipelineStageFlags src_stages,
+      VkPipelineStageFlags dst_stages,
+      uint32_t src_queue_family,
+      uint32_t dst_queue_family)
+{
+   VkImageMemoryBarrier barrier =
+   { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+
+   barrier.srcAccessMask               = 0;
+   barrier.dstAccessMask               = 0;
+   barrier.oldLayout                   = layout;
+   barrier.newLayout                   = layout;
+   barrier.srcQueueFamilyIndex         = src_queue_family;
+   barrier.dstQueueFamilyIndex         = dst_queue_family;
+   barrier.image                       = image;
+   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+   barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+   VKFUNC(vkCmdPipelineBarrier)(cmd, src_stages, dst_stages,
+         false, 0, NULL, 0, NULL, 1, &barrier);
+}
+
 void vulkan_map_persistent_texture(
       VkDevice device,
       struct vk_texture *texture)
