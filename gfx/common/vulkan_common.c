@@ -1841,6 +1841,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkSwapchainKHR old_swapchain;
    VkSurfaceTransformFlagBitsKHR pre_transform;
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+   settings_t *settings = config_get_ptr();
 
    present_mode_count = 0;
    VKFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)(
@@ -1921,8 +1922,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    desired_swapchain_images = surface_properties.minImageCount + 1;
 
    /* Limit latency. */
-   if (desired_swapchain_images > 3)
-      desired_swapchain_images = 3;
+   if (desired_swapchain_images > settings->video.max_swapchain_images)
+      desired_swapchain_images = settings->video.max_swapchain_images;
 
    if (desired_swapchain_images < surface_properties.minImageCount)
       desired_swapchain_images = surface_properties.minImageCount;
