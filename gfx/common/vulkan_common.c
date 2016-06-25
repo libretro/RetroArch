@@ -57,14 +57,14 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
       RARCH_ERR("[Vulkan]: Error: %s: %s\n",
             pLayerPrefix, pMessage);
    }
-   else if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-   {
-      RARCH_WARN("[Vulkan]: Perforamnce warning: %s: %s\n",
-            pLayerPrefix, pMessage);
-   }
    else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
    {
       RARCH_WARN("[Vulkan]: Warning: %s: %s\n",
+            pLayerPrefix, pMessage);
+   }
+   else if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+   {
+      RARCH_LOG("[Vulkan]: Performance warning: %s: %s\n",
             pLayerPrefix, pMessage);
    }
    else

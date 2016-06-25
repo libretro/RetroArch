@@ -407,6 +407,9 @@ static void vulkan_init_pipelines(
 
       VKFUNC(vkCreateGraphicsPipelines)(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->display.pipelines[4 + i]);
+
+      VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[0].module, NULL);
+      VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[1].module, NULL);
    }
 }
 
