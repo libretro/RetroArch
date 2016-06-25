@@ -933,6 +933,7 @@ static void vulkan_test_deinit(void)
 
    VKFUNC(vkDestroyRenderPass)(device, vk.render_pass, NULL);
    VKFUNC(vkDestroyPipeline)(device, vk.pipeline, NULL);
+   VKFUNC(vkDestroyDescriptorSetLayout)(device, vk.set_layout, NULL);
    VKFUNC(vkDestroyPipelineLayout)(device, vk.pipeline_layout, NULL);
 
    VKFUNC(vkFreeMemory)(device, vk.vbo.memory, NULL);
