@@ -391,6 +391,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
       struct texture_image *texture_img = NULL;
       struct overlay_desc *overlay_desc = NULL;
       struct overlay          *overlay  = NULL;
+      char tmp_str[PATH_MAX_LENGTH]     = {0};
       bool                     to_cont  = loader->pos < loader->size;
 
       if (!to_cont)
@@ -463,8 +464,10 @@ static void task_overlay_deferred_load(retro_task_t *task)
       snprintf(overlay->config.paths.key, sizeof(overlay->config.paths.key),
             "overlay%u_overlay", loader->pos);
 
-      config_get_path(conf, overlay->config.paths.key,
-               overlay->config.paths.path, sizeof(overlay->config.paths.path));
+      if (config_get_path(conf, overlay->config.paths.key,
+               tmp_str, sizeof(tmp_str)))
+         strlcpy(overlay->config.paths.path,
+               tmp_str, sizeof(overlay->config.paths.path));
 
       if (!string_is_empty(overlay->config.paths.path))
       {

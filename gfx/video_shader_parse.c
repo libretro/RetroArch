@@ -133,17 +133,19 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char frame_count_mod[64]     = {0};
    struct gfx_fbo_scale *scale  = NULL;
    bool tmp_bool                = false;
+   char tmp_str[PATH_MAX_LENGTH]= {0};
    float fattr                  = 0.0f;
    int iattr                    = 0;
 
    /* Source */
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
-   if (!config_get_path(conf, shader_name,
-            pass->source.path, sizeof(pass->source.path)))
+   if (!config_get_path(conf, shader_name, tmp_str, sizeof(tmp_str)))
    {
       RARCH_ERR("Couldn't parse shader source (%s).\n", shader_name);
       return false;
    }
+
+   strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
    
    /* Smooth */
    snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
@@ -492,6 +494,7 @@ static bool video_shader_parse_imports(config_file_t *conf,
    const char *id     = NULL;
    char *save         = NULL;
    char imports[1024] = {0};
+   char tmp_str[PATH_MAX_LENGTH]= {0};
 
    if (!config_get_array(conf, "imports", imports, sizeof(imports)))
       return true;
@@ -594,8 +597,8 @@ static bool video_shader_parse_imports(config_file_t *conf,
          var->equal = equal;
    }
 
-   config_get_path(conf, "import_script",
-         shader->script_path, sizeof(shader->script_path));
+   if (config_get_path(conf, "import_script", tmp_str, sizeof(tmp_str)))
+      strlcpy(shader->script_path, tmp_str, sizeof(shader->script_path));
    config_get_array(conf, "import_script_class",
          shader->script_class, sizeof(shader->script_class));
 
