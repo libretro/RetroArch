@@ -1953,6 +1953,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    settings_t *settings = config_get_ptr();
 
+   VKFUNC(vkDeviceWaitIdle)(vk->context.device);
+
    present_mode_count = 0;
    VKFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)(
          vk->context.gpu, vk->vk_surface,
