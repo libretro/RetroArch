@@ -808,6 +808,7 @@ ifeq ($(HAVE_VULKAN), 1)
 		$(wildcard deps/glslang/glslang/OGLCompilersDLL/*.cpp) \
 		$(wildcard deps/glslang/glslang/glslang/MachineIndependent/*.cpp) \
 		$(wildcard deps/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
+		$(wildcard deps/glslang/glslang/hlsl/*.cpp) \
 		$(wildcard deps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
 	SPIRV_CROSS_SOURCES := deps/SPIRV-Cross/spirv_cross.cpp
@@ -826,7 +827,7 @@ ifeq ($(HAVE_VULKAN), 1)
 			  -Ideps/glslang \
 			  -Ideps/SPIRV-Cross
 
-	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Igfx/include
+	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses -Igfx/include
 	CFLAGS  += -Igfx/include
 
 	GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
