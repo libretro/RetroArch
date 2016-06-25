@@ -786,59 +786,59 @@ static void config_set_defaults(void)
 
    video_driver_default_settings();
 
-   if (*g_defaults.dir.wallpapers)
+   if (!string_is_empty(g_defaults.dir.wallpapers))
       strlcpy(settings->directory.dynamic_wallpapers,
             g_defaults.dir.wallpapers, sizeof(settings->directory.dynamic_wallpapers));
-   if (*g_defaults.dir.thumbnails)
+   if (!string_is_empty(g_defaults.dir.thumbnails))
       strlcpy(settings->directory.thumbnails,
             g_defaults.dir.thumbnails, sizeof(settings->directory.thumbnails));
-   if (*g_defaults.dir.remap)
+   if (!string_is_empty(g_defaults.dir.remap))
       strlcpy(settings->directory.input_remapping,
             g_defaults.dir.remap, sizeof(settings->directory.input_remapping));
-   if (*g_defaults.dir.cache)
+   if (!string_is_empty(g_defaults.dir.cache))
       strlcpy(settings->directory.cache,
             g_defaults.dir.cache, sizeof(settings->directory.cache));
-   if (*g_defaults.dir.assets)
+   if (!string_is_empty(g_defaults.dir.assets))
       strlcpy(settings->directory.assets,
             g_defaults.dir.assets, sizeof(settings->directory.assets));
-   if (*g_defaults.dir.core_assets)
+   if (!string_is_empty(g_defaults.dir.core_assets))
       strlcpy(settings->directory.core_assets,
             g_defaults.dir.core_assets, sizeof(settings->directory.core_assets));
-   if (*g_defaults.dir.playlist)
+   if (!string_is_empty(g_defaults.dir.playlist))
       strlcpy(settings->directory.playlist,
             g_defaults.dir.playlist, sizeof(settings->directory.playlist));
-   if (*g_defaults.dir.core)
+   if (!string_is_empty(g_defaults.dir.core))
       fill_pathname_expand_special(settings->directory.libretro,
             g_defaults.dir.core, sizeof(settings->directory.libretro));
-   if (*g_defaults.dir.audio_filter)
+   if (!string_is_empty(g_defaults.dir.audio_filter))
       strlcpy(settings->directory.audio_filter,
             g_defaults.dir.audio_filter, sizeof(settings->directory.audio_filter));
-   if (*g_defaults.dir.video_filter)
+   if (!string_is_empty(g_defaults.dir.video_filter))
       strlcpy(settings->directory.video_filter,
             g_defaults.dir.video_filter, sizeof(settings->directory.video_filter));
-   if (*g_defaults.dir.shader)
+   if (!string_is_empty(g_defaults.dir.shader))
       fill_pathname_expand_special(settings->directory.video_shader,
             g_defaults.dir.shader, sizeof(settings->directory.video_shader));
 
-   if (*g_defaults.path.buildbot_server_url)
+   if (!string_is_empty(g_defaults.path.buildbot_server_url))
       strlcpy(settings->network.buildbot_url,
             g_defaults.path.buildbot_server_url, sizeof(settings->network.buildbot_url));
-   if (*g_defaults.path.core)
+   if (!string_is_empty(g_defaults.path.core))
       runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, g_defaults.path.core);
-   if (*g_defaults.dir.database)
+   if (!string_is_empty(g_defaults.dir.database))
       strlcpy(settings->path.content_database, g_defaults.dir.database,
             sizeof(settings->path.content_database));
-   if (*g_defaults.dir.cursor)
+   if (!string_is_empty(g_defaults.dir.cursor))
       strlcpy(settings->directory.cursor, g_defaults.dir.cursor,
             sizeof(settings->directory.cursor));
-   if (*g_defaults.dir.cheats)
+   if (!string_is_empty(g_defaults.dir.cheats))
       strlcpy(settings->path.cheat_database, g_defaults.dir.cheats,
             sizeof(settings->path.cheat_database));
-   if (*g_defaults.dir.core_info)
+   if (!string_is_empty(g_defaults.dir.core_info))
       fill_pathname_expand_special(settings->path.libretro_info,
             g_defaults.dir.core_info, sizeof(settings->path.libretro_info));
 #ifdef HAVE_OVERLAY
-   if (*g_defaults.dir.overlay)
+   if (!string_is_empty(g_defaults.dir.overlay))
    {
       fill_pathname_expand_special(settings->directory.overlay,
             g_defaults.dir.overlay, sizeof(settings->directory.overlay));
@@ -851,7 +851,7 @@ static void config_set_defaults(void)
 #endif
    }
 
-   if (*g_defaults.dir.osk_overlay)
+   if (!string_is_empty(g_defaults.dir.osk_overlay))
    {
       fill_pathname_expand_special(global->dir.osk_overlay,
             g_defaults.dir.osk_overlay, sizeof(global->dir.osk_overlay));
@@ -868,12 +868,12 @@ static void config_set_defaults(void)
             settings->directory.overlay, sizeof(global->dir.osk_overlay));
 #endif
 #ifdef HAVE_MENU
-   if (*g_defaults.dir.menu_config)
+   if (!string_is_empty(g_defaults.dir.menu_config))
       strlcpy(settings->directory.menu_config,
             g_defaults.dir.menu_config,
             sizeof(settings->directory.menu_config));
 #endif
-   if (*g_defaults.dir.autoconfig)
+   if (!string_is_empty(g_defaults.dir.autoconfig))
       strlcpy(settings->directory.autoconfig,
             g_defaults.dir.autoconfig,
             sizeof(settings->directory.autoconfig));
@@ -884,18 +884,18 @@ static void config_set_defaults(void)
    if (!global->has_set.save_path && *g_defaults.dir.sram)
       strlcpy(global->dir.savefile,
             g_defaults.dir.sram, sizeof(global->dir.savefile));
-   if (*g_defaults.dir.system)
+   if (!string_is_empty(g_defaults.dir.system))
       strlcpy(settings->directory.system,
             g_defaults.dir.system, sizeof(settings->directory.system));
-   if (*g_defaults.dir.screenshot)
+   if (!string_is_empty(g_defaults.dir.screenshot))
       strlcpy(settings->directory.screenshot,
             g_defaults.dir.screenshot,
             sizeof(settings->directory.screenshot));
-   if (*g_defaults.dir.resampler)
+   if (!string_is_empty(g_defaults.dir.resampler))
       strlcpy(settings->directory.resampler,
             g_defaults.dir.resampler,
             sizeof(settings->directory.resampler));
-   if (*g_defaults.dir.content_history)
+   if (!string_is_empty(g_defaults.dir.content_history))
       strlcpy(settings->directory.content_history,
             g_defaults.dir.content_history,
             sizeof(settings->directory.content_history));
