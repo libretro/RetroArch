@@ -27,7 +27,9 @@
 
 #include <boolean.h>
 #include <rthreads/rthreads.h>
+#ifdef HAVE_DYNAMIC
 #include <dynamic/dylib.h>
+#endif
 
 #include "../input_hid_driver.h"
 #define BUILDING_BTDYNAMIC
@@ -750,10 +752,12 @@ static CFRunLoopSourceRef btstack_quit_source;
 
 static void *btstack_get_handle(void)
 {
+#ifdef HAVE_DYNAMIC
    void *handle = dylib_load("/usr/lib/libBTstack.dylib");
 
    if (handle)
       return handle;
+#endif
 
    return NULL;
 }
@@ -1261,6 +1265,7 @@ static bool btstack_try_load(void)
    if (!handle)
       return false;
 
+#ifdef HAVE_DYNAMIC
    for (i = 0; grabbers[i].name; i ++)
    {
       *grabbers[i].target = dylib_proc(handle, grabbers[i].name);
@@ -1271,6 +1276,7 @@ static bool btstack_try_load(void)
          return false;
       }
    }
+#endif
 
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    run_loop_init_ptr(RUN_LOOP_COCOA);
