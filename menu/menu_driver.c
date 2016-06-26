@@ -809,7 +809,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
       case RARCH_MENU_CTL_ITERATE:
          {
-            bool retcode = false;
             menu_ctx_iterate_t *iterate = (menu_ctx_iterate_t*)data;
 
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUICK_MENU, NULL))

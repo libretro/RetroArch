@@ -375,7 +375,6 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
    unsigned i;
    union string_list_elem_attr attr;
    global_t   *global   = global_get_ptr();
-   settings_t *settings = config_get_ptr();
 
    /* First content file is the significant one. */
    retroarch_set_basename(argv[0]);
