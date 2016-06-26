@@ -125,7 +125,6 @@ typedef struct menu_input
    } delay;
 } menu_input_t;
 
-static bool menu_block_main_input = false;
 static unsigned           bind_port;
 
 static menu_input_t *menu_input_get_ptr(void)
@@ -144,10 +143,6 @@ void menu_input_key_end_line(void)
 
    /* Avoid triggering states on pressing return. */
    input_driver_set_flushing_input();
-
-#if 0
-   menu_block_main_input = false;
-#endif
 }
 
 static void menu_input_search_cb(void *userdata, const char *str)
@@ -1240,9 +1235,6 @@ unsigned menu_input_frame_retropad(retro_input_t input,
    bool set_scroll                         = false;
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = menu_input_get_ptr();
-
-   if (menu_block_main_input)
-      return 0;
 
    if (!menu_input)
       return 0;
