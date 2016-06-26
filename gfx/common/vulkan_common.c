@@ -32,6 +32,7 @@
 static dylib_t vulkan_library;
 static VkInstance cached_instance;
 static VkDevice cached_device;
+static retro_vulkan_destroy_device_t cached_destroy_device;
 
 #ifdef VULKAN_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
@@ -1279,6 +1280,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
    }
 
+   if (cached_device && cached_destroy_device)
+   {
+      vk->context.destroy_device = cached_destroy_device;
+      cached_destroy_device = NULL;
+   }
+
    if (vk->context.gpu == VK_NULL_HANDLE)
    {
       if (vkEnumeratePhysicalDevices(vk->context.instance,
@@ -1824,8 +1831,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
    if (video_driver_is_video_cache_context())
    {
-      cached_device   = vk->context.device;
-      cached_instance = vk->context.instance;
+      cached_device         = vk->context.device;
+      cached_instance       = vk->context.instance;
+      cached_destroy_device = vk->context.destroy_device;
    }
    else
    {
