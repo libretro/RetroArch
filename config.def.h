@@ -784,6 +784,8 @@ static const unsigned input_max_users = 5;
 
 static const unsigned input_poll_type_behavior = 2;
 
+static const unsigned input_bind_timeout = 5;
+
 static const unsigned menu_thumbnails_default = 3;
 
 #ifdef IOS

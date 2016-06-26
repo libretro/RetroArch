@@ -249,6 +249,7 @@ typedef struct settings
       float overlay_opacity;
       float overlay_scale;
 
+      unsigned bind_timeout;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
 

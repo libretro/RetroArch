@@ -5881,6 +5881,21 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD);
+            
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->input.bind_timeout,
+                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT),
+                  input_bind_timeout,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 1, 0, 1, true, false);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT);
 
             CONFIG_UINT(
                   list, list_info,

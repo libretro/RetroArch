@@ -1673,6 +1673,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "input_duty_cycle";
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          return "input_turbo_period";
+      case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
+         return "input_bind_timeout";
       case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
          return "input_axis_threshold";
       case MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE:
@@ -2705,6 +2707,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Duty Cycle";
       case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD:
          return "Turbo Period";
+      case MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT:
+         return "Bind Timeout";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Input Axis Threshold";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:

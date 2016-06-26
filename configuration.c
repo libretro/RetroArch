@@ -632,6 +632,7 @@ static void config_set_defaults(void)
 #endif
 
    settings->input.back_as_menu_toggle_enable       = true;
+   settings->input.bind_timeout                     = input_bind_timeout;
    settings->input.input_descriptor_label_show      = input_descriptor_label_show;
    settings->input.input_descriptor_hide_unbound    = input_descriptor_hide_unbound;
    settings->input.remap_binds_enable               = true;
@@ -1813,6 +1814,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
 
+   CONFIG_GET_INT_BASE(conf, settings, input.bind_timeout, "input_bind_timeout");
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
 
@@ -2597,6 +2599,7 @@ bool config_save_file(const char *path)
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
+   config_set_int(conf, "input_bind_timeout", settings->input.bind_timeout);
    config_set_int(conf, "input_turbo_period", settings->input.turbo_period);
    config_set_int(conf, "input_duty_cycle", settings->input.turbo_duty_cycle);
    config_set_int(conf, "input_max_users", settings->input.max_users);
