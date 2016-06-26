@@ -1098,7 +1098,7 @@ static void retroarch_init_savefile_paths(void)
    global->savefiles = string_list_new();
    retro_assert(global->savefiles);
 
-   if (system && *global->subsystem)
+   if (system && !string_is_empty(global->subsystem))
    {
       /* For subsystems, we know exactly which RAM types are supported. */
 
@@ -1558,16 +1558,18 @@ void retroarch_fill_pathnames(void)
    retroarch_init_savefile_paths();
    bsv_movie_set_path(global->name.savefile);
 
-   if (!*global->name.base)
+   if (string_is_empty(global->name.base))
       return;
 
-   if (!*global->name.ups)
+   if (string_is_empty(global->name.ups))
       fill_pathname_noext(global->name.ups, global->name.base, ".ups",
             sizeof(global->name.ups));
-   if (!*global->name.bps)
+
+   if (string_is_empty(global->name.bps))
       fill_pathname_noext(global->name.bps, global->name.base, ".bps",
             sizeof(global->name.bps));
-   if (!*global->name.ips)
+
+   if (string_is_empty(global->name.ips))
       fill_pathname_noext(global->name.ips, global->name.base, ".ips",
             sizeof(global->name.ips));
 }

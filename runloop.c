@@ -1118,7 +1118,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             const struct retro_variable *vars = 
                (const struct retro_variable*)data;
 
-            if (!*options_path && *global->path.config)
+            if (string_is_empty(options_path) && *global->path.config)
             {
                fill_pathname_resolve_relative(buf, global->path.config,
                      file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
