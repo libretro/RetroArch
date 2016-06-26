@@ -393,12 +393,14 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
 
    if (!global->has_set.state_path)
       fill_pathname_noext(global->name.savestate, global->name.base,
-            ".state", sizeof(global->name.savestate));
+            file_path_str(FILE_PATH_STATE_EXTENSION),
+            sizeof(global->name.savestate));
 
    if (path_is_directory(global->name.savestate))
    {
       fill_pathname_dir(global->name.savestate, global->name.base,
-            ".state", sizeof(global->name.savestate));
+            file_path_str(FILE_PATH_STATE_EXTENSION),
+            sizeof(global->name.savestate));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
             global->name.savestate);
@@ -521,7 +523,8 @@ static void retroarch_set_paths_redirect(void)
    if (path_is_directory(global->name.savefile))
    {
       fill_pathname_dir(global->name.savefile, global->name.base,
-            ".srm", sizeof(global->name.savefile));
+            file_path_str(FILE_PATH_SRM_EXTENSION),
+            sizeof(global->name.savefile));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
             global->name.savefile);
@@ -530,7 +533,8 @@ static void retroarch_set_paths_redirect(void)
    if (path_is_directory(global->name.savestate))
    {
       fill_pathname_dir(global->name.savestate, global->name.base,
-            ".state", sizeof(global->name.savestate));
+            file_path_str(FILE_PATH_STATE_EXTENSION),
+            sizeof(global->name.savestate));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
             global->name.savestate);
@@ -539,7 +543,8 @@ static void retroarch_set_paths_redirect(void)
    if (path_is_directory(global->name.cheatfile))
    {
       fill_pathname_dir(global->name.cheatfile, global->name.base,
-            ".state", sizeof(global->name.cheatfile));
+            file_path_str(FILE_PATH_STATE_EXTENSION),
+            sizeof(global->name.cheatfile));
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
             global->name.cheatfile);
@@ -1146,11 +1151,15 @@ static void retroarch_init_savefile_paths(void)
 
       /* Let other relevant paths be inferred from the main SRAM location. */
       if (!global->has_set.save_path)
-         fill_pathname_noext(global->name.savefile, global->name.base, ".srm",
+         fill_pathname_noext(global->name.savefile,
+               global->name.base,
+               file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
       if (path_is_directory(global->name.savefile))
       {
-         fill_pathname_dir(global->name.savefile, global->name.base, ".srm",
+         fill_pathname_dir(global->name.savefile,
+               global->name.base,
+               file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
                msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
@@ -1532,12 +1541,12 @@ void retroarch_set_pathnames(const char *path)
 
    if (!global->has_set.save_path)
       fill_pathname_noext(global->name.savefile, global->name.base,
-            ".srm", sizeof(global->name.savefile));
+            file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
    if (!global->has_set.state_path)
       fill_pathname_noext(global->name.savestate, global->name.base,
-            ".state", sizeof(global->name.savestate));
+            file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
    fill_pathname_noext(global->name.cheatfile, global->name.base,
-         ".cht", sizeof(global->name.cheatfile));
+         file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(global->name.cheatfile));
 
    retroarch_set_paths_redirect();
 }
