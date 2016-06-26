@@ -1863,8 +1863,10 @@ static bool config_load_file(const char *path, bool set_defaults)
                sizeof(global->dir.savefile));
          strlcpy(global->name.savefile, tmp_str,
                sizeof(global->name.savefile));
-         fill_pathname_dir(global->name.savefile, global->name.base,
-               ".srm", sizeof(global->name.savefile));
+         fill_pathname_dir(global->name.savefile,
+               global->name.base,
+               file_path_str(FILE_PATH_SRM_EXTENSION),
+               sizeof(global->name.savefile));
       }
       else
          RARCH_WARN("savefile_directory is not a directory, ignoring ...\n");
@@ -1882,8 +1884,10 @@ static bool config_load_file(const char *path, bool set_defaults)
                sizeof(global->dir.savestate));
          strlcpy(global->name.savestate, tmp_str,
                sizeof(global->name.savestate));
-         fill_pathname_dir(global->name.savestate, global->name.base,
-               ".state", sizeof(global->name.savestate));
+         fill_pathname_dir(global->name.savestate,
+               global->name.base,
+               file_path_str(FILE_PATH_STATE_EXTENSION),
+               sizeof(global->name.savestate));
       }
       else
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
