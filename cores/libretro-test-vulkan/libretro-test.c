@@ -1002,16 +1002,40 @@ static void context_destroy(void)
    memset(&vk, 0, sizeof(vk));
 }
 
+static const VkApplicationInfo *get_application_info(void)
+{
+   static const VkApplicationInfo info = {
+      VK_STRUCTURE_TYPE_APPLICATION_INFO,
+      NULL,
+      "libretro-test-vulkan",
+      0,
+      "libretro-test-vulkan",
+      0,
+      VK_MAKE_VERSION(1, 0, 18),
+   };
+   return &info;
+}
+
 static bool retro_init_hw_context(void)
 {
    hw_render.context_type = RETRO_HW_CONTEXT_VULKAN;
-   hw_render.version_major = VK_MAKE_VERSION(1, 0, 6);
+   hw_render.version_major = VK_MAKE_VERSION(1, 0, 18);
    hw_render.version_minor = 0;
    hw_render.context_reset = context_reset;
    hw_render.context_destroy = context_destroy;
    hw_render.cache_context = true;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       return false;
+
+   static const struct retro_hw_render_context_negotiation_interface_vulkan iface = {
+      RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN,
+      RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION,
+
+      get_application_info,
+      NULL,
+   };
+
+   environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE, (void*)&iface);
 
    return true;
 }
