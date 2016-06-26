@@ -25,6 +25,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return ".srm";
       case FILE_PATH_STATE_EXTENSION:
          return ".state";
+      case FILE_PATH_LPL_EXTENSION:
+         return ".lpl";
       case FILE_PATH_INDEX_URL:
          return ".index";
       case FILE_PATH_INDEX_DIRS_URL:

@@ -28,6 +28,7 @@
 #include "../database_info.h"
 #endif
 
+#include "../file_path_special.h"
 #include "../list_special.h"
 #include "../msg_hash.h"
 #include "../playlist.h"
@@ -276,7 +277,9 @@ static int database_info_list_iterate_found_match(
 
    path_remove_extension(db_playlist_base_str);
 
-   strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
+   strlcat(db_playlist_base_str,
+         file_path_str(FILE_PATH_LPL_EXTENSION),
+         sizeof(db_playlist_base_str));
    fill_pathname_join(db_playlist_path, settings->directory.playlist,
          db_playlist_base_str, sizeof(db_playlist_path));
 

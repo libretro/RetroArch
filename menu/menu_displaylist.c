@@ -1742,7 +1742,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    fill_short_pathname_representation(path_base, info->path,
          sizeof(path_base));
    path_remove_extension(path_base);
-   strlcat(path_base, ".lpl", sizeof(path_base));
+   strlcat(path_base,
+         file_path_str(FILE_PATH_LPL_EXTENSION),
+         sizeof(path_base));
 
    fill_pathname_join(path_playlist, settings->directory.playlist, path_base,
          sizeof(path_playlist));

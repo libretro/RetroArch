@@ -26,6 +26,7 @@
 #include "../../input/input_config.h"
 
 #include "../../core_info.h"
+#include "../../file_path_special.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../general.h"
@@ -1198,7 +1199,9 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
    *w = 19;
 
    strlcpy(playlist_name_with_ext, path, sizeof(playlist_name_with_ext));
-   strlcat(playlist_name_with_ext, ".lpl", sizeof(playlist_name_with_ext));
+   strlcat(playlist_name_with_ext,
+         file_path_str(FILE_PATH_LPL_EXTENSION),
+         sizeof(playlist_name_with_ext));
 
    for (i = 0; i < str_list->size; i++)
    {

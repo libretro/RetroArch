@@ -22,6 +22,8 @@
 #include <QDebug>
 #include <QQmlContext>
 
+#include "../../../../file_path_special.h"
+
 QObject *topLevel;
 
 int Wimp::CreateMainWindow()
@@ -57,7 +59,7 @@ void Wimp::GetSettings(settings_t *s)
 void Wimp::GetCollections(char* path)
 {
    QDir dir(path);
-   dir.setNameFilters(QStringList("*.lpl"));
+   dir.setNameFilters(QStringList(file_path_str(FILE_PATH_LPL_EXTENSION)));
    QStringList fileList = dir.entryList();
 
    if(fileList.count() == 0)
