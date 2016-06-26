@@ -203,25 +203,6 @@ static void menu_input_key_event(bool down, unsigned keycode,
 
    if (character == '/')
       menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
-
-   if (down)
-   {
-      switch (keycode)
-      {
-         case RETROK_RETURN:
-            pending_iter.action = MENU_ACTION_OK;
-            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
-            break;
-         case RETROK_BACKSPACE:
-            pending_iter.action = MENU_ACTION_CANCEL;
-            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
-            break;
-         case RETROK_SPACE:
-            pending_iter.action = MENU_ACTION_START;
-            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
-            break;
-      }
-   }
 }
 
 static void menu_driver_toggle(bool latch)
