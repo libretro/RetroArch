@@ -354,6 +354,7 @@ typedef struct vk
       const struct retro_vulkan_image *image;
       const VkSemaphore *semaphores;
       uint32_t num_semaphores;
+      VkSemaphore signal_semaphore;
 
       VkPipelineStageFlags *wait_dst_stages;
 

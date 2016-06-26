@@ -26,7 +26,7 @@
 #include <libretro.h>
 #include <vulkan/vulkan.h>
 
-#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 3
+#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 4
 #define RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION 1
 
 struct retro_vulkan_image
@@ -50,6 +50,7 @@ typedef void (*retro_vulkan_set_command_buffers_t)(void *handle,
 typedef void (*retro_vulkan_wait_sync_index_t)(void *handle);
 typedef void (*retro_vulkan_lock_queue_t)(void *handle);
 typedef void (*retro_vulkan_unlock_queue_t)(void *handle);
+typedef void (*retro_vulkan_set_signal_semaphore_t)(void *handle, VkSemaphore semaphore);
 
 typedef const VkApplicationInfo *(*retro_vulkan_get_application_info_t)(void);
 
@@ -373,6 +374,17 @@ struct retro_hw_render_interface_vulkan
     * NOTE: Queue submissions are heavy-weight. */
    retro_vulkan_lock_queue_t lock_queue;
    retro_vulkan_unlock_queue_t unlock_queue;
+
+   /* Sets a semaphore which is signaled when the image in set_image can safely be reused.
+    * The semaphore is consumed next call to retro_video_refresh_t.
+    * The semaphore will be signalled even for duped frames.
+    * The semaphore will be signalled only once, so set_signal_semaphore should be called every frame.
+    * The semaphore may be VK_NULL_HANDLE, which disables semaphore signalling for next call to retro_video_refresh_t.
+    *
+    * This is mostly useful to support use cases where you're rendering to a single image that
+    * is recycled in a ping-pong fashion with the frontend to save memory (but potentially less throughput).
+    */
+   retro_vulkan_set_signal_semaphore_t set_signal_semaphore;
 };
 
 #endif
