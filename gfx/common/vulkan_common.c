@@ -1479,11 +1479,14 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          break;
    }
 
+   if (!vulkan_library)
+   {
 #ifdef _WIN32
-   vulkan_library = dylib_load("vulkan-1.dll");
+      vulkan_library = dylib_load("vulkan-1.dll");
 #else
-   vulkan_library = dylib_load("libvulkan.so");
+      vulkan_library = dylib_load("libvulkan.so");
 #endif
+   }
 
    if (!vulkan_library)
    {
@@ -1791,6 +1794,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 {
    unsigned i;
 
+   if (!vk->context.instance)
+      return;
+
    if (vk->context.queue)
       vkQueueWaitIdle(vk->context.queue);
    if (vk->swapchain)
@@ -1831,11 +1837,13 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
             vk->context.destroy_device();
 
          vkDestroyInstance(vk->context.instance, NULL);
+         if (vulkan_library)
+         {
+            dylib_close(vulkan_library);
+            vulkan_library = NULL;
+         }
       }
    }
-
-   if (vulkan_library)
-      dylib_close(vulkan_library);
 }
 
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
