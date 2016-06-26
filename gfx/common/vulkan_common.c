@@ -29,8 +29,6 @@
 #include "vulkan_common.h"
 #include "../../performance_counters.h"
 
-vulkan_context_fp_t vkcfp;
-
 static dylib_t vulkan_library;
 static VkInstance cached_instance;
 static VkDevice cached_device;
@@ -76,36 +74,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
    return VK_FALSE;
 }
 #endif
-
-#define VKSYM(vk, entrypoint) do {                                                          \
-   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) dylib_proc(vulkan_library, "vk"#entrypoint); \
-   if (vkcfp.vk##entrypoint == NULL) {                                                      \
-      RARCH_ERR("dylib_proc failed to find vk%s\n", #entrypoint);                           \
-      return false;                                                                         \
-   }                                                                                        \
-} while(0)
-
-#define VK_GET_INSTANCE_PROC_ADDR(entrypoint) do {                                                \
-   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vkcfp.vkGetInstanceProcAddr(vk->context.instance,  \
-         "vk"#entrypoint);                                                                        \
-   if (vkcfp.vk##entrypoint == NULL)                                                              \
-      vkcfp.vk##entrypoint = (PFN_vk##entrypoint) dylib_proc(vulkan_library, "vk"#entrypoint);    \
-   if (vkcfp.vk##entrypoint == NULL) {                                                            \
-      RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);                      \
-      return false;                                                                               \
-   }                                                                                              \
-} while(0)
-
-#define VK_GET_DEVICE_PROC_ADDR(entrypoint) do {                                                 \
-   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vkcfp.vkGetDeviceProcAddr(vk->context.device,     \
-         "vk" #entrypoint);                                                                      \
-   if (vkcfp.vk##entrypoint == NULL)                                                             \
-      vkcfp.vk##entrypoint = (PFN_vk##entrypoint) dylib_proc(vulkan_library, "vk"#entrypoint);   \
-   if (vkcfp.vk##entrypoint == NULL) {                                                           \
-      RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);                       \
-      return false;                                                                              \
-   }                                                                                             \
-} while(0)
 
 uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
@@ -167,7 +135,7 @@ void vulkan_transfer_image_ownership(VkCommandBuffer cmd,
    barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
    barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
-   VKFUNC(vkCmdPipelineBarrier)(cmd, src_stages, dst_stages,
+   vkCmdPipelineBarrier(cmd, src_stages, dst_stages,
          false, 0, NULL, 0, NULL, 1, &barrier);
 }
 
@@ -175,7 +143,7 @@ void vulkan_map_persistent_texture(
       VkDevice device,
       struct vk_texture *texture)
 {
-   VKFUNC(vkMapMemory)(device, texture->memory, texture->offset,
+   vkMapMemory(device, texture->memory, texture->offset,
          texture->size, 0, &texture->mapped);
 }
 
@@ -213,7 +181,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
    region.srcSubresource.layerCount = 1;
    region.dstSubresource = region.srcSubresource;
 
-   VKFUNC(vkCmdCopyImage)(vk->cmd,
+   vkCmdCopyImage(vk->cmd,
          staging->image, VK_IMAGE_LAYOUT_GENERAL,
          dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
@@ -308,7 +276,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       VkFormatFeatureFlags required = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
          VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
 
-      VKFUNC(vkGetPhysicalDeviceFormatProperties)(
+      vkGetPhysicalDeviceFormatProperties(
             vk->context->gpu, format, &format_properties);
 
       if ((format_properties.linearTilingFeatures & required) != required)
@@ -353,11 +321,11 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          break;
    }
 
-   VKFUNC(vkCreateImage)(device, &info, NULL, &tex.image);
+   vkCreateImage(device, &info, NULL, &tex.image);
 #if 0
    vulkan_track_alloc(tex.image);
 #endif
-   VKFUNC(vkGetImageMemoryRequirements)(device, tex.image, &mem_reqs);
+   vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
    alloc.allocationSize = mem_reqs.size;
 
    switch (type)
@@ -391,12 +359,12 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       /* Recreate texture but for STAGING this time ... */
       RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
       type                  = VULKAN_TEXTURE_STAGING;
-      VKFUNC(vkDestroyImage)(device, tex.image, NULL);
+      vkDestroyImage(device, tex.image, NULL);
 
       info.usage            = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-      VKFUNC(vkCreateImage)(device, &info, NULL, &tex.image);
+      vkCreateImage(device, &info, NULL, &tex.image);
 
-      VKFUNC(vkGetImageMemoryRequirements)(device, tex.image, &mem_reqs);
+      vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
 
       alloc.allocationSize  = mem_reqs.size;
       alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
@@ -410,10 +378,10 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
    /* We're not reusing the objects themselves. */
    if (old && old->view != VK_NULL_HANDLE)
-      VKFUNC(vkDestroyImageView)(vk->context->device, old->view, NULL);
+      vkDestroyImageView(vk->context->device, old->view, NULL);
    if (old && old->image != VK_NULL_HANDLE)
    {
-      VKFUNC(vkDestroyImage)(vk->context->device, old->image, NULL);
+      vkDestroyImage(vk->context->device, old->image, NULL);
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
       vulkan_track_dealloc(old->image);
 #endif
@@ -429,13 +397,13 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       tex.memory_type = old->memory_type;
 
       if (old->mapped)
-         VKFUNC(vkUnmapMemory)(device, old->memory);
+         vkUnmapMemory(device, old->memory);
 
       old->memory     = VK_NULL_HANDLE;
    }
    else
    {
-      VKFUNC(vkAllocateMemory)(device, &alloc, NULL, &tex.memory);
+      vkAllocateMemory(device, &alloc, NULL, &tex.memory);
       tex.memory_size = alloc.allocationSize;
       tex.memory_type = alloc.memoryTypeIndex;
    }
@@ -443,11 +411,11 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    if (old)
    {
       if (old->memory != VK_NULL_HANDLE)
-         VKFUNC(vkFreeMemory)(device, old->memory, NULL);
+         vkFreeMemory(device, old->memory, NULL);
       memset(old, 0, sizeof(*old));
    }
 
-   VKFUNC(vkBindImageMemory)(device, tex.image, tex.memory, 0);
+   vkBindImageMemory(device, tex.image, tex.memory, 0);
 
    if (type != VULKAN_TEXTURE_STAGING && type != VULKAN_TEXTURE_READBACK)
    {
@@ -467,12 +435,12 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       view.subresourceRange.levelCount = 1;
       view.subresourceRange.layerCount = 1;
 
-      VKFUNC(vkCreateImageView)(device, &view, NULL, &tex.view);
+      vkCreateImageView(device, &view, NULL, &tex.view);
    }
    else
       tex.view = VK_NULL_HANDLE;
 
-   VKFUNC(vkGetImageSubresourceLayout)(device, tex.image, &subresource, &layout);
+   vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
    tex.stride = layout.rowPitch;
    tex.offset = layout.offset;
    tex.size   = layout.size;
@@ -492,14 +460,14 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       unsigned bpp       = vulkan_format_to_bpp(tex.format);
       unsigned stride    = tex.width * bpp;
 
-      VKFUNC(vkMapMemory)(device, tex.memory, tex.offset, tex.size, 0, &ptr);
+      vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
 
       dst                = (uint8_t*)ptr;
       src                = (const uint8_t*)initial;
       for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
          memcpy(dst, src, width * bpp);
 
-      VKFUNC(vkUnmapMemory)(device, tex.memory);
+      vkUnmapMemory(device, tex.memory);
    }
    else if (initial && type == VULKAN_TEXTURE_STATIC)
    {
@@ -511,11 +479,11 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       cmd_info.commandPool        = vk->staging_pool;
       cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       cmd_info.commandBufferCount = 1;
-      VKFUNC(vkAllocateCommandBuffers)(vk->context->device, &cmd_info, &staging);
+      vkAllocateCommandBuffers(vk->context->device, &cmd_info, &staging);
 
       begin_info.flags        = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-      VKFUNC(vkBeginCommandBuffer)(staging, &begin_info);
+      vkBeginCommandBuffer(staging, &begin_info);
 
       vulkan_image_layout_transition(vk, staging, tmp.image,
             VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_GENERAL,
@@ -537,7 +505,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       region.srcSubresource.layerCount = 1;
       region.dstSubresource            = region.srcSubresource;
 
-      VKFUNC(vkCmdCopyImage)(staging,
+      vkCmdCopyImage(staging,
             tmp.image, VK_IMAGE_LAYOUT_GENERAL,
             tex.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             1, &region);
@@ -550,25 +518,25 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-      VKFUNC(vkEndCommandBuffer)(staging);
+      vkEndCommandBuffer(staging);
       submit_info.commandBufferCount = 1;
       submit_info.pCommandBuffers    = &staging;
 
 #ifdef HAVE_THREADS
       slock_lock(vk->context->queue_lock);
 #endif
-      VKFUNC(vkQueueSubmit)(vk->context->queue,
+      vkQueueSubmit(vk->context->queue,
             1, &submit_info, VK_NULL_HANDLE);
 
       /* TODO: Very crude, but texture uploads only happen 
        * during init, so waiting for GPU to complete transfer 
        * and blocking isn't a big deal. */
-      VKFUNC(vkQueueWaitIdle)(vk->context->queue);
+      vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
 #endif
 
-      VKFUNC(vkFreeCommandBuffers)(vk->context->device, vk->staging_pool, 1, &staging);
+      vkFreeCommandBuffers(vk->context->device, vk->staging_pool, 1, &staging);
       vulkan_destroy_texture(
             vk->context->device, &tmp);
       tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -581,11 +549,11 @@ void vulkan_destroy_texture(
       struct vk_texture *tex)
 {
    if (tex->mapped)
-      VKFUNC(vkUnmapMemory)(device, tex->memory);
-   VKFUNC(vkFreeMemory)(device, tex->memory, NULL);
+      vkUnmapMemory(device, tex->memory);
+   vkFreeMemory(device, tex->memory, NULL);
    if (tex->view)
-      VKFUNC(vkDestroyImageView)(device, tex->view, NULL);
-   VKFUNC(vkDestroyImage)(device, tex->image, NULL);
+      vkDestroyImageView(device, tex->view, NULL);
+   vkDestroyImage(device, tex->image, NULL);
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
    vulkan_track_dealloc(tex->image);
 #endif
@@ -613,7 +581,7 @@ static void vulkan_write_quad_descriptors(
    write.descriptorCount           = 1;
    write.descriptorType            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
    write.pBufferInfo               = &buffer_info;
-   VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
 
    if (texture)
    {
@@ -628,7 +596,7 @@ static void vulkan_write_quad_descriptors(
       write.descriptorCount           = 1;
       write.descriptorType            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       write.pImageInfo                = &image_info;
-      VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
+      vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
    }
 }
 
@@ -679,8 +647,8 @@ static void vulkan_check_dynamic_state(
          { vk->vp.x, vk->vp.y },
          { vk->vp.width, vk->vp.height }};
 
-      VKFUNC(vkCmdSetViewport)(vk->cmd, 0, 1, &vk->vk_vp);
-      VKFUNC(vkCmdSetScissor) (vk->cmd, 0, 1, &sci);
+      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vkCmdSetScissor (vk->cmd, 0, 1, &sci);
 
       vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
    }
@@ -693,7 +661,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
    if (call->pipeline != vk->tracker.pipeline)
    {
-      VKFUNC(vkCmdBindPipeline)(vk->cmd,
+      vkCmdBindPipeline(vk->cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS, call->pipeline);
       vk->tracker.pipeline = call->pipeline;
 
@@ -728,7 +696,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
             call->texture,
             call->sampler);
 
-      VKFUNC(vkCmdBindDescriptorSets)(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+      vkCmdBindDescriptorSets(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
             vk->pipelines.layout, 0,
             1, &set, 0, NULL);
 
@@ -738,11 +706,11 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
    }
 
    /* VBO is already uploaded. */
-   VKFUNC(vkCmdBindVertexBuffers)(vk->cmd, 0, 1,
+   vkCmdBindVertexBuffers(vk->cmd, 0, 1,
          &call->vbo->buffer, &call->vbo->offset);
 
    /* Draw the quad */
-   VKFUNC(vkCmdDraw)(vk->cmd, call->vertices, 1, 0, 0);
+   vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
 }
 
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
@@ -751,7 +719,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
    if (quad->pipeline != vk->tracker.pipeline)
    {
-      VKFUNC(vkCmdBindPipeline)(vk->cmd,
+      vkCmdBindPipeline(vk->cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS, quad->pipeline);
 
       vk->tracker.pipeline = quad->pipeline;
@@ -796,7 +764,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
                quad->texture,
                quad->sampler);
 
-         VKFUNC(vkCmdBindDescriptorSets)(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+         vkCmdBindDescriptorSets(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
                vk->pipelines.layout, 0,
                1, &set, 0, NULL);
 
@@ -818,12 +786,12 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
             0.0f, 0.0f, 1.0f, 1.0f,
             &quad->color);
 
-      VKFUNC(vkCmdBindVertexBuffers)(vk->cmd, 0, 1,
+      vkCmdBindVertexBuffers(vk->cmd, 0, 1,
             &range.buffer, &range.offset);
    }
 
    /* Draw the quad */
-   VKFUNC(vkCmdDraw)(vk->cmd, 6, 1, 0, 0);
+   vkCmdDraw(vk->cmd, 6, 1, 0, 0);
 }
 
 void vulkan_image_layout_transition(
@@ -850,7 +818,7 @@ void vulkan_image_layout_transition(
    barrier.subresourceRange.levelCount = 1;
    barrier.subresourceRange.layerCount = 1;
 
-   VKFUNC(vkCmdPipelineBarrier)(cmd,
+   vkCmdPipelineBarrier(cmd,
          srcStages,
          dstStages,
          0,
@@ -871,9 +839,9 @@ struct vk_buffer vulkan_create_buffer(
    info.size                  = size;
    info.usage                 = usage;
    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
-   VKFUNC(vkCreateBuffer)(context->device, &info, NULL, &buffer.buffer);
+   vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
 
-   VKFUNC(vkGetBufferMemoryRequirements)(context->device, buffer.buffer, &mem_reqs);
+   vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
 
    alloc.allocationSize       = mem_reqs.size;
    alloc.memoryTypeIndex      = vulkan_find_memory_type(
@@ -881,12 +849,12 @@ struct vk_buffer vulkan_create_buffer(
          mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-   VKFUNC(vkAllocateMemory)(context->device, &alloc, NULL, &buffer.memory);
-   VKFUNC(vkBindBufferMemory)(context->device, buffer.buffer, buffer.memory, 0);
+   vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
+   vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
 
    buffer.size                = alloc.allocationSize;
 
-   VKFUNC(vkMapMemory)(context->device,
+   vkMapMemory(context->device,
          buffer.memory, 0, buffer.size, 0, &buffer.mapped);
    return buffer;
 }
@@ -895,10 +863,10 @@ void vulkan_destroy_buffer(
       VkDevice device,
       struct vk_buffer *buffer)
 {
-   VKFUNC(vkUnmapMemory)(device, buffer->memory);
-   VKFUNC(vkFreeMemory)(device, buffer->memory, NULL);
+   vkUnmapMemory(device, buffer->memory);
+   vkFreeMemory(device, buffer->memory, NULL);
 
-   VKFUNC(vkDestroyBuffer)(device, buffer->buffer, NULL);
+   vkDestroyBuffer(device, buffer->buffer, NULL);
 
    memset(buffer, 0, sizeof(*buffer));
 }
@@ -923,7 +891,7 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
    pool_info.pPoolSizes    = manager->sizes;
    pool_info.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-   VKFUNC(vkCreateDescriptorPool)(device, &pool_info, NULL, &pool->pool);
+   vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool);
 
    /* Just allocate all descriptor sets up front. */
    alloc_info.descriptorPool     = pool->pool;
@@ -931,7 +899,7 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
    alloc_info.pSetLayouts        = &manager->set_layout;
 
    for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
-      VKFUNC(vkAllocateDescriptorSets)(device, &alloc_info, &pool->sets[i]);
+      vkAllocateDescriptorSets(device, &alloc_info, &pool->sets[i]);
 
    return pool;
 }
@@ -991,9 +959,9 @@ void vulkan_destroy_descriptor_manager(
    {
       struct vk_descriptor_pool *next = node->next;
 
-      VKFUNC(vkFreeDescriptorSets)(device, node->pool,
+      vkFreeDescriptorSets(device, node->pool,
             VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS, node->sets);
-      VKFUNC(vkDestroyDescriptorPool)(device, node->pool, NULL);
+      vkDestroyDescriptorPool(device, node->pool, NULL);
 
       free(node);
       node = next;
@@ -1118,166 +1086,27 @@ void vulkan_buffer_chain_free(
 
 static bool vulkan_load_instance_symbols(gfx_ctx_vulkan_data_t *vk)
 {
-   VK_GET_INSTANCE_PROC_ADDR(EnumerateDeviceExtensionProperties);
-   VK_GET_INSTANCE_PROC_ADDR(GetDeviceProcAddr);
-   VK_GET_INSTANCE_PROC_ADDR(DestroyInstance);
-   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceFormatProperties);
-   VK_GET_INSTANCE_PROC_ADDR(EnumeratePhysicalDevices);
-   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceProperties);
-   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceMemoryProperties);
-   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceQueueFamilyProperties);
-   VK_GET_INSTANCE_PROC_ADDR(CreateDevice);
+   if (!vulkan_symbol_wrapper_load_core_instance_symbols(vk->context.instance))
+      return false;
 
-   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfacePresentModesKHR);
-   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfaceSupportKHR);
-   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfaceCapabilitiesKHR);
-   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfaceFormatsKHR);
-   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfacePresentModesKHR);
-   VK_GET_INSTANCE_PROC_ADDR(DestroySurfaceKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance, vkDestroySurfaceKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance, vkGetPhysicalDeviceSurfaceSupportKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance, vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance, vkGetPhysicalDeviceSurfaceFormatsKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance, vkGetPhysicalDeviceSurfacePresentModesKHR);
    return true;
 }
 
 static bool vulkan_load_device_symbols(gfx_ctx_vulkan_data_t *vk)
 {
-   /* Memory */
-   VK_GET_DEVICE_PROC_ADDR(AllocateMemory);
-   VK_GET_DEVICE_PROC_ADDR(FreeMemory);
+   if (!vulkan_symbol_wrapper_load_core_device_symbols(vk->context.device))
+      return false;
 
-   /* Device destruction */
-   VK_GET_DEVICE_PROC_ADDR(DestroyDevice);
-
-   /* Waiting */
-   VK_GET_DEVICE_PROC_ADDR(DeviceWaitIdle);
-
-   /* Queues */
-   VK_GET_DEVICE_PROC_ADDR(GetDeviceQueue);
-   VK_GET_DEVICE_PROC_ADDR(QueueWaitIdle);
-   VK_GET_DEVICE_PROC_ADDR(QueueSubmit);
-
-   /* Semaphores */
-   VK_GET_DEVICE_PROC_ADDR(CreateSemaphore);
-   VK_GET_DEVICE_PROC_ADDR(DestroySemaphore);
-
-   /* Buffers */
-   VK_GET_DEVICE_PROC_ADDR(CreateBuffer);
-   VK_GET_DEVICE_PROC_ADDR(DestroyBuffer);
-
-   /* Fences */
-   VK_GET_DEVICE_PROC_ADDR(CreateFence);
-   VK_GET_DEVICE_PROC_ADDR(DestroyFence);
-   VK_GET_DEVICE_PROC_ADDR(ResetFences);
-   VK_GET_DEVICE_PROC_ADDR(WaitForFences);
-
-   /* Images */
-   VK_GET_DEVICE_PROC_ADDR(CreateImage);
-   VK_GET_DEVICE_PROC_ADDR(DestroyImage);
-   VK_GET_DEVICE_PROC_ADDR(GetImageSubresourceLayout);
-
-   /* Images (Resource Memory Association) */
-   VK_GET_DEVICE_PROC_ADDR(GetBufferMemoryRequirements);
-   VK_GET_DEVICE_PROC_ADDR(BindBufferMemory);
-   VK_GET_DEVICE_PROC_ADDR(BindImageMemory);
-
-   /* Image Views */
-   VK_GET_DEVICE_PROC_ADDR(CreateImageView);
-   VK_GET_DEVICE_PROC_ADDR(DestroyImageView);
-
-   /* Resource Memory Associations */
-   VK_GET_DEVICE_PROC_ADDR(GetImageMemoryRequirements);
-
-   /* Descriptor pools */
-   VK_GET_DEVICE_PROC_ADDR(CreateDescriptorPool);
-   VK_GET_DEVICE_PROC_ADDR(DestroyDescriptorPool);
-
-   /* Descriptor sets */
-   VK_GET_DEVICE_PROC_ADDR(AllocateDescriptorSets);
-   VK_GET_DEVICE_PROC_ADDR(FreeDescriptorSets);
-   VK_GET_DEVICE_PROC_ADDR(UpdateDescriptorSets);
-
-   /* Descriptor Set Layout */
-   VK_GET_DEVICE_PROC_ADDR(CreateDescriptorSetLayout);
-   VK_GET_DEVICE_PROC_ADDR(DestroyDescriptorSetLayout);
-
-   /* Framebuffers */
-   VK_GET_DEVICE_PROC_ADDR(CreateFramebuffer);
-   VK_GET_DEVICE_PROC_ADDR(DestroyFramebuffer);
-   VK_GET_DEVICE_PROC_ADDR(AllocateCommandBuffers);
-   VK_GET_DEVICE_PROC_ADDR(FreeCommandBuffers);
-
-   /* Memory allocation */
-   VK_GET_DEVICE_PROC_ADDR(MapMemory);
-   VK_GET_DEVICE_PROC_ADDR(UnmapMemory);
-
-   /* Render Passes */
-   VK_GET_DEVICE_PROC_ADDR(CreateRenderPass);
-   VK_GET_DEVICE_PROC_ADDR(DestroyRenderPass);
-
-   /* Pipelines */
-   VK_GET_DEVICE_PROC_ADDR(DestroyPipeline);
-   VK_GET_DEVICE_PROC_ADDR(CreateGraphicsPipelines);
-
-   /* Shaders */
-   VK_GET_DEVICE_PROC_ADDR(CreateShaderModule);
-   VK_GET_DEVICE_PROC_ADDR(DestroyShaderModule);
-
-   /* Pipeline Layouts */
-   VK_GET_DEVICE_PROC_ADDR(CreatePipelineLayout);
-   VK_GET_DEVICE_PROC_ADDR(DestroyPipelineLayout);
-
-   /* Pipeline Cache */
-   VK_GET_DEVICE_PROC_ADDR(CreatePipelineCache);
-   VK_GET_DEVICE_PROC_ADDR(DestroyPipelineCache);
-
-   /* Command buffers */
-   VK_GET_DEVICE_PROC_ADDR(CreateCommandPool);
-   VK_GET_DEVICE_PROC_ADDR(DestroyCommandPool);
-   VK_GET_DEVICE_PROC_ADDR(BeginCommandBuffer);
-   VK_GET_DEVICE_PROC_ADDR(ResetCommandBuffer);
-   VK_GET_DEVICE_PROC_ADDR(EndCommandBuffer);
-
-   /* Image commands */
-   VK_GET_DEVICE_PROC_ADDR(CmdCopyImage);
-   VK_GET_DEVICE_PROC_ADDR(CmdClearColorImage);
-
-   /* Vertex input descriptions */
-   VK_GET_DEVICE_PROC_ADDR(CmdBindVertexBuffers);
-
-   /* Descriptor Set commands */
-   VK_GET_DEVICE_PROC_ADDR(CmdBindDescriptorSets);
-
-   /* Fragment operations */
-   VK_GET_DEVICE_PROC_ADDR(CmdSetScissor);
-
-   /* Render Pass commands */
-   VK_GET_DEVICE_PROC_ADDR(CmdBeginRenderPass);
-   VK_GET_DEVICE_PROC_ADDR(CmdEndRenderPass);
-
-   /* Samplers */
-   VK_GET_DEVICE_PROC_ADDR(CreateSampler);
-   VK_GET_DEVICE_PROC_ADDR(DestroySampler);
-
-   /* Fixed-function vertex postprocessing */
-   VK_GET_DEVICE_PROC_ADDR(CmdSetViewport);
-
-   /* Clear commands */
-   VK_GET_DEVICE_PROC_ADDR(CmdClearAttachments);
-
-   /* Pipeline */
-   VK_GET_DEVICE_PROC_ADDR(CmdBindPipeline);
-
-   /* Pipeline Barriers */
-   VK_GET_DEVICE_PROC_ADDR(CmdPipelineBarrier);
-
-   /* Drawing commands */
-   VK_GET_DEVICE_PROC_ADDR(CmdDraw);
-
-   /* Swapchain */
-   VK_GET_DEVICE_PROC_ADDR(CreateSwapchainKHR);
-   VK_GET_DEVICE_PROC_ADDR(DestroySwapchainKHR);
-   VK_GET_DEVICE_PROC_ADDR(GetSwapchainImagesKHR);
-   VK_GET_DEVICE_PROC_ADDR(AcquireNextImageKHR);
-   VK_GET_DEVICE_PROC_ADDR(QueuePresentKHR);
-
+   VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_EXTENSION_SYMBOL(vk->context.device, vkCreateSwapchainKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_EXTENSION_SYMBOL(vk->context.device, vkDestroySwapchainKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_EXTENSION_SYMBOL(vk->context.device, vkGetSwapchainImagesKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_EXTENSION_SYMBOL(vk->context.device, vkAcquireNextImageKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_EXTENSION_SYMBOL(vk->context.device, vkQueuePresentKHR);
    return true;
 }
 
@@ -1310,7 +1139,7 @@ static bool vulkan_find_instance_extensions(const char **exts, unsigned num_exts
    VkExtensionProperties *properties = NULL;
    uint32_t property_count;
 
-   if (VKFUNC(vkEnumerateInstanceExtensionProperties(NULL, &property_count, NULL)) != VK_SUCCESS)
+   if (vkEnumerateInstanceExtensionProperties(NULL, &property_count, NULL) != VK_SUCCESS)
       return false;
 
    properties = (VkExtensionProperties*)malloc(property_count * sizeof(*properties));
@@ -1320,7 +1149,7 @@ static bool vulkan_find_instance_extensions(const char **exts, unsigned num_exts
       goto end;
    }
 
-   if (VKFUNC(vkEnumerateInstanceExtensionProperties(NULL, &property_count, properties)) != VK_SUCCESS)
+   if (vkEnumerateInstanceExtensionProperties(NULL, &property_count, properties) != VK_SUCCESS)
    {
       ret = false;
       goto end;
@@ -1344,7 +1173,7 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu, const char **ext
    VkExtensionProperties *properties = NULL;
    uint32_t property_count;
 
-   if (VKFUNC(vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, NULL)) != VK_SUCCESS)
+   if (vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, NULL) != VK_SUCCESS)
       return false;
 
    properties = (VkExtensionProperties*)malloc(property_count * sizeof(*properties));
@@ -1354,7 +1183,7 @@ static bool vulkan_find_device_extensions(VkPhysicalDevice gpu, const char **ext
       goto end;
    }
 
-   if (VKFUNC(vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, properties)) != VK_SUCCESS)
+   if (vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, properties) != VK_SUCCESS)
    {
       ret = false;
       goto end;
@@ -1372,38 +1201,256 @@ end:
    return ret;
 }
 
-
-bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
-      enum vulkan_wsi_type type)
+static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
-   unsigned i;
-   uint32_t queue_count;
-   VkResult res;
-   VkQueueFamilyProperties queue_properties[32];
-   VkInstanceCreateInfo info          = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
-   VkApplicationInfo app              = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
-   VkPhysicalDeviceFeatures features  = { false };
-   VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
-   VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+   bool use_device_ext;
+   static const float one             = 1.0f;
    uint32_t gpu_count                 = 1;
    bool found_queue                   = false;
    VkPhysicalDevice *gpus             = NULL;
-   static const float one             = 1.0f;
+
+   VkPhysicalDeviceFeatures features  = { false };
+   VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
+   VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+   uint32_t queue_count;
+   VkResult res;
+   unsigned i;
+
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
    };
 
 #ifdef VULKAN_DEBUG
+   static const char *device_layers[] = { "VK_LAYER_LUNARG_standard_validation" };
+#endif
+
+   struct retro_hw_render_context_negotiation_interface_vulkan *iface =
+      (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
+
+   if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
+   {
+      RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong API.\n");
+      iface = NULL;
+   }
+
+   if (iface && iface->interface_version != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
+   {
+      RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong interface version.\n");
+      iface = NULL;
+   }
+
+   if (!cached_device && iface && iface->create_device)
+   {
+      struct retro_vulkan_context context = { 0 };
+      const VkPhysicalDeviceFeatures features = { 0 };
+
+      bool ret = iface->create_device(&context, vk->context.instance,
+            vk->vk_surface,
+            vulkan_symbol_wrapper_instance_proc_addr(),
+            device_extensions,
+            ARRAY_SIZE(device_extensions),
+#ifdef VULKAN_DEBUG
+            device_layers,
+            ARRAY_SIZE(device_layers),
+#else
+            NULL,
+            0,
+#endif
+            &features);
+
+      if (!ret)
+      {
+         RARCH_WARN("[Vulkan]: Failed to create device with negotiation interface. Falling back to default path.\n");
+      }
+      else
+      {
+         vk->context.destroy_device = iface->destroy_device;
+
+         vk->context.device = context.device;
+         vk->context.queue = context.queue;
+         vk->context.gpu = context.gpu;
+         vk->context.graphics_queue_index = context.queue_family_index;
+
+         if (context.presentation_queue != context.queue)
+         {
+            RARCH_ERR("[Vulkan]: Present queue != graphics queue. This is currently not supported.\n");
+            return false;
+         }
+      }
+   }
+
+   if (vk->context.gpu == VK_NULL_HANDLE)
+   {
+      if (vkEnumeratePhysicalDevices(vk->context.instance,
+               &gpu_count, NULL) != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
+         return false;
+      }
+
+      gpus = (VkPhysicalDevice*)calloc(gpu_count, sizeof(*gpus));
+      if (!gpus)
+      {
+         RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
+         return false;
+      }
+
+      if (vkEnumeratePhysicalDevices(vk->context.instance,
+               &gpu_count, gpus) != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
+         return false;
+      }
+
+      if (gpu_count < 1)
+      {
+         RARCH_ERR("[Vulkan]: Failed to enumerate Vulkan physical device.\n");
+         free(gpus);
+         return false;
+      }
+
+      vk->context.gpu = gpus[0];
+      free(gpus);
+   }
+
+   vkGetPhysicalDeviceProperties(vk->context.gpu,
+         &vk->context.gpu_properties);
+   vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
+         &vk->context.memory_properties);
+
+   if (vk->context.device == VK_NULL_HANDLE)
+   {
+      VkQueueFamilyProperties *queue_properties = NULL;
+      vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+            &queue_count, NULL);
+
+      if (queue_count < 1)
+      {
+         RARCH_ERR("[Vulkan]: Invalid number of queues detected.\n");
+         return false;
+      }
+
+      queue_properties = (VkQueueFamilyProperties*)malloc(queue_count * sizeof(*queue_properties));
+      if (!queue_properties)
+         return false;
+
+      vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+            &queue_count, queue_properties);
+
+      for (i = 0; i < queue_count; i++)
+      {
+         VkBool32 supported = VK_FALSE;
+         vkGetPhysicalDeviceSurfaceSupportKHR(
+               vk->context.gpu, vk->context.graphics_queue_index,
+               vk->vk_surface, &supported);
+
+         VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+         if (supported && ((queue_properties[i].queueFlags & required) == required))
+         {
+            vk->context.graphics_queue_index = i;
+            RARCH_LOG("[Vulkan]: Queue family %u supports %u sub-queues.\n",
+                  i, queue_properties[i].queueCount);
+            found_queue = true;
+            break;
+         }
+      }
+
+      free(queue_properties);
+
+      if (!found_queue)
+      {
+         RARCH_ERR("[Vulkan]: Did not find suitable graphics queue.\n");
+         return false;
+      }
+
+      use_device_ext = vulkan_find_device_extensions(vk->context.gpu,
+            device_extensions, ARRAY_SIZE(device_extensions));
+
+      queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
+      queue_info.queueCount               = 1;
+      queue_info.pQueuePriorities         = &one;
+
+      device_info.queueCreateInfoCount    = 1;
+      device_info.pQueueCreateInfos       = &queue_info;
+      device_info.enabledExtensionCount   = use_device_ext ? ARRAY_SIZE(device_extensions) : 0;
+      device_info.ppEnabledExtensionNames = use_device_ext ? device_extensions : NULL;
+      device_info.pEnabledFeatures        = &features;
+#ifdef VULKAN_DEBUG
+      device_info.enabledLayerCount       = ARRAY_SIZE(device_layers);
+      device_info.ppEnabledLayerNames     = device_layers;
+#endif
+
+      if (cached_device)
+      {
+         vk->context.device = cached_device;
+         cached_device      = NULL;
+
+         video_driver_set_video_cache_context_ack();
+         RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
+      }
+      else if (vkCreateDevice(vk->context.gpu, &device_info,
+               NULL, &vk->context.device) != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan]: Failed to create device.\n");
+         return false;
+      }
+   }
+
+   if (!vulkan_load_device_symbols(vk))
+   {
+      RARCH_ERR("[Vulkan]: Failed to load device symbols.\n");
+      return false;
+   }
+
+   if (vk->context.queue == VK_NULL_HANDLE)
+   {
+      vkGetDeviceQueue(vk->context.device,
+            vk->context.graphics_queue_index, 0, &vk->context.queue);
+   }
+
+#ifdef HAVE_THREADS
+   vk->context.queue_lock = slock_new();
+   if (!vk->context.queue_lock)
+   {
+      RARCH_ERR("[Vulkan]: Failed to create queue lock.\n");
+      return false;
+   }
+#endif
+
+   return true;
+}
+
+bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type)
+{
+   unsigned i;
+   VkResult res;
+   VkInstanceCreateInfo info          = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
+   VkApplicationInfo app              = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+#ifdef VULKAN_DEBUG
    const char *instance_extensions[3];
    instance_extensions[2] = "VK_EXT_debug_report";
    static const char *instance_layers[] = { "VK_LAYER_LUNARG_standard_validation" };
-   static const char *device_layers[] = { "VK_LAYER_LUNARG_standard_validation" };
 #else
    const char *instance_extensions[2];
 #endif
 
-   bool use_instance_ext, use_device_ext;
-   
+   bool use_instance_ext;
+   struct retro_hw_render_context_negotiation_interface_vulkan *iface =
+      (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
+
+   if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
+   {
+      RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong API.\n");
+      iface = NULL;
+   }
+
+   if (iface && iface->interface_version != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
+   {
+      RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong interface version.\n");
+      iface = NULL;
+   }
+
    instance_extensions[0] = "VK_KHR_surface";
 
    switch (type)
@@ -1446,8 +1493,22 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    RARCH_LOG("Vulkan dynamic library loaded.\n");
    
-   VKSYM(vk, GetInstanceProcAddr);
-   VK_GET_INSTANCE_PROC_ADDR(EnumerateInstanceExtensionProperties);
+   PFN_vkGetInstanceProcAddr GetInstanceProcAddr =
+      (PFN_vkGetInstanceProcAddr)dylib_proc(vulkan_library, "vkGetInstanceProcAddr");
+
+   if (!GetInstanceProcAddr)
+   {
+      RARCH_ERR("[Vulkan]: Failed to load vkGetInstanceProcAddr symbol, broken loader?\n");
+      return false;
+   }
+
+   vulkan_symbol_wrapper_init(GetInstanceProcAddr);
+
+   if (!vulkan_symbol_wrapper_load_global_symbols())
+   {
+      RARCH_ERR("[Vulkan]: Failed to load global Vulkan symbols, broken loader?\n");
+      return false;
+   }
 
    use_instance_ext = vulkan_find_instance_extensions(instance_extensions, ARRAY_SIZE(instance_extensions));
 
@@ -1455,7 +1516,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    app.applicationVersion            = 0;
    app.pEngineName                   = "RetroArch";
    app.engineVersion                 = 0;
-   app.apiVersion                    = VK_MAKE_VERSION(1, 0, 6);
+   app.apiVersion                    = VK_MAKE_VERSION(1, 0, 18);
 
    info.pApplicationInfo             = &app;
    info.enabledExtensionCount        = use_instance_ext ? ARRAY_SIZE(instance_extensions) : 0;
@@ -1465,6 +1526,24 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    info.ppEnabledLayerNames          = instance_layers;
 #endif
 
+   if (iface && iface->get_application_info)
+   {
+      info.pApplicationInfo = iface->get_application_info();
+      if (info.pApplicationInfo->pApplicationName)
+      {
+         RARCH_LOG("[Vulkan]: App: %s (version %u)\n",
+               info.pApplicationInfo->pApplicationName,
+               info.pApplicationInfo->applicationVersion);
+      }
+
+      if (info.pApplicationInfo->pEngineName)
+      {
+         RARCH_LOG("[Vulkan]: Engine: %s (version %u)\n",
+               info.pApplicationInfo->pEngineName,
+               info.pApplicationInfo->engineVersion);
+      }
+   }
+
    if (cached_instance)
    {
       vk->context.instance           = cached_instance;
@@ -1472,17 +1551,15 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       res                            = VK_SUCCESS;
    }
    else
-   {
-      /* This will be called with a NULL instance, which
-       * is what we want. */
-      VK_GET_INSTANCE_PROC_ADDR(CreateInstance);
-      res = VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance);
-   }
+      res = vkCreateInstance(&info, NULL, &vk->context.instance);
 
 #ifdef VULKAN_DEBUG
-   VK_GET_INSTANCE_PROC_ADDR(CreateDebugReportCallbackEXT);
-   VK_GET_INSTANCE_PROC_ADDR(DebugReportMessageEXT);
-   VK_GET_INSTANCE_PROC_ADDR(DestroyDebugReportCallbackEXT);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkCreateDebugReportCallbackEXT);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkDebugReportMessageEXT);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkDestroyDebugReportCallbackEXT);
 
    {
       VkDebugReportCallbackCreateInfoEXT info =
@@ -1492,7 +1569,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          VK_DEBUG_REPORT_WARNING_BIT_EXT |
          VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
       info.pfnCallback = vulkan_debug_cb;
-      VKFUNC(vkCreateDebugReportCallbackEXT)(vk->context.instance, &info, NULL, &vk->context.debug_callback);
+      vkCreateDebugReportCallbackEXT(vk->context.instance, &info, NULL, &vk->context.debug_callback);
    }
 #endif
 
@@ -1500,8 +1577,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
     * but slightly different VK_API_VERSION. */
    for (i = 1; i < 4 && res == VK_ERROR_INCOMPATIBLE_DRIVER; i++)
    {
+      info.pApplicationInfo = &app;
       app.apiVersion = VK_MAKE_VERSION(1, 0, i);
-      res = VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance);
+      res = vkCreateInstance(&info, NULL, &vk->context.instance);
    }
 
    if (res == VK_ERROR_INCOMPATIBLE_DRIVER)
@@ -1515,158 +1593,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       RARCH_ERR("[Vulkan]: Failed to load instance symbols.\n");
       return false;
    }
-
-   if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
-            &gpu_count, NULL) != VK_SUCCESS)
-   {
-      RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
-      return false;
-   }
-
-   gpus = (VkPhysicalDevice*)calloc(gpu_count, sizeof(*gpus));
-   if (!gpus)
-   {
-      RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
-      return false;
-   }
-
-   if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
-            &gpu_count, gpus) != VK_SUCCESS)
-   {
-      RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
-      return false;
-   }
-
-   if (gpu_count < 1)
-   {
-      RARCH_ERR("[Vulkan]: Failed to enumerate Vulkan physical device.\n");
-      free(gpus);
-      return false;
-   }
-
-   vk->context.gpu = gpus[0];
-   free(gpus);
-
-   VKFUNC(vkGetPhysicalDeviceProperties)(vk->context.gpu,
-         &vk->context.gpu_properties);
-   VKFUNC(vkGetPhysicalDeviceMemoryProperties)(vk->context.gpu,
-         &vk->context.memory_properties);
-   VKFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(vk->context.gpu,
-         &queue_count, NULL);
-
-   if (queue_count < 1 || queue_count > 32)
-   {
-      RARCH_ERR("[Vulkan]: Invalid number of queues detected.\n");
-      return false;
-   }
-
-   VKFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(vk->context.gpu,
-         &queue_count, queue_properties);
-
-   for (i = 0; i < queue_count; i++)
-   {
-      VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
-      if ((queue_properties[i].queueFlags & required) == required)
-      {
-         vk->context.graphics_queue_index = i;
-         RARCH_LOG("[Vulkan]: Device supports %u sub-queues.\n",
-               queue_properties[i].queueCount);
-         found_queue = true;
-         break;
-      }
-   }
-
-   if (!found_queue)
-   {
-      RARCH_ERR("[Vulkan]: Did not find suitable graphics queue.\n");
-      return false;
-   }
-
-   use_device_ext = vulkan_find_device_extensions(vk->context.gpu, device_extensions, ARRAY_SIZE(device_extensions));
-
-   queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
-   queue_info.queueCount               = 1;
-   queue_info.pQueuePriorities         = &one;
-
-   device_info.queueCreateInfoCount    = 1;
-   device_info.pQueueCreateInfos       = &queue_info;
-   device_info.enabledExtensionCount   = use_device_ext ? ARRAY_SIZE(device_extensions) : 0;
-   device_info.ppEnabledExtensionNames = use_device_ext ? device_extensions : NULL;
-   device_info.pEnabledFeatures        = &features;
-#ifdef VULKAN_DEBUG
-   info.enabledLayerCount              = ARRAY_SIZE(device_layers);
-   info.ppEnabledLayerNames            = device_layers;
-#endif
-
-   if (cached_device)
-   {
-      vk->context.device = cached_device;
-      cached_device      = NULL;
-
-      video_driver_set_video_cache_context_ack();
-      RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
-   }
-   else if (VKFUNC(vkCreateDevice)(vk->context.gpu, &device_info,
-            NULL, &vk->context.device) != VK_SUCCESS)
-   {
-      RARCH_ERR("[Vulkan]: Failed to create device.\n");
-      return false;
-   }
-
-   if (!vulkan_load_device_symbols(vk))
-   {
-      RARCH_ERR("[Vulkan]: Failed to load device symbols.\n");
-      return false;
-   }
-
-   VKFUNC(vkGetDeviceQueue)(vk->context.device,
-         vk->context.graphics_queue_index, 0, &vk->context.queue);
-
-   switch (type)
-   {
-      case VULKAN_WSI_WAYLAND:
-#ifdef HAVE_WAYLAND
-         VK_GET_INSTANCE_PROC_ADDR(CreateWaylandSurfaceKHR);
-#endif
-         break;
-      case VULKAN_WSI_ANDROID:
-#ifdef ANDROID
-         VK_GET_INSTANCE_PROC_ADDR(CreateAndroidSurfaceKHR);
-#endif
-         break;
-      case VULKAN_WSI_WIN32:
-#ifdef _WIN32
-         VK_GET_INSTANCE_PROC_ADDR(CreateWin32SurfaceKHR);
-#endif
-         break;
-      case VULKAN_WSI_XLIB:
-#ifdef HAVE_XLIB
-         VK_GET_INSTANCE_PROC_ADDR(CreateXlibSurfaceKHR);
-#endif
-         break;
-      case VULKAN_WSI_XCB:
-#ifdef HAVE_XCB
-         VK_GET_INSTANCE_PROC_ADDR(CreateXcbSurfaceKHR);
-#endif
-         break;
-      case VULKAN_WSI_MIR:
-#ifdef HAVE_MIR
-         VK_GET_INSTANCE_PROC_ADDR(CreateMirSurfaceKHR);
-#endif
-         break;
-      case VULKAN_WSI_NONE:
-      default:
-         break;
-   }
-
-#ifdef HAVE_THREADS
-   vk->context.queue_lock = slock_new();
-   if (!vk->context.queue_lock)
-   {
-      RARCH_ERR("[Vulkan]: Failed to create queue lock.\n");
-      return false;
-   }
-#endif
 
    return true;
 }
@@ -1682,6 +1608,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_WAYLAND:
 #ifdef HAVE_WAYLAND
          {
+            PFN_vkCreateWaylandSurfaceKHR create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateWaylandSurfaceKHR", create))
+               return false;
             VkWaylandSurfaceCreateInfoKHR surf_info; 
 
             memset(&surf_info, 0, sizeof(surf_info));
@@ -1692,7 +1621,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.display = (struct wl_display*)display;
             surf_info.surface = (struct wl_surface*)surface;
 
-            if (VKFUNC(vkCreateWaylandSurfaceKHR)(vk->context.instance,
+            if (create(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
                return false;
          }
@@ -1701,6 +1630,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_ANDROID:
 #ifdef ANDROID
          {
+            PFN_vkCreateAndroidSurfaceKHR create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateAndroidSurfaceKHR", create))
+               return false;
             VkAndroidSurfaceCreateInfoKHR surf_info;
 
             memset(&surf_info, 0, sizeof(surf_info));
@@ -1709,7 +1641,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.flags  = 0;
             surf_info.window = (ANativeWindow*)surface;
 
-            if (VKFUNC(vkCreateAndroidSurfaceKHR)(vk->context.instance,
+            if (create(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
             {
                RARCH_ERR("[Vulkan]: Failed to create Android surface.\n");
@@ -1723,6 +1655,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_WIN32:
 #ifdef _WIN32
          {
+            PFN_vkCreateWin32SurfaceKHR create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateWin32SurfaceKHR", create))
+               return false;
             VkWin32SurfaceCreateInfoKHR surf_info;
 
             memset(&surf_info, 0, sizeof(surf_info));
@@ -1732,7 +1667,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.hinstance = *(const HINSTANCE*)display;
             surf_info.hwnd      = *(const HWND*)surface;
 
-            if (VKFUNC(vkCreateWin32SurfaceKHR)(vk->context.instance,
+            if (create(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
                return false;
          }
@@ -1741,6 +1676,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_XLIB:
 #ifdef HAVE_XLIB
          {
+            PFN_vkCreateXlibSurfaceKHR create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateXlibSurfaceKHR", create))
+               return false;
             VkXlibSurfaceCreateInfoKHR surf_info;
 
             memset(&surf_info, 0, sizeof(surf_info));
@@ -1750,7 +1688,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.dpy    = (Display*)display;
             surf_info.window = *(const Window*)surface;
 
-            if (VKFUNC(vkCreateXlibSurfaceKHR)(vk->context.instance,
+            if (create(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
                   != VK_SUCCESS)
                return false;
@@ -1761,6 +1699,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 #ifdef HAVE_X11
 #ifdef HAVE_XCB
          {
+            PFN_vkCreateXcbSurfaceKHR create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateXcbSurfaceKHR", create))
+               return false;
             VkXcbSurfaceCreateInfoKHR surf_info;
 
             memset(&surf_info, 0, sizeof(surf_info));
@@ -1770,7 +1711,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.connection = XGetXCBConnection((Display*)display);
             surf_info.window     = *(const xcb_window_t*)surface;
 
-            if (VKFUNC(vkCreateXcbSurfaceKHR)(vk->context.instance,
+            if (create(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
                   != VK_SUCCESS)
                return false;
@@ -1781,6 +1722,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_MIR:
 #ifdef HAVE_MIR
          {
+            PFN_vkCreateMirSurfaceKHR create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMirSurfaceKHR", create))
+               return false;
             VkMirSurfaceCreateInfoKHR surf_info;
 
             memset(&surf_info, 0, sizeof(surf_info));
@@ -1789,7 +1733,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.connection = display;
             surf_info.mirSurface = surface;
 
-            if (VKFUNC(vkCreateMirSurfaceKHR)(vk->context.instance,
+            if (create(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
                   != VK_SUCCESS)
                return false;
@@ -1800,6 +1744,10 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       default:
          return false;
    }
+
+   /* Must create device after surface since we need to be able to query queues to use for presentation. */
+   if (!vulkan_context_init_device(vk))
+      return false;
 
    if (!vulkan_create_swapchain(
             vk, width, height, swap_interval))
@@ -1825,7 +1773,7 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 #ifdef HAVE_THREADS
    slock_lock(vk->context.queue_lock);
 #endif
-   err = VKFUNC(vkQueuePresentKHR)(vk->context.queue, &present);
+   err = vkQueuePresentKHR(vk->context.queue, &present);
 
    if (err != VK_SUCCESS || result != VK_SUCCESS)
    {
@@ -1844,28 +1792,28 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    unsigned i;
 
    if (vk->context.queue)
-      VKFUNC(vkQueueWaitIdle)(vk->context.queue);
+      vkQueueWaitIdle(vk->context.queue);
    if (vk->swapchain)
-      VKFUNC(vkDestroySwapchainKHR)(vk->context.device,
+      vkDestroySwapchainKHR(vk->context.device,
             vk->swapchain, NULL);
 
    if (destroy_surface && vk->vk_surface != VK_NULL_HANDLE)
-      VKFUNC(vkDestroySurfaceKHR)(vk->context.instance,
+      vkDestroySurfaceKHR(vk->context.instance,
             vk->vk_surface, NULL);
 
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
    {
       if (vk->context.swapchain_semaphores[i] != VK_NULL_HANDLE)
-         VKFUNC(vkDestroySemaphore)(vk->context.device,
+         vkDestroySemaphore(vk->context.device,
                vk->context.swapchain_semaphores[i], NULL);
       if (vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
-         VKFUNC(vkDestroyFence)(vk->context.device,
+         vkDestroyFence(vk->context.device,
                vk->context.swapchain_fences[i], NULL);
    }
 
 #ifdef VULKAN_DEBUG
    if (vk->context.debug_callback)
-      VKFUNC(vkDestroyDebugReportCallbackEXT)(vk->context.instance, vk->context.debug_callback, NULL);
+      vkDestroyDebugReportCallbackEXT(vk->context.instance, vk->context.debug_callback, NULL);
 #endif
 
    if (video_driver_is_video_cache_context())
@@ -1876,9 +1824,14 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    else
    {
       if (vk->context.device)
-         VKFUNC(vkDestroyDevice)(vk->context.device, NULL);
+         vkDestroyDevice(vk->context.device, NULL);
       if (vk->context.instance)
-         VKFUNC(vkDestroyInstance)(vk->context.instance, NULL);
+      {
+         if (vk->context.destroy_device)
+            vk->context.destroy_device();
+
+         vkDestroyInstance(vk->context.instance, NULL);
+      }
    }
 
    if (vulkan_library)
@@ -1896,19 +1849,19 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
    VkFence *next_fence             = NULL;
 
-   VKFUNC(vkCreateFence)(vk->context.device, &fence_info, NULL, &fence);
+   vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
 
-   err = VKFUNC(vkAcquireNextImageKHR)(vk->context.device,
+   err = vkAcquireNextImageKHR(vk->context.device,
          vk->swapchain, UINT64_MAX,
          VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
 
    index = vk->context.current_swapchain_index;
    if (vk->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
-      VKFUNC(vkCreateSemaphore)(vk->context.device, &sem_info,
+      vkCreateSemaphore(vk->context.device, &sem_info,
             NULL, &vk->context.swapchain_semaphores[index]);
 
-   VKFUNC(vkWaitForFences)(vk->context.device, 1, &fence, true, UINT64_MAX);
-   VKFUNC(vkDestroyFence)(vk->context.device, fence, NULL);
+   vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
+   vkDestroyFence(vk->context.device, fence, NULL);
 
    next_fence = &vk->context.swapchain_fences[index];
 
@@ -1918,13 +1871,13 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 
       performance_counter_init(&fence_wait, "fence_wait");
       performance_counter_start(&fence_wait);
-      VKFUNC(vkWaitForFences)(vk->context.device, 1, next_fence, true, UINT64_MAX);
+      vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
       performance_counter_stop(&fence_wait);
 
-      VKFUNC(vkResetFences)(vk->context.device, 1, next_fence);
+      vkResetFences(vk->context.device, 1, next_fence);
    }
    else
-      VKFUNC(vkCreateFence)(vk->context.device, &fence_info, NULL, next_fence);
+      vkCreateFence(vk->context.device, &fence_info, NULL, next_fence);
 
    if (err != VK_SUCCESS)
    {
@@ -1949,14 +1902,13 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSurfaceTransformFlagBitsKHR pre_transform;
-   VkBool32 supported;
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    settings_t *settings = config_get_ptr();
 
-   VKFUNC(vkDeviceWaitIdle)(vk->context.device);
+   vkDeviceWaitIdle(vk->context.device);
 
    present_mode_count = 0;
-   VKFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)(
+   vkGetPhysicalDeviceSurfacePresentModesKHR(
          vk->context.gpu, vk->vk_surface,
          &present_mode_count, NULL);
    if (present_mode_count < 1 || present_mode_count > 16)
@@ -1964,7 +1916,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       RARCH_ERR("[Vulkan]: Bogus present modes found.\n");
       return false;
    }
-   VKFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)(
+   vkGetPhysicalDeviceSurfacePresentModesKHR(
          vk->context.gpu, vk->vk_surface,
          &present_mode_count, present_modes);
 
@@ -1997,11 +1949,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("[Vulkan]: Creating swapchain with present mode: %u\n",
          (unsigned)swapchain_present_mode);
 
-   VKFUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)(vk->context.gpu,
+   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu,
          vk->vk_surface, &surface_properties);
-   VKFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR)(vk->context.gpu,
+   vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, NULL);
-   VKFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR)(vk->context.gpu,
+   vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, formats);
 
    if (format_count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
@@ -2068,16 +2020,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
       | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-   if (VKFUNC(vkGetPhysicalDeviceSurfaceSupportKHR)(
-            vk->context.gpu, vk->context.graphics_queue_index,
-            vk->vk_surface, &supported) != VK_SUCCESS || !supported)
-   {
-      RARCH_ERR("[Vulkan]: GPU does not supported presentation on queue family %u with surface 0x%llx.\n",
-            vk->context.graphics_queue_index, (unsigned long long)vk->vk_surface);
-      return false;
-   }
-
-   if (VKFUNC(vkCreateSwapchainKHR)(vk->context.device, &info, NULL, &vk->swapchain) != VK_SUCCESS)
+   if (vkCreateSwapchainKHR(vk->context.device, &info, NULL, &vk->swapchain) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan]: Failed to create swapchain.\n");
       return false;
@@ -2086,7 +2029,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    if (old_swapchain != VK_NULL_HANDLE)
    {
       RARCH_LOG("[Vulkan]: Recycled old swapchain.\n");
-      VKFUNC(vkDestroySwapchainKHR)(vk->context.device, old_swapchain, NULL);
+      vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
    }
 
    vk->context.swapchain_width  = swapchain_size.width;
@@ -2120,9 +2063,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          break;
    }
 
-   VKFUNC(vkGetSwapchainImagesKHR)(vk->context.device, vk->swapchain,
+   vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, NULL);
-   VKFUNC(vkGetSwapchainImagesKHR)(vk->context.device, vk->swapchain,
+   vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
 
    RARCH_LOG("[Vulkan]: Got %u swapchain images.\n",
@@ -2132,7 +2075,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       if (vk->context.swapchain_fences[i])
       {
-         VKFUNC(vkDestroyFence)(vk->context.device,
+         vkDestroyFence(vk->context.device,
                vk->context.swapchain_fences[i], NULL);
          vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
       }

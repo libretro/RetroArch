@@ -167,6 +167,7 @@ VIDEO CONTEXT
 
 #ifdef HAVE_VULKAN
 #include "../gfx/common/vulkan_common.c"
+#include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"
 #endif
 
 #if defined(HAVE_KMS)

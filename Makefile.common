@@ -835,6 +835,7 @@ ifeq ($(HAVE_VULKAN), 1)
 
 	OBJ += gfx/drivers/vulkan.o \
 			 gfx/common/vulkan_common.o \
+			 libretro-common/vulkan/vulkan_symbol_wrapper.o \
 			 gfx/drivers_font/vulkan_raster_font.o \
 			 gfx/drivers_shader/shader_vulkan.o \
 			 gfx/drivers_shader/glslang_util.o \

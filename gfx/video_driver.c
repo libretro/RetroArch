@@ -1283,6 +1283,8 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
  * used for GLES.
  * TODO: Refactor this better. */
 static struct retro_hw_render_callback hw_render;
+static const struct retro_hw_render_context_negotiation_interface *hw_render_context_negotiation;
+
 static bool video_driver_use_rgba                = false;
 static bool video_driver_data_own                = false;
 static bool video_driver_active                  = false;
@@ -1820,11 +1822,22 @@ void video_driver_deinit_hw_context(void)
       hw_render.context_destroy();
 
    memset(&hw_render, 0, sizeof(hw_render));
+   hw_render_context_negotiation = NULL;
 }
 
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 {
    return &hw_render;
+}
+
+const struct retro_hw_render_context_negotiation_interface *video_driver_get_context_negotiation_interface(void)
+{
+   return hw_render_context_negotiation;
+}
+
+void video_driver_set_context_negotiation_interface(const struct retro_hw_render_context_negotiation_interface *iface)
+{
+   hw_render_context_negotiation = iface;
 }
 
 void video_driver_set_video_cache_context(void)

@@ -107,6 +107,7 @@ typedef struct vulkan_context
    VkFormat swapchain_format;
 
    slock_t *queue_lock;
+   retro_vulkan_destroy_device_t destroy_device;
 
 #ifdef VULKAN_DEBUG
    VkDebugReportCallbackEXT debug_callback;

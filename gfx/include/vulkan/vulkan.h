@@ -8,24 +8,17 @@ extern "C" {
 /*
 ** Copyright (c) 2015-2016 The Khronos Group Inc.
 **
-** Permission is hereby granted, free of charge, to any person obtaining a
-** copy of this software and/or associated documentation files (the
-** "Materials"), to deal in the Materials without restriction, including
-** without limitation the rights to use, copy, modify, merge, publish,
-** distribute, sublicense, and/or sell copies of the Materials, and to
-** permit persons to whom the Materials are furnished to do so, subject to
-** the following conditions:
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
 **
-** The above copyright notice and this permission notice shall be included
-** in all copies or substantial portions of the Materials.
+**     http://www.apache.org/licenses/LICENSE-2.0
 **
-** THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-** EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-** MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-** IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-** CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-** TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-** MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
 */
 
 /*
@@ -40,12 +33,18 @@ extern "C" {
 #define VK_MAKE_VERSION(major, minor, patch) \
     (((major) << 22) | ((minor) << 12) | (patch))
 
-// Vulkan API version supported by this file
-#define VK_API_VERSION VK_MAKE_VERSION(1, 0, 4)
+// DEPRECATED: This define has been removed. Specific version defines (e.g. VK_API_VERSION_1_0), or the VK_MAKE_VERSION macro, should be used instead.
+//#define VK_API_VERSION VK_MAKE_VERSION(1, 0, 0)
+
+// Vulkan 1.0 version number
+#define VK_API_VERSION_1_0 VK_MAKE_VERSION(1, 0, 0)
 
 #define VK_VERSION_MAJOR(version) ((uint32_t)(version) >> 22)
 #define VK_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3ff)
 #define VK_VERSION_PATCH(version) ((uint32_t)(version) & 0xfff)
+// Version of this file
+#define VK_HEADER_VERSION 17
+
 
 #define VK_NULL_HANDLE 0
         
@@ -142,6 +141,7 @@ typedef enum VkResult {
     VK_ERROR_OUT_OF_DATE_KHR = -1000001004,
     VK_ERROR_INCOMPATIBLE_DISPLAY_KHR = -1000003001,
     VK_ERROR_VALIDATION_FAILED_EXT = -1000011001,
+    VK_ERROR_INVALID_SHADER_NV = -1000012000,
     VK_RESULT_BEGIN_RANGE = VK_ERROR_FORMAT_NOT_SUPPORTED,
     VK_RESULT_END_RANGE = VK_INCOMPLETE,
     VK_RESULT_RANGE_SIZE = (VK_INCOMPLETE - VK_ERROR_FORMAT_NOT_SUPPORTED + 1),
@@ -210,6 +210,10 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR = 1000008000,
     VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR = 1000009000,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT = 1000011000,
+    VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_RASTERIZATION_ORDER_AMD = 1000018000,
+    VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT = 1000022000,
+    VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT = 1000022001,
+    VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT = 1000022002,
     VK_STRUCTURE_TYPE_BEGIN_RANGE = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     VK_STRUCTURE_TYPE_END_RANGE = VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO,
     VK_STRUCTURE_TYPE_RANGE_SIZE = (VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO - VK_STRUCTURE_TYPE_APPLICATION_INFO + 1),
@@ -679,6 +683,7 @@ typedef enum VkDynamicState {
 typedef enum VkFilter {
     VK_FILTER_NEAREST = 0,
     VK_FILTER_LINEAR = 1,
+    VK_FILTER_CUBIC_IMG = 1000015000,
     VK_FILTER_BEGIN_RANGE = VK_FILTER_NEAREST,
     VK_FILTER_END_RANGE = VK_FILTER_LINEAR,
     VK_FILTER_RANGE_SIZE = (VK_FILTER_LINEAR - VK_FILTER_NEAREST + 1),
@@ -808,6 +813,8 @@ typedef enum VkFormatFeatureFlagBits {
     VK_FORMAT_FEATURE_BLIT_SRC_BIT = 0x00000400,
     VK_FORMAT_FEATURE_BLIT_DST_BIT = 0x00000800,
     VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT = 0x00001000,
+    VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG = 0x00002000,
+    VK_FORMAT_FEATURE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkFormatFeatureFlagBits;
 typedef VkFlags VkFormatFeatureFlags;
 
@@ -820,6 +827,7 @@ typedef enum VkImageUsageFlagBits {
     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000020,
     VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT = 0x00000040,
     VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT = 0x00000080,
+    VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageUsageFlagBits;
 typedef VkFlags VkImageUsageFlags;
 
@@ -829,6 +837,7 @@ typedef enum VkImageCreateFlagBits {
     VK_IMAGE_CREATE_SPARSE_ALIASED_BIT = 0x00000004,
     VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT = 0x00000008,
     VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT = 0x00000010,
+    VK_IMAGE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageCreateFlagBits;
 typedef VkFlags VkImageCreateFlags;
 
@@ -840,6 +849,7 @@ typedef enum VkSampleCountFlagBits {
     VK_SAMPLE_COUNT_16_BIT = 0x00000010,
     VK_SAMPLE_COUNT_32_BIT = 0x00000020,
     VK_SAMPLE_COUNT_64_BIT = 0x00000040,
+    VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkSampleCountFlagBits;
 typedef VkFlags VkSampleCountFlags;
 
@@ -848,6 +858,7 @@ typedef enum VkQueueFlagBits {
     VK_QUEUE_COMPUTE_BIT = 0x00000002,
     VK_QUEUE_TRANSFER_BIT = 0x00000004,
     VK_QUEUE_SPARSE_BINDING_BIT = 0x00000008,
+    VK_QUEUE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkQueueFlagBits;
 typedef VkFlags VkQueueFlags;
 
@@ -857,11 +868,13 @@ typedef enum VkMemoryPropertyFlagBits {
     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT = 0x00000004,
     VK_MEMORY_PROPERTY_HOST_CACHED_BIT = 0x00000008,
     VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT = 0x00000010,
+    VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkMemoryPropertyFlagBits;
 typedef VkFlags VkMemoryPropertyFlags;
 
 typedef enum VkMemoryHeapFlagBits {
     VK_MEMORY_HEAP_DEVICE_LOCAL_BIT = 0x00000001,
+    VK_MEMORY_HEAP_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkMemoryHeapFlagBits;
 typedef VkFlags VkMemoryHeapFlags;
 typedef VkFlags VkDeviceCreateFlags;
@@ -885,6 +898,7 @@ typedef enum VkPipelineStageFlagBits {
     VK_PIPELINE_STAGE_HOST_BIT = 0x00004000,
     VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT = 0x00008000,
     VK_PIPELINE_STAGE_ALL_COMMANDS_BIT = 0x00010000,
+    VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkPipelineStageFlagBits;
 typedef VkFlags VkPipelineStageFlags;
 typedef VkFlags VkMemoryMapFlags;
@@ -894,6 +908,7 @@ typedef enum VkImageAspectFlagBits {
     VK_IMAGE_ASPECT_DEPTH_BIT = 0x00000002,
     VK_IMAGE_ASPECT_STENCIL_BIT = 0x00000004,
     VK_IMAGE_ASPECT_METADATA_BIT = 0x00000008,
+    VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkImageAspectFlagBits;
 typedef VkFlags VkImageAspectFlags;
 
@@ -901,16 +916,19 @@ typedef enum VkSparseImageFormatFlagBits {
     VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT = 0x00000001,
     VK_SPARSE_IMAGE_FORMAT_ALIGNED_MIP_SIZE_BIT = 0x00000002,
     VK_SPARSE_IMAGE_FORMAT_NONSTANDARD_BLOCK_SIZE_BIT = 0x00000004,
+    VK_SPARSE_IMAGE_FORMAT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkSparseImageFormatFlagBits;
 typedef VkFlags VkSparseImageFormatFlags;
 
 typedef enum VkSparseMemoryBindFlagBits {
     VK_SPARSE_MEMORY_BIND_METADATA_BIT = 0x00000001,
+    VK_SPARSE_MEMORY_BIND_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkSparseMemoryBindFlagBits;
 typedef VkFlags VkSparseMemoryBindFlags;
 
 typedef enum VkFenceCreateFlagBits {
     VK_FENCE_CREATE_SIGNALED_BIT = 0x00000001,
+    VK_FENCE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkFenceCreateFlagBits;
 typedef VkFlags VkFenceCreateFlags;
 typedef VkFlags VkSemaphoreCreateFlags;
@@ -929,6 +947,7 @@ typedef enum VkQueryPipelineStatisticFlagBits {
     VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT = 0x00000100,
     VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT = 0x00000200,
     VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT = 0x00000400,
+    VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkQueryPipelineStatisticFlagBits;
 typedef VkFlags VkQueryPipelineStatisticFlags;
 
@@ -937,6 +956,7 @@ typedef enum VkQueryResultFlagBits {
     VK_QUERY_RESULT_WAIT_BIT = 0x00000002,
     VK_QUERY_RESULT_WITH_AVAILABILITY_BIT = 0x00000004,
     VK_QUERY_RESULT_PARTIAL_BIT = 0x00000008,
+    VK_QUERY_RESULT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkQueryResultFlagBits;
 typedef VkFlags VkQueryResultFlags;
 
@@ -944,6 +964,7 @@ typedef enum VkBufferCreateFlagBits {
     VK_BUFFER_CREATE_SPARSE_BINDING_BIT = 0x00000001,
     VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT = 0x00000002,
     VK_BUFFER_CREATE_SPARSE_ALIASED_BIT = 0x00000004,
+    VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkBufferCreateFlagBits;
 typedef VkFlags VkBufferCreateFlags;
 
@@ -957,6 +978,7 @@ typedef enum VkBufferUsageFlagBits {
     VK_BUFFER_USAGE_INDEX_BUFFER_BIT = 0x00000040,
     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT = 0x00000080,
     VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT = 0x00000100,
+    VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkBufferUsageFlagBits;
 typedef VkFlags VkBufferUsageFlags;
 typedef VkFlags VkBufferViewCreateFlags;
@@ -968,6 +990,7 @@ typedef enum VkPipelineCreateFlagBits {
     VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT = 0x00000001,
     VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT = 0x00000002,
     VK_PIPELINE_CREATE_DERIVATIVE_BIT = 0x00000004,
+    VK_PIPELINE_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkPipelineCreateFlagBits;
 typedef VkFlags VkPipelineCreateFlags;
 typedef VkFlags VkPipelineShaderStageCreateFlags;
@@ -979,8 +1002,9 @@ typedef enum VkShaderStageFlagBits {
     VK_SHADER_STAGE_GEOMETRY_BIT = 0x00000008,
     VK_SHADER_STAGE_FRAGMENT_BIT = 0x00000010,
     VK_SHADER_STAGE_COMPUTE_BIT = 0x00000020,
-    VK_SHADER_STAGE_ALL_GRAPHICS = 0x1F,
+    VK_SHADER_STAGE_ALL_GRAPHICS = 0x0000001F,
     VK_SHADER_STAGE_ALL = 0x7FFFFFFF,
+    VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkShaderStageFlagBits;
 typedef VkFlags VkPipelineVertexInputStateCreateFlags;
 typedef VkFlags VkPipelineInputAssemblyStateCreateFlags;
@@ -992,7 +1016,8 @@ typedef enum VkCullModeFlagBits {
     VK_CULL_MODE_NONE = 0,
     VK_CULL_MODE_FRONT_BIT = 0x00000001,
     VK_CULL_MODE_BACK_BIT = 0x00000002,
-    VK_CULL_MODE_FRONT_AND_BACK = 0x3,
+    VK_CULL_MODE_FRONT_AND_BACK = 0x00000003,
+    VK_CULL_MODE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkCullModeFlagBits;
 typedef VkFlags VkCullModeFlags;
 typedef VkFlags VkPipelineMultisampleStateCreateFlags;
@@ -1004,6 +1029,7 @@ typedef enum VkColorComponentFlagBits {
     VK_COLOR_COMPONENT_G_BIT = 0x00000002,
     VK_COLOR_COMPONENT_B_BIT = 0x00000004,
     VK_COLOR_COMPONENT_A_BIT = 0x00000008,
+    VK_COLOR_COMPONENT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkColorComponentFlagBits;
 typedef VkFlags VkColorComponentFlags;
 typedef VkFlags VkPipelineDynamicStateCreateFlags;
@@ -1014,6 +1040,7 @@ typedef VkFlags VkDescriptorSetLayoutCreateFlags;
 
 typedef enum VkDescriptorPoolCreateFlagBits {
     VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT = 0x00000001,
+    VK_DESCRIPTOR_POOL_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkDescriptorPoolCreateFlagBits;
 typedef VkFlags VkDescriptorPoolCreateFlags;
 typedef VkFlags VkDescriptorPoolResetFlags;
@@ -1022,6 +1049,7 @@ typedef VkFlags VkRenderPassCreateFlags;
 
 typedef enum VkAttachmentDescriptionFlagBits {
     VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT = 0x00000001,
+    VK_ATTACHMENT_DESCRIPTION_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkAttachmentDescriptionFlagBits;
 typedef VkFlags VkAttachmentDescriptionFlags;
 typedef VkFlags VkSubpassDescriptionFlags;
@@ -1044,22 +1072,26 @@ typedef enum VkAccessFlagBits {
     VK_ACCESS_HOST_WRITE_BIT = 0x00004000,
     VK_ACCESS_MEMORY_READ_BIT = 0x00008000,
     VK_ACCESS_MEMORY_WRITE_BIT = 0x00010000,
+    VK_ACCESS_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkAccessFlagBits;
 typedef VkFlags VkAccessFlags;
 
 typedef enum VkDependencyFlagBits {
     VK_DEPENDENCY_BY_REGION_BIT = 0x00000001,
+    VK_DEPENDENCY_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkDependencyFlagBits;
 typedef VkFlags VkDependencyFlags;
 
 typedef enum VkCommandPoolCreateFlagBits {
     VK_COMMAND_POOL_CREATE_TRANSIENT_BIT = 0x00000001,
     VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT = 0x00000002,
+    VK_COMMAND_POOL_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkCommandPoolCreateFlagBits;
 typedef VkFlags VkCommandPoolCreateFlags;
 
 typedef enum VkCommandPoolResetFlagBits {
     VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT = 0x00000001,
+    VK_COMMAND_POOL_RESET_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkCommandPoolResetFlagBits;
 typedef VkFlags VkCommandPoolResetFlags;
 
@@ -1067,23 +1099,27 @@ typedef enum VkCommandBufferUsageFlagBits {
     VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT = 0x00000001,
     VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT = 0x00000002,
     VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT = 0x00000004,
+    VK_COMMAND_BUFFER_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkCommandBufferUsageFlagBits;
 typedef VkFlags VkCommandBufferUsageFlags;
 
 typedef enum VkQueryControlFlagBits {
     VK_QUERY_CONTROL_PRECISE_BIT = 0x00000001,
+    VK_QUERY_CONTROL_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkQueryControlFlagBits;
 typedef VkFlags VkQueryControlFlags;
 
 typedef enum VkCommandBufferResetFlagBits {
     VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT = 0x00000001,
+    VK_COMMAND_BUFFER_RESET_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkCommandBufferResetFlagBits;
 typedef VkFlags VkCommandBufferResetFlags;
 
 typedef enum VkStencilFaceFlagBits {
     VK_STENCIL_FACE_FRONT_BIT = 0x00000001,
     VK_STENCIL_FACE_BACK_BIT = 0x00000002,
-    VK_STENCIL_FRONT_AND_BACK = 0x3,
+    VK_STENCIL_FRONT_AND_BACK = 0x00000003,
+    VK_STENCIL_FACE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkStencilFaceFlagBits;
 typedef VkFlags VkStencilFaceFlags;
 
@@ -3136,14 +3172,15 @@ VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSurfaceKHR)
 
 #define VK_KHR_SURFACE_SPEC_VERSION       25
 #define VK_KHR_SURFACE_EXTENSION_NAME     "VK_KHR_surface"
+#define VK_COLORSPACE_SRGB_NONLINEAR_KHR  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
 
 
 typedef enum VkColorSpaceKHR {
-    VK_COLORSPACE_SRGB_NONLINEAR_KHR = 0,
-    VK_COLORSPACE_BEGIN_RANGE = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
-    VK_COLORSPACE_END_RANGE = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
-    VK_COLORSPACE_RANGE_SIZE = (VK_COLORSPACE_SRGB_NONLINEAR_KHR - VK_COLORSPACE_SRGB_NONLINEAR_KHR + 1),
-    VK_COLORSPACE_MAX_ENUM = 0x7FFFFFFF
+    VK_COLOR_SPACE_SRGB_NONLINEAR_KHR = 0,
+    VK_COLOR_SPACE_BEGIN_RANGE_KHR = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+    VK_COLOR_SPACE_END_RANGE_KHR = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+    VK_COLOR_SPACE_RANGE_SIZE_KHR = (VK_COLOR_SPACE_SRGB_NONLINEAR_KHR - VK_COLOR_SPACE_SRGB_NONLINEAR_KHR + 1),
+    VK_COLOR_SPACE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkColorSpaceKHR;
 
 typedef enum VkPresentModeKHR {
@@ -3151,10 +3188,10 @@ typedef enum VkPresentModeKHR {
     VK_PRESENT_MODE_MAILBOX_KHR = 1,
     VK_PRESENT_MODE_FIFO_KHR = 2,
     VK_PRESENT_MODE_FIFO_RELAXED_KHR = 3,
-    VK_PRESENT_MODE_BEGIN_RANGE = VK_PRESENT_MODE_IMMEDIATE_KHR,
-    VK_PRESENT_MODE_END_RANGE = VK_PRESENT_MODE_FIFO_RELAXED_KHR,
-    VK_PRESENT_MODE_RANGE_SIZE = (VK_PRESENT_MODE_FIFO_RELAXED_KHR - VK_PRESENT_MODE_IMMEDIATE_KHR + 1),
-    VK_PRESENT_MODE_MAX_ENUM = 0x7FFFFFFF
+    VK_PRESENT_MODE_BEGIN_RANGE_KHR = VK_PRESENT_MODE_IMMEDIATE_KHR,
+    VK_PRESENT_MODE_END_RANGE_KHR = VK_PRESENT_MODE_FIFO_RELAXED_KHR,
+    VK_PRESENT_MODE_RANGE_SIZE_KHR = (VK_PRESENT_MODE_FIFO_RELAXED_KHR - VK_PRESENT_MODE_IMMEDIATE_KHR + 1),
+    VK_PRESENT_MODE_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkPresentModeKHR;
 
 
@@ -3168,6 +3205,7 @@ typedef enum VkSurfaceTransformFlagBitsKHR {
     VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR = 0x00000040,
     VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR = 0x00000080,
     VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR = 0x00000100,
+    VK_SURFACE_TRANSFORM_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkSurfaceTransformFlagBitsKHR;
 typedef VkFlags VkSurfaceTransformFlagsKHR;
 
@@ -3176,6 +3214,7 @@ typedef enum VkCompositeAlphaFlagBitsKHR {
     VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR = 0x00000002,
     VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR = 0x00000004,
     VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR = 0x00000008,
+    VK_COMPOSITE_ALPHA_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkCompositeAlphaFlagBitsKHR;
 typedef VkFlags VkCompositeAlphaFlagsKHR;
 
@@ -3237,7 +3276,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
 #define VK_KHR_swapchain 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSwapchainKHR)
 
-#define VK_KHR_SWAPCHAIN_SPEC_VERSION     67
+#define VK_KHR_SWAPCHAIN_SPEC_VERSION     68
 #define VK_KHR_SWAPCHAIN_EXTENSION_NAME   "VK_KHR_swapchain"
 
 typedef VkFlags VkSwapchainCreateFlagsKHR;
@@ -3325,6 +3364,7 @@ typedef enum VkDisplayPlaneAlphaFlagBitsKHR {
     VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR = 0x00000002,
     VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR = 0x00000004,
     VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR = 0x00000008,
+    VK_DISPLAY_PLANE_ALPHA_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
 } VkDisplayPlaneAlphaFlagBitsKHR;
 typedef VkFlags VkDisplayPlaneAlphaFlagsKHR;
 typedef VkFlags VkDisplayModeCreateFlagsKHR;
@@ -3392,7 +3432,7 @@ typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceDisplayPropertiesKHR)(VkPhys
 typedef VkResult (VKAPI_PTR *PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR)(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPlanePropertiesKHR* pProperties);
 typedef VkResult (VKAPI_PTR *PFN_vkGetDisplayPlaneSupportedDisplaysKHR)(VkPhysicalDevice physicalDevice, uint32_t planeIndex, uint32_t* pDisplayCount, VkDisplayKHR* pDisplays);
 typedef VkResult (VKAPI_PTR *PFN_vkGetDisplayModePropertiesKHR)(VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32_t* pPropertyCount, VkDisplayModePropertiesKHR* pProperties);
-typedef VkResult (VKAPI_PTR *PFN_vkCreateDisplayModeKHR)(VkPhysicalDevice physicalDevice, VkDisplayKHR display, const VkDisplayModeCreateInfoKHR*pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDisplayModeKHR* pMode);
+typedef VkResult (VKAPI_PTR *PFN_vkCreateDisplayModeKHR)(VkPhysicalDevice physicalDevice, VkDisplayKHR display, const VkDisplayModeCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDisplayModeKHR* pMode);
 typedef VkResult (VKAPI_PTR *PFN_vkGetDisplayPlaneCapabilitiesKHR)(VkPhysicalDevice physicalDevice, VkDisplayModeKHR mode, uint32_t planeIndex, VkDisplayPlaneCapabilitiesKHR* pCapabilities);
 typedef VkResult (VKAPI_PTR *PFN_vkCreateDisplayPlaneSurfaceKHR)(VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 
@@ -3675,7 +3715,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceWin32PresentationSupportKHR(
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
 
-#define VK_EXT_DEBUG_REPORT_SPEC_VERSION  2
+#define VK_EXT_DEBUG_REPORT_SPEC_VERSION  3
 #define VK_EXT_DEBUG_REPORT_EXTENSION_NAME "VK_EXT_debug_report"
 #define VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT
 
@@ -3710,11 +3750,19 @@ typedef enum VkDebugReportObjectTypeEXT {
     VK_DEBUG_REPORT_OBJECT_TYPE_SURFACE_KHR_EXT = 26,
     VK_DEBUG_REPORT_OBJECT_TYPE_SWAPCHAIN_KHR_EXT = 27,
     VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_EXT = 28,
+    VK_DEBUG_REPORT_OBJECT_TYPE_BEGIN_RANGE_EXT = VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT,
+    VK_DEBUG_REPORT_OBJECT_TYPE_END_RANGE_EXT = VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_EXT,
+    VK_DEBUG_REPORT_OBJECT_TYPE_RANGE_SIZE_EXT = (VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_EXT - VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT + 1),
+    VK_DEBUG_REPORT_OBJECT_TYPE_MAX_ENUM_EXT = 0x7FFFFFFF
 } VkDebugReportObjectTypeEXT;
 
 typedef enum VkDebugReportErrorEXT {
     VK_DEBUG_REPORT_ERROR_NONE_EXT = 0,
     VK_DEBUG_REPORT_ERROR_CALLBACK_REF_EXT = 1,
+    VK_DEBUG_REPORT_ERROR_BEGIN_RANGE_EXT = VK_DEBUG_REPORT_ERROR_NONE_EXT,
+    VK_DEBUG_REPORT_ERROR_END_RANGE_EXT = VK_DEBUG_REPORT_ERROR_CALLBACK_REF_EXT,
+    VK_DEBUG_REPORT_ERROR_RANGE_SIZE_EXT = (VK_DEBUG_REPORT_ERROR_CALLBACK_REF_EXT - VK_DEBUG_REPORT_ERROR_NONE_EXT + 1),
+    VK_DEBUG_REPORT_ERROR_MAX_ENUM_EXT = 0x7FFFFFFF
 } VkDebugReportErrorEXT;
 
 
@@ -3724,6 +3772,7 @@ typedef enum VkDebugReportFlagBitsEXT {
     VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT = 0x00000004,
     VK_DEBUG_REPORT_ERROR_BIT_EXT = 0x00000008,
     VK_DEBUG_REPORT_DEBUG_BIT_EXT = 0x00000010,
+    VK_DEBUG_REPORT_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
 } VkDebugReportFlagBitsEXT;
 typedef VkFlags VkDebugReportFlagsEXT;
 
@@ -3773,6 +3822,110 @@ VKAPI_ATTR void VKAPI_CALL vkDebugReportMessageEXT(
     const char*                                 pLayerPrefix,
     const char*                                 pMessage);
 #endif
+
+#define VK_NV_glsl_shader 1
+#define VK_NV_GLSL_SHADER_SPEC_VERSION    1
+#define VK_NV_GLSL_SHADER_EXTENSION_NAME  "VK_NV_glsl_shader"
+
+
+#define VK_IMG_filter_cubic 1
+#define VK_IMG_FILTER_CUBIC_SPEC_VERSION  1
+#define VK_IMG_FILTER_CUBIC_EXTENSION_NAME "VK_IMG_filter_cubic"
+
+
+#define VK_AMD_rasterization_order 1
+#define VK_AMD_RASTERIZATION_ORDER_SPEC_VERSION 1
+#define VK_AMD_RASTERIZATION_ORDER_EXTENSION_NAME "VK_AMD_rasterization_order"
+
+
+typedef enum VkRasterizationOrderAMD {
+    VK_RASTERIZATION_ORDER_STRICT_AMD = 0,
+    VK_RASTERIZATION_ORDER_RELAXED_AMD = 1,
+    VK_RASTERIZATION_ORDER_BEGIN_RANGE_AMD = VK_RASTERIZATION_ORDER_STRICT_AMD,
+    VK_RASTERIZATION_ORDER_END_RANGE_AMD = VK_RASTERIZATION_ORDER_RELAXED_AMD,
+    VK_RASTERIZATION_ORDER_RANGE_SIZE_AMD = (VK_RASTERIZATION_ORDER_RELAXED_AMD - VK_RASTERIZATION_ORDER_STRICT_AMD + 1),
+    VK_RASTERIZATION_ORDER_MAX_ENUM_AMD = 0x7FFFFFFF
+} VkRasterizationOrderAMD;
+
+typedef struct VkPipelineRasterizationStateRasterizationOrderAMD {
+    VkStructureType            sType;
+    const void*                pNext;
+    VkRasterizationOrderAMD    rasterizationOrder;
+} VkPipelineRasterizationStateRasterizationOrderAMD;
+
+
+
+#define VK_AMD_shader_trinary_minmax 1
+#define VK_AMD_SHADER_TRINARY_MINMAX_SPEC_VERSION 1
+#define VK_AMD_SHADER_TRINARY_MINMAX_EXTENSION_NAME "VK_AMD_shader_trinary_minmax"
+
+
+#define VK_AMD_shader_explicit_vertex_parameter 1
+#define VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_SPEC_VERSION 1
+#define VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_EXTENSION_NAME "VK_AMD_shader_explicit_vertex_parameter"
+
+
+#define VK_EXT_debug_marker 1
+#define VK_EXT_DEBUG_MARKER_SPEC_VERSION  3
+#define VK_EXT_DEBUG_MARKER_EXTENSION_NAME "VK_EXT_debug_marker"
+
+typedef struct VkDebugMarkerObjectNameInfoEXT {
+    VkStructureType               sType;
+    const void*                   pNext;
+    VkDebugReportObjectTypeEXT    objectType;
+    uint64_t                      object;
+    const char*                   pObjectName;
+} VkDebugMarkerObjectNameInfoEXT;
+
+typedef struct VkDebugMarkerObjectTagInfoEXT {
+    VkStructureType               sType;
+    const void*                   pNext;
+    VkDebugReportObjectTypeEXT    objectType;
+    uint64_t                      object;
+    uint64_t                      tagName;
+    size_t                        tagSize;
+    const void*                   pTag;
+} VkDebugMarkerObjectTagInfoEXT;
+
+typedef struct VkDebugMarkerMarkerInfoEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+    const char*        pMarkerName;
+    float              color[4];
+} VkDebugMarkerMarkerInfoEXT;
+
+
+typedef VkResult (VKAPI_PTR *PFN_vkDebugMarkerSetObjectTagEXT)(VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo);
+typedef VkResult (VKAPI_PTR *PFN_vkDebugMarkerSetObjectNameEXT)(VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdDebugMarkerBeginEXT)(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdDebugMarkerEndEXT)(VkCommandBuffer commandBuffer);
+typedef void (VKAPI_PTR *PFN_vkCmdDebugMarkerInsertEXT)(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkDebugMarkerSetObjectTagEXT(
+    VkDevice                                    device,
+    VkDebugMarkerObjectTagInfoEXT*              pTagInfo);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkDebugMarkerSetObjectNameEXT(
+    VkDevice                                    device,
+    VkDebugMarkerObjectNameInfoEXT*             pNameInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdDebugMarkerBeginEXT(
+    VkCommandBuffer                             commandBuffer,
+    VkDebugMarkerMarkerInfoEXT*                 pMarkerInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdDebugMarkerEndEXT(
+    VkCommandBuffer                             commandBuffer);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdDebugMarkerInsertEXT(
+    VkCommandBuffer                             commandBuffer,
+    VkDebugMarkerMarkerInfoEXT*                 pMarkerInfo);
+#endif
+
+#define VK_AMD_gcn_shader 1
+#define VK_AMD_GCN_SHADER_SPEC_VERSION    1
+#define VK_AMD_GCN_SHADER_EXTENSION_NAME  "VK_AMD_gcn_shader"
+
 
 #ifdef __cplusplus
 }

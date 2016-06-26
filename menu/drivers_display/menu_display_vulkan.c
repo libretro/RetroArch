@@ -207,7 +207,6 @@ static void menu_display_vk_draw(void *data)
    }
 }
 
-
 static void menu_display_vk_restore_clear_color(void)
 {
 }
@@ -232,7 +231,7 @@ static void menu_display_vk_clear_color(menu_display_ctx_clearcolor_t *clearcolo
    rect.rect.extent.height = vk->context->swapchain_height;
    rect.layerCount         = 1;
 
-   VKFUNC(vkCmdClearAttachments)(vk->cmd, 1, &attachment, 1, &rect);
+   vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
 }
 
 static void menu_display_vk_blend_begin(void)

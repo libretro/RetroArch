@@ -44,7 +44,7 @@ else
 endif
 
 CFLAGS += -std=gnu99
-OBJECTS := libretro-test.o
+OBJECTS := libretro-test.o ../../libretro-common/vulkan/vulkan_symbol_wrapper.o
 CFLAGS += -Wall -pedantic $(fpic)
 
 all: $(TARGET)
