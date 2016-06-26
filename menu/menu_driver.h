@@ -421,8 +421,6 @@ extern unsigned int rdb_entry_start_game_selection_ptr;
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
-void menu_driver_toggle_binds(bool latch);
-
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;

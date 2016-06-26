@@ -206,26 +206,6 @@ static void menu_input_key_event(bool down, unsigned keycode,
       menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
 }
 
-void menu_driver_toggle_binds(bool latch)
-{
-#if 0
-   settings_t *settings = config_get_ptr();
-   if (!settings)
-      return;
-
-   if (latch)
-   {
-      memcpy(settings->input.binds[0], retro_keybinds_menu,
-            sizeof(retro_keybinds_1));
-   }
-   else
-   {
-      memcpy(settings->input.binds[0], retro_keybinds_1,
-            sizeof(retro_keybinds_1));
-   }
-#endif
-}
-
 static void menu_driver_toggle(bool latch)
 {
    retro_keyboard_event_t *key_event          = NULL;
@@ -265,8 +245,6 @@ static void menu_driver_toggle(bool latch)
 
          runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
       }
-
-      menu_driver_toggle_binds(true);
    }
    else
    {
@@ -282,8 +260,6 @@ static void menu_driver_toggle(bool latch)
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
          *key_event = *frontend_key_event;
-       
-      menu_driver_toggle_binds(false);
    }
 }
 
