@@ -1,0 +1,18 @@
+#version 310 es
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(rgba8, set = 0, binding = 0) uniform writeonly mediump image2D uImage;
+
+layout(push_constant, std430) uniform PushConstants
+{
+   vec2 inv_resolution;
+   float frame;
+   float dummy;
+} constants;
+
+void main()
+{
+   vec2 uv = (vec2(gl_GlobalInvocationID.xy) + 0.5) * constants.inv_resolution;
+   vec4 color = vec4(sin(uv.x * 50.0 + constants.frame * 0.1) + 0.5, cos(uv.y * 55.0 + constants.frame * 0.2), 0.2, 1.0);
+   imageStore(uImage, ivec2(gl_GlobalInvocationID.xy), color);
+}
