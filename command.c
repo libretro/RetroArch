@@ -1791,7 +1791,11 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          }
          break;
-
+      case CMD_EVENT_LOAD_CORE:
+         command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+#ifndef HAVE_DYNAMIC
+         // command_event(CMD_EVENT_QUIT, NULL);
+#endif
          break;
       case CMD_EVENT_LOAD_STATE:
          /* Immutable - disallow savestate load when
