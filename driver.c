@@ -222,13 +222,13 @@ static void driver_adjust_system_rates(void)
  **/
 static void driver_set_nonblock_state(void)
 {
-   settings_t        *settings = config_get_ptr();
    bool                 enable = input_driver_is_nonblock_state();
 
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_is_active() && video_driver_get_ptr(false))
    {
-      bool video_nonblock = enable;
+      settings_t *settings = config_get_ptr();
+      bool video_nonblock  = enable;
 
       if (     !settings->video.vsync 
             || runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
