@@ -296,6 +296,7 @@ enum
 
    get_ios_version(&major, &minor);
     
+#if __IPHONE_OS_VERSION_MAX_ALLOWED < 70000
    if ((major < 7) && [event respondsToSelector:@selector(_gsEvent)])
    {
       /* Keyboard event hack for iOS versions prior to iOS 7.
@@ -315,6 +316,7 @@ enum
             break;
       }
    }
+#endif
 }
 
 @end
