@@ -727,6 +727,7 @@ ifneq ($(C90_BUILD), 1)
 ifneq ($(HAVE_GLES), 1)
    OBJ += cores/libretro-ffmpeg/fft/fft.o
    DEFINES += -Ideps -DHAVE_GL_FFT
+	NEED_CXX_LINKER=1
 endif
 endif
 endif

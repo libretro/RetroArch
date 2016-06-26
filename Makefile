@@ -1,4 +1,5 @@
 HAVE_FILE_LOGGER=1
+NEED_CXX_LINKER=0
 MISSING_DECLS   =0
 
 ifneq ($(C90_BUILD),)
@@ -71,7 +72,9 @@ ifeq ($(CXX_BUILD), 1)
 	CFLAGS   += -DCXX_BUILD
 	CXXFLAGS += -DCXX_BUILD
 else
-   ifeq ($(findstring Win32,$(OS)),)
+	ifeq ($(NEED_CXX_LINKER),1)
+	   LINK = $(CXX)
+	else ifeq ($(findstring Win32,$(OS)),)
       LINK = $(CC)
    else
       # directx-related code is c++
