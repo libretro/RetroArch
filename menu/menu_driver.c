@@ -245,7 +245,9 @@ static void menu_driver_toggle(bool latch)
 
          runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
       }
-      memcpy(settings->input.binds[0], retro_keybinds_menu,
+       
+      if (settings)
+         memcpy(settings->input.binds[0], retro_keybinds_menu,
             sizeof(retro_keybinds_1));
    }
    else
@@ -262,7 +264,9 @@ static void menu_driver_toggle(bool latch)
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
          *key_event = *frontend_key_event;
-      memcpy(settings->input.binds[0], retro_keybinds_1,
+       
+      if (settings)
+         memcpy(settings->input.binds[0], retro_keybinds_1,
             sizeof(retro_keybinds_1));
    }
 }
