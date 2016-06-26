@@ -271,7 +271,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    static struct retro_system_info menu_driver_system;
    static bool menu_driver_pending_quick_menu      = false;
-   static bool menu_driver_pending_action          = false;
    static bool menu_driver_prevent_populate        = false;
    static bool menu_driver_load_no_content         = false;
    static bool menu_driver_alive                   = false;
@@ -287,17 +286,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
    switch (state)
    {
-      case RARCH_MENU_CTL_IS_PENDING_ACTION:
-         if (!menu_driver_pending_action)
-            return false;
-         menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_ACTION, NULL);
-         break;
-      case RARCH_MENU_CTL_SET_PENDING_ACTION:
-         menu_driver_pending_action = true;
-         break;
-      case RARCH_MENU_CTL_UNSET_PENDING_ACTION:
-         menu_driver_pending_action = false;
-         break;
       case RARCH_MENU_CTL_DRIVER_DATA_GET:
          {
             menu_handle_t **driver_data = (menu_handle_t**)data;
@@ -332,7 +320,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_DESTROY:
          menu_driver_pending_quick_menu = false;
-         menu_driver_pending_action     = false;
          menu_driver_pending_quit       = false;
          menu_driver_pending_shutdown   = false;
          menu_driver_prevent_populate   = false;
@@ -858,11 +845,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!menu_driver_ctx || !menu_driver_ctx->iterate)
                return false;
              
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_ACTION, &retcode))
-            {
-                iterate->action = pending_iter.action;
-                pending_iter.action = MENU_ACTION_NOOP;
-            }
             if (menu_driver_ctx->iterate(menu_driver_data,
                      menu_userdata, iterate->action) == -1)
                return false;
