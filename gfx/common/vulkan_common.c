@@ -1383,7 +1383,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    VkPhysicalDeviceFeatures features  = { false };
    VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
    VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
-   VkQueueFamilyProperties queue_properties[32];
    uint32_t queue_count;
    VkResult res;
    unsigned i;
@@ -1396,101 +1395,176 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    static const char *device_layers[] = { "VK_LAYER_LUNARG_standard_validation" };
 #endif
 
-   if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
-            &gpu_count, NULL) != VK_SUCCESS)
+   struct retro_hw_render_context_negotiation_interface_vulkan *iface =
+      (struct retro_hw_render_context_negotiation_interface_vulkan*)video_driver_get_context_negotiation_interface();
+
+   if (iface && iface->interface_type != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
    {
-      RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
-      return false;
+      RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong API.\n");
+      iface = NULL;
    }
 
-   gpus = (VkPhysicalDevice*)calloc(gpu_count, sizeof(*gpus));
-   if (!gpus)
+   if (iface && iface->interface_version != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION)
    {
-      RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
-      return false;
+      RARCH_WARN("[Vulkan]: Got HW context negotiation interface, but it's the wrong interface version.\n");
+      iface = NULL;
    }
 
-   if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
-            &gpu_count, gpus) != VK_SUCCESS)
+   if (!cached_device && iface && iface->create_device)
    {
-      RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
-      return false;
+      struct retro_vulkan_context context = { 0 };
+      const VkPhysicalDeviceFeatures features = { 0 };
+
+      bool ret = iface->create_device(&context, vk->context.instance,
+            vk->vk_surface,
+            VKFUNC(vkGetInstanceProcAddr),
+            device_extensions,
+            ARRAY_SIZE(device_extensions),
+#ifdef VULKAN_DEBUG
+            device_layers,
+            ARRAY_SIZE(device_layers),
+#else
+            NULL,
+            0,
+#endif
+            &features);
+
+      if (!ret)
+      {
+         RARCH_WARN("[Vulkan]: Failed to create device with negotiation interface. Falling back to default path.\n");
+      }
+      else
+      {
+         vk->context.destroy_device = iface->destroy_device;
+
+         vk->context.device = context.device;
+         vk->context.queue = context.queue;
+         vk->context.gpu = context.gpu;
+         vk->context.graphics_queue_index = context.queue_family_index;
+
+         if (context.presentation_queue != context.queue)
+         {
+            RARCH_ERR("[Vulkan]: Present queue != graphics queue. This is currently not supported.\n");
+            return false;
+         }
+      }
    }
 
-   if (gpu_count < 1)
+   if (vk->context.gpu == VK_NULL_HANDLE)
    {
-      RARCH_ERR("[Vulkan]: Failed to enumerate Vulkan physical device.\n");
+      if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
+               &gpu_count, NULL) != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
+         return false;
+      }
+
+      gpus = (VkPhysicalDevice*)calloc(gpu_count, sizeof(*gpus));
+      if (!gpus)
+      {
+         RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
+         return false;
+      }
+
+      if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
+               &gpu_count, gpus) != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
+         return false;
+      }
+
+      if (gpu_count < 1)
+      {
+         RARCH_ERR("[Vulkan]: Failed to enumerate Vulkan physical device.\n");
+         free(gpus);
+         return false;
+      }
+
+      vk->context.gpu = gpus[0];
       free(gpus);
-      return false;
    }
-
-   vk->context.gpu = gpus[0];
-   free(gpus);
 
    VKFUNC(vkGetPhysicalDeviceProperties)(vk->context.gpu,
          &vk->context.gpu_properties);
    VKFUNC(vkGetPhysicalDeviceMemoryProperties)(vk->context.gpu,
          &vk->context.memory_properties);
-   VKFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(vk->context.gpu,
-         &queue_count, NULL);
 
-   if (queue_count < 1 || queue_count > 32)
+   if (vk->context.device == VK_NULL_HANDLE)
    {
-      RARCH_ERR("[Vulkan]: Invalid number of queues detected.\n");
-      return false;
-   }
+      VkQueueFamilyProperties *queue_properties = NULL;
+      VKFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(vk->context.gpu,
+            &queue_count, NULL);
 
-   VKFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(vk->context.gpu,
-         &queue_count, queue_properties);
-
-   for (i = 0; i < queue_count; i++)
-   {
-      VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
-      if ((queue_properties[i].queueFlags & required) == required)
+      if (queue_count < 1)
       {
-         vk->context.graphics_queue_index = i;
-         RARCH_LOG("[Vulkan]: Device supports %u sub-queues.\n",
-               queue_properties[i].queueCount);
-         found_queue = true;
-         break;
+         RARCH_ERR("[Vulkan]: Invalid number of queues detected.\n");
+         return false;
       }
-   }
 
-   if (!found_queue)
-   {
-      RARCH_ERR("[Vulkan]: Did not find suitable graphics queue.\n");
-      return false;
-   }
+      queue_properties = (VkQueueFamilyProperties*)malloc(queue_count * sizeof(*queue_properties));
+      if (!queue_properties)
+         return false;
 
-   use_device_ext = vulkan_find_device_extensions(vk->context.gpu, device_extensions, ARRAY_SIZE(device_extensions));
+      VKFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(vk->context.gpu,
+            &queue_count, queue_properties);
 
-   queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
-   queue_info.queueCount               = 1;
-   queue_info.pQueuePriorities         = &one;
+      for (i = 0; i < queue_count; i++)
+      {
+         VkBool32 supported = VK_FALSE;
+         VKFUNC(vkGetPhysicalDeviceSurfaceSupportKHR)(
+               vk->context.gpu, vk->context.graphics_queue_index,
+               vk->vk_surface, &supported);
 
-   device_info.queueCreateInfoCount    = 1;
-   device_info.pQueueCreateInfos       = &queue_info;
-   device_info.enabledExtensionCount   = use_device_ext ? ARRAY_SIZE(device_extensions) : 0;
-   device_info.ppEnabledExtensionNames = use_device_ext ? device_extensions : NULL;
-   device_info.pEnabledFeatures        = &features;
+         VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+         if (supported && ((queue_properties[i].queueFlags & required) == required))
+         {
+            vk->context.graphics_queue_index = i;
+            RARCH_LOG("[Vulkan]: Queue family %u supports %u sub-queues.\n",
+                  i, queue_properties[i].queueCount);
+            found_queue = true;
+            break;
+         }
+      }
+
+      free(queue_properties);
+
+      if (!found_queue)
+      {
+         RARCH_ERR("[Vulkan]: Did not find suitable graphics queue.\n");
+         return false;
+      }
+
+      use_device_ext = vulkan_find_device_extensions(vk->context.gpu,
+            device_extensions, ARRAY_SIZE(device_extensions));
+
+      queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
+      queue_info.queueCount               = 1;
+      queue_info.pQueuePriorities         = &one;
+
+      device_info.queueCreateInfoCount    = 1;
+      device_info.pQueueCreateInfos       = &queue_info;
+      device_info.enabledExtensionCount   = use_device_ext ? ARRAY_SIZE(device_extensions) : 0;
+      device_info.ppEnabledExtensionNames = use_device_ext ? device_extensions : NULL;
+      device_info.pEnabledFeatures        = &features;
 #ifdef VULKAN_DEBUG
-   device_info.enabledLayerCount       = ARRAY_SIZE(device_layers);
-   device_info.ppEnabledLayerNames     = device_layers;
+      device_info.enabledLayerCount       = ARRAY_SIZE(device_layers);
+      device_info.ppEnabledLayerNames     = device_layers;
 #endif
 
-   if (cached_device)
-   {
-      vk->context.device = cached_device;
-      cached_device      = NULL;
+      if (cached_device)
+      {
+         vk->context.device = cached_device;
+         cached_device      = NULL;
 
-      video_driver_set_video_cache_context_ack();
-      RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
-   }
-   else if (VKFUNC(vkCreateDevice)(vk->context.gpu, &device_info,
-            NULL, &vk->context.device) != VK_SUCCESS)
-   {
-      RARCH_ERR("[Vulkan]: Failed to create device.\n");
-      return false;
+         video_driver_set_video_cache_context_ack();
+         RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
+      }
+      else if (VKFUNC(vkCreateDevice)(vk->context.gpu, &device_info,
+               NULL, &vk->context.device) != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan]: Failed to create device.\n");
+         return false;
+      }
    }
 
    if (!vulkan_load_device_symbols(vk))
@@ -1499,8 +1573,11 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
-   VKFUNC(vkGetDeviceQueue)(vk->context.device,
-         vk->context.graphics_queue_index, 0, &vk->context.queue);
+   if (vk->context.queue == VK_NULL_HANDLE)
+   {
+      VKFUNC(vkGetDeviceQueue)(vk->context.device,
+            vk->context.graphics_queue_index, 0, &vk->context.queue);
+   }
 
 #ifdef HAVE_THREADS
    vk->context.queue_lock = slock_new();
@@ -1896,7 +1973,12 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       if (vk->context.device)
          VKFUNC(vkDestroyDevice)(vk->context.device, NULL);
       if (vk->context.instance)
+      {
+         if (vk->context.destroy_device)
+            vk->context.destroy_device();
+
          VKFUNC(vkDestroyInstance)(vk->context.instance, NULL);
+      }
    }
 
    if (vulkan_library)
@@ -1967,7 +2049,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSurfaceTransformFlagBitsKHR pre_transform;
-   VkBool32 supported;
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    settings_t *settings = config_get_ptr();
 
@@ -2085,15 +2166,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.oldSwapchain           = old_swapchain;
    info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
       | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-
-   if (VKFUNC(vkGetPhysicalDeviceSurfaceSupportKHR)(
-            vk->context.gpu, vk->context.graphics_queue_index,
-            vk->vk_surface, &supported) != VK_SUCCESS || !supported)
-   {
-      RARCH_ERR("[Vulkan]: GPU does not supported presentation on queue family %u with surface 0x%llx.\n",
-            vk->context.graphics_queue_index, (unsigned long long)vk->vk_surface);
-      return false;
-   }
 
    if (VKFUNC(vkCreateSwapchainKHR)(vk->context.device, &info, NULL, &vk->swapchain) != VK_SUCCESS)
    {

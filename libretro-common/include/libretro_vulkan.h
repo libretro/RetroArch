@@ -74,7 +74,7 @@ typedef bool (*retro_vulkan_create_device_t)(
       unsigned num_required_device_layers,
       const VkPhysicalDeviceFeatures *required_features);
 
-typedef void (*retro_vulkan_destroy_handle_t)(void *data);
+typedef void (*retro_vulkan_destroy_device_t)(void);
 
 /* Note on thread safety:
  * The Vulkan API is heavily designed around multi-threading, and
@@ -108,9 +108,24 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     *
     * The core is free to set its own queue priorities.
     * Device provided to frontend is owned by the frontend, but any additional device resources must be freed by core
-    * in either destroy_context callback or retro_unload_game().
+    * in destroy_device callback.
+    *
+    * If this function returns true, a PhysicalDevice, Device and Queues are initialized.
+    * If false, none of the above have been initialized and the frontend will attempt
+    * to fallback to "default" device creation, as if this function was never called.
     */
    retro_vulkan_create_device_t create_device;
+
+   /* If non-NULL, this callback is called similar to context_destroy for HW_RENDER_INTERFACE.
+    * However, it will be called even if context_reset was not called.
+    * This can happen if the context never succeeds in being created.
+    * destroy_device will always be called before the VkInstance
+    * of the frontend is destroyed if create_device was called successfully so that the core has a chance of
+    * tearing down its own device resources.
+    *
+    * Only auxillary resources should be freed here, i.e. resources which are not part of retro_vulkan_context.
+    */
+   retro_vulkan_destroy_device_t destroy_device;
 };
 
 struct retro_hw_render_interface_vulkan
