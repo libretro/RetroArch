@@ -208,6 +208,7 @@ static void menu_input_key_event(bool down, unsigned keycode,
 
 void menu_driver_toggle_binds(bool latch)
 {
+#if 0
    settings_t *settings = config_get_ptr();
    if (!settings)
       return;
@@ -222,6 +223,7 @@ void menu_driver_toggle_binds(bool latch)
       memcpy(settings->input.binds[0], retro_keybinds_1,
             sizeof(retro_keybinds_1));
    }
+#endif
 }
 
 static void menu_driver_toggle(bool latch)
