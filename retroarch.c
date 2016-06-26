@@ -1311,9 +1311,6 @@ bool retroarch_main_init(int argc, char *argv[])
          char *fullpath    = NULL;
          if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
          {
-#if defined(HAVE_FFMPEG) || defined(HAVE_IMAGEVIEWER)
-            global_t *global  = global_get_ptr();
-#endif
             switch (retroarch_path_is_media_type(fullpath))
             {
                case RARCH_CONTENT_MOVIE:
@@ -1321,6 +1318,7 @@ bool retroarch_main_init(int argc, char *argv[])
                   if (settings->multimedia.builtin_mediaplayer_enable)
                   {
 #ifdef HAVE_FFMPEG
+                     global_t *global  = global_get_ptr();
                      global->has_set.libretro  = false;
                      retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
 #endif
@@ -1330,6 +1328,7 @@ bool retroarch_main_init(int argc, char *argv[])
                case RARCH_CONTENT_IMAGE:
                   if (settings->multimedia.builtin_imageviewer_enable)
                   {
+                     global_t *global  = global_get_ptr();
                      global->has_set.libretro  = false;
                      retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
                   }
