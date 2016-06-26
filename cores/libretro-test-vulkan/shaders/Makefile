@@ -1,23 +1,19 @@
 VERT_SHADERS := $(wildcard *.vert)
 FRAG_SHADERS := $(wildcard *.frag)
-SPIRV := $(VERT_SHADERS:.vert=.vert.spv) $(FRAG_SHADERS:.frag=.frag.spv)
-INCLUDES := $(SPIRV:.spv=.inc)
+SPIRV := $(VERT_SHADERS:.vert=.vert.inc) $(FRAG_SHADERS:.frag=.frag.inc)
 
-GLSLANG := glslangValidator
+GLSLANG := glslc
+GLSLFLAGS := -mfmt=c
 
-all: $(INCLUDES)
+all: $(SPIRV)
 
-%.frag.spv: %.frag
-	$(GLSLANG) -V -o $@ $<
+%.frag.inc: %.frag
+	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
 
-%.vert.spv: %.vert
-	$(GLSLANG) -V -o $@ $<
-
-%.inc: %.spv
-	xxd -i $< $@
+%.vert.inc: %.vert
+	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
 
 clean:
-	rm -f $(INCLUDES)
 	rm -f $(SPIRV)
 
 .PHONY: clean

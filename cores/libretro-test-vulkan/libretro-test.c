@@ -5,8 +5,6 @@
 #include <math.h>
 
 #include <libretro_vulkan.h>
-#include "shaders/triangle.vert.inc"
-#include "shaders/triangle.frag.inc"
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 static struct retro_hw_render_callback hw_render;
@@ -607,12 +605,12 @@ static void init_uniform_buffer(void)
    }
 }
 
-static VkShaderModule create_shader_module(const uint8_t *data, size_t size)
+static VkShaderModule create_shader_module(const uint32_t *data, size_t size)
 {
    VkShaderModuleCreateInfo module_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
    VkShaderModule module;
    module_info.codeSize = size;
-   module_info.pCode = (const uint32_t*)data;
+   module_info.pCode = data;
    VKFUNC(vkCreateShaderModule)(vulkan->device, &module_info, NULL, &module);
    return module;
 }
@@ -745,11 +743,19 @@ static void init_pipeline(void)
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
    };
 
+   static const uint32_t triangle_vert[] =
+#include "shaders/triangle.vert.inc"
+      ;
+
+   static const uint32_t triangle_frag[] =
+#include "shaders/triangle.frag.inc"
+      ;
+
    shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-   shader_stages[0].module = create_shader_module(triangle_vert_spv, triangle_vert_spv_len);
+   shader_stages[0].module = create_shader_module(triangle_vert, sizeof(triangle_vert));
    shader_stages[0].pName = "main";
    shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-   shader_stages[1].module = create_shader_module(triangle_frag_spv, triangle_frag_spv_len);
+   shader_stages[1].module = create_shader_module(triangle_frag, sizeof(triangle_frag));
    shader_stages[1].pName = "main";
 
    VkGraphicsPipelineCreateInfo pipe = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
