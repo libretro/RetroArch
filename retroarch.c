@@ -1177,7 +1177,9 @@ static void retroarch_init_savefile_paths(void)
       /* Infer .rtc save path from save ram path. */
       attr.i = RETRO_MEMORY_RTC;
       fill_pathname(savefile_name_rtc,
-            global->name.savefile, ".rtc", sizeof(savefile_name_rtc));
+            global->name.savefile,
+            file_path_str(FILE_PATH_RTC_EXTENSION),
+            sizeof(savefile_name_rtc));
       string_list_append(global->savefiles, savefile_name_rtc, attr);
    }
 }

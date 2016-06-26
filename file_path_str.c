@@ -19,6 +19,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
 {
    switch (enum_idx)
    {
+      case FILE_PATH_RTC_EXTENSION:
+         return ".rtc";
       case FILE_PATH_CHT_EXTENSION:
          return ".cht";
       case FILE_PATH_SRM_EXTENSION:
