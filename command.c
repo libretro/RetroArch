@@ -846,7 +846,9 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 
    if (control->set_eject_state(new_state))
       snprintf(msg, sizeof(msg), "%s %s",
-            new_state ? "Ejected" : "Closed",
+            new_state ? 
+            msg_hash_to_str(MSG_DISK_EJECTED) : 
+            msg_hash_to_str(MSG_DISK_CLOSED),
             msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
    else
    {
@@ -969,7 +971,7 @@ static bool command_event_disk_control_append_image(const char *path)
    command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 
    /* TODO: Need to figure out what to do with subsystems case. */
-   if (!*global->subsystem)
+   if (string_is_empty(global->subsystem))
    {
       /* Update paths for our new image.
        * If we actually use append_image, we assume that we
@@ -1460,9 +1462,13 @@ static bool command_event_save_core_config(void)
          fill_pathname_join(config_path, config_dir, config_name,
                sizeof(config_path));
          if (i)
-            snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
+            snprintf(tmp, sizeof(tmp), "-%u%s",
+                  i,
+                  file_path_str(FILE_PATH_CONFIG_EXTENSION));
          else
-            strlcpy(tmp, ".cfg", sizeof(tmp));
+            strlcpy(tmp,
+                  file_path_str(FILE_PATH_CONFIG_EXTENSION),
+                  sizeof(tmp));
 
          strlcat(config_path, tmp, sizeof(config_path));
          if (!path_file_exists(config_path))
@@ -1477,7 +1483,9 @@ static bool command_event_save_core_config(void)
    if (!found_path)
    {
       RARCH_WARN("Cannot infer new config path. Use current time.\n");
-      fill_dated_filename(config_name, "cfg", sizeof(config_name));
+      fill_dated_filename(config_name,
+            file_path_str(FILE_PATH_CONFIG_EXTENSION),
+            sizeof(config_name));
       fill_pathname_join(config_path, config_dir, config_name,
             sizeof(config_path));
    }
@@ -1774,7 +1782,7 @@ bool command_event(enum event_command cmd, void *data)
                core_info_ctx_find_t info_find;
 
 #if defined(HAVE_DYNAMIC)
-               if (!(*settings->path.libretro))
+               if (string_is_empty(settings->path.libretro))
                   return false;
 
                libretro_get_system_info(
