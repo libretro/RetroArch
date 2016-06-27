@@ -469,7 +469,13 @@ VkBool32 vulkan_symbol_wrapper_load_core_device_symbols(VkDevice device)
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdEndQuery", vkCmdEndQuery)) return VK_FALSE;
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdResetQueryPool", vkCmdResetQueryPool)) return VK_FALSE;
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdWriteTimestamp", vkCmdWriteTimestamp)) return VK_FALSE;
-    if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdCopyQueryPoolResults", vkCmdCopyQueryPoolResults)) return VK_FALSE;
+    if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdCopyQueryPoolResults", vkCmdCopyQueryPoolResults))
+    {
+#if 0
+       /* Don't return false here. Would cause MESA Intel Ivy Bridge drivers to not work at all. */
+       return VK_FALSE;
+#endif
+    }
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdPushConstants", vkCmdPushConstants)) return VK_FALSE;
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBeginRenderPass", vkCmdBeginRenderPass)) return VK_FALSE;
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdNextSubpass", vkCmdNextSubpass)) return VK_FALSE;
