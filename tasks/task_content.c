@@ -1912,9 +1912,6 @@ bool task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-#endif
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          break;
