@@ -305,6 +305,8 @@ static void fft_step(glfft_t *fft,
 
 static inline unsigned log2i(unsigned x)
 {
+   if (x==0) return 0xBAADFOOD; // shouldn't happen
+   
    unsigned res;
    for (res = 0; x; x >>= 1)
       res++;

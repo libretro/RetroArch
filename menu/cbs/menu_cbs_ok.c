@@ -47,21 +47,24 @@ typedef struct
 
 #ifndef BIND_ACTION_OK
 #define BIND_ACTION_OK(cbs, name) \
-   cbs->action_ok = name; \
-   cbs->action_ok_ident = #name;
+   do { \
+      cbs->action_ok = name; \
+      cbs->action_ok_ident = #name; \
+   } while(0)
 #endif
 
 /* FIXME - Global variables, refactor */
-char detect_content_path[PATH_MAX_LENGTH];
-unsigned rdb_entry_start_game_selection_ptr, rpl_entry_selection_ptr;
+static char detect_content_path[PATH_MAX_LENGTH];
+static unsigned rpl_entry_selection_ptr;
+unsigned rdb_entry_start_game_selection_ptr;
 size_t hack_shader_pass = 0;
 
 #ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-char *core_buf;
-size_t core_len;
+static char *core_buf;
+static size_t core_len;
 
 /* defined in menu_cbs_deferred_push */
 static void cb_net_generic(void *task_data, void *user_data, const char *err)
@@ -638,7 +641,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    size_t selection_ptr             = 0;
    playlist_t *playlist             = NULL;
    bool playlist_initialized        = false;
-   bool is_history                  = true;
    const char *entry_path           = NULL;
    const char *entry_label          = NULL;
    const char *core_path            = NULL;
@@ -664,7 +666,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    }
 
    playlist   = tmp_playlist;
-   is_history = false;
 
    selection_ptr = entry_idx;
 
@@ -728,16 +729,6 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    if (!menu_content_load_from_playlist(&playlist_info))
       return menu_cbs_exit();
-
-   if (is_history)
-   {
-      menu_entries_pop_stack(&selection, 0, 1);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
-            &selection);
-
-      generic_action_ok_displaylist_push("",
-            "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
-   }
 
    return menu_cbs_exit();
 }
@@ -3090,7 +3081,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             break;
          case FILE_TYPE_CORE:
-            if (cbs && cbs->enum_idx != MSG_UNKNOWN)
+            if (cbs->enum_idx != MSG_UNKNOWN)
             {
                switch (cbs->enum_idx)
                {
