@@ -670,6 +670,8 @@ endif
 OBJ += gfx/video_context_driver.o \
        gfx/drivers_context/gfx_null_ctx.o \
        gfx/video_state_tracker.o \
+		 libretro-common/gfx/math/vector_2.o \
+		 libretro-common/gfx/math/vector_3.o \
        libretro-common/gfx/math/matrix_4x4.o \
        libretro-common/gfx/math/matrix_3x3.o
 
