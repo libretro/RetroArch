@@ -19,6 +19,12 @@ const char *file_path_str(enum file_path_enum enum_idx)
 {
    switch (enum_idx)
    {
+      case FILE_PATH_PROGRAM_NAME:
+#if defined(IS_SALAMANDER)
+         return "RetroArch Salamander";
+#else
+         return "RetroArch";
+#endif
       case FILE_PATH_CORE_INFO_EXTENSION:
          return ".info";
       case FILE_PATH_RTC_EXTENSION:

@@ -32,22 +32,7 @@
 
 #include <string/stdstring.h>
 
-#if defined(HAVE_FILE_LOGGER)
-#define LOG_FILE (retro_main_log_file())
-#else
-#define LOG_FILE (stderr)
-#endif
-
-#if defined(IS_SALAMANDER)
-#define PROGRAM_NAME "RetroArch Salamander"
-#elif defined(RARCH_INTERNAL)
-#define PROGRAM_NAME "RetroArch"
-#elif defined(MARCH_INTERNAL)
-#define PROGRAM_NAME "MicroArch"
-#else
-#define PROGRAM_NAME "N/A"
-#endif
-
+#include "file_path_special.h"
 #include "verbosity.h"
 
 /* If this is non-NULL. RARCH_LOG and friends 
@@ -128,7 +113,7 @@ static aslclient asl_client;
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[1024], buffer[1024];
    snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
-         PROGRAM_NAME,
+         file_path_str(FILE_PATH_PROGRAM_NAME),
          tag ? tag : "",
          fmt);
    wvsprintf(buffer, msg_new, ap);
@@ -142,11 +127,22 @@ static aslclient asl_client;
       else if (string_is_equal("[ERROR]", tag))
          prio = ANDROID_LOG_ERROR;
    }
-   __android_log_vprint(prio, PROGRAM_NAME, fmt, ap);
+   __android_log_vprint(prio,
+         file_path_str(FILE_PATH_PROGRAM_NAME),
+         fmt,
+         ap);
+#elif defined(HAVE_FILE_LOGGER)
+   fprintf(retro_main_log_file(), "%s %s :: ",
+         file_path_str(FILE_PATH_PROGRAM_NAME),
+         tag ? tag : "[INFO]");
+   vfprintf(retro_main_log_file(), fmt, ap);
+   fflush(retro_main_log_file());
 #else
-   fprintf(LOG_FILE, "%s %s :: ", PROGRAM_NAME, tag ? tag : "[INFO]");
-   vfprintf(LOG_FILE, fmt, ap);
-   fflush(LOG_FILE);
+   fprintf(stderr, "%s %s :: ",
+         file_path_str(FILE_PATH_PROGRAM_NAME),
+         tag ? tag : "[INFO]");
+   vfprintf(stderr, fmt, ap);
+   fflush(stderr);
 #endif
 }
 
