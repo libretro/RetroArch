@@ -126,7 +126,8 @@ static bool command_reply(const char * data, size_t len)
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    if (lastcmd_source == cmd_network)
    {
-      sendto(lastcmd_net_fd, data, len, 0, (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
+      sendto(lastcmd_net_fd, data, len, 0,
+            (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
       return true;
    }
 #endif
