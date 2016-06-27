@@ -254,13 +254,14 @@ static void menu_driver_toggle(bool latch)
       if (settings && settings->menu.pause_libretro)
          command_event(CMD_EVENT_AUDIO_START, NULL);
 
-      /* Prevent stray input from going to libretro core */
-      input_driver_set_flushing_input();
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
          *key_event = *frontend_key_event;
    }
+
+   /* Prevent stray input from going to libretro core */
+   input_driver_set_flushing_input();
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
