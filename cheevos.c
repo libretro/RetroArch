@@ -2331,12 +2331,12 @@ bool cheevos_toggle_hardcore_mode(void)
 
 bool cheevos_test(void)
 {
-   settings_t *settings = config_get_ptr();
    if (!cheevos_locals.loaded)
       return false;
 
    if (!cheats_are_enabled && !cheats_were_enabled)
    {
+      settings_t *settings = config_get_ptr();
       if (!settings->cheevos.enable)
          return false;
 
