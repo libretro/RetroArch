@@ -76,10 +76,13 @@ typedef int ssize_t;
 #endif
 
 #ifdef _WIN32
+#define STRING_REP_INT64 "%I64u"
 #define STRING_REP_ULONG "%Iu"
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
+#define STRING_REP_INT64 "%llu"
 #define STRING_REP_ULONG "%zu"
 #else
+#define STRING_REP_INT64 "%llu"
 #define STRING_REP_ULONG "%lu"
 #endif
 
