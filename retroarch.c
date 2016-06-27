@@ -1658,8 +1658,9 @@ void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_
    {
       current_core_explicitly_set = true;
       explicit_current_core_type  = type;
+      current_core_type           = type;
    }
-   else
+   else if (!current_core_explicitly_set)
       current_core_type          = type;
 }
 
