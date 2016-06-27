@@ -2315,7 +2315,7 @@ loop:
       menu_entries_add_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-            MSG_UNKNOWN,
+            MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
             0, 0, 0);
 
    return 0;
@@ -2484,7 +2484,7 @@ loop:
       menu_entries_add_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-            MSG_UNKNOWN,
+            MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
             0, 0, 0);
 
    return 0;
@@ -4392,8 +4392,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             menu_entries_add_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS),
-                  "",
-                  MSG_UNKNOWN,
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SHADER_PARAMETERS),
+                  MENU_ENUM_LABEL_NO_SHADER_PARAMETERS,
                   0, 0, 0);
             ret = 0;
          }
@@ -4463,7 +4463,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
 #ifdef HAVE_NETWORKING
             char new_label[PATH_MAX_LENGTH] = {0};
-            fill_pathname_join(new_label, settings->network.buildbot_assets_url, "cores", sizeof(new_label));
+            fill_pathname_join(new_label,
+                  settings->network.buildbot_assets_url,
+                  "cores", sizeof(new_label));
             print_buf_lines(info->list, core_buf, new_label,
                   core_len, FILE_TYPE_DOWNLOAD_URL);
             info->need_push    = true;
@@ -4691,14 +4693,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                if (!runloop_ctl(RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
                   menu_entries_add_enum(info->list,
                         msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE), "",
-                        MSG_UNKNOWN,
+                           MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE),
+                        msg_hash_to_str(
+                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE),
+                        MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE,
                         MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0);
                else
                   menu_entries_add_enum(info->list,
                         msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE), "",
-                        MSG_UNKNOWN, 
+                           MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE),
+                        msg_hash_to_str(
+                           MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE),
+                        MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE,
                         MENU_SETTINGS_CORE_OPTION_CREATE, 0, 0);
             }
             if (opts == 0)

@@ -1157,6 +1157,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "system_information_cpu_cores";
       case MENU_ENUM_LABEL_NO_ITEMS:
          return "no_items";
+      case MENU_ENUM_LABEL_NO_SHADER_PARAMETERS:
+         return "no_shader_parameters.";
       case MENU_ENUM_LABEL_SETTINGS_TAB:
          return "settings_tab";
       case MENU_ENUM_LABEL_HISTORY_TAB:
@@ -1575,6 +1577,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "core_specific_config";
       case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
          return "game_specific_options";
+      case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_CREATE:
+         return "game_specific_options_create";
+      case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS_IN_USE:
+         return "game_specific_options_in_use";
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
          return "auto_overrides_enable";
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
