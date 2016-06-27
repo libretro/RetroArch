@@ -516,6 +516,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -594,6 +595,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -643,6 +645,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -721,6 +724,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -795,6 +799,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -841,6 +846,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -919,6 +925,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -986,6 +993,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -1054,6 +1062,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -1131,6 +1140,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
@@ -1180,6 +1190,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_NETPLAY",
+               "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
 					"-DHAVE_NETWORKING",
