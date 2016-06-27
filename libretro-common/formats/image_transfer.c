@@ -84,6 +84,12 @@ void *image_transfer_new(enum image_type_enum type)
 #else
          break;
 #endif
+      case IMAGE_TYPE_TGA:
+#ifdef HAVE_RTGA
+         return rtga_alloc();
+#else
+         break;
+#endif
       case IMAGE_TYPE_BMP:
 #ifdef HAVE_RBMP
          return rbmp_alloc();
