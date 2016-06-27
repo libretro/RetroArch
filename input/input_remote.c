@@ -216,7 +216,6 @@ void input_remote_poll(input_remote_t *handle)
          char buf[8];
          ssize_t ret;
          fd_set fds;
-         struct timeval tmp_tv = {0};
 
          if (handle->net_fd[user] < 0)
             return;
