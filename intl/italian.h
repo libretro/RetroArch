@@ -71,7 +71,7 @@
 #define RETRO_LBL_SLOWMOTION "Rallentatore"
 #define RETRO_LBL_ENABLE_HOTKEY "Abilita Tasti Rapidi"
 #define RETRO_LBL_VOLUME_UP "Aumenta Volume"
-#define RETRO_LBL_VOLUME_DOWN "Abassa Volume"
+#define RETRO_LBL_VOLUME_DOWN "Abbassa Volume"
 #define RETRO_LBL_OVERLAY_NEXT "Overlay Successivo"
 #define RETRO_LBL_DISK_EJECT_TOGGLE "Interruttore Espelli Disco"
 #define RETRO_LBL_DISK_NEXT "Cambia Disco Successivo"
