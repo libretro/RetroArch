@@ -99,7 +99,7 @@ static aslclient asl_client;
 #else
    if (!asl_inited)
    {
-      asl_client = asl_open("RetroArch", "com.apple.console", ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
+      asl_client = asl_open(file_path_str(FILE_PATH_PROGRAM_NAME), "com.apple.console", ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
       asl_inited = 1;
    }
    aslmsg msg = asl_new(ASL_TYPE_MSG);
