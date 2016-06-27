@@ -416,7 +416,8 @@ static void init_command(void)
    VkCommandPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
    VkCommandBufferAllocateInfo info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 
-   pool_info.queueFamilyIndex = vulkan->queue_index;
+   pool_info.queueFamilyIndex = async_queue != VK_NULL_HANDLE ?
+      async_queue_index : vulkan->queue_index;
    pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
    for (unsigned i = 0; i < vk.num_swapchain_images; i++)
