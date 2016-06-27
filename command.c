@@ -2150,15 +2150,18 @@ bool command_event(enum event_command cmd, void *data)
             /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
              * need to make sure to keep a copy */
             struct retro_hw_render_callback *hwr = NULL;
+            const struct retro_hw_render_context_negotiation_interface *iface = NULL;
             struct retro_hw_render_callback hwr_copy;
             int flags = DRIVERS_CMD_ALL;
 
             hwr = video_driver_get_hw_context();
+            iface = video_driver_get_context_negotiation_interface();
             memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
             driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
 
             memcpy(hwr, &hwr_copy, sizeof(*hwr));
+            video_driver_set_context_negotiation_interface(iface);
 
             driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
          }

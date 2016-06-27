@@ -925,6 +925,12 @@ static void vulkan_unlock_queue(void *handle)
 #endif
 }
 
+static void vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore)
+{
+   vk_t *vk = (vk_t*)handle;
+   vk->hw.signal_semaphore = semaphore;
+}
+
 static void vulkan_init_hw_render(vk_t *vk)
 {
    struct retro_hw_render_interface_vulkan *iface   =
@@ -935,25 +941,26 @@ static void vulkan_init_hw_render(vk_t *vk)
    if (hwr->context_type != RETRO_HW_CONTEXT_VULKAN)
       return;
 
-   vk->hw.enable              = true;
+   vk->hw.enable               = true;
 
-   iface->interface_type      = RETRO_HW_RENDER_INTERFACE_VULKAN;
-   iface->interface_version   = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
-   iface->instance            = vk->context->instance;
-   iface->gpu                 = vk->context->gpu;
-   iface->device              = vk->context->device;
+   iface->interface_type       = RETRO_HW_RENDER_INTERFACE_VULKAN;
+   iface->interface_version    = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
+   iface->instance             = vk->context->instance;
+   iface->gpu                  = vk->context->gpu;
+   iface->device               = vk->context->device;
 
-   iface->queue               = vk->context->queue;
-   iface->queue_index         = vk->context->graphics_queue_index;
+   iface->queue                = vk->context->queue;
+   iface->queue_index          = vk->context->graphics_queue_index;
 
-   iface->handle              = vk;
-   iface->set_image           = vulkan_set_image;
-   iface->get_sync_index      = vulkan_get_sync_index;
-   iface->get_sync_index_mask = vulkan_get_sync_index_mask;
-   iface->wait_sync_index     = vulkan_wait_sync_index;
-   iface->set_command_buffers = vulkan_set_command_buffers;
-   iface->lock_queue          = vulkan_lock_queue;
-   iface->unlock_queue        = vulkan_unlock_queue;
+   iface->handle               = vk;
+   iface->set_image            = vulkan_set_image;
+   iface->get_sync_index       = vulkan_get_sync_index;
+   iface->get_sync_index_mask  = vulkan_get_sync_index_mask;
+   iface->wait_sync_index      = vulkan_wait_sync_index;
+   iface->set_command_buffers  = vulkan_set_command_buffers;
+   iface->lock_queue           = vulkan_lock_queue;
+   iface->unlock_queue         = vulkan_unlock_queue;
+   iface->set_signal_semaphore = vulkan_set_signal_semaphore;
 
    iface->get_device_proc_addr   = vkGetDeviceProcAddr;
    iface->get_instance_proc_addr = vulkan_symbol_wrapper_instance_proc_addr();
@@ -1474,6 +1481,7 @@ static bool vulkan_frame(void *data, const void *frame,
    static struct retro_perf_counter swapbuffers  = {0};
    static struct retro_perf_counter queue_submit = {0};
    bool waits_for_semaphores                     = false;
+   VkSemaphore signal_semaphores[2];
 
    VkCommandBufferBeginInfo begin_info           = { 
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -1812,10 +1820,17 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->hw.valid_semaphore = false;
    }
 
-   submit_info.signalSemaphoreCount  = 
-      vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE ? 1 : 0;
-   submit_info.pSignalSemaphores     = 
-      &vk->context->swapchain_semaphores[frame_index];
+   submit_info.signalSemaphoreCount = 0;
+
+   if (vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE)
+      signal_semaphores[submit_info.signalSemaphoreCount++] = vk->context->swapchain_semaphores[frame_index];
+
+   if (vk->hw.signal_semaphore != VK_NULL_HANDLE)
+   {
+      signal_semaphores[submit_info.signalSemaphoreCount++] = vk->hw.signal_semaphore;
+      vk->hw.signal_semaphore = VK_NULL_HANDLE;
+   }
+   submit_info.pSignalSemaphores = submit_info.signalSemaphoreCount ? signal_semaphores : NULL;
 
    performance_counter_stop(&frame_run);
 

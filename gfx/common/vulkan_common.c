@@ -32,6 +32,7 @@
 static dylib_t vulkan_library;
 static VkInstance cached_instance;
 static VkDevice cached_device;
+static retro_vulkan_destroy_device_t cached_destroy_device;
 
 #ifdef VULKAN_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
@@ -1245,6 +1246,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       const VkPhysicalDeviceFeatures features = { 0 };
 
       bool ret = iface->create_device(&context, vk->context.instance,
+            VK_NULL_HANDLE,
             vk->vk_surface,
             vulkan_symbol_wrapper_instance_proc_addr(),
             device_extensions,
@@ -1277,6 +1279,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             return false;
          }
       }
+   }
+
+   if (cached_device && cached_destroy_device)
+   {
+      vk->context.destroy_device = cached_destroy_device;
+      cached_destroy_device = NULL;
    }
 
    if (vk->context.gpu == VK_NULL_HANDLE)
@@ -1341,7 +1349,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          VkBool32 supported = VK_FALSE;
          vkGetPhysicalDeviceSurfaceSupportKHR(
-               vk->context.gpu, vk->context.graphics_queue_index,
+               vk->context.gpu, i,
                vk->vk_surface, &supported);
 
          VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
@@ -1479,11 +1487,14 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          break;
    }
 
+   if (!vulkan_library)
+   {
 #ifdef _WIN32
-   vulkan_library = dylib_load("vulkan-1.dll");
+      vulkan_library = dylib_load("vulkan-1.dll");
 #else
-   vulkan_library = dylib_load("libvulkan.so");
+      vulkan_library = dylib_load("libvulkan.so");
 #endif
+   }
 
    if (!vulkan_library)
    {
@@ -1791,8 +1802,11 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 {
    unsigned i;
 
-   if (vk->context.queue)
-      vkQueueWaitIdle(vk->context.queue);
+   if (!vk->context.instance)
+      return;
+
+   if (vk->context.device)
+      vkDeviceWaitIdle(vk->context.device);
    if (vk->swapchain)
       vkDestroySwapchainKHR(vk->context.device,
             vk->swapchain, NULL);
@@ -1818,8 +1832,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
    if (video_driver_is_video_cache_context())
    {
-      cached_device   = vk->context.device;
-      cached_instance = vk->context.instance;
+      cached_device         = vk->context.device;
+      cached_instance       = vk->context.instance;
+      cached_destroy_device = vk->context.destroy_device;
    }
    else
    {
@@ -1831,11 +1846,13 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
             vk->context.destroy_device();
 
          vkDestroyInstance(vk->context.instance, NULL);
+         if (vulkan_library)
+         {
+            dylib_close(vulkan_library);
+            vulkan_library = NULL;
+         }
       }
    }
-
-   if (vulkan_library)
-      dylib_close(vulkan_library);
 }
 
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)

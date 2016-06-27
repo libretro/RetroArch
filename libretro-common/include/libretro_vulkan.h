@@ -26,7 +26,7 @@
 #include <libretro.h>
 #include <vulkan/vulkan.h>
 
-#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 3
+#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 5
 #define RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION 1
 
 struct retro_vulkan_image
@@ -50,6 +50,7 @@ typedef void (*retro_vulkan_set_command_buffers_t)(void *handle,
 typedef void (*retro_vulkan_wait_sync_index_t)(void *handle);
 typedef void (*retro_vulkan_lock_queue_t)(void *handle);
 typedef void (*retro_vulkan_unlock_queue_t)(void *handle);
+typedef void (*retro_vulkan_set_signal_semaphore_t)(void *handle, VkSemaphore semaphore);
 
 typedef const VkApplicationInfo *(*retro_vulkan_get_application_info_t)(void);
 
@@ -66,6 +67,7 @@ struct retro_vulkan_context
 typedef bool (*retro_vulkan_create_device_t)(
       struct retro_vulkan_context *context,
       VkInstance instance,
+      VkPhysicalDevice gpu,
       VkSurfaceKHR surface,
       PFN_vkGetInstanceProcAddr get_instance_proc_addr,
       const char **required_device_extensions,
@@ -100,11 +102,17 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     * The core must prepare a designated PhysicalDevice, Device, Queue and queue family index
     * which the frontend will use for its internal operation.
     *
+    * If gpu is not VK_NULL_HANDLE, the physical device provided to the frontend must be this PhysicalDevice.
+    * The core is still free to use other physical devices.
+    *
     * The frontend will request certain extensions and layers for a device which is created.
     * The core must ensure that the queue and queue_family_index support GRAPHICS and COMPUTE.
     *
+    * If surface is not VK_NULL_HANDLE, the core must consider presentation when creating the queues.
     * If presentation to "surface" is supported on the queue, presentation_queue must be equal to queue.
     * If not, a second queue must be provided in presentation_queue and presentation_queue_index.
+    * If surface is not VK_NULL_HANDLE, the instance from frontend will have been created with supported for
+    * VK_KHR_surface extension.
     *
     * The core is free to set its own queue priorities.
     * Device provided to frontend is owned by the frontend, but any additional device resources must be freed by core
@@ -373,6 +381,17 @@ struct retro_hw_render_interface_vulkan
     * NOTE: Queue submissions are heavy-weight. */
    retro_vulkan_lock_queue_t lock_queue;
    retro_vulkan_unlock_queue_t unlock_queue;
+
+   /* Sets a semaphore which is signaled when the image in set_image can safely be reused.
+    * The semaphore is consumed next call to retro_video_refresh_t.
+    * The semaphore will be signalled even for duped frames.
+    * The semaphore will be signalled only once, so set_signal_semaphore should be called every frame.
+    * The semaphore may be VK_NULL_HANDLE, which disables semaphore signalling for next call to retro_video_refresh_t.
+    *
+    * This is mostly useful to support use cases where you're rendering to a single image that
+    * is recycled in a ping-pong fashion with the frontend to save memory (but potentially less throughput).
+    */
+   retro_vulkan_set_signal_semaphore_t set_signal_semaphore;
 };
 
 #endif
