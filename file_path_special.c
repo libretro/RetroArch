@@ -60,7 +60,7 @@ void fill_pathname_expand_special(char *out_path,
          retro_assert(src_size < size);
 
          out_path  += src_size;
-         size -= src_size;
+         size      -= src_size;
          in_path++;
       }
    }
@@ -346,7 +346,9 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
                char s1[PATH_MAX_LENGTH] = {0};
                fill_pathname_application_special(s1, sizeof(s1),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-               fill_pathname_join(s, s1, "bg.png", len);
+               fill_pathname_join(s, s1,
+                     file_path_str(FILE_PATH_BACKGROUND_IMAGE),
+                     len);
             }
          }
 #endif
@@ -415,7 +417,9 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
                char s1[PATH_MAX_LENGTH] = {0};
                fill_pathname_application_special(s1, sizeof(s1),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-               fill_pathname_join(s, s1, "font.ttf", len);
+               fill_pathname_join(s, s1,
+                     file_path_str(FILE_PATH_TTF_FONT),
+                     len);
             }
          }
 #endif

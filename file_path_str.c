@@ -63,6 +63,10 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return "retroarch-core-options.cfg";
       case FILE_PATH_MAIN_CONFIG:
          return "retroarch.cfg";
+      case FILE_PATH_BACKGROUND_IMAGE:
+         return "bg.png";
+      case FILE_PATH_TTF_FONT:
+         return "font.ttf";
       case FILE_PATH_UNKNOWN:
       default:
          break;
