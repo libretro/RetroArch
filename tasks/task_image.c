@@ -379,6 +379,8 @@ error:
    nbio_free(handle);
    task_image_load_free(t);
    free(t);
+   if (nbio)
+      free(nbio);
 
 error_msg:
    RARCH_ERR("[image load] Failed to open '%s': %s.\n",

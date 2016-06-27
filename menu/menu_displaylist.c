@@ -4466,7 +4466,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORE_CONTENT_DIRS:
          {
 #ifdef HAVE_NETWORKING
-            char new_label[PATH_MAX_LENGTH];
+            char new_label[PATH_MAX_LENGTH] = {0};
             fill_pathname_join(new_label, settings->network.buildbot_assets_url, "cores", sizeof(new_label));
             print_buf_lines(info->list, core_buf, new_label,
                   core_len, FILE_TYPE_DOWNLOAD_URL);
