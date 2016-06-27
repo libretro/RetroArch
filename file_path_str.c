@@ -39,6 +39,12 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return ".state";
       case FILE_PATH_LPL_EXTENSION:
          return ".lpl";
+      case FILE_PATH_UPS_EXTENSION:
+         return ".ups";
+      case FILE_PATH_IPS_EXTENSION:
+         return ".ips";
+      case FILE_PATH_BPS_EXTENSION:
+         return ".bps";
       case FILE_PATH_INDEX_URL:
          return ".index";
       case FILE_PATH_INDEX_DIRS_URL:

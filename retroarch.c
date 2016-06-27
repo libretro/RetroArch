@@ -1541,9 +1541,11 @@ void retroarch_set_pathnames(const char *path)
    if (!global->has_set.save_path)
       fill_pathname_noext(global->name.savefile, global->name.base,
             file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
+
    if (!global->has_set.state_path)
       fill_pathname_noext(global->name.savestate, global->name.base,
             file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
+
    fill_pathname_noext(global->name.cheatfile, global->name.base,
          file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(global->name.cheatfile));
 
@@ -1561,15 +1563,18 @@ void retroarch_fill_pathnames(void)
       return;
 
    if (string_is_empty(global->name.ups))
-      fill_pathname_noext(global->name.ups, global->name.base, ".ups",
+      fill_pathname_noext(global->name.ups, global->name.base,
+            file_path_str(FILE_PATH_UPS_EXTENSION),
             sizeof(global->name.ups));
 
    if (string_is_empty(global->name.bps))
-      fill_pathname_noext(global->name.bps, global->name.base, ".bps",
+      fill_pathname_noext(global->name.bps, global->name.base,
+            file_path_str(FILE_PATH_BPS_EXTENSION),
             sizeof(global->name.bps));
 
    if (string_is_empty(global->name.ips))
-      fill_pathname_noext(global->name.ips, global->name.base, ".ips",
+      fill_pathname_noext(global->name.ips, global->name.base,
+            file_path_str(FILE_PATH_IPS_EXTENSION),
             sizeof(global->name.ips));
 }
 
