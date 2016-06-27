@@ -1077,7 +1077,7 @@ static bool cg_d3d9_renderchain_add_lut(void *data,
 
    info.tex    = lut;
    info.smooth = smooth;
-   strcpy(info.id, id);
+   strlcpy(info.id, id, sizeof(info.id));
    if (!lut)
       return false;
 

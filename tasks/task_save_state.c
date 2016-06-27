@@ -287,7 +287,7 @@ bool content_save_state(const char *path, bool save_to_disk)
 
          memcpy(undo_load_buf.data, data, info.size);
          undo_load_buf.size = info.size;
-         strcpy(undo_load_buf.path, path);
+         strlcpy(undo_load_buf.path, path, sizeof(undo_load_buf.path));
       }
    }
    else
@@ -352,7 +352,7 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
 
       memcpy(undo_save_buf.data, buf, size);
       undo_save_buf.size = size;
-      strcpy(undo_save_buf.path, path);
+      strlcpy(undo_save_buf.path, path, sizeof(undo_save_buf.path));
 
       free(buf);
       return true;
