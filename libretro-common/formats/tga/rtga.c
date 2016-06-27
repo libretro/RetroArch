@@ -428,21 +428,17 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
-#if 0
    unsigned size_tex     = 0;
-#endif
 
    if (!rtga)
       return IMAGE_PROCESS_ERROR;
 
    rtga->output_image   = (uint32_t*)rtga_load_from_memory(rtga->buff_data, size, width, height, &comp, 4);
    *buf_data             = rtga->output_image;
-#if 0
    size_tex              = (*width) * (*height);
 
-   printf("GETS HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
    /* Convert RGBA to ARGB */
-   do
+   while(size_tex--)
    {
       unsigned int texel = rtga->output_image[size_tex];
       unsigned int A     = texel & 0xFF000000;
@@ -450,8 +446,7 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
       unsigned int G     = texel & 0x0000FF00;
       unsigned int R     = texel & 0x000000FF;
       ((unsigned int*)rtga->output_image)[size_tex] = A | (R << 16) | G | (B >> 16);
-   }while(size_tex--);
-#endif
+   };
 
    return IMAGE_PROCESS_END;
 }
