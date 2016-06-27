@@ -17,6 +17,15 @@
 #ifndef __INTL_FRENCH_H
 #define __INTL_FRENCH_H
 
+/* IMPORTANT:
+ * For non-english characters to work without proper unicode support,
+ * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
+ * If you save this file as UTF-8, you'll break non-english characters
+ * (e.g. German "Umlauts" and Portugese diacritics).
+ */
+/* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
+extern const char force_iso_8859_1[sizeof("אטילעש")==6+1 ? 1 : -1];
+
 #define RETRO_LBL_JOYPAD_B "Bouton RetroPad B"
 #define RETRO_LBL_JOYPAD_Y "Bouton RetroPad Y"
 #define RETRO_LBL_JOYPAD_SELECT "Bouton RetroPad Select"

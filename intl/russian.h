@@ -17,6 +17,8 @@
 #ifndef __INTL_RUSSIAN_H
 #define __INTL_RUSSIAN_H
 
+/* lack of force_iso_8859_1 is intentional - ISO-8859-1 does not contain the Cyrillic characters */
+
 #define RETRO_LBL_JOYPAD_B "RetroPad, кнопка B"
 #define RETRO_LBL_JOYPAD_Y "RetroPad, кнопка Y"
 #define RETRO_LBL_JOYPAD_SELECT "RetroPad, кнопка Select"
