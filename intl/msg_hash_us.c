@@ -2001,6 +2001,14 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Compiled against API";
       case MSG_FAILED_TO_LOAD:
          return "Failed to load";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+         return "Edge Magazine Issue";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING:
+         return "BBFC Rating";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING:
+         return "ESRB Rating";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING:
+         return "CERO Rating";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "Max swapchain images";
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:

@@ -1947,7 +1947,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->edge_magazine_issue)
       {
-         if (create_string_list_rdb_entry_int("Edge Magazine Issue",
+         if (create_string_list_rdb_entry_int(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE),
                   db_info_entry->edge_magazine_issue,
                   info->path, info->list) == -1)
@@ -1974,14 +1975,16 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->bbfc_rating)
       {
-         if (create_string_list_rdb_entry_string("BBFC Rating",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_BBFC_RATING),
                   db_info_entry->bbfc_rating, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->esrb_rating)
       {
-         if (create_string_list_rdb_entry_string("ESRB Rating",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING),
                   db_info_entry->esrb_rating, info->path, info->list) == -1)
             goto error;
@@ -2009,7 +2012,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->cero_rating)
       {
-         if (create_string_list_rdb_entry_string("CERO Rating",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CERO_RATING),
                   db_info_entry->cero_rating, info->path, info->list) == -1)
             goto error;
