@@ -137,8 +137,8 @@ bool content_undo_load_state()
    }
    
    /* We need to make a temporary copy of the buffer, to allow the swap below */
-   temp_data = malloc(undo_load_buf.size);
-   temp_data_size = undo_load_buf.size;
+   temp_data              = malloc(undo_load_buf.size);
+   temp_data_size         = undo_load_buf.size;
    memcpy(temp_data, undo_load_buf.data, undo_load_buf.size);
 
    serial_info.data_const = temp_data;
@@ -151,8 +151,8 @@ bool content_undo_load_state()
 
    /* Clean up the temporary copy */
    free(temp_data);
-   temp_data = NULL;
-   temp_data_size = 0;
+   temp_data              = NULL;
+   temp_data_size         = 0;
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
@@ -191,7 +191,7 @@ bool content_undo_load_state()
  *
  * Returns: true if successful, false otherwise.
  **/
-bool content_undo_save_state()
+bool content_undo_save_state(void)
 {
    bool ret = filestream_write_file(undo_save_buf.path, undo_save_buf.data, undo_save_buf.size);
 
