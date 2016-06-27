@@ -31,9 +31,9 @@
 
 #include "input_remote.h"
 
-#include "msg_hash.h"
-#include "runloop.h"
-#include "verbosity.h"
+#include "../msg_hash.h"
+#include "../runloop.h"
+#include "../verbosity.h"
 
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
