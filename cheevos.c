@@ -24,7 +24,6 @@
 #include "cheevos.h"
 #include "command.h"
 #include "dynamic.h"
-#include "libretro.h"
 #include "system.h"
 #include "network/net_http_special.h"
 #include "tasks/tasks_internal.h"
@@ -353,7 +352,7 @@ static int cheevos_getvalue__json_boolean(void *userdata, int istrue)
 
    if ( ud->is_key )
    {
-      ud->value = istrue ? "true" : "false";
+      ud->value  = istrue ? "true" : "false";
       ud->length = istrue ? 4 : 5;
       ud->is_key = 0;
    }
@@ -602,41 +601,44 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    
    var->bank_id = -1;
-   var->value = value;
+   var->value   = value;
    
    if (system->mmaps.num_descriptors != 0)
    {
-      const struct retro_memory_descriptor *desc;
-      const struct retro_memory_descriptor *end;
+      const struct retro_memory_descriptor *desc = NULL;
+      const struct retro_memory_descriptor *end  = NULL;
       
-      if (cheevos_locals.console_id == CHEEVOS_CONSOLE_GAMEBOY_ADVANCE)
+      switch (cheevos_locals.console_id)
       {
-         /* Patch the address to correctly map it to the mmaps */
-         if (var->value < 0x8000)
-         {
-            /* Internal RAM */
-            var->value += 0x3000000;
-         }
-         else
-         {
-            /* Work RAM */
-            var->value += 0x2000000 - 0x8000;
-         }
-      }
-      else if (cheevos_locals.console_id == CHEEVOS_CONSOLE_PC_ENGINE)
-      {
-         var->value += 0x1f0000;
+         case CHEEVOS_CONSOLE_GAMEBOY_ADVANCE:
+            /* Patch the address to correctly map it to the mmaps */
+            if (var->value < 0x8000)
+            {
+               /* Internal RAM */
+               var->value += 0x3000000;
+            }
+            else
+            {
+               /* Work RAM */
+               var->value += 0x2000000 - 0x8000;
+            }
+            break;
+         case CHEEVOS_CONSOLE_PC_ENGINE:
+            var->value += 0x1f0000;
+            break;
+         default:
+            break;
       }
      
       desc = system->mmaps.descriptors;
-      end = desc + system->mmaps.num_descriptors;
+      end  = desc + system->mmaps.num_descriptors;
       
       for (; desc < end; desc++)
       {
          if ((var->value & desc->select) == desc->start)
          {
             var->bank_id = desc - system->mmaps.descriptors;
-            var->value = var->value - desc->start + desc->offset;
+            var->value   = var->value - desc->start + desc->offset;
             break;
          }
       }
@@ -695,15 +697,19 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
    }
 
    var->value = strtol(str, &end, base);
-   *memaddr = end;
+   *memaddr   = end;
    
-   if (   var->type == CHEEVOS_VAR_TYPE_ADDRESS 
-       || var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
+   switch (var->type)
    {
-      cheevos_parse_guest_addr(var, var->value);
+      case CHEEVOS_VAR_TYPE_ADDRESS:
+      case CHEEVOS_VAR_TYPE_DELTA_MEM:
+         cheevos_parse_guest_addr(var, var->value);
 #ifdef CHEEVOS_DUMP_ADDRS
-      RARCH_LOG("CHEEVOS var %03d:%08X\n", var->bank_id + 1, var->value);
+         RARCH_LOG("CHEEVOS var %03d:%08X\n", var->bank_id + 1, var->value);
 #endif
+         break;
+      default:
+         break;
    }
 }
 
