@@ -876,12 +876,10 @@ static uint32_t gfx_ctx_drm_get_flags(void *data)
    uint32_t             flags = 0;
    gfx_ctx_drm_data_t    *drm = (gfx_ctx_drm_data_t*)data;
 
+   BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
+
    if (drm->core_hw_context_enable)
-   {
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-   }
-   else
-      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
 
    return flags;
 }

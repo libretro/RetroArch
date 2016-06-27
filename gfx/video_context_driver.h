@@ -54,7 +54,8 @@ enum display_metric_types
 enum display_flags
 {
    GFX_CTX_FLAGS_NONE = 0,
-   GFX_CTX_FLAGS_GL_CORE_CONTEXT
+   GFX_CTX_FLAGS_GL_CORE_CONTEXT,
+   GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
