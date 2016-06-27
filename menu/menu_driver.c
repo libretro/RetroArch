@@ -254,13 +254,12 @@ static void menu_driver_toggle(bool latch)
       if (settings && settings->menu.pause_libretro)
          command_event(CMD_EVENT_AUDIO_START, NULL);
 
-
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
          *key_event = *frontend_key_event;
    }
 
-   /* Prevent stray input from going to libretro core */
+   /* Prevent stray input */
    input_driver_set_flushing_input();
 }
 
