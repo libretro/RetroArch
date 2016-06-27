@@ -43,7 +43,7 @@ else
    CFLAGS += -O3
 endif
 
-CFLAGS += -std=gnu99
+CFLAGS += -std=gnu99 -I../../gfx/include
 OBJECTS := libretro-test.o ../../libretro-common/vulkan/vulkan_symbol_wrapper.o
 CFLAGS += -Wall -pedantic $(fpic)
 
