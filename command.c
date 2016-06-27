@@ -195,7 +195,7 @@ static bool command_read_ram(const char *arg)
 
    strlcpy(reply, "READ_CORE_RAM ", sizeof(reply));
    reply_at = reply + strlen("READ_CORE_RAM ");
-   strlcpy(reply_at, arg, sizeof(reply_at));
+   strlcpy(reply_at, arg, sizeof(reply)-strlen(reply));
 
    cheevos_parse_guest_addr(&var, strtoul(reply_at, (char**)&reply_at, 16));
    data = cheevos_get_memory(&var);
@@ -213,7 +213,7 @@ static bool command_read_ram(const char *arg)
    }
    else
    {
-      strlcpy(reply_at, " -1\n", sizeof(reply_at));
+      strlcpy(reply_at, " -1\n", sizeof(reply)-strlen(reply));
       command_reply(reply, reply_at+strlen(" -1\n") - reply);
    }
 

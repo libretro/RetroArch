@@ -1840,7 +1840,7 @@ static int action_ok_download_generic(const char *path,
       case MENU_ENUM_LABEL_CB_DOWNLOAD_URL:
          fill_pathname_join(s, label,
                path, sizeof(s));
-         path = strdup(s);
+         path = s;
          cb = cb_generic_dir_download;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
