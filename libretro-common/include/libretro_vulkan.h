@@ -26,7 +26,7 @@
 #include <libretro.h>
 #include <vulkan/vulkan.h>
 
-#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 4
+#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 5
 #define RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION 1
 
 struct retro_vulkan_image
@@ -67,6 +67,7 @@ struct retro_vulkan_context
 typedef bool (*retro_vulkan_create_device_t)(
       struct retro_vulkan_context *context,
       VkInstance instance,
+      VkPhysicalDevice gpu,
       VkSurfaceKHR surface,
       PFN_vkGetInstanceProcAddr get_instance_proc_addr,
       const char **required_device_extensions,
@@ -101,11 +102,17 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     * The core must prepare a designated PhysicalDevice, Device, Queue and queue family index
     * which the frontend will use for its internal operation.
     *
+    * If gpu is not VK_NULL_HANDLE, the physical device provided to the frontend must be this PhysicalDevice.
+    * The core is still free to use other physical devices.
+    *
     * The frontend will request certain extensions and layers for a device which is created.
     * The core must ensure that the queue and queue_family_index support GRAPHICS and COMPUTE.
     *
+    * If surface is not VK_NULL_HANDLE, the core must consider presentation when creating the queues.
     * If presentation to "surface" is supported on the queue, presentation_queue must be equal to queue.
     * If not, a second queue must be provided in presentation_queue and presentation_queue_index.
+    * If surface is not VK_NULL_HANDLE, the instance from frontend will have been created with supported for
+    * VK_KHR_surface extension.
     *
     * The core is free to set its own queue priorities.
     * Device provided to frontend is owned by the frontend, but any additional device resources must be freed by core

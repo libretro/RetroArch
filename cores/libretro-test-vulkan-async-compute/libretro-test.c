@@ -11,6 +11,8 @@
 static struct retro_hw_render_callback hw_render;
 static const struct retro_hw_render_interface_vulkan *vulkan;
 static unsigned frame_count;
+static VkQueue async_queue;
+static uint32_t async_queue_index;
 
 #define BASE_WIDTH 640
 #define BASE_HEIGHT 360
@@ -44,6 +46,8 @@ struct vulkan_data
    VkCommandPool cmd_pool[MAX_SYNC];
    VkCommandBuffer cmd[MAX_SYNC];
    VkSemaphore acquire_semaphores[MAX_SYNC];
+
+   bool need_acquire[MAX_SYNC];
 };
 static struct vulkan_data vk;
 
@@ -161,8 +165,17 @@ static void vulkan_test_render(void)
    prepare_rendering.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
    prepare_rendering.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
    prepare_rendering.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-   prepare_rendering.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-   prepare_rendering.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+   if (vk.need_acquire[vk.index])
+   {
+      prepare_rendering.srcQueueFamilyIndex = vulkan->queue_index;
+      prepare_rendering.dstQueueFamilyIndex = async_queue_index;
+   }
+   else
+   {
+      prepare_rendering.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      prepare_rendering.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+   }
    prepare_rendering.image = vk.images[vk.index].create_info.image;
    prepare_rendering.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    prepare_rendering.subresourceRange.levelCount = 1;
@@ -196,8 +209,20 @@ static void vulkan_test_render(void)
    prepare_presentation.dstAccessMask = 0;
    prepare_presentation.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
    prepare_presentation.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-   prepare_presentation.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-   prepare_presentation.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+   if (async_queue && vulkan->queue_index != async_queue_index)
+   {
+      prepare_presentation.srcQueueFamilyIndex = async_queue_index;
+      prepare_presentation.dstQueueFamilyIndex = vulkan->queue_index;
+      vk.need_acquire[vk.index] = true;
+   }
+   else
+   {
+      prepare_presentation.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      prepare_presentation.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      vk.need_acquire[vk.index] = false;
+   }
+
    prepare_presentation.image = vk.images[vk.index].create_info.image;
    prepare_presentation.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    prepare_presentation.subresourceRange.levelCount = 1;
@@ -211,14 +236,19 @@ static void vulkan_test_render(void)
 
    vkEndCommandBuffer(cmd);
 
-   vulkan->lock_queue(vulkan->handle);
+   if (!async_queue)
+      vulkan->lock_queue(vulkan->handle);
+
    VkSubmitInfo submit = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
    submit.commandBufferCount = 1;
    submit.pCommandBuffers = &cmd;
    submit.signalSemaphoreCount = 1;
    submit.pSignalSemaphores = &vk.acquire_semaphores[vk.index];
-   vkQueueSubmit(vulkan->queue, 1, &submit, VK_NULL_HANDLE);
-   vulkan->unlock_queue(vulkan->handle);
+   vkQueueSubmit(async_queue != VK_NULL_HANDLE ? async_queue : vulkan->queue,
+         1, &submit, VK_NULL_HANDLE);
+
+   if (!async_queue)
+      vulkan->unlock_queue(vulkan->handle);
 }
 
 static VkShaderModule create_shader_module(const uint32_t *data, size_t size)
@@ -339,6 +369,13 @@ static void init_swapchain(void)
       image.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
       image.mipLevels = 1;
       image.arrayLayers = 1;
+
+      uint32_t share_queues[] = { async_queue_index, vulkan->queue_index };
+      if (async_queue && async_queue_index != vulkan->queue_index)
+      {
+         image.queueFamilyIndexCount = 2;
+         image.pQueueFamilyIndices = share_queues;
+      }
 
       vkCreateImage(device, &image, NULL, &vk.images[i].create_info.image);
 
@@ -468,7 +505,10 @@ void retro_run(void)
 
    vk.index = vulkan->get_sync_index(vulkan->handle);
    vulkan_test_render();
-   vulkan->set_image(vulkan->handle, &vk.images[vk.index], 1, &vk.acquire_semaphores[vk.index], VK_QUEUE_FAMILY_IGNORED);
+   vulkan->set_image(vulkan->handle, &vk.images[vk.index],
+         1, &vk.acquire_semaphores[vk.index],
+         async_queue && async_queue_index != vulkan->queue_index ?
+         async_queue_index : VK_QUEUE_FAMILY_IGNORED);
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, BASE_WIDTH, BASE_HEIGHT, 0);
 }
 
@@ -517,6 +557,152 @@ static const VkApplicationInfo *get_application_info(void)
    return &info;
 }
 
+static bool create_device(struct retro_vulkan_context *context,
+      VkInstance instance,
+      VkPhysicalDevice gpu,
+      VkSurfaceKHR surface,
+      PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+      const char **required_device_extensions,
+      unsigned num_required_device_extensions,
+      const char **required_device_layers,
+      unsigned num_required_device_layers,
+      const VkPhysicalDeviceFeatures *required_features)
+{
+   async_queue = VK_NULL_HANDLE;
+   vulkan_symbol_wrapper_init(get_instance_proc_addr);
+   vulkan_symbol_wrapper_load_core_symbols(instance);
+
+   if (gpu == VK_NULL_HANDLE)
+   {
+      uint32_t gpu_count;
+      vkEnumeratePhysicalDevices(instance, &gpu_count, NULL);
+      if (!gpu_count)
+         return false;
+      VkPhysicalDevice *gpus = calloc(gpu_count, sizeof(*gpus));
+      if (!gpus)
+         return false;
+
+      vkEnumeratePhysicalDevices(instance, &gpu_count, gpus);
+      gpu = gpus[0];
+      free(gpus);
+   }
+
+   context->gpu = gpu;
+
+   uint32_t queue_count;
+   VkQueueFamilyProperties *queue_properties = NULL;
+   vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_count, NULL);
+   if (queue_count < 1)
+      return false;
+   queue_properties = calloc(queue_count, sizeof(*queue_properties));
+   if (!queue_properties)
+      return false;
+   vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_count, queue_properties);
+
+   if (surface != VK_NULL_HANDLE)
+   {
+      VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(instance,
+            vkGetPhysicalDeviceSurfaceSupportKHR);
+   }
+
+   bool found_queue = false;
+   for (uint32_t i = 0; i < queue_count; i++)
+   {
+      VkBool32 supported = surface == VK_NULL_HANDLE;
+
+      if (surface != VK_NULL_HANDLE)
+      {
+         vkGetPhysicalDeviceSurfaceSupportKHR(
+               gpu, i, surface, &supported);
+      }
+
+      VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+      if (supported && ((queue_properties[i].queueFlags & required) == required))
+      {
+         context->queue_family_index = i;
+         found_queue = true;
+         break;
+      }
+   }
+
+   if (!found_queue)
+   {
+      free(queue_properties);
+      return false;
+   }
+
+   bool same_queue_async = false;
+   if (queue_properties[context->queue_family_index].queueCount >= 2)
+      same_queue_async = true;
+
+   if (!same_queue_async)
+   {
+      found_queue = false;
+      for (uint32_t i = 0; i < queue_count; i++)
+      {
+         if (i == context->queue_family_index)
+            continue;
+
+         VkQueueFlags required = VK_QUEUE_COMPUTE_BIT;
+         if ((queue_properties[i].queueFlags & required) == required)
+         {
+            async_queue_index = i;
+            found_queue = true;
+            break;
+         }
+      }
+   }
+   else
+      async_queue_index = context->queue_family_index;
+
+   free(queue_properties);
+   if (!found_queue)
+      return false;
+
+   const float prios[] = { 0.5f, 0.5f };
+   VkDeviceQueueCreateInfo queues[2] = {
+      { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO },
+      { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO },
+   };
+
+   if (same_queue_async)
+   {
+      queues[0].queueFamilyIndex = context->queue_family_index;
+      queues[0].queueCount = 2;
+      queues[0].pQueuePriorities = prios;
+   }
+   else
+   {
+      queues[0].queueFamilyIndex = context->queue_family_index;
+      queues[0].queueCount = 1;
+      queues[0].pQueuePriorities = &prios[0];
+      queues[1].queueFamilyIndex = async_queue_index;
+      queues[1].queueCount = 1;
+      queues[1].pQueuePriorities = &prios[1];
+   }
+
+   VkDeviceCreateInfo device_info = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+   device_info.enabledExtensionCount = num_required_device_extensions;
+   device_info.ppEnabledExtensionNames = required_device_extensions;
+   device_info.enabledLayerCount = num_required_device_layers;
+   device_info.ppEnabledLayerNames = required_device_layers;
+   device_info.queueCreateInfoCount = same_queue_async ? 1 : 2;
+   device_info.pQueueCreateInfos = queues;
+
+   if (vkCreateDevice(gpu, &device_info, NULL, &context->device) != VK_SUCCESS)
+      return false;
+
+   vkGetDeviceQueue(context->device, context->queue_family_index, 0, &context->queue);
+   if (same_queue_async)
+      vkGetDeviceQueue(context->device, context->queue_family_index, 1, &async_queue);
+   else
+      vkGetDeviceQueue(context->device, async_queue_index, 0, &async_queue);
+
+   context->presentation_queue = context->queue;
+   context->presentation_queue_family_index = context->queue_family_index;
+   return true;
+}
+
 static bool retro_init_hw_context(void)
 {
    hw_render.context_type = RETRO_HW_CONTEXT_VULKAN;
@@ -533,7 +719,7 @@ static bool retro_init_hw_context(void)
       RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION,
 
       get_application_info,
-      NULL,
+      create_device,
    };
 
    environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE, (void*)&iface);

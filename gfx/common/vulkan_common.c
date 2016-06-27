@@ -1246,6 +1246,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       const VkPhysicalDeviceFeatures features = { 0 };
 
       bool ret = iface->create_device(&context, vk->context.instance,
+            VK_NULL_HANDLE,
             vk->vk_surface,
             vulkan_symbol_wrapper_instance_proc_addr(),
             device_extensions,
@@ -1348,7 +1349,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          VkBool32 supported = VK_FALSE;
          vkGetPhysicalDeviceSurfaceSupportKHR(
-               vk->context.gpu, vk->context.graphics_queue_index,
+               vk->context.gpu, i,
                vk->vk_surface, &supported);
 
          VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
@@ -1804,8 +1805,8 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    if (!vk->context.instance)
       return;
 
-   if (vk->context.queue)
-      vkQueueWaitIdle(vk->context.queue);
+   if (vk->context.device)
+      vkDeviceWaitIdle(vk->context.device);
    if (vk->swapchain)
       vkDestroySwapchainKHR(vk->context.device,
             vk->swapchain, NULL);
