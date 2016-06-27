@@ -3186,7 +3186,7 @@ static int menu_displaylist_parse_generic(
             menu_entries_add_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
                   msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-                  MSG_UNKNOWN,
+                  MENU_ENUM_LABEL_CORE_UPDATER_LIST,
                   MENU_SETTING_ACTION, 0, 0);
 #endif
       }
