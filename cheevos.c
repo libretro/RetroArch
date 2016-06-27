@@ -445,10 +445,17 @@ static int cheevos_count__json_number(void *userdata,
    {
       flags = strtol(number, NULL, 10);
 
-      if (flags == 3) /* core achievements */
-         ud->core_count++;
-      else if (flags == 5) /* unofficial achievements */
-         ud->unofficial_count++;
+      switch (flags)
+      {
+         case 3:  /* Core achievements */
+            ud->core_count++;
+            break;
+         case 5:  /* Unofficial achievements */
+            ud->unofficial_count++;
+            break;
+         default:
+            break;
+      }
    }
 
    return 0;
@@ -612,16 +619,11 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
       {
          case CHEEVOS_CONSOLE_GAMEBOY_ADVANCE:
             /* Patch the address to correctly map it to the mmaps */
-            if (var->value < 0x8000)
-            {
-               /* Internal RAM */
+
+            if (var->value < 0x8000) /* Internal RAM */
                var->value += 0x3000000;
-            }
-            else
-            {
-               /* Work RAM */
+            else                     /* Work RAM */
                var->value += 0x2000000 - 0x8000;
-            }
             break;
          case CHEEVOS_CONSOLE_PC_ENGINE:
             var->value += 0x1f0000;
@@ -1527,7 +1529,6 @@ Load achievements from retroachievements.org.
 static int cheevos_get_by_game_id(const char **json,
       unsigned game_id, retro_time_t *timeout)
 {
-   char request[256];
    settings_t *settings = config_get_ptr();
 
    /* Just return OK if cheevos are disabled. */
@@ -1536,6 +1537,7 @@ static int cheevos_get_by_game_id(const char **json,
 
    if (!cheevos_login(timeout))
    {
+      char request[256] = {0};
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
@@ -1725,13 +1727,14 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
    };
    
    int res;
-   char request[256];
    cheevos_deactivate_t ud;
    const char* json             = NULL;
-   settings_t *settings         = config_get_ptr();
    
    if (!cheevos_login(timeout))
    {
+      char request[256]    = {0};
+      settings_t *settings = config_get_ptr();
+
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=0",
