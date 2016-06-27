@@ -25,6 +25,7 @@
 
 #include "menu_driver.h"
 #include "menu_navigation.h"
+#include "menu_cbs.h"
 
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
@@ -56,12 +57,7 @@
 #include "../frontend/drivers/platform_linux.h"
 #endif
 
-extern unsigned rpl_entry_selection_ptr;
-
 #ifdef HAVE_NETWORKING
-extern char *core_buf;
-extern size_t core_len;
-
 static void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
       enum menu_file_type type)

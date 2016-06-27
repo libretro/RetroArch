@@ -55,7 +55,7 @@ typedef struct
 
 /* FIXME - Global variables, refactor */
 static char detect_content_path[PATH_MAX_LENGTH];
-static unsigned rpl_entry_selection_ptr;
+unsigned rpl_entry_selection_ptr;
 unsigned rdb_entry_start_game_selection_ptr;
 size_t hack_shader_pass = 0;
 
@@ -63,8 +63,8 @@ size_t hack_shader_pass = 0;
 /* HACK - we have to find some way to pass state inbetween
  * function pointer callback functions that don't necessarily
  * call each other. */
-static char *core_buf;
-static size_t core_len;
+char *core_buf;
+size_t core_len;
 
 /* defined in menu_cbs_deferred_push */
 static void cb_net_generic(void *task_data, void *user_data, const char *err)

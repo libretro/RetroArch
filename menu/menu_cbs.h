@@ -75,6 +75,9 @@ enum
 
 /* FIXME - Externs, refactor */
 extern size_t hack_shader_pass;
+extern char *core_buf;
+extern size_t core_len;
+extern unsigned rpl_entry_selection_ptr;
 
 /* Function callbacks */
 
