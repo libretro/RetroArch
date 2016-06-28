@@ -735,55 +735,56 @@ static void check_default_dirs(void)
     */
    if (path_file_exists("custom.ini"))
       return;
-   if (*g_defaults.dir.core_assets)
+
+   if (!string_is_empty(g_defaults.dir.core_assets))
       check_defaults_dir_create_dir(g_defaults.dir.core_assets);
-   if (*g_defaults.dir.remap)
+   if (!string_is_empty(g_defaults.dir.remap))
       check_defaults_dir_create_dir(g_defaults.dir.remap);
-   if (*g_defaults.dir.screenshot)
+   if (!string_is_empty(g_defaults.dir.screenshot))
       check_defaults_dir_create_dir(g_defaults.dir.screenshot);
-   if (*g_defaults.dir.core)
+   if (!string_is_empty(g_defaults.dir.core))
       check_defaults_dir_create_dir(g_defaults.dir.core);
-   if (*g_defaults.dir.autoconfig)
+   if (!string_is_empty(g_defaults.dir.autoconfig))
       check_defaults_dir_create_dir(g_defaults.dir.autoconfig);
-   if (*g_defaults.dir.audio_filter)
+   if (!string_is_empty(g_defaults.dir.audio_filter))
       check_defaults_dir_create_dir(g_defaults.dir.audio_filter);
-   if (*g_defaults.dir.video_filter)
+   if (!string_is_empty(g_defaults.dir.video_filter))
       check_defaults_dir_create_dir(g_defaults.dir.video_filter);
-   if (*g_defaults.dir.assets)
+   if (!string_is_empty(g_defaults.dir.assets))
       check_defaults_dir_create_dir(g_defaults.dir.assets);
-   if (*g_defaults.dir.playlist)
+   if (!string_is_empty(g_defaults.dir.playlist))
       check_defaults_dir_create_dir(g_defaults.dir.playlist);
-   if (*g_defaults.dir.core)
+   if (!string_is_empty(g_defaults.dir.core))
       check_defaults_dir_create_dir(g_defaults.dir.core);
-   if (*g_defaults.dir.core_info)
+   if (!string_is_empty(g_defaults.dir.core_info))
       check_defaults_dir_create_dir(g_defaults.dir.core_info);
-   if (*g_defaults.dir.overlay)
+   if (!string_is_empty(g_defaults.dir.overlay))
       check_defaults_dir_create_dir(g_defaults.dir.overlay);
-   if (*g_defaults.dir.port)
+   if (!string_is_empty(g_defaults.dir.port))
       check_defaults_dir_create_dir(g_defaults.dir.port);
-   if (*g_defaults.dir.shader)
+   if (!string_is_empty(g_defaults.dir.shader))
       check_defaults_dir_create_dir(g_defaults.dir.shader);
-   if (*g_defaults.dir.savestate)
+   if (!string_is_empty(g_defaults.dir.savestate))
       check_defaults_dir_create_dir(g_defaults.dir.savestate);
-   if (*g_defaults.dir.sram)
+   if (!string_is_empty(g_defaults.dir.sram))
       check_defaults_dir_create_dir(g_defaults.dir.sram);
-   if (*g_defaults.dir.system)
+   if (!string_is_empty(g_defaults.dir.system))
       check_defaults_dir_create_dir(g_defaults.dir.system);
-   if (*g_defaults.dir.resampler)
+   if (!string_is_empty(g_defaults.dir.resampler))
       check_defaults_dir_create_dir(g_defaults.dir.resampler);
-   if (*g_defaults.dir.menu_config)
+   if (!string_is_empty(g_defaults.dir.menu_config))
       check_defaults_dir_create_dir(g_defaults.dir.menu_config);
-   if (*g_defaults.dir.content_history)
+   if (!string_is_empty(g_defaults.dir.content_history))
       check_defaults_dir_create_dir(g_defaults.dir.content_history);
-   if (*g_defaults.dir.cache)
+   if (!string_is_empty(g_defaults.dir.cache))
       check_defaults_dir_create_dir(g_defaults.dir.cache);
-   if (*g_defaults.dir.database)
+   if (!string_is_empty(g_defaults.dir.database))
       check_defaults_dir_create_dir(g_defaults.dir.database);
-   if (*g_defaults.dir.cursor)
+   if (!string_is_empty(g_defaults.dir.cursor))
       check_defaults_dir_create_dir(g_defaults.dir.cursor);
-   if (*g_defaults.dir.cheats)
+   if (!string_is_empty(g_defaults.dir.cheats))
       check_defaults_dir_create_dir(g_defaults.dir.cheats);
-   if (*g_defaults.dir.thumbnails)
+   if (!string_is_empty(g_defaults.dir.thumbnails))
       check_defaults_dir_create_dir(g_defaults.dir.thumbnails);
 }
 
@@ -1176,7 +1177,7 @@ static bool load_content(
 
       info[i].path = NULL;
 
-      if (*path)
+      if (!string_is_empty(path))
          info[i].path = path;
 
       if (!need_fullpath && !string_is_empty(path))
@@ -1216,7 +1217,7 @@ static bool load_content(
 
       cheevos_set_cheats();
 
-      if (*content->elems[0].data)
+      if (!string_is_empty(content->elems[0].data))
          load_data = info;
       cheevos_load(load_data);
    }
@@ -1344,7 +1345,7 @@ static bool init_content_file_set_attribs(
 
    attr.i                  = 0;
 
-   if (*global->subsystem && special)
+   if (!string_is_empty(global->subsystem) && special)
    {
       unsigned i;
 
@@ -1408,7 +1409,7 @@ static bool content_file_init(struct string_list *temporary_content)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if (*global->subsystem && system)
+   if (!string_is_empty(global->subsystem) && system)
    {
       special = init_content_file_subsystem(&ret, system);
       if (!ret)
@@ -1550,11 +1551,11 @@ static void menu_content_environment_get(int *argc, char *argv[],
    wrap_args->state_path       = NULL;
    wrap_args->content_path     = NULL;
 
-   if (*global->path.config)
+   if (!string_is_empty(global->path.config))
       wrap_args->config_path   = global->path.config;
-   if (*global->dir.savefile)
+   if (!string_is_empty(global->dir.savefile))
       wrap_args->sram_path     = global->dir.savefile;
-   if (*global->dir.savestate)
+   if (!string_is_empty(global->dir.savestate))
       wrap_args->state_path    = global->dir.savestate;
    if (fullpath && *fullpath)
       wrap_args->content_path  = fullpath;
@@ -1599,7 +1600,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
    if (launched_from_menu)
    {
       /** Show loading OSD message */
-      if (*fullpath)
+      if (!string_is_empty(fullpath))
       {
          snprintf(msg, sizeof(msg), "%s %s ...", 
                msg_hash_to_str(MSG_LOADING),
@@ -1630,7 +1631,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
       {
          /* Path can be relative here.
           * Ensure we're pushing absolute path. */
-         if (*tmp)
+         if (!string_is_empty(tmp))
             path_resolve_realpath(tmp, sizeof(tmp));
       }
 
