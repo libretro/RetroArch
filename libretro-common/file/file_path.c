@@ -245,7 +245,7 @@ void fill_pathname_noext(char *out_path, const char *in_path,
 
 char *find_last_slash(const char *str)
 {
-   const char *slash = strrchr(str, '/');
+   const char *slash     = strrchr(str, '/');
 #ifdef _WIN32
    const char *backslash = strrchr(str, '\\');
 
@@ -505,7 +505,7 @@ bool path_is_absolute(const char *path)
 void path_resolve_realpath(char *buf, size_t size)
 {
 #ifndef RARCH_CONSOLE
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH] = {0};
 
    strlcpy(tmp, buf, sizeof(tmp));
 
@@ -630,6 +630,7 @@ void fill_short_pathname_representation(char* out_rep,
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
 
+#ifdef HAVE_COMPRESSION
    last_hash = (char*)strchr(path_short,'#');
    if(last_hash != NULL)
    {
@@ -644,5 +645,6 @@ void fill_short_pathname_representation(char* out_rep,
       strlcpy(out_rep, last_hash + 1, size);
    }
    else
+#endif
       strlcpy(out_rep, path_short, size);
 }
