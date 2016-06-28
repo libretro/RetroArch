@@ -1798,18 +1798,12 @@ bool task_push_content_load_default(
    /* Is content required by this core? */
    switch (mode)
    {
-      case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
-#ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-#endif
-         break;
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
 #ifdef HAVE_MENU
-         if (string_is_empty(fullpath))
-            menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
-         else
+         if (fullpath)
             menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+         else
+            menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
 #endif
          break;
       default:
@@ -1863,6 +1857,9 @@ bool task_push_content_load_default(
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
          runloop_ctl(RUNLOOP_CTL_STATE_FREE, NULL);
+#ifdef HAVE_MENU
+         menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+#endif
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
          runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
          break;
