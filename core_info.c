@@ -24,6 +24,7 @@
 
 #include "core_info.h"
 #include "configuration.h"
+#include "file_path_special.h"
 #include "list_special.h"
 #include "config.def.h"
 
@@ -178,9 +179,12 @@ static config_file_t *core_info_list_iterate(
       *substr = '\0';
 #endif
 
-   strlcat(info_path_base, ".info", sizeof(info_path_base));
+   strlcat(info_path_base,
+         file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
+         sizeof(info_path_base));
 
-   fill_pathname_join(info_path, (*settings->path.libretro_info) ?
+   fill_pathname_join(info_path,
+         (!string_is_empty(settings->path.libretro_info)) ?
          settings->path.libretro_info : settings->directory.libretro,
          info_path_base, sizeof(info_path));
 
