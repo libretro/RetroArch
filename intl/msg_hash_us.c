@@ -79,8 +79,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "filebrowser everytime.\n"
                " \n"
                "NOTE: Content for some cores might still not be\n"
-               "scannable. Examples include: \n"
-               "MAME, FBA, and maybe others."
+               "scannable."
                ,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
