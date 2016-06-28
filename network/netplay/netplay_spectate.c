@@ -57,7 +57,7 @@ static void netplay_spectate_pre_frame(netplay_t *netplay)
    new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
    if (new_fd < 0)
    {
-      RARCH_ERR("Failed to accept incoming spectator.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR));
       return;
    }
 
@@ -80,14 +80,14 @@ static void netplay_spectate_pre_frame(netplay_t *netplay)
 
    if (!netplay_get_nickname(netplay, new_fd))
    {
-      RARCH_ERR("Failed to get nickname from client.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT));
       socket_close(new_fd);
       return;
    }
 
    if (!netplay_send_nickname(netplay, new_fd))
    {
-      RARCH_ERR("Failed to send nickname to client.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT));
       socket_close(new_fd);
       return;
    }
@@ -97,7 +97,7 @@ static void netplay_spectate_pre_frame(netplay_t *netplay)
 
    if (!header)
    {
-      RARCH_ERR("Failed to generate BSV header.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_GENERATE_BSV_HEADER));
       socket_close(new_fd);
       return;
    }
@@ -108,7 +108,7 @@ static void netplay_spectate_pre_frame(netplay_t *netplay)
 
    if (!socket_send_all_blocking(new_fd, header, header_size, false))
    {
-      RARCH_ERR("Failed to send header to client.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_HEADER_TO_CLIENT));
       socket_close(new_fd);
       free(header);
       return;

@@ -236,7 +236,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
       case NETPLAY_CMD_FLIP_PLAYERS:
          if (cmd_size != sizeof(uint32_t))
          {
-            RARCH_ERR("CMD_FLIP_PLAYERS recieved an unexpected command size.\n");
+            RARCH_ERR("CMD_FLIP_PLAYERS received an unexpected command size.\n");
             return netplay_cmd_nak(netplay);
          }
 

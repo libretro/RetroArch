@@ -3063,10 +3063,13 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
 
    index_offset = menu_setting_get_index_offset(setting);
 
-   if(config_save_autoconf_profile(settings->input.device_names[index_offset], index_offset))
-      runloop_msg_queue_push("Autoconf file saved successfully", 1, 100, true);
+   if(config_save_autoconf_profile(
+            settings->input.device_names[index_offset], index_offset))
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY), 1, 100, true);
    else
-      runloop_msg_queue_push("Error saving autoconf file", 1, 100, true);
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true);
 
    return 0;
 }

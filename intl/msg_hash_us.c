@@ -2000,6 +2000,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Frontend for libretro";
       case MSG_LOADING:
          return "Loading";
+      case MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY:
+         return "Autoconfig file saved successfully.";
+      case MSG_AUTOCONFIG_FILE_ERROR_SAVING:
+         return "Error saving autoconf file.";
       case MSG_DISK_EJECTED:
          return "Ejected";
       case MSG_DISK_CLOSED:
@@ -2010,6 +2014,16 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Compiled against API";
       case MSG_FAILED_TO_LOAD:
          return "Failed to load";
+      case MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR:
+         return "Failed to accept incoming spectator.";
+      case MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT:
+         return "Failed to get nickname from client.";
+      case MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT:
+         return "Failed to send nickname to client.";
+      case MSG_FAILED_TO_GENERATE_BSV_HEADER:
+         return "Failed to generate BSV header.";
+      case MSG_FAILED_TO_SEND_HEADER_TO_CLIENT:
+         return "Failed to send header to client.";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG:
          return "Analog supported";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP:
@@ -2102,6 +2116,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Using libretro dummy core. Skipping recording.";
       case MSG_UNKNOWN:
          return "Unknown";
+      case MSG_COULD_NOT_READ_STATE_FROM_MOVIE:
+         return "Could not read state from movie.";
+      case MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE:
+         return "Movie file is not a valid BSV1 file.";
       case MSG_LOADING_CONTENT_FILE:
          return "Loading content file";
       case MSG_RECEIVED:
