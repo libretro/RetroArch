@@ -169,9 +169,8 @@ static config_file_t *core_info_list_iterate(
    if (!contents->elems[i].data)
       return NULL;
 
-   fill_pathname_base(info_path_base, contents->elems[i].data,
+   fill_pathname_base_noext(info_path_base, contents->elems[i].data,
          sizeof(info_path_base));
-   path_remove_extension(info_path_base);
 
 #if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP))
    char *substr = strrchr(info_path_base, '_');
