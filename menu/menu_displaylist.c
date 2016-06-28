@@ -114,13 +114,11 @@ static void print_buf_lines(file_list_t *list, char *buf,
                   char core_path[PATH_MAX_LENGTH]    = {0};
                   char *last                         = NULL;
 
-                  fill_pathname_join(
+                  fill_pathname_join_noext(
                         core_path,
                         settings->path.libretro_info,
                         line_start,
                         sizeof(core_path));
-
-                  path_remove_extension(core_path);
                   path_remove_extension(core_path);
                   last = (char*)strrchr(core_path, '_');
                   if (*last)
@@ -225,14 +223,13 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
                   char display_name[PATH_MAX_LENGTH] = {0};
                   char *last                         = NULL;
 
-                  fill_pathname_join(
+                  fill_pathname_join_noext(
                         core_path,
                         settings->path.libretro_info,
                         core_pathname,
                         sizeof(core_path));
+                  path_remove_extension(core_path);
 
-                  path_remove_extension(core_path);
-                  path_remove_extension(core_path);
                   last = (char*)strrchr(core_path, '_');
                   if (!string_is_empty(last))
                   {
@@ -2754,9 +2751,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
    {
       char db_path[PATH_MAX_LENGTH] = {0};
 
-      fill_pathname_join(db_path, settings->path.content_database,
+      fill_pathname_join_noext(db_path, settings->path.content_database,
             db_name, sizeof(db_path));
-      path_remove_extension(db_path);
       strlcat(db_path, file_path_str(FILE_PATH_RDB_EXTENSION),
             sizeof(db_path));
 

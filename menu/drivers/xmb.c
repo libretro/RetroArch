@@ -1033,12 +1033,11 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
       if (tmp)
       {
-         fill_pathname_join(
+         fill_pathname_join_noext(
                path,
                settings->directory.dynamic_wallpapers,
                tmp,
                sizeof(path));
-         path_remove_extension(path);
          free(tmp);
       }
 

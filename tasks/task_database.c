@@ -272,10 +272,8 @@ static int database_info_list_iterate_found_match(
    database_info_t *db_info_entry = &db_state->info->list[
       db_state->entry_index];
 
-   fill_short_pathname_representation(db_playlist_base_str,
+   fill_short_pathname_representation_noext(db_playlist_base_str,
          db_path, sizeof(db_playlist_base_str));
-
-   path_remove_extension(db_playlist_base_str);
 
    strlcat(db_playlist_base_str,
          file_path_str(FILE_PATH_LPL_EXTENSION),
