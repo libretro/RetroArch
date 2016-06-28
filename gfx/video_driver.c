@@ -24,6 +24,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include <retro_common_api.h>
 #include <file/config_file.h>
 #include <features/features_cpu.h>
 
@@ -52,12 +53,6 @@
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
 #define FPS_UPDATE_INTERVAL 256
-
-#ifdef _WIN32
-#define U64_SIGN "%I64u"
-#else
-#define U64_SIGN "%llu"
-#endif
 
 typedef struct video_driver_state
 {
@@ -1017,7 +1012,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
 
          strlcat(buf, "Frames: ", size);
 
-         snprintf(frames_text, sizeof(frames_text), U64_SIGN,
+         snprintf(frames_text, sizeof(frames_text), STRING_REP_UINT64,
                (unsigned long long)video_driver_frame_count);
 
          strlcat(buf, frames_text, size);
@@ -1025,7 +1020,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
       }
 
       if (buf_fps && settings->fps_show)
-         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: " U64_SIGN,
+         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: " STRING_REP_UINT64,
                last_fps, (unsigned long long)video_driver_frame_count);
 
       return ret;
