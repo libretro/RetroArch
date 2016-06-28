@@ -1912,7 +1912,6 @@ bool task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-         break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          break;
       default:
