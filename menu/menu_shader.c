@@ -60,19 +60,16 @@ void menu_shader_manager_init(menu_handle_t *menu)
     * conflicts on menu.cgp/menu.glslp. */
    if (config_path)
    {
-      fill_pathname_base(menu->default_glslp, config_path,
+      fill_pathname_base_noext(menu->default_glslp, config_path,
             sizeof(menu->default_glslp));
-      path_remove_extension(menu->default_glslp);
       strlcat(menu->default_glslp, ".glslp", sizeof(menu->default_glslp));
 
-      fill_pathname_base(menu->default_cgp, config_path,
+      fill_pathname_base_noext(menu->default_cgp, config_path,
             sizeof(menu->default_cgp));
-      path_remove_extension(menu->default_cgp);
       strlcat(menu->default_cgp, ".cgp", sizeof(menu->default_cgp));
 
-      fill_pathname_base(menu->default_slangp, config_path,
+      fill_pathname_base_noext(menu->default_slangp, config_path,
             sizeof(menu->default_slangp));
-      path_remove_extension(menu->default_slangp);
       strlcat(menu->default_slangp, ".slangp", sizeof(menu->default_slangp));
    }
    else

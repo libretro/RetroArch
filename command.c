@@ -1451,16 +1451,16 @@ static bool command_event_save_core_config(void)
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         char tmp[64];
+         char tmp[64] = {0};
 
-         fill_pathname_base(
+         fill_pathname_base_noext(
                config_name,
                settings->path.libretro,
                sizeof(config_name));
 
-         path_remove_extension(config_name);
          fill_pathname_join(config_path, config_dir, config_name,
                sizeof(config_path));
+
          if (i)
             snprintf(tmp, sizeof(tmp), "-%u%s",
                   i,
