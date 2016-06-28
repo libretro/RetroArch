@@ -349,6 +349,9 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
 void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size);
 
+void fill_short_pathname_representation_noext(char* out_rep,
+      const char *in_path, size_t size);
+
 void fill_pathname_expand_special(char *out_path,
       const char *in_path, size_t size);
 

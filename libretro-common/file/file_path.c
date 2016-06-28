@@ -648,3 +648,10 @@ void fill_short_pathname_representation(char* out_rep,
 #endif
       strlcpy(out_rep, path_short, size);
 }
+
+void fill_short_pathname_representation_noext(char* out_rep,
+      const char *in_path, size_t size)
+{
+   fill_short_pathname_representation(out_rep, in_path, size);
+   path_remove_extension(out_rep);
+}

@@ -1739,9 +1739,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    if (!db_info)
       goto error;
 
-   fill_short_pathname_representation(path_base, info->path,
+   fill_short_pathname_representation_noext(path_base, info->path,
          sizeof(path_base));
-   path_remove_extension(path_base);
    strlcat(path_base,
          file_path_str(FILE_PATH_LPL_EXTENSION),
          sizeof(path_base));
