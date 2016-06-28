@@ -2368,7 +2368,7 @@ static void save_keybind_joykey(config_file_t *conf, const char *prefix,
    if (bind->joykey == NO_BTN)
    {
        if (save_empty)
-         config_set_string(conf, key, "nul");
+         config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
    }
    else if (GET_HAT_DIR(bind->joykey))
       save_keybind_hat(conf, key, bind);
@@ -2389,7 +2389,7 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
    if (bind->joyaxis == AXIS_NONE)
    {
       if (save_empty)
-         config_set_string(conf, key, "nul");
+         config_set_string(conf, key, file_path_str(FILE_PATH_NUL));
    }
    else if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
    {

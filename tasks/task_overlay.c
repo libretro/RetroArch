@@ -24,6 +24,7 @@
 
 #include "tasks_internal.h"
 
+#include "../file_path_special.h"
 #include "../input/input_config.h"
 #include "../input/input_overlay.h"
 #include "../configuration.h"
@@ -181,7 +182,7 @@ static bool task_overlay_load_desc(
 
             for (; tmp; tmp = strtok_r(NULL, "|", &save))
             {
-               if (!string_is_equal(tmp, "nul"))
+               if (!string_is_equal(tmp, file_path_str(FILE_PATH_NUL)))
                   desc->key_mask |= UINT64_C(1) 
                      << input_config_translate_str_to_bind_id(tmp);
             }
