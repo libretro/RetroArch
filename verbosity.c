@@ -37,8 +37,8 @@
 
 /* If this is non-NULL. RARCH_LOG and friends 
  * will write to this file. */
-static FILE *log_file;
-static bool main_verbosity;
+static FILE *log_file      = NULL;
+static bool main_verbosity = false;
 
 void verbosity_enable(void)
 {
@@ -131,18 +131,18 @@ static aslclient asl_client;
          file_path_str(FILE_PATH_PROGRAM_NAME),
          fmt,
          ap);
-#elif defined(HAVE_FILE_LOGGER)
-   fprintf(retro_main_log_file(), "%s %s :: ",
-         file_path_str(FILE_PATH_PROGRAM_NAME),
-         tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
-   vfprintf(retro_main_log_file(), fmt, ap);
-   fflush(retro_main_log_file());
 #else
-   fprintf(stderr, "%s %s :: ",
+
+#ifdef HAVE_FILE_LOGGER
+   FILE *fp = retro_main_log_file();
+#else
+   FILE *fp = stderr;
+#endif
+   fprintf(fp, "%s %s :: ",
          file_path_str(FILE_PATH_PROGRAM_NAME),
          tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
-   vfprintf(stderr, fmt, ap);
-   fflush(stderr);
+   vfprintf(fp, fmt, ap);
+   fflush(fp);
 #endif
 }
 
