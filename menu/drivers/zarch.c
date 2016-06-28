@@ -254,7 +254,7 @@ static unsigned zarch_zui_hash(zui_t *zui, const char *s)
 {
    unsigned hval = zui->hash;
 
-   while(*s!=0)
+   while(*s != 0)
    {
       hval+=*s++;
       hval+=(hval<<10);

@@ -206,7 +206,7 @@ static void blit_line(int x, int y,
    if (!rgui_framebuf_data)
       return;
 
-   while (*message)
+   while (!string_is_empty(message))
    {
       const uint8_t *font_fb = menu_display_get_font_framebuffer();
       uint32_t symbol        = string_walk(&message);

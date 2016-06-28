@@ -2735,7 +2735,7 @@ static void xmb_context_reset_background(const char *iconpath)
 
    fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
 
-   if (*settings->path.menu_wallpaper)
+   if (!string_is_empty(settings->path.menu_wallpaper))
       strlcpy(path, settings->path.menu_wallpaper, sizeof(path));
 
    if (path_file_exists(path))
