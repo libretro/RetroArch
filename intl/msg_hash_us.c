@@ -2010,6 +2010,18 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Compiled against API";
       case MSG_FAILED_TO_LOAD:
          return "Failed to load";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG:
+         return "Analog supported";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP:
+         return "Co-op supported";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW:
+         return "Enhancement Hardware";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING:
+         return "ELSPA Rating";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE:
+         return "Rumble supported";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING:
+         return "PEGI Rating";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
          return "Edge Magazine Issue";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING:

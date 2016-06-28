@@ -1987,21 +1987,24 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       }
       if (db_info_entry->elspa_rating)
       {
-         if (create_string_list_rdb_entry_string("ELSPA Rating",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ELSPA_RATING),
                   db_info_entry->elspa_rating, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->pegi_rating)
       {
-         if (create_string_list_rdb_entry_string("PEGI Rating",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING),
                   db_info_entry->pegi_rating, info->path, info->list) == -1)
             goto error;
       }
       if (db_info_entry->enhancement_hw)
       {
-         if (create_string_list_rdb_entry_string("Enhancement Hardware",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ENHANCEMENT_HW),
                   db_info_entry->enhancement_hw, info->path, info->list) == -1)
             goto error;
@@ -2025,7 +2028,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->analog_supported == 1)
       {
-         if (create_string_list_rdb_entry_string("Analog supported",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ANALOG),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
             goto error;
@@ -2033,7 +2037,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->rumble_supported == 1)
       {
-         if (create_string_list_rdb_entry_string("Rumble supported",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RUMBLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
             goto error;
@@ -2041,7 +2046,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->coop_supported == 1)
       {
-         if (create_string_list_rdb_entry_string("Co-op supported",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_COOP),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
             goto error;
@@ -3170,8 +3176,6 @@ static int menu_displaylist_parse_generic(
    dir_list_sort(str_list, true);
 
    list_size = str_list->size;
-    
-    
 
    if (list_size == 0)
    {
