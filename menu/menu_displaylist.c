@@ -2752,7 +2752,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
       fill_pathname_join(db_path, settings->path.content_database,
             db_name, sizeof(db_path));
       path_remove_extension(db_path);
-      strlcat(db_path, ".rdb", sizeof(db_path));
+      strlcat(db_path, file_path_str(FILE_PATH_RDB_EXTENSION),
+            sizeof(db_path));
 
       menu_entries_add_enum(info->list, label,
             db_path, MSG_UNKNOWN, FILE_TYPE_RDB_ENTRY, 0, idx);
@@ -4738,7 +4739,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_DATABASES:
          info->type_default = FILE_TYPE_RDB;
-         strlcpy(info->exts, "rdb", sizeof(info->exts));
+         strlcpy(info->exts,
+               file_path_str(FILE_PATH_RDB_EXTENSION),
+               sizeof(info->exts));
          strlcpy(info->path, settings->path.content_database, sizeof(info->path));
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:

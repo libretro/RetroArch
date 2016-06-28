@@ -53,6 +53,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return ".ips";
       case FILE_PATH_BPS_EXTENSION:
          return ".bps";
+      case FILE_PATH_RDB_EXTENSION:
+         return ".rdb";
       case FILE_PATH_INDEX_URL:
          return ".index";
       case FILE_PATH_INDEX_DIRS_URL:
