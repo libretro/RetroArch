@@ -25,6 +25,12 @@ const char *file_path_str(enum file_path_enum enum_idx)
 #else
          return "RetroArch";
 #endif
+      case FILE_PATH_LOG_WARN:
+         return "[WARN]";
+      case FILE_PATH_LOG_ERROR:
+         return "[ERROR]";
+      case FILE_PATH_LOG_INFO:
+         return "[INFO]";
       case FILE_PATH_CORE_INFO_EXTENSION:
          return ".info";
       case FILE_PATH_CONFIG_EXTENSION:

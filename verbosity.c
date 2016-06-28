@@ -122,9 +122,9 @@ static aslclient asl_client;
    int prio = ANDROID_LOG_INFO;
    if (tag)
    {
-      if (string_is_equal("[WARN]", tag))
+      if (string_is_equal(file_path_str(FILE_PATH_LOG_WARN), tag))
          prio = ANDROID_LOG_WARN;
-      else if (string_is_equal("[ERROR]", tag))
+      else if (string_is_equal(file_path_str(FILE_PATH_LOG_ERROR), tag))
          prio = ANDROID_LOG_ERROR;
    }
    __android_log_vprint(prio,
@@ -134,13 +134,13 @@ static aslclient asl_client;
 #elif defined(HAVE_FILE_LOGGER)
    fprintf(retro_main_log_file(), "%s %s :: ",
          file_path_str(FILE_PATH_PROGRAM_NAME),
-         tag ? tag : "[INFO]");
+         tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
    vfprintf(retro_main_log_file(), fmt, ap);
    fflush(retro_main_log_file());
 #else
    fprintf(stderr, "%s %s :: ",
          file_path_str(FILE_PATH_PROGRAM_NAME),
-         tag ? tag : "[INFO]");
+         tag ? tag : file_path_str(FILE_PATH_LOG_INFO));
    vfprintf(stderr, fmt, ap);
    fflush(stderr);
 #endif
@@ -154,7 +154,7 @@ void RARCH_LOG(const char *fmt, ...)
       return;
 
    va_start(ap, fmt);
-   RARCH_LOG_V("[INFO]", fmt, ap);
+   RARCH_LOG_V(file_path_str(FILE_PATH_LOG_INFO), fmt, ap);
    va_end(ap);
 }
 
@@ -167,7 +167,7 @@ void RARCH_LOG_OUTPUT(const char *msg, ...)
 {
    va_list ap;
    va_start(ap, msg);
-   RARCH_LOG_OUTPUT_V("[INFO]", msg, ap);
+   RARCH_LOG_OUTPUT_V(file_path_str(FILE_PATH_LOG_INFO), msg, ap);
    va_end(ap);
 }
 
@@ -180,7 +180,7 @@ void RARCH_WARN(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);
-   RARCH_WARN_V("[WARN]", fmt, ap);
+   RARCH_WARN_V(file_path_str(FILE_PATH_LOG_WARN), fmt, ap);
    va_end(ap);
 }
 
@@ -193,7 +193,7 @@ void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);
-   RARCH_ERR_V("[ERROR]", fmt, ap);
+   RARCH_ERR_V(file_path_str(FILE_PATH_LOG_ERROR), fmt, ap);
    va_end(ap);
 }
 #endif
