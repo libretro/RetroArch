@@ -346,6 +346,12 @@ void fill_pathname_base(char *out, const char *in_path, size_t size)
    retro_assert(strlcpy(out, ptr, size) < size);
 }
 
+void fill_pathname_base_noext(char *out, const char *in_path, size_t size)
+{
+   fill_pathname_base(out, in_path, size);
+   path_remove_extension(out);
+}
+
 /**
  * fill_pathname_basedir:
  * @out_dir            : output directory
@@ -362,6 +368,13 @@ void fill_pathname_basedir(char *out_dir,
    if (out_dir != in_path)
       retro_assert(strlcpy(out_dir, in_path, size) < size);
    path_basedir(out_dir);
+}
+
+void fill_pathname_basedir_noext(char *out_dir,
+      const char *in_path, size_t size)
+{
+   fill_pathname_basedir(out_dir, in_path, size);
+   path_remove_extension(out_dir);
 }
 
 /**

@@ -251,6 +251,9 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
  **/
 void fill_pathname_base(char *out_path, const char *in_path, size_t size);
 
+void fill_pathname_base_noext(char *out_dir,
+      const char *in_path, size_t size);
+
 /**
  * fill_pathname_basedir:
  * @out_dir            : output directory        
@@ -262,6 +265,9 @@ void fill_pathname_base(char *out_path, const char *in_path, size_t size);
  * @out_path will get path "./".
  **/
 void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
+
+void fill_pathname_basedir_noext(char *out_dir,
+      const char *in_path, size_t size);
 
 /**
  * fill_pathname_parent_dir:
