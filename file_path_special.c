@@ -121,7 +121,7 @@ void fill_pathname_abbreviate_special(char *out_path,
    
    for (i = 0; candidates[i]; i++)
    {
-      if (*candidates[i] && strstr(in_path, candidates[i]) == in_path)
+      if (!string_is_empty(candidates[i]) && strstr(in_path, candidates[i]) == in_path)
       {
          size_t src_size  = strlcpy(out_path, notations[i], size);
 

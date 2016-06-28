@@ -901,7 +901,7 @@ static void config_set_defaults(void)
             g_defaults.dir.content_history,
             sizeof(settings->directory.content_history));
 
-   if (*g_defaults.path.config)
+   if (!string_is_empty(g_defaults.path.config))
       fill_pathname_expand_special(global->path.config,
             g_defaults.path.config, sizeof(global->path.config));
 
@@ -1949,7 +1949,7 @@ static void config_load_core_specific(void)
 #endif
 
 #ifdef HAVE_MENU
-   if (*settings->directory.menu_config)
+   if (!string_is_empty(settings->directory.menu_config))
    {
       path_resolve_realpath(settings->directory.menu_config,
             sizeof(settings->directory.menu_config));
@@ -2277,14 +2277,14 @@ static void parse_config_file(void)
    bool         ret = config_load_file((*global->path.config)
          ? global->path.config : NULL, false);
 
-   if (*global->path.config)
+   if (!string_is_empty(global->path.config))
    {
       RARCH_LOG("Config: loading config from: %s.\n", global->path.config);
    }
    else
    {
       RARCH_LOG("Loading default config.\n");
-      if (*global->path.config)
+      if (!string_is_empty(global->path.config))
          RARCH_LOG("Config: found default config: %s.\n", global->path.config);
    }
 
@@ -2466,7 +2466,7 @@ void config_load(void)
    global_t   *global   = global_get_ptr();
 
    /* Flush out per-core configs before loading a new config. */
-   if (*global->path.core_specific_config &&
+   if (!string_is_empty(global->path.core_specific_config) &&
          settings->config_save_on_exit && settings->core_specific_config)
       config_save_file(global->path.core_specific_config);
 

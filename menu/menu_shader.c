@@ -19,6 +19,7 @@
 #include <compat/strl.h>
 #include <retro_assert.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "menu_driver.h"
 #include "menu_shader.h"
@@ -48,10 +49,10 @@ void menu_shader_manager_init(menu_handle_t *menu)
 
    if (global)
    {
-      if (*global->path.core_specific_config
+      if (!string_is_empty(global->path.core_specific_config)
             && settings->core_specific_config)
          config_path = global->path.core_specific_config;
-      else if (*global->path.config)
+      else if (!string_is_empty(global->path.config))
          config_path = global->path.config;
    }
 
@@ -288,7 +289,7 @@ void menu_shader_manager_save_preset(
       strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
-   if (*global->path.config)
+   if (!string_is_empty(global->path.config))
       fill_pathname_basedir(
             config_directory,
             global->path.config,

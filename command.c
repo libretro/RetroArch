@@ -222,11 +222,11 @@ static bool command_read_ram(const char *arg)
 
 static bool command_write_ram(const char *arg)
 {
-   cheevos_var_t var;
-   uint8_t * data;
-   unsigned nbytes;
    int i;
    char reply[256];
+   cheevos_var_t var;
+   unsigned nbytes;
+   uint8_t * data    = NULL;
 
    cheevos_parse_guest_addr(&var, strtoul(arg, (char**)&arg, 16));
    data = cheevos_get_memory(&var);
@@ -859,7 +859,7 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
             msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
    }
 
-   if (*msg)
+   if (!string_is_empty(msg))
    {
       if (error)
          RARCH_ERR("%s\n", msg);
@@ -918,7 +918,7 @@ static void command_event_disk_control_set_index(unsigned idx)
       error = true;
    }
 
-   if (*msg)
+   if (!string_is_empty(msg))
    {
       if (error)
          RARCH_ERR("%s\n", msg);
@@ -1543,11 +1543,12 @@ void command_event_save_current_config(void)
        */
 
       /* Flush out the core specific config. */
-      if (*global->path.core_specific_config &&
-            settings->core_specific_config)
+      if (!string_is_empty(global->path.core_specific_config)
+            && settings->core_specific_config)
          ret = config_save_file(global->path.core_specific_config);
       else
          ret = config_save_file(global->path.config);
+
       if (ret)
       {
          snprintf(msg, sizeof(msg), "Saved new config to \"%s\".",
@@ -2092,7 +2093,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_CORE_INFO_INIT:
          command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 
-         if (*settings->directory.libretro)
+         if (!string_is_empty(settings->directory.libretro))
             core_info_init_list();
          break;
       case CMD_EVENT_CORE_DEINIT:

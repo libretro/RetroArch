@@ -248,7 +248,7 @@ static void menu_action_setting_disp_set_label_shader_pass(
    if (!shader)
       return;
 
-   if (*shader->pass[pass].source.path)
+   if (!string_is_empty(shader->pass[pass].source.path))
       fill_pathname_base(s,
             shader->pass[pass].source.path, len);
 #endif
