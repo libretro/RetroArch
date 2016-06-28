@@ -741,6 +741,10 @@ static void retroarch_parse_input(int argc, char *argv[])
       int port;
       int c = getopt_long(argc, argv, optstring, opts, NULL);
 
+#if 0
+      RARCH_LOG("c is: %c, optarg is: [%s]\n", c, string_is_empty(optarg) ? "" : optarg);
+#endif
+
       if (c == -1)
          break;
 
