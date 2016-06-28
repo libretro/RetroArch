@@ -24,7 +24,7 @@
 
 RETRO_BEGIN_DECLS
 
-enum menu_file_type
+enum msg_file_type
 {
    FILE_TYPE_NONE = 0,
    FILE_TYPE_PLAIN,
@@ -1977,7 +1977,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len);
 
 int menu_hash_get_help(uint32_t hash, char *s, size_t len);
 
-enum menu_file_type msg_hash_to_file_type(uint32_t hash);
+enum msg_file_type msg_hash_to_file_type(uint32_t hash);
 
 uint32_t msg_hash_calculate(const char *s);
 

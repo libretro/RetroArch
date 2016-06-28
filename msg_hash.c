@@ -187,7 +187,7 @@ uint32_t msg_hash_calculate(const char *s)
 #define HASH_EXTENSION_ISO                                                     0x0b8880d0U
 #define HASH_EXTENSION_ISO_UPPERCASE                                           0x0b87f470U
 
-enum menu_file_type msg_hash_to_file_type(uint32_t hash)
+enum msg_file_type msg_hash_to_file_type(uint32_t hash)
 {
    switch (hash)
    {

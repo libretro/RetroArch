@@ -60,7 +60,7 @@
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
-      enum menu_file_type type)
+      enum msg_file_type type)
 {
    char c;
    int i, j = 0;
@@ -155,7 +155,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
 }
 
 static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
-      enum menu_file_type type)
+      enum msg_file_type type)
 {
    char c;
    int i, j = 0;
@@ -3206,7 +3206,7 @@ static int menu_displaylist_parse_generic(
       bool is_dir;
       char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
-      enum menu_file_type file_type = FILE_TYPE_NONE;
+      enum msg_file_type file_type  = FILE_TYPE_NONE;
 
       switch (str_list->elems[i].attr.i)
       {
@@ -3233,7 +3233,7 @@ static int menu_displaylist_parse_generic(
                   break;
                }
             }
-            file_type = (enum menu_file_type)info->type_default;
+            file_type = (enum msg_file_type)info->type_default;
             break;
       }
 
