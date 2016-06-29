@@ -1000,7 +1000,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
          curr_time = new_time;
 
-         fill_string_concat(buf,
+         fill_pathname_noext(buf,
                video_driver_title_buf,
                " || ",
                size);
@@ -1945,7 +1945,8 @@ void video_driver_set_title_buf(void)
 {
    struct retro_system_info info;
    core_get_system_info(&info);
-   fill_string_concat(video_driver_title_buf, 
+
+   fill_pathname_noext(video_driver_title_buf, 
          msg_hash_to_str(MSG_PROGRAM),
          " ",
          sizeof(video_driver_title_buf));

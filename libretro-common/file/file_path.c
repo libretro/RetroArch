@@ -612,14 +612,6 @@ void fill_string_join(char *out_path,
    retro_assert(strlcat(out_path, append, size) < size);
 }
 
-void fill_string_concat(char *out_path,
-      const char *str1, const char *str2,
-      size_t size)
-{
-   strlcpy(out_path, str1, size);
-   strlcat(out_path, str2, size);
-}
-
 /**
  * fill_pathname_join_delim:
  * @out_path           : output path

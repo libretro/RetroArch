@@ -3885,7 +3885,7 @@ static bool setting_append_list_input_player_options(
       if (input_config_bind_map_get_meta(i))
          continue;
 
-      fill_string_concat(label, buffer[user],
+      fill_pathname_noext(label, buffer[user],
             " ",
             sizeof(label));
       if (
