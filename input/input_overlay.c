@@ -198,7 +198,7 @@ static void input_overlay_load_active(input_overlay_t *ol, float opacity)
    if (!ol)
       return;
 
-   if (ol->iface->load)
+   if (ol->iface && ol->iface->load)
       ol->iface->load(ol->iface_data, ol->active->load_images,
             ol->active->load_images_size);
 
