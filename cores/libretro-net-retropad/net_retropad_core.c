@@ -36,11 +36,10 @@
 #define NETRETROPAD_CORE_PREFIX(s) s
 #endif
 
-int s;
-int port;
-char message[64];
-char server[64];
-struct sockaddr_in si_other;
+static int s;
+static int port;
+static char server[64];
+static struct sockaddr_in si_other;
  
 static struct retro_log_callback logger;
 
@@ -214,7 +213,9 @@ void NETRETROPAD_CORE_PREFIX(retro_reset)(void)
 void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 {
    unsigned i;
+   char message[64];
    unsigned input_state = retropad_update_input();
+
    snprintf(message, sizeof(message), "%d", input_state);
 
    /* send the message */
