@@ -3885,8 +3885,9 @@ static bool setting_append_list_input_player_options(
       if (input_config_bind_map_get_meta(i))
          continue;
 
-      strlcpy(label, buffer[user], sizeof(label));
-      strlcat(label, " ", sizeof(label));
+      fill_string_concat(label, buffer[user],
+            " ",
+            sizeof(label));
       if (
             settings->input.input_descriptor_label_show
             && (i < RARCH_FIRST_META_KEY)
