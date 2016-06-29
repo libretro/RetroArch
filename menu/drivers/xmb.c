@@ -1359,13 +1359,13 @@ static void xmb_context_reset_horizontal_list(
       fill_pathname_application_special(iconpath, sizeof(iconpath),
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
-      fill_pathname_join(texturepath, iconpath, sysname,
+      fill_pathname_join_concat(texturepath, iconpath, sysname,
+            ".png",
             sizeof(texturepath));
-      strlcat(texturepath, ".png", sizeof(texturepath));
 
-      fill_pathname_join(content_texturepath, iconpath,
-            sysname, sizeof(content_texturepath));
-      strlcat(content_texturepath, "-content.png",
+      fill_pathname_join_concat(content_texturepath, iconpath,
+            sysname, 
+            "-content.png",
             sizeof(content_texturepath));
 
       image_texture_load(&ti, texturepath);

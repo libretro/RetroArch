@@ -310,6 +310,11 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
 void fill_pathname_join(char *out_path, const char *dir,
       const char *path, size_t size);
 
+void fill_pathname_join_concat(char *out_path,
+      const char *dir, const char *path, 
+      const char *concat,
+      size_t size);
+
 void fill_pathname_join_noext(char *out_path,
       const char *dir, const char *path, size_t size);
 
