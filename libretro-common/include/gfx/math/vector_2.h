@@ -25,6 +25,8 @@
 
 #include <stdint.h>
 
+typedef float vec2_t[2];
+
 float vec2_dot(const float *a, const float *b);
 
 float vec2_cross(const float *a, const float *b) ;
