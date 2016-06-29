@@ -208,6 +208,9 @@ static int task_database_iterate_playlist(
          iso_get_serial(db_state, db, name, db_state->serial);
          db->type = DATABASE_TYPE_SERIAL_LOOKUP;
          break;
+      case FILE_TYPE_LUTRO:
+         db->type = DATABASE_TYPE_ITERATE_LUTRO;
+         break;
       default:
          db->type = DATABASE_TYPE_CRC_LOOKUP;
          return file_get_crc(db_state, name, &db_state->crc);
@@ -417,6 +420,38 @@ static int task_database_iterate_playlist_zip(
    return 1;
 }
 
+static int task_database_iterate_playlist_lutro(
+      database_state_handle_t *db_state,
+      database_info_handle_t *db,
+      const char *path)
+{
+   char db_playlist_path[PATH_MAX_LENGTH]      = {0};
+   char game_title[PATH_MAX_LENGTH]            = {0};
+   playlist_t   *playlist = NULL;
+   settings_t           *settings = config_get_ptr();
+
+   fill_short_pathname_representation_noext(game_title,
+         path, sizeof(game_title));
+
+   fill_pathname_join(db_playlist_path, settings->directory.playlist,
+         "Lutro.lpl", sizeof(db_playlist_path));
+
+   playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
+
+   if(!playlist_entry_exists(playlist, path, "DETECT"))
+   {
+      playlist_push(playlist, path,
+            game_title, "DETECT", "DETECT",
+            "DETECT", "Lutro.lpl");
+   }
+
+   playlist_write_file(playlist);
+   playlist_free(playlist);
+
+   return 0;
+}
+
+
 static int task_database_iterate_serial_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
@@ -491,6 +526,8 @@ static int task_database_iterate(database_state_handle_t *db_state,
          return task_database_iterate_playlist(db_state, db, name);
       case DATABASE_TYPE_ITERATE_ZIP:
          return task_database_iterate_playlist_zip(db_state, db, name);
+      case DATABASE_TYPE_ITERATE_LUTRO:
+         return task_database_iterate_playlist_lutro(db_state, db, name);
       case DATABASE_TYPE_SERIAL_LOOKUP:
          return task_database_iterate_serial_lookup(db_state, db, name);
       case DATABASE_TYPE_CRC_LOOKUP:
