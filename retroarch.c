@@ -1222,7 +1222,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    fill_pathname_join(s,
          config_directory, core_name, len);
    fill_string_join(s, game_name, len);
-   strlcat(s, ".opt", len);
+   strlcat(s,
+         file_path_str(FILE_PATH_OPT_EXTENSION), len);
 
    fill_pathname_join(core_path,
          config_directory, core_name, sizeof(core_path));
