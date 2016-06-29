@@ -2362,8 +2362,7 @@ static void save_keybind_joykey(config_file_t *conf, const char *prefix,
 {
    char key[64] = {0};
 
-   fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   strlcat(key, "_btn", sizeof(key));
+   fill_pathname_join_delim_concat(key, prefix, base, '_', "_btn", sizeof(key));
 
    if (bind->joykey == NO_BTN)
    {
@@ -2383,8 +2382,10 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
    unsigned axis   = 0;
    char dir        = '\0';
 
-   fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   strlcat(key, "_axis", sizeof(key));
+   fill_pathname_join_delim_concat(key,
+         prefix, base, '_',
+         "_axis",
+         sizeof(key));
 
    if (bind->joyaxis == AXIS_NONE)
    {

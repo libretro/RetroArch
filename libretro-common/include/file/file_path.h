@@ -349,6 +349,10 @@ void fill_string_concat(char *out_path,
 void fill_pathname_join_delim(char *out_path, const char *dir,
       const char *path, const char delim, size_t size);
 
+void fill_pathname_join_delim_concat(char *out_path, const char *dir,
+      const char *path, const char delim, const char *concat,
+      size_t size);
+
 /**
  * fill_short_pathname_representation:
  * @out_rep            : output representation

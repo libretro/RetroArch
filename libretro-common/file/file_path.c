@@ -643,6 +643,14 @@ void fill_pathname_join_delim(char *out_path, const char *dir,
    retro_assert(strlcat(out_path, path, size) < size);
 }
 
+void fill_pathname_join_delim_concat(char *out_path, const char *dir,
+      const char *path, const char delim, const char *concat,
+      size_t size)
+{
+   fill_pathname_join_delim(out_path, dir, path, delim, size);
+   strlcat(out_path, concat, size);
+}
+
 /**
  * fill_short_pathname_representation:
  * @out_rep            : output representation
