@@ -1251,11 +1251,12 @@ static int generic_action_ok_remap_file_save(const char *path,
    if (info)
       core_name           = info->info.library_name;
 
-   fill_pathname_join(
-         directory,
-         settings->directory.input_remapping,
-         core_name,
-         sizeof(directory));
+   if (!string_is_empty(core_name))
+      fill_pathname_join(
+            directory,
+            settings->directory.input_remapping,
+            core_name,
+            sizeof(directory));
 
    switch (action_type)
    {
@@ -1733,11 +1734,13 @@ static void cb_generic_download(void *task_data,
          break;
    }
 
-   fill_pathname_join(output_path, dir_path,
-         transf->path, sizeof(output_path));
+   if (!string_is_empty(dir_path))
+      fill_pathname_join(output_path, dir_path,
+            transf->path, sizeof(output_path));
 
    /* Make sure the directory exists */
    path_basedir(output_path);
+
    if (!path_mkdir(output_path))
    {
       err = "Failed to create the directory.";

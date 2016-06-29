@@ -1409,7 +1409,7 @@ static bool content_file_init(struct string_list *temporary_content)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if (!string_is_empty(global->subsystem) && system)
+   if (!string_is_empty(global->subsystem))
    {
       special = init_content_file_subsystem(&ret, system);
       if (!ret)
@@ -1590,7 +1590,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
       menu_display_set_msg_force(true);
       menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
-      fill_pathname_base(name, fullpath, sizeof(name));
+      if (!string_is_empty(fullpath))
+         fill_pathname_base(name, fullpath, sizeof(name));
    }
 #endif
 

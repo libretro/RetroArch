@@ -507,11 +507,15 @@ enum retro_pixel_format rarch_softfilter_get_output_format(
 
 void rarch_softfilter_process(rarch_softfilter_t *filt,
       void *output, size_t output_stride,
-      const void *input, unsigned width, unsigned height, size_t input_stride)
+      const void *input, unsigned width, unsigned height,
+      size_t input_stride)
 {
    unsigned i;
 
-   if (filt && filt->impl && filt->impl->get_work_packets)
+   if (!filt)
+      return;
+
+   if (filt->impl && filt->impl->get_work_packets)
       filt->impl->get_work_packets(filt->impl_data, filt->packets,
             output, output_stride, input, width, height, input_stride);
    

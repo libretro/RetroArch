@@ -124,7 +124,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
       }
    }
 
-   if (g_x11_win)
+   if (g_x11_win && g_x11_dpy)
    {
       /* Save last used monitor for later. */
       x11_save_last_used_monitor(DefaultRootWindow(g_x11_dpy));
