@@ -111,7 +111,7 @@ static unsigned retropad_update_input(void)
 
    if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B))
       value += 1;
-   if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A))
+   if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y))
       value += 2;
    if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT))
       value += pow(2, 2);
@@ -125,7 +125,7 @@ static unsigned retropad_update_input(void)
       value += pow(2, 6);
    if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       value += pow(2, 7);
-   if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y))
+   if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A))
       value += pow(2, 8);
    if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X))
       value += pow(2, 9);
