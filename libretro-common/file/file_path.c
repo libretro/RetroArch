@@ -218,8 +218,7 @@ void fill_pathname(char *out_path, const char *in_path,
    if ((tok = (char*)strrchr(path_basename(tmp_path), '.')))
       *tok = '\0';
 
-   retro_assert(strlcpy(out_path, tmp_path, size) < size);
-   retro_assert(strlcat(out_path, replace, size) < size);
+   fill_pathname_noext(out_path, tmp_path, replace, size);
 }
 
 /**
@@ -559,8 +558,7 @@ void fill_pathname_resolve_relative(char *out_path,
       return;
    }
 
-   retro_assert(strlcpy(out_path, in_refpath, size) < size);
-   path_basedir(out_path);
+   fill_pathname_basedir(out_path, in_refpath, size);
    retro_assert(strlcat(out_path, in_path, size) < size);
 }
 
