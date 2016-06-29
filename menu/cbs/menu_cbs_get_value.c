@@ -761,6 +761,9 @@ static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
          break;
       case 2:
          snprintf(s, len, "%s", "L3 + R3");
+	 break;
+      case 3:
+         snprintf(s, len, "%s", "Start + Select");
          break;
    }
 }
