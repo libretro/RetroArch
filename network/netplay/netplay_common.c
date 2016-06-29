@@ -17,6 +17,7 @@
 #include "netplay_private.h"
 #include <net/net_socket.h>
 
+#include "../../msg_hash.h"
 #include "../../content.h"
 
 bool netplay_get_nickname(netplay_t *netplay, int fd)
@@ -25,19 +26,21 @@ bool netplay_get_nickname(netplay_t *netplay, int fd)
 
    if (!socket_receive_all_blocking(fd, &nick_size, sizeof(nick_size)))
    {
-      RARCH_ERR("Failed to receive nick size from host.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST));
       return false;
    }
 
    if (nick_size >= sizeof(netplay->other_nick))
    {
-      RARCH_ERR("Invalid nick size.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_INVALID_NICKNAME_SIZE));
       return false;
    }
 
    if (!socket_receive_all_blocking(fd, netplay->other_nick, nick_size))
    {
-      RARCH_ERR("Failed to receive nick.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME));
       return false;
    }
 
@@ -49,13 +52,13 @@ bool netplay_send_nickname(netplay_t *netplay, int fd)
 
    if (!socket_send_all_blocking(fd, &nick_size, sizeof(nick_size), false))
    {
-      RARCH_ERR("Failed to send nick size.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_SIZE));
       return false;
    }
 
    if (!socket_send_all_blocking(fd, netplay->nick, nick_size, false))
    {
-      RARCH_ERR("Failed to send nick.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME));
       return false;
    }
 
@@ -217,7 +220,8 @@ bool netplay_send_info(netplay_t *netplay)
 
    if (!netplay_send_nickname(netplay, netplay->fd))
    {
-      RARCH_ERR("Failed to send nick to host.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST));
       return false;
    }
 
@@ -227,17 +231,21 @@ bool netplay_send_info(netplay_t *netplay)
 
    if (!socket_receive_all_blocking(netplay->fd, sram, sram_size))
    {
-      RARCH_ERR("Failed to receive SRAM data from host.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
       return false;
    }
 
    if (!netplay_get_nickname(netplay, netplay->fd))
    {
-      RARCH_ERR("Failed to receive nick from host.\n");
+      RARCH_ERR("%s\n", 
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST));
       return false;
    }
 
-   snprintf(msg, sizeof(msg), "Connected to: \"%s\"", netplay->other_nick);
+   snprintf(msg, sizeof(msg), "%s: \"%s\"",
+         msg_hash_to_str(MSG_CONNECTED_TO),
+         netplay->other_nick);
    RARCH_LOG("%s\n", msg);
    runloop_msg_queue_push(msg, 1, 180, false);
 
@@ -254,7 +262,8 @@ bool netplay_get_info(netplay_t *netplay)
 
    if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
-      RARCH_ERR("Failed to receive header from client.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT));
       return false;
    }
 
@@ -262,7 +271,7 @@ bool netplay_get_info(netplay_t *netplay)
 
    if (*content_crc_ptr != ntohl(header[0]))
    {
-      RARCH_ERR("Content CRC32s differ. Cannot use different games.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER));
       return false;
    }
 
@@ -285,7 +294,8 @@ bool netplay_get_info(netplay_t *netplay)
 
    if (!netplay_get_nickname(netplay, netplay->fd))
    {
-      RARCH_ERR("Failed to get nickname from client.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT));
       return false;
    }
 
@@ -295,13 +305,15 @@ bool netplay_get_info(netplay_t *netplay)
 
    if (!socket_send_all_blocking(netplay->fd, sram, sram_size, false))
    {
-      RARCH_ERR("Failed to send SRAM data to client.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT));
       return false;
    }
 
    if (!netplay_send_nickname(netplay, netplay->fd))
    {
-      RARCH_ERR("Failed to send nickname to client.\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT));
       return false;
    }
 

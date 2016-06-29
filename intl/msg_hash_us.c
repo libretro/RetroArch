@@ -2014,6 +2014,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Compiled against API";
       case MSG_FAILED_TO_LOAD:
          return "Failed to load";
+      case MSG_CONNECTED_TO:
+         return "Connected to";
       case MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR:
          return "Failed to accept incoming spectator.";
       case MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT:
@@ -2024,6 +2026,28 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Failed to generate BSV header.";
       case MSG_FAILED_TO_SEND_HEADER_TO_CLIENT:
          return "Failed to send header to client.";
+      case MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST:
+         return "Failed to receive nickname size from host.";
+      case MSG_FAILED_TO_RECEIVE_NICKNAME:
+         return "Failed to receive nickname.";
+      case MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST:
+         return "Failed to receive nickname from host.";
+      case MSG_FAILED_TO_SEND_NICKNAME_SIZE:
+         return "Failed to send nickname size.";
+      case MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT:
+         return "Failed to send SRAM data to client.";
+      case MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT:
+         return "Failed to receive header from client.";
+      case MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST:
+         return "Failed to receive SRAM data from host.";
+      case MSG_CONTENT_CRC32S_DIFFER:
+         return "Content CRC32s differ. Cannot use different games.";
+      case MSG_FAILED_TO_SEND_NICKNAME:
+         return "Failed to send nickname.";
+      case MSG_FAILED_TO_SEND_NICKNAME_TO_HOST:
+         return "Failed to send nickname to host.";
+      case MSG_INVALID_NICKNAME_SIZE:
+         return "Invalid nickname size.";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG:
          return "Analog supported";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP:
