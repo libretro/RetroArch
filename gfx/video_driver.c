@@ -27,6 +27,7 @@
 #include <retro_common_api.h>
 #include <file/config_file.h>
 #include <features/features_cpu.h>
+#include <file/file_path.h>
 
 #include "video_thread_wrapper.h"
 #include "../frontend/frontend_driver.h"
@@ -999,8 +1000,10 @@ bool video_monitor_get_fps(char *buf, size_t size,
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
          curr_time = new_time;
 
-         strlcpy(buf, video_driver_title_buf, size);
-         strlcat(buf, " || ", size);
+         fill_string_concat(buf,
+               video_driver_title_buf,
+               " || ",
+               size);
 
          if (settings->fps_show)
          {

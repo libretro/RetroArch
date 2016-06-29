@@ -326,6 +326,10 @@ void fill_pathname_join_noext(char *out_path,
 void fill_string_join(char *out_path,
       const char *path, size_t size);
 
+void fill_string_concat(char *out_path,
+      const char *str1, const char *str2,
+      size_t size);
+
 /**
  * fill_pathname_join_delim:
  * @out_path           : output path
