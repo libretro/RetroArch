@@ -1243,7 +1243,6 @@ static int generic_action_ok_remap_file_save(const char *path,
    global_t *global                = global_get_ptr();
    settings_t *settings            = config_get_ptr();
    rarch_system_info_t *info       = NULL;
-   const char *game_name           = NULL;
    const char *core_name           = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
@@ -1265,8 +1264,10 @@ static int generic_action_ok_remap_file_save(const char *path,
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
          if (global)
-            game_name           = path_basename(global->name.base);
-         fill_pathname_join(file, core_name, game_name, sizeof(file));
+         {
+            const char *game_name = path_basename(global->name.base);
+            fill_pathname_join(file, core_name, game_name, sizeof(file));
+         }
          break;
    }
 
@@ -1513,10 +1514,11 @@ static int action_ok_undo_save_state(const char *path,
 static void cb_decompressed(void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
-   unsigned type_hash = (uintptr_t)user_data;
 
    if (dec && !err)
    {
+      unsigned type_hash = (uintptr_t)user_data;
+
       switch (type_hash)
       {
          case CB_CORE_UPDATER_DOWNLOAD:
@@ -1666,7 +1668,6 @@ static void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH]     = {0};
-   char shaderdir[PATH_MAX_LENGTH]       = {0};
    const char             *file_ext      = NULL;
    const char             *dir_path      = NULL;
    menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
@@ -1711,6 +1712,7 @@ static void cb_generic_download(void *task_data,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
       {
+         char shaderdir[PATH_MAX_LENGTH]       = {0};
          const char *dirname = transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG ?
                   "shaders_cg" : "shaders_glsl";
 
@@ -2086,9 +2088,6 @@ static int action_ok_lookup_setting(const char *path,
 {
    return menu_setting_set(type, label, MENU_ACTION_OK, false);
 }
-
-
-
 
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
