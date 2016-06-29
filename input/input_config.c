@@ -25,6 +25,7 @@
 #include "input_keymaps.h"
 #include "input_remapping.h"
 
+#include "../msg_hash.h"
 #include "../file_path_special.h"
 #include "../general.h"
 #include "../verbosity.h"
@@ -390,8 +391,9 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
             && settings->input.input_descriptor_label_show)
          snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
       else
-         snprintf(buf, size, "%sHat #%u %s (N/A)", prefix,
-               (unsigned)GET_HAT(bind->joykey), dir);
+         snprintf(buf, size, "%sHat #%u %s (%s)", prefix,
+               (unsigned)GET_HAT(bind->joykey), dir,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
    else
    {
@@ -399,7 +401,8 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
             && settings->input.input_descriptor_label_show)
          snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
       else
-         snprintf(buf, size, "%s%u (N/A) ", prefix, (unsigned)bind->joykey);
+         snprintf(buf, size, "%s%u (%s) ", prefix, (unsigned)bind->joykey,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
    }
 }
 
@@ -424,7 +427,8 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
          && settings->input.input_descriptor_label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
-      snprintf(buf, size, "%s%c%u (N/A) ", prefix, dir, axis);
+      snprintf(buf, size, "%s%c%u (%s) ", prefix, dir, axis,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 }
 
 void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,

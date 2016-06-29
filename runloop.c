@@ -1104,7 +1104,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
             core_option_manager_get(runloop_core_options, var);
-            RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
+            RARCH_LOG("\t%s\n", var->value ? var->value : 
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
          }
          break;
       case RUNLOOP_CTL_CORE_OPTIONS_INIT:

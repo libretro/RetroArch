@@ -21,9 +21,12 @@
 #include <utility>
 #include <string.h>
 #include <math.h>
+
+#include "slang_reflection.hpp"
+
 #include "../video_shader_driver.h"
 #include "../../verbosity.h"
-#include "slang_reflection.hpp"
+#include "../../msg_hash.h"
 
 using namespace std;
 
@@ -804,7 +807,10 @@ bool vulkan_filter_chain::init()
    for (unsigned i = 0; i < passes.size(); i++)
    {
       auto &pass = passes[i];
-      RARCH_LOG("[slang]: Building pass #%u (%s)\n", i, pass->get_name().empty() ? "N/A" : pass->get_name().c_str());
+      RARCH_LOG("[slang]: Building pass #%u (%s)\n", i,
+            pass->get_name().empty() ? 
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) : 
+            pass->get_name().c_str());
 
       source = pass->set_pass_info(max_input_size,
             source, swapchain_info, pass_info[i]);

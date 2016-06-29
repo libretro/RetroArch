@@ -1029,7 +1029,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    curr_time = fps_time = new_time;
    strlcpy(buf, video_driver_title_buf, size);
    if (buf_fps)
-      strlcpy(buf_fps, "N/A", size_fps);
+      strlcpy(buf_fps, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), size_fps);
 
    return true;
 }

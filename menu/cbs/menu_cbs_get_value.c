@@ -440,7 +440,8 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
    {
-      if(strstr(descriptor,"Auto") && !strstr(descriptor,"(N/A)"))
+      if(strstr(descriptor,"Auto") && !strstr(descriptor,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
          strlcpy(s, 
             descriptor,
             len);
@@ -1222,7 +1223,7 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
    string_list_free(str_list2);
 
    if (string_is_equal(s, "DETECT") || !found_matching_core_association)
-      strlcpy(s, "N/A", len);
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    else
    {
       char buf[PATH_MAX_LENGTH];

@@ -126,7 +126,9 @@ static void RunActionSheet(const char* title, const struct string_list* items,
   result.textLabel.text = BOXSTRING(label);
 
   if (string_is_empty(label))
-    strlcpy(buffer, "N/A", sizeof(buffer));
+    strlcpy(buffer,
+          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+          sizeof(buffer));
   result.detailTextLabel.text = BOXSTRING(buffer);
   return result;
 }
@@ -429,7 +431,9 @@ replacementString:(NSString *)string
 
    menu_entry_get_value(self.i, buffer, sizeof(buffer));
    if (string_is_empty(buffer))
-      strlcpy(buffer, "N/A", sizeof(buffer));
+      strlcpy(buffer,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+            sizeof(buffer));
 
    field.placeholder = BOXSTRING(buffer);
 

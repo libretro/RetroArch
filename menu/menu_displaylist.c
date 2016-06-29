@@ -716,7 +716,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             break;
          case FRONTEND_ARCH_NONE:
          default:
-            strlcpy(cpu_arch_str, "N/A", sizeof(cpu_arch_str));
+            strlcpy(cpu_arch_str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(cpu_arch_str));
             break;
       }
 

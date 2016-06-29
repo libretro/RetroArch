@@ -554,7 +554,7 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
             (string_is_empty(elem0_path)) ? "" : path_basename(elem0_path));
    }
    else
-      strlcpy(s, "N/A", len);
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
    return 0;
 }

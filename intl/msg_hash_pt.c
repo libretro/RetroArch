@@ -1214,8 +1214,6 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "<Padrão>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE:
          return "<Nenhum>";
-      case MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE:
-         return "N/A";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
          return "Remapeamentos de Controladores";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
