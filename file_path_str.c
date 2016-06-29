@@ -37,6 +37,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return ".info";
       case FILE_PATH_CONFIG_EXTENSION:
          return ".cfg";
+      case FILE_PATH_REMAP_EXTENSION:
+         return ".rmp";
       case FILE_PATH_RTC_EXTENSION:
          return ".rtc";
       case FILE_PATH_CHT_EXTENSION:

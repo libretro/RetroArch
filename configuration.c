@@ -2226,12 +2226,16 @@ bool config_load_remap(void)
    fill_pathname_join(core_path,
          remap_directory, core_name, sizeof(core_path));
    fill_string_join(core_path, core_name, sizeof(core_path));
-   strlcat(core_path, ".rmp", sizeof(core_path));
+   strlcat(core_path,
+         file_path_str(FILE_PATH_REMAP_EXTENSION),
+         sizeof(core_path));
 
    fill_pathname_join(game_path,
          remap_directory, core_name, sizeof(game_path));
    fill_string_join(game_path, game_name, sizeof(game_path));
-   strlcat(game_path, ".rmp", sizeof(game_path));
+   strlcat(game_path, 
+         file_path_str(FILE_PATH_REMAP_EXTENSION),
+         sizeof(game_path));
 
    /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
