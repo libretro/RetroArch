@@ -1897,13 +1897,14 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
          command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
 
-         if (!task_push_content_load_default(
-                  NULL, NULL,
-                  &content_info,
-                  CORE_TYPE_DUMMY,
-                  CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-                  NULL, NULL))
-            return false;
+         if (content_is_inited())
+            if (!task_push_content_load_default(
+                     NULL, NULL,
+                     &content_info,
+                     CORE_TYPE_DUMMY,
+                     CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+                     NULL, NULL))
+               return false;
          command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
          break;
       case CMD_EVENT_QUIT:
