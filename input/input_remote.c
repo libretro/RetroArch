@@ -155,6 +155,7 @@ static void input_remote_parse_packet(char *buffer, unsigned size, unsigned user
 {
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
    /* todo implement parsing of input_state from the packet */
+   RARCH_LOG ("Test : %s %d", buffer, atoi(buffer));
    ol_state->buttons[user] = atoi(buffer);
 }
 #endif
