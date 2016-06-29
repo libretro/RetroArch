@@ -183,7 +183,7 @@ static void menu_action_setting_disp_set_label_pipeline(
    switch (settings->menu.shader_pipeline)
    {
       case 0:
-         snprintf(s, len, "%s", "OFF");
+         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
          break;
       case 1:
          snprintf(s, len, "%s", "Ribbon (simplified)");
@@ -721,7 +721,7 @@ static void menu_action_setting_disp_set_label_thumbnails(
    switch (settings->menu.thumbnails)
    {
       case 0:
-         snprintf(s, len, "%s", "OFF");
+         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
          break;
       case 1:
          snprintf(s, len, "%s", "Screenshots");
@@ -754,7 +754,7 @@ static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
    switch (settings->input.menu_toggle_gamepad_combo)
    {
       case 0:
-         snprintf(s, len, "%s", "None");
+         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
          break;
       case 1:
          snprintf(s, len, "%s", "Down + L1 + R1 + Y");
@@ -829,7 +829,7 @@ static void menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mappi
    switch (settings->input.keyboard_gamepad_mapping_type)
    {
       case 0:
-         strlcpy(s, "None", len);
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          break;
       case 1:
          strlcpy(s, "iPega PG-9017", len);
