@@ -1965,8 +1965,10 @@ static void config_load_core_specific(void)
             global->path.config, sizeof(global->path.core_specific_config));
    }
 
-   fill_pathname_dir(global->path.core_specific_config, settings->path.libretro,
-         ".cfg", sizeof(global->path.core_specific_config));
+   fill_pathname_dir(global->path.core_specific_config,
+         settings->path.libretro,
+         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         sizeof(global->path.core_specific_config));
 
    if (settings->core_specific_config)
    {
@@ -2043,12 +2045,15 @@ bool config_load_override(void)
    fill_pathname_join(game_path,
          config_directory, core_name, sizeof(game_path));
    fill_string_join(game_path, game_name, sizeof(game_path));
-   strlcat(game_path, ".cfg", sizeof(game_path));
+   strlcat(game_path,
+         file_path_str(FILE_PATH_CONFIG_EXTENSION), sizeof(game_path));
 
    fill_pathname_join(core_path,
          config_directory, core_name, sizeof(core_path));
    fill_string_join(core_path, core_name, sizeof(core_path));
-   strlcat(core_path, ".cfg", sizeof(core_path));
+   strlcat(core_path,
+         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         sizeof(core_path));
 
 
    /* Create a new config file from core_path */
@@ -2539,13 +2544,17 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    {
       fill_pathname_join(buf, buf,
             path, sizeof(buf));
-      fill_pathname_noext(autoconf_file, buf, ".cfg", sizeof(autoconf_file));
+      fill_pathname_noext(autoconf_file, buf,
+            file_path_str(FILE_PATH_CONFIG_EXTENSION),
+            sizeof(autoconf_file));
    }
    else
    {
       fill_pathname_join(buf, settings->directory.autoconfig,
             path, sizeof(buf));
-      fill_pathname_noext(autoconf_file, buf, ".cfg", sizeof(autoconf_file));
+      fill_pathname_noext(autoconf_file, buf,
+            file_path_str(FILE_PATH_CONFIG_EXTENSION),
+            sizeof(autoconf_file));
    }
 
    conf  = config_file_new(autoconf_file);
