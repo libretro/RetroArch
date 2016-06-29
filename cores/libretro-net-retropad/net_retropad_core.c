@@ -54,8 +54,6 @@ static retro_input_state_t NETRETROPAD_CORE_PREFIX(input_state_cb);
 
 static uint16_t *frame_buf;
 
-static int NETRETROPAD_CORE_PREFIX(input_state) = 0;
-
 void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 {
    frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
@@ -107,10 +105,11 @@ void NETRETROPAD_CORE_PREFIX(retro_get_system_av_info)(
 }
 
 
-static void retropad_update_input(void)
+static unsigned retropad_update_input(void)
 {
    unsigned value = 0;
    NETRETROPAD_CORE_PREFIX(input_poll_cb)();
+
    if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B))
       value += 1;
    if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A))
@@ -135,7 +134,8 @@ static void retropad_update_input(void)
       value += pow(2, 10);
    if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R))
       value += pow(2, 11);
-   NETRETROPAD_CORE_PREFIX(input_state) += value;
+
+   return value;
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
@@ -214,8 +214,8 @@ void NETRETROPAD_CORE_PREFIX(retro_reset)(void)
 void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 {
    unsigned i;
-   retropad_update_input();
-   snprintf(message, sizeof(message), "%d", NETRETROPAD_CORE_PREFIX(input_state));
+   unsigned input_state = retropad_update_input();
+   snprintf(message, sizeof(message), "%d", input_state);
 
    /* send the message */
    if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, sizeof(si_other))==-1)
