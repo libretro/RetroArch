@@ -227,6 +227,8 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    for (i = 0; i < 320 * 240; i++)
       frame_buf[i] = 4 << 5;
    NETRETROPAD_CORE_PREFIX(video_cb)(frame_buf, 320, 240, 640);
+
+   retro_sleep(4);
 }
 
 bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
