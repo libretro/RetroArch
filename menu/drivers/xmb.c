@@ -1095,9 +1095,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
       if (!path)
          return;
 
-      strlcpy(xmb->title_name, path, sizeof(xmb->title_name));
-
-      path_remove_extension(xmb->title_name);
+      fill_pathname_base_noext(xmb->title_name, path, sizeof(xmb->title_name));
    }
 }
 
@@ -1353,8 +1351,7 @@ static void xmb_context_reset_horizontal_list(
       if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
          continue;
 
-      strlcpy(sysname, path, sizeof(sysname));
-      path_remove_extension(sysname);
+      fill_pathname_base_noext(sysname, path, sizeof(sysname));
 
       fill_pathname_application_special(iconpath, sizeof(iconpath),
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
