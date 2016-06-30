@@ -3256,10 +3256,9 @@ static int menu_displaylist_parse_generic(
                      break;
                   }
                default:
+                  file_type = (enum msg_file_type)info->type_default;
                   break;
             }
-
-            file_type = (enum msg_file_type)info->type_default;
             break;
       }
 

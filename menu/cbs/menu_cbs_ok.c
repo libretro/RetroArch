@@ -1712,7 +1712,7 @@ static void cb_generic_download(void *task_data,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
       {
-         char shaderdir[PATH_MAX_LENGTH]       = {0};
+         static char shaderdir[PATH_MAX_LENGTH]       = {0};
          const char *dirname = transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG ?
                   "shaders_cg" : "shaders_glsl";
 
