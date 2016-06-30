@@ -35,8 +35,6 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
-#include "../tasks/tasks_internal.h"
-
 /**
  * menu_content_load_from_playlist:
  * @playlist             : Playlist handle.
