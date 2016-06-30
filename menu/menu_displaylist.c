@@ -2572,8 +2572,7 @@ static int menu_displaylist_parse_horizontal_list(
    if (!item)
       return -1;
 
-   strlcpy(lpl_basename, item->path, sizeof(lpl_basename));
-   path_remove_extension(lpl_basename);
+   fill_pathname_base_noext(lpl_basename, item->path, sizeof(lpl_basename));
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
