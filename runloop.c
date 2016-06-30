@@ -330,6 +330,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
             return false;
          if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_R3))
             return false;
+         break;
       case 3:
          if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
