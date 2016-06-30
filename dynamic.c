@@ -845,7 +845,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (!settings->video.allow_rotate)
             break;
 
-         system->rotation = rotation;
+         if (system)
+            system->rotation = rotation;
 
          if (!video_driver_set_rotation(rotation))
             return false;
@@ -859,9 +860,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL:
-         system->performance_level = *(const unsigned*)data;
-         RARCH_LOG("Environ PERFORMANCE_LEVEL: %u.\n",
-               system->performance_level);
+         if (system)
+         {
+            system->performance_level = *(const unsigned*)data;
+            RARCH_LOG("Environ PERFORMANCE_LEVEL: %u.\n",
+                  system->performance_level);
+         }
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
@@ -938,8 +942,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          unsigned retro_id;
          const struct retro_input_descriptor *desc = NULL;
-
-         static const char *libretro_btn_desc[] = {
+         static const char *libretro_btn_desc[]    = {
             "B (bottom)", "Y (left)", "Select", "Start",
             "D-Pad Up", "D-Pad Down", "D-Pad Left", "D-Pad Right",
             "A (right)", "X (up)",
@@ -1054,8 +1057,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
          RARCH_LOG("Environ SET_DISK_CONTROL_INTERFACE.\n");
-         system->disk_control_cb =
-            *(const struct retro_disk_control_callback*)data;
+         if (system)
+            system->disk_control_cb =
+               *(const struct retro_disk_control_callback*)data;
          break;
 
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
@@ -1252,7 +1256,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->stop                  = driver_location_stop;
          cb->get_position          = driver_location_get_position;
          cb->set_interval          = driver_location_set_interval;
-         system->location_cb       = *cb;
+
+         if (system)
+            system->location_cb    = *cb;
 
          location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
          break;
@@ -1323,16 +1329,19 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
-         free(system->subsystem.data);
-         system->subsystem.data = (struct retro_subsystem_info*)
-            calloc(i, sizeof(*system->subsystem.data));
+         if (system)
+         {
+            free(system->subsystem.data);
+            system->subsystem.data = (struct retro_subsystem_info*)
+               calloc(i, sizeof(*system->subsystem.data));
 
-         if (!system->subsystem.data)
-            return false;
+            if (!system->subsystem.data)
+               return false;
 
-         memcpy(system->subsystem.data, info,
-               i * sizeof(*system->subsystem.data));
-         system->subsystem.size = i;
+            memcpy(system->subsystem.data, info,
+                  i * sizeof(*system->subsystem.data));
+            system->subsystem.size = i;
+         }
          break;
       }
 
