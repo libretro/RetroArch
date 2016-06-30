@@ -2098,6 +2098,16 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Error parsing arguments.";
       case MSG_ERROR:
          return "Error";
+      case MSG_MEMORY:
+         return "Memory";
+      case MSG_IN_BYTES:
+         return "in bytes";
+      case MSG_IN_MEGABYTES:
+         return "in megabytes";
+      case MSG_IN_GIGABYTES:
+         return "in gigabytes";
+      case MSG_INTERFACE:
+         return "Interface";
       case MSG_FAILED_TO_PATCH:
          return "Failed to patch";
       case MSG_CONTENT_PATCHED_SUCCESSFULLY_IN:
