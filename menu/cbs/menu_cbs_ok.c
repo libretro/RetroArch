@@ -518,7 +518,6 @@ int generic_action_ok_displaylist_push(const char *path,
 }
 
 static int generic_action_ok_file_load(const char *corepath, const char *fullpath,
-      const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum rarch_core_type action_type, enum content_mode_load content_enum_idx)
 {
    content_ctx_info_t content_info = {0};
@@ -591,8 +590,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    {
       case -1:
          return generic_action_ok_file_load(new_core_path, def_info.s,
-               label, type, idx,
-               entry_idx, CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
+               CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
@@ -1403,15 +1401,15 @@ static int action_ok_load_core_deferred(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   return generic_action_ok_file_load(path, menu->deferred_path, label, type, idx,
-         entry_idx, CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
+   return generic_action_ok_file_load(path, menu->deferred_path,
+         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
 }
 
 static int action_ok_start_net_retropad_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_file_load(NULL, NULL, label, type, idx,
-         entry_idx, CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU);
+   return generic_action_ok_file_load(NULL, NULL,
+         CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU);
 }
 
 #ifdef HAVE_FFMPEG
@@ -1425,8 +1423,8 @@ static int action_ok_file_load_ffmpeg(const char *path,
 
    fill_pathname_join(new_path, menu_path, path,
          sizeof(new_path));
-   return generic_action_ok_file_load(NULL, new_path, label, type, idx,
-         entry_idx, CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU);
+   return generic_action_ok_file_load(NULL, new_path,
+         CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU);
 }
 #endif
 
@@ -1440,15 +1438,15 @@ static int action_ok_file_load_imageviewer(const char *path,
 
    fill_pathname_join(fullpath, menu_path, path,
          sizeof(fullpath));
-   return generic_action_ok_file_load(NULL, fullpath, label, type, idx,
-         entry_idx, CORE_TYPE_IMAGEVIEWER, CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU);
+   return generic_action_ok_file_load(NULL, fullpath,
+         CORE_TYPE_IMAGEVIEWER, CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU);
 }
 
 static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_file_load(path, detect_content_path, label, type, idx,
-         entry_idx, CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
+   return generic_action_ok_file_load(path, detect_content_path,
+         CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
 }
 
 static int action_ok_file_load(const char *path,
@@ -1493,8 +1491,7 @@ static int action_ok_file_load(const char *path,
             sizeof(full_path_new));
 
    return generic_action_ok_file_load(NULL, full_path_new,
-         label, type, idx,
-         entry_idx, CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU);
+         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU);
 }
 
 
@@ -2360,8 +2357,8 @@ static int action_ok_start_core(const char *path,
 {
    /* No content needed for this core, load core immediately. */
    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
-      return generic_action_ok_file_load(NULL, NULL, label, type, idx,
-            entry_idx, CORE_TYPE_PLAIN,
+      return generic_action_ok_file_load(NULL, NULL,
+            CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU);
 
    return 0;
@@ -2470,8 +2467,8 @@ static int action_ok_load_archive(const char *path,
 
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 
-   return generic_action_ok_file_load(NULL, detect_content_path, label, type, idx,
-         entry_idx, CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU);
+   return generic_action_ok_file_load(NULL, detect_content_path,
+         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU);
 }
 
 static int action_ok_load_archive_detect_core(const char *path,
@@ -2512,8 +2509,8 @@ static int action_ok_load_archive_detect_core(const char *path,
    switch (ret)
    {
       case -1:
-         return generic_action_ok_file_load(new_core_path, def_info.s, label, type, idx,
-               entry_idx, CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
+         return generic_action_ok_file_load(new_core_path, def_info.s,
+               CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
