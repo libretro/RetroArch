@@ -645,7 +645,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    const char *core_name            = NULL;
    playlist_t *tmp_playlist         = NULL;
    menu_handle_t *menu              = NULL;
-   content_ctx_info_t content_info  = {0};
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -732,17 +731,8 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   if (!task_push_content_load_default(
-         core_path,
-         path,
-         &content_info,
-         CORE_TYPE_PLAIN,
-         CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU,
-         NULL,
-         NULL))
-      return menu_cbs_exit();
-
-   return menu_cbs_exit();
+   return generic_action_ok_file_load(core_path, path,
+         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU);
 }
 
 static int action_ok_playlist_entry(const char *path,
@@ -760,7 +750,6 @@ static int action_ok_playlist_entry(const char *path,
    const char *core_name            = NULL;
    playlist_t *tmp_playlist         = NULL;
    menu_handle_t *menu              = NULL;
-   content_ctx_info_t content_info  = {0};
    uint32_t hash_label              = msg_hash_calculate(label);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
@@ -862,15 +851,8 @@ static int action_ok_playlist_entry(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   if (!task_push_content_load_default(
-         core_path,
-         path,
-         &content_info,
-         CORE_TYPE_PLAIN,
-         CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU,
-         NULL,
-         NULL))
-      return menu_cbs_exit();
+   generic_action_ok_file_load(core_path, path,
+         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU);
 
    if (is_history)
    {
