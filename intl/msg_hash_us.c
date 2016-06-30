@@ -1782,6 +1782,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "rdb_entry_cero_rating";
       case MENU_ENUM_LABEL_RDB_ENTRY_ANALOG:
          return "rdb_entry_analog";
+      case MENU_ENUM_LABEL_RDB_ENTRY_SERIAL:
+         return "rdb_entry_serial";
       case MENU_ENUM_LABEL_CONFIGURATIONS:
          return "configurations";
       case MENU_ENUM_LABEL_LOAD_OPEN_ZIP:
@@ -2050,6 +2052,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Invalid nickname size.";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG:
          return "Analog supported";
+      case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL:
+         return "Serial";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP:
          return "Co-op supported";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW:

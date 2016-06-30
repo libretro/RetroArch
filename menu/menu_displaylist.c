@@ -2024,8 +2024,9 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (db_info_entry->serial)
       {
-         if (create_string_list_rdb_entry_string("Serial",
-                  "Serial",
+         if (create_string_list_rdb_entry_string(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
+                  msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SERIAL),
                   db_info_entry->serial, info->path, info->list) == -1)
             goto error;
       }
@@ -2149,8 +2150,8 @@ static int deferred_push_video_shader_parameters_common(
    {
       menu_entries_add_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS),
-            "",
-            MSG_UNKNOWN,
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_SHADER_PARAMETERS),
+            MENU_ENUM_LABEL_NO_SHADER_PARAMETERS,
             0, 0, 0);
       return 0;
    }
@@ -3223,18 +3224,22 @@ static int menu_displaylist_parse_generic(
             break;
          case RARCH_PLAIN_FILE:
          default:
-            if (hash_label == MENU_LABEL_DETECT_CORE_LIST ||
-                  hash_label == MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST)
+            switch (hash_label)
             {
-               if (path_is_compressed_file(str_list->elems[i].data))
-               {
-                  /* in case of deferred_core_list we have to interpret
-                   * every archive as an archive to disallow instant loading
-                   */
-                  file_type = FILE_TYPE_CARCHIVE;
+               case MENU_LABEL_DETECT_CORE_LIST:
+               case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+                  if (path_is_compressed_file(str_list->elems[i].data))
+                  {
+                     /* in case of deferred_core_list we have to interpret
+                      * every archive as an archive to disallow instant loading
+                      */
+                     file_type = FILE_TYPE_CARCHIVE;
+                     break;
+                  }
+               default:
                   break;
-               }
             }
+
             file_type = (enum msg_file_type)info->type_default;
             break;
       }
