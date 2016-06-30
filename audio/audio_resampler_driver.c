@@ -24,9 +24,7 @@
 #ifdef RARCH_INTERNAL
 #include "../performance_counters.h"
 #endif
-#ifndef DONT_HAVE_STRING_LIST
 #include "../list_special.h"
-#endif
 
 static const rarch_resampler_t *resampler_drivers[] = {
    &sinc_resampler,
@@ -94,7 +92,6 @@ const char *audio_resampler_driver_find_ident(int idx)
    return drv->ident;
 }
 
-#ifndef DONT_HAVE_STRING_LIST
 /**
  * config_get_audio_resampler_driver_options:
  *
@@ -106,7 +103,6 @@ const char* config_get_audio_resampler_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_AUDIO_RESAMPLER_DRIVERS, NULL);
 }
-#endif
 
 /**
  * find_resampler_driver:
