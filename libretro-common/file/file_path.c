@@ -585,6 +585,15 @@ void fill_pathname_join(char *out_path,
    retro_assert(strlcat(out_path, path, size) < size);
 }
 
+static void fill_string_join(char *out_path,
+      const char *append, size_t size)
+{
+   if (*out_path)
+      fill_pathname_slash(out_path, size);
+
+   retro_assert(strlcat(out_path, append, size) < size);
+}
+
 void fill_pathname_join_special_ext(char *out_path,
       const char *dir,  const char *path,
       const char *last, const char *ext,
@@ -611,14 +620,6 @@ void fill_pathname_join_noext(char *out_path,
    path_remove_extension(out_path);
 }
 
-void fill_string_join(char *out_path,
-      const char *append, size_t size)
-{
-   if (*out_path)
-      fill_pathname_slash(out_path, size);
-
-   retro_assert(strlcat(out_path, append, size) < size);
-}
 
 /**
  * fill_pathname_join_delim:
