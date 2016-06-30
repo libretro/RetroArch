@@ -2042,19 +2042,17 @@ bool config_load_override(void)
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    /* Concatenate strings into full paths for core_path, game_path */
-   fill_pathname_join(game_path,
-         config_directory, core_name, sizeof(game_path));
-   fill_string_join(game_path, game_name, sizeof(game_path));
-   strlcat(game_path,
-         file_path_str(FILE_PATH_CONFIG_EXTENSION), sizeof(game_path));
+   fill_pathname_join_special_ext(game_path,
+         config_directory, core_name,
+         game_name,
+         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         sizeof(game_path));
 
-   fill_pathname_join(core_path,
-         config_directory, core_name, sizeof(core_path));
-   fill_string_join(core_path, core_name, sizeof(core_path));
-   strlcat(core_path,
+   fill_pathname_join_special_ext(core_path,
+         config_directory, core_name,
+         core_name,
          file_path_str(FILE_PATH_CONFIG_EXTENSION),
          sizeof(core_path));
-
 
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
@@ -2223,17 +2221,15 @@ bool config_load_remap(void)
    RARCH_LOG("Remaps: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
-   fill_pathname_join(core_path,
-         remap_directory, core_name, sizeof(core_path));
-   fill_string_join(core_path, core_name, sizeof(core_path));
-   strlcat(core_path,
+   fill_pathname_join_special_ext(core_path,
+         remap_directory, core_name,
+         core_name,
          file_path_str(FILE_PATH_REMAP_EXTENSION),
          sizeof(core_path));
 
-   fill_pathname_join(game_path,
-         remap_directory, core_name, sizeof(game_path));
-   fill_string_join(game_path, game_name, sizeof(game_path));
-   strlcat(game_path, 
+   fill_pathname_join_special_ext(game_path,
+         remap_directory, core_name,
+         game_name,
          file_path_str(FILE_PATH_REMAP_EXTENSION),
          sizeof(game_path));
 
