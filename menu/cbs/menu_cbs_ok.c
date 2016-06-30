@@ -744,7 +744,6 @@ static int action_ok_playlist_entry(const char *path,
    size_t selection_ptr             = 0;
    bool playlist_initialized        = false;
    playlist_t *playlist             = g_defaults.history;
-   bool is_history                  = true;
    const char *entry_path           = NULL;
    const char *entry_label          = NULL;
    const char *core_path            = NULL;
@@ -775,7 +774,6 @@ static int action_ok_playlist_entry(const char *path,
          }
 
          playlist   = tmp_playlist;
-         is_history = false;
          break;
    }
 
@@ -852,29 +850,8 @@ static int action_ok_playlist_entry(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   generic_action_ok_file_load(core_path, path,
+   return generic_action_ok_file_load(core_path, path,
          CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU);
-
-   if (is_history)
-   {
-      switch (hash_label)
-      {
-         case MENU_LABEL_COLLECTION:
-         case MENU_LABEL_RDB_ENTRY_START_CONTENT:
-            menu_entries_pop_stack(&selection, 0, 1);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
-                  &selection);
-            break;
-         default:
-            menu_entries_flush_stack(NULL, MENU_SETTINGS);
-            break;
-      }
-
-      generic_action_ok_displaylist_push("",
-            "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
-   }
-
-   return menu_cbs_exit();
 }
 
 static int action_ok_cheat_apply_changes(const char *path,
