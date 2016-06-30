@@ -1008,9 +1008,8 @@ bool video_monitor_get_fps(char *buf, size_t size,
          if (settings->fps_show)
          {
             char fps_text[64];
-            snprintf(fps_text, sizeof(fps_text), " FPS: %6.1f", last_fps);
+            snprintf(fps_text, sizeof(fps_text), " FPS: %6.1f || ", last_fps);
             strlcat(buf, fps_text, size);
-            strlcat(buf, " || ", size);
          }
 
          strlcat(buf, "Frames: ", size);
@@ -1023,8 +1022,10 @@ bool video_monitor_get_fps(char *buf, size_t size,
       }
 
       if (buf_fps && settings->fps_show)
-         snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: " STRING_REP_UINT64,
-               last_fps, (unsigned long long)video_driver_frame_count);
+         snprintf(buf_fps, size_fps, "FPS: %6.1f || %s: " STRING_REP_UINT64,
+               last_fps,
+               msg_hash_to_str(MSG_FRAMES),
+               (unsigned long long)video_driver_frame_count);
 
       return ret;
    }

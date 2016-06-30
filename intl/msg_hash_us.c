@@ -2100,6 +2100,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Error";
       case MSG_MEMORY:
          return "Memory";
+      case MSG_FRAMES:
+         return "Frames";
       case MSG_IN_BYTES:
          return "in bytes";
       case MSG_IN_MEGABYTES:
