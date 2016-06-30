@@ -7386,8 +7386,7 @@ static bool setting_append_list(
                   list, list_info,
                   &settings->network_remote_base_port,
                   msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_REMOTE_PORT),
-                  /* todo: localization */
-                  "Network Remote Base Port",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT),
                   network_remote_base_port,
                   &group_info,
                   &subgroup_info,
@@ -7455,7 +7454,9 @@ static bool setting_append_list(
 
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
-            START_SUB_GROUP(list, list_info, "Lakka Services", &group_info, &subgroup_info, parent_group);
+            START_SUB_GROUP(list, list_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),
+                  &group_info, &subgroup_info, parent_group);
 
             CONFIG_BOOL(
                   list, list_info,

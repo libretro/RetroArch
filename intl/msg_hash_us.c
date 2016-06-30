@@ -2002,6 +2002,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Frontend for libretro";
       case MSG_LOADING:
          return "Loading";
+      case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT:
+         return "Network Remote Base Port";
       case MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY:
          return "Autoconfig file saved successfully.";
       case MSG_AUTOCONFIG_FILE_ERROR_SAVING:
