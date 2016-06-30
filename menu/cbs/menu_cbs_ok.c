@@ -522,12 +522,13 @@ static int generic_action_ok_file_load(const char *corepath, const char *fullpat
 {
    content_ctx_info_t content_info = {0};
 
-   task_push_content_load_default(
+   if (!task_push_content_load_default(
          corepath, fullpath,
          &content_info,
          action_type,
          content_enum_idx,
-         NULL, NULL);
+         NULL, NULL))
+      return -1;
 
    return 0;
 }
@@ -940,10 +941,9 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_CORE:
          flush_type = MENU_SETTINGS;
          
-         if (task_push_content_load_default(action_path,
-                  NULL, NULL, CORE_TYPE_PLAIN,
-                  CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU,
-                  NULL, NULL))
+         if (generic_action_ok_file_load(action_path,
+                  NULL, CORE_TYPE_PLAIN,
+                  CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU) == 0)
          {
 #ifndef HAVE_DYNAMIC
             ret = -1;
