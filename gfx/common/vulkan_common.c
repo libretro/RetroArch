@@ -1136,9 +1136,9 @@ static bool vulkan_find_extensions(const char **exts, unsigned num_exts,
 
 static bool vulkan_find_instance_extensions(const char **exts, unsigned num_exts)
 {
-   bool ret = true;
-   VkExtensionProperties *properties = NULL;
    uint32_t property_count;
+   bool ret                          = true;
+   VkExtensionProperties *properties = NULL;
 
    if (vkEnumerateInstanceExtensionProperties(NULL, &property_count, NULL) != VK_SUCCESS)
       return false;
@@ -1205,6 +1205,9 @@ end:
 static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    bool use_device_ext;
+   uint32_t queue_count;
+   VkResult res;
+   unsigned i;
    static const float one             = 1.0f;
    uint32_t gpu_count                 = 1;
    bool found_queue                   = false;
@@ -1213,9 +1216,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    VkPhysicalDeviceFeatures features  = { false };
    VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
    VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
-   uint32_t queue_count;
-   VkResult res;
-   unsigned i;
 
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
@@ -1911,7 +1911,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    uint32_t format_count;
    uint32_t present_mode_count;
    uint32_t desired_swapchain_images;
-   VkSwapchainCreateInfoKHR info = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
    VkSurfaceCapabilitiesKHR surface_properties;
    VkSurfaceFormatKHR formats[256];
    VkPresentModeKHR present_modes[16];
@@ -1919,8 +1918,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSurfaceTransformFlagBitsKHR pre_transform;
+   VkSwapchainCreateInfoKHR info           = { 
+      VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
-   settings_t *settings = config_get_ptr();
+   settings_t                    *settings = config_get_ptr();
 
    vkDeviceWaitIdle(vk->context.device);
 
@@ -1950,7 +1951,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
          break;
       }
-      else if (!swap_interval && present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
+      else if (!swap_interval && present_modes[i] 
+            == VK_PRESENT_MODE_IMMEDIATE_KHR)
       {
          swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
          break;
@@ -2037,7 +2039,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
       | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-   if (vkCreateSwapchainKHR(vk->context.device, &info, NULL, &vk->swapchain) != VK_SUCCESS)
+   if (vkCreateSwapchainKHR(vk->context.device,
+            &info, NULL, &vk->swapchain) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan]: Failed to create swapchain.\n");
       return false;
