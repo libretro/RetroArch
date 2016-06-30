@@ -796,8 +796,8 @@ static int action_ok_playlist_entry(const char *path,
    RARCH_LOG("playlist file: %s\n", menu->db_playlist_file);
 #endif
 
-   if (     string_is_equal(core_path, "DETECT") 
-         && string_is_equal(core_name, "DETECT"))
+   if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)) 
+         && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
       char new_core_path[PATH_MAX_LENGTH]    = {0};
