@@ -256,7 +256,9 @@ int detect_psp_game(const char *track_path, char *game_id)
 
    if (!fd)
    {
-      RARCH_LOG("Could not open data track: %s\n", strerror(errno));
+      RARCH_LOG("%s: %s\n",
+            msg_hash_to_str(MSG_COULD_NOT_OPEN_DATA_TRACK),
+            strerror(errno));
       return -errno;
    }
 
@@ -341,7 +343,7 @@ int detect_system(const char *track_path, int32_t offset,
       goto clean;
    }
 
-   RARCH_LOG("Comparing with known magic numbers...\n");
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS));
    for (i = 0; MAGIC_NUMBERS[i].system_name != NULL; i++)
    {
       if (memcmp(MAGIC_NUMBERS[i].magic, magic, MAGIC_LEN) == 0)
@@ -364,7 +366,7 @@ int detect_system(const char *track_path, int32_t offset,
       }
    }
 
-   RARCH_LOG("Could not find compatible system\n");
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM));
    rv = -EINVAL;
 
 clean:
@@ -421,7 +423,8 @@ int find_first_data_track(const char *cue_path,
 
          *offset = ((m * 60) * (s * 75) * f) * 25;
 
-         RARCH_LOG("Found 1st data track on file '%s+%d'\n",
+         RARCH_LOG("%s '%s+%d'\n",
+               msg_hash_to_str(MSG_FOUND_FIRST_DATA_TRACK_ON_FILE),
                track_path, *offset);
 
          rv = 0;

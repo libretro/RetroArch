@@ -2098,6 +2098,20 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Error parsing arguments.";
       case MSG_ERROR:
          return "Error";
+      case MSG_FOUND_DISK_LABEL:
+         return "Found disk label";
+      case MSG_READING_FIRST_DATA_TRACK:
+         return "Reading first data track...";
+      case MSG_FOUND_FIRST_DATA_TRACK_ON_FILE:
+         return "Found first data track on file";
+      case MSG_COULD_NOT_FIND_VALID_DATA_TRACK:
+         return "Could not find valid data track";
+      case MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS:
+         return "Comparing with known magic numbers...";
+      case MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM:
+         return "Could not find compatible system.";
+      case MSG_COULD_NOT_OPEN_DATA_TRACK:
+         return "could not open data track";
       case MSG_MEMORY:
          return "Memory";
       case MSG_FRAMES:

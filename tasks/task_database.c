@@ -125,13 +125,13 @@ static int iso_get_serial(database_state_handle_t *db_state,
    {
       if (detect_psp_game(name, serial) == 0)
          return 0;
-      RARCH_LOG("Found disk label '%s'\n", serial);
+      RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
    }
    else if (string_is_equal(system_name, "ps1"))
    {
       if (detect_ps1_game(name, serial) == 0)
          return 0;
-      RARCH_LOG("Found disk label '%s'\n", serial);
+      RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
    }
 
    return 0;
@@ -142,15 +142,18 @@ static int cue_get_serial(database_state_handle_t *db_state,
 {
    int32_t offset                   = 0;
    char track_path[PATH_MAX_LENGTH] = {0};
-   int rv                           = find_first_data_track(name, &offset, track_path, PATH_MAX_LENGTH);
+   int rv                           = find_first_data_track(name,
+         &offset, track_path, PATH_MAX_LENGTH);
     
    if (rv < 0)
    {
-      RARCH_LOG("Could not find valid data track: %s\n", strerror(-rv));
+      RARCH_LOG("%s: %s\n",
+            msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK),
+            strerror(-rv));
       return rv;
    }
 
-   RARCH_LOG("Reading 1st data track...\n");
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_READING_FIRST_DATA_TRACK));
 
    return iso_get_serial(db_state, db, track_path, serial);
 }
