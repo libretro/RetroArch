@@ -147,7 +147,8 @@ static int detect_ps1_game_sub(const char *track_path,
    uint8_t* boot_file;
    int skip, frame_size, is_mode1, cd_sector;
    uint8_t buffer[2048 * 2] = {0};
-   RFILE                *fp = filestream_open(track_path, RFILE_MODE_READ, -1);
+   RFILE                *fp = 
+      filestream_open(track_path, RFILE_MODE_READ, -1);
    if (!fp)
       return 0;
 
@@ -377,15 +378,11 @@ clean:
 int find_first_data_track(const char *cue_path,
       int32_t *offset, char *track_path, size_t max_len)
 {
-   int rv, m, s, f;
-   char tmp_token[MAX_TOKEN_LEN];
-   char cue_dir[PATH_MAX_LENGTH];
-   RFILE *fd;
+   int rv;
+   char tmp_token[MAX_TOKEN_LEN] = {0};
+   RFILE *fd                     = 
+      filestream_open(cue_path, RFILE_MODE_READ, -1);
 
-   strlcpy(cue_dir, cue_path, sizeof(cue_dir));
-   path_basedir(cue_dir);
-
-   fd = filestream_open(cue_path, RFILE_MODE_READ, -1);
    if (!fd)
    {
       RARCH_LOG("Could not open CUE file '%s': %s\n", cue_path,
@@ -399,12 +396,17 @@ int find_first_data_track(const char *cue_path,
    {
       if (string_is_equal(tmp_token, "FILE"))
       {
+         char cue_dir[PATH_MAX_LENGTH] = {0};
+
+         fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
+
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          fill_pathname_join(track_path, cue_dir, tmp_token, max_len);
 
       }
       else if (string_is_equal_noncase(tmp_token, "TRACK"))
       {
+         int m, s, f;
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          if (string_is_equal_noncase(tmp_token, "AUDIO"))
