@@ -284,7 +284,7 @@ static void menu_displaylist_push_perfcounter(
    for (i = 0; i < num; i++)
       if (counters[i] && counters[i]->ident)
          menu_entries_add_enum(info->list,
-               counters[i]->ident, "", (enum msg_hash_enums)(id + i), MSG_UNKNOWN, 0, 0);
+               counters[i]->ident, "", (enum msg_hash_enums)(id + i), id + i , 0, 0);
 }
 
 static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
