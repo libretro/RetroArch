@@ -2092,6 +2092,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.";
       case MSG_ERROR_PARSING_ARGUMENTS:
          return "Error parsing arguments.";
+      case MSG_ERROR:
+         return "Error";
       case MSG_FAILED_TO_PATCH:
          return "Failed to patch";
       case MSG_CONTENT_PATCHED_SUCCESSFULLY_IN:

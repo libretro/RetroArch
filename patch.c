@@ -555,9 +555,10 @@ static bool apply_patch_content(uint8_t **buf,
       success = true;
    }
    else
-      RARCH_ERR("%s %s: Error #%u\n",
+      RARCH_ERR("%s %s: %s #%u\n",
             msg_hash_to_str(MSG_FAILED_TO_PATCH),
             patch_desc,
+            msg_hash_to_str(MSG_ERROR),
             (unsigned)err);
 
    if (success)
