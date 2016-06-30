@@ -25,6 +25,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
 #else
          return "RetroArch";
 #endif
+      case FILE_PATH_LUTRO_PLAYLIST:
+         return "Lutro.lpl";
       case FILE_PATH_NUL:
          return "nul";
       case FILE_PATH_LOG_WARN:

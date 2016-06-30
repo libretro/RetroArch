@@ -433,16 +433,21 @@ static int task_database_iterate_playlist_lutro(
    fill_short_pathname_representation_noext(game_title,
          path, sizeof(game_title));
 
-   fill_pathname_join(db_playlist_path, settings->directory.playlist,
-         "Lutro.lpl", sizeof(db_playlist_path));
+   fill_pathname_join(db_playlist_path,
+         settings->directory.playlist,
+         file_path_str(FILE_PATH_LUTRO_PLAYLIST),
+         sizeof(db_playlist_path));
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
    if(!playlist_entry_exists(playlist, path, "DETECT"))
    {
       playlist_push(playlist, path,
-            game_title, "DETECT", "DETECT",
-            "DETECT", "Lutro.lpl");
+            game_title,
+            "DETECT",
+            "DETECT",
+            "DETECT",
+            file_path_str(FILE_PATH_LUTRO_PLAYLIST));
    }
 
    playlist_write_file(playlist);
