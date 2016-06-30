@@ -46,23 +46,19 @@
  **/
 bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
 {
-   unsigned idx;
    playlist_t *playlist            = NULL;
-   const char *core_path           = NULL;
    const char *path                = NULL;
-   content_ctx_info_t content_info = {0};
    
    if (!info)
       return false;
 
    playlist = (playlist_t*)info->data;
-   idx      = info->idx;
 
    if (!playlist)
       return false;
 
    playlist_get_index(playlist,
-         idx, &path, NULL, &core_path, NULL, NULL, NULL);
+         info->idx, &path, NULL, NULL, NULL, NULL, NULL);
 
    if (!string_is_empty(path))
    {
@@ -93,15 +89,7 @@ bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
          goto error;
    }
 
-   if (task_push_content_load_default(
-         core_path,
-         path,
-         &content_info,
-         CORE_TYPE_PLAIN,
-         CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU,
-         NULL,
-         NULL))
-      return true;
+   return true;
 
 error:
    runloop_msg_queue_push("File could not be loaded.\n", 1, 100, true);
