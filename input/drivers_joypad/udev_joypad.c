@@ -242,7 +242,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    if ((buf = udev_device_get_sysattr_value(parent, "idProduct")) != NULL)
       pad->pid = strtol(buf, NULL, 16);
 
-   RARCH_LOG("[udev]: Plugged pad: %s (%04x:%04x) on port #%u.\n",
+   RARCH_LOG("[udev]: Plugged pad: %s (%u:%u) on port #%u.\n",
              pad->ident, pad->vid, pad->pid, p);
 
    if (fstat(fd, &st) < 0)
