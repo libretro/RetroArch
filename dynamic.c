@@ -1352,15 +1352,18 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                      info[i].types[j].id);
          }
 
-         free(system->ports.data);
-         system->ports.data = (struct retro_controller_info*)
-            calloc(i, sizeof(*system->ports.data));
-         if (!system->ports.data)
-            return false;
+         if (system)
+         {
+            free(system->ports.data);
+            system->ports.data = (struct retro_controller_info*)
+               calloc(i, sizeof(*system->ports.data));
+            if (!system->ports.data)
+               return false;
 
-         memcpy(system->ports.data, info,
-               i * sizeof(*system->ports.data));
-         system->ports.size = i;
+            memcpy(system->ports.data, info,
+                  i * sizeof(*system->ports.data));
+            system->ports.size = i;
+         }
          break;
       }
       
