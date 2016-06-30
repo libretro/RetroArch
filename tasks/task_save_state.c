@@ -152,7 +152,6 @@ bool content_undo_load_state()
    /* Clean up the temporary copy */
    free(temp_data);
    temp_data              = NULL;
-   temp_data_size         = 0;
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
@@ -176,7 +175,8 @@ bool content_undo_load_state()
       free(blocks[i].data);
    free(blocks);
 
-   if (!ret) {
+   if (!ret)
+   {
       RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
          undo_load_buf.path);
@@ -198,12 +198,14 @@ bool content_undo_save_state(void)
    /* Wipe the save file buffer as it's intended to be one use only */
    undo_save_buf.path[0] = '\0';
    undo_save_buf.size    = 0;
-   if (undo_save_buf.data) {
+   if (undo_save_buf.data)
+   {
       free(undo_save_buf.data);
       undo_save_buf.data = NULL;
    }
 
-   if (!ret) {
+   if (!ret)
+   {
       RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
          undo_save_buf.path);
@@ -253,9 +255,12 @@ bool content_save_state(const char *path, bool save_to_disk)
    serial_info.size = info.size;
    ret              = core_serialize(&serial_info);
 
-   if (ret) {
-      if (save_to_disk) {
-         if (path_file_exists(path)) {
+   if (ret)
+   {
+      if (save_to_disk)
+      {
+         if (path_file_exists(path))
+         {
             /* Before overwritting the savestate file, load it into a buffer
             to allow undo_save_state() to work */
             /* TODO/FIXME - Use msg_hash_to_str here */
@@ -274,13 +279,15 @@ bool content_save_state(const char *path, bool save_to_disk)
          in undo_load_buf to allow content_undo_load_state() to restore it */
 
          /* If we were holding onto an old state already, clean it up first */
-         if (undo_load_buf.data) {
+         if (undo_load_buf.data)
+         {
             free(undo_load_buf.data);
             undo_load_buf.data = NULL;
          }
 
          undo_load_buf.data = malloc(info.size);
-         if (!undo_load_buf.data) {
+         if (!undo_load_buf.data)
+         {
             free(data);
             return false;
          }
@@ -338,10 +345,11 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
 
    /* This means we're backing up the file in memory, so content_undo_save_state()
    can restore it */
-   if (load_to_backup_buffer) {
-      
+   if (load_to_backup_buffer)
+   {
       /* If we were previously backing up a file, let go of it first */
-      if (undo_save_buf.data) {
+      if (undo_save_buf.data)
+      {
          free(undo_save_buf.data);
          undo_save_buf.data = NULL;
       }
@@ -482,7 +490,7 @@ bool content_reset_savestate_backups(void)
    }
 
    undo_save_buf.path[0] = '\0';
-   undo_save_buf.size = 0;
+   undo_save_buf.size    = 0;
 
    if (undo_load_buf.data)
    {
@@ -491,17 +499,17 @@ bool content_reset_savestate_backups(void)
    }
 
    undo_load_buf.path[0] = '\0';
-   undo_load_buf.size = 0;
+   undo_load_buf.size    = 0;
 
    return true;
 }
 
-bool content_undo_load_buf_is_empty()
+bool content_undo_load_buf_is_empty(void)
 {
    return undo_load_buf.data == NULL || undo_load_buf.size == 0;
 }
 
-bool content_undo_save_buf_is_empty()
+bool content_undo_save_buf_is_empty(void)
 {
    return undo_save_buf.data == NULL || undo_save_buf.size == 0;
 }

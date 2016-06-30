@@ -55,10 +55,10 @@ bool content_save_state(const char *path, bool save_to_disk);
 bool content_rename_state(const char *origin, const char *dest);
 
 /* Undoes the last load state operation that was done */
-bool content_undo_load_state();
+bool content_undo_load_state(void);
 
 /* Restores the last savestate file which was overwritten */
-bool content_undo_save_state();
+bool content_undo_save_state(void);
 
 bool content_does_not_need_content(void);
 
@@ -77,11 +77,11 @@ void content_deinit(void);
 bool content_init(void);
 
 /* Resets the state and savefile backup buffers */
-bool content_reset_savestate_backups();
+bool content_reset_savestate_backups(void);
 
 /* Checks if the buffers are empty */
-bool content_undo_load_buf_is_empty();
-bool content_undo_save_buf_is_empty();
+bool content_undo_load_buf_is_empty(void);
+bool content_undo_save_buf_is_empty(void);
 
 RETRO_END_DECLS
 
