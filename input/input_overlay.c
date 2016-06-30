@@ -129,7 +129,7 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
       if (!desc->image.pixels)
          continue;
 
-      if (ol->iface && ol->iface->vertex_geom)
+      if (ol->iface->vertex_geom)
          ol->iface->vertex_geom(ol->iface_data, desc->image_index,
                desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
    }
@@ -198,14 +198,14 @@ static void input_overlay_load_active(input_overlay_t *ol, float opacity)
    if (!ol)
       return;
 
-   if (ol->iface && ol->iface->load)
+   if (ol->iface->load)
       ol->iface->load(ol->iface_data, ol->active->load_images,
             ol->active->load_images_size);
 
    input_overlay_set_alpha_mod(opacity);
    input_overlay_set_vertex_geom(ol);
 
-   if (ol->iface && ol->iface->full_screen)
+   if (ol->iface->full_screen)
       ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
 }
 
@@ -219,7 +219,7 @@ static void input_overlay_enable(input_overlay_t *ol, bool enable)
 {
    ol->enable = enable;
 
-   if (ol->iface && ol->iface->enable)
+   if (ol->iface->enable)
       ol->iface->enable(ol->iface_data, enable);
 }
 
@@ -368,7 +368,7 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
    if (!desc->movable)
       return;
 
-   if (ol->iface && ol->iface->vertex_geom)
+   if (ol->iface->vertex_geom)
       ol->iface->vertex_geom(ol->iface_data, desc->image_index,
             desc->mod_x + desc->delta_x, desc->mod_y + desc->delta_y,
             desc->mod_w, desc->mod_h);
@@ -405,7 +405,7 @@ static void input_overlay_post_poll(input_overlay_t *ol, float opacity)
 
          if (desc->image.pixels)
          {
-            if (ol->iface && ol->iface->set_alpha)
+            if (ol->iface->set_alpha)
                ol->iface->set_alpha(ol->iface_data, desc->image_index,
                      desc->alpha_mod * opacity);
          }
@@ -494,7 +494,7 @@ void input_overlay_free(void)
 
    input_overlay_free_overlays(ol);
 
-   if (ol->iface && ol->iface->enable)
+   if (ol->iface->enable)
       ol->iface->enable(ol->iface_data, false);
 
    free(ol);
