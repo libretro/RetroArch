@@ -269,14 +269,14 @@ static int database_info_list_iterate_found_match(
    char db_playlist_path[PATH_MAX_LENGTH]      = {0};
    char  db_playlist_base_str[PATH_MAX_LENGTH] = {0};
    char entry_path_str[PATH_MAX_LENGTH]        = {0};
-   playlist_t   *playlist = NULL;
-   settings_t           *settings = config_get_ptr();
-   const char            *db_path = db_state->list->elems[
-      db_state->list_index].data;
-   const char         *entry_path = db ? db->list->elems[
-      db->list_ptr].data : NULL;
-   database_info_t *db_info_entry = &db_state->info->list[
-      db_state->entry_index];
+   playlist_t   *playlist                      = NULL;
+   settings_t           *settings              = config_get_ptr();
+   const char            *db_path              = 
+      db_state->list->elems[db_state->list_index].data;
+   const char         *entry_path              = db ? 
+      db->list->elems[db->list_ptr].data : NULL;
+   database_info_t *db_info_entry              = 
+      &db_state->info->list[db_state->entry_index];
 
    fill_short_pathname_representation_noext(db_playlist_base_str,
          db_path, sizeof(db_playlist_base_str));
@@ -314,7 +314,9 @@ static int database_info_list_iterate_found_match(
    if(!playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
       playlist_push(playlist, entry_path_str,
-            db_info_entry->name, "DETECT", "DETECT",
+            db_info_entry->name,
+            file_path_str(FILE_PATH_DETECT),
+            file_path_str(FILE_PATH_DETECT),
             db_crc, db_playlist_base_str);
    }
 
@@ -429,12 +431,8 @@ static int task_database_iterate_playlist_lutro(
       const char *path)
 {
    char db_playlist_path[PATH_MAX_LENGTH]      = {0};
-   char game_title[PATH_MAX_LENGTH]            = {0};
-   playlist_t   *playlist = NULL;
-   settings_t           *settings = config_get_ptr();
-
-   fill_short_pathname_representation_noext(game_title,
-         path, sizeof(game_title));
+   playlist_t   *playlist                      = NULL;
+   settings_t           *settings              = config_get_ptr();
 
    fill_pathname_join(db_playlist_path,
          settings->directory.playlist,
@@ -443,13 +441,18 @@ static int task_database_iterate_playlist_lutro(
 
    playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
-   if(!playlist_entry_exists(playlist, path, "DETECT"))
+   if(!playlist_entry_exists(playlist, path, file_path_str(FILE_PATH_DETECT)))
    {
+      char game_title[PATH_MAX_LENGTH]            = {0};
+
+      fill_short_pathname_representation_noext(game_title,
+            path, sizeof(game_title));
+
       playlist_push(playlist, path,
             game_title,
-            "DETECT",
-            "DETECT",
-            "DETECT",
+            file_path_str(FILE_PATH_DETECT),
+            file_path_str(FILE_PATH_DETECT),
+            file_path_str(FILE_PATH_DETECT),
             file_path_str(FILE_PATH_LUTRO_PLAYLIST));
    }
 
