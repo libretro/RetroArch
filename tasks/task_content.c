@@ -1714,6 +1714,9 @@ bool task_push_content_load_default(
 {
    bool loading_from_menu = false;
 
+   if (!content_info)
+      return false;
+
    /* First we determine if we are loading from a menu */
    switch (mode)
    {
@@ -1749,7 +1752,7 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
 #ifdef HAVE_MENU
-         if (content_info && !content_info->environ_get)
+         if (!content_info->environ_get)
             content_info->environ_get = menu_content_environment_get;
 #endif
          break;
