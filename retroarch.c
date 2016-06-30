@@ -1219,11 +1219,10 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    /* Concatenate strings into full paths for game_path */
-   fill_pathname_join(s,
-         config_directory, core_name, len);
-   fill_string_join(s, game_name, len);
-   strlcat(s,
-         file_path_str(FILE_PATH_OPT_EXTENSION), len);
+   fill_pathname_join_special_ext(s,
+         config_directory, core_name, game_name,
+         file_path_str(FILE_PATH_OPT_EXTENSION),
+         len);
 
    fill_pathname_join(core_path,
          config_directory, core_name, sizeof(core_path));

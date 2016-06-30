@@ -585,6 +585,16 @@ void fill_pathname_join(char *out_path,
    retro_assert(strlcat(out_path, path, size) < size);
 }
 
+void fill_pathname_join_special_ext(char *out_path,
+      const char *dir,  const char *path,
+      const char *last, const char *ext,
+      size_t size)
+{
+   fill_pathname_join(out_path, dir, path, size);
+   fill_string_join(out_path, last, size);
+   strlcat(out_path, ext, size);
+}
+
 void fill_pathname_join_concat(char *out_path,
       const char *dir, const char *path, 
       const char *concat,
