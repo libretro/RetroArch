@@ -351,6 +351,13 @@ void fill_pathname_base_noext(char *out, const char *in_path, size_t size)
    path_remove_extension(out);
 }
 
+void fill_pathname_base_ext(char *out, const char *in_path, const char *ext,
+      size_t size)
+{
+   fill_pathname_base_noext(out, in_path, size);
+   strlcat(out, ext, size);
+}
+
 /**
  * fill_pathname_basedir:
  * @out_dir            : output directory
