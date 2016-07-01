@@ -70,19 +70,19 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);
 
-   menu_cbs_init_bind_cancel(cbs, path, label, type, idx, menu_label, label_hash, menu_label_hash);
+   menu_cbs_init_bind_cancel(cbs, path, label, type, idx, menu_label, label_hash);
 
    menu_cbs_init_log(repr_label, "CANCEL", cbs->action_cancel_ident);
 
-   menu_cbs_init_bind_scan(cbs, path, label, type, idx, label_hash, menu_label_hash);
+   menu_cbs_init_bind_scan(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "SCAN", cbs->action_scan_ident);
 
-   menu_cbs_init_bind_start(cbs, path, label, type, idx, label_hash, menu_label_hash);
+   menu_cbs_init_bind_start(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "START", cbs->action_start_ident);
 
-   menu_cbs_init_bind_select(cbs, path, label, type, idx, label_hash, menu_label_hash);
+   menu_cbs_init_bind_select(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "SELECT", cbs->action_select_ident);
 
@@ -94,23 +94,23 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "CONTENT SWITCH", cbs->action_content_list_switch_ident);
 
-   menu_cbs_init_bind_up(cbs, path, label, type, idx, label_hash, menu_label_hash);
+   menu_cbs_init_bind_up(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "UP", cbs->action_up_ident);
 
-   menu_cbs_init_bind_down(cbs, path, label, type, idx, label_hash, menu_label_hash);
+   menu_cbs_init_bind_down(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "DOWN", cbs->action_down_ident);
 
-   menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label, label_hash, menu_label_hash);
+   menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label, label_hash);
 
    menu_cbs_init_log(repr_label, "LEFT", cbs->action_left_ident);
 
-   menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label, label_hash, menu_label_hash);
+   menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label, label_hash);
 
    menu_cbs_init_log(repr_label, "RIGHT", cbs->action_right_ident);
 
-   menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx, label_hash, menu_label_hash);
+   menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "DEFERRED PUSH", cbs->action_deferred_push_ident);
 
@@ -122,7 +122,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "GET VALUE", cbs->action_get_value_ident);
 
-   menu_cbs_init_bind_title(cbs, path, label, type, idx, label_hash, menu_label_hash);
+   menu_cbs_init_bind_title(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "GET TITLE", cbs->action_get_title_ident);
 

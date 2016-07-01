@@ -385,8 +385,7 @@ static int bind_left_generic(unsigned type, const char *label,
 }
 
 static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash, const char *menu_label,
-      uint32_t menu_label_hash)
+      const char *label, uint32_t label_hash, const char *menu_label)
 {
    unsigned i;
 
@@ -498,7 +497,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 }
 
 static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
-      unsigned type, uint32_t label_hash, const char *menu_label, uint32_t menu_label_hash)
+      unsigned type, uint32_t label_hash, const char *menu_label)
 {
    if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
@@ -596,7 +595,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *menu_label,
-      uint32_t label_hash, uint32_t menu_label_hash)
+      uint32_t label_hash)
 {
    if (!cbs)
       return -1;
@@ -618,10 +617,10 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, menu_label, menu_label_hash) == 0)
+   if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, menu_label) == 0)
       return 0;
 
-   if (menu_cbs_init_bind_left_compare_type(cbs, type, label_hash, menu_label, menu_label_hash) == 0)
+   if (menu_cbs_init_bind_left_compare_type(cbs, type, label_hash, menu_label) == 0)
       return 0;
 
    return -1;

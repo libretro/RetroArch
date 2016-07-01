@@ -186,7 +186,7 @@ static int menu_cbs_init_bind_select_compare_label(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash, uint32_t menu_label_hash)
+      uint32_t label_hash)
 {
    if (!cbs)
       return -1;
