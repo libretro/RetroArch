@@ -117,11 +117,11 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "DOWN", cbs->action_down_ident);
 
-   menu_cbs_init_bind_left(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
+   menu_cbs_init_bind_left(cbs, path, label, type, idx, menu_label, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "LEFT", cbs->action_left_ident);
 
-   menu_cbs_init_bind_right(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
+   menu_cbs_init_bind_right(cbs, path, label, type, idx, menu_label, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "RIGHT", cbs->action_right_ident);
 
