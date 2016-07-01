@@ -1451,7 +1451,8 @@ static bool command_event_save_core_config(void)
    && path_file_exists(settings->path.libretro))
    {
       unsigned i;
-      RARCH_LOG("Using core name for new config\n");
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
+
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
@@ -1483,10 +1484,11 @@ static bool command_event_save_core_config(void)
       }
    }
 
-   /* Fallback to system time... */
    if (!found_path)
    {
-      RARCH_WARN("Cannot infer new config path. Use current time.\n");
+      /* Fallback to system time... */
+      RARCH_WARN("%s\n",
+            msg_hash_to_str(MSG_CANNOT_INFER_NEW_CONFIG_PATH));
       fill_dated_filename(config_name,
             file_path_str(FILE_PATH_CONFIG_EXTENSION),
             sizeof(config_name));
@@ -1494,10 +1496,11 @@ static bool command_event_save_core_config(void)
             sizeof(config_path));
    }
 
-   /* Overrides block config file saving, make it appear as overrides 
-    * weren't enabled for a manual save */
    if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
+      /* Overrides block config file saving, 
+       * make it appear as overrides weren't enabled 
+       * for a manual save. */
       runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
       overrides_active = true;
    }
@@ -1506,13 +1509,16 @@ static bool command_event_save_core_config(void)
    {
       strlcpy(global->path.config, config_path,
             sizeof(global->path.config));
-      snprintf(msg, sizeof(msg), "Saved new config to \"%s\".",
+      snprintf(msg, sizeof(msg), "%s \"%s\".",
+            msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
       RARCH_LOG("%s\n", msg);
    }
    else
    {
-      snprintf(msg, sizeof(msg), "Failed saving config to \"%s\".",
+      snprintf(msg, sizeof(msg),
+            "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             config_path);
       RARCH_ERR("%s\n", msg);
    }
@@ -1555,13 +1561,15 @@ void command_event_save_current_config(void)
 
       if (ret)
       {
-         snprintf(msg, sizeof(msg), "Saved new config to \"%s\".",
+         snprintf(msg, sizeof(msg), "%s \"%s\".",
+               msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
                global->path.config);
          RARCH_LOG("%s\n", msg);
       }
       else
       {
-         snprintf(msg, sizeof(msg), "Failed saving config to \"%s\".",
+         snprintf(msg, sizeof(msg), "%s \"%s\".",
+               msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
                global->path.config);
          RARCH_ERR("%s\n", msg);
       }
@@ -1603,9 +1611,8 @@ static void command_event_undo_save_state(char *s, size_t len)
 {
    if (content_undo_save_buf_is_empty())
    {
-      /* TODO/FIXME - use msg_hash_to_str here */
-      snprintf(s, len, "%s",
-         "No save state has been overwritten yet.");
+      strlcpy(s, 
+         msg_hash_to_str(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET), len);
       return; 
    }
 
@@ -1617,9 +1624,7 @@ static void command_event_undo_save_state(char *s, size_t len)
       return;
    }
 
-      /* TODO/FIXME - use msg_hash_to_str here */
-      snprintf(s, len, "%s",
-         "Restored old save state.");
+   strlcpy(s, msg_hash_to_str(MSG_RESTORED_OLD_SAVE_STATE), len);
 }
 
 /**
@@ -1655,9 +1660,9 @@ static void command_event_undo_load_state(char *s, size_t len)
    
    if (content_undo_load_buf_is_empty())
    {
-      /* TODO/FIXME - use msg_hash_to_str here */
-      snprintf(s, len, "%s",
-         "No state has been loaded yet.");
+      strlcpy(s, 
+         msg_hash_to_str(MSG_NO_STATE_HAS_BEEN_LOADED_YET),
+         len);
       return; 
    }
 
@@ -1669,9 +1674,8 @@ static void command_event_undo_load_state(char *s, size_t len)
       return;
    }
 
-   /* TODO/FIXME - use msg_hash_to_str here */
-      snprintf(s, len, "%s",
-         "Undid load state.");
+   strlcpy(s, 
+         msg_hash_to_str(MSG_UNDID_LOAD_STATE), len);
 }
 
 static void command_event_main_state(unsigned cmd)

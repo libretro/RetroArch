@@ -2052,6 +2052,20 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Failed to send nickname to client.";
       case MSG_FAILED_TO_GENERATE_BSV_HEADER:
          return "Failed to generate BSV header.";
+      case MSG_USING_CORE_NAME_FOR_NEW_CONFIG:
+         return "Using core name for new config.";
+      case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
+         return "Cannot infer new config path. Use current time.";
+      case MSG_NO_STATE_HAS_BEEN_LOADED_YET:
+         return "No state has been loaded yet.";
+      case MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET:
+         return "No save state has been overwritten yet.";
+      case MSG_RESTORED_OLD_SAVE_STATE:
+         return "Restored old save state.";
+      case MSG_SAVED_NEW_CONFIG_TO:
+         return "Saved new config to";
+      case MSG_FAILED_SAVING_CONFIG_TO:
+         return "Failed saving config to";
       case MSG_FAILED_TO_SEND_HEADER_TO_CLIENT:
          return "Failed to send header to client.";
       case MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST:
