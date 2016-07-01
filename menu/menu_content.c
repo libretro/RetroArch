@@ -42,7 +42,7 @@
  *
  * Initializes core and loads content based on playlist entry.
  **/
-bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
+bool menu_content_playlist_load(menu_content_ctx_playlist_info_t *info)
 {
    playlist_t *playlist            = NULL;
    const char *path                = NULL;
@@ -92,6 +92,39 @@ bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
 error:
    runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
    return false;
+}
+
+bool menu_content_playlist_find_associated_core(const char *path, char *s, size_t len)
+{
+   unsigned j;
+   bool                     ret = false;
+   settings_t *settings         = config_get_ptr();
+   struct string_list *existing_core_names = 
+      string_split(settings->playlist_names, ";");
+   struct string_list *existing_core_paths = 
+      string_split(settings->playlist_cores, ";");
+
+   for (j = 0; j < existing_core_names->size; j++)
+   {
+      if (string_is_equal(path, existing_core_names->elems[j].data))
+      {
+         if (existing_core_paths)
+         {
+            const char *existing_core = existing_core_paths->elems[j].data;
+
+            if (existing_core)
+            {
+               strlcpy(s, existing_core, len);
+               ret = true;
+            }
+         }
+         break;
+      }
+   }
+
+   string_list_free(existing_core_names);
+   string_list_free(existing_core_paths);
+   return ret;
 }
 
 /**

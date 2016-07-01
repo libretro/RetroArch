@@ -695,7 +695,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       const char             *path_base      = 
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      = 
-         menu_playlist_find_associated_core(
+         menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
       core_info.inf  = NULL;
@@ -734,7 +734,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_info.data = playlist;
    playlist_info.idx  = selection_ptr;
 
-   if (!menu_content_load_from_playlist(&playlist_info))
+   if (!menu_content_playlist_load(&playlist_info))
       return menu_cbs_exit();
 
    playlist_get_index(playlist,
@@ -809,7 +809,7 @@ static int action_ok_playlist_entry(const char *path,
       const char             *path_base      = 
          path_basename(menu->db_playlist_file);
       bool        found_associated_core      = 
-         menu_playlist_find_associated_core(
+         menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
       core_info.inf                          = NULL;
@@ -848,7 +848,7 @@ static int action_ok_playlist_entry(const char *path,
    playlist_info.data = playlist;
    playlist_info.idx  = selection_ptr;
 
-   if (!menu_content_load_from_playlist(&playlist_info))
+   if (!menu_content_playlist_load(&playlist_info))
       return menu_cbs_exit();
 
    playlist_get_index(playlist,

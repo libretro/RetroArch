@@ -206,8 +206,6 @@ void menu_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx);
 
-bool menu_playlist_find_associated_core(const char *path, char *s, size_t len);
-
 int menu_cbs_exit(void);
 
 #endif

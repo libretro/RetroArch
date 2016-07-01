@@ -23,6 +23,7 @@
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
 
+#include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_navigation.h"
 #include "menu_cbs.h"
@@ -3405,39 +3406,6 @@ static int menu_displaylist_parse_generic(
    return 0;
 }
 
-bool menu_playlist_find_associated_core(const char *path, char *s, size_t len)
-{
-   unsigned j;
-   bool                     ret = false;
-   settings_t *settings         = config_get_ptr();
-   struct string_list *existing_core_names = 
-      string_split(settings->playlist_names, ";");
-   struct string_list *existing_core_paths = 
-      string_split(settings->playlist_cores, ";");
-
-   for (j = 0; j < existing_core_names->size; j++)
-   {
-      if (string_is_equal(path, existing_core_names->elems[j].data))
-      {
-         if (existing_core_paths)
-         {
-            const char *existing_core = existing_core_paths->elems[j].data;
-
-            if (existing_core)
-            {
-               strlcpy(s, existing_core, len);
-               ret = true;
-            }
-         }
-         break;
-      }
-   }
-
-   string_list_free(existing_core_names);
-   string_list_free(existing_core_paths);
-   return ret;
-}
-
 static void menu_displaylist_parse_playlist_associations(
       menu_displaylist_info_t *info)
 {
@@ -3462,7 +3430,7 @@ static void menu_displaylist_parse_playlist_associations(
          const char *path                 = 
             path_basename(str_list->elems[i].data);
 
-         if (!menu_playlist_find_associated_core(
+         if (!menu_content_playlist_find_associated_core(
                   path, core_path, sizeof(core_path)))
             strlcpy(core_path, file_path_str(FILE_PATH_DETECT), sizeof(core_path));
 

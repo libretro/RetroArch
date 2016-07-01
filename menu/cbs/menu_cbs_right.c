@@ -17,6 +17,7 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
+#include "../menu_content.h"
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_input.h"
@@ -26,6 +27,7 @@
 
 #include "../../core_info.h"
 #include "../../managers/cheat_manager.h"
+#include "../../file_path_special.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../system.h"
@@ -345,8 +347,9 @@ static int playlist_association_right(unsigned type, const char *label,
    stnames = string_split(settings->playlist_names, ";");
    stcores = string_split(settings->playlist_cores, ";");
 
-   if (!menu_playlist_find_associated_core(path, core_path, sizeof(core_path)))
-         strlcpy(core_path, "DETECT", sizeof(core_path));
+   if (!menu_content_playlist_find_associated_core(path, core_path, sizeof(core_path)))
+         strlcpy(core_path,
+               file_path_str(FILE_PATH_DETECT), sizeof(core_path));
 
    for (i = 0; i < list->count; i++)
    {
