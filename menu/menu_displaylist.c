@@ -3222,7 +3222,8 @@ static int menu_displaylist_parse_generic(
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
 
       if (! horizontal)
-         menu_entries_add_enum(info->list, str, "", MSG_UNKNOWN, 0, 0, 0);
+         menu_entries_add_enum(info->list, str, "",
+               MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
       return 0;
    }
 
