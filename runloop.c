@@ -244,7 +244,9 @@ static bool runloop_check_movie_init(void)
    else
       strlcpy(path, bsv_movie_get_path(), sizeof(path));
 
-   strlcat(path, ".bsv", sizeof(path));
+   strlcat(path,
+         file_path_str(FILE_PATH_BSV_EXTENSION),
+         sizeof(path));
 
    snprintf(msg, sizeof(msg), "%s \"%s\".",
          msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),

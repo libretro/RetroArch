@@ -46,7 +46,8 @@ struct core_option_manager
    bool updated;
 };
 
-static bool core_option_manager_parse_variable(core_option_manager_t *opt, size_t idx,
+static bool core_option_manager_parse_variable(
+      core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
 {
    const char *val_start      = NULL;
