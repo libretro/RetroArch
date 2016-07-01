@@ -78,7 +78,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
    if (!handle->file)
    {
-      RARCH_ERR("Could not open BSV file \"%s\" for playback.\n", path);
+      RARCH_ERR("Could not open BSV file for playback, path : \"%s\".\n", path);
       return false;
    }
 
@@ -148,7 +148,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
    handle->file       = fopen(path, "wb");
    if (!handle->file)
    {
-      RARCH_ERR("Could not open BSV \"%s\" for recording.\n", path);
+      RARCH_ERR("Could not open BSV file for recording, path : \"%s\".\n", path);
       return false;
    }
 
