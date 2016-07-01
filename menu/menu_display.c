@@ -291,9 +291,7 @@ bool menu_display_libretro(void)
 
    if (menu_display_libretro_running())
    {
-      bool libretro_input_is_blocked = input_driver_is_libretro_input_blocked();
-
-      if (!libretro_input_is_blocked)
+      if (!input_driver_is_libretro_input_blocked())
          input_driver_set_libretro_input_blocked();
 
       core_run();
@@ -415,9 +413,9 @@ void menu_display_unset_framebuffer_dirty_flag(void)
 
 float menu_display_get_dpi(void)
 {
-   settings_t *settings = config_get_ptr();
    gfx_ctx_metrics_t metrics;
-   float dpi = menu_dpi_override_value;
+   settings_t *settings = config_get_ptr();
+   float            dpi = menu_dpi_override_value;
 
    if (!settings)
       return true;
