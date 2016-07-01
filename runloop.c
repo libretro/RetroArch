@@ -571,7 +571,8 @@ static bool rarch_game_specific_options(char **output)
    char game_path[PATH_MAX_LENGTH] = {0};
    config_file_t *option_file      = NULL;
    
-   if (!retroarch_validate_game_options(game_path, sizeof(game_path), false))
+   if (!retroarch_validate_game_options(game_path,
+            sizeof(game_path), false))
          return false;
 
    option_file = config_file_new(game_path);
@@ -580,8 +581,9 @@ static bool rarch_game_specific_options(char **output)
 
    config_file_free(option_file);
    
-   RARCH_LOG("Per-Game Options: "
-         "game-specific core options found at %s\n", game_path);
+   RARCH_LOG("%s %s\n",
+         msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
+         game_path);
    *output = strdup(game_path);
    return true;
 }
@@ -634,7 +636,8 @@ static bool runloop_check_idle_state(event_cmd_state_t *cmd)
    return true;
 }
 
-static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader_dir)
+static bool runloop_check_state(event_cmd_state_t *cmd,
+      rarch_dir_list_t *shader_dir)
 {
    bool tmp                  = false;
    settings_t *settings      = config_get_ptr();
