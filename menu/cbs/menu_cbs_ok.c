@@ -758,41 +758,112 @@ static int action_ok_playlist_entry(const char *path,
    const char *core_name            = NULL;
    playlist_t *tmp_playlist         = NULL;
    menu_handle_t *menu              = NULL;
-   uint32_t hash_label              = msg_hash_calculate(label);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return menu_cbs_exit();
 
-   switch (hash_label)
-   {
-      case MENU_LABEL_COLLECTION:
-      case MENU_LABEL_RDB_ENTRY_START_CONTENT:
-         menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
-
-         if (!tmp_playlist)
-         {
-            tmp_playlist = playlist_init(
-                  menu->db_playlist_file, COLLECTION_SIZE);
-
-            if (!tmp_playlist)
-               return menu_cbs_exit();
-            playlist_initialized = true;
-         }
-
-         playlist   = tmp_playlist;
-         break;
-   }
-
    selection_ptr = entry_idx;
 
-   switch (hash_label)
+   playlist_get_index(playlist, selection_ptr,
+         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL); 
+
+   if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)) 
+         && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
-      case MENU_LABEL_RDB_ENTRY_START_CONTENT:
-         selection_ptr = rdb_entry_start_game_selection_ptr;
-         break;
+      core_info_ctx_find_t core_info;
+      char new_core_path[PATH_MAX_LENGTH]    = {0};
+      char new_display_name[PATH_MAX_LENGTH] = {0};
+      const char *entry_path                 = NULL;
+      const char *entry_crc32                = NULL;
+      const char *db_name                    = NULL;
+      const char             *path_base      = 
+         path_basename(menu->db_playlist_file);
+      bool        found_associated_core      = 
+         menu_content_playlist_find_associated_core(
+            path_base, new_core_path, sizeof(new_core_path));
+
+      core_info.inf                          = NULL;
+      core_info.path                         = new_core_path;
+
+      if (!core_info_find(&core_info))
+         found_associated_core = false;
+
+      if (!found_associated_core)
+      {
+         int ret =  action_ok_file_load_with_detect_core(entry_path,
+               label, type, selection_ptr, entry_idx);
+         if (playlist_initialized)
+            playlist_free(tmp_playlist);
+         return ret;
+      }
+
+      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+      playlist_get_index(tmp_playlist, selection_ptr,
+            &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
+
+      strlcpy(new_display_name,
+            core_info.inf->display_name, sizeof(new_display_name));
+      playlist_update(tmp_playlist,
+            selection_ptr,
+            entry_path,
+            entry_label,
+            new_core_path,
+            new_display_name,
+            entry_crc32,
+            db_name);
+      playlist_write_file(tmp_playlist);
    }
+
+   playlist_info.data = playlist;
+   playlist_info.idx  = selection_ptr;
+
+   if (!menu_content_playlist_load(&playlist_info))
+      return menu_cbs_exit();
+
+   playlist_get_index(playlist,
+         playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
+
+   return generic_action_ok_file_load(core_path, path,
+         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU);
+}
+
+static int action_ok_playlist_entry_start_content(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   size_t selection;
+   menu_content_ctx_playlist_info_t playlist_info;
+   size_t selection_ptr             = 0;
+   bool playlist_initialized        = false;
+   playlist_t *playlist             = g_defaults.history;
+   const char *entry_path           = NULL;
+   const char *entry_label          = NULL;
+   const char *core_path            = NULL;
+   const char *core_name            = NULL;
+   playlist_t *tmp_playlist         = NULL;
+   menu_handle_t *menu              = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return menu_cbs_exit();
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+   if (!tmp_playlist)
+   {
+      tmp_playlist = playlist_init(
+            menu->db_playlist_file, COLLECTION_SIZE);
+
+      if (!tmp_playlist)
+         return menu_cbs_exit();
+      playlist_initialized = true;
+   }
+
+   playlist      = tmp_playlist;
+   selection_ptr = rdb_entry_start_game_selection_ptr;
 
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL); 
@@ -3011,8 +3082,14 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
             }
+            else if (label_hash == MENU_LABEL_RDB_ENTRY_START_CONTENT)
+            {
+               BIND_ACTION_OK(cbs, action_ok_playlist_entry_start_content);
+            }
             else
+            {
                BIND_ACTION_OK(cbs, action_ok_playlist_entry);
+            }
             break;
          case FILE_TYPE_RPL_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_rpl_entry);
