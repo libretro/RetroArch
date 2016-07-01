@@ -665,39 +665,40 @@ static void menu_action_setting_disp_set_label_xmb_gradient(
 {
    settings_t *settings        = config_get_ptr();
 
+   strlcpy(s2, path, len2);
+   *w = 19;
+
    if (!settings)
       return;
 
-   strlcpy(s2, path, len2);
-   *w = 19;
    switch (settings->menu.background_gradient)
    {
       case 0:
-         snprintf(s, len, "%s", "Legacy Red");
+         strlcpy(s, "Legacy Red", len);
          break;
       case 1:
-         snprintf(s, len, "%s", "Dark Purple");
+         strlcpy(s, "Dark Purple", len);
          break;
       case 2:
-         snprintf(s, len, "%s", "Midnight Blue");
+         strlcpy(s, "Midnight Blue", len);
          break;
       case 3:
-         snprintf(s, len, "%s", "Golden");
+         strlcpy(s, "Golden", len);
          break;
       case 4:
-         snprintf(s, len, "%s", "Electric Blue");
+         strlcpy(s, "Electric Blue", len);
          break;
       case 5:
-         snprintf(s, len, "%s", "Apple Green");
+         strlcpy(s, "Apple Green", len);
          break;
       case 6:
-         snprintf(s, len, "%s", "Undersea");
+         strlcpy(s, "Undersea", len);
          break;
       case 7:
-         snprintf(s, len, "%s", "Volcanic Red");
+         strlcpy(s, "Volcanic Red", len);
          break;
       case 8:
-         snprintf(s, len, "%s", "Dark");
+         strlcpy(s, "Dark", len);
          break;
    }
 }
