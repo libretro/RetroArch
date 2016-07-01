@@ -700,7 +700,9 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       free(tmp);
    }
 
-   strlcat(xmb->thumbnail_file_path, ".png", sizeof(xmb->thumbnail_file_path));
+   strlcat(xmb->thumbnail_file_path,
+         file_path_str(FILE_PATH_PNG_EXTENSION),
+         sizeof(xmb->thumbnail_file_path));
 }
 
 static void xmb_update_thumbnail_image(void *data)
@@ -1037,7 +1039,9 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
          free(tmp);
       }
 
-      strlcat(path, ".png", sizeof(path));
+      strlcat(path,
+            file_path_str(FILE_PATH_PNG_EXTENSION),
+            sizeof(path));
 
       if (!path_file_exists(path))
          fill_pathname_application_special(path, sizeof(path),
@@ -1357,7 +1361,7 @@ static void xmb_context_reset_horizontal_list(
             APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
       fill_pathname_join_concat(texturepath, iconpath, sysname,
-            ".png",
+            file_path_str(FILE_PATH_PNG_EXTENSION),
             sizeof(texturepath));
 
       fill_pathname_join_concat(content_texturepath, iconpath,
