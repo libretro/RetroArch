@@ -282,11 +282,14 @@ static int action_start_playlist_association(unsigned type, const char *label)
    found   = string_list_find_elem(stnames, path);
 
    if (found)
-      string_list_set(stcores, found-1, "DETECT");
+      string_list_set(stcores, found-1,
+            file_path_str(FILE_PATH_DETECT));
 
-   string_list_join_concat(new_playlist_cores, sizeof(new_playlist_cores), stcores, ";");
+   string_list_join_concat(new_playlist_cores,
+         sizeof(new_playlist_cores), stcores, ";");
 
-   strlcpy(settings->playlist_cores, new_playlist_cores, sizeof(settings->playlist_cores));
+   strlcpy(settings->playlist_cores,
+         new_playlist_cores, sizeof(settings->playlist_cores));
 
    string_list_free(stcores);
    string_list_free(stnames);
