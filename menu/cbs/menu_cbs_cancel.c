@@ -48,7 +48,7 @@ static int action_cancel_core_content(const char *path,
 }
 
 static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t hash, const char *elem0, const char *menu_label)
+      const char *label, uint32_t hash, const char *menu_label)
 {
    if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST)))
    {
@@ -68,7 +68,7 @@ static int menu_cbs_init_bind_cancel_compare_type(
 
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1, const char *menu_label,
+      const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
@@ -77,7 +77,7 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_CANCEL(cbs, action_cancel_pop_default);
 
-   if (menu_cbs_init_bind_cancel_compare_label(cbs, label, label_hash, elem0, menu_label) == 0)
+   if (menu_cbs_init_bind_cancel_compare_label(cbs, label, label_hash, menu_label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_cancel_compare_type(
