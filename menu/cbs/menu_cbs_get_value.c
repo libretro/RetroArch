@@ -183,13 +183,13 @@ static void menu_action_setting_disp_set_label_pipeline(
    switch (settings->menu.shader_pipeline)
    {
       case 0:
-         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          break;
       case 1:
-         snprintf(s, len, "%s", "Ribbon (simplified)");
+         strlcpy(s, "Ribbon (simplified)", len);
          break;
       case 2:
-         snprintf(s, len, "%s", "Ribbon");
+         strlcpy(s, "Ribbon", len);
          break;
    }
 
@@ -607,13 +607,13 @@ static void menu_action_setting_disp_set_label_poll_type_behavior(
    switch (settings->input.poll_type_behavior)
    {
       case 0:
-         snprintf(s, len, "%s", "Early");
+         strlcpy(s, "Early", len);
          break;
       case 1:
-         snprintf(s, len, "%s", "Normal");
+         strlcpy(s, "Normal", len);
          break;
       case 2:
-         snprintf(s, len, "%s", "Late");
+         strlcpy(s, "Late", len);
          break;
    }
 }
@@ -637,19 +637,19 @@ static void menu_action_setting_disp_set_label_xmb_theme(
    switch (settings->menu.xmb_theme)
    {
       case 0:
-         snprintf(s, len, "%s", "Monochrome");
+         strlcpy(s, "Monochrome", len);
          break;
       case 1:
-         snprintf(s, len, "%s", "FlatUI");
+         strlcpy(s, "FlatUI", len);
          break;
       case 2:
-         snprintf(s, len, "%s", "RetroActive");
+         strlcpy(s, "RetroActive", len);
          break;
       case 3:
-         snprintf(s, len, "%s", "Pixel");
+         strlcpy(s, "Pixel", len);
          break;
       case 4:
-         snprintf(s, len, "%s", "Custom");
+         strlcpy(s, "Custom", len);
          break;
    }
 }
@@ -722,16 +722,16 @@ static void menu_action_setting_disp_set_label_thumbnails(
    switch (settings->menu.thumbnails)
    {
       case 0:
-         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF));
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          break;
       case 1:
-         snprintf(s, len, "%s", "Screenshots");
+         strlcpy(s, "Screenshots", len);
          break;
       case 2:
-         snprintf(s, len, "%s", "Title Screens");
+         strlcpy(s, "Title Screens", len);
          break;
       case 3:
-         snprintf(s, len, "%s", "Boxarts");
+         strlcpy(s, "Boxarts", len);
          break;
    }
 }
@@ -755,16 +755,16 @@ static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
    switch (settings->input.menu_toggle_gamepad_combo)
    {
       case 0:
-         snprintf(s, len, "%s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          break;
       case 1:
-         snprintf(s, len, "%s", "Down + L1 + R1 + Y");
+         strlcpy(s, "Down + L1 + R1 + Y", len);
          break;
       case 2:
-         snprintf(s, len, "%s", "L3 + R3");
+         strlcpy(s, "L3 + R3", len);
 	 break;
       case 3:
-         snprintf(s, len, "%s", "Start + Select");
+         strlcpy(s, "Start + Select", len);
          break;
    }
 }
