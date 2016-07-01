@@ -1427,6 +1427,7 @@ static int action_ok_file_load_detect_core(const char *path,
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   enum msg_hash_enums enum_idx        = MSG_UNKNOWN;
    char menu_path_new[PATH_MAX_LENGTH] = {0};
    char full_path_new[PATH_MAX_LENGTH] = {0};
    const char *menu_label              = NULL;
@@ -1438,7 +1439,7 @@ static int action_ok_file_load(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu_entries_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last(menu_stack, &menu_path, &menu_label, &enum_idx, NULL);
 
    strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
@@ -1454,7 +1455,7 @@ static int action_ok_file_load(const char *path,
             sizeof(menu_path_new));
    }
 
-   setting = menu_setting_find(menu_label);
+   setting = menu_setting_find_enum(enum_idx);
 
    if (menu_setting_get_type(setting) == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
