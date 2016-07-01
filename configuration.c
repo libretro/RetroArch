@@ -3157,7 +3157,7 @@ bool config_replace(char *path)
    settings_t *settings            = config_get_ptr();
    global_t     *global            = global_get_ptr();
 
-   if (!path)
+   if (!path || !global)
       return false;
 
    /* If config file to be replaced is the same as the
