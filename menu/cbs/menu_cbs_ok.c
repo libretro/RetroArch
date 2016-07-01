@@ -533,16 +533,17 @@ static int generic_action_ok_file_load(const char *corepath, const char *fullpat
    return 0;
 }
 
-static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
+static int file_load_with_detect_core_wrapper(
+      enum msg_hash_enums enum_label_idx,
+      enum msg_hash_enums enum_idx,
+      size_t idx, size_t entry_idx,
       const char *path, const char *label,
-      uint32_t hash_label,
       unsigned type, bool is_carchive)
 {
    menu_content_ctx_defer_info_t def_info;
    char new_core_path[PATH_MAX_LENGTH] = {0};
    char menu_path_new[PATH_MAX_LENGTH] = {0};
    int ret                             = 0;
-   enum msg_hash_enums enum_idx        = MSG_UNKNOWN;
    const char *menu_path               = NULL;
    const char *menu_label              = NULL;
    menu_handle_t *menu                 = NULL;
@@ -583,7 +584,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       fill_pathname_join(detect_content_path, menu_path_new, path,
             sizeof(detect_content_path));
 
-   if (hash_label == MENU_LABEL_COLLECTION)
+   if (enum_label_idx == MENU_ENUM_LABEL_COLLECTION)
       return generic_action_ok_displaylist_push(path,
             NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST_SET);
 
@@ -606,28 +607,39 @@ static int action_ok_file_load_with_detect_core_carchive(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   uint32_t hash_label      = msg_hash_calculate(label);
-
    fill_pathname_join_delim(detect_content_path, detect_content_path, path,
          '#', sizeof(detect_content_path));
 
    type = 0;
    label = NULL;
 
-   return file_load_with_detect_core_wrapper(idx, entry_idx,
-         path, label, hash_label, type, true);
+   return file_load_with_detect_core_wrapper(MSG_UNKNOWN,
+         MSG_UNKNOWN, idx, entry_idx,
+         path, label, type, true);
 }
 
 static int action_ok_file_load_with_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   uint32_t hash_label      = msg_hash_calculate(label);
 
    type  = 0;
    label = NULL;
 
-   return file_load_with_detect_core_wrapper(idx, entry_idx,
-         path, label, hash_label, type, false);
+   return file_load_with_detect_core_wrapper(MSG_UNKNOWN,
+         MSG_UNKNOWN, idx, entry_idx,
+         path, label, type, false);
+}
+
+static int action_ok_file_load_with_detect_core_collection(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   type  = 0;
+   label = NULL;
+
+   return file_load_with_detect_core_wrapper(
+         MENU_ENUM_LABEL_COLLECTION,
+         MSG_UNKNOWN, idx, entry_idx,
+         path, label, type, false);
 }
 
 
@@ -701,7 +713,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       if (!found_associated_core)
       {
-         int ret = action_ok_file_load_with_detect_core(entry_path,
+         int ret = action_ok_file_load_with_detect_core_collection(entry_path,
                label, type, selection_ptr, entry_idx);
          if (playlist_initialized)
             playlist_free(tmp_playlist);
