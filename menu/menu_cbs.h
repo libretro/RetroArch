@@ -190,9 +190,6 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
 
-int deferred_push_content_list(void *data, void *userdata,
-      const char *path, const char *label, unsigned type);
-
 #ifdef HAVE_LIBRETRODB
 int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx);

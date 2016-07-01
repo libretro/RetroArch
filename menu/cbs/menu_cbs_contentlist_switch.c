@@ -22,6 +22,14 @@
    cbs->action_content_list_switch_ident = #name;
 #endif
 
+static int deferred_push_content_list(void *data, void *userdata,
+      const char *path,
+      const char *label, unsigned type)
+{
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   return action_refresh_default((file_list_t*)data, selection_buf);
+}
+
 int menu_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,

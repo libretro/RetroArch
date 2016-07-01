@@ -508,13 +508,6 @@ static int deferred_push_history_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_HISTORY);
 }
 
-int deferred_push_content_list(void *data, void *userdata, const char *path,
-      const char *label, unsigned type)
-{
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   return action_refresh_default((file_list_t*)data, selection_buf);
-}
-
 static int deferred_push_database_manager_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_DATABASES);
