@@ -109,11 +109,11 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "CONTENT SWITCH", cbs->action_content_list_switch_ident);
 
-   menu_cbs_init_bind_up(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_cbs_init_bind_up(cbs, path, label, type, idx, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "UP", cbs->action_up_ident);
 
-   menu_cbs_init_bind_down(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_cbs_init_bind_down(cbs, path, label, type, idx, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "DOWN", cbs->action_down_ident);
 
@@ -125,7 +125,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "RIGHT", cbs->action_right_ident);
 
-   menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_cbs_init_bind_deferred_push(cbs, path, label, type, idx, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "DEFERRED PUSH", cbs->action_deferred_push_ident);
 

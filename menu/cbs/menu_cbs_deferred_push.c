@@ -1088,8 +1088,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 }
 
 static int menu_cbs_init_bind_deferred_push_compare_type(
-      menu_file_list_cbs_t *cbs, unsigned type,
-      uint32_t label_hash)
+      menu_file_list_cbs_t *cbs, unsigned type)
 {
    if (type == MENU_SETTING_GROUP)
    {
@@ -1111,7 +1110,6 @@ static int menu_cbs_init_bind_deferred_push_compare_type(
 
 int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
@@ -1124,7 +1122,7 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
       return 0;
 
    if (menu_cbs_init_bind_deferred_push_compare_type(
-            cbs, type, label_hash) == 0)
+            cbs, type) == 0)
       return 0;
 
    return -1;
