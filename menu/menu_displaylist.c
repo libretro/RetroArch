@@ -1553,7 +1553,8 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          if (!string_is_empty(core_name))
          {
-            if (!string_is_equal(core_name, "DETECT"))
+            if (!string_is_equal(core_name,
+                     file_path_str(FILE_PATH_DETECT)))
             {
                char tmp[PATH_MAX_LENGTH] = {0};
                snprintf(tmp, sizeof(tmp), " (%s)", core_name);
@@ -3463,15 +3464,14 @@ static void menu_displaylist_parse_playlist_associations(
 
          if (!menu_playlist_find_associated_core(
                   path, core_path, sizeof(core_path)))
-            strlcpy(core_path, "DETECT", sizeof(core_path));
+            strlcpy(core_path, file_path_str(FILE_PATH_DETECT), sizeof(core_path));
 
          strlcpy(path_base, path, sizeof(path_base));
 
          found = string_list_find_elem(stnames, path_base);
+
          if (found)
-         {
             string_list_set(stcores, found-1, core_path);
-         }
          else
          {
             string_list_append(stnames, path_base, attr);
