@@ -105,7 +105,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "INFO", cbs->action_info_ident);
 
-   menu_cbs_init_bind_content_list_switch(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_cbs_init_bind_content_list_switch(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "CONTENT SWITCH", cbs->action_content_list_switch_ident);
 
