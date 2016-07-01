@@ -1651,6 +1651,7 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 
 #ifdef HAVE_LIBRETRODB
 static int create_string_list_rdb_entry_string(
+      enum msg_hash_enums enum_idx,
       const char *desc, const char *label,
       const char *actual_string, const char *path,
       file_list_t *list)
@@ -1686,7 +1687,7 @@ static int create_string_list_rdb_entry_string(
    fill_pathname_noext(tmp, desc, ": ", sizeof(tmp));
    strlcat(tmp, actual_string, sizeof(tmp));
    menu_entries_add_enum(list, tmp, output_label,
-         MSG_UNKNOWN,
+         enum_idx,
          0, 0, 0);
 
    if (output_label)
@@ -1698,6 +1699,7 @@ static int create_string_list_rdb_entry_string(
 }
 
 static int create_string_list_rdb_entry_int(
+      enum msg_hash_enums enum_idx,
       const char *desc, const char *label,
       int actual_int, const char *path, file_list_t *list)
 {
@@ -1733,7 +1735,7 @@ static int create_string_list_rdb_entry_int(
 
    snprintf(tmp, sizeof(tmp), "%s : %d", desc, actual_int);
    menu_entries_add_enum(list, tmp, output_label,
-         MSG_UNKNOWN,
+         enum_idx,
          0, 0, 0);
 
    if (output_label)
@@ -1885,6 +1887,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->publisher)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER),
                   db_info_entry->publisher, info->path, info->list) == -1)
@@ -1899,6 +1902,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             if (db_info_entry->developer->elems[k].data)
             {
                if (create_string_list_rdb_entry_string(
+                        MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER),
                         msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER),
                         db_info_entry->developer->elems[k].data,
@@ -1911,6 +1915,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->origin)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_ORIGIN,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ORIGIN),
                   db_info_entry->origin, info->path, info->list) == -1)
@@ -1919,6 +1924,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->franchise)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE),
                   db_info_entry->franchise, info->path, info->list) == -1)
@@ -1927,6 +1933,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->max_users)
       {
          if (create_string_list_rdb_entry_int(
+                  MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS),
                   db_info_entry->max_users,
@@ -1936,6 +1943,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->tgdb_rating)
       {
          if (create_string_list_rdb_entry_int(
+                  MENU_ENUM_LABEL_RDB_ENTRY_TGDB_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_TGDB_RATING),
                   db_info_entry->tgdb_rating,
@@ -1945,6 +1953,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->famitsu_magazine_rating)
       {
          if (create_string_list_rdb_entry_int(
+                  MENU_ENUM_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING),
                   db_info_entry->famitsu_magazine_rating,
@@ -1954,6 +1963,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->edge_magazine_review)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW),
                   db_info_entry->edge_magazine_review, info->path, info->list) == -1)
@@ -1962,6 +1972,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->edge_magazine_rating)
       {
          if (create_string_list_rdb_entry_int(
+                  MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING),
                   db_info_entry->edge_magazine_rating,
@@ -1971,6 +1982,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->edge_magazine_issue)
       {
          if (create_string_list_rdb_entry_int(
+                  MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE),
                   db_info_entry->edge_magazine_issue,
@@ -1980,6 +1992,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->releasemonth)
       {
          if (create_string_list_rdb_entry_int(
+                  MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH),
                   db_info_entry->releasemonth,
@@ -1990,6 +2003,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->releaseyear)
       {
          if (create_string_list_rdb_entry_int(
+                  MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR),
                   db_info_entry->releaseyear,
@@ -1999,6 +2013,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->bbfc_rating)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_BBFC_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_BBFC_RATING),
                   db_info_entry->bbfc_rating, info->path, info->list) == -1)
@@ -2007,6 +2022,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->esrb_rating)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING),
                   db_info_entry->esrb_rating, info->path, info->list) == -1)
@@ -2015,6 +2031,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->elspa_rating)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_ELSPA_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ELSPA_RATING),
                   db_info_entry->elspa_rating, info->path, info->list) == -1)
@@ -2023,6 +2040,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->pegi_rating)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING),
                   db_info_entry->pegi_rating, info->path, info->list) == -1)
@@ -2031,6 +2049,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->enhancement_hw)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_ENHANCEMENT_HW,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ENHANCEMENT_HW),
                   db_info_entry->enhancement_hw, info->path, info->list) == -1)
@@ -2039,6 +2058,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->cero_rating)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_CERO_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CERO_RATING),
                   db_info_entry->cero_rating, info->path, info->list) == -1)
@@ -2048,6 +2068,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->serial)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_SERIAL,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SERIAL),
                   db_info_entry->serial, info->path, info->list) == -1)
@@ -2057,6 +2078,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->analog_supported == 1)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_ANALOG,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ANALOG),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
@@ -2066,6 +2088,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->rumble_supported == 1)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_RUMBLE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RUMBLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
@@ -2075,6 +2098,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->coop_supported == 1)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_COOP,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_COOP),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, info->list) == -1)
@@ -2087,6 +2111,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->crc32)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_CRC32,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CRC32),
                   crc_str,
@@ -2097,6 +2122,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->sha1)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_SHA1,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SHA1),
                   db_info_entry->sha1,
@@ -2107,6 +2133,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (db_info_entry->md5)
       {
          if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_MD5,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_MD5),
                   db_info_entry->md5,

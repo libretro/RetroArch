@@ -2654,26 +2654,26 @@ static int action_ok_video_resolution(const char *path,
    return 0;
 }
 
-static int is_rdb_entry(uint32_t label_hash)
+static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
-   switch (label_hash)
+   switch (enum_idx)
    {
-      case MENU_LABEL_RDB_ENTRY_PUBLISHER:
-      case MENU_LABEL_RDB_ENTRY_DEVELOPER:
-      case MENU_LABEL_RDB_ENTRY_ORIGIN:
-      case MENU_LABEL_RDB_ENTRY_FRANCHISE:
-      case MENU_LABEL_RDB_ENTRY_ENHANCEMENT_HW:
-      case MENU_LABEL_RDB_ENTRY_ESRB_RATING:
-      case MENU_LABEL_RDB_ENTRY_BBFC_RATING:
-      case MENU_LABEL_RDB_ENTRY_ELSPA_RATING:
-      case MENU_LABEL_RDB_ENTRY_PEGI_RATING:
-      case MENU_LABEL_RDB_ENTRY_CERO_RATING:
-      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-      case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-      case MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
-      case MENU_LABEL_RDB_ENTRY_RELEASE_MONTH:
-      case MENU_LABEL_RDB_ENTRY_RELEASE_YEAR:
-      case MENU_LABEL_RDB_ENTRY_MAX_USERS:
+      case MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER:
+      case MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER:
+      case MENU_ENUM_LABEL_RDB_ENTRY_ORIGIN:
+      case MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE:
+      case MENU_ENUM_LABEL_RDB_ENTRY_ENHANCEMENT_HW:
+      case MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING:
+      case MENU_ENUM_LABEL_RDB_ENTRY_BBFC_RATING:
+      case MENU_ENUM_LABEL_RDB_ENTRY_ELSPA_RATING:
+      case MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING:
+      case MENU_ENUM_LABEL_RDB_ENTRY_CERO_RATING:
+      case MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING:
+      case MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
+      case MENU_ENUM_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
+      case MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH:
+      case MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR:
+      case MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS:
          break;
       default:
          return -1;
@@ -2685,9 +2685,7 @@ static int is_rdb_entry(uint32_t label_hash)
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t hash, const char *elem0)
 {
-   uint32_t elem0_hash      = msg_hash_calculate(elem0);
-
-   if (!string_is_empty(elem0) && (is_rdb_entry(elem0_hash) == 0))
+   if (cbs->enum_idx != MSG_UNKNOWN && is_rdb_entry(cbs->enum_idx) == 0)
    {
       BIND_ACTION_OK(cbs, action_ok_rdb_entry_submenu);
       return 0;
