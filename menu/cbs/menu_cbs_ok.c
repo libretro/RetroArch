@@ -95,7 +95,7 @@ finish:
    menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
 
    if (err)
-      RARCH_ERR("Download failed: %s\n", err);
+      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
 
    if (data)
    {
@@ -687,8 +687,10 @@ static int action_ok_playlist_entry_collection(const char *path,
       const char *entry_path                 = NULL;
       const char *entry_crc32                = NULL;
       const char *db_name                    = NULL;
-      const char             *path_base      = path_basename(menu->db_playlist_file);
-      bool        found_associated_core      = menu_playlist_find_associated_core(
+      const char             *path_base      = 
+         path_basename(menu->db_playlist_file);
+      bool        found_associated_core      = 
+         menu_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
       core_info.inf  = NULL;
@@ -711,7 +713,8 @@ static int action_ok_playlist_entry_collection(const char *path,
       playlist_get_index(tmp_playlist, selection_ptr,
             &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
 
-      strlcpy(new_display_name, core_info.inf->display_name, sizeof(new_display_name));
+      strlcpy(new_display_name,
+            core_info.inf->display_name, sizeof(new_display_name));
       playlist_update(tmp_playlist,
             selection_ptr,
             entry_path,
@@ -896,10 +899,12 @@ static int generic_action_ok(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
+   menu_entries_get_last_stack(&menu_path,
+         &menu_label, NULL, &enum_idx, NULL);
 
    if (!string_is_empty(path))
-      fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
+      fill_pathname_join(action_path,
+            menu_path, path, sizeof(action_path));
    else
       strlcpy(action_path, menu_path, sizeof(action_path));
 
@@ -1061,14 +1066,16 @@ static int action_ok_cheat_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_CHEAT_FILE, MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS);
+         ACTION_OK_LOAD_CHEAT_FILE,
+         MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS);
 }
 
 static int action_ok_record_configfile_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_RECORD_CONFIGFILE, MENU_ENUM_LABEL_RECORDING_SETTINGS);
+         ACTION_OK_LOAD_RECORD_CONFIGFILE,
+         MENU_ENUM_LABEL_RECORDING_SETTINGS);
 }
 
 static int action_ok_remap_file_load(const char *path,
@@ -1117,7 +1124,8 @@ static int action_ok_cheevos(const char *path,
 
    menu->help_screen_id   = new_id;
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION, MENU_HELP_CHEEVOS_DESCRIPTION);
+         MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
+         MENU_HELP_CHEEVOS_DESCRIPTION);
 }
 
 static int action_ok_cheat(const char *path,
@@ -1125,7 +1133,7 @@ static int action_ok_cheat(const char *path,
 {
    menu_input_ctx_line_t line;
 
-   line.label         = "Input Cheat";
+   line.label         = msg_hash_to_str(MSG_INPUT_CHEAT);
    line.label_setting = label;
    line.type          = type;
    line.idx           = idx;
@@ -1136,7 +1144,8 @@ static int action_ok_cheat(const char *path,
    return 0;
 }
 
-static void menu_input_st_string_cb_save_preset(void *userdata, const char *str)
+static void menu_input_st_string_cb_save_preset(void *userdata,
+      const char *str)
 {
    if (str && *str)
    {
@@ -1165,7 +1174,7 @@ static int action_ok_shader_preset_save_as(const char *path,
 {
    menu_input_ctx_line_t line;
 
-   line.label         = "Preset Filename";
+   line.label         = msg_hash_to_str(MSG_INPUT_PRESET_FILENAME);
    line.label_setting = label;
    line.type          = type;
    line.idx           = idx;
@@ -1176,7 +1185,8 @@ static int action_ok_shader_preset_save_as(const char *path,
    return 0;
 }
 
-static void menu_input_st_string_cb_cheat_file_save_as(void *userdata, const char *str)
+static void menu_input_st_string_cb_cheat_file_save_as(
+      void *userdata, const char *str)
 {
    if (str && *str)
    {
@@ -1205,7 +1215,7 @@ static int action_ok_cheat_file_save_as(const char *path,
 {
    menu_input_ctx_line_t line;
 
-   line.label         = "Cheat Filename";
+   line.label         = msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME);
    line.label_setting = label;
    line.type          = type;
    line.idx           = idx;
@@ -1263,10 +1273,12 @@ static int generic_action_ok_remap_file_save(const char *path,
        path_mkdir(directory);
 
    if(input_remapping_save_file(file))
-      runloop_msg_queue_push("Remap file saved successfully",
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
             1, 100, true);
    else
-      runloop_msg_queue_push("Error saving remap file",
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
             1, 100, true);
 
    return 0;
@@ -1738,7 +1750,7 @@ static void cb_generic_download(void *task_data,
 
    if (!path_mkdir(output_path))
    {
-      err = "Failed to create the directory.";
+      err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
       goto finish;
    }
 
@@ -1753,7 +1765,7 @@ static void cb_generic_download(void *task_data,
    {
       if (task_check_decompress(output_path))
       {
-        err = "Decompression already in progress.";
+        err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
         goto finish;
       }
    }
@@ -1771,11 +1783,12 @@ static void cb_generic_download(void *task_data,
 
    if (string_is_equal_noncase(file_ext, "zip"))
    {
-      if (!task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
-            cb_decompressed, (void*)(uintptr_t)
-            msg_hash_calculate(msg_hash_to_str(transf->enum_idx))))
+      if (!task_push_decompress(output_path, dir_path,
+               NULL, NULL, NULL,
+               cb_decompressed, (void*)(uintptr_t)
+               msg_hash_calculate(msg_hash_to_str(transf->enum_idx))))
       {
-        err = "Decompression failed.";
+        err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
         goto finish;
       }
    }
@@ -2007,7 +2020,8 @@ static int action_ok_option_create(const char *path,
 
    if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
    {
-      runloop_msg_queue_push("Error saving core options file.",
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_ERROR_SAVING_CORE_OPTIONS_FILE),
             1, 100, true);
       return 0;
    }
@@ -2025,7 +2039,8 @@ static int action_ok_option_create(const char *path,
    {
       global_t                 *global  = global_get_ptr();
 
-      runloop_msg_queue_push("Core options file created successfully.",
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
             1, 100, true);
 
       strlcpy(global->path.core_options_path,

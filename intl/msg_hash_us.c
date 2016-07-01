@@ -2008,6 +2008,28 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Autoconfig file saved successfully.";
       case MSG_AUTOCONFIG_FILE_ERROR_SAVING:
          return "Error saving autoconf file.";
+      case MSG_DOWNLOAD_FAILED:
+         return "Download failed";
+      case MSG_INPUT_CHEAT:
+         return "Input Cheat";
+      case MSG_DECOMPRESSION_ALREADY_IN_PROGRESS:
+         return "Decompression already in progress.";
+      case MSG_DECOMPRESSION_FAILED:
+         return "Decompression failed.";
+      case MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY:
+         return "Core options file created successfully.";
+      case MSG_FAILED_TO_CREATE_THE_DIRECTORY:
+         return "Failed to create the directory.";
+      case MSG_ERROR_SAVING_CORE_OPTIONS_FILE:
+         return "Error saving core options file.";
+      case MSG_REMAP_FILE_SAVED_SUCCESSFULLY:
+         return "Remap file saved successfully.";
+      case MSG_ERROR_SAVING_REMAP_FILE:
+         return "Error saving remap file.";
+      case MSG_INPUT_CHEAT_FILENAME:
+         return "Cheat Filename";
+      case MSG_INPUT_PRESET_FILENAME:
+         return "Preset Filename";
       case MSG_DISK_EJECTED:
          return "Ejected";
       case MSG_DISK_CLOSED:
