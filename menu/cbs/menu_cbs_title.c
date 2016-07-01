@@ -730,7 +730,7 @@ static int action_get_title_input_binds_list(const char *path, const char *label
 }
 
 static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash, const char *elem1)
+      const char *label, uint32_t label_hash)
 {
    if (cbs->setting)
    {
@@ -1343,7 +1343,6 @@ static int menu_cbs_init_bind_title_compare_type(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
@@ -1351,7 +1350,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_GET_TITLE(cbs, action_get_title_default);
 
-   if (menu_cbs_init_bind_title_compare_label(cbs, label, label_hash, elem1) == 0)
+   if (menu_cbs_init_bind_title_compare_label(cbs, label, label_hash) == 0)
       return 0;
 
    if (menu_cbs_init_bind_title_compare_type(cbs, type) == 0)

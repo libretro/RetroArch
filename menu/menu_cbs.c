@@ -129,7 +129,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "DEFERRED PUSH", cbs->action_deferred_push_ident);
 
-   menu_cbs_init_bind_refresh(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_cbs_init_bind_refresh(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "REFRESH", cbs->action_refresh_ident);
 
@@ -137,7 +137,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "GET VALUE", cbs->action_get_value_ident);
 
-   menu_cbs_init_bind_title(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_cbs_init_bind_title(cbs, path, label, type, idx, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "GET TITLE", cbs->action_get_title_ident);
 
