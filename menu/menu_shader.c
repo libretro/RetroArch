@@ -23,6 +23,7 @@
 
 #include "menu_driver.h"
 #include "menu_shader.h"
+#include "../file_path_special.h"
 #include "../configuration.h"
 #include "../runloop.h"
 #include "../verbosity.h"
@@ -61,15 +62,15 @@ void menu_shader_manager_init(menu_handle_t *menu)
    if (config_path)
    {
       fill_pathname_base_ext(menu->default_glslp, config_path,
-            ".glslp",
+            file_path_str(FILE_PATH_GLSLP_EXTENSION),
             sizeof(menu->default_glslp));
 
       fill_pathname_base_ext(menu->default_cgp, config_path,
-            ".cgp",
+            file_path_str(FILE_PATH_CGP_EXTENSION),
             sizeof(menu->default_cgp));
 
       fill_pathname_base_ext(menu->default_slangp, config_path,
-            ".slangp",
+            file_path_str(FILE_PATH_SLANGP_EXTENSION),
             sizeof(menu->default_slangp));
    }
    else
@@ -82,7 +83,8 @@ void menu_shader_manager_init(menu_handle_t *menu)
             sizeof(menu->default_slangp));
    }
 
-   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(settings->path.shader))))
+   switch (msg_hash_to_file_type(msg_hash_calculate(
+               path_get_extension(settings->path.shader))))
    {
       case FILE_TYPE_SHADER_PRESET_GLSLP:
       case FILE_TYPE_SHADER_PRESET_CGP:
@@ -247,20 +249,26 @@ void menu_shader_manager_save_preset(
       strlcpy(buffer, basename, sizeof(buffer));
 
       /* Append extension automatically as appropriate. */
-      if (     !strstr(basename, ".cgp") 
-            && !strstr(basename, ".glslp")
-            && !strstr(basename, ".slangp"))
+      if (     !strstr(basename, file_path_str(FILE_PATH_CGP_EXTENSION)) 
+            && !strstr(basename, file_path_str(FILE_PATH_GLSLP_EXTENSION))
+            && !strstr(basename, file_path_str(FILE_PATH_SLANGP_EXTENSION)))
       {
          switch (type)
          {
             case RARCH_SHADER_GLSL:
-               strlcat(buffer, ".glslp", sizeof(buffer));
+               strlcat(buffer,
+                     file_path_str(FILE_PATH_GLSLP_EXTENSION),
+                     sizeof(buffer));
                break;
             case RARCH_SHADER_SLANG:
-               strlcat(buffer, ".slangp", sizeof(buffer));
+               strlcat(buffer,
+                     file_path_str(FILE_PATH_SLANGP_EXTENSION),
+                     sizeof(buffer));
                break;
             case RARCH_SHADER_CG:
-               strlcat(buffer, ".cgp", sizeof(buffer));
+               strlcat(buffer,
+                     file_path_str(FILE_PATH_CGP_EXTENSION),
+                     sizeof(buffer));
                break;
          }
       }

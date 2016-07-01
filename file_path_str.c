@@ -37,6 +37,12 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return "[ERROR]";
       case FILE_PATH_LOG_INFO:
          return "[INFO]";
+      case FILE_PATH_CGP_EXTENSION:
+         return ".cgp";
+      case FILE_PATH_GLSLP_EXTENSION:
+         return ".glslp";
+      case FILE_PATH_SLANGP_EXTENSION:
+         return ".slangp";
       case FILE_PATH_AUTO_EXTENSION:
          return ".auto";
       case FILE_PATH_BSV_EXTENSION:
