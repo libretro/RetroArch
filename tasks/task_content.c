@@ -296,7 +296,9 @@ static int content_7zip_file_read(
       {
          /* Error handling */
          if (!file_found)
-            RARCH_ERR("File %s not found in %s\n", needle, path);
+            RARCH_ERR("%s: %s in %s.\n", 
+                  msg_hash_to_str(MSG_FILE_NOT_FOUND),
+                  needle, path);
 
          RARCH_ERR("Failed to open compressed file inside 7zip archive.\n");
 
@@ -330,7 +332,7 @@ static struct string_list *compressed_7zip_file_list_new(
 
    if (InFile_Open(&archiveStream.file, path))
    {
-      RARCH_ERR("Could not open %s as 7z archive.\n",path);
+      RARCH_ERR("Could not open as 7zip archive: %s.\n",path);
       return NULL;
    }
 
@@ -470,7 +472,8 @@ static bool content_zip_file_decompressed_handle(
 
    if (handle->real_checksum != crc32)
    {
-      RARCH_ERR("Inflated checksum did not match CRC32!\n");
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32));
       goto error;
    }
 
@@ -526,7 +529,9 @@ static int content_zip_file_decompressed(
 
             if (buf)
             {
-               RARCH_LOG("Extracting file : %s\n", st->opt_file);
+               RARCH_LOG("%s: %s\n", 
+                     msg_hash_to_str(MSG_EXTRACTING_FILE),
+                     st->opt_file);
                memcpy(buf, handle.data, size);
 
                if (!filestream_write_file(st->opt_file, buf, size))
@@ -841,7 +846,8 @@ static void content_load_init_wrap(
 #ifdef HAVE_MENU
       else
       {
-         RARCH_LOG("No content, starting dummy core.\n");
+         RARCH_LOG("%s\n",
+               msg_hash_to_str(MSG_NO_CONTENT_STARTING_DUMMY_CORE));
          argv[(*argc)++] = strdup("--menu");
       }
 #endif
@@ -1188,7 +1194,8 @@ static bool load_content(
       else
       {
          RARCH_LOG("%s\n",
-               msg_hash_to_str(MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
+               msg_hash_to_str(
+                  MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT));
 
 #ifdef HAVE_COMPRESSION
          if (!load_content_from_compressed_archive(
@@ -1251,7 +1258,7 @@ static const struct retro_subsystem_info *init_content_file_subsystem(
    else if (special->num_roms && special->num_roms
          != global->subsystem_fullpaths->size)
    {
-      RARCH_ERR("libretro core requires %u content files for "
+      RARCH_ERR("Libretro core requires %u content files for "
             "subsystem \"%s\", but %u content files were provided.\n",
             special->num_roms, special->desc,
             (unsigned)global->subsystem_fullpaths->size);
@@ -1260,7 +1267,7 @@ static const struct retro_subsystem_info *init_content_file_subsystem(
    else if (!special->num_roms && global->subsystem_fullpaths
          && global->subsystem_fullpaths->size)
    {
-      RARCH_ERR("libretro core takes no content for subsystem \"%s\", "
+      RARCH_ERR("Libretro core takes no content for subsystem \"%s\", "
             "but %u content files were provided.\n",
             special->desc,
             (unsigned)global->subsystem_fullpaths->size);
@@ -1318,7 +1325,9 @@ static bool init_content_file_extract(
                   settings->directory.cache : NULL,
                   new_path, sizeof(new_path)))
          {
-            RARCH_ERR("Failed to extract content from zipped file: %s.\n",
+            RARCH_ERR("%s: %s.\n",
+                  msg_hash_to_str(
+                     MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
                   temp_content);
             return false;
          }

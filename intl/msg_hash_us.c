@@ -2022,6 +2022,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Core options file created successfully.";
       case MSG_FAILED_TO_CREATE_THE_DIRECTORY:
          return "Failed to create the directory.";
+      case MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE:
+         return "Failed to extract content from compressed file";
+      case MSG_FILE_NOT_FOUND:
+         return "File not found";
       case MSG_ERROR_SAVING_CORE_OPTIONS_FILE:
          return "Error saving core options file.";
       case MSG_REMAP_FILE_SAVED_SUCCESSFULLY:
@@ -2134,6 +2138,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Movie format seems to have a different serializer version. Will most likely fail.";
       case MSG_CRC32_CHECKSUM_MISMATCH:
          return "CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.";
+      case MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32:
+         return "Inflated checksum did not match CRC32.";
       case MSG_ERROR_PARSING_ARGUMENTS:
          return "Error parsing arguments.";
       case MSG_ERROR:
@@ -2346,6 +2352,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Downloading";
       case MSG_EXTRACTING:
          return "Extracting";
+      case MSG_EXTRACTING_FILE:
+         return "Extracting file";
+      case MSG_NO_CONTENT_STARTING_DUMMY_CORE:
+         return "No content, starting dummy core.";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING:
          return "Edge Magazine Rating";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW:
