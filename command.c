@@ -1894,21 +1894,37 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
+      case CMD_EVENT_QUIT:
          command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
          command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
 
-         if (content_is_inited())
-            if (!task_push_content_load_default(
-                     NULL, NULL,
-                     &content_info,
-                     CORE_TYPE_DUMMY,
-                     CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-                     NULL, NULL))
-               return false;
+         switch (cmd)
+         {
+            case CMD_EVENT_UNLOAD_CORE:
+               if (content_is_inited())
+                  if (!task_push_content_load_default(
+                           NULL, NULL,
+                           &content_info,
+                           CORE_TYPE_DUMMY,
+                           CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+                           NULL, NULL))
+                     return false;
+               break;
+            default:
+               break;
+         }
+
          command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
-         break;
-      case CMD_EVENT_QUIT:
-         retroarch_main_quit();
+
+         switch (cmd)
+         {
+            case CMD_EVENT_QUIT:
+               runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+               rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+               break;
+            default:
+               break;
+         }
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS

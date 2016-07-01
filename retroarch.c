@@ -1689,9 +1689,3 @@ void retroarch_fail(int error_code, const char *error)
    strlcpy(error_string, error, sizeof(error_string));
    longjmp(error_sjlj_context, error_code);
 }
-
-void retroarch_main_quit(void)
-{
-   runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
-   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-}
