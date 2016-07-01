@@ -1224,7 +1224,8 @@ static void command_event_load_auto_state(void)
       return;
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         ".auto", sizeof(savestate_name_auto));
+         file_path_str(FILE_PATH_AUTO_EXTENSION),
+         sizeof(savestate_name_auto));
 
    if (!path_file_exists(savestate_name_auto))
       return;
@@ -1401,7 +1402,8 @@ static bool command_event_save_auto_state(void)
 #endif
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
-         ".auto", sizeof(savestate_name_auto));
+         file_path_str(FILE_PATH_AUTO_EXTENSION),
+         sizeof(savestate_name_auto));
 
    ret = content_save_state((const char*)savestate_name_auto, true);
    RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ?

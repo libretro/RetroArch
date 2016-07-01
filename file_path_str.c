@@ -37,6 +37,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return "[ERROR]";
       case FILE_PATH_LOG_INFO:
          return "[INFO]";
+      case FILE_PATH_AUTO_EXTENSION:
+         return ".auto";
       case FILE_PATH_BSV_EXTENSION:
          return ".bsv";
       case FILE_PATH_OPT_EXTENSION:
