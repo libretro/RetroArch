@@ -719,19 +719,27 @@ static void menu_action_setting_disp_set_label_thumbnails(
 
    strlcpy(s2, path, len2);
    *w = 19;
+
    switch (settings->menu.thumbnails)
    {
       case 0:
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_OFF), len);
          break;
       case 1:
-         strlcpy(s, "Screenshots", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
          break;
       case 2:
-         strlcpy(s, "Title Screens", len);
+         strlcpy(s, 
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
          break;
       case 3:
-         strlcpy(s, "Boxarts", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
          break;
    }
 }

@@ -3404,6 +3404,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Quit";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
          return "Toggle Keyboard";
+      case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS:
+         return "Screenshots";
+      case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS:
+         return "Title Screens";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
