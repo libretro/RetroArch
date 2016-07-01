@@ -3408,6 +3408,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Screenshots";
       case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS:
          return "Title Screens";
+      case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS:
+         return "Boxarts";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
