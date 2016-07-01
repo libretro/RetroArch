@@ -80,7 +80,7 @@ static const bool _vulkan_supp = true;
 static const bool _vulkan_supp = false;
 #endif
 
-#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3)
+#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1) || defined(HAVE_OPENGLES_3_2)
 static const bool _opengles_supp = true;
 #else
 static const bool _opengles_supp = false;
