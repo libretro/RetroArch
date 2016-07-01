@@ -181,6 +181,8 @@ const char *config_get_default_video(void)
    {
       case VIDEO_GL:
          return "gl";
+      case VIDEO_VULKAN:
+         return "vulkan";
       case VIDEO_WII:
          return "gx";
       case VIDEO_XENON360:
