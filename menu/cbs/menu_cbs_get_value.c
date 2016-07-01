@@ -1211,8 +1211,7 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
    *s = '\0';
    *w = 19;
 
-   strlcpy(playlist_name_with_ext, path, sizeof(playlist_name_with_ext));
-   strlcat(playlist_name_with_ext,
+   fill_pathname_noext(playlist_name_with_ext, path,
          file_path_str(FILE_PATH_LPL_EXTENSION),
          sizeof(playlist_name_with_ext));
 
@@ -1234,7 +1233,7 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
    string_list_free(str_list);
    string_list_free(str_list2);
 
-   if (string_is_equal(s, "DETECT") || !found_matching_core_association)
+   if (string_is_equal(s, file_path_str(FILE_PATH_DETECT)) || !found_matching_core_association)
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
    else
    {
