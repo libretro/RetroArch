@@ -90,7 +90,7 @@ bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
    return true;
 
 error:
-   runloop_msg_queue_push("File could not be loaded.\n", 1, 100, true);
+   runloop_msg_queue_push("File could not be loaded from playlist.\n", 1, 100, true);
    return false;
 }
 
