@@ -51,9 +51,7 @@ static int action_info_default(unsigned type, const char *label)
 }
 
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1,
-      uint32_t label_hash, uint32_t menu_label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;

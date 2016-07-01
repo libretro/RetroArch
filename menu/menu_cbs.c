@@ -81,7 +81,7 @@ void menu_cbs_init(void *data,
       RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, msg_hash_to_str(cbs->enum_idx));
 #endif
 
-   menu_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
+   menu_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, menu_label, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);
 
@@ -101,7 +101,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "SELECT", cbs->action_select_ident);
 
-   menu_cbs_init_bind_info(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_cbs_init_bind_info(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "INFO", cbs->action_info_ident);
 
@@ -133,7 +133,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "REFRESH", cbs->action_refresh_ident);
 
-   menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "GET VALUE", cbs->action_get_value_ident);
 
