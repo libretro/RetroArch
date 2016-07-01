@@ -683,13 +683,6 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL); 
 
-#if 0
-   RARCH_LOG("path: %s, label: %s, core path: %s, core name: %s, idx: %d\n",
-         entry_path, entry_label,
-         core_path, core_name, selection_ptr);
-   RARCH_LOG("playlist file: %s\n", menu->db_playlist_file);
-#endif
-
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)) 
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
@@ -803,13 +796,6 @@ static int action_ok_playlist_entry(const char *path,
 
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL); 
-
-#if 0
-   RARCH_LOG("path: %s, label: %s, core path: %s, core name: %s, idx: %d\n",
-         entry_path, entry_label,
-         core_path, core_name, selection_ptr);
-   RARCH_LOG("playlist file: %s\n", menu->db_playlist_file);
-#endif
 
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)) 
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
