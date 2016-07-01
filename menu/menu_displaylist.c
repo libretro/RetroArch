@@ -3803,8 +3803,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_USER_BINDS_LIST:
          {
             char lbl[PATH_MAX_LENGTH] = {0};
-            unsigned val = atoi(info->path);
-            const char *temp_val = msg_hash_to_str((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
+            unsigned val              = atoi(info->path);
+            const char *temp_val      = msg_hash_to_str(
+                  (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
+
             strlcpy(lbl, temp_val, sizeof(lbl));
             ret = menu_displaylist_parse_settings(menu, info,
                   lbl, PARSE_NONE, true);
