@@ -668,12 +668,14 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #endif
 
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp));
-   menu_entries_add_enum(info->list, tmp, "", MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   menu_entries_add_enum(info->list, tmp, "",
+         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
 #ifdef ANDROID
    bool perms = test_permissions(internal_storage_path);
 
-   snprintf(tmp, sizeof(tmp), "%s: %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS),
+   snprintf(tmp, sizeof(tmp), "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS),
          perms ? "read-write" : "read-only");
    menu_entries_add_enum(info->list, tmp, "",
          MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);

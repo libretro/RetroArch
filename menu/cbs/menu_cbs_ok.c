@@ -2579,8 +2579,9 @@ static int action_ok_video_resolution(const char *path,
          strlcpy(msg, "Applying: DEFAULT", sizeof(msg));
       else
 #endif
-         snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset",            
-            width, height);
+         snprintf(msg, sizeof(msg),
+               "Applying: %dx%d\n START to reset",            
+               width, height);
       runloop_msg_queue_push(msg, 1, 100, true);
    }
 
