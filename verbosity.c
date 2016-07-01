@@ -84,12 +84,13 @@ void retro_main_log_file_deinit(void)
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-   FILE *fp = NULL;
 #if TARGET_OS_IPHONE
    static int asl_inited = 0;
 #if !TARGET_IPHONE_SIMULATOR
 static aslclient asl_client;
 #endif
+#else
+   FILE *fp = NULL;
 #endif
 
    if (!verbosity_is_enabled())
