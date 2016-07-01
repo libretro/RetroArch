@@ -2503,7 +2503,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "History";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
-         return "Add tab";
+         return "Import content";
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "Playlists";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
