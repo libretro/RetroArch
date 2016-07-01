@@ -805,12 +805,14 @@ static int action_ok_playlist_entry(const char *path,
       const char *entry_path                 = NULL;
       const char *entry_crc32                = NULL;
       const char *db_name                    = NULL;
-      const char             *path_base      = path_basename(menu->db_playlist_file);
-      bool        found_associated_core      = menu_playlist_find_associated_core(
+      const char             *path_base      = 
+         path_basename(menu->db_playlist_file);
+      bool        found_associated_core      = 
+         menu_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
-      core_info.inf  = NULL;
-      core_info.path = new_core_path;
+      core_info.inf                          = NULL;
+      core_info.path                         = new_core_path;
 
       if (!core_info_find(&core_info))
          found_associated_core = false;
@@ -829,7 +831,8 @@ static int action_ok_playlist_entry(const char *path,
       playlist_get_index(tmp_playlist, selection_ptr,
             &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
 
-      strlcpy(new_display_name, core_info.inf->display_name, sizeof(new_display_name));
+      strlcpy(new_display_name,
+            core_info.inf->display_name, sizeof(new_display_name));
       playlist_update(tmp_playlist,
             selection_ptr,
             entry_path,
@@ -1368,7 +1371,8 @@ static int action_ok_start_net_retropad_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_file_load(NULL, NULL,
-         CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU);
+         CORE_TYPE_FFMPEG,
+         CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU);
 }
 
 #ifdef HAVE_FFMPEG
@@ -1383,7 +1387,8 @@ static int action_ok_file_load_ffmpeg(const char *path,
    fill_pathname_join(new_path, menu_path, path,
          sizeof(new_path));
    return generic_action_ok_file_load(NULL, new_path,
-         CORE_TYPE_FFMPEG, CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU);
+         CORE_TYPE_FFMPEG,
+         CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU);
 }
 #endif
 
@@ -1398,7 +1403,8 @@ static int action_ok_file_load_imageviewer(const char *path,
    fill_pathname_join(fullpath, menu_path, path,
          sizeof(fullpath));
    return generic_action_ok_file_load(NULL, fullpath,
-         CORE_TYPE_IMAGEVIEWER, CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU);
+         CORE_TYPE_IMAGEVIEWER,
+         CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU);
 }
 
 static int action_ok_file_load_detect_core(const char *path,
@@ -1433,7 +1439,8 @@ static int action_ok_file_load(const char *path,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
       )
    {
-      fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
+      fill_pathname_join(menu_path_new,
+            menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
    }
 
@@ -1450,7 +1457,8 @@ static int action_ok_file_load(const char *path,
             sizeof(full_path_new));
 
    return generic_action_ok_file_load(NULL, full_path_new,
-         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU);
+         CORE_TYPE_PLAIN,
+         CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU);
 }
 
 
@@ -1697,8 +1705,9 @@ static void cb_generic_download(void *task_data,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
       {
          static char shaderdir[PATH_MAX_LENGTH]       = {0};
-         const char *dirname = transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG ?
-                  "shaders_cg" : "shaders_glsl";
+         const char *dirname                          = 
+            transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG ?
+            "shaders_cg" : "shaders_glsl";
 
          fill_pathname_join(shaderdir,
                settings->directory.video_shader,
@@ -1763,7 +1772,8 @@ static void cb_generic_download(void *task_data,
    if (string_is_equal_noncase(file_ext, "zip"))
    {
       if (!task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
-            cb_decompressed, (void*)(uintptr_t)msg_hash_calculate(msg_hash_to_str(transf->enum_idx))))
+            cb_decompressed, (void*)(uintptr_t)
+            msg_hash_calculate(msg_hash_to_str(transf->enum_idx))))
       {
         err = "Decompression failed.";
         goto finish;
@@ -1812,7 +1822,8 @@ static int action_ok_download_generic(const char *path,
    settings_t *settings         = config_get_ptr();
    retro_task_callback_t cb     = cb_generic_download;
 
-   fill_pathname_join(s, settings->network.buildbot_assets_url,
+   fill_pathname_join(s,
+         settings->network.buildbot_assets_url,
          "frontend", sizeof(s));
 
    switch (enum_idx)
@@ -1885,7 +1896,8 @@ static int action_ok_core_content_download(const char *path,
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
-   return action_ok_download_generic(path, label, menu_path, type, idx, entry_idx,
+   return action_ok_download_generic(path, label,
+         menu_path, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD);
 }
 
@@ -1995,7 +2007,7 @@ static int action_ok_option_create(const char *path,
 
    if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
    {
-      runloop_msg_queue_push("Error saving core options file",
+      runloop_msg_queue_push("Error saving core options file.",
             1, 100, true);
       return 0;
    }
@@ -2013,7 +2025,7 @@ static int action_ok_option_create(const char *path,
    {
       global_t                 *global  = global_get_ptr();
 
-      runloop_msg_queue_push("Core options file created successfully",
+      runloop_msg_queue_push("Core options file created successfully.",
             1, 100, true);
 
       strlcpy(global->path.core_options_path,
@@ -2427,7 +2439,8 @@ static int action_ok_load_archive(const char *path,
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 
    return generic_action_ok_file_load(NULL, detect_content_path,
-         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU);
+         CORE_TYPE_PLAIN,
+         CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU);
 }
 
 static int action_ok_load_archive_detect_core(const char *path,
@@ -2459,7 +2472,8 @@ static int action_ok_load_archive_detect_core(const char *path,
    def_info.s          = menu->deferred_path;
    def_info.len        = sizeof(menu->deferred_path);
 
-   if (menu_content_find_first_core(&def_info, false, new_core_path, sizeof(new_core_path)))
+   if (menu_content_find_first_core(&def_info, false,
+            new_core_path, sizeof(new_core_path)))
       ret = -1;
 
    fill_pathname_join(detect_content_path, menu_path, content_path,
@@ -2469,7 +2483,8 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          return generic_action_ok_file_load(new_core_path, def_info.s,
-               CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
+               CORE_TYPE_PLAIN,
+               CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU);
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
