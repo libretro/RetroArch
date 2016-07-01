@@ -1386,7 +1386,9 @@ static bool command_event_save_auto_state(void)
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (!settings->savestate_auto_save)
+   if (!settings || !settings->savestate_auto_save)
+      return false;
+   if (!global)
       return false;
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return false;
