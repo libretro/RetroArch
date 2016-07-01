@@ -2683,7 +2683,7 @@ static int is_rdb_entry(enum msg_hash_enums enum_idx)
 }
 
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t hash, const char *elem0)
+      const char *label, uint32_t hash)
 {
    if (cbs->enum_idx != MSG_UNKNOWN && is_rdb_entry(cbs->enum_idx) == 0)
    {
@@ -2691,10 +2691,25 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (strstr(elem0, "_input_binds_list"))
+   if (cbs->enum_idx != MSG_UNKNOWN)
    {
-      BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
-      return 0;
+      unsigned i;
+
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         unsigned first_char = 0;
+         const char *str = msg_hash_to_str(cbs->enum_idx);
+         if (!str)
+            continue;
+         if (!strstr(str, "input_binds_list"))
+            continue;
+         first_char = atoi(&str[0]);
+         if (first_char == (i+1))
+         {
+            BIND_ACTION_OK(cbs, action_ok_push_user_binds_list);
+            return 0;
+         }
+      }
    }
 
    if (menu_setting_get_browser_selection_type(cbs->setting) == ST_DIR)
@@ -3325,7 +3340,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *menu_label,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
@@ -3333,7 +3347,7 @@ int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_OK(cbs, action_ok_lookup_setting);
 
-   if (menu_cbs_init_bind_ok_compare_label(cbs, label, label_hash, elem0) == 0)
+   if (menu_cbs_init_bind_ok_compare_label(cbs, label, label_hash) == 0)
       return 0;
 
    if (menu_cbs_init_bind_ok_compare_type(cbs, label_hash, menu_label_hash, type) == 0)

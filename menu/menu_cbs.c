@@ -81,7 +81,7 @@ void menu_cbs_init(void *data,
       RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, msg_hash_to_str(cbs->enum_idx));
 #endif
 
-   menu_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, menu_label, label_hash, menu_label_hash);
+   menu_cbs_init_bind_ok(cbs, path, label, type, idx, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);
 
