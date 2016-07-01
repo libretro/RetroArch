@@ -886,8 +886,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   bind->label,
                   bind->type,
                   bind->idx,
-                  bind->elem0,
-                  bind->elem1,
                   bind->label_hash,
                   bind->menu_label_hash);
          }

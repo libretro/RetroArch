@@ -15,7 +15,6 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
-#include <lists/string_list.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
@@ -39,10 +38,7 @@ void menu_cbs_init(void *data,
       unsigned type, size_t idx)
 {
    menu_ctx_bind_t bind_info;
-   char elem0[PATH_MAX_LENGTH]   = {0};
-   char elem1[PATH_MAX_LENGTH]   = {0};
    const char *repr_label        = NULL;
-   struct string_list *str_list  = NULL;
    const char *menu_label        = NULL;
    uint32_t label_hash           = 0;
    uint32_t menu_label_hash      = 0;
@@ -51,21 +47,10 @@ void menu_cbs_init(void *data,
    if (!list)
       return;
 
-   elem0[0] = '\0';
-   elem1[0] = '\0';
-
    menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 
-   if (label)
-      str_list = string_split(label, "|");
-
-   if (str_list && str_list->size > 0)
-      strlcpy(elem0, str_list->elems[0].data, sizeof(elem0));
-   if (str_list && str_list->size > 1)
-      strlcpy(elem1, str_list->elems[1].data, sizeof(elem1));
-
    if (!label || !menu_label)
-      goto error;
+      return;
 
    label_hash      = msg_hash_calculate(label);
    menu_label_hash = msg_hash_calculate(menu_label);
@@ -146,16 +131,10 @@ void menu_cbs_init(void *data,
    bind_info.label           = label;
    bind_info.type            = type;
    bind_info.idx             = idx;
-   bind_info.elem0           = elem0;
-   bind_info.elem1           = elem1;
    bind_info.label_hash      = label_hash;
    bind_info.menu_label_hash = menu_label_hash;
 
    menu_driver_ctl(RARCH_MENU_CTL_BIND_INIT, &bind_info);
-
-error:
-   string_list_free(str_list);
-   str_list = NULL;
 }
 
 int menu_cbs_exit(void)
