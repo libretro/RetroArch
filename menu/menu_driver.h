@@ -289,8 +289,7 @@ typedef struct menu_ctx_driver
    void *(*list_get_entry)(void *data, enum menu_list_type type, unsigned i);
    void  (*list_set_selection)(void *data, file_list_t *list);
    int   (*bind_init)(menu_file_list_cbs_t *cbs,
-         const char *path, const char *label, unsigned type, size_t idx,
-         uint32_t label_hash, uint32_t menu_label_hash);
+         const char *path, const char *label, unsigned type, size_t idx);
    bool  (*load_image)(void *userdata, void *data, enum menu_image_type type);
    const char *ident;
    int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);

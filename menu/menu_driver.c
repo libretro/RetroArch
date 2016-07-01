@@ -885,9 +885,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   bind->path,
                   bind->label,
                   bind->type,
-                  bind->idx,
-                  bind->label_hash,
-                  bind->menu_label_hash);
+                  bind->idx);
          }
          break;
       case RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH:

@@ -3074,8 +3074,7 @@ static int deferred_push_content_actions(menu_displaylist_info_t *info)
    return 0;
 }
 
-static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs,
-      uint32_t label_hash)
+static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs)
 {
    if (cbs && cbs->enum_idx != MSG_UNKNOWN)
    {
@@ -3093,10 +3092,9 @@ static int xmb_list_bind_init_compare_label(menu_file_list_cbs_t *cbs,
 }
 
 static int xmb_list_bind_init(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash, uint32_t menu_label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
-   if (xmb_list_bind_init_compare_label(cbs, label_hash) == 0)
+   if (xmb_list_bind_init_compare_label(cbs) == 0)
       return 0;
 
    return -1;
