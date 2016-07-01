@@ -2028,6 +2028,12 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "File not found";
       case MSG_ERROR_SAVING_CORE_OPTIONS_FILE:
          return "Error saving core options file.";
+      case MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT:
+         return "Failed to allocate memory for patched content...";
+      case MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH:
+         return "Did not find a valid content patch.";
+      case MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED:
+         return "Several patches are explicitly defined, ignoring all...";
       case MSG_REMAP_FILE_SAVED_SUCCESSFULLY:
          return "Remap file saved successfully.";
       case MSG_ERROR_SAVING_REMAP_FILE:
