@@ -63,6 +63,10 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return ".bps";
       case FILE_PATH_RDB_EXTENSION:
          return ".rdb";
+      case FILE_PATH_ZIP_EXTENSION:
+         return ".zip";
+      case FILE_PATH_7Z_EXTENSION:
+         return ".7z";
       case FILE_PATH_INDEX_URL:
          return ".index";
       case FILE_PATH_INDEX_DIRS_URL:

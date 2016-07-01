@@ -68,10 +68,10 @@ bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
       for (i = 0; i < strlen(path_tolower); ++i)
          path_tolower[i] = tolower(path_tolower[i]);
 
-      if (strstr(path_tolower, ".zip"))
-         strstr(path_tolower, ".zip")[4] = '\0';
-      else if (strstr(path_tolower, ".7z"))
-         strstr(path_tolower, ".7z")[3] = '\0';
+      if (strstr(path_tolower, file_path_str(FILE_PATH_ZIP_EXTENSION)))
+         strstr(path_tolower, file_path_str(FILE_PATH_ZIP_EXTENSION))[4] = '\0';
+      else if (strstr(path_tolower, file_path_str(FILE_PATH_7Z_EXTENSION)))
+         strstr(path_tolower, file_path_str(FILE_PATH_7Z_EXTENSION))[3] = '\0';
 
       path_check = (char *)
          calloc(strlen(path_tolower) + 1, sizeof(char));
