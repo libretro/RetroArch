@@ -4012,11 +4012,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_HELP_LIST,
                   PARSE_ACTION, false);
-#if !defined(IOS)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_QUIT_RETROARCH,
                   PARSE_ACTION, false);
-#endif
 #if defined(HAVE_LAKKA)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SHUTDOWN,
@@ -4780,10 +4778,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_UPDATER_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_NETWORK_SETTINGS,   PARSE_ACTION, false);
-#ifdef HAVE_LAKKA
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_LAKKA_SERVICES,   PARSE_ACTION, false);
-#endif
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,

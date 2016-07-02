@@ -1364,6 +1364,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "network_settings";
       case MENU_ENUM_LABEL_USER_SETTINGS:
          return "user_settings";
+      case MENU_ENUM_LABEL_LAKKA_SERVICES:
+         return "lakka_services";
       case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
          return "directory_settings";
       case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
