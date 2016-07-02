@@ -1286,6 +1286,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "deferred_saving_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST:
          return "deferred_logging_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_FRAME_THROTTLE_SETTINGS_LIST:
+         return "deferred_frame_throttle_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST:
+         return "deferred_rewind_settings_list";
       case MENU_ENUM_LABEL_ACCOUNTS_LIST:
          return "accounts_list";
       case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
@@ -1314,6 +1318,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "saving_settings";
       case MENU_ENUM_LABEL_LOGGING_SETTINGS:
          return "logging_settings";
+      case MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS:
+         return "frame_throttle_settings";
+      case MENU_ENUM_LABEL_REWIND_SETTINGS:
+         return "rewind_settings";
       case MENU_ENUM_LABEL_AUDIO_SETTINGS:
          return "audio_settings";
       case MENU_ENUM_LABEL_DEBUG_PANEL_ENABLE:
