@@ -139,6 +139,16 @@ static int deferred_push_rewind_settings_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_REWIND_SETTINGS_LIST);
 }
 
+static int deferred_push_onscreen_display_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST);
+}
+
+static int deferred_push_onscreen_overlay_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST);
+}
+
 static int deferred_push_audio_settings_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_AUDIO_SETTINGS_LIST);
@@ -657,6 +667,16 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rewind_settings_list);
       return 0;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_display_settings_list);
+      return 0;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_overlay_settings_list);
+      return 0;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
    {
 #ifdef HAVE_NETWORKING
@@ -908,6 +928,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rewind_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_display_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_overlay_settings_list);
                break;
             case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);

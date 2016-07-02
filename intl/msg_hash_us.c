@@ -1290,6 +1290,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "deferred_frame_throttle_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST:
          return "deferred_rewind_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST:
+         return "deferred_onscreen_display_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST:
+         return "deferred_onscreen_overlay_settings_list";
       case MENU_ENUM_LABEL_ACCOUNTS_LIST:
          return "accounts_list";
       case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
@@ -1322,6 +1326,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "frame_throttle_settings";
       case MENU_ENUM_LABEL_REWIND_SETTINGS:
          return "rewind_settings";
+      case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+         return "onscreen_display_settings";
+      case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
+         return "onscreen_overlay_settings";
       case MENU_ENUM_LABEL_AUDIO_SETTINGS:
          return "audio_settings";
       case MENU_ENUM_LABEL_DEBUG_PANEL_ENABLE:
@@ -3335,6 +3343,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
          return "Onscreen Display";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
+         return "Onscreen Overlay";
+      case MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS:
          return "Onscreen Overlay";
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
          return "Menu";

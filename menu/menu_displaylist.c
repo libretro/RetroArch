@@ -3742,6 +3742,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
+      case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
+      case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
       case DISPLAYLIST_CORE_SETTINGS_LIST:
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
@@ -4135,6 +4137,55 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_FONT_PATH,
+               PARSE_ONLY_PATH, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_FONT_SIZE,
+               PARSE_ONLY_FLOAT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X,
+               PARSE_ONLY_FLOAT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y,
+               PARSE_ONLY_FLOAT, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_OVERLAY_PRESET,
+               PARSE_ONLY_PATH, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_OVERLAY_OPACITY,
+               PARSE_ONLY_FLOAT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_OVERLAY_SCALE,
+               PARSE_ONLY_FLOAT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET,
+               PARSE_ONLY_PATH, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
@@ -4383,12 +4434,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_REWIND_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),   PARSE_ONLY_GROUP, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RECORDING_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings(menu, info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS),   PARSE_ONLY_GROUP, false);
          ret = menu_displaylist_parse_settings(menu, info,

@@ -4265,6 +4265,24 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS);
+
+         CONFIG_ACTION(
+               list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS);
+
+         CONFIG_ACTION(
+               list, list_info,
                msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS),
                &group_info,
@@ -6022,7 +6040,7 @@ static bool setting_append_list(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS),
                   parent_group);
 
-            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
@@ -6229,7 +6247,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),
                parent_group);
 
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "Messages",
                &group_info,
@@ -6321,7 +6339,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                parent_group);
 
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 

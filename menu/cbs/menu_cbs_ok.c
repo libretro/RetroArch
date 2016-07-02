@@ -500,6 +500,20 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST;
          break;
+      case ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST;
+         break;
+      case ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST;
+         break;
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
@@ -2366,6 +2380,20 @@ static int action_ok_rewind_list(const char *path,
          entry_idx, ACTION_OK_DL_REWIND_SETTINGS_LIST);
 }
 
+static int action_ok_onscreen_display_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST);
+}
+
+static int action_ok_onscreen_overlay_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST);
+}
+
 static int action_ok_rdb_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3013,6 +3041,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_REWIND_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_rewind_list);
+            break;
+         case MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_onscreen_display_list);
+            break;
+         case MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_onscreen_overlay_list);
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);
