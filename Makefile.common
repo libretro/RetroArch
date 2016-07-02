@@ -863,6 +863,12 @@ ifeq ($(HAVE_EXYNOS), 1)
    HAVE_AND_WILL_USE_DRM = 1
 endif
 
+ifeq ($(HAVE_PLAINDRM), 1)
+   OBJ += gfx/drivers/drm_gfx.o
+   LIBS += -ldrm 
+   CFLAGS += -I/usr/include/libdrm
+endif
+
 ifeq ($(HAVE_AND_WILL_USE_DRM), 1)
    OBJ += gfx/common/drm_common.o
 endif

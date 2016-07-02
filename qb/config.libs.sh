@@ -115,6 +115,10 @@ if [ "$HAVE_EXYNOS" != "no" ]; then
    check_pkgconf DRM libdrm
 fi
 
+if [ "$HAVE_PLAINDRM" != "no" ]; then
+   check_pkgconf DRM libdrm
+fi
+
 if [ "$HAVE_DISPMANX" != "no" ]; then
    PKG_CONF_USED="$PKG_CONF_USED DISPMANX"
 fi

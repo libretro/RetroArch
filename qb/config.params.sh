@@ -37,6 +37,7 @@ HAVE_XINERAMA=auto         # Xinerama support.
 HAVE_KMS=auto              # KMS context support
 HAVE_EXYNOS=no             # Exynos video support
 HAVE_DISPMANX=no           # Dispmanx video support
+HAVE_PLAINDRM=no           # Plain DRM (no GL) video support
 HAVE_SUNXI=no              # Sunxi video support
 HAVE_WAYLAND=auto          # Wayland support
 C89_WAYLAND=no
