@@ -581,21 +581,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
       {
          switch (label_hash)
          {
-            case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-               BIND_ACTION_RIGHT(cbs, action_right_shader_scale_pass);
-               break;
-            case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-               BIND_ACTION_RIGHT(cbs, action_right_shader_filter_pass);
-               break;
-            case MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
-               BIND_ACTION_RIGHT(cbs, action_right_shader_filter_default);
-               break;
-            case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-               BIND_ACTION_RIGHT(cbs, action_right_shader_num_passes);
-               break;
-            case MENU_LABEL_SCREEN_RESOLUTION:
-               BIND_ACTION_RIGHT(cbs, action_right_video_resolution);
-               break;
             case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
                if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))   ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
