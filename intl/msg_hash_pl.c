@@ -965,7 +965,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Ustawienia menu";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
          return "Ustawienia multimediów";
-      case MENU_ENUM_LABEL_VALUE_UI_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS:
          return "Ustawienia interfejsu u¿ytkownika";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menu File Browser Settings";

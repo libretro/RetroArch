@@ -1872,7 +1872,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Menu";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
          return "Reprodução de Mídia"; /* UPDATE/FIXME */
-      case MENU_ENUM_LABEL_VALUE_UI_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS:
          return "Interface de Usuário";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menu de Navegação";

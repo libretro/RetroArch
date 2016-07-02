@@ -1294,6 +1294,24 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "deferred_onscreen_display_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST:
          return "deferred_onscreen_overlay_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST:
+         return "deferred_menu_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST:
+         return "deferred_user_interface_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST:
+         return "deferred_menu_file_browser_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
+         return "deferred_retro_achievements_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST:
+         return "deferred_updater_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST:
+         return "deferred_network_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST:
+         return "deferred_user_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST:
+         return "deferred_directory_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST:
+         return "deferred_privacy_settings_list";
       case MENU_ENUM_LABEL_ACCOUNTS_LIST:
          return "accounts_list";
       case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
@@ -1332,6 +1350,24 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "onscreen_overlay_settings";
       case MENU_ENUM_LABEL_AUDIO_SETTINGS:
          return "audio_settings";
+      case MENU_ENUM_LABEL_MENU_SETTINGS:
+         return "menu_settings";
+      case MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS:
+         return "user_interface_settings";
+      case MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS:
+         return "menu_file_browser_settings";
+      case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
+         return "retro_achievements_settings";
+      case MENU_ENUM_LABEL_UPDATER_SETTINGS:
+         return "updater_settings";
+      case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+         return "network_settings";
+      case MENU_ENUM_LABEL_USER_SETTINGS:
+         return "user_settings";
+      case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
+         return "directory_settings";
+      case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
+         return "privacy_settings";
       case MENU_ENUM_LABEL_DEBUG_PANEL_ENABLE:
          return "debug_panel_enable";
       case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
@@ -2454,6 +2490,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Password";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
          return "Retro Achievements";
+      case MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS:
+         return "Retro Achievements";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST:
          return "Accounts";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
@@ -3350,11 +3388,13 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Menu";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
          return "Multimedia";
-      case MENU_ENUM_LABEL_VALUE_UI_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS:
          return "User Interface";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menu File Browser";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS:
+         return "Updater";
+      case MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS:
          return "Updater";
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
          return "Network";

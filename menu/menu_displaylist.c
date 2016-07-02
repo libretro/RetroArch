@@ -2253,11 +2253,17 @@ static int menu_displaylist_parse_settings_internal(void *data,
       case PARSE_ONLY_FLOAT:
          precond = ST_FLOAT;
          break;
+      case PARSE_ONLY_HEX:
+         precond = ST_HEX;
+         break;
       case PARSE_ONLY_STRING:
          precond = ST_STRING;
          break;
       case PARSE_ONLY_PATH:
          precond = ST_PATH;
+         break;
+      case PARSE_ONLY_DIR:
+         precond = ST_DIR;
          break;
       case PARSE_ONLY_STRING_OPTIONS:
          precond = ST_STRING_OPTIONS;
@@ -2321,12 +2327,20 @@ static int menu_displaylist_parse_settings_internal(void *data,
             if (type == ST_FLOAT)
                break;
             goto loop;
+         case PARSE_ONLY_HEX:
+            if (type == ST_HEX)
+               break;
+            goto loop;
          case PARSE_ONLY_STRING:
             if (type == ST_STRING)
                break;
             goto loop;
          case PARSE_ONLY_PATH:
             if (type == ST_PATH)
+               break;
+            goto loop;
+         case PARSE_ONLY_DIR:
+            if (type == ST_DIR)
                break;
             goto loop;
          case PARSE_ONLY_STRING_OPTIONS:
@@ -2356,11 +2370,13 @@ loop:
             break;
          case PARSE_ONLY_BIND:
          case PARSE_ONLY_FLOAT:
+         case PARSE_ONLY_HEX:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:
          case PARSE_ONLY_STRING:
          case PARSE_ONLY_PATH:
+         case PARSE_ONLY_DIR:
          case PARSE_ONLY_STRING_OPTIONS:
          case PARSE_ACTION:
             time_to_exit = true;
@@ -2422,11 +2438,17 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
       case PARSE_ONLY_FLOAT:
          precond = ST_FLOAT;
          break;
+      case PARSE_ONLY_HEX:
+         precond = ST_HEX;
+         break;
       case PARSE_ONLY_STRING:
          precond = ST_STRING;
          break;
       case PARSE_ONLY_PATH:
          precond = ST_PATH;
+         break;
+      case PARSE_ONLY_DIR:
+         precond = ST_DIR;
          break;
       case PARSE_ONLY_STRING_OPTIONS:
          precond = ST_STRING_OPTIONS;
@@ -2490,12 +2512,20 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
             if (type == ST_FLOAT)
                break;
             goto loop;
+         case PARSE_ONLY_HEX:
+            if (type == ST_HEX)
+               break;
+            goto loop;
          case PARSE_ONLY_STRING:
             if (type == ST_STRING)
                break;
             goto loop;
          case PARSE_ONLY_PATH:
             if (type == ST_PATH)
+               break;
+            goto loop;
+         case PARSE_ONLY_DIR:
+            if (type == ST_DIR)
                break;
             goto loop;
          case PARSE_ONLY_STRING_OPTIONS:
@@ -2525,10 +2555,12 @@ loop:
             break;
          case PARSE_ONLY_BIND:
          case PARSE_ONLY_FLOAT:
+         case PARSE_ONLY_HEX:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:
          case PARSE_ONLY_PATH:
+         case PARSE_ONLY_DIR:
          case PARSE_ONLY_STRING:
          case PARSE_ONLY_STRING_OPTIONS:
          case PARSE_ACTION:
@@ -3744,6 +3776,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
+      case DISPLAYLIST_MENU_SETTINGS_LIST:
+      case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
+      case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
+      case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
+      case DISPLAYLIST_UPDATER_SETTINGS_LIST:
+      case DISPLAYLIST_NETWORK_SETTINGS_LIST:
+      case DISPLAYLIST_USER_SETTINGS_LIST:
+      case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
+      case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
       case DISPLAYLIST_CORE_SETTINGS_LIST:
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
@@ -4185,6 +4226,299 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          info->need_refresh = true;
          info->need_push    = true;
+      case DISPLAYLIST_MENU_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_WALLPAPER,
+               PARSE_ONLY_PATH, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_PAUSE_LIBRETRO,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MOUSE_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_POINTER_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
+               PARSE_ONLY_HEX, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
+               PARSE_ONLY_HEX, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_TITLE_COLOR,
+               PARSE_ONLY_HEX, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_SCALE_FACTOR,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_FONT,
+               PARSE_ONLY_PATH, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_THEME,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_RIBBON_ENABLE,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_GRADIENT,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_THUMBNAILS,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_TIMEDATE_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CORE_ENABLE,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_PAUSE_NONACTIVE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_UI_COMPANION_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEEVOS_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_UPDATER_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
+               PARSE_ONLY_STRING, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
+               PARSE_ONLY_STRING, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_NETWORK_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
+               PARSE_ONLY_STRING, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_MODE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETWORK_CMD_PORT,
+               PARSE_ONLY_UINT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETWORK_REMOTE_PORT,
+               PARSE_ONLY_UINT, false);
+
+         {
+            unsigned user;
+            for(user = 0; user < settings->input.max_users; user++)
+            {
+               /* TODO - implement stuff from menu_setting.c - line 7547 */
+            }
+         }
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_USER_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ACCOUNTS_LIST,
+               PARSE_ACTION, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_NICKNAME,
+               PARSE_ONLY_STRING, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_USER_LANGUAGE,
+               PARSE_ONLY_UINT, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SYSTEM_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ASSETS_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CURSOR_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_FILTER_DIR,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_SHADER_DIR,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_PLAYLIST_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CACHE_DIRECTORY,
+               PARSE_ONLY_DIR, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CAMERA_ALLOW,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_LOCATION_ALLOW,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
@@ -4440,30 +4774,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UI_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS),  PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),   PARSE_ONLY_GROUP, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,  PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_UPDATER_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETWORK_SETTINGS,   PARSE_ACTION, false);
 #ifdef HAVE_LAKKA
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),   PARSE_ONLY_GROUP, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_LAKKA_SERVICES,   PARSE_ACTION, false);
 #endif
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PLAYLIST_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS),   PARSE_ONLY_GROUP, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS),   PARSE_ONLY_GROUP, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_USER_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_DIRECTORY_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_PRIVACY_SETTINGS,   PARSE_ACTION, false);
          info->need_push    = true;
          break;
       case DISPLAYLIST_HORIZONTAL:

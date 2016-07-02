@@ -980,7 +980,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Menu";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
          return "Multimédia";
-      case MENU_ENUM_LABEL_VALUE_UI_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS:
          return "Interface graphique";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Navigateur de fichiers";

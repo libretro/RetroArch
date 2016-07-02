@@ -843,7 +843,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Menu";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
          return "Multimedia";
-      case MENU_ENUM_LABEL_VALUE_UI_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS:
          return "Gebruikersinterface";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menu Bestandsbeheer";

@@ -1184,7 +1184,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
          return "Menü-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
          return "Media-Player-Einstellungen"; /* UPDATE/FIXME */
-      case MENU_ENUM_LABEL_VALUE_UI_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS:
          return "Benutzeroberflächen-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menü-Dateibrowser-Einstellungen";
