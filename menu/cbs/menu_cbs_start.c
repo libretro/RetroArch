@@ -322,8 +322,7 @@ static int action_start_lookup_setting(unsigned type, const char *label)
    return menu_setting_set(type, label, MENU_ACTION_START, false);
 }
 
-static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
-      uint32_t hash)
+static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
 {
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
@@ -351,34 +350,6 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_START(cbs, action_start_cheat_num_passes);
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
-            BIND_ACTION_START(cbs, action_start_video_resolution);
-         default:
-            return -1;
-      }
-   }
-   else
-   {
-      switch (hash)
-      {
-         case MENU_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_START(cbs, action_start_remap_file_load);
-            break;
-         case MENU_LABEL_VIDEO_FILTER:
-            BIND_ACTION_START(cbs, action_start_video_filter_file_load);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PASS:
-            BIND_ACTION_START(cbs, action_start_shader_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-            BIND_ACTION_START(cbs, action_start_shader_scale_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-            BIND_ACTION_START(cbs, action_start_shader_filter_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-            BIND_ACTION_START(cbs, action_start_shader_num_passes);
-            break;
-         case MENU_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_START(cbs, action_start_video_resolution);
          default:
             return -1;
@@ -435,15 +406,14 @@ static int menu_cbs_init_bind_start_compare_type(menu_file_list_cbs_t *cbs,
 }
 
 int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
 
    BIND_ACTION_START(cbs, action_start_lookup_setting);
    
-   if (menu_cbs_init_bind_start_compare_label(cbs, label_hash) == 0)
+   if (menu_cbs_init_bind_start_compare_label(cbs) == 0)
       return 0;
 
    if (menu_cbs_init_bind_start_compare_type(cbs, type) == 0)

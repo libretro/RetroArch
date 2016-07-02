@@ -78,7 +78,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "SCAN", cbs->action_scan_ident);
 
-   menu_cbs_init_bind_start(cbs, path, label, type, idx, label_hash);
+   menu_cbs_init_bind_start(cbs, path, label, type, idx);
 
    menu_cbs_init_log(repr_label, "START", cbs->action_start_ident);
 
