@@ -2455,91 +2455,91 @@ static int action_ok_start_core(const char *path,
 static int action_ok_open_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE);
 }
 
 static int action_ok_push_accounts_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_ACCOUNTS_LIST);
 }
 
 static int action_ok_push_driver_settings_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_DRIVER_SETTINGS_LIST);
 }
 
 static int action_ok_push_video_settings_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_VIDEO_SETTINGS_LIST);
 }
 
 static int action_ok_push_configuration_settings_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST);
 }
 
 static int action_ok_push_core_settings_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_CORE_SETTINGS_LIST);
 }
 
 static int action_ok_push_audio_settings_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_AUDIO_SETTINGS_LIST);
 }
 
 static int action_ok_push_input_settings_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_INPUT_SETTINGS_LIST);
 }
 
 static int action_ok_push_playlist_settings_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_PLAYLIST_SETTINGS_LIST);
 }
 
 static int action_ok_push_input_hotkey_binds_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST);
 }
 
 static int action_ok_push_user_binds_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_USER_BINDS_LIST);
 }
 
 static int action_ok_push_accounts_cheevos_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST);
 }
 
 static int action_ok_open_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, label, 0, 0, entry_idx,
+   return generic_action_ok_displaylist_push(path, label, type, idx, entry_idx,
          ACTION_OK_DL_OPEN_ARCHIVE);
 }
 
