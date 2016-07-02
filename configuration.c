@@ -214,6 +214,8 @@ const char *config_get_default_video(void)
          return "dispmanx";
       case VIDEO_SUNXI:
          return "sunxi";
+      case VIDEO_PLAINDRM:
+         return "plaindrm";
       default:
          break;
    }

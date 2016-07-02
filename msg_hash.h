@@ -1014,6 +1014,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VIDEO_DRIVER_D3D,
    MENU_ENUM_LABEL_VIDEO_DRIVER_EXYNOS,
    MENU_ENUM_LABEL_VIDEO_DRIVER_SUNXI,
+   MENU_ENUM_LABEL_VIDEO_DRIVER_PLAINDRM,
 
    MENU_ENUM_LABEL_MENU_ENUM_DRIVER,
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_DRIVER,
@@ -1953,6 +1954,7 @@ enum msg_hash_enums
 #define MENU_LABEL_VIDEO_DRIVER_D3D                                            0x0b886340U
 #define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
 #define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
+#define MENU_LABEL_VIDEO_DRIVER_PLAINDRM                                       0x61a89bfaU
 #define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
 #define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
 #define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU

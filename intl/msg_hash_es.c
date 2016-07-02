@@ -305,6 +305,16 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                      "renderizados por software debería \n"
                      "ser óptimo.");
                break;
+            case MENU_LABEL_VIDEO_DRIVER_PLAINDRM:
+               snprintf(s, len,
+                     "Controlador de vídeo de DRM simple. \n"
+                     " \n"
+                     "Este es un controlador de vídeo que \n"
+                     "usa libdrm para escalado por hardware \n"
+                     "mediante los overlays de la GPU. \n"
+                     " \n"
+                     "El blitting se hace por software.");
+               break;
             case MENU_LABEL_VIDEO_DRIVER_SUNXI:
                snprintf(s, len,
                      "Controlador de vídeo Sunxi-G2D. \n"

@@ -268,6 +268,15 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                      "This is a low-level Sunxi video driver. \n"
                      "Uses the G2D block in Allwinner SoCs.");
                break;
+            case MENU_LABEL_VIDEO_DRIVER_PLAINDRM:
+               snprintf(s, len,
+                     "Plain DRM Video Driver. \n"
+                     " \n"
+                     "This is a low-level video driver using. \n"
+                     "libdrm for hardware scaling using \n"
+		     "GPU overlays.");
+               break;
+ 
             default:
                snprintf(s, len,
                      "Current Video driver.");
