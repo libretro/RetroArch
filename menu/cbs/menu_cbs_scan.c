@@ -134,8 +134,7 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
 }
 
 int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
