@@ -46,7 +46,8 @@ static int generic_shader_action_parameter_left(
    if (shader)
    {
       param->current -= param->step;
-      param->current  = MIN(MAX(param->minimum, param->current), param->maximum);
+      param->current  = MIN(MAX(param->minimum, param->current),
+            param->maximum);
    }
    return 0;
 }
@@ -59,11 +60,14 @@ static int shader_action_parameter_left(unsigned type, const char *label,
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   return generic_shader_action_parameter_left(shader_info.data, param, type, label, wraparound);
+   param = &shader_info.data->parameters[type 
+      - MENU_SETTINGS_SHADER_PARAMETER_0];
+   return generic_shader_action_parameter_left(shader_info.data, param,
+         type, label, wraparound);
 }
 
-static int shader_action_parameter_preset_left(unsigned type, const char *label,
+static int shader_action_parameter_preset_left(unsigned type,
+      const char *label,
       bool wraparound)
 {
    struct video_shader_parameter *param = NULL;
@@ -75,7 +79,8 @@ static int shader_action_parameter_preset_left(unsigned type, const char *label,
    param = shader ? 
       &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0] : 
       NULL;
-   return generic_shader_action_parameter_left(shader, param, type, label, wraparound);
+   return generic_shader_action_parameter_left(shader, param,
+         type, label, wraparound);
 }
 #endif
 
@@ -90,10 +95,13 @@ static int action_left_cheat(unsigned type, const char *label,
 static int action_left_input_desc(unsigned type, const char *label,
       bool wraparound)
 {
-   unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset / (RARCH_FIRST_CUSTOM_BIND + 4);
-   unsigned inp_desc_button_index_offset = inp_desc_index_offset - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
-   settings_t *settings = config_get_ptr();
+   unsigned inp_desc_index_offset        = type - 
+      MENU_SETTINGS_INPUT_DESC_BEGIN;
+   unsigned inp_desc_user                = inp_desc_index_offset / 
+      (RARCH_FIRST_CUSTOM_BIND + 4);
+   unsigned inp_desc_button_index_offset = inp_desc_index_offset 
+      - (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
+   settings_t *settings                  = config_get_ptr();
 
    if (settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset] > 0)
       settings->input.remap_ids[inp_desc_user][inp_desc_button_index_offset]--;
@@ -250,7 +258,8 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
-   rarch_setting_t *setting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SMOOTH);
+   rarch_setting_t *setting = menu_setting_find_enum(
+         MENU_ENUM_LABEL_VIDEO_SMOOTH);
    if (!setting)
       return menu_cbs_exit();
    return menu_action_handle_setting(setting,
@@ -326,9 +335,11 @@ static int playlist_association_left(unsigned type, const char *label,
    stnames = string_split(settings->playlist_names, ";");
    stcores = string_split(settings->playlist_cores, ";");
 
-   if (!menu_content_playlist_find_associated_core(path, core_path, sizeof(core_path)))
+   if (!menu_content_playlist_find_associated_core(path,
+            core_path, sizeof(core_path)))
          strlcpy(core_path,
-               file_path_str(FILE_PATH_DETECT), sizeof(core_path));
+               file_path_str(FILE_PATH_DETECT),
+               sizeof(core_path));
 
    for (i = 0; i < list->count; i++)
    {
@@ -351,9 +362,11 @@ static int playlist_association_left(unsigned type, const char *label,
    if (found)
       string_list_set(stcores, found-1, info->path);
 
-   string_list_join_concat(new_playlist_cores, sizeof(new_playlist_cores), stcores, ";");
+   string_list_join_concat(new_playlist_cores,
+         sizeof(new_playlist_cores), stcores, ";");
 
-   strlcpy(settings->playlist_cores, new_playlist_cores, sizeof(settings->playlist_cores));
+   strlcpy(settings->playlist_cores,
+         new_playlist_cores, sizeof(settings->playlist_cores));
 
    string_list_free(stnames);
    string_list_free(stcores);
@@ -497,7 +510,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 }
 
 static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
-      unsigned type, uint32_t label_hash, const char *menu_label)
+      unsigned type, const char *menu_label)
 {
    if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
@@ -620,7 +633,7 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, menu_label) == 0)
       return 0;
 
-   if (menu_cbs_init_bind_left_compare_type(cbs, type, label_hash, menu_label) == 0)
+   if (menu_cbs_init_bind_left_compare_type(cbs, type, menu_label) == 0)
       return 0;
 
    return -1;

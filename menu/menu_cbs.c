@@ -70,7 +70,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);
 
-   menu_cbs_init_bind_cancel(cbs, path, label, type, idx, menu_label, label_hash);
+   menu_cbs_init_bind_cancel(cbs, path, label, type, idx, menu_label);
 
    menu_cbs_init_log(repr_label, "CANCEL", cbs->action_cancel_ident);
 
