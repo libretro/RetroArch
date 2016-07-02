@@ -48,26 +48,25 @@ static int action_cancel_core_content(const char *path,
 }
 
 static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, const char *menu_label)
+      const char *label)
 {
-   if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST)))
-   {
-      BIND_ACTION_CANCEL(cbs, action_cancel_core_content);
-      return 0;
-   }
-
    return -1;
 }
 
 static int menu_cbs_init_bind_cancel_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
+   switch (type)
+   {
+      case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
+         BIND_ACTION_CANCEL(cbs, action_cancel_core_content);
+         return 0;
+   }
    return -1;
 }
 
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
@@ -75,7 +74,7 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_CANCEL(cbs, action_cancel_pop_default);
 
-   if (menu_cbs_init_bind_cancel_compare_label(cbs, label, menu_label) == 0)
+   if (menu_cbs_init_bind_cancel_compare_label(cbs, label) == 0)
       return 0;
 
    if (menu_cbs_init_bind_cancel_compare_type(

@@ -148,8 +148,7 @@ int menu_cbs_init_bind_content_list_switch(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *menu_label);
+      const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
