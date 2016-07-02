@@ -4229,6 +4229,24 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVING_SETTINGS);
+
+         CONFIG_ACTION(
+               list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_LOGGING_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOGGING_SETTINGS);
+
+         CONFIG_ACTION(
+               list, list_info,
                msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS),
                &group_info,
@@ -4574,9 +4592,9 @@ static bool setting_append_list(
          {
             bool *tmp_b = NULL;
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS), parent_group);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_LOGGING_SETTINGS);
 
-            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                   parent_group);
@@ -4658,8 +4676,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_SAVING:
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
-
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                parent_group);

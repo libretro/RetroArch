@@ -472,6 +472,20 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST;
          break;
+      case ACTION_OK_DL_SAVING_SETTINGS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST;
+         break;
+      case ACTION_OK_DL_LOGGING_SETTINGS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST;
+         break;
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
@@ -2310,6 +2324,20 @@ static int action_ok_configurations_list(const char *path,
          entry_idx, ACTION_OK_DL_CONFIGURATIONS_LIST);
 }
 
+static int action_ok_saving_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_SAVING_SETTINGS_LIST);
+}
+
+static int action_ok_logging_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_LOGGING_SETTINGS_LIST);
+}
+
 static int action_ok_rdb_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2945,6 +2973,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONFIGURATIONS:
             BIND_ACTION_OK(cbs, action_ok_configurations_list);
+            break;
+         case MENU_ENUM_LABEL_SAVING_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_saving_list);
+            break;
+         case MENU_ENUM_LABEL_LOGGING_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_logging_list);
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_video_resolution);

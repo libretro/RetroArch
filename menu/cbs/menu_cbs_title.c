@@ -207,6 +207,20 @@ static int action_get_configuration_settings_list(const char *path, const char *
    return 0;
 }
 
+static int action_get_saving_settings_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), len);
+   return 0;
+}
+
+static int action_get_logging_settings_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS), len);
+   return 0;
+}
+
 static int action_get_audio_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -763,6 +777,18 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_saving_settings_list);
+      return 0;
+   }
+
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_logging_settings_list);
+      return 0;
+   }
+
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_download_core_content_list);
@@ -979,6 +1005,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_configuration_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_logging_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_saving_settings_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_settings_list);
