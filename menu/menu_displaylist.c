@@ -3737,6 +3737,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
       case DISPLAYLIST_DRIVER_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
+      case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
       case DISPLAYLIST_CORE_SETTINGS_LIST:
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
@@ -4042,6 +4043,26 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE,
@@ -4280,8 +4301,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_INPUT_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CORE_SETTINGS,    PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings(menu, info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS),   PARSE_ONLY_GROUP, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings(menu, info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS),   PARSE_ONLY_GROUP, false);
          ret = menu_displaylist_parse_settings(menu, info,

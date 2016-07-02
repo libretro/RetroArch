@@ -1280,6 +1280,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "deferred_core_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
          return "deferred_video_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST:
+         return "deferred_configuration_settings_list";
       case MENU_ENUM_LABEL_ACCOUNTS_LIST:
          return "accounts_list";
       case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
@@ -1302,6 +1304,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "driver_settings";
       case MENU_ENUM_LABEL_VIDEO_SETTINGS:
          return "video_settings";
+      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+         return "configuration_settings";
       case MENU_ENUM_LABEL_AUDIO_SETTINGS:
          return "audio_settings";
       case MENU_ENUM_LABEL_DEBUG_PANEL_ENABLE:

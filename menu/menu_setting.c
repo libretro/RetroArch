@@ -4220,6 +4220,15 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CONFIGURATION_SETTINGS);
+
+         CONFIG_ACTION(
+               list, list_info,
                msg_hash_to_str(MENU_ENUM_LABEL_PLAYLIST_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS),
                &group_info,
@@ -4473,7 +4482,7 @@ static bool setting_append_list(
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
 
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS);
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                parent_group);
