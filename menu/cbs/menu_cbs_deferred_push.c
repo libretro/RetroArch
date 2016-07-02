@@ -271,11 +271,6 @@ static int deferred_push_settings(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_SETTINGS_ALL);
 }
 
-static int deferred_push_category(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_SETTINGS);
-}
-
 static int deferred_push_shader_options(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_OPTIONS_SHADERS);
@@ -1279,11 +1274,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 static int menu_cbs_init_bind_deferred_push_compare_type(
       menu_file_list_cbs_t *cbs, unsigned type)
 {
-   if (type == MENU_SETTING_GROUP)
-   {
-      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_category);
-   }
-   else if (type == FILE_TYPE_PLAYLIST_COLLECTION)
+   if (type == FILE_TYPE_PLAYLIST_COLLECTION)
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_collection);
    }

@@ -3718,7 +3718,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    {
       case DISPLAYLIST_HELP_SCREEN_LIST:
       case DISPLAYLIST_MAIN_MENU:
-      case DISPLAYLIST_SETTINGS:
       case DISPLAYLIST_SETTINGS_ALL:
       case DISPLAYLIST_HORIZONTAL:
       case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
@@ -3950,11 +3949,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                goto error;
          }
          return true;
-      case DISPLAYLIST_SETTINGS:
-         ret = menu_displaylist_parse_settings(menu, info,
-               info->label, PARSE_NONE, true);
-         info->need_push    = true;
-         break;
       case DISPLAYLIST_MAIN_MENU:
          {
             rarch_system_info_t *system   = NULL;
