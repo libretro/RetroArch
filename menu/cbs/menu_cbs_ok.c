@@ -1642,12 +1642,17 @@ static int action_ok_file_load(const char *path,
             sizeof(menu_path_new));
    }
 
-   if (type == FILE_TYPE_IN_CARCHIVE)
-      fill_pathname_join_delim(full_path_new, menu_path_new, path,
-            '#',sizeof(full_path_new));
-   else
-      fill_pathname_join(full_path_new, menu_path_new, path,
-            sizeof(full_path_new));
+   switch (type)
+   {
+      case FILE_TYPE_IN_CARCHIVE:
+         fill_pathname_join_delim(full_path_new, menu_path_new, path,
+               '#',sizeof(full_path_new));
+         break;
+      default:
+         fill_pathname_join(full_path_new, menu_path_new, path,
+               sizeof(full_path_new));
+         break;
+   }
 
    return generic_action_ok_file_load(NULL, full_path_new,
          CORE_TYPE_PLAIN,
