@@ -1616,13 +1616,14 @@ static int action_ok_file_load(const char *path,
    const char *menu_label              = NULL;
    const char *menu_path               = NULL;
    rarch_setting_t *setting            = NULL;
-   menu_handle_t *menu                 = NULL;
    file_list_t  *menu_stack            = menu_entries_get_menu_stack_ptr(0);
 
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return menu_cbs_exit();
-
    menu_entries_get_last(menu_stack, &menu_path, &menu_label, &enum_idx, NULL);
+
+   setting = menu_setting_find_enum(enum_idx);
+
+   if (menu_setting_get_type(setting) == ST_PATH)
+      return action_ok_set_path(path, label, type, idx, entry_idx);
 
    strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
@@ -1633,15 +1634,14 @@ static int action_ok_file_load(const char *path,
             msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
       )
    {
+      menu_handle_t *menu                 = NULL;
+      if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+         return menu_cbs_exit();
+
       fill_pathname_join(menu_path_new,
             menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
    }
-
-   setting = menu_setting_find_enum(enum_idx);
-
-   if (menu_setting_get_type(setting) == ST_PATH)
-      return action_ok_set_path(path, label, type, idx, entry_idx);
 
    if (type == FILE_TYPE_IN_CARCHIVE)
       fill_pathname_join_delim(full_path_new, menu_path_new, path,
