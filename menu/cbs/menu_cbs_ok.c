@@ -3539,33 +3539,67 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_IN_CARCHIVE:
 #endif
          case FILE_TYPE_PLAIN:
-            switch (menu_label_hash)
+            if (cbs->enum_idx != MSG_UNKNOWN)
             {
+               switch (cbs->enum_idx)
+               {
 #ifdef HAVE_LIBRETRODB
-               case MENU_LABEL_SCAN_FILE:
-                  BIND_ACTION_OK(cbs, action_ok_scan_file);
-                  break;
+                  case MENU_ENUM_LABEL_SCAN_FILE:
+                     BIND_ACTION_OK(cbs, action_ok_scan_file);
+                     break;
 #endif
-               case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-               case MENU_LABEL_DETECT_CORE_LIST:
-               case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
+                  case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+                  case MENU_ENUM_LABEL_DETECT_CORE_LIST:
+                  case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
 #ifdef HAVE_COMPRESSION
-                  if (type == FILE_TYPE_IN_CARCHIVE)
-                  {
-                     BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
-                  }
-                  else
+                     if (type == FILE_TYPE_IN_CARCHIVE)
+                     {
+                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
+                     }
+                     else
 #endif
-                  {
-                     BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
-                  }
-                  break;
-               case MENU_LABEL_DISK_IMAGE_APPEND:
-                  BIND_ACTION_OK(cbs, action_ok_disk_image_append);
-                  break;
-               default:
-                  BIND_ACTION_OK(cbs, action_ok_file_load);
-                  break;
+                     {
+                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
+                     }
+                     break;
+                  case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
+                     BIND_ACTION_OK(cbs, action_ok_disk_image_append);
+                     break;
+                  default:
+                     BIND_ACTION_OK(cbs, action_ok_file_load);
+                     break;
+               }
+            }
+            else
+            {
+               switch (menu_label_hash)
+               {
+#ifdef HAVE_LIBRETRODB
+                  case MENU_LABEL_SCAN_FILE:
+                     BIND_ACTION_OK(cbs, action_ok_scan_file);
+                     break;
+#endif
+                  case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+                  case MENU_LABEL_DETECT_CORE_LIST:
+                  case MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
+#ifdef HAVE_COMPRESSION
+                     if (type == FILE_TYPE_IN_CARCHIVE)
+                     {
+                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
+                     }
+                     else
+#endif
+                     {
+                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
+                     }
+                     break;
+                  case MENU_LABEL_DISK_IMAGE_APPEND:
+                     BIND_ACTION_OK(cbs, action_ok_disk_image_append);
+                     break;
+                  default:
+                     BIND_ACTION_OK(cbs, action_ok_file_load);
+                     break;
+               }
             }
             break;
          case FILE_TYPE_MOVIE:
