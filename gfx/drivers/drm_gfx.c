@@ -61,8 +61,8 @@ struct drm_rect
 struct drm_page
 {
    struct modeset_buf buf;	
- 
    bool used;
+
    /* Each page has it's own mutex for
     * isolating it's used flag access. */
    slock_t *page_used_mutex;
@@ -82,6 +82,7 @@ struct drm_surface
    /* main surface has 3 pages, menu surface has 1 */
    unsigned int numpages;
    struct drm_page *pages;
+
    /* the page that's currently on screen */
    struct drm_page *current_page;
    unsigned int bpp;   
@@ -104,20 +105,21 @@ struct drm_surface
    bool flip_page;
 };
 
-struct drm_struct {
-   	/* DRM connection, mode and plane management stuff */
-	int fd;
-	drmModeModeInfo *current_mode;
-	uint32_t crtc_id;
-	uint32_t connector_id;
+struct drm_struct
+{
+   /* DRM connection, mode and plane management stuff */
+   int fd;
+   drmModeModeInfo *current_mode;
+   uint32_t crtc_id;
+   uint32_t connector_id;
 
-	drmModeCrtcPtr orig_crtc;
+   drmModeCrtcPtr orig_crtc;
 
-	uint32_t plane_id;	
-	uint32_t plane_fb_prop_id;
+   uint32_t plane_id;	
+   uint32_t plane_fb_prop_id;
 
-	drmModeEncoder *encoder;
-	drmModeRes *resources;
+   drmModeEncoder *encoder;
+   drmModeRes *resources;
 } drm;
 
 struct drm_video
@@ -160,7 +162,26 @@ struct drm_video
 static int modeset_create_dumbfb(int fd,
       struct modeset_buf *buf, int bpp, uint32_t pixformat);
 
-void deinit_drm(void);
+static void deinit_drm(void)
+{
+   /* Restore the original videomode/connector/scanoutbuffer(fb) 
+    * combination (the original CRTC, that is). */ 
+   drmModeSetCrtc(drm.fd, drm.orig_crtc->crtc_id,
+         drm.orig_crtc->buffer_id,
+         drm.orig_crtc->x, drm.orig_crtc->y,
+         &drm.connector_id, 1, &drm.orig_crtc->mode);	
+
+#if 0
+   /* TODO: Free surfaces here along 
+    * with their pages (framebuffers)! */
+
+   if (bufs[0].fb_id)
+   {
+      drmModeRmFB(drm.fd, bufs[0].fb_id);
+      drmModeRmFB(drm.fd, bufs[1].fb_id);
+   }
+#endif
+}
 
 static void drm_surface_free(void *data, struct drm_surface **sp)
 {
@@ -198,35 +219,40 @@ static void drm_surface_setup(void *data,  int src_width, int src_height,
 
    /* Setup surface parameters */
    surface->numpages = numpages;
-   /* We receive the total pitch, including things that are between scanlines
-    * and we calculate the visible pitch from the visible width. 
+   /* We receive the total pitch, including things that are 
+    * between scanlines and we calculate the visible pitch 
+    * from the visible width. 
+    *
     * These will be used to increase the offsets for blitting. */
    surface->total_pitch = pitch;
    surface->pitch       = src_width * bpp; 
-   surface->bpp        = bpp;
-   surface->pixformat  = pixformat;
-   surface->src_width  = src_width;
-   surface->src_height = src_height;
-   surface->aspect     = aspect;
+   surface->bpp         = bpp;
+   surface->pixformat   = pixformat;
+   surface->src_width   = src_width;
+   surface->src_height  = src_height;
+   surface->aspect      = aspect;
    
    /* Allocate memory for all the pages in each surface
     * and initialize variables inside each page's struct. */
-   surface->pages = calloc(surface->numpages, sizeof(struct drm_page));
+   surface->pages = (struct drm_page*)
+      calloc(surface->numpages, sizeof(struct drm_page));
 
    for (i = 0; i < surface->numpages; i++)
    {
-      surface->pages[i].used = false;   
-      surface->pages[i].surface = surface;   
-      surface->pages[i].drmvars = _drmvars;   
+      surface->pages[i].used            = false;   
+      surface->pages[i].surface         = surface;   
+      surface->pages[i].drmvars         = _drmvars;   
       surface->pages[i].page_used_mutex = slock_new(); 
    }
 
    /* Create the framebuffer for each one of the pages of the surface. */
    for (i = 0; i < surface->numpages; i++)
    {
-      surface->pages[i].buf.width = src_width;
+      surface->pages[i].buf.width  = src_width;
       surface->pages[i].buf.height = src_height;
-      int ret = modeset_create_dumbfb(drm.fd, &surface->pages[i].buf, bpp, pixformat);	
+      int ret                      = modeset_create_dumbfb(
+            drm.fd, &surface->pages[i].buf, bpp, pixformat);	
+
       if (ret)
       {
          RARCH_ERR ("DRM: can't create fb\n");
@@ -280,13 +306,13 @@ static void drm_page_flip(struct drm_surface *surface)
 static void drm_surface_update(void *data, const void *frame,
       struct drm_surface *surface)
 {
-   struct drm_video *_drmvars = data;
+   struct drm_video *_drmvars  = data;
    struct drm_page       *page = NULL;
-
    /* Frame blitting */
-   int line = 0;
-   int src_offset = 0;
-   int dst_offset = 0;
+   int line                    = 0;
+   int src_offset              = 0;
+   int dst_offset              = 0;
+
    for (line = 0; line < surface->src_height; line++)
    {
       memcpy (
@@ -320,10 +346,14 @@ static uint32_t get_plane_prop_id(uint32_t obj_id, const char *name)
       if (plane->plane_id != obj_id)
          continue;
 
-      /* TODO: Improvement. We get all the properties of the plane and info about the properties.
-       * We should have done this already... This implementation must be improved. */
-      props = drmModeObjectGetProperties(drm.fd, plane->plane_id, DRM_MODE_OBJECT_PLANE);
+      /* TODO: Improvement. We get all the properties of the 
+       * plane and info about the properties.
+       * We should have done this already... 
+       * This implementation must be improved. */
+      props      = drmModeObjectGetProperties(drm.fd,
+            plane->plane_id, DRM_MODE_OBJECT_PLANE);
       props_info = malloc(props->count_props * sizeof *props_info);
+
       for (j = 0; j < props->count_props; ++j)
          props_info[j] =	drmModeGetProperty(drm.fd, props->props[j]);	
 
@@ -333,13 +363,14 @@ static uint32_t get_plane_prop_id(uint32_t obj_id, const char *name)
          if (!strcmp(props_info[j]->name, name))
             return props_info[j]->prop_id;
       }
-      RARCH_ERR ("DRM: plane %d fb property ID with name %s not found\n", plane->plane_id, name);
+      RARCH_ERR ("DRM: plane %d fb property ID with name %s not found\n",
+            plane->plane_id, name);
    }
    return (0);
 }
 
 /* gets fourcc, returns name string. */
-void format_name(const unsigned int fourcc, char *format_str)
+static void drm_format_name(const unsigned int fourcc, char *format_str)
 {
 	unsigned int i;
 	for (i = 0; i < ARRAY_SIZE(format_info); i++)
@@ -363,19 +394,19 @@ static bool format_support(const drmModePlanePtr ovr, uint32_t fmt)
    return false;
 }
 
-uint64_t plane_type (drmModePlane *plane)
+static uint64_t drm_plane_type(drmModePlane *plane)
 {
    int i,j;
    /* The property values and their names are stored in different arrays, so we
     * access them simultaneously here.
     * We are interested in OVERLAY planes only, that's type 0 or DRM_PLANE_TYPE_OVERLAY
     * (see /usr/xf86drmMode.h for definition). */
-   drmModeObjectPropertiesPtr props;	
-   props = drmModeObjectGetProperties(drm.fd, plane->plane_id, DRM_MODE_OBJECT_PLANE);
+   drmModeObjectPropertiesPtr props = 
+      drmModeObjectGetProperties(drm.fd, plane->plane_id, DRM_MODE_OBJECT_PLANE);
 
-   for (j=0; j < props->count_props; j++)
-  {
-     /* found the type property */
+   for (j = 0; j < props->count_props; j++)
+   {
+      /* found the type property */
       if ( !strcmp(drmModeGetProperty(drm.fd, props->props[j])->name, "type"))
          return (props->prop_values[j]);
    }
@@ -383,9 +414,10 @@ uint64_t plane_type (drmModePlane *plane)
 }
 
 /* This configures our only overlay plane to render the given surface. */ 
-void drm_plane_setup(struct drm_surface *surface)
+static void drm_plane_setup(struct drm_surface *surface)
 {
    int i,j;
+   char fmt_name[5];
 
    /* Get plane resources */
    drmModePlane *plane;	
@@ -396,7 +428,9 @@ void drm_plane_setup(struct drm_surface *surface)
       RARCH_ERR ("DRM: No scaling planes available!\n");
    }
 
-   RARCH_LOG ("DRM: Number of planes on FD %d is %d\n", drm.fd, plane_resources->count_planes);	
+   RARCH_LOG ("DRM: Number of planes on FD %d is %d\n",
+         drm.fd, plane_resources->count_planes);	
+
    /* dump_planes(drm.fd); */	
 
    /* Look for a plane/overlay we can use with the configured CRTC	
@@ -415,8 +449,10 @@ void drm_plane_setup(struct drm_surface *surface)
       }
    }
 
-   /* Programmer!! Save your sanity!! Primary planes have to cover the entire CRTC, and if you
-    * don't do that, you will get dmesg error "Plane must cover entire CRTC".
+   /* Programmer!! Save your sanity!! Primary planes have to 
+    * cover the entire CRTC, and if you don't do that, you 
+    * will get dmesg error "Plane must cover entire CRTC".
+    *
     * Look at linux/source/drivers/gpu/drm/drm_plane_helper.c comments for more info.
     * Also, primary planes can't be scaled: we need overlays for that. */
    for (i = 0; i < plane_resources->count_planes; i++)
@@ -424,15 +460,17 @@ void drm_plane_setup(struct drm_surface *surface)
       plane = drmModeGetPlane(drm.fd, plane_resources->planes[i]);
 
       if (!(plane->possible_crtcs & (1 << crtc_index))){
-         RARCH_LOG ("DRM: plane with ID %d can't be used with current CRTC\n",plane->plane_id);
+         RARCH_LOG ("DRM: plane with ID %d can't be used with current CRTC\n",
+               plane->plane_id);
          continue;
       }
 
       /* We are only interested in overlay planes. No overlay, no fun. 
        * (no scaling, must cover crtc..etc) so we skip primary planes */
-      if (plane_type(plane)!= DRM_PLANE_TYPE_OVERLAY)
+      if (drm_plane_type(plane) != DRM_PLANE_TYPE_OVERLAY)
       {
-         RARCH_LOG ("DRM: plane with ID %d is not an overlay. May be primary or cursor. Not usable.\n", plane->plane_id);
+         RARCH_LOG ("DRM: plane with ID %d is not an overlay. May be primary or cursor. Not usable.\n",
+               plane->plane_id);
          continue;
       }	
 
@@ -495,37 +533,38 @@ void drm_plane_setup(struct drm_surface *surface)
       RARCH_ERR("DRM: failed to enable plane: %s\n", strerror(errno));	
    }
 
-   RARCH_LOG("DRM: src_w %d, src_h %d, plane_w %d, plane_h %d\n", src_w, src_h, plane_w, plane_h);
+   RARCH_LOG("DRM: src_w %d, src_h %d, plane_w %d, plane_h %d\n",
+         src_w, src_h, plane_w, plane_h);
 
    /* Report what plane (of overlay type) we're using. */
-   char fmt_name[5];
-   format_name(surface->pixformat, fmt_name);
-   RARCH_LOG("DRM: Using plane with ID %d on CRTC ID %d format %s\n", drm.plane_id, drm.crtc_id, fmt_name);
-
+   drm_format_name(surface->pixformat, fmt_name);
+   RARCH_LOG("DRM: Using plane with ID %d on CRTC ID %d format %s\n",
+         drm.plane_id, drm.crtc_id, fmt_name);
 }
 
-static int modeset_create_dumbfb(int fd, struct modeset_buf *buf, int bpp, uint32_t pixformat)
+static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
+      int bpp, uint32_t pixformat)
 {
-   struct drm_mode_create_dumb create_dumb={0};
-   struct drm_mode_map_dumb map_dumb={0};
-   struct drm_mode_fb_cmd cmd_dumb={0};
+   struct drm_mode_create_dumb create_dumb = {0};
+   struct drm_mode_map_dumb map_dumb       = {0};
+   struct drm_mode_fb_cmd cmd_dumb         = {0};
 
-   create_dumb.width = buf->width;
+   create_dumb.width  = buf->width;
    create_dumb.height = buf->height;
-   create_dumb.bpp = bpp * 8;
-   create_dumb.flags = 0;
-   create_dumb.pitch = 0;
-   create_dumb.size = 0;
+   create_dumb.bpp    = bpp * 8;
+   create_dumb.flags  = 0;
+   create_dumb.pitch  = 0;
+   create_dumb.size   = 0;
    create_dumb.handle = 0;
    drmIoctl(drm.fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
 
    /* Create the buffer. We just copy values here... */
-   cmd_dumb.width=create_dumb.width;
-   cmd_dumb.height=create_dumb.height;
-   cmd_dumb.bpp=create_dumb.bpp;
-   cmd_dumb.pitch=create_dumb.pitch;
-   cmd_dumb.handle=create_dumb.handle;
-   cmd_dumb.depth=24;
+   cmd_dumb.width        = create_dumb.width;
+   cmd_dumb.height       = create_dumb.height;
+   cmd_dumb.bpp          = create_dumb.bpp;
+   cmd_dumb.pitch        = create_dumb.pitch;
+   cmd_dumb.handle       = create_dumb.handle;
+   cmd_dumb.depth        = 24;
 
    /* Map the buffer */
    drmIoctl(drm.fd,DRM_IOCTL_MODE_ADDFB,&cmd_dumb);
@@ -620,7 +659,7 @@ static bool init_drm(void)
 
    if (!drm.encoder)
    {
-      RARCH_ERR ("DRM: no encoder found\n");
+      RARCH_ERR ("DRM: no encoder found.\n");
       return false;
    }
 
@@ -652,31 +691,12 @@ static bool init_drm(void)
    return true;
 }
 
-void deinit_drm(void)
-{
-   /* Restore the original videomode/connector/scanoutbuffer(fb) 
-    * combination (the original CRTC, that is). */ 
-   drmModeSetCrtc(drm.fd, drm.orig_crtc->crtc_id,
-         drm.orig_crtc->buffer_id,
-         drm.orig_crtc->x, drm.orig_crtc->y,
-         &drm.connector_id, 1, &drm.orig_crtc->mode);	
-
-#if 0
-   /* TODO: Free surfaces here along 
-    * with their pages (framebuffers)! */
-
-   if (bufs[0].fb_id)
-   {
-      drmModeRmFB(drm.fd, bufs[0].fb_id);
-      drmModeRmFB(drm.fd, bufs[1].fb_id);
-   }
-#endif
-}
 
 static void *drm_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
-   struct drm_video *_drmvars = calloc(1, sizeof(struct drm_video));
+   struct drm_video *_drmvars = (struct drm_video*)
+      calloc(1, sizeof(struct drm_video));
    if (!_drmvars)
       return NULL;
 
@@ -783,6 +803,7 @@ static void drm_set_texture_enable(void *data, bool state, bool full_screen)
 static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
+   unsigned int i, j;
    struct drm_video *_drmvars = data;
 
    if (!_drmvars->menu_active)
@@ -790,7 +811,7 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    /* If menu is active in this frame but the 
     * menu surface is NULL, we allocate a new one.*/
-   if (_drmvars->menu_surface == NULL)
+   if (!_drmvars->menu_surface)
    {
       drm_surface_setup(_drmvars, 
             width, 
@@ -804,14 +825,14 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
             0,
             &_drmvars->menu_surface);
 
-      /* We need to re-setup the ONLY plane as the setup depens on input buffers dimensions */
+      /* We need to re-setup the ONLY plane as the setup 
+       * depends on input buffers dimensions. */
       drm_plane_setup(_drmvars->menu_surface);
    }
 
-   unsigned int i, j;
-
-   /* We have to go on a pixel format conversion adventure for now, until we can
-    * convince RGUI to output in an 8888 format. */
+   /* We have to go on a pixel format conversion adventure 
+    * for now, until we can convince RGUI to output 
+    * in an 8888 format. */
    unsigned int src_pitch        = width * 2; 
    unsigned int dst_pitch        = width * 4;
    unsigned int dst_width        = width;
@@ -827,12 +848,12 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
    {
       for (j = 0; j < src_pitch / 2; j++)
       {
-	 uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j); 
-	 /* The hex AND is for keeping only the part we need for each component. */
-	 uint32_t R = (src_pix << 8) & 0x00FF0000;
-	 uint32_t G = (src_pix << 4) & 0x0000FF00;
-	 uint32_t B = (src_pix << 0) & 0x000000FF;
-	 line[j] = (0 | R | G | B); 
+         uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j); 
+         /* The hex AND is for keeping only the part we need for each component. */
+         uint32_t R = (src_pix << 8) & 0x00FF0000;
+         uint32_t G = (src_pix << 4) & 0x0000FF00;
+         uint32_t B = (src_pix << 0) & 0x000000FF;
+         line[j] = (0 | R | G | B); 
       }
       memcpy(dst_base_addr + (dst_pitch * i), (char*)line, dst_pitch);
    }
