@@ -4218,6 +4218,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          info->need_refresh = true;
          info->need_push    = true;
+         break;
       case DISPLAYLIST_MENU_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MENU_WALLPAPER,
