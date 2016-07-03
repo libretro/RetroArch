@@ -278,7 +278,7 @@ VIDEO DRIVER
 #include "../gfx/drivers/vulkan.c"
 #endif
 
-#if defined(HAVE_KMS)
+#if defined(HAVE_PLAIN_DRM)
 #include "../gfx/drivers/drm_gfx.c"
 #endif
 

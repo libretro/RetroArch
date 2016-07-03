@@ -677,10 +677,13 @@ OBJ += gfx/video_context_driver.o \
 
 ifeq ($(HAVE_KMS), 1)
 	HAVE_AND_WILL_USE_DRM = 1
-	OBJ += gfx/drivers_context/drm_ctx.o \
-			 gfx/drivers/drm_gfx.o
+	OBJ += gfx/drivers_context/drm_ctx.o
 	DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
 	LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
+endif
+
+ifeq ($(HAVE_PLAIN_DRM), 1)
+	OBJ += gfx/drivers/drm_gfx.o
 endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
