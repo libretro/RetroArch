@@ -770,7 +770,7 @@ static void mui_frame(void *data)
    size_t title_margin;
    menu_display_ctx_draw_t draw;
    mui_handle_t *mui               = (mui_handle_t*)data;
-   uint64_t *frame_count           = NULL;
+   uint64_t *frame_count           = video_driver_get_frame_count_ptr();
    char msg[256]                   = {0};
    char title[256]                 = {0};
    char title_buf[256]             = {0};
@@ -782,7 +782,6 @@ static void mui_frame(void *data)
    const uint32_t passivetab_color = 0x9e9e9eff;
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
-   frame_count                     = video_driver_get_frame_count_ptr();
 
    (void)passivetab_color;
    (void)activetab_color;
