@@ -261,6 +261,14 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                      "Performance for software rendered cores \n"
                      "should be optimal.");
                break;
+            case MENU_LABEL_VIDEO_DRIVER_DRM:
+               snprintf(s, len,
+                     "Plain DRM Video Driver. \n"
+                     " \n"
+                     "This is a low-level video driver using. \n"
+                     "libdrm for hardware scaling using \n"
+                     "GPU overlays.");
+               break;
             case MENU_LABEL_VIDEO_DRIVER_SUNXI:
                snprintf(s, len,
                      "Sunxi-G2D Video Driver. \n"

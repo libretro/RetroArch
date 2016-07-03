@@ -278,6 +278,10 @@ VIDEO DRIVER
 #include "../gfx/drivers/vulkan.c"
 #endif
 
+#if defined(HAVE_KMS)
+#include "../gfx/drivers/drm_gfx.c"
+#endif
+
 #ifdef HAVE_OPENGL
 #include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"

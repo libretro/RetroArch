@@ -551,6 +551,7 @@ extern video_driver_t video_omap;
 extern video_driver_t video_exynos;
 extern video_driver_t video_dispmanx;
 extern video_driver_t video_sunxi;
+extern video_driver_t video_drm;
 extern video_driver_t video_xshm;
 extern video_driver_t video_null;
 

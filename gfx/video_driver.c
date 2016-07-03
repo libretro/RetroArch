@@ -200,6 +200,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_SUNXI
    &video_sunxi,
 #endif
+#ifdef HAVE_KMS
+   &video_drm,
+#endif
    &video_null,
    NULL,
 };

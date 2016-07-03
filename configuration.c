@@ -183,6 +183,8 @@ const char *config_get_default_video(void)
          return "gl";
       case VIDEO_VULKAN:
          return "vulkan";
+      case VIDEO_DRM:
+         return "drm";
       case VIDEO_WII:
          return "gx";
       case VIDEO_XENON360:
