@@ -617,7 +617,7 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
             msg_hash_to_str(MSG_INTERFACE),
             list->entries[k].name, list->entries[k].host);
       menu_entries_add_enum(info->list, tmp, "",
-            MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_NETWORK_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    net_ifinfo_free(list);
