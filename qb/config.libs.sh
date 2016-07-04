@@ -33,7 +33,7 @@ add_define_make DYLIB_LIB "$DYLIB"
 
 [ "$OS" = 'Darwin' ] && HAVE_X11=no # X11 breaks on recent OSXes even if present.
 
-[ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib
+[ -d /opt/vc/lib ] && add_library_dirs /opt/vc/lib && add_library_dirs /opt/vc/lib/GL
 check_lib VIDEOCORE -lbcm_host bcm_host_init "-lvcos -lvchiq_arm"
 check_lib SYSTEMD -lsystemd sd_get_machine_names
 
