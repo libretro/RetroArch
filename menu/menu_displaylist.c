@@ -316,7 +316,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       strlcat(tmp, core_info->core_name, sizeof(tmp));
 
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    fill_pathname_noext(tmp,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL),
@@ -325,7 +325,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->display_name)
       strlcat(tmp, core_info->display_name, sizeof(tmp));
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    if (core_info->systemname)
    {
@@ -336,7 +336,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             sizeof(tmp));
       strlcat(tmp, core_info->systemname, sizeof(tmp));
       menu_entries_add_enum(info->list, tmp, "",
-            MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    if (core_info->system_manufacturer)
@@ -347,7 +347,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             sizeof(tmp));
       strlcat(tmp, core_info->system_manufacturer, sizeof(tmp));
       menu_entries_add_enum(info->list, tmp, "",
-            MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    if (core_info->categories_list)
@@ -359,7 +359,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->categories_list, ", ");
       menu_entries_add_enum(info->list, tmp, "",
-            MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    if (core_info->authors_list)
@@ -371,7 +371,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->authors_list, ", ");
       menu_entries_add_enum(info->list, tmp, "",
-            MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    if (core_info->permissions_list)
@@ -383,7 +383,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->permissions_list, ", ");
       menu_entries_add_enum(info->list, tmp, "",
-            MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    if (core_info->licenses_list)
@@ -395,7 +395,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
       menu_entries_add_enum(info->list, tmp, "",
-            MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    if (core_info->supported_extensions_list)
@@ -407,7 +407,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->supported_extensions_list, ", ");
       menu_entries_add_enum(info->list, tmp, "",
-            MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
    if (core_info->firmware_count > 0)
@@ -424,7 +424,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                ": ",
                sizeof(tmp));
          menu_entries_add_enum(info->list, tmp, "",
-               MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
          /* FIXME: This looks hacky and probably
           * needs to be improved for good translation support. */
@@ -438,7 +438,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                      core_info->firmware[i].desc ?
                      core_info->firmware[i].desc : "");
                menu_entries_add_enum(info->list, tmp, "",
-                     MSG_UNKNOWN,
+                     MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                      MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
                snprintf(tmp, sizeof(tmp), "	%s: %s, %s",
@@ -451,7 +451,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REQUIRED)
                      );
                menu_entries_add_enum(info->list, tmp, "",
-                     MSG_UNKNOWN,
+                     MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                      MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
             }
          }
@@ -465,14 +465,14 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             ": ",
             sizeof(tmp));
       menu_entries_add_enum(info->list, tmp, "",
-            MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
       for (i = 0; i < core_info->note_list->size; i++)
       {
          strlcpy(tmp,
                core_info->note_list->elems[i].data, sizeof(tmp));
          menu_entries_add_enum(info->list, tmp, "",
-               MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+               MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
    }
 
