@@ -97,9 +97,9 @@ static void *thread_wrap(void *data_)
 #endif
 {
    struct thread_data *data = (struct thread_data*)data_;
-   if (!data || !data->func)
+   if (!data)
 	   return 0;
-   if (data->userdata)
+   if (data->func && data->userdata)
       data->func(data->userdata);
    free(data);
    return 0;
