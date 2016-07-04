@@ -487,7 +487,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    global_t *global                    = global_get_ptr();
 
    menu_entries_add_enum(info->list, "Directory Tests:", "",
-         MSG_UNKNOWN,
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Assume libretro directory exists and check if stat works */
@@ -495,7 +495,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    snprintf(tmp, sizeof(tmp), "- stat directory... %s",
          ret ? "passed" : "failed");
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN,
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Try to create a "test" subdirectory on top of libretro directory */
@@ -507,26 +507,26 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    snprintf(tmp, sizeof(tmp), "- create a directory... %s",
          ret ? "passed" : "failed");
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN,
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    menu_entries_add_enum(info->list, "", "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory exists */
    menu_entries_add_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY),
          "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(global->dir.savefile);
    snprintf(tmp, sizeof(tmp), "- directory name: %s",
          global->dir.savefile);
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    snprintf(tmp, sizeof(tmp), "- directory exists: %s",
          ret ? "true" : "false");
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
    fill_pathname_join(tmp, global->dir.savefile, ".retroarch",
@@ -535,24 +535,24 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    snprintf(tmp, sizeof(tmp), "- directory writable: %s",
          ret ? "true" : "false");
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    menu_entries_add_enum(info->list, "", "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if state directory exists */
    menu_entries_add_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY),
          "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(global->dir.savestate);
    snprintf(tmp, sizeof(tmp), "- directory name: %s", global->dir.savestate);
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    snprintf(tmp, sizeof(tmp), "- directory exists: %s",
          ret ? "true" : "false");
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
    fill_pathname_join(tmp, global->dir.savestate, ".retroarch", sizeof(tmp));
@@ -560,25 +560,27 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    snprintf(tmp, sizeof(tmp), "- directory writable: %s",
          ret ? "true" : "false");
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    menu_entries_add_enum(info->list, "", "",
-      MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if system directory exists */
    menu_entries_add_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY),
          "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(settings->directory.system);
    snprintf(tmp, sizeof(tmp), "- directory name: %s",
          settings->directory.system);
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    snprintf(tmp, sizeof(tmp), "- directory exists: %s",
          ret ? "true" : "false");
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
    fill_pathname_join(tmp, settings->directory.system, ".retroarch",
@@ -587,7 +589,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    snprintf(tmp, sizeof(tmp), "- directory writable: %s",
          ret ? "true" : "false");
    menu_entries_add_enum(info->list, tmp, "",
-         MSG_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    return 0;
 }

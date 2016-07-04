@@ -1186,6 +1186,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "collection";
       case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
          return "core_info_entry";
+      case MENU_ENUM_LABEL_DEBUG_INFO_ENTRY:
+         return "debug_info_entry";
       case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
          return "1_input_binds_list";
       case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
