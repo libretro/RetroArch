@@ -1188,6 +1188,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "core_info_entry";
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
          return "network_info_entry";
+      case MENU_ENUM_LABEL_PLAYLIST_ENTRY:
+         return "playlist_entry";
       case MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY:
          return "system_info_entry";
       case MENU_ENUM_LABEL_DEBUG_INFO_ENTRY:

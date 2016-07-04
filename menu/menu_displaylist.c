@@ -1587,13 +1587,13 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       if (!path)
          menu_entries_add_enum(info->list, fill_buf, path_playlist,
-               MSG_UNKNOWN, FILE_TYPE_PLAYLIST_ENTRY, 0, i);
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_PLAYLIST_ENTRY, 0, i);
       else if (is_history)
          menu_entries_add_enum(info->list, fill_buf,
-               path, MSG_UNKNOWN, FILE_TYPE_RPL_ENTRY, 0, i);
+               path, MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
       else
          menu_entries_add_enum(info->list, label,
-               path, MSG_UNKNOWN, FILE_TYPE_RPL_ENTRY, 0, i);
+               path, MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i);
    }
 
    return 0;
@@ -3452,7 +3452,7 @@ static int menu_displaylist_parse_generic(
    {
       case MENU_LABEL_CORE_LIST:
          {
-            enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+            enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
             const char *dir                = NULL;
 
             menu_entries_get_last_stack(&dir, NULL, NULL, &enum_idx, NULL);
