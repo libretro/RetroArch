@@ -99,7 +99,7 @@ static void *thread_wrap(void *data_)
    struct thread_data *data = (struct thread_data*)data_;
    if (!data)
 	   return 0;
-   if (data->func && data->userdata)
+   if (data->func)
       data->func(data->userdata);
    free(data);
    return 0;
