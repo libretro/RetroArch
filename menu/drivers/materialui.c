@@ -775,19 +775,23 @@ static void mui_frame(void *data)
       0, 0, 0, 0.2,
       0, 0, 0, 0.2,
    };
-
    float greyish_blue[16] = {
       0.22, 0.28, 0.31, 1,
       0.22, 0.28, 0.31, 1,
       0.22, 0.28, 0.31, 1,
       0.22, 0.28, 0.31, 1,
    };
+   float almost_black[16] = {
+      0.13, 0.13, 0.13, 1,
+      0.13, 0.13, 0.13, 1,
+      0.13, 0.13, 0.13, 1,
+      0.13, 0.13, 0.13, 1,
+   };
 
    bool DARK_THEME = false;
-
-   float *header_bg_color = blue_bg;
-   float *highlighted_entry_color = lightblue_bg;
-   float *footer_bg_color = white_bg;
+   float *header_bg_color           = blue_bg;
+   float *highlighted_entry_color   = lightblue_bg;
+   float *footer_bg_color           = white_bg;
 
    uint32_t font_normal_color     = 0x212121ff;
    uint32_t font_hover_color      = 0x212121ff;
@@ -803,14 +807,19 @@ static void mui_frame(void *data)
    clearcolor.b = 1.0f;
    clearcolor.a = 0.75f;
 
-   if (DARK_THEME) {
+   if (DARK_THEME)
+   {
       header_bg_color         = greyish_blue;
       highlighted_entry_color = grey_bg;
-      footer_bg_color         = black_bg;
+      footer_bg_color         = almost_black;
 
       font_normal_color = 0xffffffff;
       font_hover_color  = 0x00000000;
       
+      /* 
+      TODO/FIXME - Maybe make this track the footer's bg color or vice-versa
+      e.g. clearcolor.r = &footer_bg_color[0]; clearcolor.g = &footer_bg_color[4];
+      */
       clearcolor.r = 0.13f;
       clearcolor.g = 0.13f;
       clearcolor.b = 0.13f;
