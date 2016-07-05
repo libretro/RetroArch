@@ -792,6 +792,7 @@ static void mui_frame(void *data)
    float *header_bg_color           = blue_bg;
    float *highlighted_entry_color   = lightblue_bg;
    float *footer_bg_color           = white_bg;
+   float *body_bg_color             = white_transp_bg;
 
    uint32_t font_normal_color     = 0x212121ff;
    uint32_t font_hover_color      = 0x212121ff;
@@ -812,6 +813,7 @@ static void mui_frame(void *data)
       header_bg_color         = greyish_blue;
       highlighted_entry_color = grey_bg;
       footer_bg_color         = almost_black;
+      body_bg_color           = almost_black;
 
       font_normal_color = 0xffffffff;
       font_hover_color  = 0x00000000;
@@ -854,7 +856,7 @@ static void mui_frame(void *data)
       draw.width              = width;
       draw.height             = height;
       draw.texture            = menu_display_white_texture;
-      draw.color              = &white_transp_bg[0];
+      draw.color              = &body_bg_color[0];
       draw.vertex             = NULL;
       draw.tex_coord          = NULL;
       draw.vertex_count       = 4;
