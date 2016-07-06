@@ -82,7 +82,8 @@ enum vulkan_wsi_type
    VULKAN_WSI_ANDROID,
    VULKAN_WSI_WIN32,
    VULKAN_WSI_XCB,
-   VULKAN_WSI_XLIB
+   VULKAN_WSI_XLIB,
+   VULKAN_WSI_DISPLAY
 };
 
 typedef struct vulkan_context
@@ -124,6 +125,12 @@ typedef struct gfx_ctx_vulkan_data
    VkSwapchainKHR swapchain;
    bool need_new_swapchain;
 } gfx_ctx_vulkan_data_t;
+
+struct vulkan_display_surface_info
+{
+   unsigned width;
+   unsigned height;
+};
 
 struct vk_color
 {

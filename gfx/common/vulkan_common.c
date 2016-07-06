@@ -1435,12 +1435,13 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VkResult res;
    VkInstanceCreateInfo info          = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
    VkApplicationInfo app              = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+
+   const char *instance_extensions[4];
+   unsigned ext_count = 0;
+
 #ifdef VULKAN_DEBUG
-   const char *instance_extensions[3];
-   instance_extensions[2] = "VK_EXT_debug_report";
+   instance_extensions[ext_count++] = "VK_EXT_debug_report";
    static const char *instance_layers[] = { "VK_LAYER_LUNARG_standard_validation" };
-#else
-   const char *instance_extensions[2];
 #endif
 
    bool use_instance_ext;
@@ -1459,31 +1460,33 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       iface = NULL;
    }
 
-   instance_extensions[0] = "VK_KHR_surface";
+   instance_extensions[ext_count++] = "VK_KHR_surface";
 
    switch (type)
    {
       case VULKAN_WSI_WAYLAND:
-         instance_extensions[1] = "VK_KHR_wayland_surface";
+         instance_extensions[ext_count++] = "VK_KHR_wayland_surface";
          break;
       case VULKAN_WSI_ANDROID:
-         instance_extensions[1] = "VK_KHR_android_surface";
+         instance_extensions[ext_count++] = "VK_KHR_android_surface";
          break;
       case VULKAN_WSI_WIN32:
-         instance_extensions[1] = "VK_KHR_win32_surface";
+         instance_extensions[ext_count++] = "VK_KHR_win32_surface";
          break;
       case VULKAN_WSI_XLIB:
-         instance_extensions[1] = "VK_KHR_xlib_surface";
+         instance_extensions[ext_count++] = "VK_KHR_xlib_surface";
          break;
       case VULKAN_WSI_XCB:
-         instance_extensions[1] = "VK_KHR_xcb_surface";
+         instance_extensions[ext_count++] = "VK_KHR_xcb_surface";
          break;
       case VULKAN_WSI_MIR:
-         instance_extensions[1] = "VK_KHR_mir_surface";
+         instance_extensions[ext_count++] = "VK_KHR_mir_surface";
+         break;
+      case VULKAN_WSI_DISPLAY:
+         instance_extensions[ext_count++] = "VK_KHR_display";
          break;
       case VULKAN_WSI_NONE:
       default:
-         instance_extensions[1] = NULL;
          break;
    }
 
@@ -1521,7 +1524,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
-   use_instance_ext = vulkan_find_instance_extensions(instance_extensions, ARRAY_SIZE(instance_extensions));
+   use_instance_ext = vulkan_find_instance_extensions(instance_extensions, ext_count);
 
    app.pApplicationName              = "RetroArch";
    app.applicationVersion            = 0;
@@ -1530,7 +1533,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    app.apiVersion                    = VK_MAKE_VERSION(1, 0, 18);
 
    info.pApplicationInfo             = &app;
-   info.enabledExtensionCount        = use_instance_ext ? ARRAY_SIZE(instance_extensions) : 0;
+   info.enabledExtensionCount        = use_instance_ext ? ext_count : 0;
    info.ppEnabledExtensionNames      = use_instance_ext ? instance_extensions : NULL;
 #ifdef VULKAN_DEBUG
    info.enabledLayerCount            = ARRAY_SIZE(instance_layers);
@@ -1606,6 +1609,28 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    }
 
    return true;
+}
+
+static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
+      unsigned *width, unsigned *height,
+      const struct vulkan_display_surface_info *info)
+{
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkGetPhysicalDeviceDisplayPropertiesKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkGetDisplayPlaneSupportedDisplaysKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkGetDisplayModePropertiesKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkCreateDisplayModeKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkGetDisplayPlaneCapabilitiesKHR);
+   VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
+         vkCreateDisplayPlaneSurfaceKHR);
+
+   return false;
 }
 
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
@@ -1750,6 +1775,14 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
                return false;
          }
 #endif
+         break;
+      case VULKAN_WSI_DISPLAY:
+         {
+            if (!vulkan_create_display_surface(vk,
+                     &width, &height,
+                     (const struct vulkan_display_surface_info*)display))
+               return false;
+         }
          break;
       case VULKAN_WSI_NONE:
       default:
