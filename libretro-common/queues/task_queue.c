@@ -456,8 +456,6 @@ static void threaded_worker(void *userdata)
       retro_sleep(10);
 #endif
    }
-
-   slock_unlock(running_lock);
 }
 
 static void retro_task_threaded_init(void)
