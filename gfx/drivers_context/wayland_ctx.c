@@ -177,8 +177,10 @@ static void display_handle_mode(void *data,
    wl->width = width;
    wl->height = height;
 
-   RARCH_LOG("[Wayland]: Video mode: %d x %d @ %d Hz.\n",
-         width, height, refresh);
+   /* Certain older Wayland implementations report in Hz,
+    * but it should be mHz. */
+   RARCH_LOG("[Wayland]: Video mode: %d x %d @ %.4f Hz.\n",
+         width, height, refresh > 1000 ? refresh / 1000.0 : (double)refresh);
 }
 
 static void display_handle_done(void *data,
