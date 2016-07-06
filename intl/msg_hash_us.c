@@ -1510,6 +1510,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "stdin_commands";
       case MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE:
          return "network_remote_enable";
+      case MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE:
+         return "network_remote_user_1_enable";
+      case MENU_ENUM_LABEL_NETWORK_REMOTE_USER_LAST_ENABLE:
+         return "network_remote_user_last_enable";
       case MENU_ENUM_LABEL_NETWORK_REMOTE_PORT:
          return "network_remote_base_port";
       case MENU_ENUM_LABEL_VIDEO_DRIVER:

@@ -7564,7 +7564,7 @@ static bool setting_append_list(
                      general_read_handler,
                      SD_FLAG_ADVANCED);
                settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
-               /* TODO/FIXME - add enum_idx */
+               menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user);
             }
 
             CONFIG_BOOL(

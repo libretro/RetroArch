@@ -4415,7 +4415,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             unsigned user;
             for(user = 0; user < settings->input.max_users; user++)
             {
-               /* TODO - implement stuff from menu_setting.c - line 7547 */
+               menu_displaylist_parse_settings_enum(menu, info,
+                     MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user,
+                     PARSE_ONLY_BOOL, false);
             }
          }
 
