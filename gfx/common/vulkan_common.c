@@ -1611,10 +1611,36 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    return true;
 }
 
+static void vulkan_update_display_mode(VkDisplayModeKHR *best_mode,
+      unsigned *width,
+      unsigned *height,
+      const VkDisplayModePropertiesKHR *mode,
+      const struct vulkan_display_surface_info *info)
+{
+   *best_mode = VK_NULL_HANDLE;
+   *width = 0;
+   *height = 0;
+   (void)mode;
+   (void)info;
+}
+
 static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
       unsigned *width, unsigned *height,
       const struct vulkan_display_surface_info *info)
 {
+   bool ret = true;
+   uint32_t display_count = 0;
+   uint32_t plane_count = 0;
+   VkDisplayPropertiesKHR *displays = NULL;
+   VkDisplayPlanePropertiesKHR *planes = NULL;
+   uint32_t mode_count = 0;
+   VkDisplayModePropertiesKHR *modes = NULL;
+   unsigned dpy, i, j;
+   uint32_t best_plane = UINT32_MAX;
+   VkDisplayPlaneAlphaFlagsKHR alpha_mode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
+   VkDisplaySurfaceCreateInfoKHR create_info = { VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR };
+   VkDisplayModeKHR best_mode = VK_NULL_HANDLE;
+
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
          vkGetPhysicalDeviceDisplayPropertiesKHR);
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
@@ -1630,7 +1656,132 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
          vkCreateDisplayPlaneSurfaceKHR);
 
-   return false;
+#define GOTO_FAIL() do { \
+   ret = false; \
+   goto end; \
+} while(0)
+
+   if (vkGetPhysicalDeviceDisplayPropertiesKHR(vk->context.gpu, &display_count, NULL) != VK_SUCCESS)
+      GOTO_FAIL();
+   displays = (VkDisplayPropertiesKHR*)calloc(display_count, sizeof(*displays));
+   if (!displays)
+      GOTO_FAIL();
+   if (vkGetPhysicalDeviceDisplayPropertiesKHR(vk->context.gpu, &display_count, displays) != VK_SUCCESS)
+      GOTO_FAIL();
+
+   if (vkGetPhysicalDeviceDisplayPlanePropertiesKHR(vk->context.gpu, &plane_count, NULL) != VK_SUCCESS)
+      GOTO_FAIL();
+   planes = (VkDisplayPlanePropertiesKHR*)calloc(plane_count, sizeof(*planes));
+   if (!planes)
+      GOTO_FAIL();
+   if (vkGetPhysicalDeviceDisplayPlanePropertiesKHR(vk->context.gpu, &plane_count, planes) != VK_SUCCESS)
+      GOTO_FAIL();
+
+   for (dpy = 0; dpy < display_count; dpy++)
+   {
+      VkDisplayKHR display = displays[dpy].display;
+      best_mode = VK_NULL_HANDLE;
+      best_plane = UINT32_MAX;
+
+      if (vkGetDisplayModePropertiesKHR(vk->context.gpu,
+            display, &mode_count, NULL) != VK_SUCCESS)
+         GOTO_FAIL();
+
+      modes = (VkDisplayModePropertiesKHR*)calloc(mode_count, sizeof(*modes));
+      if (!modes)
+         GOTO_FAIL();
+
+      if (vkGetDisplayModePropertiesKHR(vk->context.gpu,
+            display, &mode_count, modes) != VK_SUCCESS)
+         GOTO_FAIL();
+
+      for (i = 0; i < mode_count; i++)
+      {
+         const VkDisplayModePropertiesKHR *mode = &modes[i];
+         vulkan_update_display_mode(&best_mode, width, height, mode, info);
+      }
+
+      free(modes);
+      modes = NULL;
+      mode_count = 0;
+
+      if (best_mode == VK_NULL_HANDLE)
+         continue;
+
+      for (i = 0; i < plane_count; i++)
+      {
+         uint32_t supported_count = 0;
+         VkDisplayKHR *supported = NULL;
+         VkDisplayPlaneCapabilitiesKHR plane_caps;
+         vkGetDisplayPlaneSupportedDisplaysKHR(vk->context.gpu, i, &supported_count, NULL);
+         if (!supported_count)
+            continue;
+
+         supported = (VkDisplayKHR*)calloc(supported_count, sizeof(*supported));
+         if (!supported)
+            GOTO_FAIL();
+
+         vkGetDisplayPlaneSupportedDisplaysKHR(vk->context.gpu, i, &supported_count,
+               supported);
+
+         for (j = 0; j < supported_count; j++)
+         {
+            if (supported[j] == display)
+            {
+               if (best_plane == UINT32_MAX)
+                  best_plane = j;
+               break;
+            }
+         }
+
+         free(supported);
+         supported = NULL;
+
+         if (j == supported_count)
+            continue;
+
+         if (planes[i].currentDisplay == VK_NULL_HANDLE ||
+             planes[i].currentDisplay == display)
+            best_plane = j;
+         else
+            continue;
+
+         vkGetDisplayPlaneCapabilitiesKHR(vk->context.gpu,
+               best_mode, i, &plane_caps);
+
+         if (plane_caps.supportedAlpha & VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR)
+         {
+            best_plane = j;
+            alpha_mode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
+            goto out;
+         }
+      }
+   }
+out:
+
+   if (best_mode == VK_NULL_HANDLE)
+      GOTO_FAIL();
+   if (best_plane == UINT32_MAX)
+      GOTO_FAIL();
+
+   create_info.displayMode = best_mode;
+   create_info.planeIndex = best_plane;
+   create_info.planeStackIndex = planes[best_plane].currentStackIndex;
+   create_info.transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+   create_info.globalAlpha = 1.0f;
+   create_info.alphaMode = alpha_mode;
+   create_info.imageExtent.width = *width;
+   create_info.imageExtent.height = *height;
+
+   if (vkCreateDisplayPlaneSurfaceKHR(vk->context.instance,
+            &create_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+      GOTO_FAIL();
+
+end:
+   free(displays);
+   free(planes);
+   free(modes);
+   return ret;
 }
 
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
