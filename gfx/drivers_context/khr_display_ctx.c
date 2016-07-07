@@ -13,8 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _WIN32
 #include <unistd.h>
 #include <signal.h>
+#endif
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
@@ -28,6 +31,7 @@ typedef struct
    unsigned height;
 } khr_display_ctx_data_t;
 
+#ifndef _WIN32
 static volatile sig_atomic_t g_khr_quit;
 static void khr_sighandler(int sig)
 {
@@ -35,6 +39,7 @@ static void khr_sighandler(int sig)
       exit(1);
    g_khr_quit = 1;
 }
+#endif
 
 static void gfx_ctx_khr_display_destroy(void *data)
 {
@@ -72,12 +77,15 @@ static void *gfx_ctx_khr_display_init(void *video_driver)
       goto error;
    }
 
+#ifndef _WIN32
+   /* FIXME: Consolidate all sig-handling like this outside context drivers. */
    sa.sa_sigaction = NULL;
    sa.sa_handler   = khr_sighandler;
    sa.sa_flags     = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
+#endif
 
    return khr;
 
@@ -101,7 +109,11 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
       *resize = true;
    }
 
+#ifdef _WIN32
+   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+#else
    if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL) || g_khr_quit)
+#endif
       *quit = true;
 }
 
