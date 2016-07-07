@@ -81,7 +81,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #ifdef EMSCRIPTEN
    &gfx_ctx_emscripten,
 #endif
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) && defined(HAVE_VULKAN_KHR_DISPLAY)
    &gfx_ctx_khr_display,
 #endif
    &gfx_ctx_null,
