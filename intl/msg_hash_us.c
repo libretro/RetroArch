@@ -1820,6 +1820,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "video_shader_scale_pass";
       case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
          return "video_shader_num_passes";
+      case MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY:
+         return "shader_parameters_entry";
+      case MENU_ENUM_LABEL_RDB_ENTRY:
+         return "rdb_entry";
       case MENU_ENUM_LABEL_RDB_ENTRY_DESCRIPTION:
          return "rdb_entry_description";
       case MENU_ENUM_LABEL_RDB_ENTRY_GENRE:

@@ -2200,7 +2200,7 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
    {
       if (!string_is_empty(db_list->list[i].name))
          menu_entries_add_enum(list, db_list->list[i].name,
-               path, MSG_UNKNOWN, FILE_TYPE_RDB_ENTRY, 0, 0);
+               path, MENU_ENUM_LABEL_RDB_ENTRY, FILE_TYPE_RDB_ENTRY, 0, 0);
    }
 
    database_info_list_free(db_list);
@@ -2229,7 +2229,8 @@ static int deferred_push_video_shader_parameters_common(
 
    for (i = 0; i < list_size; i++)
       menu_entries_add_enum(info->list, shader->parameters[i].desc,
-            info->label, MSG_UNKNOWN, base_parameter + i, 0, 0);
+            info->label, MENU_ENUM_LABEL_SHADER_PARAMETERS_ENTRY,
+            base_parameter + i, 0, 0);
 
    return 0;
 }
