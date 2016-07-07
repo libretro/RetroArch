@@ -210,7 +210,7 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
       (void)core_crc;
 
       menu_entries_add_enum(list, core_pathname, "",
-            MSG_UNKNOWN, type, 0, 0);
+            MENU_ENUM_LABEL_FILEBROWSER_ENTRY, type, 0, 0);
 
       switch (type)
       {
