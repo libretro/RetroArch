@@ -14,6 +14,7 @@
  */
 
 #include <unistd.h>
+#include <signal.h>
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
@@ -26,6 +27,14 @@ typedef struct
    unsigned width;
    unsigned height;
 } khr_display_ctx_data_t;
+
+static volatile sig_atomic_t g_khr_quit;
+static void khr_sighandler(int sig)
+{
+   if (g_khr_quit)
+      exit(1);
+   g_khr_quit = 1;
+}
 
 static void gfx_ctx_khr_display_destroy(void *data)
 {
@@ -52,6 +61,7 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
 
 static void *gfx_ctx_khr_display_init(void *video_driver)
 {
+   struct sigaction sa;
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)calloc(1, sizeof(*khr));
    if (!khr)
        return NULL;
@@ -61,6 +71,13 @@ static void *gfx_ctx_khr_display_init(void *video_driver)
       RARCH_ERR("[Vulkan]: Failed to create Vulkan context.\n");
       goto error;
    }
+
+   sa.sa_sigaction = NULL;
+   sa.sa_handler   = khr_sighandler;
+   sa.sa_flags     = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
 
    return khr;
 
@@ -84,7 +101,7 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
       *resize = true;
    }
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL) || g_khr_quit)
       *quit = true;
 }
 
