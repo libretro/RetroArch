@@ -101,7 +101,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
          line_start[ln] = '\0';
 
       menu_entries_add_enum(list, line_start, label,
-            MSG_UNKNOWN, type, 0, 0);
+            MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
 
       switch (type)
       {
@@ -3532,7 +3532,7 @@ static void menu_displaylist_parse_playlist_associations(
          menu_entries_add_enum(info->list,
                path_base,
                str_list->elems[i].data,
-               MSG_UNKNOWN,
+               MENU_ENUM_LABEL_PLAYLIST_ENTRY,
                MENU_SETTINGS_PLAYLIST_ASSOCIATION_START + i,
                0, 0);
       }
@@ -5249,7 +5249,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                for (i = 0; i < opts; i++)
                   menu_entries_add_enum(info->list,
                         core_option_manager_get_desc(coreopts, i), "",
-                        MSG_UNKNOWN, 
+                        MENU_ENUM_LABEL_CORE_OPTION_ENTRY, 
                         MENU_SETTINGS_CORE_OPTION_START + i, 0, 0);
             }
          }

@@ -1240,6 +1240,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "no_core_options_available";
       case MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE:
          return "no_core_information_available";
+      case MENU_ENUM_LABEL_CORE_OPTION_ENTRY:
+         return "core_option_entry";
+      case MENU_ENUM_LABEL_URL_ENTRY:
+         return "url_entry";
       case MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS:
          return "no_performance_counters";
       case MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY:
