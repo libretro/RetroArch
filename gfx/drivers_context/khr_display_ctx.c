@@ -66,7 +66,9 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
 
 static void *gfx_ctx_khr_display_init(void *video_driver)
 {
+#ifndef _WIN32
    struct sigaction sa;
+#endif
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)calloc(1, sizeof(*khr));
    if (!khr)
        return NULL;
