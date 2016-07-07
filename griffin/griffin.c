@@ -167,8 +167,10 @@ VIDEO CONTEXT
 
 #ifdef HAVE_VULKAN
 #include "../gfx/common/vulkan_common.c"
-#include "../gfx/drivers_context/khr_display_ctx.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"
+#ifdef HAVE_VULKAN_KHR_DISPLAY
+#include "../gfx/drivers_context/khr_display_ctx.c"
+#endif
 #endif
 
 #if defined(HAVE_KMS)
