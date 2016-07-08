@@ -31,6 +31,7 @@
 #include <retro_inline.h>
 
 #include "../../driver.h"
+#include "../../frontend/frontend_driver.h"
 #include "../../general.h"
 #include "../../verbosity.h"
 #include "../font_driver.h"
@@ -567,7 +568,8 @@ static void *xv_init(const video_info_t *video,
    memset(xv->image->data, 128, xv->image->data_size);
 
    x11_install_quit_atom();
-   x11_install_sighandlers();
+
+   frontend_driver_install_signal_handler();
 
    xv_set_nonblock_state(xv, !video->vsync);
 

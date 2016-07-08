@@ -26,6 +26,7 @@
 #include <sys/utsname.h>
 #include <sys/resource.h>
 
+#include <signal.h>
 #include <pthread.h>
 
 #ifdef ANDROID
@@ -66,6 +67,7 @@ enum
 
 struct android_app *g_android;
 
+
 static pthread_key_t thread_key;
 
 static char screenshot_dir[PATH_MAX_LENGTH];
@@ -80,6 +82,8 @@ static const char *proc_acpi_sysfs_ac_adapter_path = "/sys/class/power_supply/AC
 static const char *proc_acpi_sysfs_battery_path    = "/sys/class/power_supply";
 static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
 #endif
+
+static volatile sig_atomic_t linux_sighandler_quit;
 
 #ifndef HAVE_DYNAMIC
 static enum frontend_fork linux_fork_mode = FRONTEND_FORK_NONE;
@@ -1959,6 +1963,36 @@ static uint64_t frontend_linux_get_mem_used(void)
    return total - freemem - buffers - cached;
 }
 
+static void frontend_linux_sighandler(int sig)
+{
+   (void)sig;
+   if (linux_sighandler_quit)
+      exit(1);
+   linux_sighandler_quit = 1;
+}
+
+static void frontend_linux_install_signal_handlers(void)
+{
+   struct sigaction sa;
+
+   sa.sa_sigaction = NULL;
+   sa.sa_handler   = frontend_linux_sighandler;
+   sa.sa_flags     = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
+}
+
+static int frontend_linux_get_signal_handler_state(void)
+{
+   return (int)linux_sighandler_quit;
+}
+
+static void frontend_linux_destroy_signal_handler_state(void)
+{
+   linux_sighandler_quit = 0;
+}
+
 frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_env,       /* environment_get */
    frontend_linux_init,          /* init */
@@ -1995,9 +2029,9 @@ frontend_ctx_driver_t frontend_ctx_linux = {
 #endif
    frontend_linux_get_mem_total,
    frontend_linux_get_mem_used,
-   NULL,                         /* install_signal_handler */
-   NULL,                         /* get_sighandler_state */
-   NULL,                         /* destroy_sighandler_state */
+   frontend_linux_install_signal_handlers,
+   frontend_linux_get_signal_handler_state,
+   frontend_linux_destroy_signal_handler_state,
 #ifdef ANDROID
    "android"
 #else

@@ -23,6 +23,7 @@
 
 #include "../../driver.h"
 
+#include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
 
@@ -433,7 +434,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    settings_t *settings    = config_get_ptr();
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
-   x11_install_sighandlers();
+   frontend_driver_install_signal_handler();
 
    if (!x)
       return false;

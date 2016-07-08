@@ -16,8 +16,6 @@
 #ifndef __EGL_COMMON_H
 #define __EGL_COMMON_H
 
-#include <signal.h>
-
 #ifdef HAVE_GBM
 /* presense or absense of this include makes egl.h change NativeWindowType between gbm_device* and _XDisplay* */
 #include <gbm.h>
@@ -61,7 +59,6 @@ typedef struct
    bool use_hw_ctx;
 } egl_ctx_data_t;
 
-extern volatile sig_atomic_t g_egl_quit;
 extern bool g_egl_inited;
 
 /* bind_api is called before init so we need these, please
@@ -82,8 +79,6 @@ void egl_swap_buffers(void *data);
 void egl_set_swap_interval(egl_ctx_data_t *egl, unsigned interval);
 
 void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height);
-
-void egl_install_sighandlers(void);
 
 bool egl_init_context(egl_ctx_data_t *egl,
       void *display_data,

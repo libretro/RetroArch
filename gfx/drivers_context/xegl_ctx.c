@@ -19,6 +19,8 @@
 #include <stdint.h>
 
 #include "../../driver.h"
+#include "../../../frontend/frontend_driver.h"
+
 #include "../common/egl_common.h"
 #include "../common/gl_common.h"
 #include "../common/x11_common.h"
@@ -270,7 +272,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
 
-   x11_install_sighandlers();
+   frontend_driver_install_signal_handler();
 
    windowed_full = settings->video.windowed_fullscreen;
 

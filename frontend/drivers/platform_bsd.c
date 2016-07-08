@@ -18,6 +18,31 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <signal.h>
+
+static volatile sig_atomic_t bsd_sighandler_quit;
+
+static void frontend_bsd_install_signal_handlers(void)
+{
+   struct sigaction sa;
+
+   sa.sa_sigaction = NULL;
+   sa.sa_handler   = frontend_bsd_sighandler;
+   sa.sa_flags     = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
+}
+
+static int frontend_bsd_get_signal_handler_state(void)
+{
+   return (int)bsd_sighandler_quit;
+}
+
+static void frontend_bsd_destroy_signal_handler_state(void)
+{
+   bsd_sighandler_quit = 0;
+}
 
 frontend_ctx_driver_t frontend_ctx_bsd = {
    NULL,                         /* environment_get */
@@ -37,8 +62,8 @@ frontend_ctx_driver_t frontend_ctx_bsd = {
    NULL,                         /* parse_drive_list */
    NULL,                         /* get_mem_total */
    NULL,                         /* get_mem_free */
-   NULL,                         /* install_signal_handler */
-   NULL,                         /* get_sighandler_state */
-   NULL,                         /* destroy_signal_handler_state */
+   frontend_bsd_install_signal_handler,
+   frontend_bsd_get_signal_handler_state,
+   frontend_bsd_destroy_signal_handler_state,
    "bsd",
 };

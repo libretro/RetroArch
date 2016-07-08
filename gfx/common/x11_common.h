@@ -80,8 +80,6 @@ bool x11_has_focus_internal(void *data);
 
 bool x11_alive(void *data);
 
-void x11_install_sighandlers(void);
-
 bool x11_connect(void);
 
 void x11_update_window_title(void *data);

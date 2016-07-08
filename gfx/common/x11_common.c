@@ -24,6 +24,7 @@
 #include <X11/Xatom.h>
 
 #include "x11_common.h"
+#include "../../frontend/frontend_driver.h"
 #include "../../input/common/input_x11_common.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -38,7 +39,6 @@ static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 
 static Atom g_x11_quit_atom;
-static volatile sig_atomic_t g_x11_quit;
 static bool g_x11_has_focus;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
@@ -419,12 +419,12 @@ bool x11_alive(void *data)
          case ClientMessage:
             if (event.xclient.window == g_x11_win && 
                   (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
-               g_x11_quit = true;
+               frontend_driver_destroy_signal_handler_state();
             break;
 
          case DestroyNotify:
             if (event.xdestroywindow.window == g_x11_win)
-               g_x11_quit = true;
+               frontend_driver_destroy_signal_handler_state();
             break;
 
          case MapNotify:
@@ -452,7 +452,7 @@ bool x11_alive(void *data)
       }
    }
 
-   return !g_x11_quit;
+   return !((bool)frontend_driver_get_signal_handler_state());
 }
 
 void x11_check_window(void *data, bool *quit,
@@ -472,7 +472,7 @@ void x11_check_window(void *data, bool *quit,
 
    x11_alive(data);
 
-   *quit = g_x11_quit;
+   *quit = (bool)frontend_driver_get_signal_handler_state();
 }
 
 void x11_get_video_size(void *data, unsigned *width, unsigned *height)
@@ -516,27 +516,9 @@ bool x11_has_focus(void *data)
    return (win == g_x11_win && g_x11_has_focus) || g_x11_true_full;
 }
 
-static void x11_sighandler(int sig)
-{
-   (void)sig;
-   if (g_x11_quit) exit(1);
-   g_x11_quit = 1;
-}
-
-void x11_install_sighandlers(void)
-{
-   struct sigaction sa = {{0}};
-
-   sa.sa_handler = x11_sighandler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-}
-
 bool x11_connect(void)
 {
-   g_x11_quit = 0;
+   frontend_driver_destroy_signal_handler_state();
 
    /* Keep one g_x11_dpy alive the entire process lifetime.
     * This is necessary for nVidia's EGL implementation for now. */
