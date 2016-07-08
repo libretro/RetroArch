@@ -16,6 +16,7 @@
 
 #include <compat/strl.h>
 #include <lists/string_list.h>
+#include <string/stdstring.h>
 
 #include "menu_driver.h"
 #include "menu_display.h"
@@ -90,7 +91,10 @@ void menu_entry_get_label(uint32_t i, char *s, size_t len)
    menu_entry_t entry = {{0}};
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   strlcpy(s, entry.label, len);
+   if (!string_is_empty(entry.rich_label))
+      strlcpy(s, entry.rich_label, len);
+   else
+      strlcpy(s, entry.label, len);
 }
 
 unsigned menu_entry_get_spacing(uint32_t i)
