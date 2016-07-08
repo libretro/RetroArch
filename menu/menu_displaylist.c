@@ -3220,12 +3220,9 @@ static int menu_displaylist_parse_generic(
    bool path_is_compressed, push_dir, filter_ext;
    size_t i, list_size;
    struct string_list *str_list = NULL;
-   core_info_list_t *list       = NULL;
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
    uint32_t hash_label          = msg_hash_calculate(info->label);
-
-   core_info_get_list(&list);
 
    if (!*info->path)
    {
@@ -3469,7 +3466,10 @@ static int menu_displaylist_parse_generic(
    if (BIT32_GET(filebrowser_types,FILEBROWSER_SELECT_CORE))
    {
       enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
+      core_info_list_t *list         = NULL;
       const char *dir                = NULL;
+
+      core_info_get_list(&list);
 
       menu_entries_get_last_stack(&dir, NULL, NULL, &enum_idx, NULL);
 
