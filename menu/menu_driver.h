@@ -379,7 +379,6 @@ typedef struct menu_ctx_bind
    unsigned type;
    size_t idx;
    uint32_t label_hash;
-   uint32_t menu_label_hash;
    int retcode;
 } menu_ctx_bind_t;
 

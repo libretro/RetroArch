@@ -136,7 +136,6 @@ void menu_cbs_init(void *data,
    bind_info.type            = type;
    bind_info.idx             = idx;
    bind_info.label_hash      = label_hash;
-   bind_info.menu_label_hash = menu_label_hash;
 
    menu_driver_ctl(RARCH_MENU_CTL_BIND_INIT, &bind_info);
 }
