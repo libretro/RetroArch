@@ -110,9 +110,6 @@ static void *gfx_ctx_mali_fbdev_init(void *video_driver)
    frontend_driver_install_signal_handler();
 #endif
 
-   /* Disable cursor blinking so it's not visible in RetroArch. */
-   system("setterm -cursor off");
-   
 #ifdef HAVE_EGL
    if (!egl_init_context(&mali->egl, EGL_DEFAULT_DISPLAY,
             &major, &minor, &n, attribs))
@@ -208,7 +205,9 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       egl_report_error();
       goto error;
    }
+#endif
 
+#ifdef HAVE_EGL
    if (!egl_create_surface(&mali->egl, &mali->native_window))
       goto error;
 #endif

@@ -34,6 +34,8 @@ typedef struct
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
+
+   EGLNativeWindowType native_window;
    bool resize;
    unsigned width, height;
 } vivante_ctx_data_t;
@@ -42,12 +44,16 @@ static void gfx_ctx_vivante_destroy(void *data)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 
+   if (viv)
+   {
 #ifdef HAVE_EGL
-   egl_destroy(&viv->egl);
+      egl_destroy(&viv->egl);
 #endif
 
-   viv->resize       = false;
-   free(viv);
+      viv->resize       = false;
+      free(viv);
+   }
+
 }
 
 static void *gfx_ctx_vivante_init(void *video_driver)
@@ -74,11 +80,14 @@ static void *gfx_ctx_vivante_init(void *video_driver)
    if (!viv)
        return NULL;
 
-   (void)video_driver;
-
 #ifdef HAVE_EGL
    frontend_driver_install_signal_handler();
+#endif
 
+   /* Disable cursor blinking so it's not visible in RetroArch. */
+   system("setterm -cursor off");
+
+#ifdef HAVE_EGL
    if (!egl_init_context(&viv->egl, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
@@ -153,7 +162,6 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
       bool fullscreen)
 {
 #ifdef HAVE_EGL
-   EGLNativeWindowType window;
    static const EGLint attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
@@ -178,10 +186,10 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    }
 #endif
 
-   window     = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
+   viv->native_window = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
 
 #ifdef HAVE_EGL
-   if (!egl_create_surface(&viv->egl, window))
+   if (!egl_create_surface(&viv->egl, viv->native_window))
       goto error;
 #endif
 
@@ -230,8 +238,18 @@ static bool gfx_ctx_vivante_has_windowed(void *data)
 static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned swap_interval)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
+
 #ifdef HAVE_EGL
    egl_set_swap_interval(&viv->egl, swap_interval);
+#endif
+}
+
+static void gfx_ctx_vivante_swap_buffers(void *data)
+{
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_swap_buffers(&viv->egl);
 #endif
 }
 
@@ -250,15 +268,6 @@ static void gfx_ctx_vivante_bind_hw_render(void *data, bool enable)
 
 #ifdef HAVE_EGL
    egl_bind_hw_render(&viv->egl, enable);
-#endif
-}
-
-static void gfx_ctx_vivante_swap_buffers(void *data)
-{
-   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
-
-#ifdef HAVE_EGL
-   egl_swap_buffers(&viv->egl);
 #endif
 }
 
