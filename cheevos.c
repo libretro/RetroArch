@@ -2078,7 +2078,7 @@ bool cheevos_load(const void *data)
    const char *json     = NULL;
    retro_time_t timeout = 5000000;
    unsigned game_id     = 0;
-   char url[256];
+   char url[256]        = {0};
    settings_t *settings = config_get_ptr();
    const struct retro_game_info *info = (const struct retro_game_info*)data;
    
@@ -2165,8 +2165,7 @@ bool cheevos_load(const void *data)
    RARCH_LOG("CHEEVOS this game doesn't feature achievements\n");
    return false;
    
-   found:
-   
+found:
    if (!cheevos_get_by_game_id(&json, game_id, &timeout))
    {
       if (!cheevos_parse(json))
