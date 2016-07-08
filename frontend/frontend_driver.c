@@ -344,6 +344,14 @@ int frontend_driver_get_signal_handler_state(void)
    return frontend->get_signal_handler_state();
 }
 
+void frontend_driver_set_signal_handler_state(int value)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->set_signal_handler_state)
+      return;
+   frontend->set_signal_handler_state(value);
+}
+
 void frontend_driver_destroy_signal_handler_state(void)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();

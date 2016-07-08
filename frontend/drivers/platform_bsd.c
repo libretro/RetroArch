@@ -39,6 +39,11 @@ static int frontend_bsd_get_signal_handler_state(void)
    return (int)bsd_sighandler_quit;
 }
 
+static void frontend_bsd_set_signal_handler_state(int value)
+{
+   bsd_sighandler_quit = value;
+}
+
 static void frontend_bsd_destroy_signal_handler_state(void)
 {
    bsd_sighandler_quit = 0;
@@ -64,6 +69,7 @@ frontend_ctx_driver_t frontend_ctx_bsd = {
    NULL,                         /* get_mem_free */
    frontend_bsd_install_signal_handler,
    frontend_bsd_get_signal_handler_state,
+   frontend_bsd_set_signal_handler_state,
    frontend_bsd_destroy_signal_handler_state,
    "bsd",
 };

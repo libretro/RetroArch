@@ -1988,6 +1988,11 @@ static int frontend_linux_get_signal_handler_state(void)
    return (int)linux_sighandler_quit;
 }
 
+static void frontend_linux_set_signal_handler_state(int value)
+{
+   linux_sighandler_quit = value;
+}
+
 static void frontend_linux_destroy_signal_handler_state(void)
 {
    linux_sighandler_quit = 0;
@@ -2031,6 +2036,7 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_mem_used,
    frontend_linux_install_signal_handlers,
    frontend_linux_get_signal_handler_state,
+   frontend_linux_set_signal_handler_state,
    frontend_linux_destroy_signal_handler_state,
 #ifdef ANDROID
    "android"

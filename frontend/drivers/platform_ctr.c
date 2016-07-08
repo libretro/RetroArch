@@ -282,6 +282,7 @@ frontend_ctx_driver_t frontend_ctx_ctr = {
    NULL,                         /* get_mem_free */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_signal_handler_state */
+   NULL,                         /* set_signal_handler_state */
    NULL,                         /* destroy_signal_handler_state */
    "ctr",
 };

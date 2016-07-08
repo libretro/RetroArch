@@ -335,6 +335,7 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_get_mem_used,
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
+   NULL,                            /* set_sighandler_state */
    NULL,                            /* destroy_sighandler_state */
    "win32"
 };

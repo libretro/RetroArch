@@ -544,6 +544,7 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* get_mem_free */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
+   NULL,                         /* set_sighandler_state */
    NULL,                         /* destroy_sighandler_state */
    "ps3",
 };

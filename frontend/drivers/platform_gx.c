@@ -528,6 +528,7 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_mem_used,
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
+   NULL,                            /* set_sighandler_state */
    NULL,                            /* destroy_signal_handler_state */
    "gx",
 };
