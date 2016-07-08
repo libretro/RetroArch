@@ -1743,7 +1743,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash, uint32_t menu_label_hash)
+      uint32_t label_hash)
 {
    if (!cbs)
       return -1;
@@ -1773,30 +1773,6 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
                   menu_action_setting_disp_set_label_debug_information);
             return 0;
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_achievement_information);
-            return 0;
-         default:
-            break;
-      }
-   }
-   else
-   {
-      switch (menu_label_hash)
-      {
-         case MENU_LABEL_LOAD_CONTENT_HISTORY:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_content_history);
-            return 0;
-         case MENU_LABEL_SYSTEM_INFORMATION:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_system_information);
-            return 0;
-         case MENU_LABEL_DEBUG_INFORMATION:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_debug_information);
-            return 0;
-         case MENU_LABEL_ACHIEVEMENT_LIST:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_achievement_information);
             return 0;
