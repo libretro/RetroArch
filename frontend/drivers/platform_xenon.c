@@ -86,5 +86,6 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* parse_drive_list */
    NULL,                         /* get_mem_total */
    NULL,                         /* install_signal_handler */
+   NULL,                         /* get_sighandler_state */
    "xenon",
 };

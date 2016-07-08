@@ -83,6 +83,7 @@ typedef struct frontend_ctx_driver
    uint64_t (*get_total_mem)(void);
    uint64_t (*get_used_mem)(void);
    void (*install_signal_handler)(void);
+   int (*get_signal_handler_state)(void);
 
    const char *ident;
 

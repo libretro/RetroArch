@@ -335,4 +335,12 @@ void frontend_driver_install_sighandler(void)
       return;
    frontend->install_signal_handler();
 }
+
+int frontend_driver_get_sighandler_state(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_signal_handler_state)
+      return -1;
+   return frontend->get_signal_handler_state();
+}
 #endif

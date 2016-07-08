@@ -1409,5 +1409,6 @@ frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* get_mem_total */
    NULL,                         /* get_mem_free */
    NULL,                         /* install_signal_handler */
+   NULL,                         /* get_sighandler_state */
    "xdk",
 };

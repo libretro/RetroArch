@@ -1996,6 +1996,7 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_mem_total,
    frontend_linux_get_mem_used,
    NULL,                         /* install_signal_handler */
+   NULL,                         /* get_sighandler_state */
 #ifdef ANDROID
    "android"
 #else
