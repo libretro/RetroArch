@@ -3204,6 +3204,15 @@ static int menu_displaylist_parse_options_remappings(
    return 0;
 }
 
+enum filebrowser_enums
+{
+   FILEBROWSER_NONE = 0,
+   FILEBROWSER_SELECT_DIR,
+   FILEBROWSER_SELECT_FILE
+};
+
+static unsigned filebrowser_types = 0;
+
 static int menu_displaylist_parse_generic(
       menu_displaylist_info_t *info, bool horizontal)
 {
@@ -3823,6 +3832,18 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ARCHIVE_ACTION:
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         break;
+      default:
+         break;
+   }
+
+   switch (type)
+   {
+      case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
+         filebrowser_types = FILEBROWSER_SELECT_DIR;
+         break;
+      case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
+         filebrowser_types = FILEBROWSER_SELECT_FILE;
          break;
       default:
          break;
