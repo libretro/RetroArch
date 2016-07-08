@@ -2246,6 +2246,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             info.list           = menu_stack;
             info.directory_ptr  = selection;
             info.type           = type;
+            info.enum_idx       = MSG_UNKNOWN;
             strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
             strlcpy(info.label, name, sizeof(info.label));
 
