@@ -24,7 +24,6 @@
 
 #include <sys/poll.h>
 #include <unistd.h>
-#include <signal.h>
 
 #include <wayland-client.h>
 #ifdef HAVE_EGL
@@ -34,6 +33,7 @@
 #include <string/stdstring.h>
 
 #include "../../driver.h"
+#include "../../frontend/frontend_driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
 #ifdef HAVE_EGL
@@ -42,8 +42,6 @@
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../common/gl_common.h"
 #endif
-
-static volatile sig_atomic_t wl_quit = 0;
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -80,25 +78,6 @@ static enum gfx_ctx_api wl_api;
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
-
-static void wl_sighandler(int sig)
-{
-   (void)sig;
-   if (wl_quit) exit(1);
-   wl_quit = 1;
-}
-
-static void wl_install_sighandler(void)
-{
-   struct sigaction sa;
-
-   sa.sa_sigaction = NULL;
-   sa.sa_handler   = wl_sighandler;
-   sa.sa_flags     = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   sigaction(SIGINT, &sa, NULL);
-   sigaction(SIGTERM, &sa, NULL);
-}
 
 /* Shell surface callbacks. */
 static void shell_surface_handle_ping(void *data,
@@ -329,7 +308,7 @@ static void flush_wayland_fd(gfx_ctx_wayland_data_t *wl)
       if (fd.revents & (POLLERR | POLLHUP))
       {
          close(wl->fd);
-         wl_quit = true;
+         frontend_driver_set_signal_handler_state(1);
       }
 
       if (fd.revents & POLLIN)
@@ -376,7 +355,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   *quit = wl_quit;
+   *quit = (bool)frontend_driver_get_signal_handler_state();;
 }
 
 static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
@@ -555,7 +534,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
    }
 #endif
 
-   wl_quit = 0;
+   frontend_driver_destroy_signal_handler_state();
 
    wl->dpy = wl_display_connect(NULL);
    wl->buffer_scale = 1;
@@ -566,7 +545,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
       goto error;
    }
 
-   wl_install_sighandler();
+   frontend_driver_install_signal_handler();
 
    wl->registry = wl_display_get_registry(wl->dpy);
    wl_registry_add_listener(wl->registry, &registry_listener, wl);
