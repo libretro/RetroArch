@@ -3209,7 +3209,8 @@ enum filebrowser_enums
    FILEBROWSER_NONE = 0,
    FILEBROWSER_SELECT_DIR,
    FILEBROWSER_SELECT_FILE,
-   FILEBROWSER_SELECT_CORE
+   FILEBROWSER_SELECT_CORE,
+   FILEBROWSER_SELECT_COLLECTION
 };
 
 static unsigned filebrowser_types = 0;
@@ -3393,25 +3394,15 @@ static int menu_displaylist_parse_generic(
 
          file_type = is_dir ? FILE_TYPE_DIRECTORY : FILE_TYPE_CORE;
       }
-      else
+      else if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION))
       {
-         /* Push type further down in the chain.
-          * Needed for shader manager currently. */
-         switch (hash_label)
-         {
-            case MENU_LABEL_CONTENT_COLLECTION_LIST:
-               if (is_dir && !horizontal)
-                  file_type = FILE_TYPE_DIRECTORY;
-               else if (is_dir && horizontal)
-                  continue;
-               else
-                  file_type = FILE_TYPE_PLAYLIST_COLLECTION;
-               break;
-            default:
-               break;
-         }
+         if (is_dir && !horizontal)
+            file_type = FILE_TYPE_DIRECTORY;
+         else if (is_dir && horizontal)
+            continue;
+         else
+            file_type = FILE_TYPE_PLAYLIST_COLLECTION;
       }
-
 
       if (settings->multimedia.builtin_mediaplayer_enable ||
             settings->multimedia.builtin_imageviewer_enable)
@@ -3859,6 +3850,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          BIT32_CLEAR_ALL(filebrowser_types);
          BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_CORE);
          break;
+      case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
+         BIT32_CLEAR_ALL(filebrowser_types);
+         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION);
+         break;
       case DISPLAYLIST_GENERIC:
          break;
       default:
@@ -3876,6 +3871,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
       case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
       case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:
+      case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
       case DISPLAYLIST_GENERIC:
          {
             menu_ctx_list_t list_info;
