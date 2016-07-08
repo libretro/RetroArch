@@ -2096,6 +2096,12 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_INTERNAL_MEMORY:
+         return "Internal Memory";
+      case MSG_EXTERNAL_APPLICATION_DIR:
+         return "External Application Dir";
+      case MSG_APPLICATION_DIR:
+         return "Application Dir";
       case MSG_PROGRAM:
          return "RetroArch";
       case MSG_LIBRETRO_FRONTEND:

@@ -1831,15 +1831,19 @@ static int frontend_android_parse_drive_list(void *data)
 {
    file_list_t *list = (file_list_t*)data;
 
-   /* FILE_TYPE_DIRECTORY is not working with labels, placeholders for now */
    menu_entries_add_enum(list,
-         app_dir, "Application Dir", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         app_dir,
+         msg_hash_to_str(MSG_APPLICATION_DIR),
+         MSG_APPLICATION_DIR, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         internal_storage_app_path, "External Application Dir", MSG_UNKNOWN,
+         internal_storage_app_path,
+         msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
+         MSG_EXTERNAL_APPLICATION_DIR,
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_add_enum(list,
-         internal_storage_path, "Internal Memory",
-         MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         internal_storage_path,
+         msg_hash_to_str(MSG_INTERNAL_MEMORY),
+         MSG_INTERNAL_MEMORY, FILE_TYPE_DIRECTORY, 0, 0);
 
    menu_entries_add_enum(list, "/", "",
          MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);

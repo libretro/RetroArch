@@ -36,6 +36,24 @@ static int action_bind_label_information(char *s, size_t len)
    return 0;
 }
 
+static int action_bind_label_internal_memory(char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MSG_INTERNAL_MEMORY), len);
+   return 0;
+}
+
+static int action_bind_label_external_application_dir(char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR), len);
+   return 0;
+}
+
+static int action_bind_label_application_dir(char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MSG_APPLICATION_DIR), len);
+   return 0;
+}
+
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -48,6 +66,15 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MSG_INTERNAL_MEMORY:
+            BIND_ACTION_LABEL(cbs, action_bind_label_internal_memory);
+            break;
+         case MSG_APPLICATION_DIR:
+            BIND_ACTION_LABEL(cbs, action_bind_label_application_dir);
+            break;
+         case MSG_EXTERNAL_APPLICATION_DIR:
+            BIND_ACTION_LABEL(cbs, action_bind_label_external_application_dir);
+            break;
          case MENU_ENUM_LABEL_INFORMATION:
             BIND_ACTION_LABEL(cbs, action_bind_label_information);
             break;
