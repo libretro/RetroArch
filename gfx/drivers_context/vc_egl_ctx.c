@@ -86,7 +86,7 @@ static void gfx_ctx_vc_check_window(void *data, bool *quit,
    (void)height;
 
    *resize = false;
-   *quit   = g_egl_quit;
+   *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
 
 static bool gfx_ctx_vc_set_resize(void *data, unsigned width, unsigned height)
@@ -317,7 +317,7 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
    if (g_egl_inited)
       return false;
 
-   egl_install_sighandlers();
+   frontend_driver_install_signal_handler();
    gfx_ctx_vc_set_swap_interval(&vc->egl, vc->egl.interval);
 
    g_egl_inited = true;

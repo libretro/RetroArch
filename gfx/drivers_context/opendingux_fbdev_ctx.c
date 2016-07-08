@@ -16,6 +16,7 @@
 
 #include <signal.h>
 
+#include "../../frontend/frontend_driver.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
@@ -80,7 +81,7 @@ static void *gfx_ctx_opendingux_init(void *video_driver)
    (void)video_driver;
 
 #ifdef HAVE_EGL
-   egl_install_sighandlers();
+   frontend_driver_install_signal_handler();
 
    if (!egl_init_context(&viv->egl, EGL_DEFAULT_DISPLAY,
             &major, &minor,
@@ -127,7 +128,7 @@ static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
       *resize = true;
    }
 
-   *quit = g_egl_quit;
+   *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
 
 static bool gfx_ctx_opendingux_set_resize(void *data,
