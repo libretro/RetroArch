@@ -61,7 +61,7 @@ static void menu_action_setting_disp_set_label_cheat_num_passes(
    snprintf(s, len, "%u", cheat_manager_get_buf_size());
 }
 
-static void menu_action_setting_disp_set_label_cheevos_entry(
+static void menu_action_setting_disp_set_label_cheevos_locked_entry(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -72,7 +72,21 @@ static void menu_action_setting_disp_set_label_cheevos_entry(
 {
    *w = 19;
    strlcpy(s2, path, len2);
-   strlcpy(s, "", len);
+   strlcpy(s, "Locked", len);
+}
+
+static void menu_action_setting_disp_set_label_cheevos_unlocked_entry(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   *w = 19;
+   strlcpy(s2, path, len2);
+   strlcpy(s, "Unlocked", len);
 }
 
 static void menu_action_setting_disp_set_label_remap_file_load(
@@ -1738,9 +1752,13 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
-         case MENU_ENUM_LABEL_CHEEVOS_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
             BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_cheevos_entry);
+                  menu_action_setting_disp_set_label_cheevos_unlocked_entry);
+            return 0;
+         case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_cheevos_locked_entry);
             return 0;
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
             BIND_ACTION_GET_VALUE(cbs,

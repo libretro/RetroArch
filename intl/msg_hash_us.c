@@ -1184,8 +1184,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "input_libretro_device_p%u";
       case MENU_ENUM_LABEL_RUN:
          return "collection";
-      case MENU_ENUM_LABEL_CHEEVOS_ENTRY:
-         return "cheevos_entry";
+      case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
+         return "cheevos_locked_entry";
+      case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
+         return "cheevos_unlocked_entry";
       case MENU_ENUM_LABEL_FILEBROWSER_ENTRY:
          return "filebrowser_entry";
       case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
