@@ -33,6 +33,7 @@ typedef struct
 {
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
+   EGLNativeWindowType native_window;
 #endif
    bool resize;
    unsigned width, height;
@@ -42,15 +43,15 @@ static void gfx_ctx_opendingux_destroy(void *data)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
 
-   if (!viv)
-      return;
-
+   if (viv)
+   {
 #ifdef HAVE_EGL
-   egl_destroy(&viv->egl);
+      egl_destroy(&viv->egl);
 #endif
 
-   viv->resize       = false;
-   free(viv);
+      viv->resize       = false;
+      free(viv);
+   }
 }
 
 static void *gfx_ctx_opendingux_init(void *video_driver)
@@ -78,8 +79,6 @@ static void *gfx_ctx_opendingux_init(void *video_driver)
    if (!viv)
       return NULL;
    
-   (void)video_driver;
-
 #ifdef HAVE_EGL
    frontend_driver_install_signal_handler();
 
@@ -146,8 +145,6 @@ static void gfx_ctx_opendingux_update_window_title(void *data)
    char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
 
-   (void)data;
-
    video_monitor_get_fps(buf, sizeof(buf),
          buf_fps, sizeof(buf_fps));
    if (settings->fps_show)
@@ -159,7 +156,6 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
       bool fullscreen)
 {
 #ifdef HAVE_EGL
-   EGLNativeWindowType window;
    static const EGLint attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
@@ -183,8 +179,8 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
       goto error;
    }
 
-   window = 0;
-   if (!egl_create_surface(&viv->egl, window))
+   viv->native_window = 0;
+   if (!egl_create_surface(&viv->egl, viv->native_window))
       goto error;
 #endif
 

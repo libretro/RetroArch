@@ -52,6 +52,8 @@ typedef struct
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
+   EGL_DISPMANX_WINDOW_T native_window;
+
    bool resize;
    unsigned fb_width, fb_height;
 
@@ -129,10 +131,12 @@ static void gfx_ctx_vc_get_video_size(void *data,
 
       /*  Calculate source and destination aspect ratios. */
 
-      float srcAspect = (float)settings->video.fullscreen_x / (float)settings->video.fullscreen_y;
+      float srcAspect = (float)settings->video.fullscreen_x 
+         / (float)settings->video.fullscreen_y;
       float dstAspect = (float)vc->fb_width / (float)vc->fb_height;
 
-      /* If source and destination aspect ratios are not equal correct source width. */
+      /* If source and destination aspect ratios 
+       * are not equal correct source width. */
       if (srcAspect != dstAspect)
          *width = (unsigned)(settings->video.fullscreen_y * dstAspect);
       else
@@ -152,7 +156,6 @@ static void *gfx_ctx_vc_init(void *video_driver)
 {
    VC_DISPMANX_ALPHA_T alpha;
    EGLint n, major, minor;
-   static EGL_DISPMANX_WINDOW_T nativewindow;
 
    DISPMANX_ELEMENT_HANDLE_T dispman_element;
    DISPMANX_DISPLAY_HANDLE_T dispman_display;
@@ -202,7 +205,8 @@ static void *gfx_ctx_vc_init(void *video_driver)
       goto error;
    }
 
-   if (!egl_create_context(&vc->egl, (vc_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL))
+   if (!egl_create_context(&vc->egl, (vc_api == GFX_CTX_OPENGL_ES_API) 
+            ? context_attributes : NULL))
    {
       egl_report_error();
       goto error;
@@ -257,7 +261,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
       0 /*layer*/, &dst_rect, 0 /*src*/,
       &src_rect, DISPMANX_PROTECTION_NONE, &alpha, 0 /*clamp*/, DISPMANX_NO_ROTATE);
 
-   nativewindow.element = dispman_element;
+   vc->native_window.element = dispman_element;
 
    /* Use dispmanx upscaling if fullscreen_x and fullscreen_y are set. */
 
@@ -269,25 +273,26 @@ static void *gfx_ctx_vc_init(void *video_driver)
        * can be used to stretch video output. */
 
       /* Calculate source and destination aspect ratios. */
-      float srcAspect = (float)settings->video.fullscreen_x / (float)settings->video.fullscreen_y;
+      float srcAspect = (float)settings->video.fullscreen_x 
+         / (float)settings->video.fullscreen_y;
       float dstAspect = (float)vc->fb_width / (float)vc->fb_height;
 
       /* If source and destination aspect ratios are not equal correct source width. */
       if (srcAspect != dstAspect)
-         nativewindow.width = (unsigned)(settings->video.fullscreen_y * dstAspect);
+         vc->native_window.width = (unsigned)(settings->video.fullscreen_y * dstAspect);
       else
-         nativewindow.width = settings->video.fullscreen_x;
-      nativewindow.height = settings->video.fullscreen_y;
+         vc->native_window.width = settings->video.fullscreen_x;
+      vc->native_window.height = settings->video.fullscreen_y;
    }
    else
    {
-      nativewindow.width = vc->fb_width;
-      nativewindow.height = vc->fb_height;
+      vc->native_window.width = vc->fb_width;
+      vc->native_window.height = vc->fb_height;
    }
    vc_dispmanx_update_submit_sync(dispman_update);
 
 #ifdef HAVE_EGL
-   if (!egl_create_surface(&vc->egl, &nativewindow))
+   if (!egl_create_surface(&vc->egl, &vc->native_window))
       goto error;
 #endif
 
