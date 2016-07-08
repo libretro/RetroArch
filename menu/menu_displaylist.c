@@ -3208,7 +3208,8 @@ enum filebrowser_enums
 {
    FILEBROWSER_NONE = 0,
    FILEBROWSER_SELECT_DIR,
-   FILEBROWSER_SELECT_FILE
+   FILEBROWSER_SELECT_FILE,
+   FILEBROWSER_SELECT_CORE
 };
 
 static unsigned filebrowser_types = 0;
@@ -3263,7 +3264,7 @@ static int menu_displaylist_parse_generic(
             MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
             FILE_TYPE_USE_DIRECTORY, 0 ,0);
 
-   if (!horizontal && hash_label != MENU_LABEL_CORE_LIST)
+   if (!horizontal && !(BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_CORE)))
    {
       char out_dir[PATH_MAX_LENGTH] = {0};
       fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
@@ -3304,7 +3305,7 @@ static int menu_displaylist_parse_generic(
                MENU_ENUM_LABEL_NO_ITEMS,
                MENU_SETTING_NO_ITEM, 0, 0);
 #ifdef HAVE_NETWORKING
-         if (hash_label == MENU_LABEL_CORE_LIST)
+         if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_CORE))
             menu_entries_add_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
                   msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
@@ -3371,42 +3372,49 @@ static int menu_displaylist_parse_generic(
       if (*info->path && !path_is_compressed)
          path = path_basename(path);
 
-      /* Push type further down in the chain.
-       * Needed for shader manager currently. */
-      switch (hash_label)
+      if (BIT32_GET(filebrowser_types,FILEBROWSER_SELECT_CORE))
       {
-         case MENU_LABEL_CONTENT_COLLECTION_LIST:
-            if (is_dir && !horizontal)
-               file_type = FILE_TYPE_DIRECTORY;
-            else if (is_dir && horizontal)
-               continue;
-            else
-               file_type = FILE_TYPE_PLAYLIST_COLLECTION;
-            break;
-         case MENU_LABEL_CORE_LIST:
 #ifndef HAVE_DYNAMIC
-            if (frontend_driver_has_fork())
+         if (frontend_driver_has_fork())
+         {
+            char salamander_name[PATH_MAX_LENGTH] = {0};
+
+            if (frontend_driver_get_salamander_basename(
+                     salamander_name, sizeof(salamander_name)))
             {
-               char salamander_name[PATH_MAX_LENGTH] = {0};
-
-               if (frontend_driver_get_salamander_basename(
-                        salamander_name, sizeof(salamander_name)))
-               {
-                  if (string_is_equal_noncase(path, salamander_name))
-                     continue;
-               }
-
-               if (is_dir)
+               if (string_is_equal_noncase(path, salamander_name))
                   continue;
             }
-#endif
-            /* Compressed cores are unsupported */
-            if (file_type == FILE_TYPE_CARCHIVE)
-               continue;
 
-            file_type = is_dir ? FILE_TYPE_DIRECTORY : FILE_TYPE_CORE;
-            break;
+            if (is_dir)
+               continue;
+         }
+#endif
+         /* Compressed cores are unsupported */
+         if (file_type == FILE_TYPE_CARCHIVE)
+            continue;
+
+         file_type = is_dir ? FILE_TYPE_DIRECTORY : FILE_TYPE_CORE;
       }
+      else
+      {
+         /* Push type further down in the chain.
+          * Needed for shader manager currently. */
+         switch (hash_label)
+         {
+            case MENU_LABEL_CONTENT_COLLECTION_LIST:
+               if (is_dir && !horizontal)
+                  file_type = FILE_TYPE_DIRECTORY;
+               else if (is_dir && horizontal)
+                  continue;
+               else
+                  file_type = FILE_TYPE_PLAYLIST_COLLECTION;
+               break;
+            default:
+               break;
+         }
+      }
+
 
       if (settings->multimedia.builtin_mediaplayer_enable ||
             settings->multimedia.builtin_imageviewer_enable)
@@ -3458,40 +3466,36 @@ static int menu_displaylist_parse_generic(
       return 0;
    }
 
-   switch (hash_label)
+   if (BIT32_GET(filebrowser_types,FILEBROWSER_SELECT_CORE))
    {
-      case MENU_LABEL_CORE_LIST:
-         {
-            enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-            const char *dir                = NULL;
+      enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
+      const char *dir                = NULL;
 
-            menu_entries_get_last_stack(&dir, NULL, NULL, &enum_idx, NULL);
+      menu_entries_get_last_stack(&dir, NULL, NULL, &enum_idx, NULL);
 
-            list_size = file_list_get_size(info->list);
+      list_size = file_list_get_size(info->list);
 
-            for (i = 0; i < list_size; i++)
-            {
-               char core_path[PATH_MAX_LENGTH]    = {0};
-               char display_name[PATH_MAX_LENGTH] = {0};
-               unsigned type                      = 0;
-               const char *path                   = NULL;
+      for (i = 0; i < list_size; i++)
+      {
+         char core_path[PATH_MAX_LENGTH]    = {0};
+         char display_name[PATH_MAX_LENGTH] = {0};
+         unsigned type                      = 0;
+         const char *path                   = NULL;
 
-               menu_entries_get_at_offset(info->list,
-                     i, &path, NULL, &type, NULL,
-                     NULL);
+         menu_entries_get_at_offset(info->list,
+               i, &path, NULL, &type, NULL,
+               NULL);
 
-               if (type != FILE_TYPE_CORE)
-                  continue;
+         if (type != FILE_TYPE_CORE)
+            continue;
 
-               fill_pathname_join(core_path, dir, path, sizeof(core_path));
+         fill_pathname_join(core_path, dir, path, sizeof(core_path));
 
-               if (core_info_list_get_display_name(list,
-                        core_path, display_name, sizeof(display_name)))
-                  menu_entries_set_alt_at_offset(info->list, i, display_name);
-            }
-            info->need_sort = true;
-         }
-         break;
+         if (core_info_list_get_display_name(list,
+                  core_path, display_name, sizeof(display_name)))
+            menu_entries_set_alt_at_offset(info->list, i, display_name);
+      }
+      info->need_sort = true;
    }
 
    return 0;
@@ -3851,6 +3855,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          BIT32_CLEAR_ALL(filebrowser_types);
          BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_FILE);
          break;
+      case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:
+         BIT32_CLEAR_ALL(filebrowser_types);
+         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_CORE);
+         break;
       case DISPLAYLIST_GENERIC:
          break;
       default:
@@ -3867,6 +3875,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
       case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
+      case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:
       case DISPLAYLIST_GENERIC:
          {
             menu_ctx_list_t list_info;
