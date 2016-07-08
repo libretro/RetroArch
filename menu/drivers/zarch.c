@@ -518,13 +518,15 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, struct zui_tabbed *tabbe
 
       for (i = zui->recent_dlist_first; i < size; ++i)
       {
-         menu_entry_t entry;
+         char rich_label[PATH_MAX_LENGTH] = {0};
+         menu_entry_t entry               = {{0}};
 
          menu_entry_get(&entry, 0, i, NULL, true);
+         menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
 
          if (zarch_zui_list_item(zui, tabbed, 0, 
                   tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
-                  entry.path, i, entry.value, gamepad_index == (signed)i))
+                  rich_label, i, entry.value, gamepad_index == (signed)i))
          {
             if (menu_entry_action(&entry, i, MENU_ACTION_OK))
                return 1;

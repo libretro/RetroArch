@@ -674,7 +674,7 @@ end:
 
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
-   menu_entry_t entry;
+   menu_entry_t entry   = {{0}};
    char         *tmp    = NULL;
    settings_t *settings = config_get_ptr();
    xmb_handle_t *xmb    = (xmb_handle_t*)data;
@@ -1641,9 +1641,10 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
    for (; i < end; i++)
    {
-      menu_entry_t entry;
+      menu_entry_t entry          = {{0}};
       float icon_x, icon_y;
       menu_animation_ctx_ticker_t ticker;
+      char ticker_str[PATH_MAX_LENGTH] = {0};
       char name[PATH_MAX_LENGTH]  = {0};
       char value[PATH_MAX_LENGTH] = {0};
       const float half_size       = xmb->icon.size / 2.0f;
@@ -1735,10 +1736,12 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             ticker_limit = 70;
       }
 
+      menu_entry_get_rich_label(i, ticker_str, sizeof(ticker_str));
+
       ticker.s        = name;
       ticker.len      = ticker_limit;
       ticker.idx      = *frame_count / 20;
-      ticker.str      = entry.path;
+      ticker.str      = ticker_str;
       ticker.selected = (i == current);
 
       menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);

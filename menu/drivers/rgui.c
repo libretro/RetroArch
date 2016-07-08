@@ -608,7 +608,7 @@ static void rgui_render(void *data)
       type_str_buf[0]    = '\0';
 
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
-      menu_entry_get_path(i, entry_path, sizeof(entry_path));
+      menu_entry_get_rich_label(i, entry_path, sizeof(entry_path));
 
       ticker.s        = entry_title_buf;
       ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);

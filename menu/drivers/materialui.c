@@ -623,8 +623,9 @@ static void mui_render_menu_list(mui_handle_t *mui,
    {
       int y;
       size_t selection;
-      bool entry_selected;
-      menu_entry_t entry;
+      char rich_label[PATH_MAX_LENGTH] = {0};
+      bool entry_selected = false;
+      menu_entry_t entry  = {{0}};
 
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
@@ -636,12 +637,13 @@ static void mui_render_menu_list(mui_handle_t *mui,
          continue;
 
       menu_entry_get(&entry, 0, i, NULL, true);
+      menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
 
       entry_selected = selection == i;
 
       mui_render_label_value(mui, y, width, height, *frame_count / 20,
          entry_selected ? hover_color : normal_color, entry_selected,
-         entry.path, entry.value, pure_white);
+         rich_label, entry.value, pure_white);
    }
 }
 
