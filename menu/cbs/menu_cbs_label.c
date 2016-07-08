@@ -34,6 +34,16 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
+   if (cbs->enum_idx != MSG_UNKNOWN)
+   {
+      switch (cbs->enum_idx)
+      {
+         case 0:
+         default:
+            break;
+      }
+   }
+
    BIND_ACTION_LABEL(cbs, action_bind_label_generic);
 
    return -1;
