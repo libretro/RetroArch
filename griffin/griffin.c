@@ -722,6 +722,8 @@ FRONTEND
 #include "../frontend/drivers/platform_qnx.c"
 #elif defined(__linux__)
 #include "../frontend/drivers/platform_linux.c"
+#elif defined(BSD)
+#include "../frontend/drivers/platform_bsd.c"
 #endif
 #include "../frontend/drivers/platform_null.c"
 
