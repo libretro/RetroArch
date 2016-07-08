@@ -83,7 +83,10 @@ void menu_entry_get_path(uint32_t i, char *s, size_t len)
    menu_entry_t entry = {{0}};
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   strlcpy(s, entry.path, len);
+   if (!string_is_empty(entry.rich_label))
+      strlcpy(s, entry.rich_label, len);
+   else
+      strlcpy(s, entry.path, len);
 }
 
 void menu_entry_get_label(uint32_t i, char *s, size_t len)
@@ -91,10 +94,7 @@ void menu_entry_get_label(uint32_t i, char *s, size_t len)
    menu_entry_t entry = {{0}};
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   if (!string_is_empty(entry.rich_label))
-      strlcpy(s, entry.rich_label, len);
-   else
-      strlcpy(s, entry.label, len);
+   strlcpy(s, entry.label, len);
 }
 
 unsigned menu_entry_get_spacing(uint32_t i)
