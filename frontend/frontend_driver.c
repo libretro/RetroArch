@@ -324,4 +324,12 @@ uint64_t frontend_driver_get_used_memory(void)
       return 0;
    return frontend->get_used_mem();
 }
+
+void frontend_driver_install_sighandler(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->install_signal_handler)
+      return;
+   frontend->install_signal_handler();
+}
 #endif

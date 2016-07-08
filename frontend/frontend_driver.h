@@ -82,6 +82,7 @@ typedef struct frontend_ctx_driver
    int  (*parse_drive_list)(void*);
    uint64_t (*get_total_mem)(void);
    uint64_t (*get_used_mem)(void);
+   void (*install_signal_handler)(void);
 
    const char *ident;
 
@@ -158,6 +159,8 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len);
 uint64_t frontend_driver_get_total_memory(void);
 
 uint64_t frontend_driver_get_used_memory(void);
+
+void frontend_driver_install_sighandler(void);
 
 RETRO_END_DECLS
 

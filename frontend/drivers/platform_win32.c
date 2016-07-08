@@ -333,5 +333,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_parse_drive_list,
    frontend_win32_get_mem_total,
    frontend_win32_get_mem_used,
+   NULL,                            /* install_signal_handler */
    "win32"
 };
