@@ -3709,7 +3709,7 @@ static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 
 void menu_displaylist_reset_filebrowser(void)
 {
-   filebrowser_types = 0;
+   BIT32_CLEAR_ALL(filebrowser_types);
 }
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
@@ -3844,11 +3844,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    switch (type)
    {
       case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
-         filebrowser_types = 0;
+         BIT32_CLEAR_ALL(filebrowser_types);
          BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_DIR);
          break;
       case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
-         filebrowser_types = 0;
+         BIT32_CLEAR_ALL(filebrowser_types);
          BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_FILE);
          break;
       case DISPLAYLIST_GENERIC:
