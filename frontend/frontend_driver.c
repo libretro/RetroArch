@@ -43,7 +43,7 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(__linux__)
    &frontend_ctx_linux,
 #endif
-#if defined(BSD)
+#if defined(BSD) && !defined(__MACH__)
    &frontend_ctx_bsd,
 #endif
 #if defined(PSP) || defined(VITA)
