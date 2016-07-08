@@ -111,6 +111,9 @@ typedef struct menu_file_list_cbs
    int (*action_up)(unsigned type, const char *label);
    const char *action_up_ident;
 
+   int (*action_label)(char *s, size_t len);
+   const char *action_label_ident;
+
    int (*action_down)(unsigned type, const char *label);
    const char *action_down_ident;
 

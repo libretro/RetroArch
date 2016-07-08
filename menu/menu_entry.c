@@ -292,6 +292,10 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                entry_label, path,
                entry->path, sizeof(entry->path));
       }
+
+      if (cbs && cbs->action_label)
+         cbs->action_label(entry->rich_label,
+               sizeof(entry->rich_label));
    }
 
    entry->idx         = i;
