@@ -725,5 +725,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_mem_used,
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
+   NULL,                         /* destroy_signal_handler_state */
    "darwin",
 };
