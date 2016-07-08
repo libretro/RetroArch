@@ -227,6 +227,16 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_FILE_BROWSER_SELECT_DIR:
+         if (path)
+            strlcpy(menu->deferred_path, path,
+                  sizeof(menu->deferred_path));
+
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_label         = label;
+         dl_type                 = DISPLAYLIST_FILE_BROWSER_SELECT_DIR;
+         break;
       case ACTION_OK_DL_PUSH_DEFAULT:
          info.type          = type;
          info.directory_ptr = idx;
@@ -267,14 +277,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr = idx;
          info_path          = global->record.config_dir;
          info_label         = label;
-         dl_type                 = DISPLAYLIST_GENERIC;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.menu_content;
          info_label         = label;
-         dl_type                 = DISPLAYLIST_GENERIC;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
          info.type          = type;
@@ -375,7 +385,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr = idx;
          info_path          = action_path;
          info_label         = menu_label;
-         dl_type                 = DISPLAYLIST_GENERIC;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          fill_pathname_join(tmp,
@@ -2338,6 +2348,7 @@ static int action_ok_shader_apply_changes(const char *path,
 static int action_ok_lookup_setting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   menu_displaylist_reset_filebrowser();
    return menu_setting_set(type, label, MENU_ACTION_OK, false);
 }
 
@@ -2661,6 +2672,13 @@ int action_ok_push_generic_list(const char *path,
 {
    return generic_action_ok_displaylist_push(path, label, type, idx,
          entry_idx, ACTION_OK_DL_GENERIC);
+}
+
+int action_ok_push_filebrowser_list_dir_select(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, label, type, idx,
+         entry_idx, ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
 }
 
 static int action_ok_push_default(const char *path,
@@ -2997,7 +3015,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
    if (menu_setting_get_browser_selection_type(cbs->setting) == ST_DIR)
    {
-      BIND_ACTION_OK(cbs, action_ok_push_generic_list);
+      BIND_ACTION_OK(cbs, action_ok_push_filebrowser_list_dir_select);
       return 0;
    }
 

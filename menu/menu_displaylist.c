@@ -3235,8 +3235,7 @@ static int menu_displaylist_parse_generic(
    }
 
    path_is_compressed = path_is_compressed_file(info->path);
-   push_dir           = 
-      (menu_setting_get_browser_selection_type(info->setting) == ST_DIR);
+   push_dir           = BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR);
    filter_ext         = 
       settings->menu.navigation.browser.filter.supported_extensions_enable;
 
@@ -3708,6 +3707,11 @@ static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    return true;
 }
 
+void menu_displaylist_reset_filebrowser(void)
+{
+   filebrowser_types = 0;
+}
+
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
@@ -3840,10 +3844,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    switch (type)
    {
       case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
-         filebrowser_types = FILEBROWSER_SELECT_DIR;
+         filebrowser_types = 0;
+         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_DIR);
          break;
       case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
-         filebrowser_types = FILEBROWSER_SELECT_FILE;
+         filebrowser_types = 0;
+         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_FILE);
+         break;
+      case DISPLAYLIST_GENERIC:
          break;
       default:
          break;
@@ -3857,6 +3865,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_add_enum(info->list, info->path,
                info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0);
          break;
+      case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
+      case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
       case DISPLAYLIST_GENERIC:
          {
             menu_ctx_list_t list_info;
