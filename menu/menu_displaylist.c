@@ -2869,7 +2869,8 @@ static int menu_displaylist_parse_horizontal_content_actions(
             sizeof(db_path));
 
       menu_entries_add_enum(info->list, label,
-            db_path, MSG_UNKNOWN, FILE_TYPE_RDB_ENTRY, 0, idx);
+            db_path,
+            MENU_ENUM_LABEL_INFORMATION, FILE_TYPE_RDB_ENTRY, 0, idx);
    }
 
    return 0;

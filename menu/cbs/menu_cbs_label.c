@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_navigation.h"
@@ -28,23 +30,31 @@ static int action_bind_label_generic(char *s, size_t len)
    return 0;
 }
 
+static int action_bind_label_information(char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INFORMATION), len);
+   return 0;
+}
+
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
 
+   BIND_ACTION_LABEL(cbs, action_bind_label_generic);
+
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
       switch (cbs->enum_idx)
       {
-         case 0:
+         case MENU_ENUM_LABEL_INFORMATION:
+            BIND_ACTION_LABEL(cbs, action_bind_label_information);
+            break;
          default:
             break;
       }
    }
-
-   BIND_ACTION_LABEL(cbs, action_bind_label_generic);
 
    return -1;
 }

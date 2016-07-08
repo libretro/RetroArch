@@ -1462,6 +1462,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "add_content";
       case MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
          return "overlay_autoload_preferred";
+      case MENU_ENUM_LABEL_INFORMATION:
+         return "information";
       case MENU_ENUM_LABEL_INFORMATION_LIST:
          return "information_list";
       case MENU_ENUM_LABEL_USE_BUILTIN_PLAYER:
@@ -2596,6 +2598,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Scan Directory";
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
          return "Add Content";
+      case MENU_ENUM_LABEL_VALUE_INFORMATION:
+         return "Information";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
          return "Information";
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER:
