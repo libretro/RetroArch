@@ -2211,7 +2211,7 @@ void cheevos_populate_menu(void *data)
    {
       if (!cheevo->active)
          menu_entries_add_enum(info->list, cheevo->title,
-               cheevo->description, MSG_UNKNOWN, 
+               cheevo->description, MENU_ENUM_LABEL_CHEEVOS_ENTRY, 
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
@@ -2225,7 +2225,7 @@ void cheevos_populate_menu(void *data)
       {
          if (!cheevo->active)
             menu_entries_add_enum(info->list, cheevo->title,
-                  cheevo->description, MSG_UNKNOWN,
+                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_ENTRY,
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
@@ -2247,7 +2247,7 @@ void cheevos_populate_menu(void *data)
    {
       if (cheevo->active)
          menu_entries_add_enum(info->list, cheevo->title,
-               cheevo->description, MSG_UNKNOWN,
+               cheevo->description, MENU_ENUM_LABEL_CHEEVOS_ENTRY,
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
@@ -2261,7 +2261,7 @@ void cheevos_populate_menu(void *data)
       {
          if (cheevo->active)
             menu_entries_add_enum(info->list, cheevo->title,
-                  cheevo->description, MSG_UNKNOWN, 
+                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_ENTRY, 
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
