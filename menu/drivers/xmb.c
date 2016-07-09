@@ -312,7 +312,7 @@ float gradient_dark[16] = {
 const char *xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
-   switch (settings->menu.xmb_theme)
+   switch (settings->menu.xmb.theme)
    {
       case 1:
          return "flatui";
@@ -355,7 +355,7 @@ static float *xmb_gradient_ident(void)
 {
    settings_t *settings = config_get_ptr();
 
-   switch (settings->menu.background_gradient)
+   switch (settings->menu.xmb.menu_color_theme)
    {
       case 1:
          return &gradient_dark_purple[0];
@@ -497,7 +497,7 @@ static void xmb_draw_icon(
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id     = 0;
 
-   if (settings->menu.xmb_shadows_enable)
+   if (settings->menu.xmb.shadows_enable)
    {
       for (i = 0; i < 16; i++)
          shadow[i]      = 0;
@@ -554,7 +554,7 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline.id = 0;
 
-   if (settings->menu.xmb_shadows_enable)
+   if (settings->menu.xmb.shadows_enable)
    {
       for (i = 0; i < 16; i++)
          shadow[i]      = 0;
@@ -607,7 +607,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   if (settings->menu.xmb_shadows_enable)
+   if (settings->menu.xmb.shadows_enable)
    {
       params.drop_x      = xmb->shadow_offset;
       params.drop_y      = -xmb->shadow_offset;
@@ -1924,7 +1924,7 @@ static void xmb_draw_bg(
    menu_display_set_viewport();
 
 #ifdef HAVE_SHADERPIPELINE
-   if (settings->menu.shader_pipeline > 0)
+   if (settings->menu.xmb.shader_pipeline > 0)
    {
       draw.color = xmb_gradient_ident();
 
@@ -1936,7 +1936,7 @@ static void xmb_draw_bg(
       menu_display_draw_gradient(&draw);
 
       draw.pipeline.id = VIDEO_SHADER_MENU_SEC;
-      if (settings->menu.shader_pipeline == 2)
+      if (settings->menu.xmb.shader_pipeline == 2)
          draw.pipeline.id  = VIDEO_SHADER_MENU;
 
       menu_display_draw_pipeline(&draw);
@@ -2027,7 +2027,7 @@ static void xmb_frame(void *data)
    }
 
    menu_display_set_alpha(coord_black, MIN(
-         (float)settings->menu.xmb_alpha_factor/100, xmb->alpha));
+         (float)settings->menu.xmb.alpha_factor/100, xmb->alpha));
    menu_display_set_alpha(coord_white, xmb->alpha);
 
    xmb_draw_bg(
@@ -2258,7 +2258,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    float scale_factor;
    settings_t *settings = config_get_ptr();
 
-   scale_factor = (settings->menu.xmb_scale_factor * width) / (1920.0 * 100);
+   scale_factor = (settings->menu.xmb.scale_factor * width) / (1920.0 * 100);
 
    xmb->above_subitem_offset    =   1.5;
    xmb->above_item_offset       =  -1.0;
@@ -2306,7 +2306,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    float scale_factor;
    settings_t *settings = config_get_ptr();
 
-   scale_factor = ((settings->menu.xmb_scale_factor * width) / (1920.0 * 100)) * 1.5;
+   scale_factor = ((settings->menu.xmb.scale_factor * width) / (1920.0 * 100)) * 1.5;
 
    xmb->above_subitem_offset     =  1.5;
    xmb->above_item_offset        = -1.0;

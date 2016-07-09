@@ -208,7 +208,7 @@ static void menu_action_setting_disp_set_label_pipeline(
    *s = '\0';
    *w = 19;
 
-   switch (settings->menu.shader_pipeline)
+   switch (settings->menu.xmb.shader_pipeline)
    {
       case 0:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
@@ -662,7 +662,7 @@ static void menu_action_setting_disp_set_label_xmb_theme(
 
    strlcpy(s2, path, len2);
    *w = 19;
-   switch (settings->menu.xmb_theme)
+   switch (settings->menu.xmb.theme)
    {
       case 0:
          strlcpy(s, "Monochrome", len);
@@ -699,7 +699,7 @@ static void menu_action_setting_disp_set_label_xmb_gradient(
    if (!settings)
       return;
 
-   switch (settings->menu.background_gradient)
+   switch (settings->menu.xmb.menu_color_theme)
    {
       case 0:
          strlcpy(s, "Legacy Red", len);

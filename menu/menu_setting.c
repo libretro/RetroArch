@@ -6834,7 +6834,7 @@ static bool setting_append_list(
          {
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb_alpha_factor,
+                  &settings->menu.xmb.alpha_factor,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_ALPHA_FACTOR),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR),
                   xmb_alpha_factor,
@@ -6848,7 +6848,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb_scale_factor,
+                  &settings->menu.xmb.scale_factor,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_SCALE_FACTOR),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR),
                   xmb_scale_factor,
@@ -6862,11 +6862,11 @@ static bool setting_append_list(
 
             CONFIG_PATH(
                   list, list_info,
-                  settings->menu.xmb_font,
-                  sizeof(settings->menu.xmb_font),
+                  settings->menu.xmb.font,
+                  sizeof(settings->menu.xmb.font),
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_FONT),
-                  settings->menu.xmb_font,
+                  settings->menu.xmb.font,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -6876,7 +6876,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb_theme,
+                  &settings->menu.xmb.theme,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_THEME),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_THEME),
                   xmb_theme,
@@ -6890,7 +6890,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb_shadows_enable,
+                  &settings->menu.xmb.shadows_enable,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE),
                   xmb_shadows_enable,
@@ -6907,7 +6907,7 @@ static bool setting_append_list(
 #ifdef HAVE_SHADERPIPELINE
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.shader_pipeline,
+                  &settings->menu.xmb.shader_pipeline,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_RIBBON_ENABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE),
                   menu_shader_pipeline,
@@ -6922,7 +6922,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.background_gradient,
+                  &settings->menu.xmb.menu_color_theme,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_GRADIENT),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_GRADIENT),
                   menu_background_gradient,

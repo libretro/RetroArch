@@ -158,15 +158,24 @@ typedef struct settings
       unsigned entry_normal_color;
       unsigned entry_hover_color;
       unsigned title_color;
-      unsigned xmb_scale_factor;
-      unsigned xmb_alpha_factor;
-      unsigned xmb_theme;
-      unsigned background_gradient;
-      bool xmb_shadows_enable;
-      unsigned shader_pipeline;
-      char xmb_font[PATH_MAX_LENGTH];
       bool throttle_framerate;
       bool linear_filter;
+
+      struct
+      {
+         unsigned shader_pipeline;
+         char     font[PATH_MAX_LENGTH];
+         unsigned scale_factor;
+         unsigned alpha_factor;
+         unsigned theme;
+         unsigned menu_color_theme;
+         bool     shadows_enable;
+      } xmb;
+
+      struct
+      {
+         unsigned menu_color_theme;
+      } materialui;
    } menu;
 #endif
 
