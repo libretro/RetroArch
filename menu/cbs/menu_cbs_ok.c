@@ -813,8 +813,6 @@ static int action_ok_file_load_with_detect_core_collection(const char *path,
          path, label, type, false);
 }
 
-
-
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -855,7 +853,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 
    playlist_get_index(playlist, selection_ptr,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL); 
-
+   
    if (     string_is_equal(core_path, file_path_str(FILE_PATH_DETECT)) 
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
@@ -902,6 +900,8 @@ static int action_ok_playlist_entry_collection(const char *path,
             db_name);
       playlist_write_file(tmp_playlist);
    }
+   else
+      strlcpy(new_core_path, core_path, sizeof(new_core_path));
 
    playlist_info.data = playlist;
    playlist_info.idx  = selection_ptr;
