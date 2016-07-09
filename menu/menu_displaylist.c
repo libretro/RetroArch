@@ -3430,6 +3430,7 @@ static int menu_displaylist_parse_generic(
             break;
          case RARCH_PLAIN_FILE:
          default:
+            file_type = (enum msg_file_type)info->type_default;
             switch (type)
             {
                case DISPLAYLIST_CORES_DETECTED:
@@ -3438,11 +3439,8 @@ static int menu_displaylist_parse_generic(
                    */
                   if (path_is_compressed_file(str_list->elems[i].data))
                      file_type = FILE_TYPE_CARCHIVE;
-                  else
-                     file_type = (enum msg_file_type)info->type_default;
                   break;
                default:
-                  file_type = (enum msg_file_type)info->type_default;
                   break;
             }
             break;
