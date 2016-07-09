@@ -3218,7 +3218,6 @@ static unsigned filebrowser_types = 0;
 static int menu_displaylist_parse_playlists_horizontal(
       menu_displaylist_info_t *info)
 {
-   bool path_is_compressed, filter_ext;
    size_t i, list_size;
    struct string_list *str_list = NULL;
    unsigned items_found         = 0;
@@ -3233,26 +3232,12 @@ static int menu_displaylist_parse_playlists_horizontal(
       return 0;
    }
 
-   path_is_compressed = path_is_compressed_file(info->path);
-   filter_ext         = 
-      settings->menu.navigation.browser.filter.supported_extensions_enable;
-
-   if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
-      filter_ext = false;
-
-   if (path_is_compressed)
-      str_list = compressed_file_list_new(info->path, info->exts);
-   else
-      str_list = dir_list_new(info->path,
-            filter_ext ? info->exts : NULL,
-            true, true);
+   str_list = dir_list_new(info->path, NULL, true, true);
 
    if (!str_list)
    {
-      const char *str = path_is_compressed
-         ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
-         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
-
+      const char *str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
+      (void)str;
       return 0;
    }
 
@@ -3278,7 +3263,6 @@ static int menu_displaylist_parse_playlists_horizontal(
 
    for (i = 0; i < list_size; i++)
    {
-      bool is_dir;
       char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
@@ -3288,29 +3272,21 @@ static int menu_displaylist_parse_playlists_horizontal(
          case RARCH_DIRECTORY:
             file_type = FILE_TYPE_DIRECTORY;
             break;
-         case RARCH_COMPRESSED_ARCHIVE:
-            file_type = FILE_TYPE_CARCHIVE;
-            break;
-         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
-            file_type = FILE_TYPE_IN_CARCHIVE;
-            break;
          case RARCH_PLAIN_FILE:
          default:
             file_type = (enum msg_file_type)info->type_default;
             break;
       }
 
-      is_dir = (file_type == FILE_TYPE_DIRECTORY);
-
-      /* Need to preserve slash first time. */
-      path = str_list->elems[i].data;
-
-      if (*info->path && !path_is_compressed)
-         path = path_basename(path);
-
-      if (is_dir)
+      if (file_type == FILE_TYPE_DIRECTORY)
          continue;
+
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
+      /* Need to preserve slash first time. */
+      path      = str_list->elems[i].data;
+
+      if (*info->path)
+         path = path_basename(path);
 
       items_found++;
       menu_entries_add_enum(info->list, path, label,
