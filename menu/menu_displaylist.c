@@ -3513,7 +3513,10 @@ static int menu_displaylist_parse_generic(
                if (settings->multimedia.builtin_imageviewer_enable
                      && type != DISPLAYLIST_IMAGES)
                   file_type = FILE_TYPE_IMAGEVIEWER;
+               else
+                  file_type = FILE_TYPE_IMAGE;
 #endif
+               break;
             default:
                break;
          }
