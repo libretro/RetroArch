@@ -3215,8 +3215,128 @@ enum filebrowser_enums
 
 static unsigned filebrowser_types = 0;
 
+static int menu_displaylist_parse_playlists_horizontal(
+      menu_displaylist_info_t *info)
+{
+   bool path_is_compressed, filter_ext;
+   size_t i, list_size;
+   struct string_list *str_list = NULL;
+   unsigned items_found         = 0;
+   settings_t *settings         = config_get_ptr();
+   uint32_t hash_label          = msg_hash_calculate(info->label);
+
+   if (!*info->path)
+   {
+      if (frontend_driver_parse_drive_list(info->list) != 0)
+         menu_entries_add_enum(info->list, "/", "",
+               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+      return 0;
+   }
+
+   path_is_compressed = path_is_compressed_file(info->path);
+   filter_ext         = 
+      settings->menu.navigation.browser.filter.supported_extensions_enable;
+
+   if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
+      filter_ext = false;
+
+   if (path_is_compressed)
+      str_list = compressed_file_list_new(info->path, info->exts);
+   else
+      str_list = dir_list_new(info->path,
+            filter_ext ? info->exts : NULL,
+            true, true);
+
+   if (!str_list)
+   {
+      const char *str = path_is_compressed
+         ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
+
+      return 0;
+   }
+
+   dir_list_sort(str_list, true);
+
+   list_size = str_list->size;
+
+   if (list_size == 0)
+   {
+      if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
+      {
+         menu_entries_add_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+               MENU_ENUM_LABEL_NO_ITEMS,
+               MENU_SETTING_NO_ITEM, 0, 0);
+      }
+
+      string_list_free(str_list);
+
+      return 0;
+   }
+
+   for (i = 0; i < list_size; i++)
+   {
+      bool is_dir;
+      char label[PATH_MAX_LENGTH]   = {0};
+      const char *path              = NULL;
+      enum msg_file_type file_type  = FILE_TYPE_NONE;
+
+      switch (str_list->elems[i].attr.i)
+      {
+         case RARCH_DIRECTORY:
+            file_type = FILE_TYPE_DIRECTORY;
+            break;
+         case RARCH_COMPRESSED_ARCHIVE:
+            file_type = FILE_TYPE_CARCHIVE;
+            break;
+         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
+            file_type = FILE_TYPE_IN_CARCHIVE;
+            break;
+         case RARCH_PLAIN_FILE:
+         default:
+            file_type = (enum msg_file_type)info->type_default;
+            break;
+      }
+
+      is_dir = (file_type == FILE_TYPE_DIRECTORY);
+
+      /* Need to preserve slash first time. */
+      path = str_list->elems[i].data;
+
+      if (*info->path && !path_is_compressed)
+         path = path_basename(path);
+
+      if (is_dir)
+         continue;
+      file_type = FILE_TYPE_PLAYLIST_COLLECTION;
+
+      items_found++;
+      menu_entries_add_enum(info->list, path, label,
+            MSG_UNKNOWN,
+            file_type, 0, 0);
+   }
+
+   string_list_free(str_list);
+
+   if (items_found == 0)
+   {
+      if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
+      {
+         menu_entries_add_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+               MENU_ENUM_LABEL_NO_ITEMS,
+               MENU_SETTING_NO_ITEM, 0, 0);
+      }
+   }
+
+   return 0;
+}
+
 static int menu_displaylist_parse_generic(
-      menu_displaylist_info_t *info, bool horizontal)
+      menu_displaylist_info_t *info)
 {
    bool path_is_compressed, push_dir, filter_ext;
    size_t i, list_size;
@@ -3262,7 +3382,7 @@ static int menu_displaylist_parse_generic(
             MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
             FILE_TYPE_USE_DIRECTORY, 0 ,0);
 
-   if (!horizontal && !(BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_CORE)))
+   if (!(BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_CORE)))
    {
       char out_dir[PATH_MAX_LENGTH] = {0};
       fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
@@ -3283,9 +3403,8 @@ static int menu_displaylist_parse_generic(
          ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
 
-      if (! horizontal)
-         menu_entries_add_enum(info->list, str, "",
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
+      menu_entries_add_enum(info->list, str, "",
+            MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
       return 0;
    }
 
@@ -3396,10 +3515,8 @@ static int menu_displaylist_parse_generic(
       }
       else if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION))
       {
-         if (is_dir && !horizontal)
+         if (is_dir)
             file_type = FILE_TYPE_DIRECTORY;
-         else if (is_dir && horizontal)
-            continue;
          else
             file_type = FILE_TYPE_PLAYLIST_COLLECTION;
       }
@@ -5409,7 +5526,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    switch (type)
    {
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
-         if (menu_displaylist_parse_generic(info, true) == 0)
+         if (menu_displaylist_parse_playlists_horizontal(info) == 0)
          {
             info->need_refresh = true;
             info->need_push    = true;
@@ -5433,7 +5550,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
-         if (menu_displaylist_parse_generic(info, false) == 0)
+         if (menu_displaylist_parse_generic(info) == 0)
          {
             info->need_refresh = true;
             info->need_push    = true;
