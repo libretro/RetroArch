@@ -3222,7 +3222,6 @@ static int menu_displaylist_parse_playlists_horizontal(
    struct string_list *str_list = NULL;
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
-   uint32_t hash_label          = msg_hash_calculate(info->label);
 
    if (!*info->path)
    {
