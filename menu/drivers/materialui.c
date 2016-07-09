@@ -725,8 +725,6 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw)
 
 static void mui_frame(void *data)
 {
-   unsigned header_height;
-   bool display_kb;
    float black_bg[16] = {
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
@@ -788,21 +786,42 @@ static void mui_frame(void *data)
       0.13, 0.13, 0.13, 1,
    };
 
-   bool DARK_THEME = false;
-   float *header_bg_color           = blue_bg;
-   float *highlighted_entry_color   = lightblue_bg;
-   float *footer_bg_color           = white_bg;
-   float *body_bg_color             = white_transp_bg;
-
-   uint32_t font_normal_color     = 0x212121ff;
-   uint32_t font_hover_color      = 0x212121ff;
-   uint32_t font_header_color     = 0xffffffff;
-
-   uint32_t activetab_color       = 0x0096f2ff;
-   uint32_t passivetab_color      = 0x9e9e9eff;
-
    /* This controls the main background color */
    menu_display_ctx_clearcolor_t clearcolor;
+   menu_animation_ctx_ticker_t ticker;
+   menu_display_ctx_draw_t draw;
+   unsigned width                  = 0;
+   unsigned height                 = 0;
+   unsigned ticker_limit           = 0;
+   unsigned i                      = 0;
+   unsigned header_height          = 0;
+   size_t selection                = 0;
+   size_t title_margin             = 0;
+   bool display_kb                 = false;
+   mui_handle_t *mui               = (mui_handle_t*)data;
+   uint64_t *frame_count           = video_driver_get_frame_count_ptr();
+   char msg[256]                   = {0};
+   char title[256]                 = {0};
+   char title_buf[256]             = {0};
+   char title_msg[256]             = {0};
+   bool background_rendered        = false;
+   bool libretro_running           = menu_display_libretro_running();
+   bool DARK_THEME                 = false;
+   float *header_bg_color          = blue_bg;
+   float *highlighted_entry_color  = lightblue_bg;
+   float *footer_bg_color          = white_bg;
+   float *body_bg_color            = white_transp_bg;
+
+   uint32_t font_normal_color      = 0x212121ff;
+   uint32_t font_hover_color       = 0x212121ff;
+   uint32_t font_header_color      = 0xffffffff;
+
+   uint32_t activetab_color        = 0x0096f2ff;
+   uint32_t passivetab_color       = 0x9e9e9eff;
+
+   if (!mui)
+      return;
+
    clearcolor.r = 1.0f;
    clearcolor.g = 1.0f;
    clearcolor.b = 1.0f;
@@ -826,23 +845,6 @@ static void mui_frame(void *data)
       clearcolor.g = 0.13f;
       clearcolor.b = 0.13f;
    }
-
-   menu_animation_ctx_ticker_t ticker;
-   unsigned width, height, ticker_limit, i;
-   size_t selection;
-   size_t title_margin;
-   menu_display_ctx_draw_t draw;
-   mui_handle_t *mui               = (mui_handle_t*)data;
-   uint64_t *frame_count           = video_driver_get_frame_count_ptr();
-   char msg[256]                   = {0};
-   char title[256]                 = {0};
-   char title_buf[256]             = {0};
-   char title_msg[256]             = {0};
-   bool background_rendered        = false;
-   bool libretro_running           = menu_display_libretro_running();
-
-   if (!mui)
-      return;
 
    video_driver_get_size(&width, &height);
 
