@@ -806,7 +806,6 @@ static void mui_frame(void *data)
    char title_msg[256]             = {0};
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
-   bool DARK_THEME                 = false;
    float *header_bg_color          = blue_bg;
    float *highlighted_entry_color  = lightblue_bg;
    float *footer_bg_color          = white_bg;
@@ -823,30 +822,32 @@ static void mui_frame(void *data)
    if (!mui)
       return;
 
-   DARK_THEME                      = settings->menu.materialui.menu_color_theme;
-
    clearcolor.r = 1.0f;
    clearcolor.g = 1.0f;
    clearcolor.b = 1.0f;
    clearcolor.a = 0.75f;
 
-   if (DARK_THEME)
+   switch (settings->menu.materialui.menu_color_theme)
    {
-      header_bg_color         = greyish_blue;
-      highlighted_entry_color = grey_bg;
-      footer_bg_color         = almost_black;
-      body_bg_color           = almost_black;
+      case 0:
+         break;
+      case 1: /* DARK */
+         header_bg_color         = greyish_blue;
+         highlighted_entry_color = grey_bg;
+         footer_bg_color         = almost_black;
+         body_bg_color           = almost_black;
 
-      font_normal_color = 0xffffffff;
-      font_hover_color  = 0x00000000;
-      
-      /* 
-      TODO/FIXME - Maybe make this track the footer's bg color or vice-versa
-      e.g. clearcolor.r = &footer_bg_color[0]; clearcolor.g = &footer_bg_color[4];
-      */
-      clearcolor.r = 0.13f;
-      clearcolor.g = 0.13f;
-      clearcolor.b = 0.13f;
+         font_normal_color = 0xffffffff;
+         font_hover_color  = 0x00000000;
+
+         /* 
+            TODO/FIXME - Maybe make this track the footer's bg color or vice-versa
+            e.g. clearcolor.r = &footer_bg_color[0]; clearcolor.g = &footer_bg_color[4];
+            */
+         clearcolor.r = 0.13f;
+         clearcolor.g = 0.13f;
+         clearcolor.b = 0.13f;
+         break;
    }
 
    video_driver_get_size(&width, &height);
