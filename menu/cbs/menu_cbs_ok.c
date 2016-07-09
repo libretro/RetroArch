@@ -818,7 +818,6 @@ static int action_ok_playlist_entry_collection(const char *path,
 {
    size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
-   int ret = 0;
    char new_core_path[PATH_MAX_LENGTH]    = {0};
    size_t selection_ptr             = 0;
    playlist_t *playlist             = NULL;

@@ -3221,7 +3221,6 @@ static int menu_displaylist_parse_playlists_horizontal(
    size_t i, list_size;
    struct string_list *str_list = NULL;
    unsigned items_found         = 0;
-   settings_t *settings         = config_get_ptr();
 
    if (!*info->path)
    {

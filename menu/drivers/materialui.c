@@ -816,8 +816,10 @@ static void mui_frame(void *data)
    uint32_t font_hover_color       = 0x212121ff;
    uint32_t font_header_color      = 0xffffffff;
 
+#if 0
    uint32_t activetab_color        = 0x0096f2ff;
    uint32_t passivetab_color       = 0x9e9e9eff;
+#endif
 
    if (!mui)
       return;
