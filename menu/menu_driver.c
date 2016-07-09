@@ -276,6 +276,15 @@ static void menu_driver_toggle(bool latch)
    input_driver_set_flushing_input();
 }
 
+const char *menu_driver_ident(void)
+{
+   if (!menu_driver_alive)
+      return NULL;
+   if (!menu_driver_ctx || !menu_driver_ctx->ident)
+      return NULL;
+  return menu_driver_ctx->ident;
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)

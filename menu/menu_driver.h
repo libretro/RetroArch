@@ -414,6 +414,8 @@ const char* config_get_menu_driver_options(void);
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;
 
+const char *menu_driver_ident(void);
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 extern menu_ctx_driver_t menu_ctx_xui;

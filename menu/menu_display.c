@@ -479,7 +479,7 @@ void menu_display_draw(menu_display_ctx_draw_t *draw)
 bool menu_display_shader_pipeline_active(void)
 {
    settings_t *settings          = config_get_ptr();
-   if (!string_is_equal(settings->menu.driver, "xmb"))
+   if (!string_is_equal(menu_driver_ident(), "xmb"))
       return false;
    if (settings->menu.xmb.shader_pipeline == 0)
       return false;
