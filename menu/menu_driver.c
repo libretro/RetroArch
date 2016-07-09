@@ -64,6 +64,19 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
+static struct retro_system_info menu_driver_system;
+static bool menu_driver_pending_quick_menu      = false;
+static bool menu_driver_prevent_populate        = false;
+static bool menu_driver_load_no_content         = false;
+static bool menu_driver_alive                   = false;
+static bool menu_driver_data_own                = false;
+static bool menu_driver_pending_quit            = false;
+static bool menu_driver_pending_shutdown        = false;
+static playlist_t *menu_driver_playlist         = NULL;
+static struct video_shader *menu_driver_shader  = NULL;
+static menu_handle_t *menu_driver_data          = NULL;
+static const menu_ctx_driver_t *menu_driver_ctx = NULL;
+static void *menu_userdata                      = NULL;
 
 /**
  * menu_driver_find_handle:
@@ -265,21 +278,6 @@ static void menu_driver_toggle(bool latch)
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
-   static struct retro_system_info menu_driver_system;
-   static bool menu_driver_pending_quick_menu      = false;
-   static bool menu_driver_prevent_populate        = false;
-   static bool menu_driver_load_no_content         = false;
-   static bool menu_driver_alive                   = false;
-   static bool menu_driver_data_own                = false;
-   static bool menu_driver_pending_quit            = false;
-   static bool menu_driver_pending_shutdown        = false;
-   static playlist_t *menu_driver_playlist = NULL;
-   static struct video_shader *menu_driver_shader  = NULL;
-   static menu_handle_t *menu_driver_data          = NULL;
-   static const menu_ctx_driver_t *menu_driver_ctx = NULL;
-   static void *menu_userdata                      = NULL;
-   settings_t *settings                            = config_get_ptr();
-
    switch (state)
    {
       case RARCH_MENU_CTL_DRIVER_DATA_GET:
@@ -548,27 +546,30 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_data = NULL;
          break;
       case RARCH_MENU_CTL_INIT:
-         if (menu_driver_data)
-            return true;
-
-         menu_driver_data = (menu_handle_t*)
-            menu_driver_ctx->init(&menu_userdata);
-
-         if (!menu_driver_data || !menu_init(menu_driver_data))
          {
-            retroarch_fail(1, "init_menu()");
-            return false;
-         }
+            settings_t *settings  = config_get_ptr();
+            if (menu_driver_data)
+               return true;
 
-         strlcpy(settings->menu.driver, menu_driver_ctx->ident,
-               sizeof(settings->menu.driver));
+            menu_driver_data = (menu_handle_t*)
+               menu_driver_ctx->init(&menu_userdata);
 
-         if (menu_driver_ctx->lists_init)
-         {
-            if (!menu_driver_ctx->lists_init(menu_driver_data))
+            if (!menu_driver_data || !menu_init(menu_driver_data))
             {
                retroarch_fail(1, "init_menu()");
                return false;
+            }
+
+            strlcpy(settings->menu.driver, menu_driver_ctx->ident,
+                  sizeof(settings->menu.driver));
+
+            if (menu_driver_ctx->lists_init)
+            {
+               if (!menu_driver_ctx->lists_init(menu_driver_data))
+               {
+                  retroarch_fail(1, "init_menu()");
+                  return false;
+               }
             }
          }
          break;
