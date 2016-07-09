@@ -789,16 +789,19 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
 static int menu_input_pointer(unsigned *action)
 {
-   unsigned fb_width, fb_height;
-   int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input                     = menu_input_get_ptr();
-
-   fb_width  = menu_display_get_width();
-   fb_height = menu_display_get_height();
-
-   pointer_device = menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
+   unsigned fb_width                            = menu_display_get_width();
+   unsigned fb_height                           = menu_display_get_height();
+   int pointer_device                           = 
+      menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+   int pointer_x                                = 
+      input_driver_state(binds, 0, pointer_device,
+         0, RETRO_DEVICE_ID_POINTER_X);
+   int pointer_y                                = 
+      input_driver_state(binds, 0, pointer_device,
+         0, RETRO_DEVICE_ID_POINTER_Y);
 
    menu_input->pointer.pressed[0]  = input_driver_state(binds,
          0, pointer_device,
@@ -808,11 +811,6 @@ static int menu_input_pointer(unsigned *action)
          1, RETRO_DEVICE_ID_POINTER_PRESSED);
    menu_input->pointer.back  = input_driver_state(binds, 0, pointer_device,
          0, RARCH_DEVICE_ID_POINTER_BACK);
-
-   pointer_x = input_driver_state(binds, 0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_X);
-   pointer_y = input_driver_state(binds, 0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_Y);
 
    menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
    menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
