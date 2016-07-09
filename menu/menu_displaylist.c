@@ -3319,7 +3319,6 @@ static int menu_displaylist_parse_generic(
    struct string_list *str_list = NULL;
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
-   uint32_t hash_label          = msg_hash_calculate(info->label);
 
    if (!*info->path)
    {
@@ -3442,24 +3441,6 @@ static int menu_displaylist_parse_generic(
                else
                   file_type = (enum msg_file_type)info->type_default;
             }
-            else
-            {
-               switch (hash_label)
-               {
-                  case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-                     if (path_is_compressed_file(str_list->elems[i].data))
-                     {
-                        /* in case of deferred_core_list we have to interpret
-                         * every archive as an archive to disallow instant loading
-                         */
-                        file_type = FILE_TYPE_CARCHIVE;
-                        break;
-                     }
-                  default:
-                     file_type = (enum msg_file_type)info->type_default;
-                     break;
-               }
-            }
             break;
       }
 
@@ -3467,6 +3448,7 @@ static int menu_displaylist_parse_generic(
 
       if (!is_dir)
       {
+         uint32_t hash_label  = msg_hash_calculate(info->label);
          if (push_dir || hash_label == MENU_LABEL_SCAN_DIRECTORY)
             continue;
       }
