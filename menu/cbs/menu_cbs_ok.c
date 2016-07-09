@@ -3472,34 +3472,16 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_remap_file_load);
             break;
          case FILE_TYPE_SHADER_PRESET:
-            switch (menu_label_hash)
-            {
-               case MENU_LABEL_SCAN_FILE:
-                  break;
-               default:
-                  BIND_ACTION_OK(cbs, action_ok_shader_preset_load);
-                  break;
-            }
+            /* TODO/FIXME - handle scan case */
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_load);
             break;
          case FILE_TYPE_SHADER:
-            switch (menu_label_hash)
-            {
-               case MENU_LABEL_SCAN_FILE:
-                  break;
-               default:
-                  BIND_ACTION_OK(cbs, action_ok_shader_pass_load);
-                  break;
-            }
+            /* TODO/FIXME - handle scan case */
+            BIND_ACTION_OK(cbs, action_ok_shader_pass_load);
             break;
          case FILE_TYPE_IMAGE:
-            switch (menu_label_hash)
-            {
-               case MENU_LABEL_SCAN_FILE:
-                  break;
-               default:
-                  BIND_ACTION_OK(cbs, action_ok_menu_wallpaper_load);
-                  break;
-            }
+            /* TODO/FIXME - handle scan case */
+            BIND_ACTION_OK(cbs, action_ok_menu_wallpaper_load);
             break;
          case FILE_TYPE_USE_DIRECTORY:
             BIND_ACTION_OK(cbs, action_ok_path_use_directory);
@@ -3682,25 +3664,13 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_MOVIE:
          case FILE_TYPE_MUSIC:
 #ifdef HAVE_FFMPEG
-            switch (menu_label_hash)
-            {
-               case MENU_LABEL_SCAN_FILE:
-                  break;
-               default:
-                  BIND_ACTION_OK(cbs, action_ok_file_load_ffmpeg);
-                  break;
-            }
+            /* TODO/FIXME - handle scan case */
+            BIND_ACTION_OK(cbs, action_ok_file_load_ffmpeg);
 #endif
             break;
          case FILE_TYPE_IMAGEVIEWER:
-            switch (menu_label_hash)
-            {
-               case MENU_LABEL_SCAN_FILE:
-                  break;
-               default:
-                  BIND_ACTION_OK(cbs, action_ok_file_load_imageviewer);
-                  break;
-            }
+            /* TODO/FIXME - handle scan case */
+            BIND_ACTION_OK(cbs, action_ok_file_load_imageviewer);
             break;
          case MENU_SETTINGS:
          case MENU_SETTING_GROUP:
