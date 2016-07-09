@@ -3290,7 +3290,7 @@ static int menu_displaylist_parse_playlists_horizontal(
 
       items_found++;
       menu_entries_add_enum(info->list, path, label,
-            MSG_UNKNOWN,
+            MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY,
             file_type, 0, 0);
    }
 

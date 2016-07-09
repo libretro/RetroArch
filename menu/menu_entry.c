@@ -290,23 +290,25 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    if (cbs)
    {
+      const char *label             = NULL;
+      enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+
       entry->enum_idx    = cbs->enum_idx;
 
-      if (cbs->action_get_value && use_representation)
-      {
-         enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-         const char *label             = NULL;
-         menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
+      menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
 
+      if (cbs->action_get_value && use_representation)
          cbs->action_get_value(list,
                &entry->spacing, entry->type, i, label,
                entry->value,  sizeof(entry->value), 
                entry_label, path,
                entry->path, sizeof(entry->path));
-      }
 
       if (cbs->action_label)
-         cbs->action_label(entry->rich_label,
+         cbs->action_label(list,
+               entry->type, i,
+               label, path, 
+               entry->rich_label,
                sizeof(entry->rich_label));
    }
 

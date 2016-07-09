@@ -14,10 +14,12 @@
  */
 
 #include <compat/strl.h>
+#include <file/file_path.h>
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_navigation.h"
+#include "../../file_path_special.h"
 
 #ifndef BIND_ACTION_LABEL
 #define BIND_ACTION_LABEL(cbs, name) \
@@ -25,32 +27,69 @@
    cbs->action_label_ident = #name;
 #endif
 
-static int action_bind_label_generic(char *s, size_t len)
+static int action_bind_label_generic(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
 {
    return 0;
 }
 
-static int action_bind_label_information(char *s, size_t len)
+static int action_bind_label_information(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INFORMATION), len);
    return 0;
 }
 
-static int action_bind_label_internal_memory(char *s, size_t len)
+static int action_bind_label_internal_memory(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
 {
    strlcpy(s, msg_hash_to_str(MSG_INTERNAL_MEMORY), len);
    return 0;
 }
 
-static int action_bind_label_external_application_dir(char *s, size_t len)
+static int action_bind_label_external_application_dir(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
 {
    strlcpy(s, msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR), len);
    return 0;
 }
 
-static int action_bind_label_application_dir(char *s, size_t len)
+static int action_bind_label_application_dir(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
 {
    strlcpy(s, msg_hash_to_str(MSG_APPLICATION_DIR), len);
+   return 0;
+}
+
+static int action_bind_label_playlist_collection_entry(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   if (strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+   {
+      char path_base[PATH_MAX_LENGTH] = {0};
+      fill_short_pathname_representation_noext(path_base, path,
+            sizeof(path_base));
+
+      strlcpy(s, path_base, len);
+   }
    return 0;
 }
 
@@ -66,6 +105,9 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY:
+            BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
+            break;
          case MSG_INTERNAL_MEMORY:
             BIND_ACTION_LABEL(cbs, action_bind_label_internal_memory);
             break;
