@@ -3523,15 +3523,20 @@ static int menu_displaylist_parse_generic(
             break;
          case RARCH_PLAIN_FILE:
          default:
-            if (type == DISPLAYLIST_CORES_DETECTED)
+            switch (type)
             {
-               /* in case of deferred_core_list we have to interpret
-                * every archive as an archive to disallow instant loading
-                */
-               if (path_is_compressed_file(str_list->elems[i].data))
-                  file_type = FILE_TYPE_CARCHIVE;
-               else
+               case DISPLAYLIST_CORES_DETECTED:
+                  /* in case of deferred_core_list we have to interpret
+                   * every archive as an archive to disallow instant loading
+                   */
+                  if (path_is_compressed_file(str_list->elems[i].data))
+                     file_type = FILE_TYPE_CARCHIVE;
+                  else
+                     file_type = (enum msg_file_type)info->type_default;
+                  break;
+               default:
                   file_type = (enum msg_file_type)info->type_default;
+                  break;
             }
             break;
       }
