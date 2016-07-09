@@ -5303,6 +5303,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          strlcpy(info->exts,
                file_path_str(FILE_PATH_RDB_EXTENSION),
                sizeof(info->exts));
+         info->enum_idx = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
          strlcpy(info->path, settings->path.content_database, sizeof(info->path));
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
