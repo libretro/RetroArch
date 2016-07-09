@@ -569,6 +569,7 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    }
 
    coords.color         = (const float*)color;
+   menu_display_set_alpha((float*)coords.color, 1.0f);
    draw.x               = x;
    draw.y               = height - y;
 
