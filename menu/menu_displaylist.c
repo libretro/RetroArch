@@ -3208,7 +3208,6 @@ enum filebrowser_enums
 {
    FILEBROWSER_NONE = 0,
    FILEBROWSER_SELECT_DIR,
-   FILEBROWSER_SELECT_FILE,
    FILEBROWSER_SELECT_COLLECTION
 };
 
@@ -3932,12 +3931,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
          BIT32_CLEAR_ALL(filebrowser_types);
          BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_DIR);
-         break;
-      case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
-         BIT32_CLEAR_ALL(filebrowser_types);
-         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_FILE);
-         break;
-      case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:
          break;
       case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
          BIT32_CLEAR_ALL(filebrowser_types);
