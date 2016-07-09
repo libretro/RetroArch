@@ -252,17 +252,10 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
-      case ACTION_OK_DL_DOWNLOADS_DIR:
-         info.type          = FILE_TYPE_DIRECTORY;
-         info.directory_ptr = idx;
-         info_path          = settings->directory.core_assets;
-         info_label         = label;
-         dl_type                 = DISPLAYLIST_GENERIC;
-         break;
       case ACTION_OK_DL_CONTENT_LIST:
          info.type          = FILE_TYPE_DIRECTORY;
          info.directory_ptr = idx;
-         info_path          = settings->directory.menu_content;
+         info_path          = new_path;
          info_label         = label;
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
@@ -2655,15 +2648,19 @@ static int action_ok_remap_file(const char *path,
 static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+   settings_t            *settings   = config_get_ptr();
+   return generic_action_ok_displaylist_push(path, settings->directory.menu_content, label, type, idx,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
 static int action_ok_push_downloads_dir(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
-         entry_idx, ACTION_OK_DL_DOWNLOADS_DIR);
+   settings_t            *settings   = config_get_ptr();
+   return generic_action_ok_displaylist_push(path, settings->directory.core_assets, 
+         msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST),
+         type, idx,
+         entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
 static int action_ok_shader_preset(const char *path,
