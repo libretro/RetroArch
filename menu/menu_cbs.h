@@ -105,7 +105,7 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
 int shader_action_parameter_preset_right(unsigned type, const char *label,
       bool wraparound);
 
-int generic_action_ok_displaylist_push(const char *path,
+int generic_action_ok_displaylist_push(const char *path, const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type);
 

@@ -823,7 +823,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                menu_entries_flush_stack(NULL, MENU_SETTINGS);
                menu_display_set_msg_force(true);
 
-               generic_action_ok_displaylist_push("",
+               generic_action_ok_displaylist_push("", NULL,
                      "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
 
                if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
