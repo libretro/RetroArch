@@ -820,6 +820,8 @@ static int action_ok_playlist_entry_collection(const char *path,
 {
    size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
+   int ret = 0;
+   char new_core_path[PATH_MAX_LENGTH]    = {0};
    size_t selection_ptr             = 0;
    playlist_t *playlist             = NULL;
    bool playlist_initialized        = false;
@@ -858,7 +860,6 @@ static int action_ok_playlist_entry_collection(const char *path,
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
-      char new_core_path[PATH_MAX_LENGTH]    = {0};
       char new_display_name[PATH_MAX_LENGTH] = {0};
       const char *entry_path                 = NULL;
       const char *entry_crc32                = NULL;
@@ -911,7 +912,7 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_get_index(playlist,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
-   return generic_action_ok_file_load(core_path, path,
+   return generic_action_ok_file_load(new_core_path, path,
          CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU);
 }
 
