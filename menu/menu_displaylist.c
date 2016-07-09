@@ -3432,21 +3432,33 @@ static int menu_displaylist_parse_generic(
             break;
          case RARCH_PLAIN_FILE:
          default:
-            switch (hash_label)
+            if (type == DISPLAYLIST_CORES_DETECTED)
             {
-               case MENU_LABEL_DETECT_CORE_LIST:
-               case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-                  if (path_is_compressed_file(str_list->elems[i].data))
-                  {
-                     /* in case of deferred_core_list we have to interpret
-                      * every archive as an archive to disallow instant loading
-                      */
-                     file_type = FILE_TYPE_CARCHIVE;
-                     break;
-                  }
-               default:
+               /* in case of deferred_core_list we have to interpret
+                * every archive as an archive to disallow instant loading
+                */
+               if (path_is_compressed_file(str_list->elems[i].data))
+                  file_type = FILE_TYPE_CARCHIVE;
+               else
                   file_type = (enum msg_file_type)info->type_default;
-                  break;
+            }
+            else
+            {
+               switch (hash_label)
+               {
+                  case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
+                     if (path_is_compressed_file(str_list->elems[i].data))
+                     {
+                        /* in case of deferred_core_list we have to interpret
+                         * every archive as an archive to disallow instant loading
+                         */
+                        file_type = FILE_TYPE_CARCHIVE;
+                        break;
+                     }
+                  default:
+                     file_type = (enum msg_file_type)info->type_default;
+                     break;
+               }
             }
             break;
       }

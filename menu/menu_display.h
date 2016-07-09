@@ -201,6 +201,8 @@ void menu_display_draw_cursor(
 void menu_display_draw_text(const char *msg, int width, int height, 
       struct font_params *params);
 
+bool menu_display_shader_pipeline_active(void);
+
 void menu_display_set_alpha(float *color, float alpha_value);
 
 bool menu_display_font(enum application_special_type type);
