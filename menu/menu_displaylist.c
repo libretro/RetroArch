@@ -5408,6 +5408,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
    switch (type)
    {
+      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
+         if (menu_displaylist_parse_generic(info, true) == 0)
+         {
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
+         break;
       case DISPLAYLIST_DATABASES:
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_CORES:
@@ -5426,16 +5433,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
-      case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
+         if (menu_displaylist_parse_generic(info, false) == 0)
          {
-            bool horizontal = 
-               (type == DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL);
-
-            if (menu_displaylist_parse_generic(info, horizontal) == 0)
-            {
-               info->need_refresh = true;
-               info->need_push    = true;
-            }
+            info->need_refresh = true;
+            info->need_push    = true;
          }
          break;
       default:
