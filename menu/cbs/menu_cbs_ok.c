@@ -872,7 +872,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       core_info.inf  = NULL;
       core_info.path = new_core_path;
 
-      if (!core_info_find(&core_info))
+      if (!core_info_find(&core_info, new_core_path))
          found_associated_core = false;
 
       if (!found_associated_core)
@@ -958,7 +958,7 @@ static int action_ok_playlist_entry(const char *path,
       core_info.inf                          = NULL;
       core_info.path                         = new_core_path;
 
-      if (!core_info_find(&core_info))
+      if (!core_info_find(&core_info, new_core_path))
          found_associated_core = false;
 
       if (!found_associated_core)
@@ -1057,7 +1057,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
       core_info.inf                          = NULL;
       core_info.path                         = new_core_path;
 
-      if (!core_info_find(&core_info))
+      if (!core_info_find(&core_info, new_core_path))
          found_associated_core = false;
 
       if (!found_associated_core)
