@@ -3309,99 +3309,6 @@ static int menu_displaylist_parse_playlists_horizontal(
    return 0;
 }
 
-static int menu_displaylist_parse_databases(
-      menu_displaylist_info_t *info,
-      enum menu_displaylist_ctl_state type)
-{
-   size_t i, list_size;
-   struct string_list *str_list = NULL;
-   unsigned items_found         = 0;
-   settings_t *settings         = config_get_ptr();
-
-   if (!*info->path)
-   {
-      if (frontend_driver_parse_drive_list(info->list) != 0)
-         menu_entries_add_enum(info->list, "/", "",
-               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-      return 0;
-   }
-
-   str_list = dir_list_new(info->path, NULL, true, true);
-
-   if (!str_list)
-   {
-      const char *str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
-
-      menu_entries_add_enum(info->list, str, "",
-            MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
-      return 0;
-   }
-
-   dir_list_sort(str_list, true);
-
-   list_size = str_list->size;
-
-   for (i = 0; i < list_size; i++)
-   {
-      bool is_dir;
-      char label[PATH_MAX_LENGTH]   = {0};
-      const char *path              = NULL;
-      enum msg_file_type file_type  = FILE_TYPE_NONE;
-
-      switch (str_list->elems[i].attr.i)
-      {
-         case RARCH_DIRECTORY:
-            file_type = FILE_TYPE_DIRECTORY;
-            break;
-         case RARCH_COMPRESSED_ARCHIVE:
-            file_type = FILE_TYPE_CARCHIVE;
-            break;
-         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
-            file_type = FILE_TYPE_IN_CARCHIVE;
-            break;
-         case RARCH_PLAIN_FILE:
-         default:
-            break;
-      }
-
-      is_dir = (file_type == FILE_TYPE_DIRECTORY);
-
-      /* Need to preserve slash first time. */
-      path = str_list->elems[i].data;
-
-      if (*info->path)
-         path = path_basename(path);
-
-      if (is_dir)
-         file_type = FILE_TYPE_DIRECTORY;
-      else
-         file_type = FILE_TYPE_RDB;
-
-      items_found++;
-      menu_entries_add_enum(info->list, path, label,
-            MSG_UNKNOWN,
-            file_type, 0, 0);
-   }
-
-   string_list_free(str_list);
-
-   if (items_found == 0)
-   {
-      if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
-      {
-         menu_entries_add_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-               MENU_ENUM_LABEL_NO_ITEMS,
-               MENU_SETTING_NO_ITEM, 0, 0);
-      }
-
-      return 0;
-   }
-
-   return 0;
-}
-
 static int menu_displaylist_parse_generic(
       menu_displaylist_info_t *info,
       enum menu_displaylist_ctl_state type)
@@ -5608,14 +5515,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->need_push    = true;
          }
          break;
-      case DISPLAYLIST_DATABASES:
-         if (menu_displaylist_parse_databases(info, type) == 0)
-         {
-            info->need_refresh = true;
-            info->need_push    = true;
-         }
-         break;
       case DISPLAYLIST_DEFAULT:
+      case DISPLAYLIST_DATABASES:
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_SHADER_PASS:
