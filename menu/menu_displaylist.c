@@ -3517,7 +3517,7 @@ static int menu_displaylist_parse_generic(
             case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER
                if (settings->multimedia.builtin_imageviewer_enable
-                     && hash_label != MENU_LABEL_MENU_WALLPAPER)
+                     && type != DISPLAYLIST_IMAGES)
                   file_type = FILE_TYPE_IMAGEVIEWER;
 #endif
             default:
