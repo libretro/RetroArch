@@ -780,10 +780,10 @@ static void mui_frame(void *data)
       0.22, 0.28, 0.31, 1,
    };
    float almost_black[16] = {
-      0.13, 0.13, 0.13, 1,
-      0.13, 0.13, 0.13, 1,
-      0.13, 0.13, 0.13, 1,
-      0.13, 0.13, 0.13, 1,
+      0.13, 0.13, 0.13, 0.90,
+      0.13, 0.13, 0.13, 0.90,
+      0.13, 0.13, 0.13, 0.90,
+      0.13, 0.13, 0.13, 0.90,
    };
 
    /* This controls the main background color */
@@ -811,6 +811,7 @@ static void mui_frame(void *data)
    float *highlighted_entry_color  = lightblue_bg;
    float *footer_bg_color          = white_bg;
    float *body_bg_color            = white_transp_bg;
+   settings_t *settings            = config_get_ptr();
 
    uint32_t font_normal_color      = 0x212121ff;
    uint32_t font_hover_color       = 0x212121ff;
@@ -821,6 +822,8 @@ static void mui_frame(void *data)
 
    if (!mui)
       return;
+
+   DARK_THEME                      = settings->menu.materialui.menu_color_theme;
 
    clearcolor.r = 1.0f;
    clearcolor.g = 1.0f;

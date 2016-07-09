@@ -474,6 +474,7 @@ static void config_set_defaults(void)
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
    settings->menu.xmb.font[0]          = '\0';
 #endif
+   settings->menu.materialui.menu_color_theme = 0;
 
    settings->menu.throttle_framerate   = true;
    settings->menu.linear_filter        = true;
@@ -1532,6 +1533,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef HAVE_XMB
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb.menu_color_theme, "xmb_menu_color_theme");
 #endif
+   CONFIG_GET_INT_BASE(conf, settings, menu.materialui.menu_color_theme, "materialui_menu_color_theme");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.xmb.shadows_enable, "xmb_shadows_enable");
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb.shader_pipeline, "menu_shader_pipeline");
    if (config_get_path(conf, "xmb_font", tmp_str, sizeof(tmp_str)))
@@ -2946,6 +2948,7 @@ bool config_save_file(const char *path)
 #ifdef HAVE_XMB
    config_set_int(conf, "xmb_menu_color_theme", settings->menu.xmb.menu_color_theme);
 #endif
+   config_set_int(conf, "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme);
    config_set_bool(conf, "xmb_shadows_enable", settings->menu.xmb.shadows_enable);
    config_set_int(conf, "menu_shader_pipeline", settings->menu.xmb.shader_pipeline);
    config_set_path(conf, "xmb_font",

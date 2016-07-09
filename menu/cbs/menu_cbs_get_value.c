@@ -682,7 +682,7 @@ static void menu_action_setting_disp_set_label_xmb_theme(
    }
 }
 
-static void menu_action_setting_disp_set_label_xmb_gradient(
+static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -727,6 +727,36 @@ static void menu_action_setting_disp_set_label_xmb_gradient(
          break;
       case 8:
          strlcpy(s, "Dark", len);
+         break;
+   }
+}
+
+static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings        = config_get_ptr();
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+
+   if (!settings)
+      return;
+
+   switch (settings->menu.materialui.menu_color_theme)
+   {
+      case 0:
+         strlcpy(s, "White", len);
+         break;
+      case 1:
+         strlcpy(s, "Dark", len);
+         break;
+      default:
          break;
    }
 }
@@ -1413,9 +1443,13 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_xmb_theme);
             break;
-         case MENU_ENUM_LABEL_XMB_GRADIENT:
+         case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
             BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_xmb_gradient);
+                  menu_action_setting_disp_set_label_xmb_menu_color_theme);
+            break;
+         case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_materialui_menu_color_theme);
             break;
          case MENU_ENUM_LABEL_THUMBNAILS:
             BIND_ACTION_GET_VALUE(cbs,
@@ -1517,7 +1551,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             break;
          case MENU_LABEL_XMB_GRADIENT:
             BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_xmb_gradient);
+                  menu_action_setting_disp_set_label_xmb_menu_color_theme);
             break;
          case MENU_LABEL_THUMBNAILS:
             BIND_ACTION_GET_VALUE(cbs,

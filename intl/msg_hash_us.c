@@ -1626,8 +1626,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "xmb_font";
       case MENU_ENUM_LABEL_XMB_THEME:
          return "xmb_theme";
-      case MENU_ENUM_LABEL_XMB_GRADIENT:
+      case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
          return "xmb_menu_color_theme";
+      case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
+         return "materialui_menu_color_theme";
       case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
          return "xmb_shadows_enable";
       case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
@@ -2832,7 +2834,9 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "XMB Font";
       case MENU_ENUM_LABEL_VALUE_XMB_THEME:
          return "XMB Theme";
-      case MENU_ENUM_LABEL_VALUE_XMB_GRADIENT:
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
+         return "Menu Color Theme";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME:
          return "Menu Color Theme";
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
          return "Icon Shadows Enable";

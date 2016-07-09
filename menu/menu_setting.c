@@ -6923,8 +6923,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.xmb.menu_color_theme,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_GRADIENT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_GRADIENT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME),
                   menu_background_gradient,
                   &group_info,
                   &subgroup_info,
@@ -6932,7 +6932,25 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 8, 1, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_GRADIENT);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME);
+         }
+
+         /* only MaterialUI uses these values, don't show them on other drivers */
+         if (string_is_equal(settings->menu.driver, "glui"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.materialui.menu_color_theme,
+                  msg_hash_to_str(MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME),
+                  menu_background_gradient,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME);
          }
 
          CONFIG_BOOL(
