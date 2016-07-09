@@ -6592,6 +6592,21 @@ static bool setting_append_list(
          menu_settings_list_current_add_values(list, list_info, "png");
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER);
 
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->menu.wallpaper.opacity,
+               msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY),
+               0.5f,
+               "%.3f %",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY);
+
          CONFIG_BOOL(
                list, list_info,
                &settings->menu.dynamic_wallpaper_enable,

@@ -507,6 +507,12 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
 
    draw->coords      = &coords;
 
+   if (!menu_display_libretro_running())
+   {
+      settings_t *settings          = config_get_ptr();
+      menu_display_set_alpha(draw->color, settings->menu.wallpaper.opacity);
+   }
+
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;
 

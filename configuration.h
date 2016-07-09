@@ -123,6 +123,11 @@ typedef struct settings
 
       struct
       {
+         float opacity;
+      } wallpaper;
+
+      struct
+      {
          bool enable;
       } mouse;
 

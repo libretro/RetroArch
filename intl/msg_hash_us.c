@@ -2086,6 +2086,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "use_builtin_image_viewer";
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          return "input_poll_type_behavior";
+      case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
+         return "menu_wallpaper_opacity";
       default:
          break;
    }
@@ -3534,6 +3536,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Title Screens";
       case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS:
          return "Boxarts";
+      case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
+         return "Wallpaper opacity";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
