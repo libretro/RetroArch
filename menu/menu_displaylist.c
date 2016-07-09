@@ -3209,7 +3209,6 @@ enum filebrowser_enums
    FILEBROWSER_NONE = 0,
    FILEBROWSER_SELECT_DIR,
    FILEBROWSER_SELECT_FILE,
-   FILEBROWSER_SELECT_CORE,
    FILEBROWSER_SELECT_COLLECTION
 };
 
@@ -3356,12 +3355,12 @@ static int menu_displaylist_parse_generic(
             MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
             FILE_TYPE_USE_DIRECTORY, 0 ,0);
 
-   if (!(BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_CORE)))
+   if (type == DISPLAYLIST_CORES)
    {
       char out_dir[PATH_MAX_LENGTH] = {0};
       fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
 
-      if (!string_is_empty(out_dir))
+      if (string_is_empty(out_dir))
       {
          menu_entries_prepend(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
@@ -3396,7 +3395,7 @@ static int menu_displaylist_parse_generic(
                MENU_ENUM_LABEL_NO_ITEMS,
                MENU_SETTING_NO_ITEM, 0, 0);
 #ifdef HAVE_NETWORKING
-         if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_CORE))
+         if (type == DISPLAYLIST_CORES)
             menu_entries_add_enum(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
                   msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
@@ -3461,7 +3460,7 @@ static int menu_displaylist_parse_generic(
       if (*info->path && !path_is_compressed)
          path = path_basename(path);
 
-      if (BIT32_GET(filebrowser_types,FILEBROWSER_SELECT_CORE))
+      if (type == DISPLAYLIST_CORES)
       {
 #ifndef HAVE_DYNAMIC
          if (frontend_driver_has_fork())
@@ -3546,7 +3545,7 @@ static int menu_displaylist_parse_generic(
       return 0;
    }
 
-   if (BIT32_GET(filebrowser_types,FILEBROWSER_SELECT_CORE))
+   if (type == DISPLAYLIST_CORES)
    {
       enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
       core_info_list_t *list         = NULL;
@@ -3939,8 +3938,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_FILE);
          break;
       case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:
-         BIT32_CLEAR_ALL(filebrowser_types);
-         BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_CORE);
          break;
       case DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION:
          BIT32_CLEAR_ALL(filebrowser_types);
