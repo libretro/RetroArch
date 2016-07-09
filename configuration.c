@@ -1526,7 +1526,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb_scale_factor, "xmb_scale_factor");
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb_alpha_factor, "xmb_alpha_factor");
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb_theme, "xmb_theme");
-   CONFIG_GET_INT_BASE(conf, settings, menu.background_gradient, "menu_background_gradient");
+#ifdef HAVE_XMB
+   CONFIG_GET_INT_BASE(conf, settings, menu.background_gradient, "xmb_menu_color_theme");
+#endif
    CONFIG_GET_BOOL_BASE(conf, settings, menu.xmb_shadows_enable, "xmb_shadows_enable");
    CONFIG_GET_INT_BASE(conf, settings, menu.shader_pipeline, "menu_shader_pipeline");
    if (config_get_path(conf, "xmb_font", tmp_str, sizeof(tmp_str)))
@@ -2938,7 +2940,9 @@ bool config_save_file(const char *path)
    config_set_int(conf, "xmb_scale_factor", settings->menu.xmb_scale_factor);
    config_set_int(conf, "xmb_alpha_factor", settings->menu.xmb_alpha_factor);
    config_set_int(conf, "xmb_theme", settings->menu.xmb_theme);
-   config_set_int(conf, "menu_background_gradient", settings->menu.background_gradient);
+#ifdef HAVE_XMB
+   config_set_int(conf, "xmb_menu_color_theme", settings->menu.background_gradient);
+#endif
    config_set_bool(conf, "xmb_shadows_enable", settings->menu.xmb_shadows_enable);
    config_set_int(conf, "menu_shader_pipeline", settings->menu.shader_pipeline);
    config_set_path(conf, "xmb_font",

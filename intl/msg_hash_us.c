@@ -1627,7 +1627,7 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_XMB_THEME:
          return "xmb_theme";
       case MENU_ENUM_LABEL_XMB_GRADIENT:
-         return "menu_color_theme";
+         return "xmb_menu_color_theme";
       case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
          return "xmb_shadows_enable";
       case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
