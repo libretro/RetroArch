@@ -3311,7 +3311,8 @@ static int menu_displaylist_parse_playlists_horizontal(
 }
 
 static int menu_displaylist_parse_generic(
-      menu_displaylist_info_t *info)
+      menu_displaylist_info_t *info,
+      enum menu_displaylist_ctl_state type)
 {
    bool path_is_compressed, push_dir, filter_ext;
    size_t i, list_size;
@@ -5528,7 +5529,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
-         if (menu_displaylist_parse_generic(info) == 0)
+         if (menu_displaylist_parse_generic(info, type) == 0)
          {
             info->need_refresh = true;
             info->need_push    = true;
