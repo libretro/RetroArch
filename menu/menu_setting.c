@@ -6597,7 +6597,7 @@ static bool setting_append_list(
                &settings->menu.wallpaper.opacity,
                msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY),
-               0.5f,
+               menu_wallpaper_opacity,
                "%.3f %",
                &group_info,
                &subgroup_info,

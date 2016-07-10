@@ -609,7 +609,7 @@ static void config_set_defaults(void)
    settings->menu.timedate_enable              = true;
    settings->menu.core_enable                  = true;
    settings->menu.dynamic_wallpaper_enable     = false;
-   settings->menu.wallpaper.opacity            = 0.5f;
+   settings->menu.wallpaper.opacity            = menu_wallpaper_opacity;
    settings->menu.thumbnails                   = menu_thumbnails_default;
    settings->menu.show_advanced_settings       = show_advanced_settings;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
