@@ -796,6 +796,7 @@ static void mui_frame(void *data)
    float red_500[16]               = {0};
    float red_50[16]                = {0};
    float yellow_500[16]            = {0};
+   float blue_grey_500[16]         = {0};
    float yellow_200[16]            = {0};
    unsigned width                  = 0;
    unsigned height                 = 0;
@@ -834,14 +835,15 @@ static void mui_frame(void *data)
    if (!mui)
       return;
 
-   hex32_to_rgba_normalized(0xFFEB3B, yellow_500, 1.00);
-   hex32_to_rgba_normalized(0xFFF59D, yellow_200, 0.90);
-   hex32_to_rgba_normalized(0xF44336, red_500,    1.00);
-   hex32_to_rgba_normalized(0xFFEBEE, red_50,     0.90);
-   hex32_to_rgba_normalized(0x2196F3, blue_500,   1.00);
-   hex32_to_rgba_normalized(0xE3F2FD, blue_50,    0.90);
-   hex32_to_rgba_normalized(0x4CAF50, green_500,  1.00);
-   hex32_to_rgba_normalized(0xE8F5E9, green_50,   0.90);
+   hex32_to_rgba_normalized(0xFFEB3B, yellow_500,     1.00);
+   hex32_to_rgba_normalized(0xFFF59D, yellow_200,     0.90);
+   hex32_to_rgba_normalized(0xF44336, red_500,        1.00);
+   hex32_to_rgba_normalized(0xFFEBEE, red_50,         0.90);
+   hex32_to_rgba_normalized(0x2196F3, blue_500,       1.00);
+   hex32_to_rgba_normalized(0xE3F2FD, blue_50,        0.90);
+   hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
+   hex32_to_rgba_normalized(0x607D8B, blue_grey_500,  1.00);
+   hex32_to_rgba_normalized(0xCFD8DC, green_50,       0.90);
 
    clearcolor.r = 1.0f;
    clearcolor.g = 1.0f;
@@ -851,6 +853,17 @@ static void mui_frame(void *data)
    switch (settings->menu.materialui.menu_color_theme)
    {
       case MATERIALUI_THEME_BLUE:
+         break;
+      case MATERIALUI_THEME_BLUE_GREY:
+         header_bg_color         = blue_grey_500;
+         body_bg_color           = white_transp_bg;
+         highlighted_entry_color = green_50;
+         footer_bg_color         = white_bg;
+         active_tab_marker_color = blue_grey_500;
+
+         font_normal_color       = 0x212121ff;
+         font_hover_color        = 0x212121ff;
+         font_header_color       = 0xffffffff;
          break;
       case MATERIALUI_THEME_GREEN:
          header_bg_color         = green_500;
@@ -877,7 +890,6 @@ static void mui_frame(void *data)
          break;
       case MATERIALUI_THEME_YELLOW:
          header_bg_color         = yellow_500;
-         body_bg_color           = white_transp_bg;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = yellow_200;
          footer_bg_color         = white_bg;
