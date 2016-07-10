@@ -3136,8 +3136,6 @@ static int menu_displaylist_parse_options_remappings(
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
    for (p = 0; p < settings->input.max_users; p++)
    {
       char key_type[PATH_MAX_LENGTH]   = {0};
@@ -3169,6 +3167,8 @@ static int menu_displaylist_parse_options_remappings(
          msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME),
          MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
          MENU_SETTING_ACTION, 0, 0);
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
    {
@@ -3312,8 +3312,9 @@ static int menu_displaylist_parse_generic(
       menu_displaylist_info_t *info,
       enum menu_displaylist_ctl_state type)
 {
-   bool path_is_compressed, push_dir, filter_ext;
    size_t i, list_size;
+   bool path_is_compressed      = false;
+   bool filter_ext              = false;
    struct string_list *str_list = NULL;
    unsigned items_found         = 0;
    settings_t *settings         = config_get_ptr();
@@ -3327,7 +3328,6 @@ static int menu_displaylist_parse_generic(
    }
 
    path_is_compressed = path_is_compressed_file(info->path);
-   push_dir           = BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR);
    filter_ext         = 
       settings->menu.navigation.browser.filter.supported_extensions_enable;
 
@@ -3348,7 +3348,7 @@ static int menu_displaylist_parse_generic(
             MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
             FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
 
-   if (push_dir)
+   if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
@@ -3449,7 +3449,7 @@ static int menu_displaylist_parse_generic(
 
       if (!is_dir)
       {
-         if (push_dir)
+         if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
             continue;
          if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
             continue;
