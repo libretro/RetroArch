@@ -478,6 +478,10 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
          }
 
       }
+      else
+      {
+         return -1;
+      }
    }
 
    return 0;
