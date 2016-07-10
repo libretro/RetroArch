@@ -1425,7 +1425,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 }
 
 static int menu_cbs_init_bind_get_string_representation_compare_label(
-      menu_file_list_cbs_t *cbs, uint32_t label_hash)
+      menu_file_list_cbs_t *cbs)
 {
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
@@ -1534,97 +1534,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          case MENU_ENUM_LABEL_SAVE_STATE:
          case MENU_ENUM_LABEL_LOAD_STATE:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_more);
-            break;
-         default:
-            return - 1;
-      }
-   }
-   else
-   {
-      switch (label_hash)
-      {
-         case MENU_LABEL_XMB_THEME:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_xmb_theme);
-            break;
-         case MENU_LABEL_XMB_GRADIENT:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_xmb_menu_color_theme);
-            break;
-         case MENU_LABEL_THUMBNAILS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_thumbnails);
-            break;
-         case MENU_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_remap_file_load);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_filter_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_scale_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_num_passes);
-            break;
-         case MENU_LABEL_XMB_RIBBON_ENABLE:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_pipeline);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PASS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_default_filter);
-            break;
-         case MENU_LABEL_VIDEO_FILTER:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_filter);
-            break;
-         case MENU_LABEL_CONFIGURATIONS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_configurations);
-            break;
-         case MENU_LABEL_SCREEN_RESOLUTION:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_video_resolution);
-            break;
-         case MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mapping_type);
-            break;
-         case MENU_LABEL_CONTENT_COLLECTION_LIST:
-         case MENU_LABEL_LOAD_CONTENT_HISTORY:
-         case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         case MENU_LABEL_DETECT_CORE_LIST:
-         case MENU_LABEL_LOAD_CONTENT:
-         case MENU_LABEL_CORE_OPTIONS:
-         case MENU_LABEL_CORE_CHEAT_OPTIONS:
-         case MENU_LABEL_SHADER_OPTIONS:
-         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-         case MENU_LABEL_CHEAT_FILE_SAVE_AS:
-         case MENU_LABEL_FRONTEND_COUNTERS:
-         case MENU_LABEL_CORE_COUNTERS:
-         case MENU_LABEL_DATABASE_MANAGER_LIST:
-         case MENU_LABEL_CURSOR_MANAGER_LIST:
-         case MENU_LABEL_CLOSE_CONTENT:
-         case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-         case MENU_LABEL_CORE_INFORMATION:
-         case MENU_LABEL_SYSTEM_INFORMATION:
-         case MENU_LABEL_DEBUG_INFORMATION:
-         case MENU_LABEL_ACHIEVEMENT_LIST:
-         case MENU_LABEL_SAVE_STATE:
-         case MENU_LABEL_LOAD_STATE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_more);
             break;
@@ -1776,8 +1685,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
 }
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
@@ -1843,7 +1751,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (menu_cbs_init_bind_get_string_representation_compare_label(cbs, label_hash) == 0)
+   if (menu_cbs_init_bind_get_string_representation_compare_label(cbs) == 0)
       return 0;
 
    if (menu_cbs_init_bind_get_string_representation_compare_type(cbs, type) == 0)
