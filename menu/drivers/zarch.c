@@ -209,7 +209,7 @@ static bool zarch_zui_check_button_down(zui_t *zui,
    hitbox.y1   = y1;
    hitbox.y2   = y2;
 
-   if (menu_input_ctl(MENU_INPUT_CTL_CHECK_INSIDE_HITBOX, &hitbox))
+   if (menu_input_mouse_check_vector_inside_hitbox(&hitbox))
       zui->item.hot = id;
 
    if (     zui->item.hot == id 
@@ -233,7 +233,7 @@ static bool zarch_zui_check_button_up(zui_t *zui,
    hitbox.y1   = y1;
    hitbox.y2   = y2;
 
-   if (menu_input_ctl(MENU_INPUT_CTL_CHECK_INSIDE_HITBOX, &hitbox))
+   if (menu_input_mouse_check_vector_inside_hitbox(&hitbox))
       zui->item.hot = id;
 
    if (     zui->item.active == id 

@@ -465,15 +465,19 @@ static void config_set_defaults(void)
    if (def_menu)
       strlcpy(settings->menu.driver,
             def_menu,  sizeof(settings->menu.driver));
-   settings->menu.xmb_scale_factor   = xmb_scale_factor;
-   settings->menu.xmb_alpha_factor   = xmb_alpha_factor;
-   settings->menu.xmb_theme          = xmb_theme;
-   settings->menu.background_gradient= menu_background_gradient;
-   settings->menu.xmb_shadows_enable = xmb_shadows_enable;
-   settings->menu.shader_pipeline    = menu_shader_pipeline;
-   settings->menu.xmb_font[0]        = '\0';
-   settings->menu.throttle_framerate = true;
-   settings->menu.linear_filter      = true;
+#ifdef HAVE_XMB
+   settings->menu.xmb.scale_factor     = xmb_scale_factor;
+   settings->menu.xmb.alpha_factor     = xmb_alpha_factor;
+   settings->menu.xmb.theme            = xmb_theme;
+   settings->menu.xmb.menu_color_theme = menu_background_gradient;
+   settings->menu.xmb.shadows_enable   = xmb_shadows_enable;
+   settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
+   settings->menu.xmb.font[0]          = '\0';
+#endif
+   settings->menu.materialui.menu_color_theme = 0;
+
+   settings->menu.throttle_framerate   = true;
+   settings->menu.linear_filter        = true;
 #endif
 
    settings->history_list_enable         = def_history_list_enable;
@@ -605,6 +609,7 @@ static void config_set_defaults(void)
    settings->menu.timedate_enable              = true;
    settings->menu.core_enable                  = true;
    settings->menu.dynamic_wallpaper_enable     = false;
+   settings->menu.wallpaper.opacity            = menu_wallpaper_opacity;
    settings->menu.thumbnails                   = menu_thumbnails_default;
    settings->menu.show_advanced_settings       = show_advanced_settings;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
@@ -1324,6 +1329,7 @@ static bool config_load_file(const char *path, bool set_defaults)
          "menu_core_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.dynamic_wallpaper_enable,
          "menu_dynamic_wallpaper_enable");
+   CONFIG_GET_FLOAT_BASE(conf, settings, menu.wallpaper.opacity, "menu_wallpaper_opacity");
    CONFIG_GET_INT_BASE(conf, settings, menu.thumbnails,
          "menu_thumbnails");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.enable,
@@ -1523,14 +1529,17 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_array(conf, "location_driver", settings->location.driver, sizeof(settings->location.driver));
 #ifdef HAVE_MENU
    config_get_array(conf, "menu_driver",     settings->menu.driver, sizeof(settings->menu.driver));
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb_scale_factor, "xmb_scale_factor");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb_alpha_factor, "xmb_alpha_factor");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb_theme, "xmb_theme");
-   CONFIG_GET_INT_BASE(conf, settings, menu.background_gradient, "menu_background_gradient");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.xmb_shadows_enable, "xmb_shadows_enable");
-   CONFIG_GET_INT_BASE(conf, settings, menu.shader_pipeline, "menu_shader_pipeline");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.scale_factor, "xmb_scale_factor");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.alpha_factor, "xmb_alpha_factor");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.theme, "xmb_theme");
+#ifdef HAVE_XMB
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.menu_color_theme, "xmb_menu_color_theme");
+#endif
+   CONFIG_GET_INT_BASE(conf, settings, menu.materialui.menu_color_theme, "materialui_menu_color_theme");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.xmb.shadows_enable, "xmb_shadows_enable");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.shader_pipeline, "menu_shader_pipeline");
    if (config_get_path(conf, "xmb_font", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->menu.xmb_font, tmp_str, sizeof(settings->menu.xmb_font));
+      strlcpy(settings->menu.xmb.font, tmp_str, sizeof(settings->menu.xmb.font));
 #endif
    config_get_array(conf, "video_context_driver",
          settings->video.context_driver,
@@ -2700,6 +2709,8 @@ bool config_save_file(const char *path)
 #ifdef HAVE_MENU
    config_set_path(conf, "menu_wallpaper",
          settings->path.menu_wallpaper);
+   config_set_float(conf, "menu_wallpaper_opacity",
+         settings->menu.wallpaper.opacity);
 #endif
    config_set_string(conf, "video_filter",
          settings->path.softfilter_plugin);
@@ -2935,14 +2946,17 @@ bool config_save_file(const char *path)
          *global->dir.savestate ? global->dir.savestate : "default");
 
 #ifdef HAVE_MENU
-   config_set_int(conf, "xmb_scale_factor", settings->menu.xmb_scale_factor);
-   config_set_int(conf, "xmb_alpha_factor", settings->menu.xmb_alpha_factor);
-   config_set_int(conf, "xmb_theme", settings->menu.xmb_theme);
-   config_set_int(conf, "menu_background_gradient", settings->menu.background_gradient);
-   config_set_bool(conf, "xmb_shadows_enable", settings->menu.xmb_shadows_enable);
-   config_set_int(conf, "menu_shader_pipeline", settings->menu.shader_pipeline);
+   config_set_int(conf, "xmb_scale_factor", settings->menu.xmb.scale_factor);
+   config_set_int(conf, "xmb_alpha_factor", settings->menu.xmb.alpha_factor);
+   config_set_int(conf, "xmb_theme", settings->menu.xmb.theme);
+#ifdef HAVE_XMB
+   config_set_int(conf, "xmb_menu_color_theme", settings->menu.xmb.menu_color_theme);
+#endif
+   config_set_int(conf, "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme);
+   config_set_bool(conf, "xmb_shadows_enable", settings->menu.xmb.shadows_enable);
+   config_set_int(conf, "menu_shader_pipeline", settings->menu.xmb.shader_pipeline);
    config_set_path(conf, "xmb_font",
-         !string_is_empty(settings->menu.xmb_font) ? settings->menu.xmb_font : "");
+         !string_is_empty(settings->menu.xmb.font) ? settings->menu.xmb.font : "");
    config_set_bool(conf, "rgui_show_start_screen",
          settings->menu_show_start_screen);
    config_set_bool(conf, "menu_navigation_wraparound_enable",

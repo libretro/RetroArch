@@ -609,6 +609,20 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
    return false;
 }
 
+bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox)
+{
+   int16_t  mouse_x       = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t  mouse_y       = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   bool     inside_hitbox = 
+      (mouse_x    >= hitbox->x1) 
+      && (mouse_x <= hitbox->x2) 
+      && (mouse_y >= hitbox->y1) 
+      && (mouse_y <= hitbox->y2)
+      ;
+
+   return inside_hitbox;
+}
+
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
    static char menu_input_keyboard_label_setting[256];
@@ -631,22 +645,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
             menu_input->binds.begin = lim->min;
             menu_input->binds.last  = lim->max;
-         }
-         break;
-      case MENU_INPUT_CTL_CHECK_INSIDE_HITBOX:
-         {
-            menu_input_ctx_hitbox_t *hitbox = (menu_input_ctx_hitbox_t*)data;
-            int16_t  mouse_x       = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-            int16_t  mouse_y       = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-            bool     inside_hitbox = 
-                  (mouse_x    >= hitbox->x1) 
-                  && (mouse_x <= hitbox->x2) 
-                  && (mouse_y >= hitbox->y1) 
-                  && (mouse_y <= hitbox->y2)
-                  ;
-
-            if (!inside_hitbox)
-               return false;
          }
          break;
       case MENU_INPUT_CTL_DEINIT:
@@ -791,16 +789,19 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
 static int menu_input_pointer(unsigned *action)
 {
-   unsigned fb_width, fb_height;
-   int pointer_device, pointer_x, pointer_y;
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input                     = menu_input_get_ptr();
-
-   fb_width  = menu_display_get_width();
-   fb_height = menu_display_get_height();
-
-   pointer_device = menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
+   unsigned fb_width                            = menu_display_get_width();
+   unsigned fb_height                           = menu_display_get_height();
+   int pointer_device                           = 
+      menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
+   int pointer_x                                = 
+      input_driver_state(binds, 0, pointer_device,
+         0, RETRO_DEVICE_ID_POINTER_X);
+   int pointer_y                                = 
+      input_driver_state(binds, 0, pointer_device,
+         0, RETRO_DEVICE_ID_POINTER_Y);
 
    menu_input->pointer.pressed[0]  = input_driver_state(binds,
          0, pointer_device,
@@ -810,11 +811,6 @@ static int menu_input_pointer(unsigned *action)
          1, RETRO_DEVICE_ID_POINTER_PRESSED);
    menu_input->pointer.back  = input_driver_state(binds, 0, pointer_device,
          0, RARCH_DEVICE_ID_POINTER_BACK);
-
-   pointer_x = input_driver_state(binds, 0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_X);
-   pointer_y = input_driver_state(binds, 0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_Y);
 
    menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
    menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;

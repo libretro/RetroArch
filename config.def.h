@@ -524,12 +524,16 @@ static bool xmb_shadows_enable   = false;
 static bool xmb_shadows_enable   = true;
 #endif
 
+static float menu_wallpaper_opacity = 0.300;
+
 static unsigned menu_background_gradient = 4;
 
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
 #if defined(HAVE_OPENGLES2) || defined(OSX_PPC)
 static unsigned menu_shader_pipeline = 1;
 #else
 static unsigned menu_shader_pipeline = 2;
+#endif
 #endif
 
 static bool show_advanced_settings    = true;

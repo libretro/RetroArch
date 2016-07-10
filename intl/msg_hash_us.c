@@ -1110,6 +1110,15 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
 
 static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 {
+   if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
+         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
+   {
+      static char hotkey_lbl[PATH_MAX_LENGTH] = {0};
+      unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
+      snprintf(hotkey_lbl, sizeof(hotkey_lbl), "input_hotkey_binds_%d", idx);
+      return hotkey_lbl;
+   }
+
    switch (msg)
    {
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
@@ -1184,8 +1193,12 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "input_libretro_device_p%u";
       case MENU_ENUM_LABEL_RUN:
          return "collection";
-      case MENU_ENUM_LABEL_CHEEVOS_ENTRY:
-         return "cheevos_entry";
+      case MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY:
+         return "playlist_collection_entry";
+      case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
+         return "cheevos_locked_entry";
+      case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
+         return "cheevos_unlocked_entry";
       case MENU_ENUM_LABEL_FILEBROWSER_ENTRY:
          return "filebrowser_entry";
       case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
@@ -1252,6 +1265,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "no_performance_counters";
       case MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY:
          return "no_entries_to_display";
+      case MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY:
+         return "no_achievements_to_display";
       case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
          return "cheevos_unlocked_achievements";
       case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS:
@@ -1624,8 +1639,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "xmb_font";
       case MENU_ENUM_LABEL_XMB_THEME:
          return "xmb_theme";
-      case MENU_ENUM_LABEL_XMB_GRADIENT:
-         return "xmb_gradient";
+      case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
+         return "xmb_menu_color_theme";
+      case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
+         return "materialui_menu_color_theme";
       case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
          return "xmb_shadows_enable";
       case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
@@ -2080,6 +2097,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "use_builtin_image_viewer";
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          return "input_poll_type_behavior";
+      case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
+         return "menu_wallpaper_opacity";
       default:
          break;
    }
@@ -2098,6 +2117,48 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED:
+         return "Ribbon (simplified)";
+      case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON:
+         return "Ribbon";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE:
+         return "Blue";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED:
+         return "Red";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW:
+         return "Yellow";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN:
+         return "Green";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE:
+         return "Dark Blue";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED:
+         return "Legacy Red";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE:
+         return "Dark Purple";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE:
+         return "Midnight Blue";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN:
+         return "Golden";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE:
+         return "Electric Blue";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN:
+         return "Apple Green";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA:
+         return "Undersea";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED:
+         return "Volcanic Red";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK:
+         return "Dark";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY:
+         return "Unlocked";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
+         return "Unlocked";
+      case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE:
+         return "Late";
+      case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL:
+         return "Normal";
+      case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY:
+         return "Early";
       case MSG_INTERNAL_MEMORY:
          return "Internal Memory";
       case MSG_EXTERNAL_APPLICATION_DIR:
@@ -2498,6 +2559,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Custom Viewport Height";
       case MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY:
          return "No entries to display.";
+      case MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY:
+         return "No achievements to display.";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
          return "Unlocked Achievements:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
@@ -2830,8 +2893,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "XMB Font";
       case MENU_ENUM_LABEL_VALUE_XMB_THEME:
          return "XMB Theme";
-      case MENU_ENUM_LABEL_VALUE_XMB_GRADIENT:
-         return "Background Gradient";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
+         return "Menu Color Theme";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME:
+         return "Menu Color Theme";
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
          return "Icon Shadows Enable";
       case MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE:
@@ -3526,6 +3591,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Title Screens";
       case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS:
          return "Boxarts";
+      case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
+         return "Wallpaper opacity";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

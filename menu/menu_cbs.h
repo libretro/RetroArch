@@ -27,6 +27,7 @@ enum
    ACTION_OK_DL_DEFAULT = 0,
    ACTION_OK_DL_OPEN_ARCHIVE,
    ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE,
+   ACTION_OK_DL_SCAN_DIR_LIST,
    ACTION_OK_DL_HELP,
    ACTION_OK_DL_RPL_ENTRY,
    ACTION_OK_DL_RDB_ENTRY,
@@ -37,7 +38,7 @@ enum
    ACTION_OK_DL_SHADER_PRESET,
    ACTION_OK_DL_GENERIC,
    ACTION_OK_DL_PUSH_DEFAULT,
-   ACTION_OK_DL_DOWNLOADS_DIR,
+   ACTION_OK_DL_FILE_BROWSER_SELECT_DIR,
    ACTION_OK_DL_INPUT_SETTINGS_LIST,
    ACTION_OK_DL_DRIVER_SETTINGS_LIST,
    ACTION_OK_DL_VIDEO_SETTINGS_LIST,
@@ -104,7 +105,7 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
 int shader_action_parameter_preset_right(unsigned type, const char *label,
       bool wraparound);
 
-int generic_action_ok_displaylist_push(const char *path,
+int generic_action_ok_displaylist_push(const char *path, const char *new_path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type);
 
@@ -145,8 +146,7 @@ int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash, uint32_t menu_label_hash);
+      const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);

@@ -540,11 +540,11 @@ bool core_info_load(core_info_ctx_find_t *info)
    return true;
 }
 
-bool core_info_find(core_info_ctx_find_t *info)
+bool core_info_find(core_info_ctx_find_t *info, const char *core_path)
 {
    if (!info || !core_info_curr_list)
       return false;
-   info->inf = core_info_find_internal(core_info_curr_list, info->path);
+   info->inf = core_info_find_internal(core_info_curr_list, core_path);
    if (!info->inf)
       return false;
    return true;

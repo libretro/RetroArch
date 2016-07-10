@@ -114,6 +114,14 @@ typedef struct mui_handle
    float scroll_y;
 } mui_handle_t;
 
+static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
+{
+   rgba[0] = rgba[4] = rgba[8]  = rgba[12] = ((hex >> 16) & 0xFF) * (1.0f / 255.0f); /* r */
+   rgba[1] = rgba[5] = rgba[9]  = rgba[13] = ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f); /* g */
+   rgba[2] = rgba[6] = rgba[10] = rgba[14] = ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f); /* b */
+   rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
+}
+
 static const char *mui_texture_path(unsigned id)
 {
    switch (id)
@@ -217,7 +225,7 @@ static void mui_draw_icon(
 static void mui_draw_tab(mui_handle_t *mui,
       unsigned i,
       unsigned width, unsigned height,
-      float *pure_white)
+      float *tab_color)
 {
    unsigned tab_icon = 0;
 
@@ -249,7 +257,7 @@ static void mui_draw_tab(mui_handle_t *mui,
          height,
          0,
          1,
-         &pure_white[0]);
+         &tab_color[0]); /* default color is pure_white */
 }
 
 static void mui_draw_text(float x, float y, unsigned width, unsigned height,
@@ -305,7 +313,7 @@ static void mui_render_quad(mui_handle_t *mui,
 
 static void mui_draw_tab_begin(mui_handle_t *mui,
       unsigned width, unsigned height,
-      float *white_bg, float *grey_bg)
+      float *tabs_bg_color, float *tabs_separator_color)
 {
    float scale_factor = menu_display_get_dpi();
 
@@ -315,19 +323,19 @@ static void mui_draw_tab_begin(mui_handle_t *mui,
    mui_render_quad(mui, 0, height - mui->tabs_height, width,
          mui->tabs_height,
          width, height,
-         white_bg);
+         tabs_bg_color); /* white_bg */
 
    /* tabs separator */
    mui_render_quad(mui, 0, height - mui->tabs_height, width,
          1,
          width, height,
-         grey_bg);
+         tabs_separator_color); /* grey_bg */
 }
 
 static void mui_draw_tab_end(mui_handle_t *mui,
       unsigned width, unsigned height,
       unsigned header_height,
-      float *blue_bg)
+      float *active_tab_marker_color)
 {
    /* active tab marker */
    unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
@@ -337,7 +345,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          tab_width,
          header_height/16,
          width, height,
-         &blue_bg[0]);
+         &active_tab_marker_color[0]); /* blue_500 */
 }
 
 static void mui_draw_scrollbar(mui_handle_t *mui, 
@@ -391,7 +399,7 @@ static void mui_get_message(void *data, const char *message)
 static void mui_render_messagebox(const char *message)
 {
    unsigned i, width, height;
-   uint32_t normal_color;
+   uint32_t font_normal_color;
    int x, y, font_size;
    settings_t *settings     = config_get_ptr();
    struct string_list *list = (struct string_list*)
@@ -409,7 +417,7 @@ static void mui_render_messagebox(const char *message)
    x = width  / 2;
    y = height / 2 - list->size * font_size / 2;
 
-   normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
+   font_normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
 
    for (i = 0; i < list->size; i++)
    {
@@ -417,7 +425,7 @@ static void mui_render_messagebox(const char *message)
       if (msg)
          mui_draw_text(x, y + i * font_size,
                width, height,
-               msg, normal_color, TEXT_ALIGN_CENTER);
+               msg, font_normal_color, TEXT_ALIGN_CENTER);
    }
 
 end:
@@ -595,14 +603,14 @@ static void mui_render_label_value(mui_handle_t *mui,
             height,
             0,
             1,
-            &pure_white[0]);
+            &pure_white[0]); /* pure_white */
 }
 
 static void mui_render_menu_list(mui_handle_t *mui,
       unsigned width, unsigned height,
-      uint32_t normal_color,
-      uint32_t hover_color,
-      float *pure_white)
+      uint32_t font_normal_color,
+      uint32_t font_hover_color,
+      float *menu_list_color)
 {
    unsigned header_height;
    uint64_t *frame_count;
@@ -641,9 +649,18 @@ static void mui_render_menu_list(mui_handle_t *mui,
 
       entry_selected = selection == i;
 
-      mui_render_label_value(mui, y, width, height, *frame_count / 20,
-         entry_selected ? hover_color : normal_color, entry_selected,
-         rich_label, entry.value, pure_white);
+      mui_render_label_value(
+         mui,
+         y,
+         width,
+         height,
+         *frame_count / 20,
+         entry_selected ? font_hover_color : font_normal_color, 
+         entry_selected,
+         rich_label, 
+         entry.value, 
+         menu_list_color /* pure_white */
+      ); 
    }
 }
 
@@ -716,37 +733,23 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw)
 
 static void mui_frame(void *data)
 {
-   unsigned header_height;
-   bool display_kb;
    float black_bg[16] = {
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
    };
-   float blue_bg[16] = {
-      0.13, 0.59, 0.95, 1,
-      0.13, 0.59, 0.95, 1,
-      0.13, 0.59, 0.95, 1,
-      0.13, 0.59, 0.95, 1,
-   };
-   float lightblue_bg[16] = {
-      0.89, 0.95, 0.99, 1.00,
-      0.89, 0.95, 0.99, 1.00,
-      0.89, 0.95, 0.99, 1.00,
-      0.89, 0.95, 0.99, 1.00,
-   };
    float pure_white[16]=  {
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
    };
    float white_bg[16]=  {
-      0.98, 0.98, 0.98, 1,
-      0.98, 0.98, 0.98, 1,
-      0.98, 0.98, 0.98, 1,
-      0.98, 0.98, 0.98, 1,
+      0.98, 0.98, 0.98, 1.00,
+      0.98, 0.98, 0.98, 1.00,
+      0.98, 0.98, 0.98, 1.00,
+      0.98, 0.98, 0.98, 1.00,
    };
    float white_transp_bg[16]=  {
       0.98, 0.98, 0.98, 0.90,
@@ -755,41 +758,154 @@ static void mui_frame(void *data)
       0.98, 0.98, 0.98, 0.90,
    };
    float grey_bg[16]=  {
-      0.78, 0.78, 0.78, 1,
-      0.78, 0.78, 0.78, 1,
-      0.78, 0.78, 0.78, 1,
-      0.78, 0.78, 0.78, 1,
+      0.78, 0.78, 0.78, 0.90,
+      0.78, 0.78, 0.78, 0.90,
+      0.78, 0.78, 0.78, 0.90,
+      0.78, 0.78, 0.78, 0.90,
    };
    float shadow_bg[16]=  {
-      0, 0, 0, 0,
-      0, 0, 0, 0,
-      0, 0, 0, 0.2,
-      0, 0, 0, 0.2,
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.2,
+      0.00, 0.00, 0.00, 0.2,
    };
+   float greyish_blue[16] = {
+      0.22, 0.28, 0.31, 1.00,
+      0.22, 0.28, 0.31, 1.00,
+      0.22, 0.28, 0.31, 1.00,
+      0.22, 0.28, 0.31, 1.00,
+   };
+   float almost_black[16] = {
+      0.13, 0.13, 0.13, 0.90,
+      0.13, 0.13, 0.13, 0.90,
+      0.13, 0.13, 0.13, 0.90,
+      0.13, 0.13, 0.13, 0.90,
+   };
+
+   /* This controls the main background color */
+   menu_display_ctx_clearcolor_t clearcolor;
    menu_animation_ctx_ticker_t ticker;
-   unsigned width, height, ticker_limit, i;
-   size_t selection;
-   size_t title_margin;
    menu_display_ctx_draw_t draw;
+
+   /* https://material.google.com/style/color.html#color-color-palette */
+   /* Hex values converted to RGB normalized decimals, alpha set to 1 */
+   float blue_500[16]              = {0};
+   float blue_50[16]               = {0};
+   float green_500[16]             = {0};
+   float green_50[16]              = {0};
+   float red_500[16]               = {0};
+   float red_50[16]                = {0};
+   float yellow_500[16]            = {0};
+   float yellow_200[16]            = {0};
+   unsigned width                  = 0;
+   unsigned height                 = 0;
+   unsigned ticker_limit           = 0;
+   unsigned i                      = 0;
+   unsigned header_height          = 0;
+   size_t selection                = 0;
+   size_t title_margin             = 0;
+   bool display_kb                 = false;
    mui_handle_t *mui               = (mui_handle_t*)data;
    uint64_t *frame_count           = video_driver_get_frame_count_ptr();
    char msg[256]                   = {0};
    char title[256]                 = {0};
    char title_buf[256]             = {0};
    char title_msg[256]             = {0};
-   const uint32_t normal_color     = 0x212121ff;
-   const uint32_t hover_color      = 0x212121ff;
-   const uint32_t title_color      = 0xffffffff;
-   const uint32_t activetab_color  = 0x0096f2ff;
-   const uint32_t passivetab_color = 0x9e9e9eff;
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
 
-   (void)passivetab_color;
-   (void)activetab_color;
+   /* Default is blue theme */
+   float *header_bg_color          = blue_500;
+   float *highlighted_entry_color  = blue_50;
+   float *footer_bg_color          = white_bg;
+   float *body_bg_color            = white_transp_bg;
+   settings_t *settings            = config_get_ptr();
+   float *active_tab_marker_color  = blue_500;
+
+   uint32_t font_normal_color      = 0x212121ff;
+   uint32_t font_hover_color       = 0x212121ff;
+   uint32_t font_header_color      = 0xffffffff;
+
+#if 0
+   uint32_t activetab_color        = 0x0096f2ff;
+   uint32_t passivetab_color       = 0x9e9e9eff;
+#endif
 
    if (!mui)
       return;
+
+   hex32_to_rgba_normalized(0xFFEB3B, yellow_500, 1.00);
+   hex32_to_rgba_normalized(0xFFF59D, yellow_200, 0.90);
+   hex32_to_rgba_normalized(0xF44336, red_500,    1.00);
+   hex32_to_rgba_normalized(0xFFEBEE, red_50,     0.90);
+   hex32_to_rgba_normalized(0x2196F3, blue_500,   1.00);
+   hex32_to_rgba_normalized(0xE3F2FD, blue_50,    0.90);
+   hex32_to_rgba_normalized(0x4CAF50, green_500,  1.00);
+   hex32_to_rgba_normalized(0xE8F5E9, green_50,   0.90);
+
+   clearcolor.r = 1.0f;
+   clearcolor.g = 1.0f;
+   clearcolor.b = 1.0f;
+   clearcolor.a = 0.75f;
+
+   switch (settings->menu.materialui.menu_color_theme)
+   {
+      case MATERIALUI_THEME_BLUE:
+         break;
+      case MATERIALUI_THEME_GREEN:
+         header_bg_color         = green_500;
+         body_bg_color           = white_transp_bg;
+         highlighted_entry_color = green_50;
+         footer_bg_color         = white_bg;
+         active_tab_marker_color = green_500;
+
+         font_normal_color       = 0x212121ff;
+         font_hover_color        = 0x212121ff;
+         font_header_color       = 0xffffffff;
+         break;
+      case MATERIALUI_THEME_RED:
+         header_bg_color         = red_500;
+         body_bg_color           = white_transp_bg;
+         highlighted_entry_color = red_50;
+         footer_bg_color         = white_bg;
+         body_bg_color           = white_transp_bg;
+         active_tab_marker_color = red_500;
+
+         font_normal_color       = 0x212121ff;
+         font_hover_color        = 0x212121ff;
+         font_header_color       = 0xffffffff;
+         break;
+      case MATERIALUI_THEME_YELLOW:
+         header_bg_color         = yellow_500;
+         body_bg_color           = white_transp_bg;
+         body_bg_color           = white_transp_bg;
+         highlighted_entry_color = yellow_200;
+         footer_bg_color         = white_bg;
+         active_tab_marker_color = yellow_500;
+
+         font_normal_color       = 0x212121ff;
+         font_hover_color        = 0x212121ff;
+         font_header_color       = 0x00000000;
+         break;
+      case MATERIALUI_THEME_DARK_BLUE:
+         header_bg_color         = greyish_blue;
+         body_bg_color           = almost_black;
+         highlighted_entry_color = grey_bg;
+         footer_bg_color         = almost_black;
+         active_tab_marker_color = greyish_blue;
+
+         font_normal_color = 0xffffffff;
+         font_hover_color  = 0x00000000;
+
+         /* 
+            TODO/FIXME - Maybe make this track the footer's bg color or vice-versa
+            e.g. clearcolor.r = &footer_bg_color[0]; clearcolor.g = &footer_bg_color[4];
+            */
+         clearcolor.r = 0.13f;
+         clearcolor.g = 0.13f;
+         clearcolor.b = 0.13f;
+         break;
+   }
 
    video_driver_get_size(&width, &height);
 
@@ -803,7 +919,7 @@ static void mui_frame(void *data)
       draw.width              = width;
       draw.height             = height;
       draw.texture            = menu_display_white_texture;
-      draw.color              = &white_transp_bg[0];
+      draw.color              = &body_bg_color[0];
       draw.vertex             = NULL;
       draw.tex_coord          = NULL;
       draw.vertex_count       = 4;
@@ -816,13 +932,6 @@ static void mui_frame(void *data)
    }
    else
    {
-      menu_display_ctx_clearcolor_t clearcolor;
-
-      clearcolor.r = 1.0f;
-      clearcolor.g = 1.0f;
-      clearcolor.b = 1.0f;
-      clearcolor.a = 0.75f;
-
       menu_display_clear_color(&clearcolor);
 
       if (mui->textures.bg)
@@ -858,46 +967,69 @@ static void mui_frame(void *data)
       return;
 
    if (background_rendered || libretro_running)
-      menu_display_set_alpha(lightblue_bg, 0.75);
+      menu_display_set_alpha(blue_50, 0.75);
    else
-      menu_display_set_alpha(lightblue_bg, 1.0);
+      menu_display_set_alpha(blue_50, 1.0);
 
    /* highlighted entry */
-   mui_render_quad(mui, 0,
-         header_height -   mui->scroll_y + mui->line_height *
-         selection, width, mui->line_height,
-         width, height,
-         &lightblue_bg[0]);
+   mui_render_quad(
+      mui, 
+      0,
+      header_height - mui->scroll_y + mui->line_height *selection,
+      width,
+      mui->line_height,
+      width, 
+      height,
+      &highlighted_entry_color[0]
+   );
 
    menu_display_font_bind_block(&mui->list_block);
 
-   mui_render_menu_list(mui, width, height,
-         normal_color, hover_color, &pure_white[0]);
+   mui_render_menu_list(
+      mui, 
+      width, 
+      height,
+      font_normal_color, 
+      font_hover_color, 
+      &pure_white[0]
+   );
 
    menu_display_font_flush_block();
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
-   mui_render_quad(mui, 0, 0, width, header_height,
-         width, height, &blue_bg[0]);
+   mui_render_quad(
+      mui,
+      0, 
+      0, 
+      width, 
+      header_height,
+      width, 
+      height,
+      &header_bg_color[0]);
 
    mui->tabs_height = 0;
 
    /* display tabs if depth equal one, if not hide them */
    if (mui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
    {
-      mui_draw_tab_begin(mui, width, height, &white_bg[0], &grey_bg[0]);
+      mui_draw_tab_begin(mui, width, height, &footer_bg_color[0], &grey_bg[0]);
 
       for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
          mui_draw_tab(mui, i, width, height, &pure_white[0]);
 
-      mui_draw_tab_end(mui, width, height, header_height, &blue_bg[0]);
+      mui_draw_tab_end(mui, width, height, header_height, &active_tab_marker_color[0]);
    }
 
-   mui_render_quad(mui, 0, header_height, width,
-         mui->shadow_height,
-         width, height,
-         &shadow_bg[0]);
+   mui_render_quad(
+      mui,
+      0, 
+      header_height, 
+      width,
+      mui->shadow_height,
+      width, 
+      height,
+      &shadow_bg[0]);
 
    title_margin = mui->margin;
 
@@ -905,15 +1037,16 @@ static void mui_frame(void *data)
    {
       title_margin = mui->icon_size;
       mui_draw_icon(
-            mui->icon_size,
-            mui->textures.list[MUI_TEXTURE_BACK],
-            0,
-            0,
-            width,
-            height,
-            0,
-            1,
-            &pure_white[0]);
+         mui->icon_size,
+         mui->textures.list[MUI_TEXTURE_BACK],
+         0,
+         0,
+         width,
+         height,
+         0,
+         1,
+         &pure_white[0]
+      );
    }
 
    ticker_limit = (width - mui->margin*2) / mui->glyph_width;
@@ -951,7 +1084,7 @@ static void mui_frame(void *data)
    }
 
    mui_draw_text(title_margin, header_height / 2, width, height,
-         title_buf, title_color, TEXT_ALIGN_LEFT);
+         title_buf, font_header_color, TEXT_ALIGN_LEFT);
 
    mui_draw_scrollbar(mui, width, height, &grey_bg[0]);
 

@@ -476,6 +476,16 @@ void menu_display_draw(menu_display_ctx_draw_t *draw)
    menu_disp->draw(draw);
 }
 
+bool menu_display_shader_pipeline_active(void)
+{
+   settings_t *settings          = config_get_ptr();
+   if (!string_is_equal(menu_driver_ident(), "xmb"))
+      return false;
+   if (settings->menu.xmb.shader_pipeline == 0)
+      return false;
+   return true;
+}
+
 void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
 {
    if (!menu_disp || !draw || !menu_disp->draw_pipeline)
@@ -488,6 +498,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
    static struct video_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
+   settings_t *settings          = config_get_ptr();
    if (!menu_disp || !draw)
       return;
 
@@ -506,6 +517,9 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
    coords.color         = (const float*)draw->color;
 
    draw->coords      = &coords;
+
+   if (!menu_display_libretro_running() && !menu_display_shader_pipeline_active())
+      menu_display_set_alpha(draw->color, settings->menu.wallpaper.opacity);
 
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;

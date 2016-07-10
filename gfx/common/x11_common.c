@@ -419,12 +419,12 @@ bool x11_alive(void *data)
          case ClientMessage:
             if (event.xclient.window == g_x11_win && 
                   (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
-               frontend_driver_destroy_signal_handler_state();
+               frontend_driver_set_signal_handler_state(1);
             break;
 
          case DestroyNotify:
             if (event.xdestroywindow.window == g_x11_win)
-               frontend_driver_destroy_signal_handler_state();
+               frontend_driver_set_signal_handler_state(1);
             break;
 
          case MapNotify:

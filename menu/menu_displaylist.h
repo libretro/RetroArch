@@ -64,6 +64,11 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_HISTORY,
    DISPLAYLIST_PLAYLIST_COLLECTION,
    DISPLAYLIST_DEFAULT,
+   DISPLAYLIST_FILE_BROWSER_SELECT_DIR,
+   DISPLAYLIST_FILE_BROWSER_SCAN_DIR,
+   DISPLAYLIST_FILE_BROWSER_SELECT_FILE,
+   DISPLAYLIST_FILE_BROWSER_SELECT_CORE,
+   DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION,
    DISPLAYLIST_CORES,
    DISPLAYLIST_CORES_SUPPORTED,
    DISPLAYLIST_CORES_COLLECTION_SUPPORTED,
@@ -184,6 +189,8 @@ typedef struct menu_displaylist_ctx_entry
    file_list_t *stack;
    file_list_t *list;
 } menu_displaylist_ctx_entry_t;
+
+void menu_displaylist_reset_filebrowser(void);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 

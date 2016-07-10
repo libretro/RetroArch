@@ -379,7 +379,6 @@ typedef struct menu_ctx_bind
    unsigned type;
    size_t idx;
    uint32_t label_hash;
-   uint32_t menu_label_hash;
    int retcode;
 } menu_ctx_bind_t;
 
@@ -414,6 +413,8 @@ const char* config_get_menu_driver_options(void);
 
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;
+
+const char *menu_driver_ident(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 

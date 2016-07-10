@@ -2246,6 +2246,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             info.list           = menu_stack;
             info.directory_ptr  = selection;
             info.type           = type;
+            info.enum_idx       = MSG_UNKNOWN;
             strlcpy(info.path,  setting->default_value.string, sizeof(info.path));
             strlcpy(info.label, name, sizeof(info.label));
 
@@ -3761,9 +3762,11 @@ static bool setting_append_list_input_player_options(
       snprintf(key[user], sizeof(key[user]),
                "input_player%u_joypad_index", user + 1);
       snprintf(key_type[user], sizeof(key_type[user]),
-               "input_libretro_device_p%u", user + 1);
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE),
+               user + 1);
       snprintf(key_analog[user], sizeof(key_analog[user]),
-               "input_player%u_analog_dpad_mode", user + 1);
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),
+               user + 1);
       snprintf(key_bind_all[user], sizeof(key_bind_all[user]),
                "input_player%u_bind_all", user + 1);
       snprintf(key_bind_all_save_autoconfig[user], sizeof(key_bind_all[user]),
@@ -3878,9 +3881,8 @@ static bool setting_append_list_input_player_options(
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)
    {
-      char label[PATH_MAX_LENGTH];
-      char name[PATH_MAX_LENGTH];
-      bool do_add = true;
+      char label[PATH_MAX_LENGTH] = {0};
+      char name[PATH_MAX_LENGTH]  = {0};
 
       if (input_config_bind_map_get_meta(i))
          continue;
@@ -3888,6 +3890,7 @@ static bool setting_append_list_input_player_options(
       fill_pathname_noext(label, buffer[user],
             " ",
             sizeof(label));
+
       if (
             settings->input.input_descriptor_label_show
             && (i < RARCH_FIRST_META_KEY)
@@ -3905,7 +3908,7 @@ static bool setting_append_list_input_player_options(
                   sizeof(label));
 
             if (settings->input.input_descriptor_hide_unbound)
-               do_add = false;
+               continue;
          }
       }
       else
@@ -3913,21 +3916,18 @@ static bool setting_append_list_input_player_options(
 
       snprintf(name, sizeof(name), "p%u_%s", user + 1, input_config_bind_map_get_base(i));
 
-      if (do_add)
-      {
-         CONFIG_BIND(
-               list, list_info,
-               &settings->input.binds[user][i],
-               user + 1,
-               user,
-               strdup(name),
-               strdup(label),
-               &defaults[i],
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
-      }
+      CONFIG_BIND(
+            list, list_info,
+            &settings->input.binds[user][i],
+            user + 1,
+            user,
+            strdup(name),
+            strdup(label),
+            &defaults[i],
+            &group_info,
+            &subgroup_info,
+            parent_group);
+      (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
    }
 
    END_SUB_GROUP(list, list_info, parent_group);
@@ -6254,7 +6254,8 @@ static bool setting_append_list(
                      &retro_keybinds_1[i],
                      &group_info, &subgroup_info, parent_group);
                (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
-               /* TODO - add enum_idx */
+               menu_settings_list_current_add_enum_idx(list, list_info, 
+                     MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i);
             }
 
             END_SUB_GROUP(list, list_info, parent_group);
@@ -6591,6 +6592,21 @@ static bool setting_append_list(
          menu_settings_list_current_add_values(list, list_info, "png");
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER);
 
+         CONFIG_FLOAT(
+               list, list_info,
+               &settings->menu.wallpaper.opacity,
+               msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY),
+               menu_wallpaper_opacity,
+               "%.3f %",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY);
+
          CONFIG_BOOL(
                list, list_info,
                &settings->menu.dynamic_wallpaper_enable,
@@ -6833,7 +6849,7 @@ static bool setting_append_list(
          {
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb_alpha_factor,
+                  &settings->menu.xmb.alpha_factor,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_ALPHA_FACTOR),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR),
                   xmb_alpha_factor,
@@ -6847,7 +6863,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb_scale_factor,
+                  &settings->menu.xmb.scale_factor,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_SCALE_FACTOR),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR),
                   xmb_scale_factor,
@@ -6861,11 +6877,11 @@ static bool setting_append_list(
 
             CONFIG_PATH(
                   list, list_info,
-                  settings->menu.xmb_font,
-                  sizeof(settings->menu.xmb_font),
+                  settings->menu.xmb.font,
+                  sizeof(settings->menu.xmb.font),
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_FONT),
-                  settings->menu.xmb_font,
+                  settings->menu.xmb.font,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -6875,7 +6891,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb_theme,
+                  &settings->menu.xmb.theme,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_THEME),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_THEME),
                   xmb_theme,
@@ -6889,7 +6905,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb_shadows_enable,
+                  &settings->menu.xmb.shadows_enable,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE),
                   xmb_shadows_enable,
@@ -6906,7 +6922,7 @@ static bool setting_append_list(
 #ifdef HAVE_SHADERPIPELINE
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.shader_pipeline,
+                  &settings->menu.xmb.shader_pipeline,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_RIBBON_ENABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE),
                   menu_shader_pipeline,
@@ -6921,9 +6937,9 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.background_gradient,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_GRADIENT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_GRADIENT),
+                  &settings->menu.xmb.menu_color_theme,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME),
                   menu_background_gradient,
                   &group_info,
                   &subgroup_info,
@@ -6931,7 +6947,25 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 8, 1, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_GRADIENT);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME);
+         }
+
+         /* only MaterialUI uses these values, don't show them on other drivers */
+         if (string_is_equal(settings->menu.driver, "glui"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.materialui.menu_color_theme,
+                  msg_hash_to_str(MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME),
+                  menu_background_gradient,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 4, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME);
          }
 
          CONFIG_BOOL(

@@ -429,6 +429,12 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
+   if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+   {
+      BIND_ACTION_LEFT(cbs, action_left_mainmenu);
+      return 0;
+   }
+
    if (strstr(label, "rdb_entry"))
    {
       BIND_ACTION_LEFT(cbs, action_left_scroll);
@@ -474,20 +480,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       }
       else
       {
-         switch (label_hash)
-         {
-            case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
-               if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))   ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
-                     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
-                  )
-               {
-                  BIND_ACTION_LEFT(cbs, action_left_mainmenu);
-                  break;
-               }
-            default:
-               return -1;
-         }
+         return -1;
       }
    }
 

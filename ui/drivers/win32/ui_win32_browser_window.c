@@ -23,11 +23,9 @@
 
 #include "../../ui_companion_driver.h"
 
-static bool ui_browser_window_win32_open(ui_browser_window_state_t *state)
+static bool ui_browser_window_win32_core(ui_browser_window_state_t *state, bool save)
 {
-   OPENFILENAME ofn;
-
-   memset((void*)&ofn, 0, sizeof(OPENFILENAME));
+   OPENFILENAME ofn = {};
 
    ofn.lStructSize     = sizeof(OPENFILENAME);
    ofn.hwndOwner       = (HWND)state->window;
@@ -39,15 +37,22 @@ static bool ui_browser_window_win32_open(ui_browser_window_state_t *state)
    ofn.nMaxFile        = PATH_MAX;
    ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
 
-   if (!GetOpenFileName(&ofn))
-	   return false;
+   if ( save && !GetOpenFileName(&ofn))
+      return false;
+   if (!save && !GetSaveFileName(&ofn))
+      return false;
 
    return true;
 }
 
+static bool ui_browser_window_win32_open(ui_browser_window_state_t *state)
+{
+   return ui_browser_window_win32_core(state, false);
+}
+
 static bool ui_browser_window_win32_save(ui_browser_window_state_t *state)
 {
-   return false;
+   return ui_browser_window_win32_core(state, true);
 }
 
 const ui_browser_window_t ui_browser_window_win32 = {

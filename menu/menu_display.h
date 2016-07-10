@@ -29,6 +29,15 @@
 
 RETRO_BEGIN_DECLS
 
+enum materialui_color_theme
+{
+   MATERIALUI_THEME_BLUE = 0,
+   MATERIALUI_THEME_GREEN,
+   MATERIALUI_THEME_RED,
+   MATERIALUI_THEME_YELLOW,
+   MATERIALUI_THEME_DARK_BLUE
+};
+
 enum menu_display_prim_type
 {
    MENU_DISPLAY_PRIM_NONE = 0,
@@ -200,6 +209,8 @@ void menu_display_draw_cursor(
 
 void menu_display_draw_text(const char *msg, int width, int height, 
       struct font_params *params);
+
+bool menu_display_shader_pipeline_active(void);
 
 void menu_display_set_alpha(float *color, float alpha_value);
 

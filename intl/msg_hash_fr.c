@@ -1070,7 +1070,9 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "XMB : Police";
       case MENU_ENUM_LABEL_VALUE_XMB_THEME:
          return "XMB : Theme";
-      case MENU_ENUM_LABEL_VALUE_XMB_GRADIENT:
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
+         return "Dégradé de font d'écran";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME:
          return "Dégradé de font d'écran";
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
          return "Ombres pour les icones";
