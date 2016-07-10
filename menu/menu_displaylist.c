@@ -3936,8 +3936,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          BIT32_CLEAR_ALL(filebrowser_types);
          BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION);
          break;
-      case DISPLAYLIST_GENERIC:
-         break;
       default:
          break;
    }
