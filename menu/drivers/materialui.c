@@ -799,6 +799,9 @@ static void mui_frame(void *data)
    float blue_grey_500[16]         = {0};
    float blue_grey_50[16]          = {0};
    float yellow_200[16]            = {0};
+   float color_nv_header[16]       = {0};
+   float color_nv_body[16]         = {0};
+   float color_nv_accent[16]       = {0};
    unsigned width                  = 0;
    unsigned height                 = 0;
    unsigned ticker_limit           = 0;
@@ -846,6 +849,9 @@ static void mui_frame(void *data)
    hex32_to_rgba_normalized(0x607D8B, blue_grey_500,  1.00);
    hex32_to_rgba_normalized(0xCFD8DC, blue_grey_50,   0.90);
    hex32_to_rgba_normalized(0xC8E6C9, green_50,       0.90);
+   hex32_to_rgba_normalized(0x282F37, color_nv_header,1.00);
+   hex32_to_rgba_normalized(0x202427, color_nv_body,  1.00);
+   hex32_to_rgba_normalized(0x77B900, color_nv_accent,1.00);
 
    clearcolor.r = 1.0f;
    clearcolor.g = 1.0f;
@@ -915,9 +921,23 @@ static void mui_frame(void *data)
             TODO/FIXME - Maybe make this track the footer's bg color or vice-versa
             e.g. clearcolor.r = &footer_bg_color[0]; clearcolor.g = &footer_bg_color[4];
             */
-         clearcolor.r = 0.13f;
-         clearcolor.g = 0.13f;
-         clearcolor.b = 0.13f;
+         clearcolor.r            = 0.13f;
+         clearcolor.g            = 0.13f;
+         clearcolor.b            = 0.13f;
+         break;
+      case MATERIALUI_THEME_NVIDIA_SHIELD:
+         header_bg_color         = color_nv_header;
+         body_bg_color           = color_nv_body;
+         highlighted_entry_color = color_nv_accent;
+         footer_bg_color         = color_nv_body;
+         active_tab_marker_color = color_nv_accent;
+
+         font_normal_color       = 0xbbc0c4ff;
+         font_hover_color        = 0xffffffff;
+
+         clearcolor.r            = color_nv_body[0];
+         clearcolor.g            = color_nv_body[1];
+         clearcolor.b            = color_nv_body[2];
          break;
    }
 

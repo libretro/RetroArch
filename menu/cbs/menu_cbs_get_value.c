@@ -821,6 +821,11 @@ static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE), len);
          break;
+      case MATERIALUI_THEME_NVIDIA_SHIELD:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD), len);
+         break;
       default:
          break;
    }
