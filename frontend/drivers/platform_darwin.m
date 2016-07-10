@@ -354,7 +354,17 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
    strlcat(home_dir_buf, "/RetroArch", sizeof(home_dir_buf));
    fill_pathname_join(g_defaults.dir.shader, home_dir_buf, "shaders_glsl", sizeof(g_defaults.dir.shader));
+#if TARGET_OS_IPHONE
+    int major, minor;
+    get_ios_version(&major, &minor);
+    if (major >= 10 ) {
+        fill_pathname_join(g_defaults.dir.core, bundle_path_buf, "modules", sizeof(g_defaults.dir.core));
+    } else {
+        fill_pathname_join(g_defaults.dir.core, home_dir_buf, "cores", sizeof(g_defaults.dir.core));
+    }
+#else
    fill_pathname_join(g_defaults.dir.core, home_dir_buf, "cores", sizeof(g_defaults.dir.core));
+#endif
    fill_pathname_join(g_defaults.dir.core_info, home_dir_buf, "info", sizeof(g_defaults.dir.core_info));
    fill_pathname_join(g_defaults.dir.overlay, home_dir_buf, "overlays", sizeof(g_defaults.dir.overlay));
    fill_pathname_join(g_defaults.dir.autoconfig, home_dir_buf, "autoconfig", sizeof(g_defaults.dir.autoconfig));
@@ -408,9 +418,6 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
 #if TARGET_OS_IPHONE
     char assets_zip_path[PATH_MAX_LENGTH];
-    int major, minor;
-
-    get_ios_version(&major, &minor);
     if (major > 8)
        strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
 
