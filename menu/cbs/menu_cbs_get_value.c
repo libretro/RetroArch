@@ -72,7 +72,8 @@ static void menu_action_setting_disp_set_label_cheevos_locked_entry(
 {
    *w = 19;
    strlcpy(s2, path, len2);
-   strlcpy(s, "Locked", len);
+   strlcpy(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY), len);
 }
 
 static void menu_action_setting_disp_set_label_cheevos_unlocked_entry(
@@ -86,7 +87,8 @@ static void menu_action_setting_disp_set_label_cheevos_unlocked_entry(
 {
    *w = 19;
    strlcpy(s2, path, len2);
-   strlcpy(s, "Unlocked", len);
+   strlcpy(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY), len);
 }
 
 static void menu_action_setting_disp_set_label_remap_file_load(
@@ -214,10 +216,14 @@ static void menu_action_setting_disp_set_label_pipeline(
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          break;
       case 1:
-         strlcpy(s, "Ribbon (simplified)", len);
+         strlcpy(s, 
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED), len);
          break;
       case 2:
-         strlcpy(s, "Ribbon", len);
+         strlcpy(s, 
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
          break;
    }
 
@@ -329,7 +335,8 @@ static void menu_action_setting_disp_set_label_shader_parameter(
    if (!shader_info.data)
       return;
 
-   param = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+   param = &shader_info.data->parameters[type - 
+      MENU_SETTINGS_SHADER_PARAMETER_0];
 
    if (!param)
       return;
@@ -468,7 +475,7 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
    {
-      if(strstr(descriptor,"Auto") && !strstr(descriptor,
+      if(strstr(descriptor, "Auto") && !strstr(descriptor,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
          strlcpy(s, 
             descriptor,
@@ -635,13 +642,19 @@ static void menu_action_setting_disp_set_label_poll_type_behavior(
    switch (settings->input.poll_type_behavior)
    {
       case 0:
-         strlcpy(s, "Early", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY), len);
          break;
       case 1:
-         strlcpy(s, "Normal", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL), len);
          break;
       case 2:
-         strlcpy(s, "Late", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE), len);
          break;
    }
 }
@@ -702,31 +715,58 @@ static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
    switch (settings->menu.xmb.menu_color_theme)
    {
       case 0:
-         strlcpy(s, "Legacy Red", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED),
+               len);
          break;
       case 1:
-         strlcpy(s, "Dark Purple", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE),
+               len);
          break;
       case 2:
-         strlcpy(s, "Midnight Blue", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE),
+               len);
          break;
       case 3:
-         strlcpy(s, "Golden", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN),
+               len);
          break;
       case 4:
-         strlcpy(s, "Electric Blue", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE),
+               len);
          break;
       case 5:
-         strlcpy(s, "Apple Green", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN),
+               len);
          break;
       case 6:
-         strlcpy(s, "Undersea", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA),
+               len);
          break;
       case 7:
-         strlcpy(s, "Volcanic Red", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED),
+               len);
          break;
       case 8:
-         strlcpy(s, "Dark", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                 MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK),
+               len);
          break;
    }
 }
@@ -751,10 +791,14 @@ static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
    switch (settings->menu.materialui.menu_color_theme)
    {
       case 0:
-         strlcpy(s, "White", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_WHITE), len);
          break;
       case 1:
-         strlcpy(s, "Dark", len);
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK), len);
          break;
       default:
          break;
