@@ -2655,6 +2655,7 @@ static int action_ok_push_downloads_dir(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t            *settings   = config_get_ptr();
+   menu_displaylist_reset_filebrowser();
    return generic_action_ok_displaylist_push(path, settings->directory.core_assets, 
          msg_hash_to_str(MENU_ENUM_LABEL_DETECT_CORE_LIST),
          type, idx,
