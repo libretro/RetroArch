@@ -19,7 +19,7 @@
 		</dict>
 	</array>
 	<key>CFBundleExecutable</key>
-	<string>RetroArch</string>
+	<string>${EXECUTABLE_NAME}</string>
 	<key>CFBundleIcons</key>
 	<dict/>
 	<key>CFBundleIcons~ipad</key>
