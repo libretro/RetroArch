@@ -206,8 +206,6 @@ static bool menu_init(menu_handle_t *menu_data)
    return true;
 }
 
-static menu_ctx_iterate_t pending_iter;
-
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
