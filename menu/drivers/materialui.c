@@ -114,6 +114,14 @@ typedef struct mui_handle
    float scroll_y;
 } mui_handle_t;
 
+static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
+{
+   rgba[0] = rgba[4] = rgba[8]  = rgba[12] = ((hex >> 16) & 0xFF) * (1.0f / 255.0f); /* r */
+   rgba[1] = rgba[5] = rgba[9]  = rgba[13] = ((hex >> 8 ) & 0xFF) * (1.0f / 255.0f); /* g */
+   rgba[2] = rgba[6] = rgba[10] = rgba[14] = ((hex >> 0 ) & 0xFF) * (1.0f / 255.0f); /* b */
+   rgba[3] = rgba[7] = rgba[11] = rgba[15] = alpha;
+}
+
 static const char *mui_texture_path(unsigned id)
 {
    switch (id)
@@ -337,7 +345,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          tab_width,
          header_height/16,
          width, height,
-         &active_tab_marker_color[0]); /* blue_bg */
+         &active_tab_marker_color[0]); /* blue_500 */
 }
 
 static void mui_draw_scrollbar(mui_handle_t *mui, 
@@ -731,29 +739,17 @@ static void mui_frame(void *data)
       0, 0, 0, 0.75,
       0, 0, 0, 0.75,
    };
-   float blue_bg[16] = {
-      0.13, 0.59, 0.95, 1,
-      0.13, 0.59, 0.95, 1,
-      0.13, 0.59, 0.95, 1,
-      0.13, 0.59, 0.95, 1,
-   };
-   float lightblue_bg[16] = {
-      0.89, 0.95, 0.99, 1.00,
-      0.89, 0.95, 0.99, 1.00,
-      0.89, 0.95, 0.99, 1.00,
-      0.89, 0.95, 0.99, 1.00,
-   };
    float pure_white[16]=  {
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
    };
    float white_bg[16]=  {
-      0.98, 0.98, 0.98, 1,
-      0.98, 0.98, 0.98, 1,
-      0.98, 0.98, 0.98, 1,
-      0.98, 0.98, 0.98, 1,
+      0.98, 0.98, 0.98, 1.00,
+      0.98, 0.98, 0.98, 1.00,
+      0.98, 0.98, 0.98, 1.00,
+      0.98, 0.98, 0.98, 1.00,
    };
    float white_transp_bg[16]=  {
       0.98, 0.98, 0.98, 0.90,
@@ -768,16 +764,16 @@ static void mui_frame(void *data)
       0.78, 0.78, 0.78, 0.90,
    };
    float shadow_bg[16]=  {
-      0, 0, 0, 0,
-      0, 0, 0, 0,
-      0, 0, 0, 0.2,
-      0, 0, 0, 0.2,
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.00,
+      0.00, 0.00, 0.00, 0.2,
+      0.00, 0.00, 0.00, 0.2,
    };
    float greyish_blue[16] = {
-      0.22, 0.28, 0.31, 1,
-      0.22, 0.28, 0.31, 1,
-      0.22, 0.28, 0.31, 1,
-      0.22, 0.28, 0.31, 1,
+      0.22, 0.28, 0.31, 1.00,
+      0.22, 0.28, 0.31, 1.00,
+      0.22, 0.28, 0.31, 1.00,
+      0.22, 0.28, 0.31, 1.00,
    };
    float almost_black[16] = {
       0.13, 0.13, 0.13, 0.90,
@@ -790,6 +786,17 @@ static void mui_frame(void *data)
    menu_display_ctx_clearcolor_t clearcolor;
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
+
+   /* https://material.google.com/style/color.html#color-color-palette */
+   /* Hex values converted to RGB normalized decimals, alpha set to 1 */
+   float blue_500[16]              = {0};
+   float blue_50[16]               = {0};
+   float green_500[16]             = {0};
+   float green_50[16]              = {0};
+   float red_500[16]               = {0};
+   float red_50[16]                = {0};
+   float yellow_500[16]            = {0};
+   float yellow_200[16]            = {0};
    unsigned width                  = 0;
    unsigned height                 = 0;
    unsigned ticker_limit           = 0;
@@ -806,11 +813,14 @@ static void mui_frame(void *data)
    char title_msg[256]             = {0};
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
-   float *header_bg_color          = blue_bg;
-   float *highlighted_entry_color  = lightblue_bg;
+
+   /* Default is blue theme */
+   float *header_bg_color          = blue_500;
+   float *highlighted_entry_color  = blue_50;
    float *footer_bg_color          = white_bg;
    float *body_bg_color            = white_transp_bg;
    settings_t *settings            = config_get_ptr();
+   float *active_tab_marker_color  = blue_500;
 
    uint32_t font_normal_color      = 0x212121ff;
    uint32_t font_hover_color       = 0x212121ff;
@@ -824,6 +834,15 @@ static void mui_frame(void *data)
    if (!mui)
       return;
 
+   hex32_to_rgba_normalized(0xFFEB3B, yellow_500, 1.00);
+   hex32_to_rgba_normalized(0xFFF59D, yellow_200, 0.90);
+   hex32_to_rgba_normalized(0xF44336, red_500,    1.00);
+   hex32_to_rgba_normalized(0xFFEBEE, red_50,     0.90);
+   hex32_to_rgba_normalized(0x2196F3, blue_500,   1.00);
+   hex32_to_rgba_normalized(0xE3F2FD, blue_50,    0.90);
+   hex32_to_rgba_normalized(0x4CAF50, green_500,  1.00);
+   hex32_to_rgba_normalized(0xE8F5E9, green_50,   0.90);
+
    clearcolor.r = 1.0f;
    clearcolor.g = 1.0f;
    clearcolor.b = 1.0f;
@@ -833,11 +852,47 @@ static void mui_frame(void *data)
    {
       case MATERIALUI_THEME_BLUE:
          break;
+      case MATERIALUI_THEME_GREEN:
+         header_bg_color         = green_500;
+         body_bg_color           = white_transp_bg;
+         highlighted_entry_color = green_50;
+         footer_bg_color         = white_bg;
+         active_tab_marker_color = green_500;
+
+         font_normal_color       = 0x212121ff;
+         font_hover_color        = 0x212121ff;
+         font_header_color       = 0xffffffff;
+         break;
+      case MATERIALUI_THEME_RED:
+         header_bg_color         = red_500;
+         body_bg_color           = white_transp_bg;
+         highlighted_entry_color = red_50;
+         footer_bg_color         = white_bg;
+         body_bg_color           = white_transp_bg;
+         active_tab_marker_color = red_500;
+
+         font_normal_color       = 0x212121ff;
+         font_hover_color        = 0x212121ff;
+         font_header_color       = 0xffffffff;
+         break;
+      case MATERIALUI_THEME_YELLOW:
+         header_bg_color         = yellow_500;
+         body_bg_color           = white_transp_bg;
+         body_bg_color           = white_transp_bg;
+         highlighted_entry_color = yellow_200;
+         footer_bg_color         = white_bg;
+         active_tab_marker_color = yellow_500;
+
+         font_normal_color       = 0x212121ff;
+         font_hover_color        = 0x212121ff;
+         font_header_color       = 0x00000000;
+         break;
       case MATERIALUI_THEME_DARK_BLUE:
          header_bg_color         = greyish_blue;
+         body_bg_color           = almost_black;
          highlighted_entry_color = grey_bg;
          footer_bg_color         = almost_black;
-         body_bg_color           = almost_black;
+         active_tab_marker_color = greyish_blue;
 
          font_normal_color = 0xffffffff;
          font_hover_color  = 0x00000000;
@@ -912,9 +967,9 @@ static void mui_frame(void *data)
       return;
 
    if (background_rendered || libretro_running)
-      menu_display_set_alpha(lightblue_bg, 0.75);
+      menu_display_set_alpha(blue_50, 0.75);
    else
-      menu_display_set_alpha(lightblue_bg, 1.0);
+      menu_display_set_alpha(blue_50, 1.0);
 
    /* highlighted entry */
    mui_render_quad(
@@ -963,7 +1018,7 @@ static void mui_frame(void *data)
       for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
          mui_draw_tab(mui, i, width, height, &pure_white[0]);
 
-      mui_draw_tab_end(mui, width, height, header_height, &blue_bg[0]);
+      mui_draw_tab_end(mui, width, height, header_height, &active_tab_marker_color[0]);
    }
 
    mui_render_quad(

@@ -796,6 +796,21 @@ static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE), len);
          break;
+      case MATERIALUI_THEME_GREEN:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN), len);
+         break;
+      case MATERIALUI_THEME_RED:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED), len);
+         break;
+      case MATERIALUI_THEME_YELLOW:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW), len);
+         break;
       case MATERIALUI_THEME_DARK_BLUE:
          strlcpy(s,
                msg_hash_to_str(
