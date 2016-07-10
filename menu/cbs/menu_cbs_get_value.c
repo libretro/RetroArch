@@ -21,6 +21,7 @@
 #include "../menu_animation.h"
 #include "../menu_cbs.h"
 #include "../menu_shader.h"
+#include "../menu_display.h"
 
 #include "../../input/input_autodetect.h"
 #include "../../input/input_config.h"
@@ -770,12 +771,6 @@ static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
          break;
    }
 }
-
-enum materialui_color_theme
-{
-   THEME_BLUE = 0,
-   THEME_DARK_BLUE
-};
 
 static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
       file_list_t* list,

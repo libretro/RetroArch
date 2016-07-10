@@ -29,6 +29,12 @@
 
 RETRO_BEGIN_DECLS
 
+enum materialui_color_theme
+{
+   THEME_BLUE = 0,
+   THEME_DARK_BLUE
+};
+
 enum menu_display_prim_type
 {
    MENU_DISPLAY_PRIM_NONE = 0,
