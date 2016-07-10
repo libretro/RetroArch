@@ -1425,7 +1425,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 }
 
 static int menu_cbs_init_bind_get_string_representation_compare_label(
-      menu_file_list_cbs_t *cbs, uint32_t label_hash)
+      menu_file_list_cbs_t *cbs)
 {
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
@@ -1543,15 +1543,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
    }
    else
    {
-      switch (label_hash)
-      {
-         case MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mapping_type);
-            break;
-         default:
-            return - 1;
-      }
+      return -1;
    }
 
    return 0;
@@ -1697,8 +1689,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
 }
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      uint32_t label_hash)
+      const char *path, const char *label, unsigned type, size_t idx)
 {
    if (!cbs)
       return -1;
@@ -1764,7 +1755,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (menu_cbs_init_bind_get_string_representation_compare_label(cbs, label_hash) == 0)
+   if (menu_cbs_init_bind_get_string_representation_compare_label(cbs) == 0)
       return 0;
 
    if (menu_cbs_init_bind_get_string_representation_compare_type(cbs, type) == 0)
