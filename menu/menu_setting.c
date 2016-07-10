@@ -6958,7 +6958,7 @@ static bool setting_append_list(
                   &settings->menu.materialui.menu_color_theme,
                   msg_hash_to_str(MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME),
-                  menu_background_gradient,
+                  MATERIALUI_THEME_BLUE,
                   &group_info,
                   &subgroup_info,
                   parent_group,
