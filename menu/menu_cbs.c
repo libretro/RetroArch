@@ -118,7 +118,7 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "REFRESH", cbs->action_refresh_ident);
 
-   menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx);
+   menu_cbs_init_bind_get_string_representation(cbs, path, label, type, idx, label_hash);
 
    menu_cbs_init_log(repr_label, "GET VALUE", cbs->action_get_value_ident);
 

@@ -146,7 +146,8 @@ int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path, const char *label, unsigned type, size_t idx,
+      uint32_t label_hash);
 
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
