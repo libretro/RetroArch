@@ -86,6 +86,7 @@
 #define CLOCK_REALTIME 0
 #endif
 
+#if __IPHONE_OS_VERSION_MAX_ALLOWED < 100000
 static int clock_gettime(int clk_ik, struct timespec *t)
 {
    struct timeval now;
@@ -96,6 +97,8 @@ static int clock_gettime(int clk_ik, struct timespec *t)
    t->tv_nsec = now.tv_usec * 1000;
    return 0;
 }
+#endif
+
 #endif
 
 #ifdef EMSCRIPTEN
