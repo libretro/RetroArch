@@ -1265,6 +1265,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "no_performance_counters";
       case MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY:
          return "no_entries_to_display";
+      case MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY:
+         return "no_achievements_to_display";
       case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
          return "cheevos_unlocked_achievements";
       case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS:
@@ -2551,6 +2553,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Custom Viewport Height";
       case MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY:
          return "No entries to display.";
+      case MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY:
+         return "No achievements to display.";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
          return "Unlocked Achievements:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:

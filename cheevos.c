@@ -2191,6 +2191,7 @@ void cheevos_populate_menu(void *data)
 {
 #ifdef HAVE_MENU
    unsigned i;
+   unsigned items_found          = 0;
    const cheevo_t *end           = NULL;
    cheevo_t *cheevo              = NULL;
    settings_t *settings          = config_get_ptr();
@@ -2202,9 +2203,12 @@ void cheevos_populate_menu(void *data)
    for (i = 0; cheevo < end; i++, cheevo++)
    {
       if (!cheevo->active)
+      {
          menu_entries_add_enum(info->list, cheevo->title,
                cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY, 
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         items_found++;
+      }
    }
    
    if (settings->cheevos.test_unofficial)
@@ -2228,9 +2232,12 @@ void cheevos_populate_menu(void *data)
    for (i = 0; cheevo < end; i++, cheevo++)
    {
       if (cheevo->active)
+      {
          menu_entries_add_enum(info->list, cheevo->title,
                cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+         items_found++;
+      }
    }
    
    if (settings->cheevos.test_unofficial)
@@ -2242,10 +2249,22 @@ void cheevos_populate_menu(void *data)
       for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
          if (cheevo->active)
+         {
             menu_entries_add_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY, 
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+            items_found++;
+         }
       }
+   }
+
+   if (items_found == 0)
+   {
+      menu_entries_add_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,
+            FILE_TYPE_NONE, 0, 0);
    }
 #endif
 }
