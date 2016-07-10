@@ -3244,14 +3244,11 @@ static int menu_displaylist_parse_playlists_horizontal(
 
    if (list_size == 0)
    {
-      if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
-      {
-         menu_entries_add_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-               MENU_ENUM_LABEL_NO_ITEMS,
-               MENU_SETTING_NO_ITEM, 0, 0);
-      }
+      menu_entries_add_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+            MENU_ENUM_LABEL_NO_ITEMS,
+            MENU_SETTING_NO_ITEM, 0, 0);
 
       string_list_free(str_list);
 
@@ -3295,14 +3292,11 @@ static int menu_displaylist_parse_playlists_horizontal(
 
    if (items_found == 0)
    {
-      if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
-      {
-         menu_entries_add_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-               MENU_ENUM_LABEL_NO_ITEMS,
-               MENU_SETTING_NO_ITEM, 0, 0);
-      }
+      menu_entries_add_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+            MENU_ENUM_LABEL_NO_ITEMS,
+            MENU_SETTING_NO_ITEM, 0, 0);
    }
 
    return 0;
@@ -3387,22 +3381,19 @@ static int menu_displaylist_parse_generic(
 
    if (list_size == 0)
    {
-      if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
-      {
-         menu_entries_add_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-               MENU_ENUM_LABEL_NO_ITEMS,
-               MENU_SETTING_NO_ITEM, 0, 0);
+      menu_entries_add_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+            MENU_ENUM_LABEL_NO_ITEMS,
+            MENU_SETTING_NO_ITEM, 0, 0);
 #ifdef HAVE_NETWORKING
-         if (type == DISPLAYLIST_CORES)
-            menu_entries_add_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-                  MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-                  MENU_SETTING_ACTION, 0, 0);
+      if (type == DISPLAYLIST_CORES)
+         menu_entries_add_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
+               MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+               MENU_SETTING_ACTION, 0, 0);
 #endif
-      }
 
       string_list_free(str_list);
 
@@ -3534,14 +3525,11 @@ static int menu_displaylist_parse_generic(
 
    if (items_found == 0)
    {
-      if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
-      {
-         menu_entries_add_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-               MENU_ENUM_LABEL_NO_ITEMS,
-               MENU_SETTING_NO_ITEM, 0, 0);
-      }
+      menu_entries_add_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+            MENU_ENUM_LABEL_NO_ITEMS,
+            MENU_SETTING_NO_ITEM, 0, 0);
 
       return 0;
    }
