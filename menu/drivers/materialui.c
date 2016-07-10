@@ -899,7 +899,7 @@ static void mui_frame(void *data)
 
          font_normal_color       = 0x212121ff;
          font_hover_color        = 0x212121ff;
-         font_header_color       = 0xffffffff;
+         font_header_color       = 0x00000000;
          break;
       case MATERIALUI_THEME_DARK_BLUE:
          header_bg_color         = greyish_blue;
