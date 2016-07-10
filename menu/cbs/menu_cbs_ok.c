@@ -123,9 +123,7 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *info_path    = NULL;
    menu_handle_t            *menu    = NULL;
    enum msg_hash_enums enum_idx      = MSG_UNKNOWN;
-   global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
-   file_list_t        *selection_buf = menu_entries_get_selection_buf_ptr(0);
    file_list_t           *menu_stack = menu_entries_get_menu_stack_ptr(0);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
@@ -267,11 +265,14 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_RECORD_CONFIGFILE:
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = global->record.config_dir;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            global_t  *global  = global_get_ptr();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = global->record.config_dir;
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          info.type          = type;
@@ -665,7 +666,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
-         info.list          = selection_buf;
+         info.list          = menu_entries_get_selection_buf_ptr(0);
          info_path          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS);
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS);
          info.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
