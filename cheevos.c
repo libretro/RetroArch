@@ -649,7 +649,7 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
    {
       unsigned i;
       
-      for (i = 0; i < sizeof(cheevos_locals.meminfo) / sizeof(cheevos_locals.meminfo[0]); i++)
+      for (i = 0; i < ARRAY_SIZE(cheevos_locals.meminfo); i++)
       {
          if (var->value < cheevos_locals.meminfo[i].size)
          {
@@ -1824,8 +1824,8 @@ static size_t cheevos_eval_md5(
 
 static void cheevos_fill_md5(size_t size, size_t total, MD5_CTX *ctx)
 {
-   char buffer[4096];
-   ssize_t fill = total - size;
+   char buffer[4096] = {0};
+   ssize_t fill      = total - size;
    
    memset((void*)buffer, 0, sizeof(buffer));
 
@@ -1846,11 +1846,10 @@ static unsigned cheevos_find_game_id_generic(
       retro_time_t timeout)
 {
    MD5_CTX ctx;
-   uint8_t hash[16];
    retro_time_t to;
-   size_t size;
-   
-   size = cheevos_eval_md5(info, &ctx);
+   uint8_t hash[16] = {0};
+   size_t size      = cheevos_eval_md5(info, &ctx);
+
    MD5_Final(hash, &ctx);
    
    if (!size)
@@ -1865,11 +1864,9 @@ static unsigned cheevos_find_game_id_snes(
       retro_time_t timeout)
 {
    MD5_CTX ctx;
-   uint8_t hash[16];
    retro_time_t to;
-   size_t size;
-   
-   size = cheevos_eval_md5(info, &ctx);
+   uint8_t hash[16] = {0};
+   size_t size      = cheevos_eval_md5(info, &ctx);
    
    if (!size)
    {
@@ -1935,8 +1932,8 @@ static unsigned cheevos_find_game_id_nes(
    }
    else
    {
-      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
       ssize_t num_read;
+      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
       
       if (!file)
          return 0;
@@ -1978,8 +1975,8 @@ static unsigned cheevos_find_game_id_nes(
       {
          53, 198, 228
       };
-      bool round  = true;
-      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
+      bool round     = true;
+      RFILE *file    = filestream_open(info->path, RFILE_MODE_READ, 0);
       uint8_t * data = (uint8_t *) malloc(rom_size << 14);
       
       if (!file || !data)
@@ -1997,7 +1994,7 @@ static unsigned cheevos_find_game_id_nes(
 	   mapper_no |= (header.rom_type2 & 0xF0);
       
 
-      for (i = 0; i != sizeof(not_power2) / sizeof(not_power2[0]); ++i)
+      for (i = 0; i != ARRAY_SIZE(not_power2); ++i)
       {
          /* for games not to the power of 2, so we just read enough
           * PRG rom from it, but we have to keep ROM_size to the power of 2
@@ -2100,14 +2097,16 @@ bool cheevos_load(const void *data)
    cheevos_locals.meminfo[3].id = RETRO_MEMORY_RTC;
    core_get_memory(&cheevos_locals.meminfo[3]);
    
-   /* Bail out if cheevos are disabled. But set the above anyways, command_read_ram needs it. */
+   /* Bail out if cheevos are disabled. 
+    * But set the above anyways, command_read_ram needs it. */
    if (!settings->cheevos.enable)
       return true;
    
-   /* Use the supported extensions as a hint to what method we should use. */
+   /* Use the supported extensions as a hint 
+    * to what method we should use. */
    core_get_system_info(&sysinfo);
    
-   for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(finders); i++)
    {
       if (finders[i].ext_hashes)
       {
@@ -2149,7 +2148,7 @@ bool cheevos_load(const void *data)
       }
    }
    
-   for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
+   for (i = 0; i < ARRAY_SIZE(finders); i++)
    {
       if (finders[i].ext_hashes)
          continue;
@@ -2175,7 +2174,8 @@ found:
          cheevos_locals.loaded = 1;
          
          cheevos_make_playing_url(game_id, url, sizeof(url));
-         task_push_http_transfer(url, true, NULL, cheevos_playing, (void*)(uintptr_t)game_id);
+         task_push_http_transfer(url, true, NULL,
+               cheevos_playing, (void*)(uintptr_t)game_id);
          return true;
       }
       
@@ -2299,7 +2299,8 @@ bool cheevos_toggle_hardcore_mode(void)
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
 
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE));
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE), 0, 3 * 60, true);
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE), 0, 3 * 60, true);
    }
    else
    {
