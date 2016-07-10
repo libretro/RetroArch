@@ -1479,7 +1479,6 @@ static int generic_action_ok_remap_file_save(const char *path,
 {
    char directory[PATH_MAX_LENGTH] = {0};
    char file[PATH_MAX_LENGTH]      = {0};
-   global_t *global                = global_get_ptr();
    settings_t *settings            = config_get_ptr();
    rarch_system_info_t *info       = NULL;
    const char *core_name           = NULL;
@@ -1502,8 +1501,8 @@ static int generic_action_ok_remap_file_save(const char *path,
          fill_pathname_join(file, core_name, core_name, sizeof(file));
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
-         if (global)
          {
+            global_t *global      = global_get_ptr();
             const char *game_name = path_basename(global->name.base);
             fill_pathname_join(file, core_name, game_name, sizeof(file));
          }
@@ -1599,14 +1598,11 @@ static int action_ok_core_deferred_set(const char *path,
    return menu_cbs_exit();
 }
 
-
 static int action_ok_deferred_list_stub(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return 0;
 }
-
-
 
 static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -2650,7 +2646,8 @@ static int action_ok_push_content_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t            *settings   = config_get_ptr();
-   return generic_action_ok_displaylist_push(path, settings->directory.menu_content, label, type, idx,
+   return generic_action_ok_displaylist_push(path,
+         settings->directory.menu_content, label, type, idx,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
