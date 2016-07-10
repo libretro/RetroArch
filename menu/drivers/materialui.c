@@ -225,7 +225,8 @@ static void mui_draw_icon(
 static void mui_draw_tab(mui_handle_t *mui,
       unsigned i,
       unsigned width, unsigned height,
-      float *tab_color)
+      float *tab_color,
+      float *active_tab_color)
 {
    unsigned tab_icon = 0;
 
@@ -234,17 +235,26 @@ static void mui_draw_tab(mui_handle_t *mui,
       case MUI_SYSTEM_TAB_MAIN:
          tab_icon = MUI_TEXTURE_TAB_MAIN_PASSIVE;
          if (i == mui->categories.selection_ptr)
+         {
             tab_icon = MUI_TEXTURE_TAB_MAIN_ACTIVE;
+            tab_color = active_tab_color;
+         }
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
          tab_icon = MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
          if (i == mui->categories.selection_ptr)
+         {
             tab_icon = MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE;
+            tab_color = active_tab_color;
+         }
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
          tab_icon = MUI_TEXTURE_TAB_SETTINGS_PASSIVE;
          if (i == mui->categories.selection_ptr)
+         {
             tab_icon = MUI_TEXTURE_TAB_SETTINGS_ACTIVE;
+            tab_color = active_tab_color;
+         }
          break;
    }
 
@@ -1055,7 +1065,7 @@ static void mui_frame(void *data)
       mui_draw_tab_begin(mui, width, height, &footer_bg_color[0], &grey_bg[0]);
 
       for (i = 0; i <= MUI_SYSTEM_TAB_END; i++)
-         mui_draw_tab(mui, i, width, height, &pure_white[0]);
+         mui_draw_tab(mui, i, width, height, &pure_white[0], &active_tab_marker_color[0]);
 
       mui_draw_tab_end(mui, width, height, header_height, &active_tab_marker_color[0]);
    }
