@@ -839,19 +839,8 @@ static void mui_frame(void *data)
    if (!mui)
       return;
 
-   hex32_to_rgba_normalized(0xFFEB3B, yellow_500,     1.00);
-   hex32_to_rgba_normalized(0xFFF9C4, yellow_200,     0.90);
-   hex32_to_rgba_normalized(0xF44336, red_500,        1.00);
-   hex32_to_rgba_normalized(0xFFEBEE, red_50,         0.90);
    hex32_to_rgba_normalized(0x2196F3, blue_500,       1.00);
    hex32_to_rgba_normalized(0xE3F2FD, blue_50,        0.90);
-   hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
-   hex32_to_rgba_normalized(0x607D8B, blue_grey_500,  1.00);
-   hex32_to_rgba_normalized(0xCFD8DC, blue_grey_50,   0.90);
-   hex32_to_rgba_normalized(0xC8E6C9, green_50,       0.90);
-   hex32_to_rgba_normalized(0x282F37, color_nv_header,1.00);
-   hex32_to_rgba_normalized(0x202427, color_nv_body,  1.00);
-   hex32_to_rgba_normalized(0x77B900, color_nv_accent,1.00);
 
    clearcolor.r = 1.0f;
    clearcolor.g = 1.0f;
@@ -863,6 +852,9 @@ static void mui_frame(void *data)
       case MATERIALUI_THEME_BLUE:
          break;
       case MATERIALUI_THEME_BLUE_GREY:
+         hex32_to_rgba_normalized(0x607D8B, blue_grey_500,  1.00);
+         hex32_to_rgba_normalized(0xCFD8DC, blue_grey_50,   0.90);
+
          header_bg_color         = blue_grey_500;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = blue_grey_50;
@@ -874,6 +866,9 @@ static void mui_frame(void *data)
          font_header_color       = 0xffffffff;
          break;
       case MATERIALUI_THEME_GREEN:
+         hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
+         hex32_to_rgba_normalized(0xC8E6C9, green_50,       0.90);
+
          header_bg_color         = green_500;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = green_50;
@@ -885,6 +880,9 @@ static void mui_frame(void *data)
          font_header_color       = 0xffffffff;
          break;
       case MATERIALUI_THEME_RED:
+         hex32_to_rgba_normalized(0xF44336, red_500,        1.00);
+         hex32_to_rgba_normalized(0xFFEBEE, red_50,         0.90);
+
          header_bg_color         = red_500;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = red_50;
@@ -897,6 +895,9 @@ static void mui_frame(void *data)
          font_header_color       = 0xffffffff;
          break;
       case MATERIALUI_THEME_YELLOW:
+         hex32_to_rgba_normalized(0xFFEB3B, yellow_500,     1.00);
+         hex32_to_rgba_normalized(0xFFF9C4, yellow_200,     0.90);
+
          header_bg_color         = yellow_500;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = yellow_200;
@@ -926,6 +927,10 @@ static void mui_frame(void *data)
          clearcolor.b            = 0.13f;
          break;
       case MATERIALUI_THEME_NVIDIA_SHIELD:
+         hex32_to_rgba_normalized(0x282F37, color_nv_header,1.00);
+         hex32_to_rgba_normalized(0x202427, color_nv_body,  1.00);
+         hex32_to_rgba_normalized(0x77B900, color_nv_accent,1.00);
+
          header_bg_color         = color_nv_header;
          body_bg_color           = color_nv_body;
          highlighted_entry_color = color_nv_accent;
