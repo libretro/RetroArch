@@ -1545,52 +1545,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
    {
       switch (label_hash)
       {
-         case MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_default_filter);
-            break;
-         case MENU_LABEL_VIDEO_FILTER:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_filter);
-            break;
-         case MENU_LABEL_CONFIGURATIONS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_configurations);
-            break;
-         case MENU_LABEL_SCREEN_RESOLUTION:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_video_resolution);
-            break;
          case MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_input_keyboard_gamepad_mapping_type);
-            break;
-         case MENU_LABEL_CONTENT_COLLECTION_LIST:
-         case MENU_LABEL_LOAD_CONTENT_HISTORY:
-         case MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         case MENU_LABEL_DETECT_CORE_LIST:
-         case MENU_LABEL_LOAD_CONTENT:
-         case MENU_LABEL_CORE_OPTIONS:
-         case MENU_LABEL_CORE_CHEAT_OPTIONS:
-         case MENU_LABEL_SHADER_OPTIONS:
-         case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
-         case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
-         case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-         case MENU_LABEL_CHEAT_FILE_SAVE_AS:
-         case MENU_LABEL_FRONTEND_COUNTERS:
-         case MENU_LABEL_CORE_COUNTERS:
-         case MENU_LABEL_DATABASE_MANAGER_LIST:
-         case MENU_LABEL_CURSOR_MANAGER_LIST:
-         case MENU_LABEL_CLOSE_CONTENT:
-         case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-         case MENU_LABEL_CORE_INFORMATION:
-         case MENU_LABEL_SYSTEM_INFORMATION:
-         case MENU_LABEL_DEBUG_INFORMATION:
-         case MENU_LABEL_ACHIEVEMENT_LIST:
-         case MENU_LABEL_SAVE_STATE:
-         case MENU_LABEL_LOAD_STATE:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_more);
             break;
          default:
             return - 1;
