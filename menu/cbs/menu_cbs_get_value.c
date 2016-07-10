@@ -771,6 +771,12 @@ static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
    }
 }
 
+enum materialui_color_theme
+{
+   THEME_BLUE = 0,
+   THEME_DARK_BLUE
+};
+
 static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -790,12 +796,12 @@ static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
 
    switch (settings->menu.materialui.menu_color_theme)
    {
-      case 0:
+      case THEME_BLUE:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_WHITE), len);
          break;
-      case 1:
+      case THEME_DARK_BLUE:
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK), len);
