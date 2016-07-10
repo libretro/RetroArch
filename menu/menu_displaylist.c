@@ -4189,8 +4189,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             for (i = 0; i < RARCH_BIND_LIST_END; i++)
             {
-               ret = menu_displaylist_parse_settings(menu, info,
-                     input_config_bind_map_get_base(i), PARSE_ONLY_BIND, false);
+               ret = menu_displaylist_parse_settings_enum(menu, info,
+                    MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i, 
+                    PARSE_ONLY_BIND, false);
                (void)ret;
             }
          }

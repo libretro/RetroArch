@@ -6255,7 +6255,8 @@ static bool setting_append_list(
                      &retro_keybinds_1[i],
                      &group_info, &subgroup_info, parent_group);
                (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
-               /* TODO - add enum_idx */
+               menu_settings_list_current_add_enum_idx(list, list_info, 
+                     MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i);
             }
 
             END_SUB_GROUP(list, list_info, parent_group);
