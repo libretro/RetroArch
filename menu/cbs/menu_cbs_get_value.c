@@ -791,15 +791,15 @@ static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
 
    switch (settings->menu.materialui.menu_color_theme)
    {
-      case THEME_BLUE:
+      case MATERIALUI_THEME_BLUE:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_WHITE), len);
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE), len);
          break;
-      case THEME_DARK_BLUE:
+      case MATERIALUI_THEME_DARK_BLUE:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK), len);
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE), len);
          break;
       default:
          break;

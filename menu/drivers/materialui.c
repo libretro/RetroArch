@@ -831,9 +831,9 @@ static void mui_frame(void *data)
 
    switch (settings->menu.materialui.menu_color_theme)
    {
-      case 0:
+      case MATERIALUI_THEME_BLUE:
          break;
-      case 1: /* DARK */
+      case MATERIALUI_THEME_DARK_BLUE:
          header_bg_color         = greyish_blue;
          highlighted_entry_color = grey_bg;
          footer_bg_color         = almost_black;
