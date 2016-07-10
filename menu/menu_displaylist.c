@@ -3208,6 +3208,7 @@ enum filebrowser_enums
 {
    FILEBROWSER_NONE = 0,
    FILEBROWSER_SELECT_DIR,
+   FILEBROWSER_SCAN_DIR,
    FILEBROWSER_SELECT_COLLECTION
 };
 
@@ -3340,7 +3341,7 @@ static int menu_displaylist_parse_generic(
             filter_ext ? info->exts : NULL,
             true, true);
 
-   if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY)))
+   if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
@@ -3448,8 +3449,9 @@ static int menu_displaylist_parse_generic(
 
       if (!is_dir)
       {
-         uint32_t hash_label  = msg_hash_calculate(info->label);
-         if (push_dir || hash_label == MENU_LABEL_SCAN_DIRECTORY)
+         if (push_dir)
+            continue;
+         if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
             continue;
       }
 
@@ -3928,6 +3930,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
    switch (type)
    {
+      case DISPLAYLIST_FILE_BROWSER_SCAN_DIR:
+         BIT32_CLEAR_ALL(filebrowser_types);
+         BIT32_SET(filebrowser_types, FILEBROWSER_SCAN_DIR);
+         break;
       case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
          BIT32_CLEAR_ALL(filebrowser_types);
          BIT32_SET(filebrowser_types, FILEBROWSER_SELECT_DIR);
@@ -3948,6 +3954,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_entries_add_enum(info->list, info->path,
                info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0);
          break;
+      case DISPLAYLIST_FILE_BROWSER_SCAN_DIR:
       case DISPLAYLIST_FILE_BROWSER_SELECT_DIR:
       case DISPLAYLIST_FILE_BROWSER_SELECT_FILE:
       case DISPLAYLIST_FILE_BROWSER_SELECT_CORE:

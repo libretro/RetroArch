@@ -257,6 +257,13 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_SCAN_DIR_LIST:
+         info.type          = FILE_TYPE_DIRECTORY;
+         info.directory_ptr = idx;
+         info_path          = new_path;
+         info_label         = label;
+         dl_type            = DISPLAYLIST_FILE_BROWSER_SCAN_DIR;
+         break;
       case ACTION_OK_DL_REMAP_FILE:
          info.type          = type;
          info.directory_ptr = idx;
@@ -2651,6 +2658,15 @@ static int action_ok_push_content_list(const char *path,
          entry_idx, ACTION_OK_DL_CONTENT_LIST);
 }
 
+static int action_ok_scan_directory_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t            *settings   = config_get_ptr();
+   return generic_action_ok_displaylist_push(path,
+         settings->directory.menu_content, label, type, idx,
+         entry_idx, ACTION_OK_DL_SCAN_DIR_LIST);
+}
+
 static int action_ok_push_downloads_dir(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3201,8 +3217,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONTENT_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
-         case MENU_ENUM_LABEL_SCAN_FILE:
          case MENU_ENUM_LABEL_SCAN_DIRECTORY:
+            BIND_ACTION_OK(cbs, action_ok_scan_directory_list);
+            break;
+         case MENU_ENUM_LABEL_SCAN_FILE:
          case MENU_ENUM_LABEL_LOAD_CONTENT:
          case MENU_ENUM_LABEL_DETECT_CORE_LIST:
             BIND_ACTION_OK(cbs, action_ok_push_content_list);
