@@ -235,26 +235,17 @@ static void mui_draw_tab(mui_handle_t *mui,
       case MUI_SYSTEM_TAB_MAIN:
          tab_icon = MUI_TEXTURE_TAB_MAIN_PASSIVE;
          if (i == mui->categories.selection_ptr)
-         {
-            tab_icon = MUI_TEXTURE_TAB_MAIN_ACTIVE;
             tab_color = active_tab_color;
-         }
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
          tab_icon = MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
          if (i == mui->categories.selection_ptr)
-         {
-            tab_icon = MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE;
             tab_color = active_tab_color;
-         }
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
          tab_icon = MUI_TEXTURE_TAB_SETTINGS_PASSIVE;
          if (i == mui->categories.selection_ptr)
-         {
-            tab_icon = MUI_TEXTURE_TAB_SETTINGS_ACTIVE;
             tab_color = active_tab_color;
-         }
          break;
    }
 
