@@ -3762,9 +3762,11 @@ static bool setting_append_list_input_player_options(
       snprintf(key[user], sizeof(key[user]),
                "input_player%u_joypad_index", user + 1);
       snprintf(key_type[user], sizeof(key_type[user]),
-               "input_libretro_device_p%u", user + 1);
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE),
+               user + 1);
       snprintf(key_analog[user], sizeof(key_analog[user]),
-               "input_player%u_analog_dpad_mode", user + 1);
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),
+               user + 1);
       snprintf(key_bind_all[user], sizeof(key_bind_all[user]),
                "input_player%u_bind_all", user + 1);
       snprintf(key_bind_all_save_autoconfig[user], sizeof(key_bind_all[user]),
