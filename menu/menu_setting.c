@@ -3881,9 +3881,8 @@ static bool setting_append_list_input_player_options(
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)
    {
-      char label[PATH_MAX_LENGTH];
-      char name[PATH_MAX_LENGTH];
-      bool do_add = true;
+      char label[PATH_MAX_LENGTH] = {0};
+      char name[PATH_MAX_LENGTH]  = {0};
 
       if (input_config_bind_map_get_meta(i))
          continue;
@@ -3891,6 +3890,7 @@ static bool setting_append_list_input_player_options(
       fill_pathname_noext(label, buffer[user],
             " ",
             sizeof(label));
+
       if (
             settings->input.input_descriptor_label_show
             && (i < RARCH_FIRST_META_KEY)
@@ -3908,7 +3908,7 @@ static bool setting_append_list_input_player_options(
                   sizeof(label));
 
             if (settings->input.input_descriptor_hide_unbound)
-               do_add = false;
+               continue;
          }
       }
       else
@@ -3916,21 +3916,18 @@ static bool setting_append_list_input_player_options(
 
       snprintf(name, sizeof(name), "p%u_%s", user + 1, input_config_bind_map_get_base(i));
 
-      if (do_add)
-      {
-         CONFIG_BIND(
-               list, list_info,
-               &settings->input.binds[user][i],
-               user + 1,
-               user,
-               strdup(name),
-               strdup(label),
-               &defaults[i],
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
-      }
+      CONFIG_BIND(
+            list, list_info,
+            &settings->input.binds[user][i],
+            user + 1,
+            user,
+            strdup(name),
+            strdup(label),
+            &defaults[i],
+            &group_info,
+            &subgroup_info,
+            parent_group);
+      (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
    }
 
    END_SUB_GROUP(list, list_info, parent_group);
