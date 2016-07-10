@@ -4178,7 +4178,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             for (i = 0; i < RARCH_BIND_LIST_END; i++)
             {
                ret = menu_displaylist_parse_settings_enum(menu, info,
-                    MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i, 
+                    (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i), 
                     PARSE_ONLY_BIND, false);
                (void)ret;
             }
@@ -4536,7 +4536,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             for(user = 0; user < settings->input.max_users; user++)
             {
                menu_displaylist_parse_settings_enum(menu, info,
-                     MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
                      PARSE_ONLY_BOOL, false);
             }
          }

@@ -6255,7 +6255,7 @@ static bool setting_append_list(
                      &group_info, &subgroup_info, parent_group);
                (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
                menu_settings_list_current_add_enum_idx(list, list_info, 
-                     MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i);
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i));
             }
 
             END_SUB_GROUP(list, list_info, parent_group);
