@@ -1545,42 +1545,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
    {
       switch (label_hash)
       {
-         case MENU_LABEL_XMB_THEME:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_xmb_theme);
-            break;
-         case MENU_LABEL_XMB_GRADIENT:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_xmb_menu_color_theme);
-            break;
-         case MENU_LABEL_THUMBNAILS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_thumbnails);
-            break;
-         case MENU_LABEL_REMAP_FILE_LOAD:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_remap_file_load);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_filter_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_scale_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_num_passes);
-            break;
-         case MENU_LABEL_XMB_RIBBON_ENABLE:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_pipeline);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_PASS:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_shader_pass);
-            break;
          case MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_shader_default_filter);
