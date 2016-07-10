@@ -939,7 +939,7 @@ static void mui_frame(void *data)
       case MATERIALUI_THEME_NVIDIA_SHIELD:
          hex32_to_rgba_normalized(0x282F37, color_nv_header,1.00);
          hex32_to_rgba_normalized(0x202427, color_nv_body,  1.00);
-         hex32_to_rgba_normalized(0x77B900, color_nv_accent,1.00);
+         hex32_to_rgba_normalized(0x77B900, color_nv_accent,0.90);
 
          header_bg_color         = color_nv_header;
          body_bg_color           = color_nv_body;
