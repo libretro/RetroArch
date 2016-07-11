@@ -992,7 +992,7 @@ static void mui_frame(void *data)
          break;
    }
 
-   menu_display_set_alpha(footer_bg_color, settings->menu.footer.opacity);
+   menu_display_set_alpha(footer_bg_color_real, settings->menu.footer.opacity);
 
    video_driver_get_size(&width, &height);
 
