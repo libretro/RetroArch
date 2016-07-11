@@ -70,10 +70,12 @@ size_t core_len;
 static void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
    bool refresh = false;
-   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
+   menu_file_transfer_t *state = (menu_file_transfer_t*)user_data;
 
    if (core_buf)
       free(core_buf);
+
 
    core_buf = NULL;
    core_len = 0;
@@ -380,7 +382,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr = idx;
          info_path          = parent_dir;
          info_label         = menu_label;
-         dl_type                 = DISPLAYLIST_GENERIC;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
          info.type          = type;
@@ -1805,6 +1807,7 @@ static int generic_action_ok_network(const char *path,
    char url_path[PATH_MAX_LENGTH] = {0};
    settings_t *settings           = config_get_ptr();
    unsigned type_id2              = 0;
+   menu_file_transfer_t *transf   = NULL;
    const char *url_label          = NULL;
    retro_task_callback_t callback = NULL;
    bool refresh                   = true;
@@ -1865,7 +1868,10 @@ static int generic_action_ok_network(const char *path,
          break;
    }
 
-   task_push_http_transfer(url_path, false, url_label, callback, NULL);
+   transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+   strlcpy(transf->path, url_path, sizeof(transf->path));
+
+   task_push_http_transfer(url_path, false, url_label, callback, transf);
 
    return generic_action_ok_displaylist_push(path, NULL,
          label, type, idx, entry_idx, type_id2);
