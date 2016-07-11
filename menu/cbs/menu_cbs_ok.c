@@ -98,13 +98,15 @@ finish:
 
    if (err)
       RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
-   else if (!strstr(state->path, ".index-dirs"))
+   else if (!strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
 #if 0
+      menu_file_transfer_t *transf     = NULL;
       char parent_dir[PATH_MAX_LENGTH] = {0};
+
       fill_pathname_parent_dir(parent_dir,
             state->path, sizeof(parent_dir));
-      strlcat(parent_dir, ".index-extended", sizeof(parent_dir));
+      strlcat(parent_dir, file_path_str(FILE_PATH_INDEX_EXTENDED_URL), sizeof(parent_dir));
 
       transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
       strlcpy(transf->path, parent_dir, sizeof(transf->path));
