@@ -277,7 +277,7 @@ static uint32_t cheevos_djb2(const char* str, size_t length)
 {
    const unsigned char *aux = (const unsigned char*)str;
    const unsigned char *end = aux + length;
-   uint32_t hash = 5381;
+   uint32_t            hash = 5381;
 
    while (aux < end)
       hash = (hash << 5) + hash + *aux++;
@@ -838,11 +838,11 @@ static INLINE const char *cheevos_dupstr(const cheevos_field_t *field)
 
 static int cheevos_new_cheevo(cheevos_readud_t *ud)
 {
-   const cheevos_condset_t *end;
    unsigned set;
-   cheevos_condset_t *condset;
-   cheevo_t *cheevo;
-   int flags = strtol(ud->flags.string, NULL, 10);
+   const cheevos_condset_t *end = NULL;
+   cheevos_condset_t *condset   = NULL;
+   cheevo_t *cheevo             = NULL;
+   int flags                    = strtol(ud->flags.string, NULL, 10);
 
    if (flags == 3)
       cheevo = cheevos_locals.core.cheevos + ud->core_count++;
@@ -878,7 +878,8 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
       if (!cheevo->condsets)
          return -1;
 
-      memset((void*)cheevo->condsets, 0, cheevo->count * sizeof(cheevos_condset_t));
+      memset((void*)cheevo->condsets, 0, 
+            cheevo->count * sizeof(cheevos_condset_t));
       end = cheevo->condsets + cheevo->count;
       set = 0;
 
@@ -1419,9 +1420,7 @@ static int cheevos_login(retro_time_t *timeout)
       free((void*)json);
 
       if (!res)
-      {
          return 0;
-      }
    }
 
    runloop_msg_queue_push("Retro Achievements login error",
@@ -2198,13 +2197,11 @@ void cheevos_populate_menu(void *data)
 #ifdef HAVE_MENU
    unsigned i;
    unsigned items_found          = 0;
-   const cheevo_t *end           = NULL;
-   cheevo_t *cheevo              = NULL;
    settings_t *settings          = config_get_ptr();
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
-   
-   cheevo = cheevos_locals.core.cheevos;
-   end    = cheevos_locals.core.cheevos + cheevos_locals.core.count;
+   cheevo_t *cheevo              = cheevos_locals.core.cheevos;
+   const cheevo_t *end           = cheevos_locals.core.cheevos + 
+                                   cheevos_locals.core.count;
    
    for (i = 0; cheevo < end; i++, cheevo++)
    {
