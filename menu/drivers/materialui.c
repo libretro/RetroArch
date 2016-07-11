@@ -542,12 +542,12 @@ static void mui_render_label_value(mui_handle_t *mui,
    mui_draw_text(mui->margin, y + mui->line_height / 2,
          width, height, label_str, color, TEXT_ALIGN_LEFT);
 
-   bool switch_is_off = true;
+   bool switch_is_on = true;
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF]) {
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
-         switch_is_off = true;
+         switch_is_on = false;
       }
       else
          do_draw_text = true;
@@ -556,7 +556,7 @@ static void mui_render_label_value(mui_handle_t *mui,
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_ON]) {
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
-         switch_is_off = false;
+         switch_is_on = true;
       }
       else
          do_draw_text = true;
@@ -577,14 +577,18 @@ static void mui_render_label_value(mui_handle_t *mui,
          case FILE_TYPE_MOVIE:
             break;
          case FILE_TYPE_BOOL_ON:
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON]) {
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
+               switch_is_on = true;
+            }
             else
                do_draw_text = true;
             break;
          case FILE_TYPE_BOOL_OFF:
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF]) {
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
+               switch_is_on = false;
+            }
             else
                do_draw_text = true;
             break;
@@ -609,7 +613,7 @@ static void mui_render_label_value(mui_handle_t *mui,
             height,
             0,
             1,
-            switch_is_off ? &pure_white[0] :  &label_color[0]
+            switch_is_on ? &label_color[0] :  &pure_white[0]
       );
 }
 
@@ -1039,7 +1043,7 @@ static void mui_frame(void *data)
       height,
       font_normal_color, 
       font_hover_color, 
-      &highlighted_entry_color[0]
+      &active_tab_marker_color[0]
    );
 
    menu_display_font_flush_block();
