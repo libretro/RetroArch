@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "vulkan/vulkan_symbol_wrapper.h"
+#include <vulkan/vulkan_symbol_wrapper.h>
 #include <libretro_vulkan.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
