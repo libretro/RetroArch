@@ -1930,6 +1930,8 @@ bool task_push_content_load_default(
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          break;
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
+         break;
       default:
 #ifdef HAVE_MENU
          if (type != CORE_TYPE_DUMMY && mode != CONTENT_MODE_LOAD_FROM_CLI)
