@@ -1928,6 +1928,7 @@ bool task_push_content_load_default(
    /* Push quick menu onto menu stack */
    switch (mode)
    {
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          break;
       default:
