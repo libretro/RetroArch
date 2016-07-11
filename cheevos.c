@@ -1985,14 +1985,16 @@ static unsigned cheevos_find_game_id_nes(
          return 0;
       }
 
-      /* from fceu core - need it for a correctly md5 sum */
+      /* TODO/FIXME - any way we can move this per-core stuff
+       * somewhere else? Bound to become really messy in here over time */
+
+      /* from FCEU core - need it for a correctly md5 sum */
       memset(data, 0xFF, rom_size << 14);
 
-      /* from fceu core - compute size using the cart mapper */
+      /* from FCEU core - compute size using the cart mapper */
       mapper_no = (header.rom_type >> 4);
 	   mapper_no |= (header.rom_type2 & 0xF0);
       
-
       for (i = 0; i != ARRAY_SIZE(not_power2); ++i)
       {
          /* for games not to the power of 2, so we just read enough
@@ -2000,7 +2002,8 @@ static unsigned cheevos_find_game_id_nes(
           * since PRGCartMapping wants ROM_size to be to the power of 2
           * so instead if not to power of 2, we just use head.ROM_size when
           * we use FCEU_read. */
-         if (not_power2[i] == mapper_no) {
+         if (not_power2[i] == mapper_no)
+         {
             round = false;
             break;
          }
@@ -2008,7 +2011,11 @@ static unsigned cheevos_find_game_id_nes(
       
       MD5_Init(&ctx);
       filestream_seek(file, sizeof(header), SEEK_SET);
-      /* from fceu core - check if Trainer included in ROM data */
+
+      /* TODO/FIXME - any way we can move this per-core stuff
+       * somewhere else? Bound to become really messy in here over time */
+      /* from FCEU core - check if Trainer included in ROM data */
+
       if (header.rom_type & 4)
          filestream_seek(file, sizeof(header), SEEK_CUR);
 
