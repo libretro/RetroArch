@@ -526,6 +526,8 @@ static bool xmb_shadows_enable   = true;
 
 static float menu_wallpaper_opacity = 0.300;
 
+static float menu_footer_opacity = 1.000;
+
 static unsigned menu_background_gradient = 4;
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)

@@ -1643,6 +1643,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "xmb_menu_color_theme";
       case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
          return "materialui_menu_color_theme";
+      case MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY:
+         return "materialui_menu_footer_opacity";
       case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
          return "xmb_shadows_enable";
       case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
@@ -2121,6 +2123,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Ribbon (simplified)";
       case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON:
          return "Ribbon";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY:
+         return "Footer Opacity";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE:
          return "Blue";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY:

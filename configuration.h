@@ -128,6 +128,11 @@ typedef struct settings
 
       struct
       {
+         float opacity;
+      } footer;
+
+      struct
+      {
          bool enable;
       } mouse;
 

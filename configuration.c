@@ -610,6 +610,7 @@ static void config_set_defaults(void)
    settings->menu.core_enable                  = true;
    settings->menu.dynamic_wallpaper_enable     = false;
    settings->menu.wallpaper.opacity            = menu_wallpaper_opacity;
+   settings->menu.footer.opacity               = menu_footer_opacity;
    settings->menu.thumbnails                   = menu_thumbnails_default;
    settings->menu.show_advanced_settings       = show_advanced_settings;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
@@ -1330,6 +1331,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, menu.dynamic_wallpaper_enable,
          "menu_dynamic_wallpaper_enable");
    CONFIG_GET_FLOAT_BASE(conf, settings, menu.wallpaper.opacity, "menu_wallpaper_opacity");
+   CONFIG_GET_FLOAT_BASE(conf, settings, menu.footer.opacity, "menu_footer_opacity");
    CONFIG_GET_INT_BASE(conf, settings, menu.thumbnails,
          "menu_thumbnails");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.enable,
@@ -2711,6 +2713,8 @@ bool config_save_file(const char *path)
          settings->path.menu_wallpaper);
    config_set_float(conf, "menu_wallpaper_opacity",
          settings->menu.wallpaper.opacity);
+   config_set_float(conf, "menu_footer_opacity",
+         settings->menu.footer.opacity);
 #endif
    config_set_string(conf, "video_filter",
          settings->path.softfilter_plugin);

@@ -6966,6 +6966,21 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 6, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->menu.footer.opacity,
+                  msg_hash_to_str(MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY),
+                  menu_footer_opacity,
+                  "%.3f %",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY);
          }
 
          CONFIG_BOOL(
