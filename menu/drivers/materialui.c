@@ -780,6 +780,7 @@ static void mui_frame(void *data)
       0.00, 0.00, 0.00, 0.2,
       0.00, 0.00, 0.00, 0.2,
    };
+   /* TODO/FIXME - convert this over to new hex format */
    float greyish_blue[16] = {
       0.22, 0.28, 0.31, 1.00,
       0.22, 0.28, 0.31, 1.00,
@@ -818,6 +819,7 @@ static void mui_frame(void *data)
    float color_nv_body[16]         = {0};
    float color_nv_accent[16]       = {0};
    float footer_bg_color_real[16]  = {0};
+   float header_bg_color_real[16]  = {0};
    unsigned width                  = 0;
    unsigned height                 = 0;
    unsigned ticker_limit           = 0;
@@ -853,10 +855,11 @@ static void mui_frame(void *data)
    {
       case MATERIALUI_THEME_BLUE:
          hex32_to_rgba_normalized(0x2196F3, blue_500,       1.00);
+         hex32_to_rgba_normalized(0x2196F3, header_bg_color_real, 1.00);
          hex32_to_rgba_normalized(0xE3F2FD, blue_50,        0.90);
          hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
 
-         header_bg_color         = blue_500;
+         header_bg_color         = header_bg_color_real;
          highlighted_entry_color = blue_50;
          footer_bg_color         = footer_bg_color_real;
          body_bg_color           = white_transp_bg;
@@ -873,10 +876,11 @@ static void mui_frame(void *data)
          break;
       case MATERIALUI_THEME_BLUE_GREY:
          hex32_to_rgba_normalized(0x607D8B, blue_grey_500,  1.00);
+         hex32_to_rgba_normalized(0x607D8B, header_bg_color_real,  1.00);
          hex32_to_rgba_normalized(0xCFD8DC, blue_grey_50,   0.90);
          hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
 
-         header_bg_color         = blue_grey_500;
+         header_bg_color         = header_bg_color_real;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = blue_grey_50;
          footer_bg_color         = footer_bg_color_real;
@@ -893,10 +897,11 @@ static void mui_frame(void *data)
          break;
       case MATERIALUI_THEME_GREEN:
          hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
+         hex32_to_rgba_normalized(0x4CAF50, header_bg_color_real,      1.00);
          hex32_to_rgba_normalized(0xC8E6C9, green_50,       0.90);
          hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
 
-         header_bg_color         = green_500;
+         header_bg_color         = header_bg_color_real;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = green_50;
          footer_bg_color         = footer_bg_color_real;
@@ -913,10 +918,11 @@ static void mui_frame(void *data)
          break;
       case MATERIALUI_THEME_RED:
          hex32_to_rgba_normalized(0xF44336, red_500,        1.00);
+         hex32_to_rgba_normalized(0xF44336, header_bg_color_real,        1.00);
          hex32_to_rgba_normalized(0xFFEBEE, red_50,         0.90);
          hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
 
-         header_bg_color         = red_500;
+         header_bg_color         = header_bg_color_real;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = red_50;
          footer_bg_color         = footer_bg_color_real;
@@ -934,10 +940,12 @@ static void mui_frame(void *data)
          break;
       case MATERIALUI_THEME_YELLOW:
          hex32_to_rgba_normalized(0xFFEB3B, yellow_500,     1.00);
+         hex32_to_rgba_normalized(0xFFEB3B, header_bg_color_real,     1.00);
          hex32_to_rgba_normalized(0xFFF9C4, yellow_200,     0.90);
          hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
 
          header_bg_color         = yellow_500;
+         header_bg_color         = header_bg_color_real;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = yellow_200;
          footer_bg_color         = footer_bg_color_real;
@@ -954,7 +962,8 @@ static void mui_frame(void *data)
          break;
       case MATERIALUI_THEME_DARK_BLUE:
          hex32_to_rgba_normalized(0x212121, footer_bg_color_real, 1.00);
-         header_bg_color         = greyish_blue;
+         memcpy(header_bg_color_real, greyish_blue, sizeof(header_bg_color_real));
+         header_bg_color         = header_bg_color_real;
          body_bg_color           = almost_black;
          highlighted_entry_color = grey_bg;
          footer_bg_color         = footer_bg_color_real;
@@ -971,11 +980,12 @@ static void mui_frame(void *data)
          break;
       case MATERIALUI_THEME_NVIDIA_SHIELD:
          hex32_to_rgba_normalized(0x282F37, color_nv_header,1.00);
+         hex32_to_rgba_normalized(0x282F37, header_bg_color_real,1.00);
          hex32_to_rgba_normalized(0x202427, color_nv_body,  0.90);
          hex32_to_rgba_normalized(0x77B900, color_nv_accent,0.90);
          hex32_to_rgba_normalized(0x202427, footer_bg_color_real,  1.00);
 
-         header_bg_color         = color_nv_header;
+         header_bg_color         = header_bg_color_real;
          body_bg_color           = color_nv_body;
          highlighted_entry_color = color_nv_accent;
          footer_bg_color         = footer_bg_color_real;
@@ -992,6 +1002,7 @@ static void mui_frame(void *data)
          break;
    }
 
+   menu_display_set_alpha(header_bg_color_real, settings->menu.header.opacity);
    menu_display_set_alpha(footer_bg_color_real, settings->menu.footer.opacity);
 
    video_driver_get_size(&width, &height);
