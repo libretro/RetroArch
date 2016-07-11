@@ -35,6 +35,7 @@ HAVE_X11=auto              # everything X11.
 HAVE_OMAP=no               # OMAP video support
 HAVE_XINERAMA=auto         # Xinerama support.
 HAVE_KMS=auto              # KMS context support
+HAVE_PLAIN_DRM=no          # Plain DRM video support
 HAVE_EXYNOS=no             # Exynos video support
 HAVE_DISPMANX=no           # Dispmanx video support
 HAVE_SUNXI=no              # Sunxi video support

@@ -309,7 +309,6 @@ fi
 if [ "$HAVE_KMS" != "no" ]; then
    check_pkgconf GBM gbm 9.0
    check_pkgconf DRM libdrm
-   check_pkgconf PLAIN_DRM libdrm 2.4.65
    if [ "$HAVE_GBM" = "yes" ] && [ "$HAVE_DRM" = "yes" ] && [ "$HAVE_EGL" = "yes" ]; then
       HAVE_KMS=yes
    elif [ "$HAVE_KMS" = "yes" ]; then
