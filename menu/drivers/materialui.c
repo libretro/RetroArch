@@ -793,15 +793,15 @@ static void mui_frame(void *data)
       0.13, 0.13, 0.13, 0.90,
    };
 
-   uint32_t black_opaque_54 = 0x0000008a;
-   uint32_t black_opaque_87 = 0x000000de;
-   uint32_t white_opaque_70 = 0xffffffb3;
 
    /* This controls the main background color */
    menu_display_ctx_clearcolor_t clearcolor;
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
 
+   uint32_t black_opaque_54        = 0x0000008a;
+   uint32_t black_opaque_87        = 0x000000de;
+   uint32_t white_opaque_70        = 0xffffffb3;
    /* https://material.google.com/style/color.html#color-color-palette */
    /* Hex values converted to RGB normalized decimals, alpha set to 1 */
    float blue_500[16]              = {0};
@@ -848,11 +848,6 @@ static void mui_frame(void *data)
    if (!mui)
       return;
 
-   clearcolor.r = 1.0f;
-   clearcolor.g = 1.0f;
-   clearcolor.b = 1.0f;
-   clearcolor.a = 0.75f;
-
    switch (settings->menu.materialui.menu_color_theme)
    {
       case MATERIALUI_THEME_BLUE:
@@ -868,6 +863,11 @@ static void mui_frame(void *data)
          font_normal_color       = black_opaque_54;
          font_hover_color        = black_opaque_87;
          font_header_color       = 0xffffffff;
+
+         clearcolor.r            = 1.0f;
+         clearcolor.g            = 1.0f;
+         clearcolor.b            = 1.0f;
+         clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_BLUE_GREY:
          hex32_to_rgba_normalized(0x607D8B, blue_grey_500,  1.00);
@@ -882,6 +882,11 @@ static void mui_frame(void *data)
          font_normal_color       = black_opaque_54;
          font_hover_color        = black_opaque_87;
          font_header_color       = 0xffffffff;
+
+         clearcolor.r            = 1.0f;
+         clearcolor.g            = 1.0f;
+         clearcolor.b            = 1.0f;
+         clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_GREEN:
          hex32_to_rgba_normalized(0x4CAF50, green_500,      1.00);
@@ -896,6 +901,11 @@ static void mui_frame(void *data)
          font_normal_color       = black_opaque_54;
          font_hover_color        = black_opaque_87;
          font_header_color       = 0xffffffff;
+
+         clearcolor.r            = 1.0f;
+         clearcolor.g            = 1.0f;
+         clearcolor.b            = 1.0f;
+         clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_RED:
          hex32_to_rgba_normalized(0xF44336, red_500,        1.00);
@@ -911,6 +921,11 @@ static void mui_frame(void *data)
          font_normal_color       = black_opaque_54;
          font_hover_color        = black_opaque_87;
          font_header_color       = 0xffffffff;
+
+         clearcolor.r            = 1.0f;
+         clearcolor.g            = 1.0f;
+         clearcolor.b            = 1.0f;
+         clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_YELLOW:
          hex32_to_rgba_normalized(0xFFEB3B, yellow_500,     1.00);
@@ -925,6 +940,11 @@ static void mui_frame(void *data)
          font_normal_color       = black_opaque_54;
          font_hover_color        = black_opaque_87;
          font_header_color       = black_opaque_54;
+
+         clearcolor.r            = 1.0f;
+         clearcolor.g            = 1.0f;
+         clearcolor.b            = 1.0f;
+         clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_DARK_BLUE:
          header_bg_color         = greyish_blue;
@@ -940,6 +960,7 @@ static void mui_frame(void *data)
          clearcolor.r            = body_bg_color[0];
          clearcolor.g            = body_bg_color[1];
          clearcolor.b            = body_bg_color[2];
+         clearcolor.a            = 0.75f;
          break;
       case MATERIALUI_THEME_NVIDIA_SHIELD:
          hex32_to_rgba_normalized(0x282F37, color_nv_header,1.00);
@@ -959,6 +980,7 @@ static void mui_frame(void *data)
          clearcolor.r            = color_nv_body[0];
          clearcolor.g            = color_nv_body[1];
          clearcolor.b            = color_nv_body[2];
+         clearcolor.a            = 0.75f;
          break;
    }
 
