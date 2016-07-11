@@ -249,7 +249,7 @@ static void mui_draw_tab(mui_handle_t *mui,
          height,
          0,
          1,
-         &tab_color[0]); /* default color is pure_white */
+         &tab_color[0]);
 }
 
 static void mui_draw_text(float x, float y, unsigned width, unsigned height,
@@ -315,13 +315,13 @@ static void mui_draw_tab_begin(mui_handle_t *mui,
    mui_render_quad(mui, 0, height - mui->tabs_height, width,
          mui->tabs_height,
          width, height,
-         tabs_bg_color); /* white_bg */
+         tabs_bg_color);
 
    /* tabs separator */
    mui_render_quad(mui, 0, height - mui->tabs_height, width,
          1,
          width, height,
-         tabs_separator_color); /* grey_bg */
+         tabs_separator_color);
 }
 
 static void mui_draw_tab_end(mui_handle_t *mui,
@@ -670,7 +670,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
          entry_selected,
          rich_label, 
          entry.value, 
-         menu_list_color /* pure_white */
+         menu_list_color
       ); 
    }
 }
