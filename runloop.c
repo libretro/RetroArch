@@ -1297,6 +1297,38 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    return -1;
 }
 
+#ifdef HAVE_MENU
+static int runloop_iterate_menu(event_cmd_state_t *cmd, unsigned *sleep_ms)
+{
+   menu_ctx_iterate_t iter;
+   settings_t *settings    = config_get_ptr();
+   bool focused            = runloop_is_focused() &&
+      !ui_companion_is_on_foreground();
+   bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
+   enum menu_action action = (enum menu_action)
+      menu_input_frame_retropad(cmd->state[0], cmd->state[2]);
+
+   iter.action = action;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+      rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+
+   if (focused || !is_idle)
+      menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+
+   if (!focused || is_idle)
+   {
+      *sleep_ms = 10;
+      return 1;
+   }
+
+   if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
+      return 0;
+
+   return -1;
+}
+#endif
+
 /**
  * runloop_iterate:
  *
@@ -1429,33 +1461,11 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
-      menu_ctx_iterate_t iter;
-      bool focused            = runloop_is_focused() &&
-                                !ui_companion_is_on_foreground();
-      bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
-      enum menu_action action = (enum menu_action)
-               menu_input_frame_retropad(cmd.state[0], cmd.state[2]);
+      int ret = runloop_iterate_menu(&cmd, sleep_ms);
 
-      iter.action = action;
-
-      if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-
-      if (focused || !is_idle)
-         menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
-
-      if (!focused || is_idle)
-      {
-         *sleep_ms = 10;
-         return 1;
-      }
-
-      if (!settings->menu.throttle_framerate)
-      {
-         if (!settings->fastforward_ratio)
-            return 0;
-      }
-      goto end;
+      if (ret == -1)
+         goto end;
+      return ret;
    }
 #endif
 
