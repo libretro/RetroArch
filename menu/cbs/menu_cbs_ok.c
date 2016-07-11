@@ -98,6 +98,20 @@ finish:
 
    if (err)
       RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
+   else if (!strstr(state->path, ".index-dirs"))
+   {
+#if 0
+      char parent_dir[PATH_MAX_LENGTH] = {0};
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+      strlcat(parent_dir, ".index-extended", sizeof(parent_dir));
+
+      transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+      strlcpy(transf->path, parent_dir, sizeof(transf->path));
+
+      task_push_http_transfer(parent_dir, false, url_label, cb_net_generic, transf);
+#endif
+   }
 
    if (data)
    {
