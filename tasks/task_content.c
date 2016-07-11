@@ -1934,10 +1934,7 @@ bool task_push_content_load_default(
       default:
 #ifdef HAVE_MENU
          if (type != CORE_TYPE_DUMMY && mode != CONTENT_MODE_LOAD_FROM_CLI)
-         {
-            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);
             menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-         }
 #endif
          break;
    }
