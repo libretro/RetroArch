@@ -66,6 +66,53 @@ size_t hack_shader_pass = 0;
 char *core_buf;
 size_t core_len;
 
+static void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
+{
+   char subdir_path[PATH_MAX_LENGTH] = {0};
+   http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
+   menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
+
+   if (!data || err)
+      goto finish;
+
+   memcpy(subdir_path, data->data, data->len * sizeof(char));
+   subdir_path[data->len] = '\0';
+
+finish:
+   if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   {
+      char *last                       = NULL;
+      char parent_dir[PATH_MAX_LENGTH] = {0};
+      file_list_t *selection_buf       = menu_entries_get_selection_buf_ptr(0);
+      bool refresh                     = true;
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+      last = (char*)strrchr(parent_dir, '/');
+
+      if (*last)
+         *last = '\0';
+
+      menu_entries_prepend(selection_buf,
+            subdir_path,
+            parent_dir,
+            MENU_ENUM_LABEL_URL_ENTRY,
+            FILE_TYPE_DOWNLOAD_URL, 0 ,0);
+      menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+      /* TODO/FIXME - fix this */
+   }
+
+   if (err)
+      RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+}
+
 /* defined in menu_cbs_deferred_push */
 static void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
@@ -98,28 +145,27 @@ finish:
 
    if (err)
       RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
-   else if (!strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
-   {
-#if 0
-      menu_file_transfer_t *transf     = NULL;
-      char parent_dir[PATH_MAX_LENGTH] = {0};
-
-      fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-      strlcat(parent_dir, file_path_str(FILE_PATH_INDEX_EXTENDED_URL), sizeof(parent_dir));
-
-      transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
-      strlcpy(transf->path, parent_dir, sizeof(transf->path));
-
-      task_push_http_transfer(parent_dir, false, url_label, cb_net_generic, transf);
-#endif
-   }
 
    if (data)
    {
       if (data->data)
          free(data->data);
       free(data);
+   }
+
+   if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   {
+      menu_file_transfer_t *transf     = NULL;
+      char parent_dir[PATH_MAX_LENGTH] = {0};
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+      strlcat(parent_dir, file_path_str(FILE_PATH_INDEX_DIRS_URL), sizeof(parent_dir));
+
+      transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
+      strlcpy(transf->path, parent_dir, sizeof(transf->path));
+
+      task_push_http_transfer(parent_dir, true, "index_dirs", cb_net_generic_subdir, transf);
    }
 }
 #endif
@@ -1887,7 +1933,7 @@ static int generic_action_ok_network(const char *path,
    transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
    strlcpy(transf->path, url_path, sizeof(transf->path));
 
-   task_push_http_transfer(url_path, false, url_label, callback, transf);
+   task_push_http_transfer(url_path, true, url_label, callback, transf);
 
    return generic_action_ok_displaylist_push(path, NULL,
          label, type, idx, entry_idx, type_id2);
@@ -2166,7 +2212,7 @@ static int action_ok_download_generic(const char *path,
    transf->enum_idx = enum_idx;
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   task_push_http_transfer(s3, false, msg_hash_to_str(enum_idx), cb, transf);
+   task_push_http_transfer(s3, true, msg_hash_to_str(enum_idx), cb, transf);
 #endif
    return 0;
 }
@@ -2179,6 +2225,7 @@ static int action_ok_core_content_download(const char *path,
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
+
 
    return action_ok_download_generic(path, label,
          menu_path, type, idx, entry_idx,
