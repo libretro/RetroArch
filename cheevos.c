@@ -750,11 +750,12 @@ static unsigned cheevos_count_cond_sets(const char *memaddr)
    {
       do
       {
+         /* Skip any characters up until the start of the achievement condition */
          while (  *memaddr == ' ' 
                || *memaddr == '_' 
                || *memaddr == '|' 
                || *memaddr == 'S')
-            memaddr++; /* Skip any chars up til the start of the achievement condition */
+            memaddr++; 
 
          cheevos_parse_cond(&cond, &memaddr);
       }
@@ -779,8 +780,12 @@ static unsigned cheevos_count_conds_in_set(const char *memaddr, unsigned set)
    {
       do
       {
-         while (*memaddr == ' ' || *memaddr == '_' || *memaddr == '|' || *memaddr == 'S')
-            memaddr++; /* Skip any chars up til the start of the achievement condition */
+         /* Skip any characters up until the start of the achievement condition */
+         while (  *memaddr == ' ' 
+               || *memaddr == '_'
+               || *memaddr == '|'
+               || *memaddr == 'S')
+            memaddr++;
 
          cheevos_parse_cond(&cond, &memaddr);
 
@@ -800,8 +805,12 @@ static void cheevos_parse_memaddr(cheevos_cond_t *cond, const char *memaddr)
    {
       do
       {
-         while (*memaddr == ' ' || *memaddr == '_' || *memaddr == '|' || *memaddr == 'S')
-            memaddr++; /* Skip any chars up til the start of the achievement condition */
+         /* Skip any characters up until the start of the achievement condition */
+         while (  *memaddr == ' ' 
+               || *memaddr == '_'
+               || *memaddr == '|'
+               || *memaddr == 'S')
+            memaddr++;
 
          cheevos_parse_cond(cond++, &memaddr);
       }
@@ -1029,7 +1038,6 @@ static int cheevos_parse(const char *json)
       return 0;
 
    /* Count the number of achievements in the JSON file. */
-
    if (cheevos_count_cheevos(json, &core_count, &unofficial_count) != JSONSAX_OK)
       return -1;
 
@@ -1085,13 +1093,9 @@ uint8_t *cheevos_get_memory(const cheevos_var_t *var)
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
       
       if (system->mmaps.num_descriptors != 0)
-      {
          return (uint8_t *)system->mmaps.descriptors[var->bank_id].ptr + var->value;
-      }
-      else
-      {
-         return (uint8_t *)cheevos_locals.meminfo[var->bank_id].data + var->value;
-      }
+
+      return (uint8_t *)cheevos_locals.meminfo[var->bank_id].data + var->value;
    }
    
    return NULL;
@@ -1168,25 +1172,21 @@ static int cheevos_test_condition(cheevos_cond_t *cond)
    {
       case CHEEVOS_COND_OP_EQUALS:
          return sval == tval;
-
       case CHEEVOS_COND_OP_LESS_THAN:
          return sval < tval;
-
       case CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL:
          return sval <= tval;
-
       case CHEEVOS_COND_OP_GREATER_THAN:
          return sval > tval;
-
       case CHEEVOS_COND_OP_GREATER_THAN_OR_EQUAL:
          return sval >= tval;
-
       case CHEEVOS_COND_OP_NOT_EQUAL_TO:
          return sval != tval;
-
       default:
-         return 1;
+         break;
    }
+
+   return 1;
 }
 
 static int cheevos_test_cond_set(const cheevos_condset_t *condset,
@@ -1373,13 +1373,13 @@ static void cheevos_url_encode(const char *str, char *encoded, size_t len)
 
 static int cheevos_login(retro_time_t *timeout)
 {
-   const char *username;
-   const char *password;
-   char urle_user[64];
-   char urle_pwd[64];
-   char request[256];
-   const char *json;
    int res;
+   char urle_user[64]           = {0};
+   char urle_pwd[64]            = {0};
+   char request[256]            = {0};
+   const char *json             = NULL;
+   const char *username         = NULL;
+   const char *password         = NULL;
    settings_t *settings         = config_get_ptr();
 
    if (cheevos_locals.token[0])
@@ -1460,7 +1460,7 @@ static void cheevos_unlocked(void *task_data, void *user_data, const char *error
    }
    else
    {
-      char url[256];
+      char url[256] = {0};
 
       RARCH_ERR("CHEEVOS error awarding achievement %u, retrying\n", cheevo->id);
 
@@ -1478,11 +1478,12 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
    {
       if (cheevo->active && cheevos_test_cheevo(cheevo))
       {
-         char url[256];
+         char url[256] = {0};
 
          cheevo->active = 0;
 
-         RARCH_LOG("CHEEVOS awarding cheevo %u: %s (%s)\n", cheevo->id, cheevo->title, cheevo->description);
+         RARCH_LOG("CHEEVOS awarding cheevo %u: %s (%s)\n",
+               cheevo->id, cheevo->title, cheevo->description);
 
          runloop_msg_queue_push(cheevo->title, 0, 3 * 60, false);
          runloop_msg_queue_push(cheevo->description, 0, 5 * 60, false);
@@ -1564,10 +1565,10 @@ static int cheevos_get_by_game_id(const char **json,
 
 static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
 {
-   char request[256];
-   const char* json;
-   char game_id[16];
    int res;
+   char request[256] = {0};
+   char game_id[16]  = {0};
+   const char* json  = NULL;
    
    RARCH_LOG(
       "CHEEVOS getting game id for hash %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
@@ -1637,7 +1638,7 @@ static void cheevos_playing(void *task_data, void *user_data, const char *error)
    }
    else
    {
-      char url[256];
+      char url[256] = {0};
 
       RARCH_ERR("CHEEVOS error posting playing game %u activity, will retry\n", game_id);
 
@@ -1887,9 +1888,7 @@ static unsigned cheevos_find_game_id_genesis(
    MD5_CTX ctx;
    uint8_t hash[16];
    retro_time_t to;
-   size_t size;
-   
-   size = cheevos_eval_md5(info, &ctx);
+   size_t size = cheevos_eval_md5(info, &ctx);
    
    if (!size)
    {
@@ -2309,6 +2308,7 @@ bool cheevos_unload(void)
 bool cheevos_toggle_hardcore_mode(void)
 {
    settings_t *settings = config_get_ptr();
+
    /* reset and deinit rewind to avoid cheat the score */
    if (settings->cheevos.hardcore_mode_enable)
    {
