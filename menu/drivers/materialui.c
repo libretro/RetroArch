@@ -956,9 +956,9 @@ static void mui_frame(void *data)
          font_hover_color        = 0xffffffff;
          font_header_color       = 0xffffffff;
 
-         clearcolor.r            = color_nv_body[0];
-         clearcolor.g            = color_nv_body[1];
-         clearcolor.b            = color_nv_body[2];
+         clearcolor.r            = body_bg_color[0];
+         clearcolor.g            = body_bg_color[1];
+         clearcolor.b            = body_bg_color[2];
          break;
    }
 
