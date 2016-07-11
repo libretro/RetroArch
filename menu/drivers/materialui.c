@@ -337,7 +337,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          tab_width,
          header_height/16,
          width, height,
-         &active_tab_marker_color[0]); /* blue_500 */
+         &active_tab_marker_color[0]);
 }
 
 static void mui_draw_scrollbar(mui_handle_t *mui, 
@@ -827,6 +827,7 @@ static void mui_frame(void *data)
    bool display_kb                 = false;
    mui_handle_t *mui               = (mui_handle_t*)data;
    uint64_t *frame_count           = video_driver_get_frame_count_ptr();
+   settings_t *settings            = config_get_ptr();
    char msg[256]                   = {0};
    char title[256]                 = {0};
    char title_buf[256]             = {0};
@@ -834,28 +835,18 @@ static void mui_frame(void *data)
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
 
-   /* Default is blue theme */
-   float *header_bg_color          = blue_500;
-   float *highlighted_entry_color  = blue_50;
-   float *footer_bg_color          = white_bg;
-   float *body_bg_color            = white_transp_bg;
-   settings_t *settings            = config_get_ptr();
-   float *active_tab_marker_color  = blue_500;
+   float *header_bg_color          = NULL;
+   float *highlighted_entry_color  = NULL;
+   float *footer_bg_color          = NULL;
+   float *body_bg_color            = NULL;
+   float *active_tab_marker_color  = NULL;
 
-   uint32_t font_normal_color      = black_opaque_54;
-   uint32_t font_hover_color       = black_opaque_87;
-   uint32_t font_header_color      = 0xffffffff;
-
-#if 0
-   uint32_t activetab_color        = 0x0096f2ff;
-   uint32_t passivetab_color       = 0x9e9e9eff;
-#endif
+   uint32_t font_normal_color      = 0;
+   uint32_t font_hover_color       = 0;
+   uint32_t font_header_color      = 0;
 
    if (!mui)
       return;
-
-   hex32_to_rgba_normalized(0x2196F3, blue_500,       1.00);
-   hex32_to_rgba_normalized(0xE3F2FD, blue_50,        0.90);
 
    clearcolor.r = 1.0f;
    clearcolor.g = 1.0f;
@@ -865,6 +856,18 @@ static void mui_frame(void *data)
    switch (settings->menu.materialui.menu_color_theme)
    {
       case MATERIALUI_THEME_BLUE:
+         hex32_to_rgba_normalized(0x2196F3, blue_500,       1.00);
+         hex32_to_rgba_normalized(0xE3F2FD, blue_50,        0.90);
+
+         header_bg_color         = blue_500;
+         highlighted_entry_color = blue_50;
+         footer_bg_color         = white_bg;
+         body_bg_color           = white_transp_bg;
+         active_tab_marker_color = blue_500;
+
+         font_normal_color       = black_opaque_54;
+         font_hover_color        = black_opaque_87;
+         font_header_color       = 0xffffffff;
          break;
       case MATERIALUI_THEME_BLUE_GREY:
          hex32_to_rgba_normalized(0x607D8B, blue_grey_500,  1.00);
