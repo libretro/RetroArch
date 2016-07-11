@@ -1298,17 +1298,15 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 }
 
 #ifdef HAVE_MENU
-static int runloop_iterate_menu(event_cmd_state_t *cmd, unsigned *sleep_ms)
+static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
 {
    menu_ctx_iterate_t iter;
    settings_t *settings    = config_get_ptr();
    bool focused            = runloop_is_focused() &&
       !ui_companion_is_on_foreground();
    bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
-   enum menu_action action = (enum menu_action)
-      menu_input_frame_retropad(cmd->state[0], cmd->state[2]);
 
-   iter.action = action;
+   iter.action             = action;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
       rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
@@ -1461,7 +1459,9 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
-      int ret = runloop_iterate_menu(&cmd, sleep_ms);
+      int ret = runloop_iterate_menu((enum menu_action)
+      menu_input_frame_retropad(cmd.state[0], cmd.state[2]),
+      sleep_ms);
 
       if (ret == -1)
          goto end;
