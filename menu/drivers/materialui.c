@@ -52,12 +52,9 @@ enum
    MUI_TEXTURE_BACK,
    MUI_TEXTURE_SWITCH_ON,
    MUI_TEXTURE_SWITCH_OFF,
-   MUI_TEXTURE_TAB_MAIN_ACTIVE,
-   MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE,
-   MUI_TEXTURE_TAB_SETTINGS_ACTIVE,
-   MUI_TEXTURE_TAB_MAIN_PASSIVE,
-   MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE,
-   MUI_TEXTURE_TAB_SETTINGS_PASSIVE,
+   MUI_TEXTURE_TAB_MAIN,
+   MUI_TEXTURE_TAB_PLAYLISTS,
+   MUI_TEXTURE_TAB_SETTINGS,
    MUI_TEXTURE_LAST
 };
 
@@ -134,17 +131,11 @@ static const char *mui_texture_path(unsigned id)
          return "on.png";
       case MUI_TEXTURE_SWITCH_OFF:
          return "off.png";
-      case MUI_TEXTURE_TAB_MAIN_ACTIVE:
-         return "main_tab_active.png";
-      case MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE:
-         return "playlists_tab_active.png";
-      case MUI_TEXTURE_TAB_SETTINGS_ACTIVE:
-         return "settings_tab_active.png";
-      case MUI_TEXTURE_TAB_MAIN_PASSIVE:
+      case MUI_TEXTURE_TAB_MAIN:
          return "main_tab_passive.png";
-      case MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE:
+      case MUI_TEXTURE_TAB_PLAYLISTS:
          return "playlists_tab_passive.png";
-      case MUI_TEXTURE_TAB_SETTINGS_PASSIVE:
+      case MUI_TEXTURE_TAB_SETTINGS:
          return "settings_tab_passive.png";
    }
 
@@ -233,17 +224,17 @@ static void mui_draw_tab(mui_handle_t *mui,
    switch (i)
    {
       case MUI_SYSTEM_TAB_MAIN:
-         tab_icon = MUI_TEXTURE_TAB_MAIN_PASSIVE;
+         tab_icon = MUI_TEXTURE_TAB_MAIN;
          if (i == mui->categories.selection_ptr)
             tab_color = active_tab_color;
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
-         tab_icon = MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
+         tab_icon = MUI_TEXTURE_TAB_PLAYLISTS;
          if (i == mui->categories.selection_ptr)
             tab_color = active_tab_color;
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
-         tab_icon = MUI_TEXTURE_TAB_SETTINGS_PASSIVE;
+         tab_icon = MUI_TEXTURE_TAB_SETTINGS;
          if (i == mui->categories.selection_ptr)
             tab_color = active_tab_color;
          break;
@@ -509,8 +500,17 @@ static void mui_render(void *data)
 static void mui_render_label_value(mui_handle_t *mui,
       int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
-      const char *value, float *pure_white)
+      const char *value, float *label_color)
 {
+   /* This will be used instead of label_color if texture_switch is 'off' icon */
+   float pure_white[16]=  {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+   };
+
+
    menu_animation_ctx_ticker_t ticker;
    char label_str[PATH_MAX_LENGTH] = {0};
    char value_str[PATH_MAX_LENGTH] = {0};
@@ -542,17 +542,22 @@ static void mui_render_label_value(mui_handle_t *mui,
    mui_draw_text(mui->margin, y + mui->line_height / 2,
          width, height, label_str, color, TEXT_ALIGN_LEFT);
 
+   bool switch_is_off = true;
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
    {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF]) {
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
+         switch_is_off = true;
+      }
       else
          do_draw_text = true;
    }
    else if (string_is_equal(value, "enabled") || string_is_equal(value, "on"))
    {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON]) {
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
+         switch_is_off = false;
+      }
       else
          do_draw_text = true;
    }
@@ -604,7 +609,8 @@ static void mui_render_label_value(mui_handle_t *mui,
             height,
             0,
             1,
-            &pure_white[0]); /* pure_white */
+            switch_is_off ? &pure_white[0] :  &label_color[0]
+      );
 }
 
 static void mui_render_menu_list(mui_handle_t *mui,
@@ -783,6 +789,10 @@ static void mui_frame(void *data)
       0.13, 0.13, 0.13, 0.90,
    };
 
+   uint32_t black_opaque_54 = 0x0000008a;
+   uint32_t black_opaque_87 = 0x000000de;
+   uint32_t white_opaque_70 = 0xffffffb3;
+
    /* This controls the main background color */
    menu_display_ctx_clearcolor_t clearcolor;
    menu_animation_ctx_ticker_t ticker;
@@ -828,8 +838,8 @@ static void mui_frame(void *data)
    settings_t *settings            = config_get_ptr();
    float *active_tab_marker_color  = blue_500;
 
-   uint32_t font_normal_color      = 0x212121ff;
-   uint32_t font_hover_color       = 0x212121ff;
+   uint32_t font_normal_color      = black_opaque_54;
+   uint32_t font_hover_color       = black_opaque_87;
    uint32_t font_header_color      = 0xffffffff;
 
 #if 0
@@ -862,8 +872,8 @@ static void mui_frame(void *data)
          footer_bg_color         = white_bg;
          active_tab_marker_color = blue_grey_500;
 
-         font_normal_color       = 0x212121ff;
-         font_hover_color        = 0x212121ff;
+         font_normal_color       = black_opaque_54;
+         font_hover_color        = black_opaque_87;
          font_header_color       = 0xffffffff;
          break;
       case MATERIALUI_THEME_GREEN:
@@ -876,8 +886,8 @@ static void mui_frame(void *data)
          footer_bg_color         = white_bg;
          active_tab_marker_color = green_500;
 
-         font_normal_color       = 0x212121ff;
-         font_hover_color        = 0x212121ff;
+         font_normal_color       = black_opaque_54;
+         font_hover_color        = black_opaque_87;
          font_header_color       = 0xffffffff;
          break;
       case MATERIALUI_THEME_RED:
@@ -891,8 +901,8 @@ static void mui_frame(void *data)
          body_bg_color           = white_transp_bg;
          active_tab_marker_color = red_500;
 
-         font_normal_color       = 0x212121ff;
-         font_hover_color        = 0x212121ff;
+         font_normal_color       = black_opaque_54;
+         font_hover_color        = black_opaque_87;
          font_header_color       = 0xffffffff;
          break;
       case MATERIALUI_THEME_YELLOW:
@@ -905,9 +915,9 @@ static void mui_frame(void *data)
          footer_bg_color         = white_bg;
          active_tab_marker_color = yellow_500;
 
-         font_normal_color       = 0x212121ff;
-         font_hover_color        = 0x212121ff;
-         font_header_color       = 0x00000000;
+         font_normal_color       = black_opaque_54;
+         font_hover_color        = black_opaque_87;
+         font_header_color       = black_opaque_54;
          break;
       case MATERIALUI_THEME_DARK_BLUE:
          header_bg_color         = greyish_blue;
@@ -916,16 +926,13 @@ static void mui_frame(void *data)
          footer_bg_color         = almost_black;
          active_tab_marker_color = greyish_blue;
 
-         font_normal_color       = 0xffffffff;
-         font_hover_color        = 0x00000000;
+         font_normal_color       = white_opaque_70;
+         font_hover_color        = 0xffffffff;
+         font_header_color       = 0xffffffff;
 
-         /* 
-            TODO/FIXME - Maybe make this track the footer's bg color or vice-versa
-            e.g. clearcolor.r = &footer_bg_color[0]; clearcolor.g = &footer_bg_color[4];
-            */
-         clearcolor.r            = 0.13f;
-         clearcolor.g            = 0.13f;
-         clearcolor.b            = 0.13f;
+         clearcolor.r            = body_bg_color[0];
+         clearcolor.g            = body_bg_color[1];
+         clearcolor.b            = body_bg_color[2];
          break;
       case MATERIALUI_THEME_NVIDIA_SHIELD:
          hex32_to_rgba_normalized(0x282F37, color_nv_header,1.00);
@@ -940,6 +947,7 @@ static void mui_frame(void *data)
 
          font_normal_color       = 0xbbc0c4ff;
          font_hover_color        = 0xffffffff;
+         font_header_color       = 0xffffffff;
 
          clearcolor.r            = color_nv_body[0];
          clearcolor.g            = color_nv_body[1];
@@ -1031,7 +1039,7 @@ static void mui_frame(void *data)
       height,
       font_normal_color, 
       font_hover_color, 
-      &pure_white[0]
+      &highlighted_entry_color[0]
    );
 
    menu_display_font_flush_block();
