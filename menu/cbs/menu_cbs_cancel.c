@@ -59,6 +59,7 @@ static int menu_cbs_init_bind_cancel_compare_type(
    switch (type)
    {
       case FILE_TYPE_DOWNLOAD_CORE_CONTENT:
+      case FILE_TYPE_DOWNLOAD_URL:
          BIND_ACTION_CANCEL(cbs, action_cancel_core_content);
          return 0;
    }
