@@ -317,9 +317,10 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
       settings->slowmotion_ratio;
 
+   audio_driver_data.output_samples.conv_buf =
+      (int16_t*)malloc(outsamples_max * sizeof(int16_t));
    /* Used for recording even if audio isn't enabled. */
-   retro_assert(audio_driver_data.output_samples.conv_buf =
-         (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
+   retro_assert(audio_driver_data.output_samples.conv_buf != NULL);
 
    if (!audio_driver_data.output_samples.conv_buf)
       goto error;
@@ -330,8 +331,9 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
-   retro_assert(audio_driver_data.rewind.buf = (int16_t*)
-         malloc(max_bufsamples * sizeof(int16_t)));
+   audio_driver_data.rewind.buf = (int16_t*)malloc
+      (max_bufsamples * sizeof(int16_t));
+   retro_assert(audio_driver_data.rewind.buf != NULL);
 
    if (!audio_driver_data.rewind.buf)
       goto error;
@@ -405,8 +407,9 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_unset_active();
    }
 
-   retro_assert(audio_driver_data.data = (float*)
-         malloc(max_bufsamples * sizeof(float)));
+   audio_driver_data.data = (float*)
+      malloc(max_bufsamples * sizeof(float));
+   retro_assert(audio_driver_data.data != NULL);
 
    if (!audio_driver_data.data)
       goto error;
@@ -415,8 +418,10 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    retro_assert(settings->audio.out_rate <
          audio_driver_data.audio_rate.input * AUDIO_MAX_RATIO);
-   retro_assert(audio_driver_data.output_samples.buf = (float*)
-         malloc(outsamples_max * sizeof(float)));
+
+   audio_driver_data.output_samples.buf = (float*)
+      malloc(outsamples_max * sizeof(float));
+   retro_assert(audio_driver_data.output_samples.buf != NULL);
 
    if (!audio_driver_data.output_samples.buf)
       goto error;
