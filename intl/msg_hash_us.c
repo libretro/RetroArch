@@ -1099,6 +1099,7 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU)
                );
+         break;
       default:
          if (string_is_empty(s))
             strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
