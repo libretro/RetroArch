@@ -940,8 +940,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
       {
-         unsigned retro_id;
-         const struct retro_input_descriptor *desc = NULL;
          static const char *libretro_btn_desc[]    = {
             "B (bottom)", "Y (left)", "Select", "Start",
             "D-Pad Up", "D-Pad Down", "D-Pad Left", "D-Pad Right",
@@ -949,89 +947,94 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             "L", "R", "L2", "R2", "L3", "R3",
          };
 
-         memset(&system->input_desc_btn, 0,
-               sizeof(system->input_desc_btn));
-
-         desc = (const struct retro_input_descriptor*)data;
-
-         for (; desc->description; desc++)
+         if (system)
          {
-            unsigned retro_port = desc->port;
+            unsigned retro_id;
+            const struct retro_input_descriptor *desc = NULL;
+            memset(&system->input_desc_btn, 0,
+                  sizeof(system->input_desc_btn));
 
-            retro_id            = desc->id;
+            desc = (const struct retro_input_descriptor*)data;
 
-            if (desc->port >= MAX_USERS)
-               continue;
-
-            /* Ignore all others for now. */
-            if (desc->device != RETRO_DEVICE_JOYPAD  &&
-                  desc->device != RETRO_DEVICE_ANALOG)
-               continue;
-
-            if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
-               continue;
-
-            if (desc->device == RETRO_DEVICE_ANALOG)
+            for (; desc->description; desc++)
             {
-               switch (retro_id)
-               {
-                  case RETRO_DEVICE_ID_ANALOG_X:
-                     switch (desc->index)
-                     {
-                        case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                           system->input_desc_btn[retro_port]
-                           [RARCH_ANALOG_LEFT_X_PLUS]  = desc->description;
-                           system->input_desc_btn[retro_port]
-                           [RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
-                           break;
-                        case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                           system->input_desc_btn[retro_port]
-                           [RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
-                           system->input_desc_btn[retro_port]
-                           [RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
-                           break;
-                     }
-                     break;
-                  case RETRO_DEVICE_ID_ANALOG_Y:
-                     switch (desc->index)
-                     {
-                        case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                           system->input_desc_btn[retro_port]
-                           [RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
-                           system->input_desc_btn[retro_port]
-                           [RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
-                           break;
-                        case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                           system->input_desc_btn[retro_port]
-                           [RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
-                           system->input_desc_btn[retro_port]
-                           [RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
-                           break;
-                     }
-                     break;
-               }
-            }
-            else
-               system->input_desc_btn[retro_port]
-               [retro_id] = desc->description;
-         }
+               unsigned retro_port = desc->port;
 
-         RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
-         for (p = 0; p < settings->input.max_users; p++)
-         {
-            for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
-            {
-               const char *description = system->input_desc_btn[p][retro_id];
+               retro_id            = desc->id;
 
-               if (!description)
+               if (desc->port >= MAX_USERS)
                   continue;
 
-               RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
-                     p + 1, libretro_btn_desc[retro_id], description);
-            }
-         }
+               /* Ignore all others for now. */
+               if (desc->device != RETRO_DEVICE_JOYPAD  &&
+                     desc->device != RETRO_DEVICE_ANALOG)
+                  continue;
 
-         core_set_input_descriptors();
+               if (desc->id >= RARCH_FIRST_CUSTOM_BIND)
+                  continue;
+
+               if (desc->device == RETRO_DEVICE_ANALOG)
+               {
+                  switch (retro_id)
+                  {
+                     case RETRO_DEVICE_ID_ANALOG_X:
+                        switch (desc->index)
+                        {
+                           case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_LEFT_X_PLUS]  = desc->description;
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
+                              break;
+                           case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
+                              break;
+                        }
+                        break;
+                     case RETRO_DEVICE_ID_ANALOG_Y:
+                        switch (desc->index)
+                        {
+                           case RETRO_DEVICE_INDEX_ANALOG_LEFT:
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
+                              break;
+                           case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
+                              system->input_desc_btn[retro_port]
+                                 [RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
+                              break;
+                        }
+                        break;
+                  }
+               }
+               else
+                  system->input_desc_btn[retro_port]
+                     [retro_id] = desc->description;
+            }
+
+            RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
+            for (p = 0; p < settings->input.max_users; p++)
+            {
+               for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
+               {
+                  const char *description = system->input_desc_btn[p][retro_id];
+
+                  if (!description)
+                     continue;
+
+                  RARCH_LOG("\tRetroPad, User %u, Button \"%s\" => \"%s\"\n",
+                        p + 1, libretro_btn_desc[retro_id], description);
+               }
+            }
+
+            core_set_input_descriptors();
+         }
 
          break;
       }
