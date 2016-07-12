@@ -1412,7 +1412,7 @@ static void ffmpeg_thread(void *data)
          slock_unlock(ff->cond_lock);
       }
 
-      if (avail_video)
+      if (avail_video && video_buf)
       {
          slock_lock(ff->lock);
          fifo_read(ff->attr_fifo, &attr_buf, sizeof(attr_buf));
@@ -1425,7 +1425,7 @@ static void ffmpeg_thread(void *data)
          ffmpeg_push_video_thread(ff, &attr_buf);
       }
 
-      if (avail_audio)
+      if (avail_audio && audio_buf)
       {
          struct ffemu_audio_data aud = {0};
 
