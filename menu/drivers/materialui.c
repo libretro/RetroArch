@@ -839,11 +839,11 @@ static void mui_frame(void *data)
    bool libretro_running           = menu_display_libretro_running();
 
    /* Default is blue theme */
-   float *header_bg_color          = blue_500;
-   float *highlighted_entry_color  = blue_50;
-   float *footer_bg_color          = white_bg;
-   float *body_bg_color            = white_transp_bg;
-   float *active_tab_marker_color  = blue_500;
+   float *header_bg_color          = NULL;
+   float *highlighted_entry_color  = NULL;
+   float *footer_bg_color          = NULL;
+   float *body_bg_color            = NULL;
+   float *active_tab_marker_color  = NULL;
    float *passive_tab_icon_color   = grey_bg;
 
    uint32_t font_normal_color      = 0;
