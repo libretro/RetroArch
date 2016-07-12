@@ -61,7 +61,7 @@
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
-      enum msg_file_type type, bool extended)
+      enum msg_file_type type, bool append, bool extended)
 {
    char c;
    int i, j = 0;
@@ -117,11 +117,23 @@ static void print_buf_lines(file_list_t *list, char *buf,
       (void)core_crc;
 
       if (extended)
-         menu_entries_append_enum(list, core_pathname, "",
-               MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+      {
+         if (append)
+            menu_entries_append_enum(list, core_pathname, "",
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+         else
+            menu_entries_prepend(list, core_pathname, "",
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+      }
       else
-         menu_entries_append_enum(list, line_start, label,
-               MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+      {
+         if (append)
+            menu_entries_append_enum(list, line_start, label,
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+         else
+            menu_entries_prepend(list, line_start, label,
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+      }
 
       switch (type)
       {
@@ -171,7 +183,9 @@ static void print_buf_lines(file_list_t *list, char *buf,
       *(buf + i + 1) = c;
       line_start     = buf + i + 1;
    }
-   file_list_sort_on_alt(list);
+
+   if (append)
+      file_list_sort_on_alt(list);
    /* If the buffer was completely full, and didn't end
     * with a newline, just ignore the partial last line. */
 }
@@ -5016,7 +5030,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORE_CONTENT:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
-               core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT, false);
+               core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT, true, false);
          info->need_push    = true;
          info->need_refresh = true;
 #endif
@@ -5029,9 +5043,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             strlcpy(new_label, str_list->elems[0].data, sizeof(new_label));
             strlcpy(core_buf, str_list->elems[1].data, core_len);
             print_buf_lines(info->list, core_buf, new_label,
-                  core_len, FILE_TYPE_DOWNLOAD_URL, false);
+                  core_len, FILE_TYPE_DOWNLOAD_URL, false, false);
             info->need_push    = true;
             info->need_refresh = true;
+            info->need_clear   = true;
 
             string_list_free(str_list);
 #endif
@@ -5045,7 +5060,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   settings->network.buildbot_assets_url,
                   "cores", sizeof(new_label));
             print_buf_lines(info->list, core_buf, new_label,
-                  core_len, FILE_TYPE_DOWNLOAD_URL, false);
+                  core_len, FILE_TYPE_DOWNLOAD_URL, true, false);
             info->need_push    = true;
             info->need_refresh = true;
 #endif
@@ -5054,7 +5069,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORES_UPDATER:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
-               core_len, FILE_TYPE_DOWNLOAD_CORE, true);
+               core_len, FILE_TYPE_DOWNLOAD_CORE, true, true);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -5064,7 +5079,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
                core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
-               false);
+               true, false);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -5074,7 +5089,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
                core_len, FILE_TYPE_DOWNLOAD_LAKKA,
-               false);
+               true, false);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
