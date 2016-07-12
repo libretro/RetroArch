@@ -61,100 +61,7 @@
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
       const char *label, int buf_size,
-      enum msg_file_type type)
-{
-   char c;
-   int i, j = 0;
-   char *line_start = buf;
-
-   if (!buf || !buf_size)
-   {
-      menu_entries_add_enum(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-            FILE_TYPE_NONE, 0, 0);
-      return;
-   }
-
-   for (i = 0; i < buf_size; i++)
-   {
-      size_t ln;
-
-      /* The end of the buffer, print the last bit */
-      if (*(buf + i) == '\0')
-         break;
-
-      if (*(buf + i) != '\n')
-         continue;
-
-      /* Found a line ending, print the line and compute new line_start */
-
-      /* Save the next char  */
-      c = *(buf + i + 1);
-      /* replace with \0 */
-      *(buf + i + 1) = '\0';
-
-      /* We need to strip the newline. */
-      ln = strlen(line_start) - 1;
-      if (line_start[ln] == '\n')
-         line_start[ln] = '\0';
-
-      menu_entries_add_enum(list, line_start, label,
-            MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
-
-      switch (type)
-      {
-         case FILE_TYPE_DOWNLOAD_CORE:
-            {
-               settings_t *settings      = config_get_ptr();
-
-               if (settings)
-               {
-                  char display_name[PATH_MAX_LENGTH] = {0};
-                  char core_path[PATH_MAX_LENGTH]    = {0};
-                  char *last                         = NULL;
-
-                  fill_pathname_join_noext(
-                        core_path,
-                        settings->path.libretro_info,
-                        line_start,
-                        sizeof(core_path));
-                  path_remove_extension(core_path);
-                  last = (char*)strrchr(core_path, '_');
-                  if (*last)
-                  {
-                     if (!string_is_equal(last, "_libretro"))
-                        *last = '\0';
-                  }
-                  strlcat(core_path,
-                        file_path_str(FILE_PATH_CORE_INFO_EXTENSION),
-                        sizeof(core_path));
-
-                  if (core_info_get_display_name(
-                           core_path, display_name, sizeof(display_name)))
-                     menu_entries_set_alt_at_offset(list, j, display_name);
-               }
-            }
-            break;
-         default:
-         case FILE_TYPE_NONE:
-            break;
-      }
-
-      j++;
-
-      /* Restore the saved char */
-      *(buf + i + 1) = c;
-      line_start     = buf + i + 1;
-   }
-   file_list_sort_on_alt(list);
-   /* If the buffer was completely full, and didn't end
-    * with a newline, just ignore the partial last line. */
-}
-
-static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
-      enum msg_file_type type)
+      enum msg_file_type type, bool extended)
 {
    char c;
    int i, j = 0;
@@ -209,8 +116,12 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
       (void)core_date;
       (void)core_crc;
 
-      menu_entries_add_enum(list, core_pathname, "",
-            MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+      if (extended)
+         menu_entries_add_enum(list, core_pathname, "",
+               MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+      else
+         menu_entries_add_enum(list, line_start, label,
+               MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
 
       switch (type)
       {
@@ -220,14 +131,14 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
 
                if (settings)
                {
-                  char core_path[PATH_MAX_LENGTH]    = {0};
                   char display_name[PATH_MAX_LENGTH] = {0};
+                  char core_path[PATH_MAX_LENGTH]    = {0};
                   char *last                         = NULL;
 
                   fill_pathname_join_noext(
                         core_path,
                         settings->path.libretro_info,
-                        core_pathname,
+                        extended ? core_pathname : line_start,
                         sizeof(core_path));
                   path_remove_extension(core_path);
 
@@ -247,8 +158,8 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
                }
             }
             break;
-         case FILE_TYPE_NONE:
          default:
+         case FILE_TYPE_NONE:
             break;
       }
 
@@ -5105,7 +5016,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORE_CONTENT:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
-               core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT);
+               core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT, false);
          info->need_push    = true;
          info->need_refresh = true;
 #endif
@@ -5118,7 +5029,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             strlcpy(new_label, str_list->elems[0].data, sizeof(new_label));
             strlcpy(core_buf, str_list->elems[1].data, core_len);
             print_buf_lines(info->list, core_buf, new_label,
-                  core_len, FILE_TYPE_DOWNLOAD_URL);
+                  core_len, FILE_TYPE_DOWNLOAD_URL, false);
             info->need_push    = true;
             info->need_refresh = true;
 
@@ -5134,7 +5045,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   settings->network.buildbot_assets_url,
                   "cores", sizeof(new_label));
             print_buf_lines(info->list, core_buf, new_label,
-                  core_len, FILE_TYPE_DOWNLOAD_URL);
+                  core_len, FILE_TYPE_DOWNLOAD_URL, false);
             info->need_push    = true;
             info->need_refresh = true;
 #endif
@@ -5142,8 +5053,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_CORES_UPDATER:
 #ifdef HAVE_NETWORKING
-         print_buf_lines_extended(info->list, core_buf,
-               core_len, FILE_TYPE_DOWNLOAD_CORE);
+         print_buf_lines(info->list, core_buf, "",
+               core_len, FILE_TYPE_DOWNLOAD_CORE, true);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -5152,7 +5063,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_THUMBNAILS_UPDATER:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
-               core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT);
+               core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
+               false);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
@@ -5161,7 +5073,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_LAKKA:
 #ifdef HAVE_NETWORKING
          print_buf_lines(info->list, core_buf, "",
-               core_len, FILE_TYPE_DOWNLOAD_LAKKA);
+               core_len, FILE_TYPE_DOWNLOAD_LAKKA,
+               false);
          info->need_push    = true;
          info->need_refresh = true;
          info->need_clear   = true;
