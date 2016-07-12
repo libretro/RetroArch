@@ -994,7 +994,6 @@ static int action_ok_playlist_entry(const char *path,
    size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
    size_t selection_ptr             = 0;
-   bool playlist_initialized        = false;
    playlist_t *playlist             = g_defaults.history;
    const char *entry_path           = NULL;
    const char *entry_label          = NULL;
@@ -1035,13 +1034,8 @@ static int action_ok_playlist_entry(const char *path,
          found_associated_core = false;
 
       if (!found_associated_core)
-      {
-         int ret =  action_ok_file_load_with_detect_core(entry_path,
+         return  action_ok_file_load_with_detect_core(entry_path,
                label, type, selection_ptr, entry_idx);
-         if (playlist_initialized)
-            playlist_free(tmp_playlist);
-         return ret;
-      }
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
