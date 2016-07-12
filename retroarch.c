@@ -1312,7 +1312,8 @@ bool retroarch_main_init(int argc, char *argv[])
                settings->multimedia.builtin_imageviewer_enable))
       {
          char *fullpath    = NULL;
-         if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
+         if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath) 
+               && !string_is_empty(fullpath))
          {
             switch (retroarch_path_is_media_type(fullpath))
             {
