@@ -1873,6 +1873,7 @@ static int generic_action_ok_network(const char *path,
    const char *url_label          = NULL;
    retro_task_callback_t callback = NULL;
    bool refresh                   = true;
+   bool suppress_msg              = false;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
@@ -1889,6 +1890,7 @@ static int generic_action_ok_network(const char *path,
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_CONTENT_DIRS_LIST;
          callback  = cb_net_generic;
+         suppress_msg = true;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST:
          fill_pathname_join(url_path, path,
@@ -1896,6 +1898,7 @@ static int generic_action_ok_network(const char *path,
          url_label = msg_hash_to_str(enum_idx);
          type_id2  = ACTION_OK_DL_CORE_CONTENT_LIST;
          callback  = cb_net_generic;
+         suppress_msg = true;
          break;
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
          fill_pathname_join(url_path, settings->network.buildbot_url,
@@ -1933,7 +1936,7 @@ static int generic_action_ok_network(const char *path,
    transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
    strlcpy(transf->path, url_path, sizeof(transf->path));
 
-   task_push_http_transfer(url_path, true, url_label, callback, transf);
+   task_push_http_transfer(url_path, suppress_msg, url_label, callback, transf);
 
    return generic_action_ok_displaylist_push(path, NULL,
          label, type, idx, entry_idx, type_id2);
