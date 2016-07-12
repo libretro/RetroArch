@@ -1121,7 +1121,7 @@ static unsigned cheevos_get_var_value(cheevos_var_t *var)
       {
          live_val = memory[0];
 
-         if (var->size >= CHEEVOS_VAR_SIZE_BIT_0 
+         if (var->size > CHEEVOS_VAR_SIZE_BIT_0 
                && var->size <= CHEEVOS_VAR_SIZE_BIT_7)
             live_val = (live_val & 
                   (1 << (var->size - CHEEVOS_VAR_SIZE_BIT_0))) != 0;
