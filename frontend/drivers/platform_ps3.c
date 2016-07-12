@@ -493,27 +493,27 @@ static int frontend_ps3_parse_drive_list(void *data)
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
 
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/app_home/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/dev_hdd0/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/dev_hdd1/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/host_root/",  "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/dev_usb000/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/dev_usb001/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/dev_usb002/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/dev_usb003/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/dev_usb004/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/dev_usb005/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_add_enum(list,
+   menu_entries_append_enum(list,
          "/dev_usb006/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 

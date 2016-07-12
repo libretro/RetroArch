@@ -1134,7 +1134,7 @@ static bool zarch_menu_init_list(void *data)
          msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
    info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
-   menu_entries_add_enum(menu_stack,
+   menu_entries_append_enum(menu_stack,
          info.path, info.label, MENU_ENUM_LABEL_HISTORY_TAB, info.type, info.flags, 0);
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);

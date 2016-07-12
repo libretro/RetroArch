@@ -2207,7 +2207,7 @@ void cheevos_populate_menu(void *data)
    {
       if (!cheevo->active)
       {
-         menu_entries_add_enum(info->list, cheevo->title,
+         menu_entries_append_enum(info->list, cheevo->title,
                cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY, 
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
          items_found++;
@@ -2223,7 +2223,7 @@ void cheevos_populate_menu(void *data)
       for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
          if (!cheevo->active)
-            menu_entries_add_enum(info->list, cheevo->title,
+            menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
@@ -2236,7 +2236,7 @@ void cheevos_populate_menu(void *data)
    {
       if (cheevo->active)
       {
-         menu_entries_add_enum(info->list, cheevo->title,
+         menu_entries_append_enum(info->list, cheevo->title,
                cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
                MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
          items_found++;
@@ -2253,7 +2253,7 @@ void cheevos_populate_menu(void *data)
       {
          if (cheevo->active)
          {
-            menu_entries_add_enum(info->list, cheevo->title,
+            menu_entries_append_enum(info->list, cheevo->title,
                   cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY, 
                   MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
             items_found++;
@@ -2263,7 +2263,7 @@ void cheevos_populate_menu(void *data)
 
    if (items_found == 0)
    {
-      menu_entries_add_enum(info->list,
+      menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY),
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY),
             MENU_ENUM_LABEL_NO_ACHIEVEMENTS_TO_DISPLAY,

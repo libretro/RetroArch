@@ -184,7 +184,7 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
       enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx);
 
-void menu_entries_add_enum(file_list_t *list, const char *path, const char *label,
+void menu_entries_append_enum(file_list_t *list, const char *path, const char *label,
       enum msg_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx);
 

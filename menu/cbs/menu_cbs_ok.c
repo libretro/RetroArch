@@ -742,7 +742,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS);
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS);
          info.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
-         menu_entries_add_enum(menu_stack, info_path, info_label,
+         menu_entries_append_enum(menu_stack, info_path, info_label,
                MENU_ENUM_LABEL_CONTENT_SETTINGS,
                0, 0, 0);
          dl_type            = DISPLAYLIST_CONTENT_SETTINGS;
