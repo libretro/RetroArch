@@ -2148,6 +2148,7 @@ static int action_ok_download_generic(const char *path,
    char s3[PATH_MAX_LENGTH]     = {0};
    menu_file_transfer_t *transf = NULL;
    settings_t *settings         = config_get_ptr();
+   bool suppress_msg            = false;
    retro_task_callback_t cb     = cb_generic_download;
 
    fill_pathname_join(s,
@@ -2157,6 +2158,7 @@ static int action_ok_download_generic(const char *path,
    switch (enum_idx)
    {
       case MENU_ENUM_LABEL_CB_DOWNLOAD_URL:
+         suppress_msg = true;
          fill_pathname_join(s, label,
                path, sizeof(s));
          path = s;
@@ -2210,7 +2212,7 @@ static int action_ok_download_generic(const char *path,
    transf->enum_idx = enum_idx;
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   task_push_http_transfer(s3, true, msg_hash_to_str(enum_idx), cb, transf);
+   task_push_http_transfer(s3, suppress_msg, msg_hash_to_str(enum_idx), cb, transf);
 #endif
    return 0;
 }
