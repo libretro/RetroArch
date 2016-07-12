@@ -2287,7 +2287,7 @@ static int menu_displaylist_parse_settings_internal(void *data,
          goto loop;
 
 
-      menu_entries_add(info->list, short_description,
+      menu_entries_append(info->list, short_description,
             name, menu_setting_set_flags(setting), 0, 0);
       count++;
 
