@@ -843,7 +843,6 @@ static void mui_frame(void *data)
    float *highlighted_entry_color  = blue_50;
    float *footer_bg_color          = white_bg;
    float *body_bg_color            = white_transp_bg;
-   settings_t *settings            = config_get_ptr();
    float *active_tab_marker_color  = blue_500;
    float *passive_tab_icon_color   = grey_bg;
 
