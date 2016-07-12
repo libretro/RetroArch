@@ -81,25 +81,13 @@ static void cb_net_generic_subdir(void *task_data, void *user_data, const char *
 finish:
    if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
-      char *last                       = NULL;
       char parent_dir[PATH_MAX_LENGTH] = {0};
-      file_list_t *selection_buf       = menu_entries_get_selection_buf_ptr(0);
-      bool refresh                     = true;
 
       fill_pathname_parent_dir(parent_dir,
             state->path, sizeof(parent_dir));
-      last = (char*)strrchr(parent_dir, '/');
 
-      if (*last)
-         *last = '\0';
-
-      menu_entries_prepend(selection_buf,
-            subdir_path,
-            parent_dir,
-            MENU_ENUM_LABEL_URL_ENTRY,
-            FILE_TYPE_DOWNLOAD_URL, 0 ,0);
-      menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-      /* TODO/FIXME - fix this */
+      generic_action_ok_displaylist_push(parent_dir, NULL,
+            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);
    }
 
    if (err)
@@ -493,6 +481,19 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
+         break;
+      case ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST:
+         {
+            char new_path[PATH_MAX_LENGTH];
+            snprintf(new_path, sizeof(new_path), "%s;%s", path, label);
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = new_path;
+            info_label         = msg_hash_to_str(
+                  MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST);
+            info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
+            dl_type            = DISPLAYLIST_GENERIC;
+         }
          break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_LIST:
          info.type          = type;
