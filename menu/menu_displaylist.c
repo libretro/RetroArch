@@ -3214,8 +3214,8 @@ enum filebrowser_enums
 
 static unsigned filebrowser_types = 0;
 
-static int menu_displaylist_parse_playlists_horizontal(
-      menu_displaylist_info_t *info)
+static int menu_displaylist_parse_playlists(
+      menu_displaylist_info_t *info, bool horizontal)
 {
    size_t i, list_size;
    struct string_list *str_list = NULL;
@@ -3244,11 +3244,12 @@ static int menu_displaylist_parse_playlists_horizontal(
 
    if (list_size == 0)
    {
-      menu_entries_add_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-            MENU_ENUM_LABEL_NO_ITEMS,
-            MENU_SETTING_NO_ITEM, 0, 0);
+      if (!horizontal)
+         menu_entries_add_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+               MENU_ENUM_LABEL_NO_ITEMS,
+               MENU_SETTING_NO_ITEM, 0, 0);
 
       string_list_free(str_list);
 
@@ -3723,7 +3724,7 @@ static bool menu_displaylist_push_internal(
                sizeof(info->path));
 
          if (!menu_displaylist_ctl(
-                  DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, info))
+                  DISPLAYLIST_DATABASE_PLAYLISTS, info))
             return false;
       }
       return true;
@@ -5445,10 +5446,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          strlcpy(info->exts, "dbc", sizeof(info->exts));
          strlcpy(info->path, settings->directory.cursor, sizeof(info->path));
          break;
-      case DISPLAYLIST_DATABASE_PLAYLISTS:
-         info->type_default = FILE_TYPE_PLAIN;
-         strlcpy(info->exts, "lpl", sizeof(info->exts));
-         break;
       case DISPLAYLIST_CORES:
          {
             char ext_name[PATH_MAX_LENGTH] = {0};
@@ -5513,7 +5510,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    switch (type)
    {
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
-         if (menu_displaylist_parse_playlists_horizontal(info) == 0)
+         if (menu_displaylist_parse_playlists(info, true) == 0)
+         {
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
+         break;
+      case DISPLAYLIST_DATABASE_PLAYLISTS:
+         if (menu_displaylist_parse_playlists(info, false) == 0)
          {
             info->need_refresh = true;
             info->need_push    = true;
@@ -5526,7 +5530,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_SHADER_PASS:
       case DISPLAYLIST_SHADER_PRESET:
       case DISPLAYLIST_DATABASE_CURSORS:
-      case DISPLAYLIST_DATABASE_PLAYLISTS:
       case DISPLAYLIST_VIDEO_FILTERS:
       case DISPLAYLIST_AUDIO_FILTERS:
       case DISPLAYLIST_IMAGES:
