@@ -1252,7 +1252,7 @@ static void decode_thread(void *data)
             decoded_size = frame_size + sizeof(pts);
             slock_lock(fifo_lock);
 
-            while (!decode_thread_dead 
+            while (!decode_thread_dead  && (video_decode_fifo != NULL)
                   && fifo_write_avail(video_decode_fifo) < decoded_size)
             {
                if (!main_sleeping)
