@@ -5040,8 +5040,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_NETWORKING
             struct string_list *str_list = string_split(info->path, ";");
             char new_label[PATH_MAX_LENGTH] = {0};
-            strlcpy(new_label, str_list->elems[0].data, sizeof(new_label));
-            strlcpy(core_buf, str_list->elems[1].data, core_len);
+            if (str_list->elems[0].data)
+               strlcpy(new_label, str_list->elems[0].data, sizeof(new_label));
+            if (str_list->elems[1].data)
+               strlcpy(core_buf, str_list->elems[1].data, core_len);
             print_buf_lines(info->list, core_buf, new_label,
                   core_len, FILE_TYPE_DOWNLOAD_URL, false, false);
             info->need_push    = true;
