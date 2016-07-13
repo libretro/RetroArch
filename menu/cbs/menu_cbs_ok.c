@@ -79,6 +79,17 @@ static void cb_net_generic_subdir(void *task_data, void *user_data, const char *
    subdir_path[data->len] = '\0';
 
 finish:
+   if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
+   {
+      char parent_dir[PATH_MAX_LENGTH] = {0};
+
+      fill_pathname_parent_dir(parent_dir,
+            state->path, sizeof(parent_dir));
+
+      generic_action_ok_displaylist_push(parent_dir, NULL,
+            subdir_path, 0, 0, 0, ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST);
+   }
+
    if (err)
       RARCH_ERR("%s: %s\n", msg_hash_to_str(MSG_DOWNLOAD_FAILED), err);
 
