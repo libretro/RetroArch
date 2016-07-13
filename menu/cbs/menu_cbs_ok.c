@@ -2165,7 +2165,11 @@ static int action_ok_download_generic(const char *path,
          cb = cb_generic_dir_download;
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
-         strlcpy(s, menu_label, sizeof(s));
+         {
+            struct string_list *str_list = string_split(menu_label, ";");
+            strlcpy(s, str_list->elems[0].data, sizeof(s));
+            string_list_free(str_list);
+         }
          break;
       case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
 #ifdef HAVE_LAKKA
