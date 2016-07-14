@@ -2918,6 +2918,16 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Icon Shadows Enable";
       case MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE:
          return "Menu Shader Pipeline";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
+         return "Monochrome";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI:
+         return "FlatUI";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:
+         return "RetroActive";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL:
+         return "Pixel";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM:
+         return "Custom";
       case MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "Suspend Screensaver";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:

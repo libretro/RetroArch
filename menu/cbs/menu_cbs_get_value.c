@@ -679,19 +679,24 @@ static void menu_action_setting_disp_set_label_xmb_theme(
    switch (settings->menu.xmb.theme)
    {
       case XMB_ICON_THEME_MONOCHROME:
-         strlcpy(s, "Monochrome", len);
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME), len);
          break;
       case XMB_ICON_THEME_FLATUI:
-         strlcpy(s, "FlatUI", len);
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI), len);
          break;
       case XMB_ICON_THEME_RETROACTIVE:
-         strlcpy(s, "RetroActive", len);
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE), len);
          break;
       case XMB_ICON_THEME_PIXEL:
-         strlcpy(s, "Pixel", len);
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL), len);
          break;
       case XMB_ICON_THEME_CUSTOM:
-         strlcpy(s, "Custom", len);
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM), len);
          break;
    }
 }
