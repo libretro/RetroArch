@@ -357,21 +357,21 @@ static float *xmb_gradient_ident(void)
 
    switch (settings->menu.xmb.menu_color_theme)
    {
-      case 1:
+      case XMB_THEME_DARK_PURPLE:
          return &gradient_dark_purple[0];
-      case 2:
+      case XMB_THEME_MIDNIGHT_BLUE:
          return &gradient_midnight_blue[0];
-      case 3:
+      case XMB_THEME_GOLDEN:
          return &gradient_golden[0];
-      case 4:
+      case XMB_THEME_ELECTRIC_BLUE:
          return &gradient_electric_blue[0];
-      case 5:
+      case XMB_THEME_APPLE_GREEN:
          return &gradient_apple_green[0];
-      case 6:
+      case XMB_THEME_UNDERSEA:
          return &gradient_undersea[0];
-      case 7:
+      case XMB_THEME_VOLCANIC_RED:
          return &gradient_volcanic_red[0];
-      case 8:
+      case XMB_THEME_DARK:
          return &gradient_dark[0];
       case 0:
       default:

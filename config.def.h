@@ -512,11 +512,13 @@ static const bool default_overlay_enable = false;
 static const bool overlay_hide_in_menu = true;
 
 #ifdef HAVE_MENU
+#include "menu/menu_display.h"
+
 static bool default_block_config_read = true;
 
 static unsigned xmb_scale_factor = 100;
 static unsigned xmb_alpha_factor = 75;
-static unsigned xmb_theme        = 0;
+static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
 
 #ifdef HAVE_LAKKA
 static bool xmb_shadows_enable   = false;

@@ -715,55 +715,55 @@ static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
 
    switch (settings->menu.xmb.menu_color_theme)
    {
-      case 0:
+      case XMB_THEME_LEGACY_RED:
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED),
                len);
          break;
-      case 1:
+      case XMB_THEME_DARK_PURPLE:
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE),
                len);
          break;
-      case 2:
+      case XMB_THEME_MIDNIGHT_BLUE:
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE),
                len);
          break;
-      case 3:
+      case XMB_THEME_GOLDEN:
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN),
                len);
          break;
-      case 4:
+      case XMB_THEME_ELECTRIC_BLUE:
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE),
                len);
          break;
-      case 5:
+      case XMB_THEME_APPLE_GREEN:
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN),
                len);
          break;
-      case 6:
+      case XMB_THEME_UNDERSEA:
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA),
                len);
          break;
-      case 7:
+      case XMB_THEME_VOLCANIC_RED:
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED),
                len);
          break;
-      case 8:
+      case XMB_THEME_DARK:
          strlcpy(s,
                msg_hash_to_str(
                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK),

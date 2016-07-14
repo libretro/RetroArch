@@ -40,6 +40,19 @@ enum materialui_color_theme
    MATERIALUI_THEME_NVIDIA_SHIELD
 };
 
+enum xmb_color_theme
+{
+   XMB_THEME_LEGACY_RED  = 0,
+   XMB_THEME_DARK_PURPLE,
+   XMB_THEME_MIDNIGHT_BLUE,
+   XMB_THEME_GOLDEN,
+   XMB_THEME_ELECTRIC_BLUE,
+   XMB_THEME_APPLE_GREEN,
+   XMB_THEME_UNDERSEA,
+   XMB_THEME_VOLCANIC_RED,
+   XMB_THEME_DARK
+};
+
 enum menu_display_prim_type
 {
    MENU_DISPLAY_PRIM_NONE = 0,
