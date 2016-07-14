@@ -213,15 +213,15 @@ static void menu_action_setting_disp_set_label_pipeline(
 
    switch (settings->menu.xmb.shader_pipeline)
    {
-      case 0:
+      case XMB_SHADER_PIPELINE_WALLPAPER:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          break;
-      case 1:
+      case XMB_SHADER_PIPELINE_SIMPLE_RIBBON:
          strlcpy(s, 
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED), len);
          break;
-      case 2:
+      case XMB_SHADER_PIPELINE_RIBBON:
          strlcpy(s, 
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);

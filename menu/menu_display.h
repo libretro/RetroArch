@@ -56,6 +56,14 @@ enum xmb_color_theme
    XMB_THEME_LAST
 };
 
+enum xmb_shader_pipeline
+{
+   XMB_SHADER_PIPELINE_WALLPAPER = 0,
+   XMB_SHADER_PIPELINE_SIMPLE_RIBBON,
+   XMB_SHADER_PIPELINE_RIBBON,
+   XMB_SHADER_PIPELINE_LAST
+};
+
 enum menu_display_prim_type
 {
    MENU_DISPLAY_PRIM_NONE = 0,

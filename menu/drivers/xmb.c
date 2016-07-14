@@ -1925,7 +1925,7 @@ static void xmb_draw_bg(
    menu_display_set_viewport();
 
 #ifdef HAVE_SHADERPIPELINE
-   if (settings->menu.xmb.shader_pipeline > 0
+   if (settings->menu.xmb.shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER 
          && 
          (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER))
    {
@@ -1939,7 +1939,7 @@ static void xmb_draw_bg(
       menu_display_draw_gradient(&draw);
 
       draw.pipeline.id = VIDEO_SHADER_MENU_SEC;
-      if (settings->menu.xmb.shader_pipeline == 2)
+      if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_RIBBON)
          draw.pipeline.id  = VIDEO_SHADER_MENU;
 
       menu_display_draw_pipeline(&draw);

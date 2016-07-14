@@ -481,7 +481,7 @@ bool menu_display_shader_pipeline_active(void)
    settings_t *settings          = config_get_ptr();
    if (!string_is_equal(menu_driver_ident(), "xmb"))
       return false;
-   if (settings->menu.xmb.shader_pipeline == 0)
+   if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER)
       return false;
    return true;
 }
