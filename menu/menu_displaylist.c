@@ -3229,6 +3229,7 @@ static int menu_displaylist_parse_playlists(
 }
 
 static int menu_displaylist_parse_generic(
+      menu_handle_t       *menu,
       menu_displaylist_info_t *info,
       enum menu_displaylist_ctl_state type)
 {
@@ -3494,6 +3495,18 @@ static int menu_displaylist_parse_generic(
       }
       info->need_sort = true;
    }
+
+   /* We don't want to show 'filter by extension' for this. */
+   if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
+      return 0;
+   if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
+      return 0;
+
+   menu_entries_prepend(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
+         msg_hash_to_str(MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
+         MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+         0, 0 ,0);
 
    return 0;
 }
@@ -5482,7 +5495,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
       case DISPLAYLIST_CONTENT_HISTORY:
-         if (menu_displaylist_parse_generic(info, type) == 0)
+         if (menu_displaylist_parse_generic(menu, info, type) == 0)
          {
             info->need_refresh = true;
             info->need_push    = true;
