@@ -313,9 +313,18 @@ static int database_info_list_iterate_found_match(
 
    if(!playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
+      // For the playlist item name, use the game's
+      // description if it's less then 60 characters
+      // long. Otherwise, just use the name.
+      char* name;
+      if (strlen(db_info_entry->description) <= 60)
+         name = db_info_entry->description;
+      else
+         name = db_info_entry->name;
+
+      // Add the item to the playlist.
       playlist_push(playlist, entry_path_str,
-            // Use the game's description, instead of its name.
-            db_info_entry->description,
+            name,
             file_path_str(FILE_PATH_DETECT),
             file_path_str(FILE_PATH_DETECT),
             db_crc, db_playlist_base_str);
