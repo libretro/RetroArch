@@ -441,7 +441,11 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    else
       tex.view = VK_NULL_HANDLE;
 
-   vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
+   if (info.tiling == VK_IMAGE_TILING_LINEAR)
+      vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
+   else
+      memset(&layout, 0, sizeof(layout));
+
    tex.stride = layout.rowPitch;
    tex.offset = layout.offset;
    tex.size   = layout.size;
