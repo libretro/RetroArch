@@ -314,7 +314,8 @@ static int database_info_list_iterate_found_match(
    if(!playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
       playlist_push(playlist, entry_path_str,
-            db_info_entry->name,
+            // Use the game's description, instead of its name.
+            db_info_entry->description,
             file_path_str(FILE_PATH_DETECT),
             file_path_str(FILE_PATH_DETECT),
             db_crc, db_playlist_base_str);
