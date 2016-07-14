@@ -2820,6 +2820,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Use Output Dir";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
          return "Record Config";
+      case MENU_ENUM_LABEL_VALUE_CONFIG:
+         return "Config";
       case MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Post filter record Enable";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
@@ -3138,6 +3140,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Options";
       case MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS:
          return "Cheats";
+      case MENU_ENUM_LABEL_VALUE_REMAP_FILE:
+         return "Remap File";
+      case MENU_ENUM_LABEL_VALUE_CHEAT_FILE:
+         return "Cheat File";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD:
          return "Cheat File Load";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
@@ -3258,6 +3264,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Audio Latency (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
          return "Audio Device";
+      case MENU_ENUM_LABEL_VALUE_OVERLAY:
+         return "Overlay";
       case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
          return "Keyboard Overlay Preset";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
@@ -3276,6 +3284,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Preview Shader Parameters";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
          return "Menu Shader Parameters";
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO:
+         return "Shader Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
          return "Shader Preset Save As";
       case MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS:
@@ -3328,6 +3338,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Permissions";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:
          return "License(s)";
+      case MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES:
+         return "Supported cores";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS:
          return "Supported extensions";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
