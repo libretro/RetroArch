@@ -498,6 +498,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
    static struct video_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
+   bool add_opacity_to_wallpaper = false;
    settings_t *settings          = config_get_ptr();
    if (!menu_disp || !draw)
       return;
@@ -519,6 +520,12 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
    draw->coords      = &coords;
 
    if (!menu_display_libretro_running() && !menu_display_shader_pipeline_active())
+      add_opacity_to_wallpaper = true;
+   if (string_is_equal(menu_driver_ident(), "xmb") 
+         && settings->menu.xmb.menu_color_theme == XMB_THEME_WALLPAPER)
+      add_opacity_to_wallpaper = true;
+
+   if (add_opacity_to_wallpaper)
       menu_display_set_alpha(draw->color, settings->menu.wallpaper.opacity);
 
    if (!draw->texture)

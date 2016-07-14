@@ -1925,7 +1925,9 @@ static void xmb_draw_bg(
    menu_display_set_viewport();
 
 #ifdef HAVE_SHADERPIPELINE
-   if (settings->menu.xmb.shader_pipeline > 0)
+   if (settings->menu.xmb.shader_pipeline > 0
+         && 
+         (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER))
    {
       draw.color = xmb_gradient_ident();
 

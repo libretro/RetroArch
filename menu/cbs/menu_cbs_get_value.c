@@ -715,6 +715,12 @@ static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
 
    switch (settings->menu.xmb.menu_color_theme)
    {
+      case XMB_THEME_WALLPAPER:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_WALLPAPER),
+               len);
+         break;
       case XMB_THEME_LEGACY_RED:
          strlcpy(s,
                msg_hash_to_str(
