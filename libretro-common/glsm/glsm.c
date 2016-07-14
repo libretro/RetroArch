@@ -2018,21 +2018,49 @@ static void glsm_state_unbind(void)
          glDisable(gl_state.cap_translate[i]);
    }
 
-   gl_state.blendfunc.used = false;
-   gl_state.colormask.used = false;
-   gl_state.blendfunc_separate.used = false;
-   gl_state.cullface.used = false;
-   gl_state.depthmask.used = false;
-   gl_state.polygonoffset.used = false;
-   gl_state.scissor.used = false;
-   gl_state.depthrange.used = false;
-   gl_state.stencilmask.used = false;
-   gl_state.frontface.used = false;
-   gl_state.depthfunc.used = false;
-   gl_state.stencilop.used = false;
-   gl_state.stencilfunc.used = false;
+   glBlendFunc(GL_ONE, GL_ZERO);
 
+   if (gl_state.colormask.used)
+      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+   if (gl_state.blendfunc_separate.used)
+      glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ONE, GL_ZERO);
+
+   if (gl_state.cullface.used)
+      glCullFace(GL_BACK);
+
+   if (gl_state.depthmask.used)
+      glDepthMask(GL_TRUE);
+
+   if (gl_state.polygonoffset.used)
+      glPolygonOffset(0, 0);
+
+   glUseProgram(0);
+   glClearColor(0,0,0,0.0f);
+
+   if (gl_state.depthrange.used)
+      rglDepthRange(0, 1);
+
+   glStencilMask(1);
+   glFrontFace(GL_CCW);
+   if (gl_state.depthfunc.used)
+      glDepthFunc(GL_LESS);
+
+   if (gl_state.stencilop.used)
+      glStencilOp(GL_KEEP,GL_KEEP, GL_KEEP);
+
+   if (gl_state.stencilfunc.used)
+      glStencilFunc(GL_ALWAYS,0,1);
+
+   /* Clear textures */
+   for (i = 0; i < glsm_max_textures; i ++)
+   {
+      glActiveTexture(GL_TEXTURE0 + i);
+      glBindTexture(GL_TEXTURE_2D, 0);
+   }
    glActiveTexture(GL_TEXTURE0);
+
+   for (i = 0; i < MAX_ATTRIB; i ++)
+      glDisableVertexAttribArray(i);
 
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0);
 }
