@@ -373,7 +373,7 @@ static float *xmb_gradient_ident(void)
          return &gradient_volcanic_red[0];
       case XMB_THEME_DARK:
          return &gradient_dark[0];
-      case 0:
+      case XMB_THEME_LEGACY_RED:
       default:
          break;
    }
