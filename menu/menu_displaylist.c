@@ -4578,15 +4578,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CAMERA_ALLOW,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_LOCATION_ALLOW,
-               PARSE_ONLY_BOOL, true);
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CAMERA_ALLOW,
+                  PARSE_ONLY_BOOL, false);
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                     MENU_ENUM_LABEL_LOCATION_ALLOW,
+                     PARSE_ONLY_BOOL, true) == -1)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                     MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                     0, 0, 0);
 
-         info->need_refresh = true;
-         info->need_push    = true;
+            info->need_refresh = true;
+            info->need_push    = true;
          break;
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
