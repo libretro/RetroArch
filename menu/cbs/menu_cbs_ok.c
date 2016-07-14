@@ -249,6 +249,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
+         menu_displaylist_reset_filebrowser();
          info.directory_ptr = idx;
          info_path          = settings->directory.audio_filter;
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
@@ -256,6 +257,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_SHADER_PASS:
+         menu_displaylist_reset_filebrowser();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.video_shader;
@@ -279,6 +281,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_FILE_BROWSER_SELECT_DIR:
+         menu_displaylist_reset_filebrowser();
          if (path)
             strlcpy(menu->deferred_path, path,
                   sizeof(menu->deferred_path));
@@ -296,6 +299,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_SHADER_PRESET:
+         menu_displaylist_reset_filebrowser();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.video_shader; 
@@ -303,6 +307,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_CONTENT_LIST:
+         menu_displaylist_reset_filebrowser();
          info.type          = FILE_TYPE_DIRECTORY;
          info.directory_ptr = idx;
          info_path          = new_path;
@@ -317,6 +322,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SCAN_DIR;
          break;
       case ACTION_OK_DL_REMAP_FILE:
+         menu_displaylist_reset_filebrowser();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.input_remapping;
@@ -326,6 +332,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_RECORD_CONFIGFILE:
          {
             global_t  *global  = global_get_ptr();
+            menu_displaylist_reset_filebrowser();
             info.type          = type;
             info.directory_ptr = idx;
             info_path          = global->record.config_dir;
@@ -334,6 +341,7 @@ int generic_action_ok_displaylist_push(const char *path,
          }
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
+         menu_displaylist_reset_filebrowser();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.menu_content;
@@ -341,6 +349,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
+         menu_displaylist_reset_filebrowser();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
@@ -348,6 +357,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CHEAT_FILE:
+         menu_displaylist_reset_filebrowser();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->path.cheat_database;
@@ -355,6 +365,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_CORE_LIST:
+         menu_displaylist_reset_filebrowser();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.libretro;
@@ -362,6 +373,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_CORE;
          break;
       case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
+         menu_displaylist_reset_filebrowser();
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = settings->directory.playlist;
@@ -369,6 +381,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_COLLECTION;
          break;
       case ACTION_OK_DL_RDB_ENTRY:
+         menu_displaylist_reset_filebrowser();
          fill_pathname_join_delim(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
                path, '|', sizeof(tmp));
@@ -442,6 +455,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
+         menu_displaylist_reset_filebrowser();
          fill_pathname_join(tmp,
                settings->path.content_database,
                path, sizeof(tmp));
@@ -454,6 +468,7 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type                 = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
+         menu_displaylist_reset_filebrowser();
          fill_pathname_join(tmp, settings->directory.cursor,
                path, sizeof(tmp));
 

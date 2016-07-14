@@ -3494,6 +3494,7 @@ static int menu_displaylist_parse_generic(
             menu_entries_set_alt_at_offset(info->list, i, display_name);
       }
       info->need_sort = true;
+      return 0;
    }
 
    /* We don't want to show 'filter by extension' for this. */
@@ -3635,6 +3636,7 @@ static bool menu_displaylist_push_internal(
    {
       settings_t *settings  = config_get_ptr();
 
+      menu_displaylist_reset_filebrowser();
       info->type = 42;
       strlcpy(info->exts, "lpl", sizeof(info->exts));
       strlcpy(info->label,
@@ -5359,6 +5361,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASES:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_RDB;
          strlcpy(info->exts,
                file_path_str(FILE_PATH_RDB_EXTENSION),
@@ -5397,6 +5400,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push = true;
          break;
       case DISPLAYLIST_DATABASE_CURSORS:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_CURSOR;
          strlcpy(info->exts, "dbc", sizeof(info->exts));
          strlcpy(info->path, settings->directory.cursor, sizeof(info->path));
@@ -5405,56 +5409,69 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             char ext_name[PATH_MAX_LENGTH] = {0};
 
+            menu_displaylist_reset_filebrowser();
             info->type_default = FILE_TYPE_PLAIN;
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
                strlcpy(info->exts, ext_name, sizeof(info->exts));
          }
          break;
       case DISPLAYLIST_CONFIG_FILES:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_SHADER_PRESET:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_SHADER_PRESET;
          strlcpy(info->exts, "cgp|glslp|slangp", sizeof(info->exts));
          break;
       case DISPLAYLIST_SHADER_PASS:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_SHADER;
          strlcpy(info->exts, "cg|glsl|slang", sizeof(info->exts));
          break;
       case DISPLAYLIST_VIDEO_FILTERS:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_VIDEOFILTER;
          strlcpy(info->exts, "filt", sizeof(info->exts));
          break;
       case DISPLAYLIST_IMAGES:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_IMAGE;
          strlcpy(info->exts, "png|jpg|jpeg|bmp|tga", sizeof(info->exts));
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_AUDIOFILTER;
          strlcpy(info->exts, "dsp", sizeof(info->exts));
          break;
       case DISPLAYLIST_CHEAT_FILES:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_CHEAT;
          strlcpy(info->exts, "cht", sizeof(info->exts));
          break;
       case DISPLAYLIST_CONTENT_HISTORY:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_PLAIN;
          strlcpy(info->exts, "lpl", sizeof(info->exts));
          break;
       case DISPLAYLIST_FONTS:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_FONT;
          strlcpy(info->exts, "ttf", sizeof(info->exts));
          break;
       case DISPLAYLIST_OVERLAYS:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_OVERLAY;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_RECORD_CONFIG_FILES:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_RECORD_CONFIG;
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_REMAP_FILES:
+         menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_REMAP;
          strlcpy(info->exts, "rmp", sizeof(info->exts));
          break;
