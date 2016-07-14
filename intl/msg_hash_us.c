@@ -2146,8 +2146,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Green";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE:
          return "Dark Blue";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_WALLPAPER:
-         return "Wallpaper";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN:
+         return "Plain";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED:
          return "Legacy Red";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE:
