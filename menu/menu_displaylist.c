@@ -5240,6 +5240,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
                      MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
                      0, 0, 0);
+#ifdef HAVE_NETWORKING
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
+                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
+                     MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+                     MENU_SETTING_ACTION, 0, 0);
+#endif
             }
             else
             {
