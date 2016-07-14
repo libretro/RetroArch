@@ -1947,10 +1947,28 @@ static void xmb_draw_bg(
    else
 #endif
    {
-      if (!running && draw.texture)
-         draw.color = &coord_white[0];
+      uintptr_t texture           = draw.texture;
 
-      menu_display_draw_bg(&draw);
+      if (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER)
+         draw.color = xmb_gradient_ident();
+
+      if (running)
+         menu_display_set_alpha(draw.color, coord_black[3]);
+      else
+         menu_display_set_alpha(draw.color, coord_white[3]);
+
+      if (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER)
+         menu_display_draw_gradient(&draw);
+
+      {
+         draw.texture = texture;
+         menu_display_set_alpha(draw.color, coord_white[3]);
+
+         if (!running && draw.texture)
+            draw.color = &coord_white[0];
+
+         menu_display_draw_bg(&draw);
+      }
    }
 
    menu_display_draw(&draw);
