@@ -314,15 +314,15 @@ const char *xmb_theme_ident(void)
    settings_t *settings = config_get_ptr();
    switch (settings->menu.xmb.theme)
    {
-      case 1:
+      case XMB_ICON_THEME_FLATUI:
          return "flatui";
-      case 2:
+      case XMB_ICON_THEME_RETROACTIVE:
          return "retroactive";
-      case 3:
+      case XMB_ICON_THEME_PIXEL:
          return "pixel";
-      case 4:
+      case XMB_ICON_THEME_CUSTOM:
          return "custom";
-      case 0:
+      case XMB_ICON_THEME_MONOCHROME:
       default:
          break;
    }

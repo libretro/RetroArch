@@ -678,19 +678,19 @@ static void menu_action_setting_disp_set_label_xmb_theme(
    *w = 19;
    switch (settings->menu.xmb.theme)
    {
-      case 0:
+      case XMB_ICON_THEME_MONOCHROME:
          strlcpy(s, "Monochrome", len);
          break;
-      case 1:
+      case XMB_ICON_THEME_FLATUI:
          strlcpy(s, "FlatUI", len);
          break;
-      case 2:
+      case XMB_ICON_THEME_RETROACTIVE:
          strlcpy(s, "RetroActive", len);
          break;
-      case 3:
+      case XMB_ICON_THEME_PIXEL:
          strlcpy(s, "Pixel", len);
          break;
-      case 4:
+      case XMB_ICON_THEME_CUSTOM:
          strlcpy(s, "Custom", len);
          break;
    }

@@ -6894,7 +6894,7 @@ static bool setting_append_list(
                   &settings->menu.xmb.theme,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_THEME),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_THEME),
-                  xmb_theme,
+                  xmb_icon_theme,
                   &group_info,
                   &subgroup_info,
                   parent_group,

@@ -56,6 +56,15 @@ enum xmb_color_theme
    XMB_THEME_LAST
 };
 
+enum xmb_icon_theme
+{
+   XMB_ICON_THEME_MONOCHROME = 0,
+   XMB_ICON_THEME_FLATUI,
+   XMB_ICON_THEME_RETROACTIVE,
+   XMB_ICON_THEME_PIXEL,
+   XMB_ICON_THEME_CUSTOM
+};
+
 enum xmb_shader_pipeline
 {
    XMB_SHADER_PIPELINE_WALLPAPER = 0,
