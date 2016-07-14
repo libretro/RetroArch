@@ -468,7 +468,7 @@ static void config_set_defaults(void)
 #ifdef HAVE_XMB
    settings->menu.xmb.scale_factor     = xmb_scale_factor;
    settings->menu.xmb.alpha_factor     = xmb_alpha_factor;
-   settings->menu.xmb.theme            = xmb_theme;
+   settings->menu.xmb.theme            = xmb_icon_theme;
    settings->menu.xmb.menu_color_theme = menu_background_gradient;
    settings->menu.xmb.shadows_enable   = xmb_shadows_enable;
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
