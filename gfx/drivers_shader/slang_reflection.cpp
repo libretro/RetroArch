@@ -247,8 +247,8 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
    auto ranges = compiler.get_active_buffer_ranges(resource.id);
    for (auto &range : ranges)
    {
-      auto &name = compiler.get_member_name(resource.type_id, range.index);
-      auto &type = compiler.get_type(compiler.get_type(resource.type_id).member_types[range.index]);
+      auto &name = compiler.get_member_name(resource.base_type_id, range.index);
+      auto &type = compiler.get_type(compiler.get_type(resource.base_type_id).member_types[range.index]);
 
       unsigned tex_sem_index = 0;
       auto sem = slang_uniform_name_to_semantic(*reflection->semantic_map, name);
@@ -405,14 +405,14 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
    {
       reflection->ubo_stage_mask |= SLANG_STAGE_VERTEX_MASK;
       reflection->ubo_size = max(reflection->ubo_size,
-            vertex_compiler.get_declared_struct_size(vertex_compiler.get_type(vertex.uniform_buffers[0].type_id)));
+            vertex_compiler.get_declared_struct_size(vertex_compiler.get_type(vertex.uniform_buffers[0].base_type_id)));
    }
 
    if (fragment_ubo)
    {
       reflection->ubo_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
       reflection->ubo_size = max(reflection->ubo_size,
-            fragment_compiler.get_declared_struct_size(fragment_compiler.get_type(fragment.uniform_buffers[0].type_id)));
+            fragment_compiler.get_declared_struct_size(fragment_compiler.get_type(fragment.uniform_buffers[0].base_type_id)));
    }
 
    // Find all relevant uniforms.
