@@ -3169,14 +3169,10 @@ static int menu_displaylist_parse_playlists(
 
    if (list_size == 0)
    {
-      if (!horizontal)
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-               MENU_ENUM_LABEL_NO_ITEMS,
-               MENU_SETTING_NO_ITEM, 0, 0);
-
       string_list_free(str_list);
+
+      if (!horizontal)
+         goto no_playlists;
 
       return 0;
    }
@@ -3217,14 +3213,16 @@ static int menu_displaylist_parse_playlists(
    string_list_free(str_list);
 
    if (items_found == 0)
-   {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-            MENU_ENUM_LABEL_NO_ITEMS,
-            MENU_SETTING_NO_ITEM, 0, 0);
-   }
+      goto no_playlists;
 
+   return 0;
+
+no_playlists:
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+         MENU_ENUM_LABEL_NO_ITEMS,
+         MENU_SETTING_NO_ITEM, 0, 0);
    return 0;
 }
 
