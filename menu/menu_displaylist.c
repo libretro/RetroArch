@@ -3225,9 +3225,9 @@ static int menu_displaylist_parse_playlists(
 
 no_playlists:
    menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-         MENU_ENUM_LABEL_NO_ITEMS,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NO_PLAYLISTS),
+         MENU_ENUM_LABEL_NO_PLAYLISTS,
          MENU_SETTING_NO_ITEM, 0, 0);
    return 0;
 }

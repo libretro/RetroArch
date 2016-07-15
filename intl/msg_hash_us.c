@@ -1174,6 +1174,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "system_information_cpu_cores";
       case MENU_ENUM_LABEL_NO_ITEMS:
          return "no_items";
+      case MENU_ENUM_LABEL_NO_PLAYLISTS:
+         return "no_playlists";
       case MENU_ENUM_LABEL_NO_SHADER_PARAMETERS:
          return "no_shader_parameters.";
       case MENU_ENUM_LABEL_SETTINGS_TAB:
@@ -3220,6 +3222,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Directory not found.";
       case MENU_ENUM_LABEL_VALUE_NO_ITEMS:
          return "No items.";
+      case MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS:
+         return "No playlists.";
       case MENU_ENUM_LABEL_VALUE_CORE_LIST:
          return "Load Core";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
