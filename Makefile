@@ -120,10 +120,14 @@ endif
 
 all: $(TARGET) config.mk
 
+ifeq ($(MAKECMDGOALS),clean)
+config.mk:
+else
 -include $(RARCH_OBJ:.o=.d)
 config.mk: configure qb/*
 	@echo "config.mk is outdated or non-existing. Run ./configure again."
 	@exit 1
+endif
 
 retroarch: $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
