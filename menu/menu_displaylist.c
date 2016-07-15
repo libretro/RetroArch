@@ -3167,11 +3167,13 @@ static int menu_displaylist_parse_playlists(
 
    list_size = str_list->size;
 
+#ifdef HAVE_LIBRETRODB
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
          msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
          MENU_ENUM_LABEL_SCAN_DIRECTORY,
          MENU_SETTING_ACTION, 0, 0);
+#endif
 
    if (list_size == 0)
    {
@@ -3266,12 +3268,14 @@ static int menu_displaylist_parse_generic(
             filter_ext ? info->exts : NULL,
             true, true);
 
+#ifdef HAVE_LIBRETRODB
    if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
             MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
             FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
+#endif
 
    if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
       menu_entries_prepend(info->list,
