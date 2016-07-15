@@ -19,7 +19,7 @@ ifeq ($(HAVE_LIBRETRODB),)
 endif
 
 ifeq ($(HAVE_HID), 1)
-	DEFINES += -DHAVE_HID
+   DEFINES += -DHAVE_HID
 endif
 
 ifeq ($(HAVE_LIBRETRODB), 1)
@@ -66,7 +66,7 @@ ifeq ($(HAVE_FILE_LOGGER), 1)
 endif
 
 ifeq ($(HAVE_SHADERPIPELINE), 1)
-	CFLAGS += -DHAVE_SHADERPIPELINE
+   CFLAGS += -DHAVE_SHADERPIPELINE
 endif
 
 CFLAGS += -I./libretro-common/include
@@ -78,7 +78,7 @@ CFLAGS += -I./libretro-common/include
 
 ifneq ($(findstring BSD,$(OS)),)
    BSD_LOCAL_INC += -I/usr/local/include
-	OBJ += frontend/drivers/platform_bsd.o
+   OBJ += frontend/drivers/platform_bsd.o
 endif
 
 ifneq ($(findstring Darwin,$(OS)),)
@@ -122,10 +122,10 @@ OBJ += frontend/frontend.o \
        frontend/drivers/platform_null.o \
        ui/ui_companion_driver.o \
        ui/drivers/ui_null.o \
-		 ui/drivers/null/ui_null_window.o \
-		 ui/drivers/null/ui_null_browser_window.o \
-		 ui/drivers/null/ui_null_msg_window.o \
-		 ui/drivers/null/ui_null_application.o \
+       ui/drivers/null/ui_null_window.o \
+       ui/drivers/null/ui_null_browser_window.o \
+       ui/drivers/null/ui_null_msg_window.o \
+       ui/drivers/null/ui_null_application.o \
        core_impl.o \
        retroarch.o \
        input/input_keyboard.o \
@@ -133,11 +133,11 @@ OBJ += frontend/frontend.o \
        msg_hash.o \
        intl/msg_hash_us.o \
        runloop.o \
-		 libretro-common/algorithms/mismatch.o \
+       libretro-common/algorithms/mismatch.o \
        libretro-common/queues/task_queue.o \
        tasks/task_content.o \
-		 tasks/task_save_ram.o \
-		 tasks/task_save_state.o \
+       tasks/task_save_ram.o \
+       tasks/task_save_state.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
        libretro-common/encodings/encoding_utf.o \
@@ -145,8 +145,8 @@ OBJ += frontend/frontend.o \
        libretro-common/lists/dir_list.o \
        libretro-common/file/retro_dirent.o \
        libretro-common/streams/file_stream.o \
-		 libretro-common/streams/interface_stream.o \
-		 libretro-common/streams/memory_stream.o \
+       libretro-common/streams/interface_stream.o \
+       libretro-common/streams/memory_stream.o \
        libretro-common/file/retro_stat.o \
        libretro-common/lists/string_list.o \
        libretro-common/string/stdstring.o \
@@ -255,10 +255,10 @@ endif
 ifeq ($(HAVE_QT), 1)
 HAVE_QT_WRAPPER=0
 OBJ += ui/drivers/ui_qt.o \
-		 ui/drivers/qt/ui_qt_application.o \
-		 ui/drivers/qt/ui_qt_window.o \
-		 ui/drivers/qt/ui_qt_browser_window.o \
-		 ui/drivers/qt/ui_qt_msg_window.o
+       ui/drivers/qt/ui_qt_application.o \
+       ui/drivers/qt/ui_qt_window.o \
+       ui/drivers/qt/ui_qt_browser_window.o \
+       ui/drivers/qt/ui_qt_msg_window.o
 
 ifneq ($(findstring Linux,$(OS)),)
 DEFINES += -I/usr/include/qt -fPIC
@@ -331,7 +331,7 @@ ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/drivers/alsa.o
 
 ifeq ($(HAVE_THREADS), 1)
-	OBJ += audio/drivers/alsathread.o
+   OBJ += audio/drivers/alsathread.o
 endif
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
@@ -406,10 +406,10 @@ ifeq ($(HAVE_NEON),1)
 endif
 
 OBJ += libretro-common/conversion/s16_to_float.o \
-		 libretro-common/conversion/float_to_s16.o
+       libretro-common/conversion/float_to_s16.o
 ifeq ($(HAVE_NEON),1)
    OBJ += libretro-common/conversion/s16_to_float_neon.o \
-			 libretro-common/conversion/float_to_s16_neon.o
+          libretro-common/conversion/float_to_s16_neon.o
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
@@ -421,10 +421,10 @@ HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
 
 ifeq ($(HW_CONTEXT_MENU_DRIVERS),0)
 ifeq ($(HAVE_GL_CONTEXT),1)
-	HW_CONTEXT_MENU_DRIVERS=1
+   HW_CONTEXT_MENU_DRIVERS=1
 endif
 ifeq ($(HAVE_VULKAN),1)
-	HW_CONTEXT_MENU_DRIVERS=1
+   HW_CONTEXT_MENU_DRIVERS=1
 endif
 endif
 
@@ -527,8 +527,8 @@ endif
 
 ifeq ($(UTF8), 1)
    DEFINES += -DHAVE_UTF8
-	OBJ += intl/msg_hash_ru.o
-	DEFINES += -finput-charset=UTF-8
+   OBJ += intl/msg_hash_ru.o
+   DEFINES += -finput-charset=UTF-8
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)
@@ -575,9 +575,9 @@ ifeq ($(HAVE_XINPUT), 1)
 endif
 
 ifeq ($(HAVE_OPENDINGUX_FBDEV), 1)
-	OBJ += gfx/drivers_context/opendingux_fbdev_ctx.o
-	DEFINES += $(EGL_CFLAGS)
-	LIBS += $(EGL_LIBS)
+   OBJ += gfx/drivers_context/opendingux_fbdev_ctx.o
+   DEFINES += $(EGL_CFLAGS)
+   LIBS += $(EGL_LIBS)
 endif
 
 ifeq ($(HAVE_X11), 1)
@@ -589,16 +589,16 @@ ifeq ($(HAVE_X11), 1)
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
 ifeq ($(HAVE_XCB),1)
-	LIBS    += -lX11-xcb
+   LIBS    += -lX11-xcb
 endif
 ifneq ($(HAVE_GLES), 1)
-	OBJ += gfx/drivers_context/x_ctx.o
+   OBJ += gfx/drivers_context/x_ctx.o
 endif
 endif
 
 ifeq ($(HAVE_XCB),1)
-	DEFINES += $(XCB_CFLAGS)
-	LIBS    += $(XCB_LIBS)
+   DEFINES += $(XCB_CFLAGS)
+   LIBS    += $(XCB_LIBS)
 endif
 
 ifeq ($(HAVE_XKBCOMMON), 1)
@@ -641,9 +641,9 @@ endif
 ifeq ($(HAVE_HID), 1)
    DEFINES += -DHAVE_HID
    OBJ +=      input/input_hid_driver.o \
-					input/drivers_joypad/hid_joypad.o \
-					input/connect/joypad_connection.o \
-					input/connect/connect_ps2adapter.o \
+               input/drivers_joypad/hid_joypad.o \
+               input/connect/joypad_connection.o \
+               input/connect/connect_ps2adapter.o \
                input/connect/connect_ps3.o \
                input/connect/connect_ps4.o \
                input/connect/connect_wii.o \
@@ -661,10 +661,10 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
 OBJ += ui/drivers/ui_win32.o \
-		 ui/drivers/win32/ui_win32_window.o \
-		 ui/drivers/win32/ui_win32_browser_window.o \
-		 ui/drivers/win32/ui_win32_msg_window.o \
-		 ui/drivers/win32/ui_win32_application.o
+       ui/drivers/win32/ui_win32_window.o \
+       ui/drivers/win32/ui_win32_browser_window.o \
+       ui/drivers/win32/ui_win32_msg_window.o \
+       ui/drivers/win32/ui_win32_application.o
 endif
 
 # Video
@@ -672,20 +672,20 @@ endif
 OBJ += gfx/video_context_driver.o \
        gfx/drivers_context/gfx_null_ctx.o \
        gfx/video_state_tracker.o \
-		 libretro-common/gfx/math/vector_2.o \
-		 libretro-common/gfx/math/vector_3.o \
+       libretro-common/gfx/math/vector_2.o \
+       libretro-common/gfx/math/vector_3.o \
        libretro-common/gfx/math/matrix_4x4.o \
        libretro-common/gfx/math/matrix_3x3.o
 
 ifeq ($(HAVE_KMS), 1)
-	HAVE_AND_WILL_USE_DRM = 1
-	OBJ += gfx/drivers_context/drm_ctx.o
-	DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
-	LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
+   HAVE_AND_WILL_USE_DRM = 1
+   OBJ += gfx/drivers_context/drm_ctx.o
+   DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
+   LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
 endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
-	OBJ += gfx/drivers/drm_gfx.o
+   OBJ += gfx/drivers/drm_gfx.o
 endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
@@ -735,7 +735,7 @@ ifneq ($(C90_BUILD), 1)
 ifneq ($(HAVE_GLES), 1)
    OBJ += cores/libretro-ffmpeg/fft/fft.o
    DEFINES += -Ideps -DHAVE_GL_FFT
-	NEED_CXX_LINKER=1
+   NEED_CXX_LINKER=1
 endif
 endif
 endif
@@ -804,61 +804,61 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_VULKAN), 1)
-	ifneq ($(findstring Win32,$(OS)),)
-		GLSLANG_PLATFORM := Windows
-	else
-		GLSLANG_PLATFORM := Unix
-	endif
+   ifneq ($(findstring Win32,$(OS)),)
+      GLSLANG_PLATFORM := Windows
+   else
+      GLSLANG_PLATFORM := Unix
+   endif
 
-	GLSLANG_SOURCES := \
-		$(wildcard deps/glslang/*.cpp) \
-		$(wildcard deps/glslang/glslang/SPIRV/*.cpp) \
-		$(wildcard deps/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
-		$(wildcard deps/glslang/glslang/OGLCompilersDLL/*.cpp) \
-		$(wildcard deps/glslang/glslang/glslang/MachineIndependent/*.cpp) \
-		$(wildcard deps/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
-		$(wildcard deps/glslang/glslang/hlsl/*.cpp) \
-		$(wildcard deps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
+   GLSLANG_SOURCES := \
+      $(wildcard deps/glslang/*.cpp) \
+      $(wildcard deps/glslang/glslang/SPIRV/*.cpp) \
+      $(wildcard deps/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
+      $(wildcard deps/glslang/glslang/OGLCompilersDLL/*.cpp) \
+      $(wildcard deps/glslang/glslang/glslang/MachineIndependent/*.cpp) \
+      $(wildcard deps/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
+      $(wildcard deps/glslang/glslang/hlsl/*.cpp) \
+      $(wildcard deps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
-	SPIRV_CROSS_SOURCES := deps/SPIRV-Cross/spirv_cross.cpp
-	ifneq ($(findstring Win32,$(OS)),)
-		# Trivial temporary workaround for MinGW and glslang.
-		CXXFLAGS += -fpermissive
-	endif
+   SPIRV_CROSS_SOURCES := deps/SPIRV-Cross/spirv_cross.cpp
+   ifneq ($(findstring Win32,$(OS)),)
+      # Trivial temporary workaround for MinGW and glslang.
+      CXXFLAGS += -fpermissive
+   endif
 
-	DEFINES += \
-			  -Ideps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
-			  -Ideps/glslang/glslang/OGLCompilersDLL \
-			  -Ideps/glslang/glslang \
-			  -Ideps/glslang/glslang/glslang/MachineIndependent \
-			  -Ideps/glslang/glslang/glslang/Public \
-			  -Ideps/glslang/glslang/SPIRV \
-			  -Ideps/glslang \
-			  -Ideps/SPIRV-Cross
+   DEFINES += \
+           -Ideps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
+           -Ideps/glslang/glslang/OGLCompilersDLL \
+           -Ideps/glslang/glslang \
+           -Ideps/glslang/glslang/glslang/MachineIndependent \
+           -Ideps/glslang/glslang/glslang/Public \
+           -Ideps/glslang/glslang/SPIRV \
+           -Ideps/glslang \
+           -Ideps/SPIRV-Cross
 
-	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses -Igfx/include
-	CFLAGS  += -Igfx/include
+   CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses -Igfx/include
+   CFLAGS  += -Igfx/include
 
-	GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
-	SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
+   GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
+   SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
 
-	OBJ += gfx/drivers/vulkan.o \
-			 gfx/common/vulkan_common.o \
-			 libretro-common/vulkan/vulkan_symbol_wrapper.o \
-			 gfx/drivers_font/vulkan_raster_font.o \
-			 gfx/drivers_shader/shader_vulkan.o \
-			 gfx/drivers_shader/glslang_util.o \
-			 gfx/drivers_shader/slang_reflection.o \
-			 $(GLSLANG_OBJ) \
-			 $(SPIRV_CROSS_OBJ)
+   OBJ += gfx/drivers/vulkan.o \
+          gfx/common/vulkan_common.o \
+          libretro-common/vulkan/vulkan_symbol_wrapper.o \
+          gfx/drivers_font/vulkan_raster_font.o \
+          gfx/drivers_shader/shader_vulkan.o \
+          gfx/drivers_shader/glslang_util.o \
+          gfx/drivers_shader/slang_reflection.o \
+          $(GLSLANG_OBJ) \
+          $(SPIRV_CROSS_OBJ)
 
-	ifeq ($(HAVE_VULKAN_KHR_DISPLAY), 1)
-		OBJ += gfx/drivers_context/khr_display_ctx.o
-	endif
-	ifeq ($(HAVE_MENU_COMMON), 1)
-		OBJ += menu/drivers_display/menu_display_vulkan.o
-	endif
-	LIBS += -lstdc++
+   ifeq ($(HAVE_VULKAN_KHR_DISPLAY), 1)
+      OBJ += gfx/drivers_context/khr_display_ctx.o
+   endif
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_vulkan.o
+   endif
+   LIBS += -lstdc++
 endif
 
 ifeq ($(HAVE_OMAP), 1)
@@ -975,29 +975,29 @@ ifeq ($(HAVE_ZLIB), 1)
 endif
 
 ifeq ($(HAVE_RTGA), 1)
-	DEFINES += -DHAVE_RTGA
-	OBJ += libretro-common/formats/tga/rtga.o
+   DEFINES += -DHAVE_RTGA
+   OBJ += libretro-common/formats/tga/rtga.o
 endif
 
 ifeq ($(HAVE_RPNG), 1)
-	DEFINES += -DHAVE_RPNG
+   DEFINES += -DHAVE_RPNG
    OBJ += libretro-common/formats/png/rpng.o \
           libretro-common/formats/png/rpng_encode.o
 endif
 
 ifeq ($(HAVE_RJPEG), 1)
-	DEFINES += -DHAVE_RJPEG
-	OBJ += libretro-common/formats/jpeg/rjpeg.o
+   DEFINES += -DHAVE_RJPEG
+   OBJ += libretro-common/formats/jpeg/rjpeg.o
 endif
 
 ifeq ($(HAVE_RBMP), 1)
-	DEFINES += -DHAVE_RBMP
-	OBJ += libretro-common/formats/bmp/rbmp.o
+   DEFINES += -DHAVE_RBMP
+   OBJ += libretro-common/formats/bmp/rbmp.o
 endif
 
 OBJ += libretro-common/formats/bmp/rbmp_encode.o \
        libretro-common/formats/json/jsonsax.o \
-		 libretro-common/formats/image_transfer.o
+       libretro-common/formats/image_transfer.o
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
@@ -1042,18 +1042,18 @@ ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
    OBJ += libretro-common/net/net_compat.o \
           libretro-common/net/net_http.o \
-			 libretro-common/net/net_socket.o \
+          libretro-common/net/net_socket.o \
           network/net_http_special.o \
           tasks/task_http.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
-	OBJ += libretro-common/net/net_ifinfo.o
-	endif
+   OBJ += libretro-common/net/net_ifinfo.o
+   endif
 
    ifeq ($(WANT_IFADDRS), 1)
-	DEFINES += -DWANT_IFADDRS
-	OBJ += libretro-common/compat/compat_ifaddrs.o
-	endif
+   DEFINES += -DWANT_IFADDRS
+   OBJ += libretro-common/compat/compat_ifaddrs.o
+   endif
 
    ifneq ($(findstring Win32,$(OS)),)
       LIBS += -lws2_32 -liphlpapi
@@ -1064,9 +1064,9 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_NETPLAY), 1)
       DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
       OBJ += network/netplay/netplay_net.o \
-				 network/netplay/netplay_spectate.o \
-				 network/netplay/netplay_common.o \
-				 network/netplay/netplay.o
+             network/netplay/netplay_spectate.o \
+             network/netplay/netplay_common.o \
+             network/netplay/netplay.o
    endif
 
    # Retro Achievements (also depends on threads)
@@ -1080,7 +1080,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += input/input_remote.o \
-				 cores/libretro-net-retropad/net_retropad_core.o
+             cores/libretro-net-retropad/net_retropad_core.o
    endif
 endif
 

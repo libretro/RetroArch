@@ -34,7 +34,7 @@ endif
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
 ifeq ($(MISSING_DECLS), 1)
-	DEFINES += -Werror=missing-declarations
+   DEFINES += -Werror=missing-declarations
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
@@ -69,12 +69,12 @@ OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 ifeq ($(CXX_BUILD), 1)
    LINK = $(CXX)
    CFLAGS   := $(CXXFLAGS) -xc++
-	CFLAGS   += -DCXX_BUILD
-	CXXFLAGS += -DCXX_BUILD
+   CFLAGS   += -DCXX_BUILD
+   CXXFLAGS += -DCXX_BUILD
 else
-	ifeq ($(NEED_CXX_LINKER),1)
-	   LINK = $(CXX)
-	else ifeq ($(findstring Win32,$(OS)),)
+   ifeq ($(NEED_CXX_LINKER),1)
+      LINK = $(CXX)
+   else ifeq ($(findstring Win32,$(OS)),)
       LINK = $(CC)
    else
       # directx-related code is c++
