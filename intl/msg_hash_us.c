@@ -3236,6 +3236,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Undo Load State";
       case MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE:
          return "Undo Save State";
+      case MSG_UNDID_LOAD_STATE:
+         return "Undid load state.";
       case MENU_ENUM_LABEL_VALUE_RESUME_CONTENT:
          return "Resume";
       case MENU_ENUM_LABEL_VALUE_INPUT_DRIVER:
