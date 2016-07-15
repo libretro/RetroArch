@@ -157,6 +157,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
    retro_assert(dynamic->type == VULKAN_TEXTURE_DYNAMIC);
    retro_assert(staging->type == VULKAN_TEXTURE_STAGING);
 
+   vulkan_sync_texture_to_gpu(vk, staging);
    vulkan_transition_texture(vk, staging);
 
    /* We don't have to sync against previous TRANSFER, 
@@ -239,6 +240,30 @@ static void vulkan_track_dealloc(VkImage image)
    retro_assert(0 && "Couldn't find VkImage in dealloc!");
 }
 #endif
+
+void vulkan_sync_texture_to_gpu(vk_t *vk, const struct vk_texture *tex)
+{
+   VkMappedMemoryRange range = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+   if (!tex || !tex->need_manual_cache_management || tex->memory == VK_NULL_HANDLE)
+      return;
+
+   range.memory = tex->memory;
+   range.offset = 0;
+   range.size = VK_WHOLE_SIZE;
+   vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
+}
+
+void vulkan_sync_texture_to_cpu(vk_t *vk, const struct vk_texture *tex)
+{
+   VkMappedMemoryRange range = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+   if (!tex || !tex->need_manual_cache_management || tex->memory == VK_NULL_HANDLE)
+      return;
+
+   range.memory = tex->memory;
+   range.offset = 0;
+   range.size = VK_WHOLE_SIZE;
+   vkInvalidateMappedMemoryRanges(vk->context->device, 1, &range);
+}
 
 struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
@@ -340,14 +365,18 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          break;
 
       default:
+         /* Try to find a memory type which is cached, even if it means manual cache management. */
          alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
                &vk->context->memory_properties,
                mem_reqs.memoryTypeBits,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
                VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+         tex.need_manual_cache_management =
+            (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
+             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0;
          break;
    }
 
@@ -472,6 +501,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
          memcpy(dst, src, width * bpp);
 
+      vulkan_sync_texture_to_gpu(vk, &tex);
       vkUnmapMemory(device, tex.memory);
    }
    else if (initial && type == VULKAN_TEXTURE_STATIC)

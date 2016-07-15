@@ -1448,22 +1448,6 @@ static void vulkan_readback(vk_t *vk)
          VK_PIPELINE_STAGE_HOST_BIT);
 }
 
-static void vulkan_flush_caches(vk_t *vk)
-{
-   VkMemoryBarrier barrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER };
-   barrier.srcAccessMask = 0;
-   barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_UNIFORM_READ_BIT;
-
-   vkCmdPipelineBarrier(vk->cmd,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_VERTEX_INPUT_BIT |
-         VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         false,
-         1, &barrier,
-         0, NULL, 0, NULL);
-}
-
 static bool vulkan_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -1521,8 +1505,6 @@ static bool vulkan_frame(void *data, const void *frame,
    performance_counter_stop(&begin_cmd);
 
    memset(&vk->tracker, 0, sizeof(vk->tracker));
-
-   vulkan_flush_caches(vk);
 
    waits_for_semaphores = vk->hw.enable && frame &&
                           !vk->hw.num_cmd && vk->hw.valid_semaphore;
@@ -1591,6 +1573,8 @@ static bool vulkan_frame(void *data, const void *frame,
          vulkan_copy_staging_to_dynamic(vk, vk->cmd,
                &chain->texture_optimal, &chain->texture);
       }
+      else
+         vulkan_sync_texture_to_gpu(vk, &chain->texture);
 
       vk->last_valid_index = frame_index;
    }
@@ -2016,6 +2000,7 @@ static void vulkan_set_texture_frame(void *data,
    for (y = 0; y < height; y++, dst += texture->stride, src += stride)
       memcpy(dst, src, stride);
 
+   vulkan_sync_texture_to_gpu(vk, texture);
    vkUnmapMemory(vk->context->device, texture->memory);
 
    vk->menu.alpha      = alpha;
@@ -2164,6 +2149,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
       vkMapMemory(vk->context->device, staging->memory,
             staging->offset, staging->size, 0, (void**)&src);
 
+      vulkan_sync_texture_to_cpu(vk, staging);
+
       vk->readback.scaler.in_stride  = staging->stride;
       vk->readback.scaler.out_stride = -(int)vk->vp.width * 3;
       scaler_ctx_scale(&vk->readback.scaler, buffer, src);
@@ -2186,6 +2173,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
       if (!staging->mapped)
          vulkan_map_persistent_texture(
                vk->context->device, staging);
+
+      vulkan_sync_texture_to_cpu(vk, staging);
 
       {
          unsigned x, y;
