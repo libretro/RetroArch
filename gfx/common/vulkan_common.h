@@ -170,6 +170,7 @@ struct vk_texture
    VkImageLayout layout;
    enum vk_texture_type type;
    bool default_smooth;
+   bool need_manual_cache_management;
 };
 
 struct vk_buffer
@@ -405,6 +406,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       VkFormat format,
       const void *initial, const VkComponentMapping *swizzle,
       enum vk_texture_type type);
+
+void vulkan_sync_texture_to_gpu(vk_t *vk, const struct vk_texture *tex);
+void vulkan_sync_texture_to_cpu(vk_t *vk, const struct vk_texture *tex);
 
 void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture);
 
