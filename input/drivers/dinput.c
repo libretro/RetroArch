@@ -221,11 +221,11 @@ static void dinput_poll(void *data)
       di->mouse_x = di->window_pos_x;
       di->mouse_y = di->window_pos_y;
 
+
+	  if (!mouse_state.rgbButtons[0])
+		  unset_doubleclick_on_titlebar();
       if (doubleclick_on_titlebar_pressed())
-      {
          di->mouse_l  = 0;
-         unset_doubleclick_on_titlebar();
-      }
       else
          di->mouse_l  = mouse_state.rgbButtons[0];
       di->mouse_r     = mouse_state.rgbButtons[1];
