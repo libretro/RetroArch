@@ -3235,6 +3235,195 @@ no_playlists:
    return 0;
 }
 
+static int menu_displaylist_parse_cores(
+      menu_handle_t       *menu,
+      menu_displaylist_info_t *info,
+      enum menu_displaylist_ctl_state type)
+{
+   size_t i, list_size;
+   bool filter_ext              = true;
+   struct string_list *str_list = NULL;
+   unsigned items_found         = 0;
+   settings_t *settings         = config_get_ptr();
+
+   if (!*info->path)
+   {
+      if (frontend_driver_parse_drive_list(info->list) != 0)
+         menu_entries_append_enum(info->list, "/", "",
+               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+      return 0;
+   }
+
+   str_list = dir_list_new(info->path,
+         filter_ext ? info->exts : NULL,
+         true, true);
+
+   {
+      char out_dir[PATH_MAX_LENGTH] = {0};
+      fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
+
+      if (string_is_empty(out_dir))
+      {
+         menu_entries_prepend(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
+               info->path,
+               MENU_ENUM_LABEL_PARENT_DIRECTORY,
+               FILE_TYPE_PARENT_DIRECTORY, 0, 0);
+      }
+   }
+
+   if (!str_list)
+   {
+      const char *str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND);
+
+      menu_entries_append_enum(info->list, str, "",
+            MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
+      return 0;
+   }
+
+   dir_list_sort(str_list, true);
+
+   list_size = str_list->size;
+
+   if (list_size == 0)
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+            MENU_ENUM_LABEL_NO_ITEMS,
+            MENU_SETTING_NO_ITEM, 0, 0);
+#ifdef HAVE_NETWORKING
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
+            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+            MENU_SETTING_ACTION, 0, 0);
+#endif
+
+      string_list_free(str_list);
+
+      return 0;
+   }
+
+   for (i = 0; i < list_size; i++)
+   {
+      bool is_dir;
+      char label[PATH_MAX_LENGTH]   = {0};
+      const char *path              = NULL;
+      enum msg_file_type file_type  = FILE_TYPE_NONE;
+
+      switch (str_list->elems[i].attr.i)
+      {
+         case RARCH_DIRECTORY:
+            file_type = FILE_TYPE_DIRECTORY;
+            break;
+         case RARCH_COMPRESSED_ARCHIVE:
+            file_type = FILE_TYPE_CARCHIVE;
+            break;
+         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
+            file_type = FILE_TYPE_IN_CARCHIVE;
+            break;
+         case RARCH_PLAIN_FILE:
+         default:
+            file_type = (enum msg_file_type)info->type_default;
+            break;
+      }
+
+      is_dir = (file_type == FILE_TYPE_DIRECTORY);
+
+      if (!is_dir)
+      {
+         if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
+            continue;
+         if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
+            continue;
+      }
+
+      /* Need to preserve slash first time. */
+      path = str_list->elems[i].data;
+
+      if (*info->path)
+         path = path_basename(path);
+
+#ifndef HAVE_DYNAMIC
+      if (frontend_driver_has_fork())
+      {
+         char salamander_name[PATH_MAX_LENGTH] = {0};
+
+         if (frontend_driver_get_salamander_basename(
+                  salamander_name, sizeof(salamander_name)))
+         {
+            if (string_is_equal_noncase(path, salamander_name))
+               continue;
+         }
+
+         if (is_dir)
+            continue;
+      }
+#endif
+      /* Compressed cores are unsupported */
+      if (file_type == FILE_TYPE_CARCHIVE)
+         continue;
+
+      file_type = is_dir ? FILE_TYPE_DIRECTORY : FILE_TYPE_CORE;
+
+      items_found++;
+      menu_entries_append_enum(info->list, path, label,
+            MSG_UNKNOWN,
+            file_type, 0, 0);
+   }
+
+   string_list_free(str_list);
+
+   if (items_found == 0)
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+            MENU_ENUM_LABEL_NO_ITEMS,
+            MENU_SETTING_NO_ITEM, 0, 0);
+
+      return 0;
+   }
+
+   {
+      enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
+      core_info_list_t *list         = NULL;
+      const char *dir                = NULL;
+
+      core_info_get_list(&list);
+
+      menu_entries_get_last_stack(&dir, NULL, NULL, &enum_idx, NULL);
+
+      list_size = file_list_get_size(info->list);
+
+      for (i = 0; i < list_size; i++)
+      {
+         char core_path[PATH_MAX_LENGTH]    = {0};
+         char display_name[PATH_MAX_LENGTH] = {0};
+         unsigned type                      = 0;
+         const char *path                   = NULL;
+
+         menu_entries_get_at_offset(info->list,
+               i, &path, NULL, &type, NULL,
+               NULL);
+
+         if (type != FILE_TYPE_CORE)
+            continue;
+
+         fill_pathname_join(core_path, dir, path, sizeof(core_path));
+
+         if (core_info_list_get_display_name(list,
+                  core_path, display_name, sizeof(display_name)))
+            menu_entries_set_alt_at_offset(info->list, i, display_name);
+      }
+      info->need_sort = true;
+      return 0;
+   }
+
+   return 0;
+}
+
 static int menu_displaylist_parse_generic(
       menu_handle_t       *menu,
       menu_displaylist_info_t *info,
@@ -3285,21 +3474,6 @@ static int menu_displaylist_parse_generic(
             MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
             FILE_TYPE_USE_DIRECTORY, 0 ,0);
 
-   if (type == DISPLAYLIST_CORES)
-   {
-      char out_dir[PATH_MAX_LENGTH] = {0};
-      fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
-
-      if (string_is_empty(out_dir))
-      {
-         menu_entries_prepend(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
-               info->path,
-               MENU_ENUM_LABEL_PARENT_DIRECTORY,
-               FILE_TYPE_PARENT_DIRECTORY, 0, 0);
-      }
-   }
-
    if (!str_list)
    {
       const char *str = path_is_compressed
@@ -3322,14 +3496,6 @@ static int menu_displaylist_parse_generic(
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0);
-#ifdef HAVE_NETWORKING
-      if (type == DISPLAYLIST_CORES)
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-               MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-               MENU_SETTING_ACTION, 0, 0);
-#endif
 
       string_list_free(str_list);
 
@@ -3388,31 +3554,7 @@ static int menu_displaylist_parse_generic(
       if (*info->path && !path_is_compressed)
          path = path_basename(path);
 
-      if (type == DISPLAYLIST_CORES)
-      {
-#ifndef HAVE_DYNAMIC
-         if (frontend_driver_has_fork())
-         {
-            char salamander_name[PATH_MAX_LENGTH] = {0};
-
-            if (frontend_driver_get_salamander_basename(
-                     salamander_name, sizeof(salamander_name)))
-            {
-               if (string_is_equal_noncase(path, salamander_name))
-                  continue;
-            }
-
-            if (is_dir)
-               continue;
-         }
-#endif
-         /* Compressed cores are unsupported */
-         if (file_type == FILE_TYPE_CARCHIVE)
-            continue;
-
-         file_type = is_dir ? FILE_TYPE_DIRECTORY : FILE_TYPE_CORE;
-      }
-      else if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION))
+      if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION))
       {
          if (is_dir)
             file_type = FILE_TYPE_DIRECTORY;
@@ -3467,42 +3609,6 @@ static int menu_displaylist_parse_generic(
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0);
 
-      return 0;
-   }
-
-   if (type == DISPLAYLIST_CORES)
-   {
-      enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-      core_info_list_t *list         = NULL;
-      const char *dir                = NULL;
-
-      core_info_get_list(&list);
-
-      menu_entries_get_last_stack(&dir, NULL, NULL, &enum_idx, NULL);
-
-      list_size = file_list_get_size(info->list);
-
-      for (i = 0; i < list_size; i++)
-      {
-         char core_path[PATH_MAX_LENGTH]    = {0};
-         char display_name[PATH_MAX_LENGTH] = {0};
-         unsigned type                      = 0;
-         const char *path                   = NULL;
-
-         menu_entries_get_at_offset(info->list,
-               i, &path, NULL, &type, NULL,
-               NULL);
-
-         if (type != FILE_TYPE_CORE)
-            continue;
-
-         fill_pathname_join(core_path, dir, path, sizeof(core_path));
-
-         if (core_info_list_get_display_name(list,
-                  core_path, display_name, sizeof(display_name)))
-            menu_entries_set_alt_at_offset(info->list, i, display_name);
-      }
-      info->need_sort = true;
       return 0;
    }
 
@@ -5504,9 +5610,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->need_push    = true;
          }
          break;
+      case DISPLAYLIST_CORES:
+         if (menu_displaylist_parse_cores(menu, info, type) == 0)
+         {
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
+         break;
       case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_DATABASES:
-      case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_SHADER_PASS:
       case DISPLAYLIST_SHADER_PRESET:
