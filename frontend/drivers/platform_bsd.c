@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <signal.h>
+#include <stdlib.h>
 
 static volatile sig_atomic_t bsd_sighandler_quit;
 
@@ -75,7 +76,7 @@ frontend_ctx_driver_t frontend_ctx_bsd = {
    NULL,                         /* parse_drive_list */
    NULL,                         /* get_mem_total */
    NULL,                         /* get_mem_free */
-   frontend_bsd_install_signal_handler,
+   frontend_bsd_install_signal_handlers,
    frontend_bsd_get_signal_handler_state,
    frontend_bsd_set_signal_handler_state,
    frontend_bsd_destroy_signal_handler_state,
