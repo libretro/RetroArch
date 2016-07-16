@@ -598,7 +598,7 @@ static void menu_action_setting_disp_set_label_menu_more(
       const char *path,
       char *s2, size_t len2)
 {
-   strlcpy(s, "...", len);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE), len);
    *w = 19;
    strlcpy(s2, path, len2);
 }
