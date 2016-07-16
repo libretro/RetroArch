@@ -22,6 +22,14 @@
 
 static volatile sig_atomic_t bsd_sighandler_quit;
 
+static void frontend_bsd_sighandler(int sig)
+{
+   (void)sig;
+   if (bsd_sighandler_quit)
+      exit(1);
+   bsd_sighandler_quit = 1;
+}
+
 static void frontend_bsd_install_signal_handlers(void)
 {
    struct sigaction sa;
