@@ -3331,14 +3331,6 @@ static int menu_displaylist_parse_cores(
 
       is_dir = (file_type == FILE_TYPE_DIRECTORY);
 
-      if (!is_dir)
-      {
-         if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
-            continue;
-         if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
-            continue;
-      }
-
       /* Need to preserve slash first time. */
       path = str_list->elems[i].data;
 
