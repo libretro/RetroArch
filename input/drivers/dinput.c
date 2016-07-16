@@ -181,8 +181,16 @@ static void *dinput_init(void)
    return di;
 }
 
-extern "C" bool doubleclick_on_titlebar_pressed(void);
-extern "C" void unset_doubleclick_on_titlebar(void);
+#if __cplusplus
+extern "C" {
+#endif
+
+bool doubleclick_on_titlebar_pressed(void);
+void unset_doubleclick_on_titlebar(void);
+
+#if __cplusplus
+}
+#endif
 
 static void dinput_poll(void *data)
 {
