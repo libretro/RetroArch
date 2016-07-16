@@ -890,8 +890,11 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 #endif
          )
    {
-      mouse_oldleft   = false;
-      mouse_oldright  = false;
+      /* HACK: Need to lie to avoid false hits if mouse is held when entering the RetroArch window */
+      /* this happens if, for example, someone double clicks the window border to maximize it */
+      /* the proper fix is, of course, triggering on WM_LBUTTONDOWN rather than this state change */
+      mouse_oldleft   = true;
+      mouse_oldright  = true;
       return 0;
    }
 
