@@ -238,6 +238,9 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       const core_info_t *core_info     = NULL;
       settings_t *settings             = config_get_ptr();
 
+	  if (!settings)
+		  return 0;
+
       DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
 
       core_info_get_list(&core_info_list);
@@ -261,10 +264,10 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
          {
             const core_info_t *info = (const core_info_t*)&core_info[i];
 
-            if(strcmp(info->systemname, current_core->systemname))
+            if(!string_is_equal(info->systemname, current_core->systemname))
                break;
 
-            if(!strcmp(settings->path.libretro,info->path))
+            if(string_is_equal(settings->path.libretro, info->path))
             {
                /* Our previous core supports the current rom */
                content_ctx_info_t content_info = {0};
