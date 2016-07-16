@@ -181,6 +181,8 @@ static void *dinput_init(void)
    return di;
 }
 
+extern bool doubleclick_on_titlebar;
+
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
@@ -218,9 +220,10 @@ static void dinput_poll(void *data)
       di->mouse_x = di->window_pos_x;
       di->mouse_y = di->window_pos_y;
 
-      di->mouse_l  = mouse_state.rgbButtons[0];
-      di->mouse_r  = mouse_state.rgbButtons[1];
-      di->mouse_m  = mouse_state.rgbButtons[2];
+      if (!doubleclick_on_titlebar)
+         di->mouse_l  = mouse_state.rgbButtons[0];
+      di->mouse_r     = mouse_state.rgbButtons[1];
+      di->mouse_m     = mouse_state.rgbButtons[2];
 
       /* No simple way to get absolute coordinates
        * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */

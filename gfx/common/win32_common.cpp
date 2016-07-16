@@ -50,6 +50,8 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
 extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
 
+extern "C" bool doubleclick_on_titlebar;
+
 unsigned g_resize_width;
 unsigned g_resize_height;
 bool g_restore_desktop;
@@ -299,6 +301,11 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
 {
    settings_t *settings     = config_get_ptr();
 
+   doubleclick_on_titlebar = false;
+
+   if (message == WM_NCLBUTTONDBLCLK)
+      doubleclick_on_titlebar = true;
+
    switch (message)
    {
       case WM_SYSCOMMAND:
@@ -357,6 +364,11 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
    LRESULT ret;
    bool quit = false;
 
+   doubleclick_on_titlebar = false;
+
+   if (message == WM_NCLBUTTONDBLCLK)
+      doubleclick_on_titlebar = true;
+
    switch (message)
    {
       case WM_DROPFILES:
@@ -401,6 +413,11 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
    LRESULT ret;
    bool quit = false;
    settings_t *settings     = config_get_ptr();
+
+   doubleclick_on_titlebar = false;
+
+   if (message == WM_NCLBUTTONDBLCLK)
+      doubleclick_on_titlebar = true;
 
    switch (message)
    {
