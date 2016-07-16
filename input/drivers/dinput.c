@@ -181,7 +181,8 @@ static void *dinput_init(void)
    return di;
 }
 
-extern bool doubleclick_on_titlebar;
+extern "C" bool doubleclick_on_titlebar_pressed(void);
+extern "C" void unset_doubleclick_on_titlebar(void);
 
 static void dinput_poll(void *data)
 {
@@ -220,7 +221,12 @@ static void dinput_poll(void *data)
       di->mouse_x = di->window_pos_x;
       di->mouse_y = di->window_pos_y;
 
-      if (!doubleclick_on_titlebar)
+      if (doubleclick_on_titlebar_pressed())
+      {
+         di->mouse_l  = 0;
+         unset_doubleclick_on_titlebar();
+      }
+      else
          di->mouse_l  = mouse_state.rgbButtons[0];
       di->mouse_r     = mouse_state.rgbButtons[1];
       di->mouse_m     = mouse_state.rgbButtons[2];

@@ -50,8 +50,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
 extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
 
-extern "C" bool doubleclick_on_titlebar;
-
+bool doubleclick_on_titlebar = false;
 unsigned g_resize_width;
 unsigned g_resize_height;
 bool g_restore_desktop;
@@ -77,6 +76,19 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 static HMONITOR win32_monitor_last;
 static unsigned win32_monitor_count;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
+
+extern "C"
+{
+	bool doubleclick_on_titlebar_pressed(void)
+	{
+		return doubleclick_on_titlebar;
+	}
+
+        void unset_doubleclick_on_titlebar(void)
+        {
+           doubleclick_on_titlebar = false;
+        }
+};
 
 INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message, 
         WPARAM wParam, LPARAM lParam)
@@ -301,8 +313,6 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
 {
    settings_t *settings     = config_get_ptr();
 
-   doubleclick_on_titlebar = false;
-
    if (message == WM_NCLBUTTONDBLCLK)
       doubleclick_on_titlebar = true;
 
@@ -364,8 +374,6 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
    LRESULT ret;
    bool quit = false;
 
-   doubleclick_on_titlebar = false;
-
    if (message == WM_NCLBUTTONDBLCLK)
       doubleclick_on_titlebar = true;
 
@@ -413,8 +421,6 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
    LRESULT ret;
    bool quit = false;
    settings_t *settings     = config_get_ptr();
-
-   doubleclick_on_titlebar = false;
 
    if (message == WM_NCLBUTTONDBLCLK)
       doubleclick_on_titlebar = true;
