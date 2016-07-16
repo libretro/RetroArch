@@ -569,7 +569,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
 
       frontend->get_os(tmp, sizeof(tmp), &major, &minor);
 
-      if (major >= 6 && minor >= 1)
+      if (major*100+minor >= 601)
       {
          /* Windows 7, 8, 10 codepath */
          typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
