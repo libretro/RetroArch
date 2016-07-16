@@ -270,7 +270,6 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
                      CORE_TYPE_PLAIN,
                      CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                      NULL, NULL);
-               DragFinish((HDROP)wparam);
                return 0;
             }
          }
@@ -302,7 +301,6 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
                   NULL, NULL);
          }
       }
-      DragFinish((HDROP)wparam);
    }
 
    return 0;
@@ -329,7 +327,13 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          }
          break;
       case WM_DROPFILES:
-         return win32_drag_query_file(hwnd, wparam);
+         {
+            int ret = win32_drag_query_file(hwnd, wparam);
+            DragFinish((HDROP)wparam);
+            if (ret != 0)
+               return 0;
+         }
+         break;
       case WM_CHAR:
       case WM_KEYDOWN:
       case WM_KEYUP:
