@@ -241,6 +241,10 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
 
       core_info_get_list(&core_info_list);
+
+	  if (!core_info_list)
+		  return 0;
+
       core_info_list_get_supported_cores(core_info_list,
             (const char*)szFilename, &core_info, &list_size);
 
