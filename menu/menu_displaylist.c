@@ -3419,7 +3419,8 @@ static int menu_displaylist_parse_cores(
 static int menu_displaylist_parse_generic(
       menu_handle_t       *menu,
       menu_displaylist_info_t *info,
-      enum menu_displaylist_ctl_state type)
+      enum menu_displaylist_ctl_state type,
+      bool extensions_honored)
 {
    size_t i, list_size;
    bool path_is_compressed      = false;
@@ -3442,6 +3443,9 @@ static int menu_displaylist_parse_generic(
 
    if (string_is_equal(info->label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE)))
       filter_ext = false;
+
+   if (extensions_honored)
+      filter_ext = true;
 
    if (path_is_compressed)
       str_list = compressed_file_list_new(info->path, info->exts);
@@ -3610,11 +3614,12 @@ static int menu_displaylist_parse_generic(
    if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
       return 0;
 
-   menu_entries_prepend(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
-         msg_hash_to_str(MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
-         MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-         0, 0 ,0);
+   if (!extensions_honored)
+      menu_entries_prepend(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
+            msg_hash_to_str(MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
+            MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+            0, 0 ,0);
 
    return 0;
 }
@@ -3838,6 +3843,7 @@ void menu_displaylist_reset_filebrowser(void)
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
+   bool extensions_honored       = false;
    menu_ctx_displaylist_t disp_list;
 #ifdef HAVE_SHADER_MANAGER
    video_shader_ctx_t shader_info;
@@ -5609,9 +5615,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->need_push    = true;
          }
          break;
-      case DISPLAYLIST_DEFAULT:
       case DISPLAYLIST_DATABASES:
-      case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_SHADER_PASS:
       case DISPLAYLIST_SHADER_PRESET:
       case DISPLAYLIST_DATABASE_CURSORS:
@@ -5624,8 +5628,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_REMAP_FILES:
       case DISPLAYLIST_RECORD_CONFIG_FILES:
       case DISPLAYLIST_CONFIG_FILES:
+         extensions_honored = true;
+         /* fall-through */
+      case DISPLAYLIST_DEFAULT:
+      case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CONTENT_HISTORY:
-         if (menu_displaylist_parse_generic(menu, info, type) == 0)
+         if (menu_displaylist_parse_generic(menu, info, type, extensions_honored) == 0)
          {
             info->need_refresh = true;
             info->need_push    = true;
