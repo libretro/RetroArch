@@ -29,7 +29,9 @@
 #ifndef _XBOX
 #pragma comment( lib, "d3d9" )
 #pragma comment( lib, "d3dx9" )
+#ifdef HAVE_CG
 #pragma comment( lib, "cgd3d9" )
+#endif
 #pragma comment( lib, "dxguid" )
 #endif
 #endif
