@@ -3604,14 +3604,14 @@ static int menu_displaylist_parse_generic(
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0);
 
-      return 0;
+      goto end;
    }
 
    /* We don't want to show 'filter by extension' for this. */
    if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
-      return 0;
+      goto end;
    if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
-      return 0;
+      goto end;
 
    if (!extensions_honored)
       menu_entries_prepend(info->list,
@@ -3619,6 +3619,13 @@ static int menu_displaylist_parse_generic(
             msg_hash_to_str(MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE),
             MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
             0, 0 ,0);
+
+end:
+   menu_entries_prepend(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
+         info->path,
+         MENU_ENUM_LABEL_PARENT_DIRECTORY,
+         FILE_TYPE_PARENT_DIRECTORY, 0, 0);
 
    return 0;
 }
