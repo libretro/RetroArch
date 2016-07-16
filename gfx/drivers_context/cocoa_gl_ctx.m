@@ -427,7 +427,7 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
    window    = ui_companion_driver_get_window_ptr();
    view.data = (CocoaView*)nsview_get_ptr();
 
-   if (window)
+   if (window && *buf)
        window->set_title(&view, buf);
 #endif
     if (settings->fps_show)
