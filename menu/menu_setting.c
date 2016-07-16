@@ -6598,7 +6598,7 @@ static bool setting_append_list(
                msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY),
                menu_wallpaper_opacity,
-               "%.3f %",
+               "%.3f",
                &group_info,
                &subgroup_info,
                parent_group,
