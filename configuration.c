@@ -604,7 +604,7 @@ static void config_set_defaults(void)
    if (first_initialized)
       settings->menu_show_start_screen         = default_menu_show_start_screen;
    settings->menu.pause_libretro               = true;
-   settings->menu.mouse.enable                 = false;
+   settings->menu.mouse.enable                 = def_mouse_enable;
    settings->menu.pointer.enable               = pointer_enable;
    settings->menu.timedate_enable              = true;
    settings->menu.core_enable                  = true;
