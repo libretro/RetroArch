@@ -381,6 +381,8 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
    return 0;
 }
 
+extern void ui_window_win32_set_droppable(void *data, bool droppable);
+
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -410,15 +412,13 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       case WM_CREATE:
          {
             ui_window_win32_t win32_window;
-            const ui_window_t *window = ui_companion_driver_get_window_ptr();
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
             g_inited              = true;
             
             win32_window.hwnd     = hwnd;
 
-            if (window)
-               window->set_droppable(&win32_window, true);
+            ui_window_win32_set_droppable(&win32_window, true);
          }
          return 0;
    }
@@ -459,13 +459,11 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
       case WM_CREATE:
          {
             ui_window_win32_t win32_window;
-            const ui_window_t *window = ui_companion_driver_get_window_ptr();
             win32_window.hwnd           = hwnd;
 
             create_graphics_context(hwnd, &g_quit);
 
-            if (window)
-               window->set_droppable(&win32_window, true);
+            ui_window_win32_set_droppable(&win32_window, true);
          }
          return 0;
    }
