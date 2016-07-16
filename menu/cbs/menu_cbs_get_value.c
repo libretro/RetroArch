@@ -1426,7 +1426,7 @@ static void menu_action_setting_disp_set_label_content_history(
       char *s2, size_t len2)
 {
    *s = '\0';
-   *w = strlen(label);
+   *w = 19;
 
    menu_setting_get_label(list, s,
          len, w, type, label, entry_label, i);
