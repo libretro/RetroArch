@@ -2565,7 +2565,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS:
          return "Internal storage status";
       case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
-         return "..";
+         return "Parent directory";
       case MENU_ENUM_LABEL_VALUE_RUN:
          return "Run";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X:
