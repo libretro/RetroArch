@@ -1370,25 +1370,29 @@ static void xmb_context_reset_horizontal_list(
             "-content.png",
             sizeof(content_texturepath));
 
-      image_texture_load(&ti, texturepath);
-      
-      if(ti.pixels) {
-        video_driver_texture_unload(&node->icon);
-        video_driver_texture_load(&ti,
-                TEXTURE_FILTER_MIPMAP_LINEAR, &node->icon);
+      if (image_texture_load(&ti, texturepath))
+      {
+         if(ti.pixels)
+         {
+            video_driver_texture_unload(&node->icon);
+            video_driver_texture_load(&ti,
+                  TEXTURE_FILTER_MIPMAP_LINEAR, &node->icon);
+         }
+
+         image_texture_free(&ti);
       }
 
-      image_texture_free(&ti);
+      if (image_texture_load(&ti, content_texturepath))
+      {
+         if(ti.pixels)
+         {
+            video_driver_texture_unload(&node->content_icon);
+            video_driver_texture_load(&ti,
+                  TEXTURE_FILTER_MIPMAP_LINEAR, &node->content_icon);
+         }
 
-      image_texture_load(&ti, content_texturepath);
-      
-      if(ti.pixels) {
-        video_driver_texture_unload(&node->content_icon);
-        video_driver_texture_load(&ti,
-                TEXTURE_FILTER_MIPMAP_LINEAR, &node->content_icon);
+         image_texture_free(&ti);
       }
-      
-      image_texture_free(&ti);
    }
 
    xmb_toggle_horizontal_list(xmb);
