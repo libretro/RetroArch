@@ -1365,11 +1365,6 @@ static void xmb_context_reset_horizontal_list(
             file_path_str(FILE_PATH_PNG_EXTENSION),
             sizeof(texturepath));
 
-      fill_pathname_join_concat(content_texturepath, iconpath,
-            sysname, 
-            "-content.png",
-            sizeof(content_texturepath));
-
       if (image_texture_load(&ti, texturepath))
       {
          if(ti.pixels)
@@ -1381,6 +1376,11 @@ static void xmb_context_reset_horizontal_list(
 
          image_texture_free(&ti);
       }
+
+      fill_pathname_join_concat(content_texturepath, iconpath,
+            sysname, 
+            "-content.png",
+            sizeof(content_texturepath));
 
       if (image_texture_load(&ti, content_texturepath))
       {
