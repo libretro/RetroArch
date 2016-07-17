@@ -2171,7 +2171,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY:
          return "Unlocked";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
-         return "Unlocked";
+         return "Locked";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE:
          return "Late";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL:
