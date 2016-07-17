@@ -315,7 +315,7 @@ static state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
    if (!state)
       return NULL;
 
-   state->blocksize   = (state_size + sizeof(uint16_t) - 1) & ~sizeof(uint16_t);
+   state->blocksize   = (state_size + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
    /* the compressed data is surrounded by pointers to the other side */
    state->maxcompsize = state_manager_raw_maxsize(state_size) + sizeof(size_t) * 2;
    state->data        = (uint8_t*)malloc(buffer_size);
