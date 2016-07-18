@@ -195,8 +195,15 @@ static core_info_list_t *core_info_list_new(void)
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
-   struct string_list *contents     = 
-      dir_list_new_special(NULL, DIR_LIST_CORES, NULL);
+   struct string_list *contents     = NULL;
+   settings_t *settings             = config_get_ptr();
+
+   if (!settings)
+      return NULL;
+
+   contents = dir_list_new_special(
+         settings->directory.libretro,
+         DIR_LIST_CORES, NULL);
 
    if (!contents)
       return NULL;

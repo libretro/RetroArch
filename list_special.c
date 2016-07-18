@@ -22,7 +22,6 @@
 
 #include "list_special.h"
 #include "frontend/frontend_driver.h"
-#include "configuration.h"
 #include "core_info.h"
 
 #ifdef HAVE_MENU
@@ -54,10 +53,8 @@ struct string_list *dir_list_new_special(const char *input_dir,
    const char *dir                   = NULL;
    const char *exts                  = NULL;
    bool include_dirs                 = false;
-   settings_t *settings              = config_get_ptr();
 
    (void)input_dir;
-   (void)settings;
 
    switch (type)
    {
@@ -66,7 +63,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
          exts = filter;
          break;
       case DIR_LIST_CORES:
-         dir  = settings->directory.libretro;
+         dir  = input_dir;
 
          if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
             return NULL;
@@ -109,11 +106,11 @@ struct string_list *dir_list_new_special(const char *input_dir,
          }
          break;
       case DIR_LIST_COLLECTIONS:
-         dir  = settings->directory.playlist;
+         dir  = input_dir;
          exts = "lpl";
          break;
       case DIR_LIST_DATABASES:
-         dir  = settings->path.content_database;
+         dir  = input_dir;
          exts = "rdb";
          break;
       case DIR_LIST_PLAIN:

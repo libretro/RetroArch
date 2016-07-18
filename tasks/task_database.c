@@ -564,6 +564,7 @@ static void task_database_cleanup_state(
 
 static void task_database_handler(retro_task_t *task)
 {
+   settings_t *settings             = config_get_ptr();
    db_handle_t *db                  = (db_handle_t*)task->state;
    database_info_handle_t  *dbinfo  = db->handle;
    database_state_handle_t *dbstate = &db->state;
@@ -578,7 +579,8 @@ static void task_database_handler(retro_task_t *task)
       case DATABASE_STATUS_ITERATE_BEGIN:
          if (dbstate && !dbstate->list)
             dbstate->list = dir_list_new_special(
-                  NULL, DIR_LIST_DATABASES, NULL);
+                  settings->path.content_database,
+                  DIR_LIST_DATABASES, NULL);
          dbinfo->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
