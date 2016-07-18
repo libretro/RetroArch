@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <lists/dir_list.h>
+#include <lists/string_list.h>
 #include <compat/strl.h>
 
 #include "list_special.h"
@@ -84,23 +85,30 @@ struct string_list *dir_list_new_special(const char *input_dir,
          }
          break;
       case DIR_LIST_SHADERS:
-         dir  = settings->directory.video_shader;
+         {
+            union string_list_elem_attr attr = {0};
+            struct string_list *str_list     = string_list_new();
+
+            if (!str_list)
+               return NULL;
+
+            dir  = settings->directory.video_shader;
 #ifdef HAVE_CG
-         strlcat(ext_shaders, "cg|cgp", sizeof(ext_shaders));
+            string_list_append(str_list, "cg", attr);
+            string_list_append(str_list, "cgp", attr);
 #endif
 #ifdef HAVE_GLSL
-         if (strstr(ext_shaders, "cg|cgp"))
-            strlcat(ext_shaders, "|glsl|glslp", sizeof(ext_shaders));
-         else
-            strlcat(ext_shaders, "glsl|glslp", sizeof(ext_shaders));
+            string_list_append(str_list, "glsl", attr);
+            string_list_append(str_list, "glslp", attr);
 #endif
 #ifdef HAVE_VULKAN
-         if (strstr(ext_shaders, "cg|cgp") || strstr(ext_shaders, "glsl|glslp"))
-            strlcat(ext_shaders, "|slang|slangp", sizeof(ext_shaders));
-         else
-            strlcat(ext_shaders, "slang|slangp", sizeof(ext_shaders));
+            string_list_append(str_list, "slang", attr);
+            string_list_append(str_list, "slangp", attr);
 #endif
-         exts = ext_shaders;
+            string_list_join_concat(ext_shaders, sizeof(ext_shaders), str_list, "|");
+            string_list_free(str_list);
+            exts = ext_shaders;
+         }
          break;
       case DIR_LIST_COLLECTIONS:
          dir  = settings->directory.playlist;
