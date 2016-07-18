@@ -504,9 +504,12 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
 static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
       bool pressed_next, bool pressed_prev)
 {
+
    char msg[128]               = {0};
    const char *shader          = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
+
+   RARCH_LOG("SWITCH \n");
 
    if (!dir_list || !dir_list->list)
       return;
@@ -527,6 +530,7 @@ static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
       return;
 
    shader   = dir_list->list->elems[dir_list->ptr].data;
+   RARCH_LOG("SWITCH %s,\n", shader);
 
    switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(shader))))
    {
@@ -701,10 +705,14 @@ static bool runloop_check_state(event_cmd_state_t *cmd,
 
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
       runloop_check_movie();
-
-   runloop_check_shader_dir(shader_dir,
-         runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
-         runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
+   
+   if (runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT) || 
+      runloop_cmd_triggered(cmd, RARCH_SHADER_PREV))
+   {
+      runloop_check_shader_dir(shader_dir,
+            runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
+            runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
+   }
 
    if (runloop_cmd_triggered(cmd, RARCH_DISK_EJECT_TOGGLE))
       command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);

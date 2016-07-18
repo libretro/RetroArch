@@ -89,10 +89,16 @@ struct string_list *dir_list_new_special(const char *input_dir,
          strlcat(ext_shaders, "cg|cgp", sizeof(ext_shaders));
 #endif
 #ifdef HAVE_GLSL
-         strlcat(ext_shaders, "glsl|glslp", sizeof(ext_shaders));
+         if (strstr(ext_shaders, "cg|cgp"))
+            strlcat(ext_shaders, "|glsl|glslp", sizeof(ext_shaders));
+         else
+            strlcat(ext_shaders, "glsl|glslp", sizeof(ext_shaders));
 #endif
 #ifdef HAVE_VULKAN
-         strlcat(ext_shaders, "slang|slangp", sizeof(ext_shaders));
+         if (strstr(ext_shaders, "cg|cgp") || strstr(ext_shaders, "glsl|glslp"))
+            strlcat(ext_shaders, "|slang|slangp", sizeof(ext_shaders));
+         else
+            strlcat(ext_shaders, "slang|slangp", sizeof(ext_shaders));
 #endif
          exts = ext_shaders;
          break;
