@@ -49,17 +49,15 @@
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
-   char ext_shaders[PATH_MAX_LENGTH];
-   char ext_name[PATH_MAX_LENGTH];
-   const char *dir   = NULL;
-   const char *exts  = NULL;
-   bool include_dirs = false;
-
-   settings_t *settings = config_get_ptr();
+   char ext_shaders[PATH_MAX_LENGTH] = {0};
+   char ext_name[PATH_MAX_LENGTH]    = {0};
+   const char *dir                   = NULL;
+   const char *exts                  = NULL;
+   bool include_dirs                 = false;
+   settings_t *settings              = config_get_ptr();
 
    (void)input_dir;
    (void)settings;
-   ext_shaders[0] = '\0';
 
    switch (type)
    {
@@ -92,7 +90,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
             if (!str_list)
                return NULL;
 
-            dir  = settings->directory.video_shader;
+            dir  = input_dir;
 #ifdef HAVE_CG
             string_list_append(str_list, "cg", attr);
             string_list_append(str_list, "cgp", attr);

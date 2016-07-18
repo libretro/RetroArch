@@ -472,7 +472,7 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
    if (!*settings->directory.video_shader)
       return false;
 
-   dir_list->list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
+   dir_list->list = dir_list_new_special(settings->directory.video_shader, DIR_LIST_SHADERS, NULL);
 
    if (!dir_list->list || dir_list->list->size == 0)
    {
