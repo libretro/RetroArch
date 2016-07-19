@@ -1329,6 +1329,9 @@ static bool init_content_file_extract(
                   msg_hash_to_str(
                      MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
                   temp_content);
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE)
+                  , 10, 180, false);
             return false;
          }
 
