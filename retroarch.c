@@ -1272,6 +1272,8 @@ static void retroarch_validate_cpu_features(void)
  **/
 bool retroarch_main_init(int argc, char *argv[])
 {
+   bool menu_alive = false;
+
    retroarch_init_state();
 
    if (setjmp(error_sjlj_context) > 0)
@@ -1344,16 +1346,31 @@ bool retroarch_main_init(int argc, char *argv[])
          }
       }
    }
-   
+
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
+
+#ifdef HAVE_MENU
+   menu_alive = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
+#endif
+
    if (current_core_explicitly_set)
    {
       current_core_explicitly_set = false;
       if (!command_event(CMD_EVENT_CORE_INIT, &explicit_current_core_type))
-         goto error;
+      {
+         if (!menu_alive)
+            goto error;
+         current_core_type = CORE_TYPE_DUMMY;
+         command_event(CMD_EVENT_CORE_INIT, &current_core_type);
+      }
    }
    else if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
-      goto error;
+   {
+         if (!menu_alive)
+               goto error;
+       current_core_type = CORE_TYPE_DUMMY;
+       command_event(CMD_EVENT_CORE_INIT, &current_core_type);
+   }
 
    driver_ctl(RARCH_DRIVER_CTL_INIT_ALL, NULL);
    command_event(CMD_EVENT_COMMAND_INIT, NULL);
