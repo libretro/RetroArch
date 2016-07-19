@@ -201,7 +201,7 @@ static bool runloop_check_movie_playback(void)
       return false;
 
    runloop_msg_queue_push(
-         msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 1, 180, false);
+         msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false);
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
    command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
@@ -259,7 +259,7 @@ static bool runloop_check_movie_init(void)
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
    {
-      runloop_msg_queue_push(msg, 1, 180, true);
+      runloop_msg_queue_push(msg, 2, 180, true);
       RARCH_LOG("%s \"%s\".\n",
             msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
             path);
@@ -268,7 +268,7 @@ static bool runloop_check_movie_init(void)
    {
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
-            1, 180, true);
+            2, 180, true);
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
    }
@@ -301,9 +301,9 @@ static bool runloop_check_slowmotion(bool *ptr)
       video_driver_cached_frame_render();
 
    if (state_manager_frame_is_reversed())
-      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 0, 30, true);
+      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
    else
-      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 0, 30, true);
+      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
    return true;
 }
 
@@ -449,7 +449,7 @@ static void runloop_check_stateslots(settings_t *settings,
          msg_hash_to_str(MSG_STATE_SLOT),
          settings->state_slot);
 
-   runloop_msg_queue_push(msg, 1, 180, true);
+   runloop_msg_queue_push(msg, 2, 180, true);
 
    RARCH_LOG("%s\n", msg);
 }
@@ -553,7 +553,7 @@ static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
    snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
          msg_hash_to_str(MSG_SHADER),
          (unsigned)dir_list->ptr, shader);
-   runloop_msg_queue_push(msg, 1, 120, true);
+   runloop_msg_queue_push(msg, 2, 120, true);
 
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
