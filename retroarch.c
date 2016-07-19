@@ -1272,8 +1272,8 @@ static void retroarch_validate_cpu_features(void)
  **/
 bool retroarch_main_init(int argc, char *argv[])
 {
-   bool menu_alive;
-   bool init_failed;
+   bool init_failed = false;
+   bool menu_alive  = false;
 
    retroarch_init_state();
 
@@ -1356,7 +1356,6 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
 
    /* Attempt to initialize core */
-   init_failed = false;
    if (current_core_explicitly_set)
    {
       current_core_explicitly_set = false;
@@ -1367,15 +1366,19 @@ bool retroarch_main_init(int argc, char *argv[])
       init_failed = true;
 
    /* Handle core initialization failure */
-   if (init_failed) {
+   if (init_failed)
+   {
 #ifdef HAVE_MENU
       /* Check if menu was active prior to core initialization */
-      if (menu_alive) {
+      if (menu_alive)
+      {
          /* Attemot initializing dummy core */
-	 current_core_type = CORE_TYPE_DUMMY;
-	 if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
+         current_core_type = CORE_TYPE_DUMMY;
+         if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
             goto error;
-      } else {
+      }
+      else
+      {
          /* Fall back to regular error handling */
          goto error;
       }
