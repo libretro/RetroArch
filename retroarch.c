@@ -1272,7 +1272,8 @@ static void retroarch_validate_cpu_features(void)
  **/
 bool retroarch_main_init(int argc, char *argv[])
 {
-   bool menu_alive = false;
+   bool menu_alive;
+   bool init_failed;
 
    retroarch_init_state();
 
@@ -1350,26 +1351,37 @@ bool retroarch_main_init(int argc, char *argv[])
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
 
 #ifdef HAVE_MENU
+   /* Check if menu is active */
    menu_alive = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
 #endif
 
+   /* Attempt to initialize core */
+   init_failed = false;
    if (current_core_explicitly_set)
    {
       current_core_explicitly_set = false;
       if (!command_event(CMD_EVENT_CORE_INIT, &explicit_current_core_type))
-      {
-         if (!menu_alive)
-            goto error;
-         current_core_type = CORE_TYPE_DUMMY;
-         command_event(CMD_EVENT_CORE_INIT, &current_core_type);
-      }
+         init_failed = true;
    }
    else if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
-   {
-         if (!menu_alive)
-               goto error;
-       current_core_type = CORE_TYPE_DUMMY;
-       command_event(CMD_EVENT_CORE_INIT, &current_core_type);
+      init_failed = true;
+
+   /* Handle core initialization failure */
+   if (init_failed) {
+#ifdef HAVE_MENU
+      /* Check if menu was active prior to core initialization */
+      if (menu_alive) {
+         /* Attemot initializing dummy core */
+	 current_core_type = CORE_TYPE_DUMMY;
+	 if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
+            goto error;
+      } else {
+         /* Fall back to regular error handling */
+         goto error;
+      }
+#else
+      goto error;
+#endif
    }
 
    driver_ctl(RARCH_DRIVER_CTL_INIT_ALL, NULL);
