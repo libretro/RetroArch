@@ -1331,7 +1331,7 @@ static bool init_content_file_extract(
                   temp_content);
             runloop_msg_queue_push(
                   msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE)
-                  , 10, 180, false);
+                  , 2, 180, true);
             return false;
          }
 
@@ -1618,7 +1618,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
          snprintf(msg, sizeof(msg), "%s %s ...", 
                msg_hash_to_str(MSG_LOADING),
                name);
-         runloop_msg_queue_push(msg, 1, 1, false);
+         runloop_msg_queue_push(msg, 2, 1, true);
       }
    }
    
@@ -1666,7 +1666,7 @@ error:
          snprintf(msg, sizeof(msg), "%s %s.\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD),
                name);
-         runloop_msg_queue_push(msg, 1, 90, false);
+         runloop_msg_queue_push(msg, 2, 90, true);
       }
    }
    return false;
