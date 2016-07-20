@@ -163,7 +163,7 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LIBS) -lm $(EXTRA_GL_LIBS)
 
 %.o: %.c
-	$(CC) -I../../libretro-common/include $(CFLAGS) -c -o $@ $<
+	$(CC) -I../../libretro-common/include $(CFLAGS) $(fpic) -c -o $@ $<
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)
