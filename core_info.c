@@ -623,8 +623,10 @@ void core_info_get_name(const char *path, char *s, size_t len)
    size_t i;
    core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
+   settings_t             *settings = config_get_ptr();
    struct string_list *contents     = dir_list_new_special(
-         NULL, DIR_LIST_CORES, NULL);
+         settings->directory.libretro,
+         DIR_LIST_CORES, NULL);
 
    if (!contents)
       return;
