@@ -377,7 +377,7 @@ static void *dsound_init(const char *device, unsigned rate, unsigned latency)
    return ds;
 
 error:
-   RARCH_ERR("[DirectSound] Error occured in init.\n");
+   RARCH_ERR("[DirectSound] Error occurred in init.\n");
    dsound_free(ds);
    return NULL;
 }

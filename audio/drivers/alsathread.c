@@ -92,7 +92,7 @@ static void alsa_worker_thread(void *data)
       }
       else if (frames < 0)
       {
-         RARCH_ERR("[ALSA]: Unknown error occured (%s).\n",
+         RARCH_ERR("[ALSA]: Unknown error occurred (%s).\n",
                snd_strerror(frames));
          break;
       }
