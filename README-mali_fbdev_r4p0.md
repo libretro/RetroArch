@@ -18,7 +18,7 @@ So we will use
 First we will clone and build the kernel:
 git clone https://github.com/mireq/linux-sunxi.git -b sunxi-3.4 --depth 1
 
-Now we edit drivers/video/sunxi/disp/dev_fb.c, and uncoment the line 1074:
+Now we edit drivers/video/sunxi/disp/dev_fb.c, and uncomment the line 1074:
 // Fb_wait_for_vsync(info); 
 
 It is assumed you have a cross-compiler installed, so we configure and build the kernel and modules:

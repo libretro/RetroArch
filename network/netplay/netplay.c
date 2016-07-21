@@ -953,7 +953,7 @@ static void netplay_flip_users(netplay_t *netplay)
       netplay, NETPLAY_CMD_FLIP_PLAYERS,
       &flip_frame_net, sizeof flip_frame_net,
       CMD_OPT_HOST_ONLY | CMD_OPT_REQUIRE_SYNC,
-      "flip users", "Succesfully flipped users.\n");
+      "flip users", "Successfully flipped users.\n");
    
    if(command)
    {

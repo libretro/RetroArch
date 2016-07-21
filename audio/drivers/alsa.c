@@ -224,7 +224,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
          return written;
       else if (frames < 0)
       {
-         RARCH_ERR("[ALSA]: Unknown error occured (%s).\n",
+         RARCH_ERR("[ALSA]: Unknown error occurred (%s).\n",
                snd_strerror(frames));
          return -1;
       }
