@@ -712,10 +712,14 @@ static void xmb_update_thumbnail_image(void *data)
    if (!xmb)
       return;
 
+
    if (path_file_exists(xmb->thumbnail_file_path))
+   {
+      RARCH_LOG("path: %s\n", xmb->thumbnail_file_path);
       task_push_image_load(xmb->thumbnail_file_path,
             MENU_ENUM_LABEL_CB_MENU_THUMBNAIL,
             menu_display_handle_thumbnail_upload, NULL);
+   }
    else if (xmb->depth == 1)
       xmb->thumbnail = 0;
 }
@@ -2746,6 +2750,7 @@ static void xmb_context_reset_background(const char *iconpath)
 
    if (!string_is_empty(settings->path.menu_wallpaper))
       strlcpy(path, settings->path.menu_wallpaper, sizeof(path));
+
 
    if (path_file_exists(path))
       task_push_image_load(path,
