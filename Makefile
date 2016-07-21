@@ -136,12 +136,12 @@ retroarch: $(RARCH_OBJ)
 $(OBJDIR)/%.o: %.c config.h config.mk
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
+	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp config.h config.mk
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
-	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
+	$(Q)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
 $(OBJDIR)/%.o: %.m
 	@mkdir -p $(dir $@)
