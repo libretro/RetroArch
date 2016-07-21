@@ -6,8 +6,8 @@
 
 #include "vulkan/vulkan_symbol_wrapper.h"
 #include <libretro_vulkan.h>
+#include <retro_miscellaneous.h>
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 static struct retro_hw_render_callback hw_render;
 static const struct retro_hw_render_interface_vulkan *vulkan;
 
