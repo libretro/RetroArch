@@ -3409,7 +3409,6 @@ static int menu_displaylist_parse_cores(
             menu_entries_set_alt_at_offset(info->list, i, display_name);
       }
       info->need_sort = true;
-      return 0;
    }
 
    return 0;
