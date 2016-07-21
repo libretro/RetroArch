@@ -15,6 +15,9 @@ static const struct retro_hw_render_interface_vulkan *vulkan;
 #define BASE_HEIGHT 240
 #define MAX_SYNC 8
 
+static unsigned width  = BASE_WIDTH;
+static unsigned height = BASE_HEIGHT;
+
 struct buffer
 {
    VkBuffer buffer;
@@ -102,8 +105,17 @@ void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
 
+   struct retro_variable variables[] = {
+      {
+         "testvulkan_resolution",
+         "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768|1024x1024|1280x720|1280x960|1600x1200|1920x1080|1920x1440|1920x1600|2048x2048",
+      },
+      { NULL, NULL },
+   };
+
    bool no_rom = true;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_rom);
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, variables);
 }
 
 void retro_set_audio_sample(retro_audio_sample_t cb)
@@ -209,8 +221,8 @@ static void vulkan_test_render(void)
    VkRenderPassBeginInfo rp_begin = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
    rp_begin.renderPass = vk.render_pass;
    rp_begin.framebuffer = vk.framebuffers[vk.index];
-   rp_begin.renderArea.extent.width = BASE_WIDTH;
-   rp_begin.renderArea.extent.height = BASE_HEIGHT;
+   rp_begin.renderArea.extent.width = width;
+   rp_begin.renderArea.extent.height = height;
    rp_begin.clearValueCount = 1;
    rp_begin.pClearValues = &clear_value;
    vkCmdBeginRenderPass(cmd, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
@@ -223,16 +235,16 @@ static void vulkan_test_render(void)
    VkViewport vp = { 0 };
    vp.x = 0.0f;
    vp.y = 0.0f;
-   vp.width = BASE_WIDTH;
-   vp.height = BASE_HEIGHT;
+   vp.width = width;
+   vp.height = height;
    vp.minDepth = 0.0f;
    vp.maxDepth = 1.0f;
    vkCmdSetViewport(cmd, 0, 1, &vp);
 
    VkRect2D scissor;
    memset(&scissor, 0, sizeof(scissor));
-   scissor.extent.width = BASE_WIDTH;
-   scissor.extent.height = BASE_HEIGHT;
+   scissor.extent.width = width;
+   scissor.extent.height = height;
    vkCmdSetScissor(cmd, 0, 1, &scissor);
 
    VkDeviceSize offset = 0;
@@ -529,8 +541,8 @@ static void init_swapchain(void)
       image.imageType = VK_IMAGE_TYPE_2D;
       image.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
       image.format = VK_FORMAT_R8G8B8A8_UNORM;
-      image.extent.width = BASE_WIDTH;
-      image.extent.height = BASE_HEIGHT;
+      image.extent.width = width;
+      image.extent.height = height;
       image.extent.depth = 1;
       image.samples = VK_SAMPLE_COUNT_1_BIT;
       image.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -575,8 +587,8 @@ static void init_swapchain(void)
       fb_info.renderPass = vk.render_pass;
       fb_info.attachmentCount = 1;
       fb_info.pAttachments = &vk.images[i].image_view;
-      fb_info.width = BASE_WIDTH;
-      fb_info.height = BASE_HEIGHT;
+      fb_info.width = width;
+      fb_info.height = height;
       fb_info.layers = 1;
 
       vkCreateFramebuffer(device, &fb_info, NULL, &vk.framebuffers[i]);
@@ -668,8 +680,35 @@ static void vulkan_test_deinit(void)
    memset(&vk, 0, sizeof(vk));
 }
 
+static void update_variables(void)
+{
+   struct retro_variable var = {
+      .key = "testvulkan_resolution",
+   };
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      char *pch;
+      char str[100];
+      snprintf(str, sizeof(str), "%s", var.value);
+      
+      pch = strtok(str, "x");
+      if (pch)
+         width = strtoul(pch, NULL, 0);
+      pch = strtok(NULL, "x");
+      if (pch)
+         height = strtoul(pch, NULL, 0);
+
+      fprintf(stderr, "[libretro-test]: Got size: %u x %u.\n", width, height);
+   }
+}
+
 void retro_run(void)
 {
+   bool updated = false;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
+      update_variables();
+
    input_poll_cb();
 
    if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
@@ -689,7 +728,7 @@ void retro_run(void)
    vulkan_test_render();
    vulkan->set_image(vulkan->handle, &vk.images[vk.index], 0, NULL, VK_QUEUE_FAMILY_IGNORED);
    vulkan->set_command_buffers(vulkan->handle, 1, &vk.cmd[vk.index]);
-   video_cb(RETRO_HW_FRAME_BUFFER_VALID, BASE_WIDTH, BASE_HEIGHT, 0);
+   video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
 }
 
 static void context_reset(void)
@@ -763,6 +802,8 @@ static bool retro_init_hw_context(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
+   update_variables();
+
    if (!retro_init_hw_context())
    {
       fprintf(stderr, "HW Context could not be initialized, exiting...\n");
