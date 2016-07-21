@@ -1846,7 +1846,9 @@ out:
    create_info.planeStackIndex = planes[best_plane].currentStackIndex;
    create_info.transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
    create_info.globalAlpha = 1.0f;
-   create_info.alphaMode = alpha_mode;
+   /* TODO/FIXME - why is this cast needed for CXX_BUILD? Why is
+    * alpha_mode not just VkDisplayPlaneAlphaFlagBitsKHR to begin with? */
+   create_info.alphaMode = (VkDisplayPlaneAlphaFlagBitsKHR)alpha_mode;
    create_info.imageExtent.width = *width;
    create_info.imageExtent.height = *height;
 
