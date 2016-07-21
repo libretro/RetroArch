@@ -1922,7 +1922,9 @@ bool command_event(enum event_command cmd, void *data)
                break;
          }
 
+#ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
+#endif
 
          switch (cmd)
          {
