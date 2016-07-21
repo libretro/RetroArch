@@ -251,6 +251,9 @@ void menu_display_set_alpha(float *color, float alpha_value);
 
 bool menu_display_font(enum application_special_type type);
 
+void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
+      uintptr_t *item);
+
 extern uintptr_t menu_display_white_texture;
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;

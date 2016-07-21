@@ -19,6 +19,7 @@
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
+#include <file/file_path.h>
 #include <string/stdstring.h>
 
 #include "../config.def.h"
@@ -26,6 +27,7 @@
 #include "../configuration.h"
 #include "../runloop.h"
 #include "../core.h"
+#include "../gfx/video_driver.h"
 #include "../gfx/video_thread_wrapper.h"
 #include "../verbosity.h"
 
@@ -804,4 +806,22 @@ void menu_display_set_alpha(float *color, float alpha_value)
    if (!color)
       return;
    color[3] = color[7] = color[11] = color[15] = alpha_value;
+}
+
+void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
+      uintptr_t *item)
+{
+   struct texture_image ti     = {0};
+   char path[PATH_MAX_LENGTH]  = {0};
+
+   if (texture_path != NULL)
+      fill_pathname_join(path, iconpath, texture_path, sizeof(path));
+
+   if (string_is_empty(path) || !path_file_exists(path))
+      return;
+
+   image_texture_load(&ti, path);
+   video_driver_texture_load(&ti,
+         TEXTURE_FILTER_MIPMAP_LINEAR, item);
+   image_texture_free(&ti);
 }

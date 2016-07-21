@@ -2716,26 +2716,7 @@ static void xmb_context_reset_textures(
    unsigned i;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
-   {
-      struct texture_image ti     = {0};
-      char path[PATH_MAX_LENGTH]  = {0};
-      const char *texture_path    = xmb_texture_path(i);
-
-      if (texture_path != NULL)
-         fill_pathname_join(path, iconpath, texture_path, sizeof(path));
-
-      if (string_is_empty(path) || !path_file_exists(path))
-         continue;
-
-      image_texture_load(&ti, path);
-
-      video_driver_texture_unload(&xmb->textures.list[i]);
-      video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR,
-            &xmb->textures.list[i]);
-
-      image_texture_free(&ti);
-   }
+      menu_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i]);
 
    menu_display_allocate_white_texture();
 
