@@ -229,13 +229,15 @@ void playlist_push(playlist_t *playlist,
    if (!playlist)
       return;
 
-   if (!core_path || !*core_path || !core_name || !*core_name)
+   if (string_is_empty(core_path) || string_is_empty(core_name))
    {
       RARCH_ERR("cannot push NULL or empty core info into the playlist.\n");
+      RARCH_ERR("core_name: %s.\n", string_is_empty(core_name) ? "N/A" : core_name);
+      RARCH_ERR("core_path: %s.\n", string_is_empty(core_path) ? "N/A" : core_path);
       return;
    }
 
-   if (path && !*path)
+   if (string_is_empty(path))
       path = NULL;
 
    for (i = 0; i < playlist->size; i++)
@@ -308,8 +310,13 @@ void playlist_write_file(playlist_t *playlist)
 
    file = fopen(playlist->conf_path, "w");
 
+   RARCH_LOG("Trying to write to playlist file: %s\n", playlist->conf_path);
+
    if (!file)
+   {
+      RARCH_ERR("Failed to write to playlist file: %s\n", playlist->conf_path);
       return;
+   }
 
    for (i = 0; i < playlist->size; i++)
       fprintf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
