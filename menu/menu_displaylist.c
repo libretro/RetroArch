@@ -5280,6 +5280,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_HISTORY:
+         if (settings->history_list_enable)
          {
             char path_playlist[PATH_MAX_LENGTH] = {0};
             playlist_t         *playlist        = g_defaults.history;
@@ -5288,24 +5289,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                command_event(CMD_EVENT_HISTORY_INIT, NULL);
 
             strlcpy(path_playlist, "history", sizeof(path_playlist));
-
             ret = menu_displaylist_parse_playlist(info,
                   playlist, path_playlist, true);
-
             strlcpy(
                   menu->db_playlist_file,
                   settings->path.content_history,
                   sizeof(menu->db_playlist_file));
-
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
                   (void*)menu->db_playlist_file);
+         }
+         else
+         {
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
+                  MENU_INFO_MESSAGE, 0, 0);
+            ret = 0;
+         }
 
-            if (ret == 0)
-            {
-               info->need_refresh = true;
-               info->need_push    = true;
-            }
+         if (ret == 0)
+         {
+            info->need_refresh = true;
+            info->need_push    = true;
          }
          break;
       case DISPLAYLIST_OPTIONS_DISK:
