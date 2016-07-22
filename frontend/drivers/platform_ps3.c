@@ -209,6 +209,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
          RARCH_LOG("usrDirPath : [%s].\n", g_defaults.dir.port);
       }
 
+      strlcpy(g_defaults.dir.content_history,
+            g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
       fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
             "cores", sizeof(g_defaults.dir.core));
       fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,

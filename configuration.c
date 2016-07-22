@@ -1664,6 +1664,13 @@ static bool config_load_file(const char *path, bool set_defaults)
       *settings->path.libretro = '\0';
    }
 
+   if (config_get_path(conf, "libretro_path", tmp_str, sizeof(tmp_str)))
+   {
+#ifndef HAVE_DYNAMIC
+      strlcpy(settings->path.libretro, tmp_str, sizeof(settings->path.libretro));
+#endif
+   }
+
    if (config_get_path(conf, "resampler_directory", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->directory.resampler, tmp_str, sizeof(settings->directory.resampler));
 

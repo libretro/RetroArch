@@ -231,10 +231,22 @@ void playlist_push(playlist_t *playlist,
 
    if (string_is_empty(core_path) || string_is_empty(core_name))
    {
-      RARCH_ERR("cannot push NULL or empty core info into the playlist.\n");
-      RARCH_ERR("core_name: %s.\n", string_is_empty(core_name) ? "N/A" : core_name);
-      RARCH_ERR("core_path: %s.\n", string_is_empty(core_path) ? "N/A" : core_path);
-      return;
+      if (string_is_empty(core_name) && !string_is_empty(core_path))
+      {
+         static char base_path[PATH_MAX_LENGTH] = {0};
+         fill_pathname_base_noext(base_path, core_path, sizeof(base_path));
+         core_name = base_path;
+         RARCH_LOG("core_name is now: %s\n", core_name);
+      }
+
+      RARCH_LOG("core_name: %s.\n", string_is_empty(core_name) ? "N/A" : core_name);
+      RARCH_LOG("core_path: %s.\n", string_is_empty(core_path) ? "N/A" : core_path);
+
+      if (string_is_empty(core_path) || string_is_empty(core_name))
+      {
+         RARCH_ERR("cannot push NULL or empty core name into the playlist.\n");
+         return;
+      }
    }
 
    if (string_is_empty(path))
