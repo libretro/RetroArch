@@ -156,9 +156,6 @@ static void gfx_ctx_ps3_check_window(void *data, bool *quit,
    *quit = false;
    *resize = false;
 
-   if (gl->quitting)
-      *quit = true;
-
    if (gl->should_resize)
       *resize = true;
 }
