@@ -1176,6 +1176,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "no_items";
       case MENU_ENUM_LABEL_NO_PLAYLISTS:
          return "no_playlists";
+      case MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE:
+         return "no_history";
       case MENU_ENUM_LABEL_NO_SHADER_PARAMETERS:
          return "no_shader_parameters.";
       case MENU_ENUM_LABEL_SETTINGS_TAB:
@@ -3168,6 +3170,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Disk Cycle Tray Status";
       case MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE:
          return "No playlist entries available.";
+      case MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE:
+         return "No history available.";
       case MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE:
          return "No core information available.";
       case MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:

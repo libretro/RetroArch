@@ -5302,9 +5302,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          else
          {
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE),
+                  MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
                   MENU_INFO_MESSAGE, 0, 0);
             ret = 0;
          }
