@@ -1379,9 +1379,9 @@ static void xmb_context_reset_horizontal_list(
          image_texture_free(&ti);
       }
 
-      fill_pathname_join_concat(content_texturepath, iconpath,
-            sysname, 
-            "-content.png",
+      strlcat(iconpath, sysname, sizeof(iconpath));
+      fill_pathname_join_delim(content_texturepath, iconpath,
+            file_path_str(FILE_PATH_CONTENT_BASENAME), '-',
             sizeof(content_texturepath));
 
       if (image_texture_load(&ti, content_texturepath))

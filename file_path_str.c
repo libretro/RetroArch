@@ -27,6 +27,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
 #endif
       case FILE_PATH_DETECT:
          return "DETECT";
+      case FILE_PATH_CONTENT_BASENAME:
+         return "content.png";
       case FILE_PATH_LUTRO_PLAYLIST:
          return "Lutro.lpl";
       case FILE_PATH_NUL:
