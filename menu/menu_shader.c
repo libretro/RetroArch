@@ -38,24 +38,14 @@ void menu_shader_manager_init(menu_handle_t *menu)
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
    config_file_t *conf         = NULL;
-   const char *config_path     = NULL;
    settings_t *settings        = config_get_ptr();
-   global_t   *global          = global_get_ptr();
+   const char *config_path     = config_get_active_path();
 
    if (!menu)
       return;
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);
-
-   if (global)
-   {
-      if (!string_is_empty(global->path.core_specific_config)
-            && settings->core_specific_config)
-         config_path = global->path.core_specific_config;
-      else if (!string_is_empty(global->path.config))
-         config_path = global->path.config;
-   }
 
    /* In a multi-config setting, we can't have
     * conflicts on menu.cgp/menu.glslp. */

@@ -3227,3 +3227,15 @@ bool config_replace(char *path)
 
    return true;
 }
+
+const char *config_get_active_path(void)
+{
+   settings_t *settings        = config_get_ptr();
+   global_t   *global          = global_get_ptr();
+   if (!string_is_empty(global->path.core_specific_config)
+         && settings->core_specific_config)
+      return global->path.core_specific_config;
+   else if (!string_is_empty(global->path.config))
+      return global->path.config;
+   return NULL;
+}

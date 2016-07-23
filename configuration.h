@@ -596,6 +596,8 @@ bool config_init(void);
 
 void config_free(void);
 
+const char *config_get_active_path(void);
+
 settings_t *config_get_ptr(void);
 
 RETRO_END_DECLS
