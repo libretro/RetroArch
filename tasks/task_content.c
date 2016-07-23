@@ -1607,9 +1607,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
    }
 #endif
 
-   if (!content_load(content_info))
-      goto error;
-
    if (launched_from_menu)
    {
       /** Show loading OSD message */
@@ -1621,7 +1618,10 @@ static bool task_load_content(content_ctx_info_t *content_info,
          runloop_msg_queue_push(msg, 2, 1, true);
       }
    }
-   
+
+   if (!content_load(content_info))
+      goto error;
+
    /* Push entry to top of history playlist */
    if (content_is_inited() || content_does_not_need_content())
    {
