@@ -746,6 +746,8 @@ bool vulkan_filter_chain::init_alias()
       if (name.empty())
          continue;
 
+      unsigned i = &pass - passes.data();
+
       if (!set_unique_map(common.texture_semantic_map, name,
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
          return false;
@@ -761,8 +763,6 @@ bool vulkan_filter_chain::init_alias()
       if (!set_unique_map(common.texture_semantic_uniform_map, name + "FeedbackSize",
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
          return false;
-
-      i++;
    }
    return true;
 }
