@@ -1541,13 +1541,13 @@ static bool command_event_save_core_config(void)
  **/
 void command_event_save_current_config(void)
 {
-   char msg[128];
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   bool ret             = false;
 
    if (settings->config_save_on_exit && !string_is_empty(global->path.config))
    {
+      bool ret      = false;
+      char msg[128] = {0};
       /* Save last core-specific config to the default config location,
        * needed on consoles for core switching and reusing last good
        * config for new cores.
