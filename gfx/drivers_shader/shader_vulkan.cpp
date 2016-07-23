@@ -233,6 +233,7 @@ struct CommonResources
 
    vector<Texture> original_history;
    vector<Texture> framebuffer_feedback;
+   vector<Texture> pass_outputs;
 
    unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
    unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
@@ -825,7 +826,7 @@ bool vulkan_filter_chain::init()
       return false;
    if (!init_feedback())
       return false;
-
+   common.pass_outputs.resize(passes.size());
    return true;
 }
 
@@ -874,6 +875,8 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       source.texture.width    = fb.get_size().width;
       source.texture.height   = fb.get_size().height;
       source.filter           = passes[i + 1]->get_source_filter();
+
+      common.pass_outputs[i] = source;
    }
 }
 
@@ -1608,6 +1611,16 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    {
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
+            texture);
+      i++;
+   }
+
+   // Previous passes.
+   i = 0;
+   for (auto &texture : common->pass_outputs)
+   {
+      build_semantic_texture_array(set, buffer,
+            SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
             texture);
       i++;
    }
