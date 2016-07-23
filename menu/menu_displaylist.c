@@ -5571,7 +5571,26 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_IMAGES:
          menu_displaylist_reset_filebrowser();
          info->type_default = FILE_TYPE_IMAGE;
-         strlcpy(info->exts, "png|jpg|jpeg|bmp|tga", sizeof(info->exts));
+         {
+            union string_list_elem_attr attr = {0};
+            struct string_list *str_list     = string_list_new();
+
+#ifdef HAVE_RBMP
+            string_list_append(str_list, "bmp", attr);
+#endif
+#ifdef HAVE_RPNG
+            string_list_append(str_list, "png", attr);
+#endif
+#ifdef HAVE_RJPEG
+            string_list_append(str_list, "jpeg", attr);
+            string_list_append(str_list, "jpg", attr);
+#endif
+#ifdef HAVE_RTGA
+            string_list_append(str_list, "tga", attr);
+#endif
+            string_list_join_concat(info->exts, sizeof(info->exts), str_list, "|");
+            string_list_free(str_list);
+         }
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
          menu_displaylist_reset_filebrowser();
