@@ -1979,7 +1979,10 @@ static void config_load_core_specific(void)
    *global->path.core_specific_config = '\0';
 
    if (string_is_empty(settings->path.libretro))
+   {
+      RARCH_WARN("Libretro path not set, cannot load core-specific config file...\n");
       return;
+   }
 
 #ifdef HAVE_DYNAMIC
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
