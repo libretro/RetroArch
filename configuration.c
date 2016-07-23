@@ -3071,6 +3071,11 @@ bool config_save_file(const char *path)
    config_set_float(conf, "slowmotion_ratio",
          settings->slowmotion_ratio);
 
+#ifndef HAVE_DYNAMIC
+   config_set_path(conf,  "libretro_path",
+         settings->path.libretro);;
+#endif
+
    config_set_bool(conf, "config_save_on_exit",
          settings->config_save_on_exit);
    config_set_int(conf, "state_slot", settings->state_slot);
