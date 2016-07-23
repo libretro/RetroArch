@@ -180,6 +180,8 @@ void core_unset_input_descriptors(void);
 
 bool core_uninit_libretro_callbacks(void);
 
+void core_uninit_symbols(void);
+
 void core_set_input_state(retro_ctx_input_state_info_t *info);
 
 RETRO_END_DECLS

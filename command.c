@@ -1161,6 +1161,7 @@ static void command_event_deinit_core(bool reinit)
 
    core_unload_game();
    core_unload();
+   core_uninit_symbols();
 
    if (reinit)
    {

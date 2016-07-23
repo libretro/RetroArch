@@ -211,6 +211,11 @@ bool core_set_poll_type(unsigned *type)
    return true;
 }
 
+void core_uninit_symbols(void)
+{
+   uninit_libretro_sym(&core);
+}
+
 bool core_init_symbols(enum rarch_core_type *type)
 {
    if (!type)
@@ -329,9 +334,9 @@ bool core_init(void)
 bool core_unload(void)
 {
    core.retro_deinit();
-   uninit_libretro_sym(&core);
    return true;
 }
+
 
 bool core_unload_game(void)
 {
