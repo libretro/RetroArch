@@ -1981,9 +1981,9 @@ static void config_load_core_specific(void)
 
    *path_core_specific_config = '\0';
 
-   if (string_is_empty(settings->path.libretro))
+   if (string_is_empty(config_get_active_core_path()))
    {
-      RARCH_WARN("Libretro path not set, cannot load core-specific config file...\n");
+      RARCH_WARN("Active core path not set, cannot load core-specific config file...\n");
       return;
    }
 
@@ -3229,6 +3229,12 @@ bool config_replace(char *path)
       return false;
 
    return true;
+}
+
+const char *config_get_active_core_path(void)
+{
+   settings_t *settings        = config_get_ptr();
+   return settings->path.libretro;
 }
 
 const char *config_get_active_path(void)

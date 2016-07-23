@@ -598,6 +598,8 @@ void config_free(void);
 
 const char *config_get_active_path(void);
 
+const char *config_get_active_core_path(void);
+
 void config_free_state(void);
 
 settings_t *config_get_ptr(void);

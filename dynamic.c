@@ -322,7 +322,7 @@ static void load_dynamic_core(void)
       retroarch_fail(1, "init_libretro_sym()");
    }
 
-   if (!*settings->path.libretro)
+   if (string_is_empty(settings->path.libretro))
    {
       RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
             "libretro_path is not set. Cannot continue.\n");
