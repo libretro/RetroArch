@@ -29,8 +29,10 @@
 #include "../menu/menu_driver.h"
 #endif
 
-#include "tasks_internal.h"
+#include "../file_path_special.h"
 #include "../verbosity.h"
+
+#include "tasks_internal.h"
 
 enum image_status_enum
 {
@@ -354,13 +356,14 @@ bool task_push_image_load(const char *fullpath,
    nbio->cb           = &cb_nbio_image_menu_thumbnail;
    nbio->status       = NBIO_STATUS_TRANSFER;
 
-   if (strstr(fullpath, ".png"))
+   if (strstr(fullpath, file_path_str(FILE_PATH_PNG_EXTENSION)))
       nbio->image_type = IMAGE_TYPE_PNG;
-   else if (strstr(fullpath, ".jpeg") || strstr(fullpath, ".jpg"))
+   else if (strstr(fullpath, file_path_str(FILE_PATH_JPEG_EXTENSION)) 
+         || strstr(fullpath, file_path_str(FILE_PATH_JPG_EXTENSION)))
       nbio->image_type = IMAGE_TYPE_JPEG;
-   else if (strstr(fullpath, ".bmp"))
+   else if (strstr(fullpath, file_path_str(FILE_PATH_BMP_EXTENSION)))
       nbio->image_type = IMAGE_TYPE_BMP;
-   else if (strstr(fullpath, ".tga"))
+   else if (strstr(fullpath, file_path_str(FILE_PATH_TGA_EXTENSION)))
       nbio->image_type = IMAGE_TYPE_TGA;
 
    nbio_begin_read(handle);

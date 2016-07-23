@@ -71,6 +71,14 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return "lpl";
       case FILE_PATH_PNG_EXTENSION:
          return ".png";
+      case FILE_PATH_JPEG_EXTENSION:
+         return ".jpeg";
+      case FILE_PATH_BMP_EXTENSION:
+         return ".bmp";
+      case FILE_PATH_TGA_EXTENSION:
+         return ".tga";
+      case FILE_PATH_JPG_EXTENSION:
+         return ".jpg";
       case FILE_PATH_UPS_EXTENSION:
          return ".ups";
       case FILE_PATH_IPS_EXTENSION:
