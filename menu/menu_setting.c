@@ -3740,6 +3740,7 @@ static bool setting_append_list_input_player_options(
          parent_group);
 
    {
+      char tmp_string[PATH_MAX_LENGTH] = {0};
       /* These constants match the string lengths.
        * Keep them up to date or you'll get some really obvious bugs.
        * 2 is the length of '99'; we don't need more users than that.
@@ -3759,20 +3760,24 @@ static bool setting_append_list_input_player_options(
       static char label_bind_all_save_autoconfig[MAX_USERS][64];
       static char label_bind_defaults[MAX_USERS][64];
 
-      snprintf(key[user], sizeof(key[user]),
-               "input_player%u_joypad_index", user + 1);
+      snprintf(tmp_string, sizeof(tmp_string), "input_player%u", user + 1);
+
+      fill_pathname_join_delim(key[user], tmp_string, "joypad_index", '_',
+            sizeof(key[user]));
       snprintf(key_type[user], sizeof(key_type[user]),
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE),
                user + 1);
       snprintf(key_analog[user], sizeof(key_analog[user]),
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE),
                user + 1);
-      snprintf(key_bind_all[user], sizeof(key_bind_all[user]),
-               "input_player%u_bind_all", user + 1);
-      snprintf(key_bind_all_save_autoconfig[user], sizeof(key_bind_all[user]),
-               "input_player%u_bind_all_save_autoconfig", user + 1);
-      snprintf(key_bind_defaults[user], sizeof(key_bind_defaults[user]),
-               "input_player%u_bind_defaults", user + 1);
+      fill_pathname_join_delim(key_bind_all[user], tmp_string, "bind_all", '_',
+            sizeof(key_bind_all[user]));
+      fill_pathname_join_delim(key_bind_all_save_autoconfig[user],
+            tmp_string, "bind_all_save_autoconfig", '_',
+            sizeof(key_bind_all_save_autoconfig[user]));
+      fill_pathname_join_delim(key_bind_defaults[user],
+            tmp_string, "bind_defaults", '_',
+            sizeof(key_bind_defaults[user]));
 
       snprintf(label[user], sizeof(label[user]),
                "%s %u Device Index", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);
