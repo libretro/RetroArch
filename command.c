@@ -1935,7 +1935,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             case CMD_EVENT_QUIT:
                runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+#ifdef HAVE_MENU
                rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+#endif
                break;
             default:
                break;

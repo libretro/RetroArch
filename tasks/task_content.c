@@ -1835,6 +1835,12 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
          if (!command_event_cmd_exec((void*)fullpath))
             return false;
+#ifndef HAVE_DYNAMIC
+         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+#ifdef HAVE_MENU
+         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+#endif
+#endif
          break;
       default:
          break;
