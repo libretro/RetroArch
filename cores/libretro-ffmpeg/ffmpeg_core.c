@@ -815,11 +815,16 @@ static bool open_codecs(void)
 {
    unsigned i;
 
+   decode_thread_lock   = slock_new();
+
    video_stream         = -1;
    audio_streams_num    = 0;
-   audio_streams_ptr    = 0;
    subtitle_streams_num = 0;
+
+   slock_lock(decode_thread_lock);
+   audio_streams_ptr    = 0;
    subtitle_streams_ptr = 0;
+   slock_unlock(decode_thread_lock);
 
    memset(audio_streams,    0, sizeof(audio_streams));
    memset(subtitle_streams, 0, sizeof(subtitle_streams));
@@ -1587,8 +1592,6 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       goto error;
    }
 
-   decode_thread_dead = false;
-
 #ifdef HAVE_GL_FFT
    is_glfft = video_stream < 0 && audio_streams_num > 0;
 #endif
@@ -1626,7 +1629,10 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    fifo_cond = scond_new();
    fifo_decode_cond = scond_new();
    fifo_lock = slock_new();
-   decode_thread_lock = slock_new();
+
+   slock_lock(fifo_lock);
+   decode_thread_dead = false;
+   slock_unlock(fifo_lock);
 
    check_variables();
 
