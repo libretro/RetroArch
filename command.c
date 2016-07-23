@@ -1918,6 +1918,10 @@ bool command_event(enum event_command cmd, void *data)
                            CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
                            NULL, NULL))
                      return false;
+#ifndef HAVE_DYNAMIC
+               core_unload_game();
+               core_unload();
+#endif
                break;
             default:
                break;
