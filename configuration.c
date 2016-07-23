@@ -1971,12 +1971,15 @@ static bool config_load_file(const char *path, bool set_defaults)
    return true;
 }
 
+/* Config file associated with per-core configs. */
+static char path_core_specific_config[PATH_MAX_LENGTH];
+
 static void config_load_core_specific(void)
 {
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   *global->path.core_specific_config = '\0';
+   *path_core_specific_config = '\0';
 
    if (string_is_empty(settings->path.libretro))
    {
@@ -1994,22 +1997,22 @@ static void config_load_core_specific(void)
    {
       path_resolve_realpath(settings->directory.menu_config,
             sizeof(settings->directory.menu_config));
-      strlcpy(global->path.core_specific_config,
+      strlcpy(path_core_specific_config,
             settings->directory.menu_config,
-            sizeof(global->path.core_specific_config));
+            sizeof(path_core_specific_config));
    }
    else
 #endif
    {
       /* Use original config file's directory as a fallback. */
-      fill_pathname_basedir(global->path.core_specific_config,
-            global->path.config, sizeof(global->path.core_specific_config));
+      fill_pathname_basedir(path_core_specific_config,
+            global->path.config, sizeof(path_core_specific_config));
    }
 
-   fill_pathname_dir(global->path.core_specific_config,
+   fill_pathname_dir(path_core_specific_config,
          settings->path.libretro,
          file_path_str(FILE_PATH_CONFIG_EXTENSION),
-         sizeof(global->path.core_specific_config));
+         sizeof(path_core_specific_config));
 
    if (settings->core_specific_config)
    {
@@ -2021,9 +2024,9 @@ static void config_load_core_specific(void)
 
       strlcpy(tmp, settings->path.libretro, sizeof(tmp));
       RARCH_LOG("Config: loading core-specific config from: %s.\n",
-            global->path.core_specific_config);
+            path_core_specific_config);
 
-      if (!config_load_file(global->path.core_specific_config, true))
+      if (!config_load_file(path_core_specific_config, true))
          RARCH_WARN("Config: core-specific config not found, reusing last config.\n");
 
       /* Force some parameters which are implied when using core specific configs.
@@ -2513,9 +2516,9 @@ void config_load(void)
    global_t   *global   = global_get_ptr();
 
    /* Flush out per-core configs before loading a new config. */
-   if (!string_is_empty(global->path.core_specific_config) &&
+   if (!string_is_empty(path_core_specific_config) &&
          settings->config_save_on_exit && settings->core_specific_config)
-      config_save_file(global->path.core_specific_config);
+      config_save_file(path_core_specific_config);
 
    /* Flush out some states that could have been 
     * set by core environment variables */
@@ -3233,12 +3236,17 @@ const char *config_get_active_path(void)
    settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
 
-   if (!string_is_empty(global->path.core_specific_config)
+   if (!string_is_empty(path_core_specific_config)
          && settings->core_specific_config)
-      return global->path.core_specific_config;
+      return path_core_specific_config;
 
    if (!string_is_empty(global->path.config))
       return global->path.config;
 
    return NULL;
+}
+
+void config_free_state(void)
+{
+   *path_core_specific_config = '\0';
 }

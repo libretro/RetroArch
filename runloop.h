@@ -153,7 +153,6 @@ typedef struct rarch_path
    char default_log[PATH_MAX_LENGTH];
 #endif
    /* Config file associated with per-core configs. */
-   char core_specific_config[PATH_MAX_LENGTH];
    char core_options_path[PATH_MAX_LENGTH];
 } rarch_path_t;
 
