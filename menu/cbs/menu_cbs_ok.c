@@ -499,8 +499,10 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST:
          {
-            char new_path[PATH_MAX_LENGTH];
-            snprintf(new_path, sizeof(new_path), "%s;%s", path, label);
+            char new_path[PATH_MAX_LENGTH] = {0};
+
+            fill_pathname_join_delim(new_path, path, label, ';',
+                  sizeof(new_path));
             info.type          = type;
             info.directory_ptr = idx;
             info_path          = new_path;
