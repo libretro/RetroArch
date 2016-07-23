@@ -3248,5 +3248,5 @@ const char *config_get_active_path(void)
 
 void config_free_state(void)
 {
-   *path_core_specific_config = '\0';
+   path_core_specific_config[0] = '\0';
 }
