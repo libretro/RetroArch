@@ -223,15 +223,16 @@ static bool command_read_ram(const char *arg)
 static bool command_write_ram(const char *arg)
 {
    int i;
-   char reply[256];
    cheevos_var_t var;
    unsigned nbytes;
    uint8_t * data    = NULL;
 
    cheevos_parse_guest_addr(&var, strtoul(arg, (char**)&arg, 16));
+
    data = cheevos_get_memory(&var);
 
-   if (!data) return false;
+   if (!data)
+      return false;
 
    while (*arg)
    {
@@ -240,7 +241,6 @@ static bool command_write_ram(const char *arg)
    }
 
    return true;
-   return false;
 }
 #endif
 
