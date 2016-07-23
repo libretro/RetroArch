@@ -174,7 +174,7 @@ for f in *_${platform}.${EXT} ; do
 
    # Do manual executable step
    if [ $PLATFORM = "dex-ps3" ] ; then
-      $MAKE_FSELF_NPDRM ../retroarch_${platform}.elf ../CORE.SELF
+      $MAKE_FSELF_NPDRM -c ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "cex-ps3" ] ; then
       make_self_wc ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "ode-ps3" ] ; then
@@ -251,7 +251,7 @@ fi
 
 # Packaging
 if [ $PLATFORM = "dex-ps3" ] ; then
-   $MAKE_FSELF_NPDRM ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
+   $MAKE_FSELF_NPDRM -c ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
    $MAKE_PACKAGE_NPDRM ../pkg/${platform}/package.conf ../pkg/${platform}
 elif [ $PLATFORM = "cex-ps3" ] ; then
