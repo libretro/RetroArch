@@ -297,6 +297,9 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
    if (!drm)
       return;
 
+   /* Restore original CRTC. */
+   drm_restore_crtc();
+
    if (g_gbm_surface)
       gbm_surface_destroy(g_gbm_surface);
 
@@ -336,8 +339,6 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
          break;
    }
 
-   /* Restore original CRTC. */
-   drm_restore_crtc();
    free_drm_resources(drm);
 
    g_drm_mode          = NULL;
@@ -368,7 +369,6 @@ static void *gfx_ctx_drm_init(void *video_driver)
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, false);
 
 nextgpu:
-   drm_restore_crtc();
    free_drm_resources(drm);
 
    if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
