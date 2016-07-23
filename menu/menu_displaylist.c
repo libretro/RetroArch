@@ -3205,16 +3205,16 @@ static int menu_displaylist_parse_playlists(
 
       if (file_type == FILE_TYPE_DIRECTORY)
          continue;
-      if (!string_list_find_elem_prefix(str_list, ".",
-               file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
-         continue;
 
-
-      file_type = FILE_TYPE_PLAYLIST_COLLECTION;
       /* Need to preserve slash first time. */
       path      = str_list->elems[i].data;
 
-      if (*info->path)
+      if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+         continue;
+
+      file_type = FILE_TYPE_PLAYLIST_COLLECTION;
+
+      if (!string_is_empty(info->path))
          path = path_basename(path);
 
       items_found++;
