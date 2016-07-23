@@ -5554,14 +5554,46 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          strlcpy(info->exts, "cfg", sizeof(info->exts));
          break;
       case DISPLAYLIST_SHADER_PRESET:
-         menu_displaylist_reset_filebrowser();
-         info->type_default = FILE_TYPE_SHADER_PRESET;
-         strlcpy(info->exts, "cgp|glslp|slangp", sizeof(info->exts));
+         {
+            union string_list_elem_attr attr = {0};
+            struct string_list *str_list     = string_list_new();
+
+            menu_displaylist_reset_filebrowser();
+            info->type_default = FILE_TYPE_SHADER_PRESET;
+
+#ifdef HAVE_CG
+            string_list_append(str_list, "cgp", attr);
+#endif
+#ifdef HAVE_GLSL
+            string_list_append(str_list, "glslp", attr);
+#endif
+#ifdef HAVE_VULKAN
+            string_list_append(str_list, "slangp", attr);
+#endif
+            string_list_join_concat(info->exts, sizeof(info->exts), str_list, "|");
+            string_list_free(str_list);
+         }
          break;
       case DISPLAYLIST_SHADER_PASS:
-         menu_displaylist_reset_filebrowser();
-         info->type_default = FILE_TYPE_SHADER;
-         strlcpy(info->exts, "cg|glsl|slang", sizeof(info->exts));
+         {
+            union string_list_elem_attr attr = {0};
+            struct string_list *str_list     = string_list_new();
+
+            menu_displaylist_reset_filebrowser();
+            info->type_default = FILE_TYPE_SHADER;
+
+#ifdef HAVE_CG
+            string_list_append(str_list, "cg", attr);
+#endif
+#ifdef HAVE_GLSL
+            string_list_append(str_list, "glsl", attr);
+#endif
+#ifdef HAVE_VULKAN
+            string_list_append(str_list, "slang", attr);
+#endif
+            string_list_join_concat(info->exts, sizeof(info->exts), str_list, "|");
+            string_list_free(str_list);
+         }
          break;
       case DISPLAYLIST_VIDEO_FILTERS:
          menu_displaylist_reset_filebrowser();
