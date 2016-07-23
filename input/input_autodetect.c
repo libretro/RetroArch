@@ -165,7 +165,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             string_is_empty(display_name) ? params->name : display_name);
 
       if(!remote_is_bound)
-         runloop_msg_queue_push(msg, 2, 60, true);
+         runloop_msg_queue_push(msg, 2, 60, false);
       remote_is_bound = true;
    }
    else
@@ -175,7 +175,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             params->idx);
 
       if (!block_osd_spam)
-          runloop_msg_queue_push(msg, 2, 60, true);
+          runloop_msg_queue_push(msg, 2, 60, false);
    }
    input_reindex_devices();
 #if 0
@@ -337,7 +337,7 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
          params->name, params->vid, params->pid);
    snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured",
          params->name, (long)params->vid, (long)params->pid);
-   runloop_msg_queue_push(msg, 2, 60, true);
+   runloop_msg_queue_push(msg, 2, 60, false);
 
 error:
    return false;
@@ -361,6 +361,6 @@ void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
    char msg[PATH_MAX_LENGTH];
 
    snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, ident);
-   runloop_msg_queue_push(msg, 2, 60, true);
+   runloop_msg_queue_push(msg, 2, 60, false);
    RARCH_LOG("Autodetect: %s\n", msg);
 }
