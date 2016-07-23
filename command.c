@@ -1546,19 +1546,18 @@ void command_event_save_current_config(void)
 
    if (settings->config_save_on_exit && !string_is_empty(global->path.config))
    {
-      bool ret      = false;
-      char msg[128] = {0};
+      bool ret                = false;
+      char msg[128]           = {0};
+      const char *config_path = config_get_active_path();
+
       /* Save last core-specific config to the default config location,
        * needed on consoles for core switching and reusing last good
        * config for new cores.
        */
 
       /* Flush out the core specific config. */
-      if (!string_is_empty(global->path.core_specific_config)
-            && settings->core_specific_config)
-         ret = config_save_file(global->path.core_specific_config);
-      else
-         ret = config_save_file(global->path.config);
+      if (config_path)
+         ret = config_save_file(config_path);
 
       if (ret)
       {
