@@ -67,6 +67,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return ".state";
       case FILE_PATH_LPL_EXTENSION:
          return ".lpl";
+      case FILE_PATH_LPL_EXTENSION_NO_DOT:
+         return "lpl";
       case FILE_PATH_PNG_EXTENSION:
          return ".png";
       case FILE_PATH_UPS_EXTENSION:

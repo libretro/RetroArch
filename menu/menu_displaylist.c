@@ -3205,6 +3205,10 @@ static int menu_displaylist_parse_playlists(
 
       if (file_type == FILE_TYPE_DIRECTORY)
          continue;
+      if (!string_list_find_elem_prefix(str_list, ".",
+               file_path_str(FILE_PATH_LPL_EXTENSION_NO_DOT)))
+         continue;
+
 
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
       /* Need to preserve slash first time. */
@@ -3222,7 +3226,11 @@ static int menu_displaylist_parse_playlists(
    string_list_free(str_list);
 
    if (items_found == 0)
+   {
+      if (horizontal)
+         return 0;
       goto no_playlists;
+   }
 
    return 0;
 
