@@ -2637,6 +2637,12 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    return ret;
 }
 
+struct config_bool_setting
+{ 
+   const char *ident;
+   bool value;
+};
+
 /**
  * config_save_file:
  * @path            : Path that shall be written to.
@@ -2653,6 +2659,20 @@ bool config_save_file(const char *path)
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
+   struct config_bool_setting bool_settings[] = {
+      { "ui_companion_start_on_boot",   settings->ui.companion_start_on_boot},
+      { "ui_companion_enable",          settings->ui.companion_enable},
+      { "video_gpu_record",             settings->video.gpu_record},
+      { "input_remap_binds_enable",     settings->input.remap_binds_enable},
+      { "back_as_menu_toggle_enable",   settings->input.back_as_menu_toggle_enable},
+      { "netplay_client_swap_input",    settings->input.netplay_client_swap_input},
+      { "input_descriptor_label_show",  settings->input.input_descriptor_label_show},
+      { "input_descriptor_hide_unbound",settings->input.input_descriptor_hide_unbound},
+      { "load_dummy_on_core_shutdown",  settings->load_dummy_on_core_shutdown},
+      { "builtin_mediaplayer_enable",   settings->multimedia.builtin_mediaplayer_enable},
+      { "builtin_imageviewer_enable",   settings->multimedia.builtin_imageviewer_enable},
+      { "fps_show",                     settings->fps_show}
+   };
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -2674,30 +2694,12 @@ bool config_save_file(const char *path)
          settings->input.menu_toggle_gamepad_combo);
    config_set_float(conf, "input_axis_threshold",
          settings->input.axis_threshold);
-   config_set_bool(conf, "ui_companion_start_on_boot",
-         settings->ui.companion_start_on_boot);
-   config_set_bool(conf, "ui_companion_enable",
-         settings->ui.companion_enable);
-   config_set_bool(conf, "video_gpu_record",
-         settings->video.gpu_record);
-   config_set_bool(conf, "input_remap_binds_enable",
-         settings->input.remap_binds_enable);
-   config_set_bool(conf, "back_as_menu_toggle_enable",
-         settings->input.back_as_menu_toggle_enable);
-   config_set_bool(conf, "netplay_client_swap_input",
-         settings->input.netplay_client_swap_input);
-   config_set_bool(conf, "input_descriptor_label_show",
-         settings->input.input_descriptor_label_show);
-   config_set_bool(conf, "input_descriptor_hide_unbound",
-         settings->input.input_descriptor_hide_unbound);
-   config_set_bool(conf,  "load_dummy_on_core_shutdown",
-         settings->load_dummy_on_core_shutdown);
-   config_set_bool(conf,  "builtin_mediaplayer_enable",
-         settings->multimedia.builtin_mediaplayer_enable);
-   config_set_bool(conf,  "builtin_imageviewer_enable",
-         settings->multimedia.builtin_imageviewer_enable);
-   config_set_bool(conf,  "fps_show",
-         settings->fps_show);
+
+   for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
+   {
+      config_set_bool(conf, bool_settings[i].ident,
+            bool_settings[i].value);
+   }
    config_set_bool(conf,  "ui_menubar_enable",
          settings->ui.menubar_enable);
    config_set_path(conf,  "recording_output_directory",
