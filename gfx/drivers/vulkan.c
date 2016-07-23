@@ -1448,6 +1448,60 @@ static void vulkan_readback(vk_t *vk)
          VK_PIPELINE_STAGE_HOST_BIT);
 }
 
+static void vulkan_inject_black_frame(vk_t *vk)
+{
+   VkCommandBufferBeginInfo begin_info           = {
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+   VkSubmitInfo submit_info                      = {
+      VK_STRUCTURE_TYPE_SUBMIT_INFO };
+
+   const VkClearColorValue clear_color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
+   const VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+   unsigned frame_index                = vk->context->current_swapchain_index;
+   struct vk_per_frame *chain          = &vk->swapchain[frame_index];
+   vk->chain                           = chain;
+   vk->cmd                             = chain->cmd;
+   begin_info.flags                    = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   vkResetCommandBuffer(vk->cmd, 0);
+   vkBeginCommandBuffer(vk->cmd, &begin_info);
+
+   vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   vkCmdClearColorImage(vk->cmd, chain->backbuffer.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         &clear_color, 1, &range);
+
+   vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+         VK_ACCESS_TRANSFER_WRITE_BIT, 0,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+
+   vkEndCommandBuffer(vk->cmd);
+
+   submit_info.commandBufferCount   = 1;
+   submit_info.pCommandBuffers      = &vk->cmd;
+   if (vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE)
+   {
+      submit_info.signalSemaphoreCount = 1;
+      submit_info.pSignalSemaphores = &vk->context->swapchain_semaphores[frame_index];
+   }
+
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   vkQueueSubmit(vk->context->queue, 1,
+         &submit_info, vk->context->swapchain_fences[frame_index]);
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
+
+   video_context_driver_swap_buffers();
+}
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -1457,6 +1511,7 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned width, height;
    VkClearValue clear_value;
    vk_t *vk                                      = (vk_t*)data;
+   settings_t *settings                          = config_get_ptr();
    static struct retro_perf_counter frame_run    = {0};
    static struct retro_perf_counter begin_cmd    = {0};
    static struct retro_perf_counter build_cmd    = {0};
@@ -1848,6 +1903,17 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->should_resize = false;
    }
    vulkan_check_swapchain(vk);
+
+   /* Disable BFI during fast forward, slow-motion,
+    * and pause to prevent flicker. */
+   if (
+         settings->video.black_frame_insertion
+         && !input_driver_is_nonblock_state()
+         && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
+         && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+   {
+      vulkan_inject_black_frame(vk);
+   }
 
    return true;
 }

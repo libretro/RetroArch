@@ -2300,7 +2300,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.clipped                = true;
    info.oldSwapchain           = old_swapchain;
    info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
-      | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+      | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
    if (vkCreateSwapchainKHR(vk->context.device,
             &info, NULL, &vk->swapchain) != VK_SUCCESS)
