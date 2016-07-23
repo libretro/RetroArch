@@ -1889,7 +1889,8 @@ static bool vulkan_frame(void *data, const void *frame,
    video_context_driver_swap_buffers();
    performance_counter_stop(&swapbuffers);
 
-   video_context_driver_update_window_title();
+   if (!vk->context->swap_interval_emulation_lock)
+      video_context_driver_update_window_title();
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
@@ -1913,6 +1914,22 @@ static bool vulkan_frame(void *data, const void *frame,
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
    {
       vulkan_inject_black_frame(vk);
+   }
+
+   /* Vulkan doesn't directly support swap_interval > 1, so we fake it by duping out more frames. */
+   if (vk->context->swap_interval > 1 && !vk->context->swap_interval_emulation_lock)
+   {
+      unsigned i;
+      vk->context->swap_interval_emulation_lock = true;
+      for (i = 1; i < vk->context->swap_interval; i++)
+      {
+         if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg))
+         {
+            vk->context->swap_interval_emulation_lock = false;
+            return false;
+         }
+      }
+      vk->context->swap_interval_emulation_lock = false;
    }
 
    return true;

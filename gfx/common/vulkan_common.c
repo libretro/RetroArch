@@ -2207,6 +2207,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
             present_modes[i]);
    }
 
+   vk->context.swap_interval = swap_interval;
    for (i = 0; i < present_mode_count; i++)
    {
       if (!swap_interval && present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)

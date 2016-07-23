@@ -105,6 +105,7 @@ typedef struct vulkan_context
    uint32_t current_swapchain_index;
    unsigned swapchain_width;
    unsigned swapchain_height;
+   unsigned swap_interval;
    VkFormat swapchain_format;
 
    slock_t *queue_lock;
@@ -116,6 +117,7 @@ typedef struct vulkan_context
 
    /* Used by screenshot to get blits with correct colorspace. */
    bool swapchain_is_srgb;
+   bool swap_interval_emulation_lock;
 } vulkan_context_t;
 
 typedef struct gfx_ctx_vulkan_data
