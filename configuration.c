@@ -2649,6 +2649,12 @@ struct config_int_setting
    unsigned value;
 };
 
+struct config_float_setting
+{ 
+   const char *ident;
+   unsigned value;
+};
+
 /**
  * config_save_file:
  * @path            : Path that shall be written to.
@@ -2832,6 +2838,30 @@ bool config_save_file(const char *path)
       { "bundle_assets_extract_version_current", settings->bundle_assets_extract_version_current},
       { "bundle_assets_extract_last_version", settings->bundle_assets_extract_last_version}
    };
+   struct config_float_setting float_settings[] = {
+      { "video_aspect_ratio", settings->video.aspect_ratio},
+      { "video_scale",        settings->video.scale},
+      { "video_refresh_rate", settings->video.refresh_rate},
+      { "audio_rate_control_delta", settings->audio.rate_control_delta},
+      { "audio_max_timing_skew",    settings->audio.max_timing_skew},
+      { "audio_volume",             settings->audio.volume},
+      { "video_font_size",          settings->video.font_size},
+#ifdef HAVE_OVERLAY
+      { "input_overlay_opacity",    settings->input.overlay_opacity},
+      { "input_overlay_scale",      settings->input.overlay_scale},
+#endif
+#ifdef HAVE_MENU
+      { "menu_wallpaper_opacity",   settings->menu.wallpaper.opacity},
+      { "menu_footer_opacity",      settings->menu.footer.opacity},
+      { "menu_header_opacity",      settings->menu.header.opacity},
+#endif
+      { "video_message_pos_x",      settings->video.msg_pos_x},
+      { "video_message_pos_y",      settings->video.msg_pos_y},
+      { "video_font_size",          settings->video.font_size},
+      { "fastforward_ratio",        settings->fastforward_ratio},
+      { "slowmotion_ratio",         settings->slowmotion_ratio},
+      { "input_axis_threshold",     settings->input.axis_threshold},
+   };
 
 
    if (!conf)
@@ -2842,8 +2872,11 @@ bool config_save_file(const char *path)
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
-   config_set_float(conf, "input_axis_threshold",
-         settings->input.axis_threshold);
+   for (i = 0; i < ARRAY_SIZE(float_settings); i++)
+   {
+      config_set_float(conf, float_settings[i].ident,
+            float_settings[i].value);
+   }
 
    for (i = 0; i < ARRAY_SIZE(int_settings); i++)
    {
@@ -2900,12 +2933,6 @@ bool config_save_file(const char *path)
 #ifdef HAVE_MENU
    config_set_path(conf, "menu_wallpaper",
          settings->path.menu_wallpaper);
-   config_set_float(conf, "menu_wallpaper_opacity",
-         settings->menu.wallpaper.opacity);
-   config_set_float(conf, "menu_footer_opacity",
-         settings->menu.footer.opacity);
-   config_set_float(conf, "menu_header_opacity",
-         settings->menu.header.opacity);
 #endif
    config_set_string(conf, "video_filter",
          settings->path.softfilter_plugin);
@@ -2925,16 +2952,10 @@ bool config_save_file(const char *path)
          settings->directory.cursor);
    config_set_path(conf,  "content_history_dir",
          settings->directory.content_history);
-   config_set_float(conf, "video_aspect_ratio",
-         settings->video.aspect_ratio);
-   config_set_float(conf, "video_scale",
-         settings->video.scale);
    config_set_string(conf,  "playlist_names",
          settings->playlist_names);
    config_set_string(conf,  "playlist_cores",
          settings->playlist_cores);
-   config_set_float(conf, "video_refresh_rate",
-         settings->video.refresh_rate);
    config_set_string(conf, "video_driver",
          settings->video.driver);
    config_set_string(conf, "record_driver",
@@ -2962,16 +2983,10 @@ bool config_save_file(const char *path)
    config_set_string(conf, "cheevos_password", settings->cheevos.password);
 #endif
 
-   config_set_float(conf, "audio_rate_control_delta",
-         settings->audio.rate_control_delta);
-   config_set_float(conf, "audio_max_timing_skew",
-         settings->audio.max_timing_skew);
-   config_set_float(conf, "audio_volume", settings->audio.volume);
    config_set_string(conf, "video_context_driver", settings->video.context_driver);
    config_set_string(conf, "audio_driver", settings->audio.driver);
 
 
-   config_set_float(conf, "video_font_size", settings->video.font_size);
 
    msg_color = (((int)(settings->video.msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->video.msg_color_g * 255.0f) & 0xff) <<  8) +
@@ -3048,25 +3063,13 @@ bool config_save_file(const char *path)
 
 
 #ifdef HAVE_OVERLAY
-   config_set_float(conf, "input_overlay_opacity",
-         settings->input.overlay_opacity);
-   config_set_float(conf, "input_overlay_scale",
-         settings->input.overlay_scale);
 
    config_set_path(conf, "osk_overlay_directory",
          string_is_empty(global->dir.osk_overlay) 
          ? "default" : global->dir.osk_overlay);
 #endif
-   config_set_float(conf, "video_message_pos_x",
-         settings->video.msg_pos_x);
-   config_set_float(conf, "video_message_pos_y",
-         settings->video.msg_pos_y);
 
    video_driver_save_settings(conf);
-
-   config_set_float(conf, "video_font_size",
-         settings->video.font_size);
-
 
 #ifdef HAVE_LAKKA
    if (settings->ssh_enable)
@@ -3083,10 +3086,6 @@ bool config_save_file(const char *path)
       remove(LAKKA_BLUETOOTH_PATH);
 #endif
 
-   config_set_float(conf, "fastforward_ratio",
-         settings->fastforward_ratio);
-   config_set_float(conf, "slowmotion_ratio",
-         settings->slowmotion_ratio);
 
 #ifndef HAVE_DYNAMIC
    config_set_path(conf,  "libretro_path",
