@@ -5430,37 +5430,40 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->video.hard_sync,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_HARD_SYNC),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC),
-               hard_sync,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
+         if (string_is_equal(settings->video.driver, "gl"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->video.hard_sync,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_HARD_SYNC),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC),
+                  hard_sync,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
 
-         CONFIG_UINT(
-               list, list_info,
-               &settings->video.hard_sync_frames,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES),
-               hard_sync_frames,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES);
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->video.hard_sync_frames,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES),
+                  hard_sync_frames,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES);
+         }
 
          CONFIG_UINT(
                list, list_info,
