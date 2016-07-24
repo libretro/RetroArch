@@ -70,6 +70,12 @@ struct config_int_setting
    unsigned value;
 };
 
+struct config_float_setting_ptr
+{ 
+   const char *ident;
+   float *value_ptr;
+};
+
 struct config_float_setting
 { 
    const char *ident;
@@ -1397,6 +1403,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive},
       { "auto_screenshot_filename",     &settings->auto_screenshot_filename}
    };
+
    struct config_int_setting_ptr int_settings[] = {
       { "video_fullscreen_x",  &settings->video.fullscreen_x},
       { "video_fullscreen_y",  &settings->video.fullscreen_y},
@@ -1460,6 +1467,27 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "menu_scroll_down_btn",   &settings->menu_scroll_down_btn},
       { "menu_scroll_up_btn",     &settings->menu_scroll_up_btn}
    };
+
+   struct config_float_setting_ptr float_settings[] = {
+      { "input_overlay_opacity", &settings->input.overlay_opacity},
+      { "input_overlay_scale", &settings->input.overlay_scale},
+      { "slowmotion_ratio", &settings->slowmotion_ratio},
+      { "fastforward_ratio", &settings->fastforward_ratio},
+      { "menu_wallpaper_opacity", &settings->menu.wallpaper.opacity},
+      { "menu_footer_opacity", &settings->menu.footer.opacity},
+      { "menu_header_opacity", &settings->menu.header.opacity},
+      { "video_aspect_ratio", &settings->video.aspect_ratio},
+      { "video_refresh_rate", &settings->video.refresh_rate},
+      { "video_font_size", &settings->video.font_size},
+      { "video_message_pos_x", &settings->video.msg_pos_x},
+      { "video_message_pos_y", &settings->video.msg_pos_y},
+      { "input_axis_threshold", &settings->input.axis_threshold},
+      { "audio_rate_control_delta", &settings->audio.rate_control_delta},
+      { "audio_max_timing_skew", &settings->audio.max_timing_skew},
+      { "audio_volume", &settings->audio.volume},
+      { "video_scale", &settings->video.scale}
+   };
+
 
    if (path)
    {
@@ -1585,24 +1613,13 @@ static bool config_load_file(const char *path, bool set_defaults)
          &settings->menu.title_color);
 #endif
 
+   for (i = 0; i < ARRAY_SIZE(float_settings); i++)
+   {
+      float tmp = 0.0f;
+      if (config_get_float(conf, float_settings[i].ident, &tmp))
+         *float_settings[i].value_ptr = tmp;
+   }
 
-   CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_opacity, "input_overlay_opacity");
-   CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_scale, "input_overlay_scale");
-   CONFIG_GET_FLOAT_BASE(conf, settings, slowmotion_ratio, "slowmotion_ratio");
-   CONFIG_GET_FLOAT_BASE(conf, settings, fastforward_ratio, "fastforward_ratio");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.scale, "video_scale");
-   CONFIG_GET_FLOAT_BASE(conf, settings, menu.wallpaper.opacity, "menu_wallpaper_opacity");
-   CONFIG_GET_FLOAT_BASE(conf, settings, menu.footer.opacity, "menu_footer_opacity");
-   CONFIG_GET_FLOAT_BASE(conf, settings, menu.header.opacity, "menu_header_opacity");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.aspect_ratio, "video_aspect_ratio");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.refresh_rate, "video_refresh_rate");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.font_size, "video_font_size");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_x, "video_message_pos_x");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_y, "video_message_pos_y");
-   CONFIG_GET_FLOAT_BASE(conf, settings, input.axis_threshold, "input_axis_threshold");
-   CONFIG_GET_FLOAT_BASE(conf, settings, audio.rate_control_delta, "audio_rate_control_delta");
-   CONFIG_GET_FLOAT_BASE(conf, settings, audio.max_timing_skew, "audio_max_timing_skew");
-   CONFIG_GET_FLOAT_BASE(conf, settings, audio.volume, "audio_volume");
 
    config_get_array(conf, "playlist_names", settings->playlist_names, sizeof(settings->playlist_names));
    config_get_array(conf, "playlist_cores", settings->playlist_cores, sizeof(settings->playlist_cores));
