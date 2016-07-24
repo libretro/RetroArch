@@ -25,25 +25,14 @@ int menu_hash_get_help_eo_enum(enum msg_hash_enums msg, char *s, size_t len)
    {
       case MSG_UNKNOWN:
       default:
-         return -1;
-   }
-
-   return 0;
-}
-
-int menu_hash_get_help_eo(uint32_t hash, char *s, size_t len)
-{
-   int ret = 0;
-
-   switch (hash)
-   {
-      case 0:
-      default:
-         ret = -1;
+         if (string_is_empty(s))
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
+         /* TODO/FIXME - should change this to -1 once we add more entries */
          break;
    }
 
-   return ret;
+   /* TODO/FIXME - should change this to 0 once we add more entries */
+   return -1;
 }
 
 const char *msg_hash_to_str_eo(enum msg_hash_enums msg)
