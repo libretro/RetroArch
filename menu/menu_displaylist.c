@@ -4163,10 +4163,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_START_CORE, PARSE_ACTION, false);
 
-#if 0
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_START_NET_RETROPAD, PARSE_ACTION, false);
-#endif
 
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
