@@ -2652,7 +2652,13 @@ struct config_int_setting
 struct config_float_setting
 { 
    const char *ident;
-   unsigned value;
+   float value;
+};
+
+struct config_string_setting
+{ 
+   const char *ident;
+   const char *value;
 };
 
 /**
@@ -2870,6 +2876,42 @@ bool config_save_file(const char *path)
       { "input_axis_threshold",     settings->input.axis_threshold},
    };
 
+   struct config_string_setting string_settings[] = {
+      { "bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir},
+      { "video_filter",             settings->path.softfilter_plugin},
+      { "audio_dsp_plugin",         settings->path.audio_dsp_plugin},
+      { "playlist_names",           settings->playlist_names},
+      { "playlist_cores",           settings->playlist_cores},
+      { "video_driver",             settings->video.driver},
+      { "record_driver",            settings->record.driver},
+      { "camera_driver",            settings->camera.driver},
+      { "location_driver",          settings->location.driver},
+#ifdef HAVE_MENU
+      { "menu_driver",              settings->menu.driver},
+#endif
+      { "audio_device",             settings->audio.device},
+      { "core_updater_buildbot_url",settings->network.buildbot_url},
+      { "core_updater_buildbot_assets_url",settings->network.buildbot_assets_url},
+      { "camera_device",            settings->camera.device},
+#ifdef HAVE_CHEEVOS
+      { "cheevos_username",         settings->cheevos.username},
+      { "cheevos_password",         settings->cheevos.password},
+#endif
+      { "video_context_driver",     settings->video.context_driver},
+      { "audio_driver",             settings->audio.driver},
+      { "audio_resampler",          settings->audio.resampler},
+#ifdef HAVE_NETPLAY
+      { "netplay_ip_address",       global->netplay.server},
+#endif
+      { "netplay_nickname",         settings->username},
+      { "input_driver",             settings->input.driver},
+      { "input_joypad_driver",      settings->input.joypad_driver},
+      { "input_keyboard_layout",    settings->input.keyboard_layout},
+      { "bundle_assets_src_path",   settings->path.bundle_assets_src},
+      { "bundle_assets_dst_path",   settings->path.bundle_assets_dst}
+   };
+
+
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -2878,6 +2920,12 @@ bool config_save_file(const char *path)
       return false;
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
+
+   for (i = 0; i < ARRAY_SIZE(string_settings); i++)
+   {
+      config_set_string(conf, string_settings[i].ident,
+            string_settings[i].value);
+   }
 
    for (i = 0; i < ARRAY_SIZE(float_settings); i++)
    {
@@ -2942,59 +2990,7 @@ bool config_save_file(const char *path)
          settings->menu.title_color);
 #endif
 
-   config_set_string(conf,  "bundle_assets_src_path",
-         settings->path.bundle_assets_src);
-   config_set_string(conf,  "bundle_assets_dst_path",
-         settings->path.bundle_assets_dst);
-   config_set_string(conf,  "bundle_assets_dst_path_subdir",
-         settings->path.bundle_assets_dst_subdir);
-   config_set_string(conf, "video_filter",
-         settings->path.softfilter_plugin);
-   config_set_string(conf, "audio_dsp_plugin",
-         settings->path.audio_dsp_plugin);
-   config_set_string(conf,  "playlist_names",
-         settings->playlist_names);
-   config_set_string(conf,  "playlist_cores",
-         settings->playlist_cores);
-   config_set_string(conf, "video_driver",
-         settings->video.driver);
-   config_set_string(conf, "record_driver",
-         settings->record.driver);
-   config_set_string(conf, "camera_driver",
-         settings->camera.driver);
-   config_set_string(conf, "location_driver",
-         settings->location.driver);
-#ifdef HAVE_MENU
-   config_set_string(conf,"menu_driver", settings->menu.driver);
-#endif
 
-   config_set_string(conf, "audio_device", settings->audio.device);
-   config_set_string(conf, "core_updater_buildbot_url",
-         settings->network.buildbot_url);
-   config_set_string(conf, "core_updater_buildbot_assets_url",
-         settings->network.buildbot_assets_url);
-   config_set_string(conf, "camera_device", settings->camera.device);
-
-#ifdef HAVE_CHEEVOS
-   config_set_string(conf, "cheevos_username", settings->cheevos.username);
-   config_set_string(conf, "cheevos_password", settings->cheevos.password);
-#endif
-
-   config_set_string(conf, "video_context_driver", settings->video.context_driver);
-   config_set_string(conf, "audio_driver", settings->audio.driver);
-   config_set_string(conf, "audio_resampler", settings->audio.resampler);
-#ifdef HAVE_NETPLAY
-   config_set_string(conf, "netplay_ip_address",
-         global->netplay.server);
-#endif
-   config_set_string(conf, "netplay_nickname",
-         settings->username);
-
-   config_set_string(conf, "input_driver", settings->input.driver);
-   config_set_string(conf, "input_joypad_driver",
-         settings->input.joypad_driver);
-   config_set_string(conf, "input_keyboard_layout",
-         settings->input.keyboard_layout);
 
    config_set_path(conf,  "recording_output_directory",
          global->record.output_dir);
