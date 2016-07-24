@@ -1790,8 +1790,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
 
    /* Post-settings load */
-   if (string_is_equal(settings->path.menu_wallpaper, "default"))
-      *settings->path.menu_wallpaper = '\0';
 
    if (settings->video.hard_sync_frames > 3)
       settings->video.hard_sync_frames = 3;
@@ -1802,14 +1800,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    settings->video.swap_interval = MAX(settings->video.swap_interval, 1);
    settings->video.swap_interval = MIN(settings->video.swap_interval, 4);
 
-   if (string_is_equal(settings->directory.video_shader, "default"))
-      *settings->directory.video_shader = '\0';
-
-   if (string_is_equal(settings->directory.video_filter, "default"))
-      *settings->directory.video_filter = '\0';
-
-   if (string_is_equal(settings->directory.audio_filter, "default"))
-      *settings->directory.audio_filter = '\0';
 
    audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 
@@ -1895,6 +1885,14 @@ static bool config_load_file(const char *path, bool set_defaults)
       *settings->path.libretro = '\0';
    }
 
+   if (string_is_equal(settings->path.menu_wallpaper, "default"))
+      *settings->path.menu_wallpaper = '\0';
+   if (string_is_equal(settings->directory.video_shader, "default"))
+      *settings->directory.video_shader = '\0';
+   if (string_is_equal(settings->directory.video_filter, "default"))
+      *settings->directory.video_filter = '\0';
+   if (string_is_equal(settings->directory.audio_filter, "default"))
+      *settings->directory.audio_filter = '\0';
    if (string_is_equal(settings->directory.core_assets, "default"))
       *settings->directory.core_assets = '\0';
    if (string_is_equal(settings->directory.assets, "default"))
