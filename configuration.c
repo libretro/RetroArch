@@ -2643,6 +2643,12 @@ struct config_bool_setting
    bool value;
 };
 
+struct config_int_setting
+{ 
+   const char *ident;
+   unsigned value;
+};
+
 /**
  * config_save_file:
  * @path            : Path that shall be written to.
@@ -2766,6 +2772,36 @@ bool config_save_file(const char *path)
       { "input_autodetect_enable",      settings->input.autodetect_enable},
       { "audio_rate_control",           settings->audio.rate_control},
    };
+   struct config_int_setting int_settings[] = {
+      { "input_bind_timeout",           settings->input.bind_timeout},
+      { "input_turbo_period",           settings->input.turbo_period},
+      { "input_duty_cycle",             settings->input.turbo_duty_cycle},
+      { "input_max_users",              settings->input.max_users},
+      { "input_menu_toggle_gamepad_combo", settings->input.menu_toggle_gamepad_combo},
+      { "audio_latency",                settings->audio.latency},
+      { "audio_block_frames",           settings->audio.block_frames},
+      { "rewind_granularity",           settings->rewind_granularity},
+      { "autosave_interval",            settings->autosave_interval},
+      { "libretro_log_level",           settings->libretro_log_level},
+      { "keyboard_gamepad_mapping_type",settings->input.keyboard_gamepad_mapping_type},
+      { "input_poll_type_behavior",     settings->input.poll_type_behavior},
+      { "menu_ok_btn",                  settings->menu_ok_btn},
+      { "menu_cancel_btn",              settings->menu_cancel_btn},
+      { "menu_search_btn",              settings->menu_search_btn},
+      { "menu_info_btn",                settings->menu_info_btn},
+      { "menu_default_btn",             settings->menu_default_btn},
+      { "menu_scroll_down_btn",         settings->menu_scroll_down_btn},
+      { "video_monitor_index",          settings->video.monitor_index},
+      { "video_fullscreen_x",           settings->video.fullscreen_x},
+      { "video_fullscreen_y",           settings->video.fullscreen_y},
+#ifdef HAVE_COMMAND
+      { "network_cmd_port",             settings->network_cmd_port},
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+      { "network_remote_base_port",     settings->network_remote_base_port},
+#endif
+      { "menu_scroll_up_btn",           settings->menu_scroll_up_btn}
+   };
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -2775,18 +2811,14 @@ bool config_save_file(const char *path)
 
    RARCH_LOG("Saving config at path: \"%s\"\n", path);
 
-   config_set_int(conf, "input_bind_timeout",
-         settings->input.bind_timeout);
-   config_set_int(conf, "input_turbo_period",
-         settings->input.turbo_period);
-   config_set_int(conf, "input_duty_cycle",
-         settings->input.turbo_duty_cycle);
-   config_set_int(conf, "input_max_users",
-         settings->input.max_users);
-   config_set_int(conf, "input_menu_toggle_gamepad_combo",
-         settings->input.menu_toggle_gamepad_combo);
    config_set_float(conf, "input_axis_threshold",
          settings->input.axis_threshold);
+
+   for (i = 0; i < ARRAY_SIZE(int_settings); i++)
+   {
+      config_set_int(conf, int_settings[i].ident,
+            int_settings[i].value);
+   }
 
    for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
    {
@@ -2862,18 +2894,10 @@ bool config_save_file(const char *path)
          settings->directory.cursor);
    config_set_path(conf,  "content_history_dir",
          settings->directory.content_history);
-   config_set_int(conf,   "audio_latency",
-         settings->audio.latency);
-   config_set_int(conf,   "audio_block_frames",
-         settings->audio.block_frames);
-   config_set_int(conf,   "rewind_granularity",
-         settings->rewind_granularity);
    config_set_float(conf, "video_aspect_ratio",
          settings->video.aspect_ratio);
    config_set_float(conf, "video_scale",
          settings->video.scale);
-   config_set_int(conf,   "autosave_interval",
-         settings->autosave_interval);
 #ifdef GEKKO
    config_set_int(conf,   "video_viwidth",
          settings->video.viwidth);
@@ -2888,12 +2912,6 @@ bool config_save_file(const char *path)
          settings->playlist_cores);
    config_set_float(conf, "video_refresh_rate",
          settings->video.refresh_rate);
-   config_set_int(conf,   "video_monitor_index",
-         settings->video.monitor_index);
-   config_set_int(conf,    "video_fullscreen_x",
-         settings->video.fullscreen_x);
-   config_set_int(conf,    "video_fullscreen_y",
-         settings->video.fullscreen_y);
    config_set_string(conf, "video_driver",
          settings->video.driver);
    config_set_string(conf, "record_driver",
@@ -3055,10 +3073,6 @@ bool config_save_file(const char *path)
    config_set_float(conf, "video_font_size",
          settings->video.font_size);
 
-#ifdef HAVE_COMMAND
-   config_set_int(conf, "network_cmd_port",
-         settings->network_cmd_port);
-#endif
 
 #ifdef HAVE_LAKKA
    if (settings->ssh_enable)
@@ -3122,35 +3136,9 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
    }
 
-#ifdef HAVE_NETWORKGAMEPAD
-   config_set_int(conf, "network_remote_base_port",
-         settings->network_remote_base_port);
-
-#endif
    for (i = 0; i < MAX_USERS; i++)
       save_keybinds_user(conf, i);
 
-   config_set_int(conf, "libretro_log_level",
-         settings->libretro_log_level);
-
-   config_set_int(conf, "keyboard_gamepad_mapping_type",
-         settings->input.keyboard_gamepad_mapping_type);
-   config_set_int(conf, "input_poll_type_behavior",
-         settings->input.poll_type_behavior);
-   config_set_int(conf, "menu_ok_btn",
-         settings->menu_ok_btn);
-   config_set_int(conf, "menu_cancel_btn",
-         settings->menu_cancel_btn);
-   config_set_int(conf, "menu_search_btn",
-         settings->menu_search_btn);
-   config_set_int(conf, "menu_info_btn",
-         settings->menu_info_btn);
-   config_set_int(conf, "menu_default_btn",
-         settings->menu_default_btn);
-   config_set_int(conf, "menu_scroll_down_btn",
-         settings->menu_scroll_down_btn);
-   config_set_int(conf, "menu_scroll_up_btn",
-         settings->menu_scroll_up_btn);
 
    ret = config_file_write(conf, path);
    config_file_free(conf);
