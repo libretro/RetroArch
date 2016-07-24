@@ -2082,9 +2082,6 @@ enum msg_hash_enums
 #define MENU_LABEL_HELP_SCANNING_CONTENT                                       0x1dec52b8U
 #define MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD                                 0x6e66ef07U
 #define MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING                            0xd44d395cU
-#define MENU_LABEL_TURBO                                                       0x107434f1U
-#define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
-#define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 
 /* Main menu */
 #define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
