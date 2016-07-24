@@ -1667,6 +1667,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (config_get_path(conf, "core_options_path", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->path.core_options, tmp_str, sizeof(settings->path.core_options));
 
+   if (config_get_path(conf, "system_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.system, tmp_str,
+            sizeof(settings->directory.system));
 
    if (config_get_path(conf, "content_database_path", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->path.content_database, tmp_str, sizeof(settings->path.content_database));
@@ -1884,15 +1887,14 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (string_is_equal(settings->directory.menu_config, "default"))
       *settings->directory.menu_config = '\0';
 #endif
-
-
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->directory.overlay, "default"))
       *settings->directory.overlay = '\0';
    if (string_is_equal(global->dir.osk_overlay, "default"))
       *global->dir.osk_overlay = '\0';
 #endif
-
+   if (string_is_equal(settings->directory.system, "default"))
+      *settings->directory.system = '\0';
 
    if (settings->slowmotion_ratio < 1.0f)
       settings->slowmotion_ratio = 1.0f;
@@ -1907,8 +1909,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    settings->samba_enable     = path_file_exists(LAKKA_SAMBA_PATH);
    settings->bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
-
-
 
    if (!global->has_set.save_path &&
          config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
@@ -1950,24 +1950,6 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
       else
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");
-   }
-
-
-   if (config_get_path(conf, "system_directory", tmp_str, sizeof(tmp_str)))
-   {
-      strlcpy(settings->directory.system, tmp_str,
-            sizeof(settings->directory.system));
-   }
-   else
-   {
-      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR\n");
-      *settings->directory.system = '\0';
-   }
-
-   if (string_is_equal(settings->directory.system, "default"))
-   {
-      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR\n");
-      *settings->directory.system = '\0';
    }
 
    config_read_keybinds_conf(conf);
