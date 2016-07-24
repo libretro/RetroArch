@@ -2027,27 +2027,14 @@ enum msg_hash_enums
 #define MENU_LABEL_LOAD_ARCHIVE                                                0xc3834e66U
 
 /* Help */
-#define MENU_LABEL_REWIND_ENABLE                                               0x9761e074U
-#define MENU_LABEL_REWIND_GRANULARITY                                          0xe859cbdfU
-
 #define MENU_LABEL_LIBRETRO_INFO_PATH                                          0xe552b25fU
-
-#define MENU_LABEL_AUTOSAVE_INTERVAL                                           0xecc87351U
-
-#define MENU_LABEL_CONFIG_SAVE_ON_EXIT                                         0x79b590feU
-
-#define MENU_LABEL_CAMERA_ALLOW                                                0xc14d302cU
-#define MENU_LABEL_LOCATION_ALLOW                                              0xf089275cU
 
 #define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
 
-#define MENU_LABEL_INPUT_DRIVER                                                0x4c087840U
 #define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
 #define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
 
-#define MENU_LABEL_AUDIO_MUTE                                                  0xe0ca1151U
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
-#define MENU_LABEL_AUDIO_MAX_TIMING_SKEW                                       0x4c96f75cU
 
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
@@ -2061,7 +2048,6 @@ enum msg_hash_enums
 #define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
 #define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
 #define MENU_LABEL_VIDEO_DRIVER_DRM                                            0x61a89bfaU
-#define MENU_LABEL_VIDEO_ROTATION                                              0x4ce6882bU
 #define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
 #define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
 #define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
@@ -2099,7 +2085,6 @@ enum msg_hash_enums
 #define MENU_LABEL_TURBO                                                       0x107434f1U
 #define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
-#define MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT                                0xec5a348bU
 
 /* Main menu */
 #define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
