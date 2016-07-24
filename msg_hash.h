@@ -1794,8 +1794,6 @@ enum msg_hash_enums
 
 /* Accounts settings */
 
-#define MENU_LABEL_ACCOUNTS_CHEEVOS_PASSWORD                                   0x45cf62e3U
-#define MENU_LABEL_ACCOUNTS_CHEEVOS_USERNAME                                   0x2bf153f0U
 #define MENU_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS                                 0xe6b7c16cU
 #define MENU_LABEL_ACCOUNTS_LIST                                               0x774c15a0U
 
@@ -1870,16 +1868,12 @@ enum msg_hash_enums
 #define MENU_LABEL_INPUT_DUTY_CYCLE                                            0xec787129U
 #define MENU_LABEL_INPUT_BIND_DEVICE_ID                                        0xd1ea94ecU
 #define MENU_LABEL_INPUT_BIND_DEVICE_TYPE                                      0xf6e9f041U
-#define MENU_LABEL_INPUT_AXIS_THRESHOLD                                        0xe95c2095U
 
 #define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
 
 /* Record settings */
 
-#define MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY                                 0x8343eff4U
 #define MENU_LABEL_RECORD_CONFIG                                               0x11c3daf9U
-#define MENU_LABEL_RECORD_PATH                                                 0x016d7afaU
-#define MENU_LABEL_RECORD_ENABLE                                               0x1654e22aU
 
 /* Cheat options */
 
@@ -1893,10 +1887,6 @@ enum msg_hash_enums
 
 /* Disk settings */
 
-#define MENU_LABEL_DISK_EJECT_TOGGLE                                           0x49633fbbU
-#define MENU_LABEL_DISK_NEXT                                                   0xeeaf6c6eU
-#define MENU_LABEL_DISK_CYCLE_TRAY_STATUS                                      0x3035cdc1U
-#define MENU_LABEL_DISK_INDEX                                                  0x6c14bf54U
 #define MENU_LABEL_DISK_OPTIONS                                                0xc61ab5fbU
 #define MENU_LABEL_DISK_IMAGE_APPEND                                           0x5af7d709U
 
@@ -1907,8 +1897,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_ENABLE_HOTKEY                                               0xc04037bfU
 #define MENU_LABEL_GRAB_MOUSE_TOGGLE                                           0xb2869aaaU
-#define MENU_LABEL_STATE_SLOT_DECREASE                                         0xe48b8082U
-#define MENU_LABEL_STATE_SLOT_INCREASE                                         0x36a0cbb0U
 
 /* Directory settings */
 
@@ -2015,7 +2003,6 @@ enum msg_hash_enums
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
-#define MENU_LABEL_VIDEO_DRIVER                                                0x1805a5e7U
 #define MENU_LABEL_VIDEO_DRIVER_GL                                             0x005977f8U
 #define MENU_LABEL_VIDEO_DRIVER_SDL2                                           0x7c9dd69aU
 #define MENU_LABEL_VIDEO_DRIVER_SDL1                                           0x0b88a968U
