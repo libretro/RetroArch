@@ -405,12 +405,11 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 {
 #ifndef IS_SALAMANDER
    char path[PATH_MAX_LENGTH] = {0};
-   settings_t       *settings = config_get_ptr();
 
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
-    * settings->path.libretro is set here. */
-   if (!settings->path.libretro[0] && *argc >= 1 && strrchr(argv[0], '/'))
+    * active core path is set here. */
+   if (config_active_core_path_is_empty() && *argc >= 1 && strrchr(argv[0], '/'))
    {
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
       if (path_file_exists(path))

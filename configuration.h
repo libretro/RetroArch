@@ -604,6 +604,8 @@ void config_set_active_core_path(const char *path);
 
 void config_clear_active_core_path(void);
 
+bool config_active_core_path_is_empty(void);
+
 void config_free_state(void);
 
 settings_t *config_get_ptr(void);
