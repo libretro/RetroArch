@@ -1417,6 +1417,40 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "video_frame_delay",      &settings->video.frame_delay },
       { "video_swap_interval",    &settings->video.swap_interval},
       { "input_poll_type_behavior", &settings->input.poll_type_behavior},
+      { "input_max_users",          &settings->input.max_users},
+      { "input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo},
+      { "libretro_log_level", &settings->libretro_log_level},
+      { "rewind_granularity", &settings->rewind_granularity},
+      { "autosave_interval", &settings->autosave_interval},
+      { "keyboard_gamepad_mapping_type", &settings->input.keyboard_gamepad_mapping_type},
+      { "bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current},
+      { "bundle_assets_extract_last_version", &settings->bundle_assets_extract_last_version},
+      { "content_history_size", &settings->content_history_size },
+      { "input_bind_timeout", &settings->input.bind_timeout},
+      { "input_turbo_period", &settings->input.turbo_period},
+      { "input_duty_cycle", &settings->input.turbo_duty_cycle},
+#ifdef HAVE_NETWORKGAMEPAD
+      { "network_remote_base_port", &settings->network_remote_base_port},
+#endif
+#ifdef HAVE_COMMAND
+      { "network_cmd_port", &settings->network_cmd_port},
+#endif
+#ifdef HAVE_LANGEXTRA
+      { "user_language", &settings->user_language},
+#endif
+#ifdef HAVE_MENU
+      { "xmb_scale_factor", &settings->menu.xmb.scale_factor},
+      { "xmb_alpha_factor", &settings->menu.xmb.alpha_factor},
+      { "xmb_theme", &settings->menu.xmb.theme},
+#ifdef HAVE_XMB
+      { "xmb_menu_color_theme", &settings->menu.xmb.menu_color_theme},
+#endif
+      { "materialui_menu_color_theme", &settings->menu.materialui.menu_color_theme},
+      { "menu_shader_pipeline", &settings->menu.xmb.shader_pipeline},
+#endif
+      { "audio_out_rate", &settings->audio.out_rate},
+      { "audio_block_frames", &settings->audio.block_frames},
+      { "audio_latency", &settings->audio.latency},
       { "menu_ok_btn",            &settings->menu_ok_btn},
       { "menu_cancel_btn",        &settings->menu_cancel_btn},
       { "menu_search_btn",        &settings->menu_search_btn},
@@ -1503,41 +1537,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.x,  "custom_viewport_x");
    CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.y,  "custom_viewport_y");
    CONFIG_GET_INT_BASE(conf, settings, state_slot,  "state_slot");
-   CONFIG_GET_INT_BASE(conf, settings, input.max_users, "input_max_users");
-   CONFIG_GET_INT_BASE(conf, settings, input.menu_toggle_gamepad_combo, "input_menu_toggle_gamepad_combo");
-   CONFIG_GET_INT_BASE(conf, settings, libretro_log_level, "libretro_log_level");
-   CONFIG_GET_INT_BASE(conf, settings, input.keyboard_gamepad_mapping_type, "keyboard_gamepad_mapping_type");
-   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_version_current, "bundle_assets_extract_version_current");
-   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_last_version,    "bundle_assets_extract_last_version");
-
-   CONFIG_GET_INT_BASE(conf, settings, rewind_granularity, "rewind_granularity");
-   CONFIG_GET_INT_BASE(conf, settings, autosave_interval, "autosave_interval");
-#ifdef HAVE_COMMAND
-   CONFIG_GET_INT_BASE(conf, settings, network_cmd_port, "network_cmd_port");
-#endif
-   CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
-   CONFIG_GET_INT_BASE(conf, settings, input.bind_timeout, "input_bind_timeout");
-   CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
-   CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
-#ifdef HAVE_LANGEXTRA
-   CONFIG_GET_INT_BASE(conf, settings, user_language, "user_language");
-#endif
-   CONFIG_GET_INT_BASE(conf, settings, audio.out_rate, "audio_out_rate");
-   CONFIG_GET_INT_BASE(conf, settings, audio.block_frames, "audio_block_frames");
-   CONFIG_GET_INT_BASE(conf, settings, audio.latency, "audio_latency");
-#ifdef HAVE_MENU
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.scale_factor, "xmb_scale_factor");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.alpha_factor, "xmb_alpha_factor");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.theme, "xmb_theme");
-#ifdef HAVE_XMB
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.menu_color_theme, "xmb_menu_color_theme");
-#endif
-   CONFIG_GET_INT_BASE(conf, settings, menu.materialui.menu_color_theme, "materialui_menu_color_theme");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.shader_pipeline, "menu_shader_pipeline");
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-   CONFIG_GET_INT_BASE(conf, settings, network_remote_base_port, "network_remote_base_port");
-#endif
 
 #ifdef HAVE_NETPLAY
    if (!global->has_set.netplay_delay_frames)
