@@ -184,29 +184,29 @@ static int action_iterate_help(menu_handle_t *menu,
 #endif
 
       case MENU_HELP_WHAT_IS_A_CORE:
-         menu_hash_get_help(MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
+         menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
                s, len);
          break;
       case MENU_HELP_LOADING_CONTENT:
-         menu_hash_get_help(MENU_LABEL_LOAD_CONTENT,
+         menu_hash_get_help_enum(MENU_ENUM_LABEL_LOAD_CONTENT,
                s, len);
          break;
       case MENU_HELP_CHANGE_VIRTUAL_GAMEPAD:
-         menu_hash_get_help(
-               MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC,
+         menu_hash_get_help_enum(
+               MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC,
                s, len);
          break;
       case MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-         menu_hash_get_help(
-               MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
+         menu_hash_get_help_enum(
+               MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
                s, len);
          break;
       case MENU_HELP_SCANNING_CONTENT:
-         menu_hash_get_help(MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC,
+         menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC,
                s, len);
          break;
       case MENU_HELP_EXTRACT:
-         menu_hash_get_help(MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
+         menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                s, len);
 
          if (settings->bundle_finished)
@@ -336,8 +336,17 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                label_hash       = msg_hash_calculate(needle);
             }
 
-            ret = menu_hash_get_help(label_hash, 
-                  menu->menu_state.msg, sizeof(menu->menu_state.msg));
+            if (cbs->enum_idx != MSG_UNKNOWN)
+            {
+               ret = menu_hash_get_help_enum(cbs->enum_idx, 
+                     menu->menu_state.msg, sizeof(menu->menu_state.msg));
+#if 0
+               RARCH_LOG("enum: %s\n", msg_hash_to_str(cbs->enum_idx));
+#endif
+            }
+            else
+               ret = menu_hash_get_help(label_hash, 
+                     menu->menu_state.msg, sizeof(menu->menu_state.msg));
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);

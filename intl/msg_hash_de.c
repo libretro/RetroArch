@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../msg_hash.h"
 #include "../configuration.h"
@@ -43,8 +44,27 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CORE_LIST:
+         snprintf(s, len,
+               "Lade Core. \n"
+               " \n"
+               "Suche nach einer Libretro-Core- \n"
+               "Implementierung. In welchem Verzeichnis der \n"
+               "Browser startet, hängt vom deinem Core-Verzeichnis \n"
+               "ab. Falls du es nicht eingestellt hast, wird er \n"
+               "im Root-Verzeichnis starten. \n"
+               " \n"
+               "Ist das Core-Verzeichnis ein Ordner, wird das \n"
+               "Menü diesen als Startverzeichnis nutzen. Ist \n"
+               "das Core-Verzeichnis ein Pfad zu einer Datei, \n"
+               "wird es in dem Verzeichnis starten, in dem \n"
+               "sich die Datei befindet.");
+         break;
       case MSG_UNKNOWN:
       default:
+         /* TODO/FIXME - translate */
+         if (string_is_empty(s))
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
          return -1;
    }
 
@@ -135,22 +155,6 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                "zuletzt geladenen Cores zeigen und diesen Core \n"
                "nutzen, wenn Content geladen wird."
                );
-         break;
-      case MENU_LABEL_CORE_LIST:
-         snprintf(s, len,
-               "Lade Core. \n"
-               " \n"
-               "Suche nach einer Libretro-Core- \n"
-               "Implementierung. In welchem Verzeichnis der \n"
-               "Browser startet, hängt vom deinem Core-Verzeichnis \n"
-               "ab. Falls du es nicht eingestellt hast, wird er \n"
-               "im Root-Verzeichnis starten. \n"
-               " \n"
-               "Ist das Core-Verzeichnis ein Ordner, wird das \n"
-               "Menü diesen als Startverzeichnis nutzen. Ist \n"
-               "das Core-Verzeichnis ein Pfad zu einer Datei, \n"
-               "wird es in dem Verzeichnis starten, in dem \n"
-               "sich die Datei befindet.");
          break;
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,

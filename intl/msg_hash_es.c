@@ -43,6 +43,22 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CORE_LIST:
+         snprintf(s, len,
+               "Cargar núcleo. \n"
+               " \n"
+               "Busca una implementación de núcleo \n"
+               "para libretro. El navegador empezará \n"
+               "desde la ruta de tu carpeta de núcleos.\n"
+               "Si está en blanco, empezará desde \n"
+               "la raíz.\n"
+               " \n"
+               "Si la carpeta de núcleos es una carpeta,\n"
+               "el menú la utilizará como carpeta \n"
+               "base. Si la carpeta de núcleos es una \n"
+               "ruta completa, empezará en la carpeta \n"
+               "donde se encuentre el archivo.");
+         break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
          snprintf(s, len,
                "Puedes usar estos controles en tu mando\n"
@@ -226,22 +242,6 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                "'Cargar núcleo' y lo utilizará al \n"
                "cargar un contenido."
                );
-         break;
-      case MENU_LABEL_CORE_LIST:
-         snprintf(s, len,
-               "Cargar núcleo. \n"
-               " \n"
-               "Busca una implementación de núcleo \n"
-               "para libretro. El navegador empezará \n"
-               "desde la ruta de tu carpeta de núcleos.\n"
-               "Si está en blanco, empezará desde \n"
-               "la raíz.\n"
-               " \n"
-               "Si la carpeta de núcleos es una carpeta,\n"
-               "el menú la utilizará como carpeta \n"
-               "base. Si la carpeta de núcleos es una \n"
-               "ruta completa, empezará en la carpeta \n"
-               "donde se encuentre el archivo.");
          break;
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,

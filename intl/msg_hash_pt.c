@@ -40,6 +40,20 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CORE_LIST:
+         snprintf(s, len,
+               "Carregar Core. \n"
+               " \n"
+               "Busca uma implementação de um core \n"
+               "libretro. Onde a busca inicia depende \n"
+               "do caminho do seu Diretório de Cores. \n"
+               "Se não definido, começará no raiz. \n"
+               " \n"
+               "Se o Diretório de Cores estiver definido, \n"
+               "o menu o usará como pasta inicial. Se for um \n"
+               "caminho completo, ele começará na pasta onde \n"
+               "o arquivo estiver.");
+         break;
       case MSG_UNKNOWN:
       default:
          if (s[0] == '\0')
@@ -124,20 +138,6 @@ int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len)
                "e o usará quando o conteúdo estiver \n"
                "carregado."
                );
-         break;
-      case MENU_LABEL_CORE_LIST:
-         snprintf(s, len,
-               "Carregar Core. \n"
-               " \n"
-               "Busca uma implementação de um core \n"
-               "libretro. Onde a busca inicia depende \n"
-               "do caminho do seu Diretório de Cores. \n"
-               "Se não definido, começará no raiz. \n"
-               " \n"
-               "Se o Diretório de Cores estiver definido, \n"
-               "o menu o usará como pasta inicial. Se for um \n"
-               "caminho completo, ele começará na pasta onde \n"
-               "o arquivo estiver.");
          break;
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,

@@ -38,6 +38,20 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CORE_LIST:
+         snprintf(s, len,
+               "Carica Core. \n"
+               " \n"
+               "Sfoglia per una implementazione per il \n"
+               "core libretro. Dove il browser \n"
+               "si avvia dipende dal percorso impostato per \n"
+               "Core Directory. Se vuoto, si avvierà nella root. \n"
+               " \n"
+               "Se la Core Directory è una directory, il menù \n"
+               "userà quella come cartella principale. Se la Core \n"
+               "Directory è un percorso completo, si avvierà \n"
+               "nella cartella dove si trova il file.");
+         break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
          snprintf(s, len,
                "Puoi usare i seguenti controlli sotto \n"
@@ -198,20 +212,6 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                "in 'Carica Core', e userà quel core \n"
                "quando il gioco viene caricato."
                );
-         break;
-      case MENU_LABEL_CORE_LIST:
-         snprintf(s, len,
-               "Carica Core. \n"
-               " \n"
-               "Sfoglia per una implementazione per il \n"
-               "core libretro. Dove il browser \n"
-               "si avvia dipende dal percorso impostato per \n"
-               "Core Directory. Se vuoto, si avvierà nella root. \n"
-               " \n"
-               "Se la Core Directory è una directory, il menù \n"
-               "userà quella come cartella principale. Se la Core \n"
-               "Directory è un percorso completo, si avvierà \n"
-               "nella cartella dove si trova il file.");
          break;
       case MENU_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,
