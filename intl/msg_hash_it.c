@@ -38,6 +38,13 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
+         snprintf(s, len,
+               "Benvenuto a RetroArch\n"
+               "\n"
+               "Per ulteriori informazioni, vai su Aiuto.\n"
+               );
+         break;
       case MSG_UNKNOWN:
       default:
          if (s[0] == '\0')
@@ -126,13 +133,6 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
          break;
       case MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
          strlcpy(s, "Estraendo, per favore attendi...\n", len);
-         break;
-      case MENU_LABEL_WELCOME_TO_RETROARCH:
-         snprintf(s, len,
-               "Benvenuto a RetroArch\n"
-               "\n"
-               "Per ulteriori informazioni, vai su Aiuto.\n"
-               );
          break;
       case MENU_LABEL_INPUT_DRIVER:
          if (settings)

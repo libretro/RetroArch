@@ -2088,7 +2088,6 @@ enum msg_hash_enums
 #define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
 #define MENU_LABEL_HOLD_FAST_FORWARD                                           0xebe2e4cdU
 #define MENU_LABEL_PAUSE_TOGGLE                                                0x557634e4U
-#define MENU_LABEL_WELCOME_TO_RETROARCH                                        0xbcff0b3cU
 #define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
 #define MENU_LABEL_HELP_LIST                                                   0x006af669U
 #define MENU_LABEL_HELP_WHAT_IS_A_CORE                                         0x83fcbc44U

@@ -145,14 +145,6 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
       case MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
          strlcpy(s, "Extrayendo, espera, por favor...\n", len);
          break;
-      case MENU_LABEL_WELCOME_TO_RETROARCH:
-         snprintf(s, len,
-               "Bienvenido a RetroArch\n"
-               "\n"
-               "Para más información ve al menú \n"
-			   "de Ayuda.\n"
-               );
-         break;
       case MENU_LABEL_INPUT_DRIVER:
          if (settings)
             driver_hash = msg_hash_calculate(settings->input.driver);
