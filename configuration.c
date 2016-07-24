@@ -2721,8 +2721,47 @@ bool config_save_file(const char *path)
       { "menu_pointer_enable",          settings->menu.pointer.enable},
       { "menu_timedate_enable",         settings->menu.timedate_enable},
       { "menu_core_enable",             settings->menu.core_enable},
-      { "menu_dynamic_wallpaper_enable", settings->menu.dynamic_wallpaper_enable},
+      { "menu_dynamic_wallpaper_enable",settings->menu.dynamic_wallpaper_enable},
+      { "xmb_shadows_enable",           settings->menu.xmb.shadows_enable},
+      { "rgui_show_start_screen",       settings->menu_show_start_screen},
+      { "menu_navigation_wraparound_enable", settings->menu.navigation.wraparound.enable},
+      { "menu_navigation_browser_filter_supported_extensions_enable", 
+         settings->menu.navigation.browser.filter.supported_extensions_enable},
+      { "menu_show_advanced_settings",  settings->menu.show_advanced_settings},
 #endif
+#ifdef HAVE_CHEEVOS
+      { "cheevos_enable",               settings->cheevos.enable},
+      { "cheevos_test_unofficial",      settings->cheevos.test_unofficial},
+      { "cheevos_hardcore_mode_enable", settings->cheevos.hardcore_mode_enable},
+#endif
+#ifdef HAVE_OVERLAY
+      { "input_overlay_enable",         settings->input.overlay_enable},
+      { "input_overlay_enable_autopreferred", settings->input.overlay_enable_autopreferred},
+      { "input_overlay_hide_in_menu",   settings->input.overlay_hide_in_menu},
+      { "input_osk_overlay_enable",     settings->osk.enable},
+#endif
+#ifdef HAVE_COMMAND
+      { "network_cmd_enable",           settings->network_cmd_enable},
+      { "stdin_cmd_enable",             settings->stdin_cmd_enable},
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+      { "network_remote_enable",        settings->network_remote_enable},
+#endif
+#ifdef HAVE_NETPLAY
+      { "netplay_spectator_mode_enable",global->netplay.is_spectate},
+      { "netplay_mode",                 global->netplay.is_client},
+#endif
+      { "block_sram_overwrite",         settings->block_sram_overwrite},
+      { "savestate_auto_index",         settings->savestate_auto_index},
+      { "savestate_auto_save",          settings->savestate_auto_save},
+      { "savestate_auto_load",          settings->savestate_auto_load},
+      { "history_list_enable",          settings->history_list_enable},
+      { "core_specific_config",         settings->core_specific_config},
+      { "game_specific_options",        settings->game_specific_options},
+      { "auto_overrides_enable",        settings->auto_overrides_enable},
+      { "auto_remaps_enable",           settings->auto_remaps_enable},
+      { "sort_savefiles_enable",        settings->sort_savefiles_enable},
+      { "sort_savestates_enable",       settings->sort_savestates_enable},
       { "config_save_on_exit",          settings->config_save_on_exit},
       { "input_autodetect_enable",      settings->input.autodetect_enable},
       { "audio_rate_control",           settings->audio.rate_control},
@@ -2754,6 +2793,25 @@ bool config_save_file(const char *path)
       config_set_bool(conf, bool_settings[i].ident,
             bool_settings[i].value);
    }
+#ifdef HAVE_NETWORKGAMEPAD
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      char tmp[64] = {0};
+      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
+      config_set_bool(conf, tmp, settings->network_remote_enable_user[i]);
+   }
+#endif
+   if (!global->has_set.ups_pref)
+      config_set_bool(conf, "ups_pref", global->patch.ups_pref);
+   if (!global->has_set.bps_pref)
+      config_set_bool(conf, "bps_pref", global->patch.bps_pref);
+   if (!global->has_set.ips_pref)
+      config_set_bool(conf, "ips_pref", global->patch.ips_pref);
+   config_set_bool(conf, "log_verbosity",
+         verbosity_is_enabled());
+   config_set_bool(conf, "perfcnt_enable",
+         runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL));
+
    config_set_path(conf,  "recording_output_directory",
          global->record.output_dir);
    config_set_path(conf,  "recording_config_directory",
@@ -2870,9 +2928,6 @@ bool config_save_file(const char *path)
    config_set_string(conf, "camera_device", settings->camera.device);
 
 #ifdef HAVE_CHEEVOS
-   config_set_bool(conf, "cheevos_enable", settings->cheevos.enable);
-   config_set_bool(conf, "cheevos_test_unofficial", settings->cheevos.test_unofficial);
-   config_set_bool(conf, "cheevos_hardcore_mode_enable", settings->cheevos.hardcore_mode_enable);
    config_set_string(conf, "cheevos_username", settings->cheevos.username);
    config_set_string(conf, "cheevos_password", settings->cheevos.password);
 #endif
@@ -2894,12 +2949,6 @@ bool config_save_file(const char *path)
                (((int)(settings->video.msg_color_b * 255.0f) & 0xff));
    config_set_hex(conf, "video_message_color", msg_color);
 
-   if (!global->has_set.ups_pref)
-      config_set_bool(conf, "ups_pref", global->patch.ups_pref);
-   if (!global->has_set.bps_pref)
-      config_set_bool(conf, "bps_pref", global->patch.bps_pref);
-   if (!global->has_set.ips_pref)
-      config_set_bool(conf, "ips_pref", global->patch.ips_pref);
 
    config_set_path(conf, "system_directory",
          string_is_empty(settings->directory.system) ? "default" :
@@ -2964,19 +3013,9 @@ bool config_save_file(const char *path)
    config_set_int(conf, "xmb_menu_color_theme", settings->menu.xmb.menu_color_theme);
 #endif
    config_set_int(conf, "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme);
-   config_set_bool(conf, "xmb_shadows_enable", settings->menu.xmb.shadows_enable);
    config_set_int(conf, "menu_shader_pipeline", settings->menu.xmb.shader_pipeline);
    config_set_path(conf, "xmb_font",
          !string_is_empty(settings->menu.xmb.font) ? settings->menu.xmb.font : "");
-   config_set_bool(conf, "rgui_show_start_screen",
-         settings->menu_show_start_screen);
-   config_set_bool(conf, "menu_navigation_wraparound_enable",
-         settings->menu.navigation.wraparound.enable);
-   config_set_bool(conf,
-         "menu_navigation_browser_filter_supported_extensions_enable",
-         settings->menu.navigation.browser.filter.supported_extensions_enable);
-   config_set_bool(conf, "menu_show_advanced_settings",
-         settings->menu.show_advanced_settings);
    config_set_hex(conf, "menu_entry_normal_color",
          settings->menu.entry_normal_color);
    config_set_hex(conf, "menu_entry_hover_color",
@@ -2989,12 +3028,6 @@ bool config_save_file(const char *path)
          settings->content_history_size);
 
 #ifdef HAVE_OVERLAY
-   config_set_bool(conf, "input_overlay_enable",
-         settings->input.overlay_enable);
-   config_set_bool(conf, "input_overlay_enable_autopreferred",
-         settings->input.overlay_enable_autopreferred);
-   config_set_bool(conf, "input_overlay_hide_in_menu",
-         settings->input.overlay_hide_in_menu);
    config_set_float(conf, "input_overlay_opacity",
          settings->input.overlay_opacity);
    config_set_float(conf, "input_overlay_scale",
@@ -3003,8 +3036,6 @@ bool config_save_file(const char *path)
    config_set_path(conf, "osk_overlay_directory",
          string_is_empty(global->dir.osk_overlay) 
          ? "default" : global->dir.osk_overlay);
-   config_set_bool(conf, "input_osk_overlay_enable",
-         settings->osk.enable);
 #endif
    config_set_float(conf, "video_message_pos_x",
          settings->video.msg_pos_x);
@@ -3023,22 +3054,8 @@ bool config_save_file(const char *path)
 
    config_set_float(conf, "video_font_size",
          settings->video.font_size);
-   config_set_bool(conf, "block_sram_overwrite",
-         settings->block_sram_overwrite);
-   config_set_bool(conf, "savestate_auto_index",
-         settings->savestate_auto_index);
-   config_set_bool(conf, "savestate_auto_save",
-         settings->savestate_auto_save);
-   config_set_bool(conf, "savestate_auto_load",
-         settings->savestate_auto_load);
-   config_set_bool(conf, "history_list_enable",
-         settings->history_list_enable);
 
 #ifdef HAVE_COMMAND
-   config_set_bool(conf, "network_cmd_enable",
-         settings->network_cmd_enable);
-   config_set_bool(conf, "stdin_cmd_enable",
-         settings->stdin_cmd_enable);
    config_set_int(conf, "network_cmd_port",
          settings->network_cmd_port);
 #endif
@@ -3071,10 +3088,6 @@ bool config_save_file(const char *path)
    config_set_int(conf, "state_slot", settings->state_slot);
 
 #ifdef HAVE_NETPLAY
-   config_set_bool(conf, "netplay_spectator_mode_enable",
-         global->netplay.is_spectate);
-   config_set_bool(conf, "netplay_mode",
-         global->netplay.is_client);
    config_set_string(conf, "netplay_ip_address",
          global->netplay.server);
    config_set_int(conf, "netplay_ip_port",
@@ -3110,14 +3123,6 @@ bool config_save_file(const char *path)
    }
 
 #ifdef HAVE_NETWORKGAMEPAD
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      char tmp[64] = {0};
-      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
-      config_set_bool(conf, tmp, settings->network_remote_enable_user[i]);
-   }
-   config_set_bool(conf, "network_remote_enable",
-         settings->network_remote_enable);
    config_set_int(conf, "network_remote_base_port",
          settings->network_remote_base_port);
 
@@ -3125,24 +3130,8 @@ bool config_save_file(const char *path)
    for (i = 0; i < MAX_USERS; i++)
       save_keybinds_user(conf, i);
 
-   config_set_bool(conf, "core_specific_config",
-         settings->core_specific_config);
-   config_set_bool(conf, "game_specific_options",
-         settings->game_specific_options);
-   config_set_bool(conf, "auto_overrides_enable",
-         settings->auto_overrides_enable);
-   config_set_bool(conf, "auto_remaps_enable",
-         settings->auto_remaps_enable);
-   config_set_bool(conf, "sort_savefiles_enable",
-         settings->sort_savefiles_enable);
-   config_set_bool(conf, "sort_savestates_enable",
-         settings->sort_savestates_enable);
    config_set_int(conf, "libretro_log_level",
          settings->libretro_log_level);
-   config_set_bool(conf, "log_verbosity",
-         verbosity_is_enabled());
-   config_set_bool(conf, "perfcnt_enable",
-         runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL));
 
    config_set_int(conf, "keyboard_gamepad_mapping_type",
          settings->input.keyboard_gamepad_mapping_type);
