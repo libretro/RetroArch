@@ -7284,7 +7284,7 @@ static bool setting_append_list(
                list, list_info,
                &settings->content_history_size,
                msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE),
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE),
                default_content_history_size,
                &group_info,
                &subgroup_info,

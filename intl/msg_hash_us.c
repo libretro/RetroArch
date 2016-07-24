@@ -30,6 +30,49 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
+         snprintf(s, len,
+               "Show the input descriptors set by the core instead \n"
+               "of the default ones.");
+         break;
+      case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
+         snprintf(s, len,
+               "Number of entries that will be kept in content history playlist.");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN:
+         snprintf(s, len,
+               "To use windowed mode or not when going fullscreen.");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
+         snprintf(s, len,
+               "Font size for on-screen messages.");
+         break;
+      case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
+         snprintf(s, len,
+               "When saving savestates, state index is automatically \n"
+               "incremented before saving.\n\n"
+               "When the content is loaded, state index will be set \n"
+               "to the highest existing value.");
+         break;
+      case MENU_ENUM_LABEL_FPS_SHOW:
+         snprintf(s, len,
+               "Enables displaying the current frames per second.");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
+         snprintf(s, len,
+               "Show and/or hide onscreen messages.");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
+      case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
+         snprintf(s, len,
+               "Offset for where messages will be placed onscreen.\n"
+               "Values are in range [0.0, 1.0].");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
+         snprintf(s, len,
+               "Set to true if hardware-rendered cores should get their \n"
+               "private context.");
+         break;
       case MENU_ENUM_LABEL_CORE_LIST:
          snprintf(s, len,
                "Load Core. \n"
@@ -740,6 +783,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "system-specific configs, etc.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
+      case MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD:
          snprintf(s, len,
                "Automatically saves a savestate at the \n"
                "end of RetroArch's lifetime.\n"
@@ -1683,7 +1727,7 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
          return "history_list_enable";
       case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
-         return "Content History Size";
+         return "content_history_size";
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          return "video_refresh_rate_auto";
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
