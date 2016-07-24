@@ -2671,7 +2671,46 @@ bool config_save_file(const char *path)
       { "load_dummy_on_core_shutdown",  settings->load_dummy_on_core_shutdown},
       { "builtin_mediaplayer_enable",   settings->multimedia.builtin_mediaplayer_enable},
       { "builtin_imageviewer_enable",   settings->multimedia.builtin_imageviewer_enable},
-      { "fps_show",                     settings->fps_show}
+      { "fps_show",                     settings->fps_show},
+      { "ui_menubar_enable",            settings->ui.menubar_enable},
+      { "suspend_screensaver_enable",   settings->ui.suspend_screensaver_enable},
+      { "rewind_enable",                settings->rewind_enable},
+      { "audio_sync",                   settings->audio.sync},
+      { "video_shader_enable",          settings->video.shader_enable},
+      { "video_aspect_ratio_auto",      settings->video.aspect_ratio_auto},
+      { "video_windowed_fullscreen",    settings->video.windowed_fullscreen},
+      { "video_crop_overscan",          settings->video.crop_overscan},
+      { "video_scale_integer",          settings->video.scale_integer},
+      { "video_smooth",                 settings->video.smooth},
+      { "video_threaded",               settings->video.threaded},
+      { "video_shared_context",         settings->video.shared_context},
+      { "custom_bgm_enable",            global->console.sound.system_bgm_enable},
+      { "auto_screenshot_filename",     settings->auto_screenshot_filename},
+      { "video_force_srgb_disable",     settings->video.force_srgb_disable},
+      { "video_fullscreen",             settings->video.fullscreen},
+      { "bundle_assets_extract_enable", settings->bundle_assets_extract_enable},
+      { "video_vsync",                  settings->video.vsync},
+      { "video_hard_sync",              settings->video.hard_sync},
+      { "video_black_frame_insertion",  settings->video.black_frame_insertion},
+      { "video_disable_composition",    settings->video.disable_composition},
+      { "pause_nonactive",              settings->pause_nonactive},
+      { "video_gpu_screenshot",         settings->video.gpu_screenshot},
+      { "keyboard_gamepad_enable",      settings->input.keyboard_gamepad_enable},
+      { "core_set_supports_no_game_enable", settings->set_supports_no_game_enable},
+      { "audio_enable",                 settings->audio.enable},
+      { "audio_mute_enable",            settings->audio.mute_enable},
+      { "location_allow",               settings->location.allow},
+      { "video_font_enable",            settings->video.font_enable},
+      { "core_updater_auto_extract_archive", settings->network.buildbot_auto_extract_archive},
+      { "camera_allow",                 settings->camera.allow},
+#if TARGET_OS_IPHONE
+      { "small_keyboard_enable",        settings->input.small_keyboard_enable},
+#endif
+#ifdef GEKKO
+      { "video_vfilter",                settings->video.vfilter},
+#endif
+      { "config_save_on_exit",          settings->config_save_on_exit},
+      { "input_autodetect_enable",      settings->input.autodetect_enable}
    };
 
    if (!conf)
@@ -2700,14 +2739,10 @@ bool config_save_file(const char *path)
       config_set_bool(conf, bool_settings[i].ident,
             bool_settings[i].value);
    }
-   config_set_bool(conf,  "ui_menubar_enable",
-         settings->ui.menubar_enable);
    config_set_path(conf,  "recording_output_directory",
          global->record.output_dir);
    config_set_path(conf,  "recording_config_directory",
          global->record.config_dir);
-   config_set_bool(conf,  "suspend_screensaver_enable",
-         settings->ui.suspend_screensaver_enable);
    config_set_path(conf,  "libretro_directory",
          settings->directory.libretro);
    config_set_path(conf,  "core_options_path",
@@ -2754,50 +2789,22 @@ bool config_save_file(const char *path)
          settings->directory.cursor);
    config_set_path(conf,  "content_history_dir",
          settings->directory.content_history);
-   config_set_bool(conf,  "rewind_enable",
-         settings->rewind_enable);
    config_set_int(conf,   "audio_latency",
          settings->audio.latency);
-   config_set_bool(conf,  "audio_sync",
-         settings->audio.sync);
    config_set_int(conf,   "audio_block_frames",
          settings->audio.block_frames);
    config_set_int(conf,   "rewind_granularity",
          settings->rewind_granularity);
-   config_set_bool(conf,  "video_shader_enable",
-         settings->video.shader_enable);
    config_set_float(conf, "video_aspect_ratio",
          settings->video.aspect_ratio);
-   config_set_bool(conf,  "video_aspect_ratio_auto",
-         settings->video.aspect_ratio_auto);
-   config_set_bool(conf,  "video_windowed_fullscreen",
-         settings->video.windowed_fullscreen);
    config_set_float(conf, "video_scale",
          settings->video.scale);
    config_set_int(conf,   "autosave_interval",
          settings->autosave_interval);
-   config_set_bool(conf,  "video_crop_overscan",
-         settings->video.crop_overscan);
-   config_set_bool(conf,  "video_scale_integer",
-         settings->video.scale_integer);
 #ifdef GEKKO
    config_set_int(conf,   "video_viwidth",
          settings->video.viwidth);
-   config_set_bool(conf,  "video_vfilter",
-         settings->video.vfilter);
 #endif
-   config_set_bool(conf,  "video_smooth",
-         settings->video.smooth);
-   config_set_bool(conf,  "video_threaded",
-         settings->video.threaded);
-   config_set_bool(conf,  "video_shared_context",
-         settings->video.shared_context);
-   config_set_bool(conf,  "video_force_srgb_disable",
-         settings->video.force_srgb_disable);
-   config_set_bool(conf,  "video_fullscreen",
-         settings->video.fullscreen);
-   config_set_bool(conf,  "bundle_assets_extract_enable",
-         settings->bundle_assets_extract_enable);
    config_set_int(conf,  "bundle_assets_extract_version_current",
          settings->bundle_assets_extract_version_current);
    config_set_int(conf,  "bundle_assets_extract_last_version",
@@ -2847,36 +2854,23 @@ bool config_save_file(const char *path)
 #endif
 
 
-   config_set_bool(conf,  "video_vsync", settings->video.vsync);
-   config_set_int(conf,   "video_max_swapchain_images",
-         settings->video.max_swapchain_images);
-   config_set_bool(conf,  "video_hard_sync", settings->video.hard_sync);
    config_set_int(conf,   "video_hard_sync_frames",
          settings->video.hard_sync_frames);
    config_set_int(conf,   "video_frame_delay", settings->video.frame_delay);
-   config_set_bool(conf,  "video_black_frame_insertion",
-         settings->video.black_frame_insertion);
-   config_set_bool(conf,  "video_disable_composition",
-         settings->video.disable_composition);
-   config_set_bool(conf,  "pause_nonactive", settings->pause_nonactive);
+   config_set_int(conf,   "video_max_swapchain_images",
+         settings->video.max_swapchain_images);
    config_set_int(conf, "video_swap_interval", settings->video.swap_interval);
-   config_set_bool(conf, "video_gpu_screenshot", settings->video.gpu_screenshot);
    config_set_int(conf, "video_rotation", settings->video.rotation);
    config_set_path(conf, "screenshot_directory",
          string_is_empty(settings->directory.screenshot) ? "default" :
          settings->directory.screenshot);
-   config_set_bool(conf, "auto_screenshot_filename",
-         settings->auto_screenshot_filename);
    config_set_int(conf, "aspect_ratio_index", settings->video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", settings->audio.device);
    config_set_string(conf, "core_updater_buildbot_url",
          settings->network.buildbot_url);
    config_set_string(conf, "core_updater_buildbot_assets_url",
          settings->network.buildbot_assets_url);
-   config_set_bool(conf, "core_updater_auto_extract_archive",
-         settings->network.buildbot_auto_extract_archive);
    config_set_string(conf, "camera_device", settings->camera.device);
-   config_set_bool(conf, "camera_allow", settings->camera.allow);
 
 #ifdef HAVE_CHEEVOS
    config_set_bool(conf, "cheevos_enable", settings->cheevos.enable);
@@ -2894,14 +2888,10 @@ bool config_save_file(const char *path)
    config_set_float(conf, "audio_volume", settings->audio.volume);
    config_set_string(conf, "video_context_driver", settings->video.context_driver);
    config_set_string(conf, "audio_driver", settings->audio.driver);
-   config_set_bool(conf, "audio_enable", settings->audio.enable);
-   config_set_bool(conf, "audio_mute_enable", settings->audio.mute_enable);
    config_set_int(conf, "audio_out_rate", settings->audio.out_rate);
 
-   config_set_bool(conf, "location_allow", settings->location.allow);
 
    config_set_float(conf, "video_font_size", settings->video.font_size);
-   config_set_bool(conf,  "video_font_enable", settings->video.font_enable);
 
    msg_color = (((int)(settings->video.msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->video.msg_color_g * 255.0f) & 0xff) <<  8) +
@@ -3001,8 +2991,6 @@ bool config_save_file(const char *path)
 
    config_set_int(conf, "content_history_size",
          settings->content_history_size);
-   config_set_bool(conf, "input_autodetect_enable",
-         settings->input.autodetect_enable);
 
 #ifdef HAVE_OVERLAY
    config_set_bool(conf, "input_overlay_enable",
@@ -3084,8 +3072,6 @@ bool config_save_file(const char *path)
          settings->path.libretro);;
 #endif
 
-   config_set_bool(conf, "config_save_on_exit",
-         settings->config_save_on_exit);
    config_set_int(conf, "state_slot", settings->state_slot);
 
 #ifdef HAVE_NETPLAY
@@ -3107,8 +3093,6 @@ bool config_save_file(const char *path)
          settings->user_language);
 #endif
 
-   config_set_bool(conf, "custom_bgm_enable",
-         global->console.sound.system_bgm_enable);
 
    config_set_string(conf, "input_driver", settings->input.driver);
    config_set_string(conf, "input_joypad_driver",
@@ -3164,18 +3148,10 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "perfcnt_enable",
          runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL));
 
-#if TARGET_OS_IPHONE
-   config_set_bool(conf, "small_keyboard_enable",
-         settings->input.small_keyboard_enable);
-#endif
-   config_set_bool(conf, "keyboard_gamepad_enable",
-         settings->input.keyboard_gamepad_enable);
    config_set_int(conf, "keyboard_gamepad_mapping_type",
          settings->input.keyboard_gamepad_mapping_type);
    config_set_int(conf, "input_poll_type_behavior",
          settings->input.poll_type_behavior);
-   config_set_bool(conf, "core_set_supports_no_game_enable",
-         settings->set_supports_no_game_enable);
    config_set_int(conf, "menu_ok_btn",
          settings->menu_ok_btn);
    config_set_int(conf, "menu_cancel_btn",
