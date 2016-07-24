@@ -2709,8 +2709,23 @@ bool config_save_file(const char *path)
 #ifdef GEKKO
       { "video_vfilter",                settings->video.vfilter},
 #endif
+#ifdef HAVE_MENU
+#ifdef HAVE_THREADS
+      { "threaded_data_runloop_enable", settings->threaded_data_runloop_enable},
+#endif
+      { "menu_throttle_framerate",      settings->menu.throttle_framerate},
+      { "menu_linear_filter",           settings->menu.linear_filter},
+      { "dpi_override_enable",          settings->menu.dpi.override_enable},
+      { "menu_pause_libretro",          settings->menu.pause_libretro},
+      { "menu_mouse_enable",            settings->menu.mouse.enable},
+      { "menu_pointer_enable",          settings->menu.pointer.enable},
+      { "menu_timedate_enable",         settings->menu.timedate_enable},
+      { "menu_core_enable",             settings->menu.core_enable},
+      { "menu_dynamic_wallpaper_enable", settings->menu.dynamic_wallpaper_enable},
+#endif
       { "config_save_on_exit",          settings->config_save_on_exit},
-      { "input_autodetect_enable",      settings->input.autodetect_enable}
+      { "input_autodetect_enable",      settings->input.autodetect_enable},
+      { "audio_rate_control",           settings->audio.rate_control},
    };
 
    if (!conf)
@@ -2830,26 +2845,8 @@ bool config_save_file(const char *path)
    config_set_string(conf, "location_driver",
          settings->location.driver);
 #ifdef HAVE_MENU
-#ifdef HAVE_THREADS
-   config_set_bool(conf,"threaded_data_runloop_enable",
-         settings->threaded_data_runloop_enable);
-#endif
-
-   config_set_bool(conf, "menu_throttle_framerate",
-         settings->menu.throttle_framerate);
-   config_set_bool(conf, "menu_linear_filter",
-         settings->menu.linear_filter);
-   config_set_bool(conf, "dpi_override_enable",
-         settings->menu.dpi.override_enable);
    config_set_int (conf, "dpi_override_value", settings->menu.dpi.override_value);
    config_set_string(conf,"menu_driver", settings->menu.driver);
-   config_set_bool(conf,"menu_pause_libretro", settings->menu.pause_libretro);
-   config_set_bool(conf,"menu_mouse_enable", settings->menu.mouse.enable);
-   config_set_bool(conf,"menu_pointer_enable", settings->menu.pointer.enable);
-   config_set_bool(conf,"menu_timedate_enable", settings->menu.timedate_enable);
-   config_set_bool(conf,"menu_core_enable", settings->menu.core_enable);
-   config_set_bool(conf,"menu_dynamic_wallpaper_enable",
-         settings->menu.dynamic_wallpaper_enable);
    config_set_int(conf,"menu_thumbnails", settings->menu.thumbnails);
 #endif
 
@@ -2880,7 +2877,6 @@ bool config_save_file(const char *path)
    config_set_string(conf, "cheevos_password", settings->cheevos.password);
 #endif
 
-   config_set_bool(conf, "audio_rate_control", settings->audio.rate_control);
    config_set_float(conf, "audio_rate_control_delta",
          settings->audio.rate_control_delta);
    config_set_float(conf, "audio_max_timing_skew",
