@@ -17,7 +17,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
- 
+
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
@@ -36,11 +36,13 @@
 #define NETRETROPAD_CORE_PREFIX(s) s
 #endif
 
+#include "remotepad.h"
+
 static int s;
 static int port;
 static char server[64];
 static struct sockaddr_in si_other;
- 
+
 static struct retro_log_callback logger;
 
 static retro_log_printf_t NETRETROPAD_CORE_PREFIX(log_cb);
@@ -56,6 +58,28 @@ static uint16_t *frame_buf;
 void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 {
    frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
+
+   if (frame_buf)
+   {
+      uint16_t *pixel = frame_buf + 49 * 320 + 32;
+
+      for (unsigned rle = 0; rle < sizeof(body); )
+      {
+         uint16_t color = 0;
+
+         for (unsigned runs = body[rle++]; runs > 0; runs--)
+         {
+            for (unsigned count = body[rle++]; count > 0; count--)
+            {
+               *pixel++ = color;
+            }
+
+            color = 0x4208 - color;
+         }
+
+         pixel += 65;
+      }
+   }
 
    NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Initialising sockets...\n");
    network_init();
@@ -224,8 +248,38 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
       if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, sizeof(si_other))==-1)
           NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Error sending data\n");
    }
-   for (i = 0; i < 320 * 240; i++)
-      frame_buf[i] = 4 << 5;
+
+   uint16_t *pixel = frame_buf + 49 * 320 + 32;
+
+   for (unsigned rle = 0; rle < sizeof(buttons); )
+   {
+      char paint = 0;
+
+      for (unsigned runs = buttons[rle++]; runs > 0; runs--)
+      {
+         unsigned button = paint ? 1 << buttons[rle++] : 0;
+
+         if (paint)
+         {
+            uint16_t color = (input_state & button) ? 0x0500 : 0xffff;
+
+            for (unsigned count = buttons[rle++]; count > 0; count--)
+            {
+               *pixel++ = color;
+            }
+         }
+         else
+         {
+            pixel += buttons[rle++];
+         }
+
+         paint = !paint;
+      }
+
+      pixel += 65;
+   }
+
+
    NETRETROPAD_CORE_PREFIX(video_cb)(frame_buf, 320, 240, 640);
 
    retro_sleep(4);
@@ -253,7 +307,7 @@ bool NETRETROPAD_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info
    in_target.server = server;
    in_target.domain = SOCKET_DOMAIN_INET;
 
-   socket_set_target(&si_other, &in_target); 
+   socket_set_target(&si_other, &in_target);
 
    NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Server IP Address: %s\n" , server);
 
@@ -319,5 +373,3 @@ void NETRETROPAD_CORE_PREFIX(retro_cheat_set)(unsigned idx,
    (void)enabled;
    (void)code;
 }
-
-
