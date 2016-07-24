@@ -1276,7 +1276,7 @@ static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *
 static bool config_load_file(const char *path, bool set_defaults)
 {
    unsigned i;
-   bool tmp_bool;
+   bool tmp_bool                         = false;
    char *save                            = NULL;
    const char *extra_path                = NULL;
    char tmp_str[PATH_MAX_LENGTH]         = {0};
@@ -1480,13 +1480,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 
 #ifdef RARCH_CONSOLE
-   {
-      bool tmp_bool = false;
-      /* TODO - will be refactored later to make it more clean - it's more
-       * important that it works for consoles right now */
-      if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
-         global->console.sound.system_bgm_enable = tmp_bool;
-   }
    video_driver_load_settings(conf);
 #endif
 
@@ -1792,6 +1785,47 @@ static bool config_load_file(const char *path, bool set_defaults)
          *bool_settings[i].value_ptr = tmp;
    }
 
+   if (!global->has_set.verbosity)
+   {
+      if (config_get_bool(conf, "log_verbosity", &tmp_bool))
+      {
+         if (tmp_bool)
+            verbosity_enable();
+         else
+            verbosity_disable();
+      }
+   }
+
+   {
+      char tmp[64]  = {0};
+
+      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
+      if (config_get_bool(conf, tmp, &tmp_bool))
+      {
+         if (tmp_bool)
+            runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
+         else
+            runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
+      }
+   }
+#ifdef HAVE_NETWORKGAMEPAD
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      char tmp[64]  = {0};
+
+      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
+
+      if (config_get_bool(conf, tmp, &tmp_bool))
+         settings->network_remote_enable_user[i] = tmp_bool;
+   }
+#endif
+#ifdef RARCH_CONSOLE
+   /* TODO - will be refactored later to make it more clean - it's more
+    * important that it works for consoles right now */
+   if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
+      global->console.sound.system_bgm_enable = tmp_bool;
+#endif
+
 
    if (!string_is_empty(settings->directory.screenshot))
    {
@@ -1831,30 +1865,6 @@ static bool config_load_file(const char *path, bool set_defaults)
       *settings->directory.menu_config = '\0';
 #endif
 
-   if (!global->has_set.verbosity)
-   {
-      if (config_get_bool(conf, "log_verbosity", &tmp_bool))
-      {
-         if (tmp_bool)
-            verbosity_enable();
-         else
-            verbosity_disable();
-      }
-   }
-
-   {
-      bool tmp_bool = false;
-      char tmp[64]  = {0};
-
-      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
-      if (config_get_bool(conf, tmp, &tmp_bool))
-      {
-         if (tmp_bool)
-            runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
-         else
-            runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
-      }
-   }
 
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->directory.overlay, "default"))
@@ -1885,16 +1895,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      bool tmp_bool = false;
-      char tmp[64]  = {0};
-
-      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
-
-      if (config_get_bool(conf, tmp, &tmp_bool))
-         settings->network_remote_enable_user[i] = tmp_bool;
-   }
    CONFIG_GET_INT_BASE(conf, settings, network_remote_base_port, "network_remote_base_port");
 
 #endif
