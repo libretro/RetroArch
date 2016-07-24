@@ -1822,10 +1822,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_CONTENT_SETTINGS                                            0xe789f7f6U
 
-#define MENU_LABEL_RESET                                                       0x10474288U
-
-#define MENU_LABEL_SAVE_STATE                                                  0x3a4849b5U
-#define MENU_LABEL_LOAD_STATE                                                  0xa39eb286U
 #define MENU_LABEL_REWIND                                                      0x1931d5aeU
 #define MENU_LABEL_SHADER_NEXT                                                 0x54d359baU
 #define MENU_LABEL_SHADER_PREV                                                 0x54d4a758U
@@ -1839,21 +1835,10 @@ enum msg_hash_enums
 #define MENU_LABEL_R_X_MINUS                                                   0x78cb50f9U
 #define MENU_LABEL_R_Y_MINUS                                                   0xc5c58dbaU
 #define MENU_LABEL_R_Y_PLUS                                                    0x63173332U
-#define MENU_LABEL_BLOCK_SRAM_OVERWRITE                                        0xc4e88d08U
-#define MENU_LABEL_CORE_SPECIFIC_CONFIG                                        0x3c9a55e8U
-#define MENU_LABEL_GAME_SPECIFIC_OPTIONS                                       0x142ec90fU
-#define MENU_LABEL_SCREENSHOT                                                  0x9a37f083U
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
 
 /* Menu settings */
-#define MENU_LABEL_THUMBNAILS                                                  0x0a3ec67cU
-#define MENU_LABEL_SAVESTATE_AUTO_SAVE                                         0xf6f4a05bU
-#define MENU_LABEL_SAVESTATE_AUTO_LOAD                                         0xf6f1028cU
-#define MENU_LABEL_SAVESTATE_AUTO_INDEX                                        0xd4da8b84U
 #define MENU_LABEL_XMB_FONT                                                    0x0ECA56CA2
-#define MENU_LABEL_XMB_THEME                                                   0x824c5a7eU
-#define MENU_LABEL_XMB_GRADIENT                                                0x18e63099U
-#define MENU_LABEL_XMB_RIBBON_ENABLE                                           0x8e89c3edU
 
 #define MENU_LABEL_PERFCNT_ENABLE                                              0x6823dbddU
 
@@ -1917,19 +1902,13 @@ enum msg_hash_enums
 
 /* Menu settings */
 
-#define MENU_LABEL_MENU_TOGGLE                                                 0xfb22e3dbU
 #define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
-#define MENU_LABEL_MENU_LINEAR_FILTER                                          0x5fe9128cU
-#define MENU_LABEL_MENU_THROTTLE_FRAMERATE                                     0x9a8681c5U
 #define MENU_LABEL_MENU_SETTINGS                                               0x61e4544bU
 
 #define MENU_LABEL_ENABLE_HOTKEY                                               0xc04037bfU
 #define MENU_LABEL_GRAB_MOUSE_TOGGLE                                           0xb2869aaaU
 #define MENU_LABEL_STATE_SLOT_DECREASE                                         0xe48b8082U
 #define MENU_LABEL_STATE_SLOT_INCREASE                                         0x36a0cbb0U
-
-/* Libretro settings */
-#define MENU_LABEL_LIBRETRO_LOG_LEVEL                                          0x57971ac0U
 
 /* Directory settings */
 
@@ -2033,7 +2012,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_AUDIO_DSP_PLUGIN                                            0x4a69572bU
 
-#define MENU_LABEL_AUDIO_RESAMPLER_DRIVER                                      0xedcba9ecU
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
@@ -2048,7 +2026,6 @@ enum msg_hash_enums
 #define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
 #define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
 #define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
-#define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
 #define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
 #define MENU_LABEL_HELP_LIST                                                   0x006af669U
