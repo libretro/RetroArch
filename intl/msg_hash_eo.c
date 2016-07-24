@@ -21,9 +21,6 @@
 
 int menu_hash_get_help_eo_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   uint32_t      driver_hash = 0;
-   settings_t      *settings = config_get_ptr();
-
    switch (msg)
    {
       case MSG_UNKNOWN:
