@@ -322,7 +322,7 @@ static void load_dynamic_core(void)
       retroarch_fail(1, "init_libretro_sym()");
    }
 
-   if (string_is_empty(settings->path.libretro))
+   if (string_is_empty(config_get_active_core_path()))
    {
       RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
             "libretro_path is not set. Cannot continue.\n");
@@ -335,12 +335,12 @@ static void load_dynamic_core(void)
    path_resolve_realpath(settings->path.libretro, sizeof(settings->path.libretro));
 
    RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
-         settings->path.libretro);
-   lib_handle = dylib_load(settings->path.libretro);
+         config_get_active_core_path());
+   lib_handle = dylib_load(config_get_active_core_path());
    if (!lib_handle)
    {
       RARCH_ERR("Failed to open libretro core: \"%s\"\n",
-            settings->path.libretro);
+            config_get_active_core_path());
       RARCH_ERR("Error(s): %s\n", dylib_error());
       retroarch_fail(1, "load_dynamic()");
    }

@@ -810,7 +810,7 @@ static void content_push_to_history_playlist(bool do_push,
    playlist_push(g_defaults.history,
          path,
          NULL,
-         settings->path.libretro,
+         config_get_active_core_path(),
          info->library_name,
          NULL,
          NULL);
@@ -1572,8 +1572,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
    if (fullpath && *fullpath)
       wrap_args->content_path  = fullpath;
    if (!global->has_set.libretro)
-      wrap_args->libretro_path = *settings->path.libretro 
-         ? settings->path.libretro : NULL;
+      wrap_args->libretro_path = string_is_empty(config_get_active_core_path()) ? NULL :
+         config_get_active_core_path();
 
 }
 #endif

@@ -236,10 +236,6 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       content_ctx_info_t content_info  = {0};
       core_info_list_t *core_info_list = NULL;
       const core_info_t *core_info     = NULL;
-      settings_t *settings             = config_get_ptr();
-
-	  if (!settings)
-		  return 0;
 
       DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
 
@@ -253,7 +249,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 
       runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
 
-      if (!string_is_empty(settings->path.libretro))
+      if (!string_is_empty(config_get_active_core_path()))
       {
          unsigned i;
          core_info_t *current_core = NULL;
@@ -267,7 +263,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
             if(!string_is_equal(info->systemname, current_core->systemname))
                break;
 
-            if(string_is_equal(settings->path.libretro, info->path))
+            if(string_is_equal(config_get_active_core_path(), info->path))
             {
                /* Our previous core supports the current rom */
                content_ctx_info_t content_info = {0};
@@ -318,7 +314,6 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
-   settings_t *settings     = config_get_ptr();
 
    if (message == WM_NCLBUTTONDBLCLK)
       doubleclick_on_titlebar = true;
@@ -374,8 +369,11 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          *quit = true;
          break;
 	  case WM_COMMAND:
-         if (settings->ui.menubar_enable)
-            win32_menu_loop(main_window.hwnd, wparam);
+         {
+            settings_t *settings     = config_get_ptr();
+            if (settings->ui.menubar_enable)
+               win32_menu_loop(main_window.hwnd, wparam);
+         }
          break;
    }
    return 0;
@@ -433,7 +431,6 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
 {
    LRESULT ret;
    bool quit = false;
-   settings_t *settings     = config_get_ptr();
 
    if (message == WM_NCLBUTTONDBLCLK)
       doubleclick_on_titlebar = true;

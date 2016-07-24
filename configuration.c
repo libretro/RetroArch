@@ -3146,6 +3146,22 @@ const char *config_get_active_core_path(void)
    return settings->path.libretro;
 }
 
+void config_set_active_core_path(const char *path)
+{
+   settings_t *settings        = config_get_ptr();
+   if (!settings)
+      return;
+   strlcpy(settings->path.libretro, path, sizeof(settings->path.libretro));
+}
+
+void config_clear_active_core_path(void)
+{
+   settings_t *settings        = config_get_ptr();
+   if (!settings)
+      return;
+   *settings->path.libretro = '\0';
+}
+
 const char *config_get_active_path(void)
 {
    settings_t *settings        = config_get_ptr();

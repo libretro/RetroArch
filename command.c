@@ -1448,8 +1448,8 @@ static bool command_event_save_core_config(void)
    }
 
    /* Infer file name based on libretro core. */
-   if (!string_is_empty(settings->path.libretro) 
-   && path_file_exists(settings->path.libretro))
+   if (!string_is_empty(config_get_active_core_path()) 
+         && path_file_exists(config_get_active_core_path()))
    {
       unsigned i;
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
@@ -1461,7 +1461,7 @@ static bool command_event_save_core_config(void)
 
          fill_pathname_base_noext(
                config_name,
-               settings->path.libretro,
+               config_get_active_core_path(),
                sizeof(config_name));
 
          fill_pathname_join(config_path, config_dir, config_name,
@@ -1791,17 +1791,17 @@ bool command_event(enum event_command cmd, void *data)
                core_info_ctx_find_t info_find;
 
 #if defined(HAVE_DYNAMIC)
-               if (string_is_empty(settings->path.libretro))
+               if (string_is_empty(config_get_active_core_path()))
                   return false;
 
                libretro_get_system_info(
-                     settings->path.libretro,
+                     config_get_active_core_path(),
                      system,
                      ptr);
 #else
                libretro_get_system_info_static(system, ptr);
 #endif
-               info_find.path = settings->path.libretro;
+               info_find.path = config_get_active_core_path();
 
                if (!core_info_load(&info_find))
                   return false;

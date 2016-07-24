@@ -846,7 +846,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'L':
             if (path_is_directory(optarg))
             {
-               *settings->path.libretro = '\0';
+               config_clear_active_core_path();
                strlcpy(settings->directory.libretro, optarg,
                      sizeof(settings->directory.libretro));
                global->has_set.libretro = true;

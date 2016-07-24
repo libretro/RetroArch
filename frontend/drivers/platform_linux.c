@@ -1872,10 +1872,8 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 
          {
             char executable_path[PATH_MAX_LENGTH] = {0};
-            settings_t                  *settings = config_get_ptr();
-
             fill_pathname_application_path(executable_path, sizeof(executable_path));
-            strlcpy(settings->path.libretro, executable_path, sizeof(settings->path.libretro));
+            config_set_active_core_path(executable_path);
          }
          command_event(CMD_EVENT_QUIT, NULL);
          break;

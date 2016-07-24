@@ -741,7 +741,6 @@ static bool runloop_is_frame_count_end(void)
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
-   settings_t *settings                             = config_get_ptr();
 
    switch (state)
    {
@@ -910,10 +909,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             const char *fullpath = (const char*)data;
             if (!fullpath)
                return false;
-            strlcpy(
-                  settings->path.libretro,
-                  fullpath,
-                  sizeof(settings->path.libretro));
+            config_set_active_core_path(fullpath);
          }
          break;
       case RUNLOOP_CTL_CLEAR_CONTENT_PATH:
@@ -1056,9 +1052,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_TASK_INIT:
          {
-            bool threaded_enable = false;
 #ifdef HAVE_THREADS
-            threaded_enable = settings->threaded_data_runloop_enable;
+            settings_t *settings = config_get_ptr();
+            bool threaded_enable = settings->threaded_data_runloop_enable;
+#else
+            bool threaded_enable = false;
 #endif
             task_queue_ctl(TASK_QUEUE_CTL_DEINIT, NULL);
             task_queue_ctl(TASK_QUEUE_CTL_INIT, &threaded_enable);
@@ -1134,6 +1132,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             bool ret                          = false;
             char buf[PATH_MAX_LENGTH]         = {0};
             global_t *global                  = global_get_ptr();
+            settings_t *settings              = config_get_ptr();
             const char *options_path          = settings->path.core_options;
             const struct retro_variable *vars = 
                (const struct retro_variable*)data;

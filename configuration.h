@@ -600,6 +600,10 @@ const char *config_get_active_path(void);
 
 const char *config_get_active_core_path(void);
 
+void config_set_active_core_path(const char *path);
+
+void config_clear_active_core_path(void);
+
 void config_free_state(void);
 
 settings_t *config_get_ptr(void);
