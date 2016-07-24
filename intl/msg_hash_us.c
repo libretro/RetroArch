@@ -30,6 +30,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE:
+         snprintf(s, len,
+               "Allow games to set rotation. If false, \n"
+               "rotation requests are honored, but ignored.\n\n"
+               "Used for setups where one manually rotates the monitor.");
+         break;
       case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
          snprintf(s, len,
                "Show the input descriptors set by the core instead \n"
