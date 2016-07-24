@@ -43,6 +43,13 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
+         snprintf(s, len,
+               "Puedes usar estos controles en tu mando\n"
+               "o teclado para controlar el menú: \n"
+               " \n"
+               );
+         break;
       case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
          snprintf(s, len,
                "Bienvenido a RetroArch\n"
@@ -133,13 +140,6 @@ int menu_hash_get_help_es(uint32_t hash, char *s, size_t len)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
-               );
-         break;
-      case MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG:
-         snprintf(s, len,
-               "Puedes usar estos controles en tu mando\n"
-               "o teclado para controlar el menú: \n"
-               " \n"
                );
          break;
       case MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:

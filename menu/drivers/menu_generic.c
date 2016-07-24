@@ -108,7 +108,7 @@ static int action_iterate_help(menu_handle_t *menu,
                      keybind, auto_bind, sizeof(desc[i]));
             }
 
-            menu_hash_get_help(MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG,
+            menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG,
                   s2, sizeof(s2));
 
             snprintf(s, len,

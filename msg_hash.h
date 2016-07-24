@@ -2101,7 +2101,6 @@ enum msg_hash_enums
 #define MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT                                0xec5a348bU
 
 #define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
-#define MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG                                  0x72674cdfU
 #define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
 #define MENU_LABEL_VALUE_HELP_LOADING_CONTENT                                  0x70bab027U
 #define MENU_LABEL_VALUE_HELP_LIST                                             0x6c57426aU

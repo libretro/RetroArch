@@ -38,6 +38,14 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
+         snprintf(s, len,
+               "Puoi usare i seguenti controlli sotto \n"
+               "sia su gamepad che su tastiera\n"
+               "per controllare il menù: \n"
+               " \n"
+               );
+         break;
       case MENU_ENUM_LABEL_WELCOME_TO_RETROARCH:
          snprintf(s, len,
                "Benvenuto a RetroArch\n"
@@ -122,14 +130,6 @@ int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST)
                   );
-         break;
-      case MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG:
-         snprintf(s, len,
-               "Puoi usare i seguenti controlli sotto \n"
-               "sia su gamepad che su tastiera\n"
-               "per controllare il menù: \n"
-               " \n"
-               );
          break;
       case MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
          strlcpy(s, "Estraendo, per favore attendi...\n", len);
