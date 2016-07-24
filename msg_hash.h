@@ -1917,7 +1917,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
-#define MENU_LABEL_CLOSE_CONTENT                                               0x4b622170U
 #define MENU_LABEL_CORE_LIST                                                   0xa22bb14dU
 #define MENU_LABEL_MANAGEMENT                                                  0x2516c88aU
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
@@ -1935,13 +1934,8 @@ enum msg_hash_enums
 #define MENU_LABEL_CUSTOM_RATIO                                                0xf038731eU
 #define MENU_LABEL_PAL60_ENABLE                                                0x62bc416eU
 #define MENU_LABEL_CONTENT_HISTORY_PATH                                        0x6f22fb9dU
-#define MENU_LABEL_RECORDING_SETTINGS                                          0x1a80b313U
 #define MENU_LABEL_ONSCREEN_KEYBOARD_OVERLAY_SETTINGS                          0xa6de9ba6U
-#define MENU_LABEL_PLAYLIST_SETTINGS                                           0xdb3e0e07U
-#define MENU_LABEL_ARCHIVE_SETTINGS                                            0x78e85398U
-#define MENU_LABEL_DIRECTORY_SETTINGS                                          0xb817bd2bU
 #define MENU_LABEL_SHADER_APPLY_CHANGES                                        0x4f7306b9U
-#define MENU_LABEL_ONSCREEN_DISPLAY_SETTINGS                                   0x67571029U
 #define MENU_LABEL_CUSTOM_BIND                                                 0x1e84b3fcU
 #define MENU_LABEL_CUSTOM_BIND_ALL                                             0x79ac14f4U
 #define MENU_LABEL_CUSTOM_BIND_DEFAULTS                                        0xe88f7b13U
