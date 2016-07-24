@@ -1820,19 +1820,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_CONTENT_SETTINGS                                            0xe789f7f6U
 
-#define MENU_LABEL_REWIND                                                      0x1931d5aeU
-#define MENU_LABEL_SHADER_NEXT                                                 0x54d359baU
-#define MENU_LABEL_SHADER_PREV                                                 0x54d4a758U
-#define MENU_LABEL_FRAME_ADVANCE                                               0xd80302a1U
-#define MENU_LABEL_MOVIE_RECORD_TOGGLE                                         0xa2d2ff04U
-#define MENU_LABEL_L_X_PLUS                                                    0xd7370d4bU
-#define MENU_LABEL_L_X_MINUS                                                   0xbde0aaf3U
-#define MENU_LABEL_L_Y_PLUS                                                    0xd98c35ecU
-#define MENU_LABEL_L_Y_MINUS                                                   0x0adae7b4U
-#define MENU_LABEL_R_X_PLUS                                                    0x60c20a91U
-#define MENU_LABEL_R_X_MINUS                                                   0x78cb50f9U
-#define MENU_LABEL_R_Y_MINUS                                                   0xc5c58dbaU
-#define MENU_LABEL_R_Y_PLUS                                                    0x63173332U
 #define MENU_LABEL_SCREEN_RESOLUTION                                           0x5c9b3a58U
 
 /* Menu settings */
@@ -1869,9 +1856,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_CHEAT_DATABASE_PATH                                         0x01388b8aU
 #define MENU_LABEL_CHEAT_FILE_LOAD                                             0x57336148U
-#define MENU_LABEL_CHEAT_INDEX_MINUS                                           0x57f58b6cU
-#define MENU_LABEL_CHEAT_INDEX_PLUS                                            0x678542a4U
-#define MENU_LABEL_CHEAT_TOGGLE                                                0xe515e0cbU
 #define MENU_LABEL_CHEAT_FILE_SAVE_AS                                          0x1f58dccaU
 #define MENU_LABEL_CHEAT_APPLY_CHANGES                                         0xde88aa27U
 
