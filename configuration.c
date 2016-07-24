@@ -2835,6 +2835,13 @@ bool config_save_file(const char *path)
       { "video_rotation",               settings->video.rotation},
       { "aspect_ratio_index",           settings->video.aspect_ratio_idx},
       { "state_slot",                   settings->state_slot},
+#ifdef HAVE_NETPLAY
+      { "netplay_ip_port",              global->netplay.port},
+      { "netplay_delay_frames",         global->netplay.sync_frames},
+#endif
+#ifdef HAVE_LANGEXTRA
+      { "user_language",                settings->user_language},
+#endif
       { "bundle_assets_extract_version_current", settings->bundle_assets_extract_version_current},
       { "bundle_assets_extract_last_version", settings->bundle_assets_extract_last_version}
    };
@@ -2884,6 +2891,20 @@ bool config_save_file(const char *path)
             int_settings[i].value);
    }
 
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      char cfg[64] = {0};
+
+      snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+      config_set_int(conf, cfg, settings->input.device[i]);
+      snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
+      config_set_int(conf, cfg, settings->input.joypad_map[i]);
+      snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
+      config_set_int(conf, cfg, settings->input.libretro_device[i]);
+      snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
+      config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
+   }
+
    for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
    {
       config_set_bool(conf, bool_settings[i].ident,
@@ -2908,50 +2929,29 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "perfcnt_enable",
          runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL));
 
-   config_set_path(conf,  "recording_output_directory",
-         global->record.output_dir);
-   config_set_path(conf,  "recording_config_directory",
-         global->record.config_dir);
-   config_set_path(conf,  "libretro_directory",
-         settings->directory.libretro);
-   config_set_path(conf,  "core_options_path",
-         settings->path.core_options);
-   config_set_path(conf,  "libretro_info_path",
-         settings->path.libretro_info);
-   config_set_path(conf,  "video_shader",
-         settings->path.shader);
+   msg_color = (((int)(settings->video.msg_color_r * 255.0f) & 0xff) << 16) +
+               (((int)(settings->video.msg_color_g * 255.0f) & 0xff) <<  8) +
+               (((int)(settings->video.msg_color_b * 255.0f) & 0xff));
+   config_set_hex(conf, "video_message_color", msg_color);
+#ifdef HAVE_MENU
+   config_set_hex(conf, "menu_entry_normal_color",
+         settings->menu.entry_normal_color);
+   config_set_hex(conf, "menu_entry_hover_color",
+         settings->menu.entry_hover_color);
+   config_set_hex(conf, "menu_title_color",
+         settings->menu.title_color);
+#endif
+
    config_set_string(conf,  "bundle_assets_src_path",
          settings->path.bundle_assets_src);
    config_set_string(conf,  "bundle_assets_dst_path",
          settings->path.bundle_assets_dst);
    config_set_string(conf,  "bundle_assets_dst_path_subdir",
          settings->path.bundle_assets_dst_subdir);
-   config_set_path(conf,  "content_database_path",
-         settings->path.content_database);
-   config_set_path(conf,  "cheat_database_path",
-         settings->path.cheat_database);
-#ifdef HAVE_MENU
-   config_set_path(conf, "menu_wallpaper",
-         settings->path.menu_wallpaper);
-#endif
    config_set_string(conf, "video_filter",
          settings->path.softfilter_plugin);
    config_set_string(conf, "audio_dsp_plugin",
          settings->path.audio_dsp_plugin);
-   config_set_path(conf, "content_history_path",
-         settings->path.content_history);
-#ifdef HAVE_OVERLAY
-   config_set_path(conf, "input_overlay",
-         settings->path.overlay);
-   config_set_path(conf, "input_osk_overlay",
-         settings->path.osk_overlay);
-#endif
-   config_set_path(conf, "video_font_path",
-         settings->path.font);
-   config_set_path(conf,  "cursor_directory",
-         settings->directory.cursor);
-   config_set_path(conf,  "content_history_dir",
-         settings->directory.content_history);
    config_set_string(conf,  "playlist_names",
          settings->playlist_names);
    config_set_string(conf,  "playlist_cores",
@@ -2968,9 +2968,6 @@ bool config_save_file(const char *path)
    config_set_string(conf,"menu_driver", settings->menu.driver);
 #endif
 
-   config_set_path(conf, "screenshot_directory",
-         string_is_empty(settings->directory.screenshot) ? "default" :
-         settings->directory.screenshot);
    config_set_string(conf, "audio_device", settings->audio.device);
    config_set_string(conf, "core_updater_buildbot_url",
          settings->network.buildbot_url);
@@ -2985,15 +2982,57 @@ bool config_save_file(const char *path)
 
    config_set_string(conf, "video_context_driver", settings->video.context_driver);
    config_set_string(conf, "audio_driver", settings->audio.driver);
+   config_set_string(conf, "audio_resampler", settings->audio.resampler);
+#ifdef HAVE_NETPLAY
+   config_set_string(conf, "netplay_ip_address",
+         global->netplay.server);
+#endif
+   config_set_string(conf, "netplay_nickname",
+         settings->username);
 
+   config_set_string(conf, "input_driver", settings->input.driver);
+   config_set_string(conf, "input_joypad_driver",
+         settings->input.joypad_driver);
+   config_set_string(conf, "input_keyboard_layout",
+         settings->input.keyboard_layout);
 
-
-   msg_color = (((int)(settings->video.msg_color_r * 255.0f) & 0xff) << 16) +
-               (((int)(settings->video.msg_color_g * 255.0f) & 0xff) <<  8) +
-               (((int)(settings->video.msg_color_b * 255.0f) & 0xff));
-   config_set_hex(conf, "video_message_color", msg_color);
-
-
+   config_set_path(conf,  "recording_output_directory",
+         global->record.output_dir);
+   config_set_path(conf,  "recording_config_directory",
+         global->record.config_dir);
+   config_set_path(conf,  "libretro_directory",
+         settings->directory.libretro);
+   config_set_path(conf,  "core_options_path",
+         settings->path.core_options);
+   config_set_path(conf,  "libretro_info_path",
+         settings->path.libretro_info);
+   config_set_path(conf,  "video_shader",
+         settings->path.shader);
+   config_set_path(conf,  "content_database_path",
+         settings->path.content_database);
+   config_set_path(conf,  "cheat_database_path",
+         settings->path.cheat_database);
+#ifdef HAVE_MENU
+   config_set_path(conf, "menu_wallpaper",
+         settings->path.menu_wallpaper);
+#endif
+   config_set_path(conf, "content_history_path",
+         settings->path.content_history);
+#ifdef HAVE_OVERLAY
+   config_set_path(conf, "input_overlay",
+         settings->path.overlay);
+   config_set_path(conf, "input_osk_overlay",
+         settings->path.osk_overlay);
+#endif
+   config_set_path(conf, "video_font_path",
+         settings->path.font);
+   config_set_path(conf,  "cursor_directory",
+         settings->directory.cursor);
+   config_set_path(conf,  "content_history_dir",
+         settings->directory.content_history);
+   config_set_path(conf, "screenshot_directory",
+         string_is_empty(settings->directory.screenshot) ? "default" :
+         settings->directory.screenshot);
    config_set_path(conf, "system_directory",
          string_is_empty(settings->directory.system) ? "default" :
          settings->directory.system);
@@ -3042,31 +3081,22 @@ bool config_save_file(const char *path)
    config_set_path(conf, "audio_filter_dir",
          string_is_empty(settings->directory.audio_filter) ? "default" :
          settings->directory.audio_filter);
-
-   config_set_string(conf, "audio_resampler", settings->audio.resampler);
    config_set_path(conf, "savefile_directory",
          string_is_empty(global->dir.savefile) ? "default" : global->dir.savefile);
    config_set_path(conf, "savestate_directory",
          string_is_empty(global->dir.savestate) ? "default" : global->dir.savestate);
-
-
 #ifdef HAVE_MENU
    config_set_path(conf, "xmb_font",
          !string_is_empty(settings->menu.xmb.font) ? settings->menu.xmb.font : "");
-   config_set_hex(conf, "menu_entry_normal_color",
-         settings->menu.entry_normal_color);
-   config_set_hex(conf, "menu_entry_hover_color",
-         settings->menu.entry_hover_color);
-   config_set_hex(conf, "menu_title_color",
-         settings->menu.title_color);
 #endif
-
-
 #ifdef HAVE_OVERLAY
-
    config_set_path(conf, "osk_overlay_directory",
          string_is_empty(global->dir.osk_overlay) 
          ? "default" : global->dir.osk_overlay);
+#endif
+#ifndef HAVE_DYNAMIC
+   config_set_path(conf,  "libretro_path",
+         settings->path.libretro);;
 #endif
 
    video_driver_save_settings(conf);
@@ -3086,51 +3116,8 @@ bool config_save_file(const char *path)
       remove(LAKKA_BLUETOOTH_PATH);
 #endif
 
-
-#ifndef HAVE_DYNAMIC
-   config_set_path(conf,  "libretro_path",
-         settings->path.libretro);;
-#endif
-
-
-#ifdef HAVE_NETPLAY
-   config_set_string(conf, "netplay_ip_address",
-         global->netplay.server);
-   config_set_int(conf, "netplay_ip_port",
-         global->netplay.port);
-   config_set_int(conf, "netplay_delay_frames",
-         global->netplay.sync_frames);
-#endif
-   config_set_string(conf, "netplay_nickname",
-         settings->username);
-#ifdef HAVE_LANGEXTRA
-   config_set_int(conf, "user_language",
-         settings->user_language);
-#endif
-
-
-   config_set_string(conf, "input_driver", settings->input.driver);
-   config_set_string(conf, "input_joypad_driver",
-         settings->input.joypad_driver);
-   config_set_string(conf, "input_keyboard_layout",
-         settings->input.keyboard_layout);
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      char cfg[64] = {0};
-
-      snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
-      config_set_int(conf, cfg, settings->input.device[i]);
-      snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
-      config_set_int(conf, cfg, settings->input.joypad_map[i]);
-      snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
-      config_set_int(conf, cfg, settings->input.libretro_device[i]);
-      snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
-      config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
-   }
-
    for (i = 0; i < MAX_USERS; i++)
       save_keybinds_user(conf, i);
-
 
    ret = config_file_write(conf, path);
    config_file_free(conf);
