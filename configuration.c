@@ -1308,13 +1308,38 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "builtin_mediaplayer_enable",  &settings->multimedia.builtin_mediaplayer_enable},
       { "builtin_imageviewer_enable",  &settings->multimedia.builtin_imageviewer_enable},
       { "input_autodetect_enable",     &settings->input.autodetect_enable},
+#ifdef HAVE_NETWORKGAMEPAD
+      { "network_remote_enable",       &settings->network_remote_enable},
+#endif
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
       { "threaded_data_runloop_enable",&settings->threaded_data_runloop_enable},
 #endif
       { "rgui_show_start_screen",      &settings->menu_show_start_screen},
       { "xmb_shadows_enable",          &settings->menu.xmb.shadows_enable},
+      { "menu_throttle_framerate",     &settings->menu.throttle_framerate},
+      { "menu_linear_filter",          &settings->menu.linear_filter},
+      { "menu_pause_libretro",         &settings->menu.pause_libretro},
+      { "menu_mouse_enable",           &settings->menu.mouse.enable},
+      { "menu_pointer_enable",         &settings->menu.pointer.enable},
+      { "menu_timedate_enable",        &settings->menu.timedate_enable},
+      { "menu_core_enable",            &settings->menu.core_enable},
+      { "menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable},
+      { "menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable},
+      { "menu_navigation_browser_filter_supported_extensions_enable",
+         &settings->menu.navigation.browser.filter.supported_extensions_enable },
+      { "menu_show_advanced_settings", &settings->menu.show_advanced_settings },
 #endif
+#ifdef GEKKO
+      { "video_vfilter",               &settings->video.vfilter},
+#endif
+      { "video_shader_enable",         &settings->video.shader_enable},
+      { "video_allow_rotate",          &settings->video.allow_rotate},
+      { "video_smooth",                &settings->video.smooth},
+      { "video_force_aspect",          &settings->video.force_aspect},
+      { "video_scale_integer",         &settings->video.scale_integer},
+      { "video_crop_overscan",         &settings->video.crop_overscan},
+      { "video_aspect_ratio_auto",     &settings->video.aspect_ratio_auto},
       { "camera_allow",                &settings->camera.allow},
       { "audio_enable",                &settings->audio.enable},
       { "audio_mute_enable",           &settings->audio.mute_enable},
@@ -1322,7 +1347,49 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "audio_rate_control",          &settings->audio.rate_control},
       { "rewind_enable",               &settings->rewind_enable},
       { "location_allow",              &settings->location.allow},
-      { "auto_screenshot_filename",    &settings->auto_screenshot_filename}
+      { "video_threaded",              &settings->video.threaded},
+      { "video_font_enable",           &settings->video.font_enable},
+      { "video_force_srgb_enable",     &settings->video.force_srgb_disable},
+      {  "core_set_supports_no_game_enable", &settings->set_supports_no_game_enable},
+      { "video_shared_context",        &settings->video.shared_context},
+#ifdef CHEEVOS
+      { "cheevos_enable",              &settings->cheevos.enable},
+      { "cheevos_test_unofficial",     &settings->cheevos.test_unofficial},
+      { "cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable},
+#endif
+#if TARGET_OS_IPHONE
+      { "small_keyboard_enable",       &settings->input.small_keyboard_enable},
+#endif
+      { "input_overlay_enable",        &settings->input.overlay_enable},
+      { "input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred},
+      { "input_overlay_hide_in_menu",  &settings->input.overlay_hide_in_menu},
+      { "keyboard_gamepad_enable",     &settings->input.keyboard_gamepad_enable},
+      { "video_post_filter_record",    &settings->video.post_filter_record},
+      { "video_gpu_record",            &settings->video.gpu_record},
+      { "video_gpu_screenshot",        &settings->video.gpu_screenshot},
+      { "debug_panel_enable",          &settings->debug_panel_enable},
+      { "back_as_menu_toggle_enable",  &settings->input.back_as_menu_toggle_enable},
+      { "input_remap_binds_enable",    &settings->input.remap_binds_enable},
+      { "netplay_client_swap_input",   &settings->input.netplay_client_swap_input},
+      { "input_descriptor_label_show", &settings->input.input_descriptor_label_show},
+      { "input_descriptor_hide_unbound",&settings->input.input_descriptor_hide_unbound},
+      { "ui_companion_start_on_boot",   &settings->ui.companion_start_on_boot},
+      { "ui_companion_enable",          &settings->ui.companion_enable},
+      { "bundle_assets_extract_enable", &settings->bundle_assets_extract_enable},
+      { "pause_nonactive",              &settings->pause_nonactive},
+      { "block_sram_overwrite",         &settings->block_sram_overwrite},
+      { "savestate_auto_index",         &settings->savestate_auto_index},
+      { "savestate_auto_save",          &settings->savestate_auto_save},
+      { "savestate_auto_load",          &settings->savestate_auto_load},
+#ifdef HAVE_COMMAND
+      { "network_cmd_enable",           &settings->network_cmd_enable},
+      { "stdin_cmd_enable",             &settings->stdin_cmd_enable},
+#endif
+#ifdef HAVE_OVERLAY
+      { "input_osk_overlay_enable",     &settings->osk.enable},
+#endif
+      { "core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive},
+      { "auto_screenshot_filename",     &settings->auto_screenshot_filename}
    };
 
    if (path)
@@ -1363,173 +1430,39 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 #endif
 
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.scale, "video_scale");
-   CONFIG_GET_INT_BASE  (conf, settings, video.fullscreen_x, "video_fullscreen_x");
-   CONFIG_GET_INT_BASE  (conf, settings, video.fullscreen_y, "video_fullscreen_y");
 
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
-   config_get_array(conf, "playlist_names", settings->playlist_names, sizeof(settings->playlist_names));
-   config_get_array(conf, "playlist_cores", settings->playlist_cores, sizeof(settings->playlist_cores));
 
-   CONFIG_GET_INT_BASE (conf, settings, video.monitor_index, "video_monitor_index");
+
+
+   CONFIG_GET_INT_BASE(conf, settings, video.fullscreen_x, "video_fullscreen_x");
+   CONFIG_GET_INT_BASE(conf, settings, video.fullscreen_y, "video_fullscreen_y");
+   CONFIG_GET_INT_BASE(conf, settings, video.monitor_index, "video_monitor_index");
    CONFIG_GET_INT_BASE(conf, settings, video.max_swapchain_images, "video_max_swapchain_images");
-
 #ifdef HAVE_MENU
-
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.throttle_framerate,
-         "menu_throttle_framerate");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.linear_filter,
-         "menu_linear_filter");
    CONFIG_GET_INT_BASE (conf, settings, menu.dpi.override_value,
          "dpi_override_value");
-
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.pause_libretro,
-         "menu_pause_libretro");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.mouse.enable,
-         "menu_mouse_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.pointer.enable,
-         "menu_pointer_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.timedate_enable,
-         "menu_timedate_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.core_enable,
-         "menu_core_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.dynamic_wallpaper_enable,
-         "menu_dynamic_wallpaper_enable");
-   CONFIG_GET_FLOAT_BASE(conf, settings, menu.wallpaper.opacity, "menu_wallpaper_opacity");
-   CONFIG_GET_FLOAT_BASE(conf, settings, menu.footer.opacity, "menu_footer_opacity");
-   CONFIG_GET_FLOAT_BASE(conf, settings, menu.header.opacity, "menu_header_opacity");
    CONFIG_GET_INT_BASE(conf, settings, menu.thumbnails,
          "menu_thumbnails");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.enable,
-         "menu_navigation_wraparound_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings,
-         menu.navigation.browser.filter.supported_extensions_enable,
-         "menu_navigation_browser_filter_supported_extensions_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.show_advanced_settings,
-         "menu_show_advanced_settings");
-   config_get_hex_base(conf, "menu_entry_normal_color",
-         &settings->menu.entry_normal_color);
-   config_get_hex_base(conf, "menu_entry_hover_color",
-         &settings->menu.entry_hover_color);
-   config_get_hex_base(conf, "menu_title_color",
-         &settings->menu.title_color);
-
-   if (config_get_path(conf, "menu_wallpaper", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->path.menu_wallpaper, tmp_str,
-            sizeof(settings->path.menu_wallpaper));
-
-   if (string_is_equal(settings->path.menu_wallpaper, "default"))
-      *settings->path.menu_wallpaper = '\0';
 #endif
-
    CONFIG_GET_INT_BASE(conf, settings, video.hard_sync_frames, "video_hard_sync_frames");
-   if (settings->video.hard_sync_frames > 3)
-      settings->video.hard_sync_frames = 3;
-
    CONFIG_GET_INT_BASE(conf, settings, video.frame_delay, "video_frame_delay");
-   if (settings->video.frame_delay > 15)
-      settings->video.frame_delay = 15;
-
    CONFIG_GET_INT_BASE(conf, settings, video.swap_interval, "video_swap_interval");
-   settings->video.swap_interval = MAX(settings->video.swap_interval, 1);
-   settings->video.swap_interval = MIN(settings->video.swap_interval, 4);
-   CONFIG_GET_BOOL_BASE(conf, settings, video.threaded, "video_threaded");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.shared_context, "video_shared_context");
 #ifdef GEKKO
    CONFIG_GET_INT_BASE(conf, settings, video.viwidth, "video_viwidth");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.vfilter, "video_vfilter");
 #endif
-   CONFIG_GET_BOOL_BASE(conf, settings, video.smooth, "video_smooth");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.force_aspect, "video_force_aspect");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.scale_integer, "video_scale_integer");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.crop_overscan, "video_crop_overscan");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.aspect_ratio, "video_aspect_ratio");
    CONFIG_GET_INT_BASE(conf, settings, video.aspect_ratio_idx, "aspect_ratio_index");
-   CONFIG_GET_BOOL_BASE(conf,  settings, video.aspect_ratio_auto, "video_aspect_ratio_auto");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.refresh_rate, "video_refresh_rate");
-
-   if (config_get_path(conf, "video_shader", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->path.shader, tmp_str, sizeof(settings->path.shader));
-
-   CONFIG_GET_BOOL_BASE(conf, settings, video.shader_enable, "video_shader_enable");
-
-   CONFIG_GET_BOOL_BASE(conf, settings, video.allow_rotate, "video_allow_rotate");
-
-   if (config_get_path(conf, "video_font_path", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->path.font, tmp_str, sizeof(settings->path.font));
-
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.font_size, "video_font_size");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.font_enable, "video_font_enable");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_x, "video_message_pos_x");
-   CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_y, "video_message_pos_y");
    CONFIG_GET_INT_BASE(conf, settings, video.rotation, "video_rotation");
-
-   CONFIG_GET_BOOL_BASE(conf, settings, video.force_srgb_disable, "video_force_srgb_disable");
-   CONFIG_GET_BOOL_BASE(conf, settings, set_supports_no_game_enable, "core_set_supports_no_game_enable");
-
-#ifdef RARCH_CONSOLE
-   {
-      bool tmp_bool = false;
-      /* TODO - will be refactored later to make it more clean - it's more
-       * important that it works for consoles right now */
-      if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
-         global->console.sound.system_bgm_enable = tmp_bool;
-   }
-   video_driver_load_settings(conf);
-#endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
 
    CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.width,  "custom_viewport_width");
    CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.height, "custom_viewport_height");
    CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.x,      "custom_viewport_x");
    CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.y,      "custom_viewport_y");
-
-   if (config_get_hex(conf, "video_message_color", &msg_color))
-   {
-      settings->video.msg_color_r = ((msg_color >> 16) & 0xff) / 255.0f;
-      settings->video.msg_color_g = ((msg_color >>  8) & 0xff) / 255.0f;
-      settings->video.msg_color_b = ((msg_color >>  0) & 0xff) / 255.0f;
-   }
-
-   CONFIG_GET_BOOL_BASE(conf, settings, video.post_filter_record, "video_post_filter_record");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.gpu_record, "video_gpu_record");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.gpu_screenshot, "video_gpu_screenshot");
-
-   if (string_is_equal(settings->directory.video_shader, "default"))
-      *settings->directory.video_shader = '\0';
-
-   if (config_get_path(conf, "video_filter_dir", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.video_filter, tmp_str, sizeof(settings->directory.video_filter));
-
-   if (string_is_equal(settings->directory.video_filter, "default"))
-      *settings->directory.video_filter = '\0';
-
-   if (config_get_path(conf, "audio_filter_dir", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.audio_filter, tmp_str, sizeof(settings->directory.audio_filter));
-
-   if (string_is_equal(settings->directory.audio_filter, "default"))
-      *settings->directory.audio_filter = '\0';
-
-   CONFIG_GET_BOOL_BASE(conf, settings, input.back_as_menu_toggle_enable, "back_as_menu_toggle_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, input.remap_binds_enable, "input_remap_binds_enable");
-   CONFIG_GET_FLOAT_BASE(conf, settings, input.axis_threshold, "input_axis_threshold");
-   CONFIG_GET_BOOL_BASE(conf, settings, input.netplay_client_swap_input, "netplay_client_swap_input");
    CONFIG_GET_INT_BASE(conf, settings, input.max_users, "input_max_users");
    CONFIG_GET_INT_BASE(conf, settings, input.menu_toggle_gamepad_combo, "input_menu_toggle_gamepad_combo");
-   CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_label_show, "input_descriptor_label_show");
-   CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_hide_unbound, "input_descriptor_hide_unbound");
-
-   CONFIG_GET_BOOL_BASE(conf, settings, ui.companion_start_on_boot, "ui_companion_start_on_boot");
-   CONFIG_GET_BOOL_BASE(conf, settings, ui.companion_enable, "ui_companion_enable");
-
-   if (config_get_path(conf, "core_updater_buildbot_url", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->network.buildbot_url, tmp_str, sizeof(settings->network.buildbot_url));
-   if (config_get_path(conf, "core_updater_buildbot_assets_url", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->network.buildbot_assets_url, tmp_str, sizeof(settings->network.buildbot_assets_url));
-   CONFIG_GET_BOOL_BASE(conf, settings, network.buildbot_auto_extract_archive, "core_updater_auto_extract_archive");
-
    for (i = 0; i < MAX_USERS; i++)
    {
       char buf[64] = {0};
@@ -1546,6 +1479,32 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
+#ifdef RARCH_CONSOLE
+   {
+      bool tmp_bool = false;
+      /* TODO - will be refactored later to make it more clean - it's more
+       * important that it works for consoles right now */
+      if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
+         global->console.sound.system_bgm_enable = tmp_bool;
+   }
+   video_driver_load_settings(conf);
+#endif
+
+   if (config_get_hex(conf, "video_message_color", &msg_color))
+   {
+      settings->video.msg_color_r = ((msg_color >> 16) & 0xff) / 255.0f;
+      settings->video.msg_color_g = ((msg_color >>  8) & 0xff) / 255.0f;
+      settings->video.msg_color_b = ((msg_color >>  0) & 0xff) / 255.0f;
+   }
+#ifdef HAVE_MENU
+   config_get_hex_base(conf, "menu_entry_normal_color",
+         &settings->menu.entry_normal_color);
+   config_get_hex_base(conf, "menu_entry_hover_color",
+         &settings->menu.entry_hover_color);
+   config_get_hex_base(conf, "menu_title_color",
+         &settings->menu.title_color);
+#endif
+
    if (!global->has_set.ups_pref)
    {
       CONFIG_GET_BOOL_BASE(conf, global, patch.ups_pref, "ups_pref");
@@ -1558,29 +1517,38 @@ static bool config_load_file(const char *path, bool set_defaults)
    {
       CONFIG_GET_BOOL_BASE(conf, global, patch.ips_pref, "ips_pref");
    }
+#ifdef HAVE_NETPLAY
+   if (!global->has_set.netplay_mode)
+      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_spectate,
+            "netplay_spectator_mode_enable");
+   if (!global->has_set.netplay_mode)
+      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_client, "netplay_mode");
+#endif
 
-   /* Audio settings. */
-   CONFIG_GET_INT_BASE(conf, settings, audio.out_rate, "audio_out_rate");
-   CONFIG_GET_INT_BASE(conf, settings, audio.block_frames, "audio_block_frames");
-
-   config_get_array(conf, "audio_device", settings->audio.device, sizeof(settings->audio.device));
-
-   CONFIG_GET_INT_BASE(conf, settings, audio.latency, "audio_latency");
+   CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_opacity, "input_overlay_opacity");
+   CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_scale, "input_overlay_scale");
+   CONFIG_GET_FLOAT_BASE(conf, settings, slowmotion_ratio, "slowmotion_ratio");
+   CONFIG_GET_FLOAT_BASE(conf, settings, fastforward_ratio, "fastforward_ratio");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.scale, "video_scale");
+   CONFIG_GET_FLOAT_BASE(conf, settings, menu.wallpaper.opacity, "menu_wallpaper_opacity");
+   CONFIG_GET_FLOAT_BASE(conf, settings, menu.footer.opacity, "menu_footer_opacity");
+   CONFIG_GET_FLOAT_BASE(conf, settings, menu.header.opacity, "menu_header_opacity");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.aspect_ratio, "video_aspect_ratio");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.refresh_rate, "video_refresh_rate");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.font_size, "video_font_size");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_x, "video_message_pos_x");
+   CONFIG_GET_FLOAT_BASE(conf, settings, video.msg_pos_y, "video_message_pos_y");
+   CONFIG_GET_FLOAT_BASE(conf, settings, input.axis_threshold, "input_axis_threshold");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.rate_control_delta, "audio_rate_control_delta");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.max_timing_skew, "audio_max_timing_skew");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.volume, "audio_volume");
 
+   config_get_array(conf, "playlist_names", settings->playlist_names, sizeof(settings->playlist_names));
+   config_get_array(conf, "playlist_cores", settings->playlist_cores, sizeof(settings->playlist_cores));
+   config_get_array(conf, "audio_device", settings->audio.device, sizeof(settings->audio.device));
    config_get_array(conf, "audio_resampler", settings->audio.resampler, sizeof(settings->audio.resampler));
-
-   audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
-
    config_get_array(conf, "camera_device", settings->camera.device, sizeof(settings->camera.device));
-
-
 #ifdef HAVE_CHEEVOS
-   CONFIG_GET_BOOL_BASE(conf, settings, cheevos.enable, "cheevos_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, cheevos.test_unofficial, "cheevos_test_unofficial");
-   CONFIG_GET_BOOL_BASE(conf, settings, cheevos.hardcore_mode_enable, "cheevos_hardcore_mode_enable");
    config_get_array(conf, "cheevos_username", settings->cheevos.username, sizeof(settings->cheevos.username));
    config_get_array(conf, "cheevos_password", settings->cheevos.password, sizeof(settings->cheevos.password));
 #endif
@@ -1591,16 +1559,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_array(conf, "location_driver", settings->location.driver, sizeof(settings->location.driver));
 #ifdef HAVE_MENU
    config_get_array(conf, "menu_driver",     settings->menu.driver, sizeof(settings->menu.driver));
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.scale_factor, "xmb_scale_factor");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.alpha_factor, "xmb_alpha_factor");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.theme, "xmb_theme");
-#ifdef HAVE_XMB
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.menu_color_theme, "xmb_menu_color_theme");
-#endif
-   CONFIG_GET_INT_BASE(conf, settings, menu.materialui.menu_color_theme, "materialui_menu_color_theme");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.shader_pipeline, "menu_shader_pipeline");
-   if (config_get_path(conf, "xmb_font", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->menu.xmb.font, tmp_str, sizeof(settings->menu.xmb.font));
 #endif
    config_get_array(conf, "video_context_driver",
          settings->video.context_driver,
@@ -1617,9 +1575,68 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_array(conf, "input_keyboard_layout",
          settings->input.keyboard_layout,
          sizeof(settings->input.keyboard_layout));
+   config_get_array(conf, "bundle_assets_src_path",
+         settings->path.bundle_assets_src,
+         sizeof(settings->path.bundle_assets_src));
+   config_get_array(conf, "bundle_assets_dst_path",
+         settings->path.bundle_assets_dst,
+         sizeof(settings->path.bundle_assets_dst));
+   config_get_array(conf, "bundle_assets_dst_path_subdir",
+         settings->path.bundle_assets_dst_subdir,
+         sizeof(settings->path.bundle_assets_dst_subdir));
 
 
+   CONFIG_GET_INT_BASE(conf, settings, libretro_log_level, "libretro_log_level");
+   CONFIG_GET_INT_BASE(conf, settings, input.keyboard_gamepad_mapping_type, "keyboard_gamepad_mapping_type");
+   CONFIG_GET_INT_BASE(conf, settings, input.poll_type_behavior, "input_poll_type_behavior");
+   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_version_current, "bundle_assets_extract_version_current");
+   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_last_version,    "bundle_assets_extract_last_version");
 
+   CONFIG_GET_INT_BASE(conf, settings, rewind_granularity, "rewind_granularity");
+   CONFIG_GET_INT_BASE(conf, settings, autosave_interval, "autosave_interval");
+#ifdef HAVE_COMMAND
+   CONFIG_GET_INT_BASE(conf, settings, network_cmd_port, "network_cmd_port");
+#endif
+   CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
+   CONFIG_GET_INT_BASE(conf, settings, input.bind_timeout, "input_bind_timeout");
+   CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
+   CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
+#ifdef HAVE_LANGEXTRA
+   CONFIG_GET_INT_BASE(conf, settings, user_language, "user_language");
+#endif
+   CONFIG_GET_INT_BASE(conf, settings, audio.out_rate, "audio_out_rate");
+   CONFIG_GET_INT_BASE(conf, settings, audio.block_frames, "audio_block_frames");
+   CONFIG_GET_INT_BASE(conf, settings, audio.latency, "audio_latency");
+#ifdef HAVE_MENU
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.scale_factor, "xmb_scale_factor");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.alpha_factor, "xmb_alpha_factor");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.theme, "xmb_theme");
+#ifdef HAVE_XMB
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.menu_color_theme, "xmb_menu_color_theme");
+#endif
+   CONFIG_GET_INT_BASE(conf, settings, menu.materialui.menu_color_theme, "materialui_menu_color_theme");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.shader_pipeline, "menu_shader_pipeline");
+#endif
+
+#ifdef HAVE_MENU
+   if (config_get_path(conf, "xmb_font", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->menu.xmb.font, tmp_str, sizeof(settings->menu.xmb.font));
+#endif
+   if (config_get_path(conf, "menu_wallpaper", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->path.menu_wallpaper, tmp_str,
+            sizeof(settings->path.menu_wallpaper));
+   if (config_get_path(conf, "video_shader", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->path.shader, tmp_str, sizeof(settings->path.shader));
+   if (config_get_path(conf, "video_font_path", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->path.font, tmp_str, sizeof(settings->path.font));
+   if (config_get_path(conf, "video_filter_dir", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.video_filter, tmp_str, sizeof(settings->directory.video_filter));
+   if (config_get_path(conf, "audio_filter_dir", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.audio_filter, tmp_str, sizeof(settings->directory.audio_filter));
+   if (config_get_path(conf, "core_updater_buildbot_url", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->network.buildbot_url, tmp_str, sizeof(settings->network.buildbot_url));
+   if (config_get_path(conf, "core_updater_buildbot_assets_url", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->network.buildbot_assets_url, tmp_str, sizeof(settings->network.buildbot_assets_url));
 #ifdef HAVE_OVERLAY
    if (config_get_path(conf, "input_overlay", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->path.overlay, tmp_str, sizeof(settings->path.overlay));
@@ -1637,15 +1654,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (config_get_path(conf, "core_options_path", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->path.core_options, tmp_str, sizeof(settings->path.core_options));
 
-   config_get_array(conf, "bundle_assets_src_path",
-         settings->path.bundle_assets_src,
-         sizeof(settings->path.bundle_assets_src));
-   config_get_array(conf, "bundle_assets_dst_path",
-         settings->path.bundle_assets_dst,
-         sizeof(settings->path.bundle_assets_dst));
-   config_get_array(conf, "bundle_assets_dst_path_subdir",
-         settings->path.bundle_assets_dst_subdir,
-         sizeof(settings->path.bundle_assets_dst_subdir));
 
    if (config_get_path(conf, "content_database_path", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->path.content_database, tmp_str, sizeof(settings->path.content_database));
@@ -1661,6 +1669,102 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    if (config_get_path(conf, "content_history_path", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->path.content_history, tmp_str, sizeof(settings->path.content_history));
+
+   if (config_get_path(conf, "resampler_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.resampler, tmp_str, sizeof(settings->directory.resampler));
+
+   if (config_get_path(conf, "cache_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.cache, tmp_str, sizeof(settings->directory.cache));
+
+   if (config_get_path(conf, "input_remapping_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.input_remapping, tmp_str, sizeof(settings->directory.input_remapping));
+
+   if (config_get_path(conf, "core_assets_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.core_assets, tmp_str, sizeof(settings->directory.core_assets));
+
+   if (config_get_path(conf, "assets_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.assets, tmp_str, sizeof(settings->directory.assets));
+
+   if (config_get_path(conf, "dynamic_wallpapers_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.dynamic_wallpapers, tmp_str, sizeof(settings->directory.dynamic_wallpapers));
+
+   if (config_get_path(conf, "thumbnails_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.thumbnails, tmp_str, sizeof(settings->directory.thumbnails));
+
+   if (config_get_path(conf, "playlist_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.playlist, tmp_str, sizeof(settings->directory.playlist));
+
+   if (config_get_path(conf, "recording_output_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(global->record.output_dir, tmp_str, sizeof(global->record.output_dir));
+   if (config_get_path(conf, "recording_config_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(global->record.config_dir, tmp_str, sizeof(global->record.config_dir));
+#ifdef HAVE_OVERLAY
+   if (config_get_path(conf, "overlay_directory", tmp_str, sizeof(tmp_str)))
+         strlcpy(settings->directory.overlay, tmp_str, sizeof(settings->directory.overlay));
+   if (config_get_path(conf, "osk_overlay_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(global->dir.osk_overlay, tmp_str, sizeof(global->dir.osk_overlay));
+#endif
+   if (config_get_path(conf, "content_history_dir", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.content_history, tmp_str, sizeof(settings->directory.content_history));
+   if (config_get_path(conf, "joypad_autoconfig_dir", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.autoconfig, tmp_str, sizeof(settings->directory.autoconfig));
+   if (config_get_path(conf, "screenshot_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.screenshot, tmp_str, sizeof(settings->directory.screenshot));
+   if (config_get_path(conf, "video_shader_dir", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.video_shader, tmp_str, sizeof(settings->directory.video_shader));
+   if (!global->has_set.libretro_directory)
+   {
+      if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
+            strlcpy(settings->directory.libretro, tmp_str, sizeof(settings->directory.libretro));
+   }
+#ifndef HAVE_DYNAMIC
+   if (config_get_path(conf, "libretro_path", tmp_str, sizeof(tmp_str)))
+   {
+      strlcpy(settings->path.libretro, tmp_str, sizeof(settings->path.libretro));
+   }
+#endif
+#ifdef HAVE_MENU
+   if (config_get_path(conf, "rgui_browser_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.menu_content, tmp_str, sizeof(settings->directory.menu_content));
+   if (config_get_path(conf, "rgui_config_directory", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->directory.menu_config, tmp_str, sizeof(settings->directory.menu_config));
+#endif
+   if (!rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
+   {
+      if (config_get_path(conf, "netplay_nickname",  tmp_str, sizeof(tmp_str)))
+            strlcpy(settings->username, tmp_str, sizeof(settings->username));
+   }
+#ifdef HAVE_NETPLAY
+   if (!global->has_set.netplay_ip_address)
+   {
+      if (config_get_path(conf, "netplay_ip_address", tmp_str, sizeof(tmp_str)))
+            strlcpy(global->netplay.server, tmp_str, sizeof(global->netplay.server));
+   }
+#endif
+
+   /* Post-settings load */
+   if (string_is_equal(settings->path.menu_wallpaper, "default"))
+      *settings->path.menu_wallpaper = '\0';
+
+   if (settings->video.hard_sync_frames > 3)
+      settings->video.hard_sync_frames = 3;
+
+   if (settings->video.frame_delay > 15)
+      settings->video.frame_delay = 15;
+
+   settings->video.swap_interval = MAX(settings->video.swap_interval, 1);
+   settings->video.swap_interval = MIN(settings->video.swap_interval, 4);
+
+   if (string_is_equal(settings->directory.video_shader, "default"))
+      *settings->directory.video_shader = '\0';
+
+   if (string_is_equal(settings->directory.video_filter, "default"))
+      *settings->directory.video_filter = '\0';
+
+   if (string_is_equal(settings->directory.audio_filter, "default"))
+      *settings->directory.audio_filter = '\0';
+
+   audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 
    if (string_is_empty(settings->path.content_history))
    {
@@ -1688,8 +1792,6 @@ static bool config_load_file(const char *path, bool set_defaults)
          *bool_settings[i].value_ptr = tmp;
    }
 
-   if (config_get_path(conf, "screenshot_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.screenshot, tmp_str, sizeof(settings->directory.screenshot));
 
    if (!string_is_empty(settings->directory.screenshot))
    {
@@ -1702,15 +1804,6 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
-   if (config_get_path(conf, "video_shader_dir", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.video_shader, tmp_str, sizeof(settings->directory.video_shader));
-
-   if (!global->has_set.libretro_directory)
-   {
-      if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
-            strlcpy(settings->directory.libretro, tmp_str, sizeof(settings->directory.libretro));
-   }
-
    /* Safe-guard against older behavior. */
    if (path_is_directory(settings->path.libretro))
    {
@@ -1719,37 +1812,6 @@ static bool config_load_file(const char *path, bool set_defaults)
             sizeof(settings->directory.libretro));
       *settings->path.libretro = '\0';
    }
-
-   if (config_get_path(conf, "libretro_path", tmp_str, sizeof(tmp_str)))
-   {
-#ifndef HAVE_DYNAMIC
-      strlcpy(settings->path.libretro, tmp_str, sizeof(settings->path.libretro));
-#endif
-   }
-
-   if (config_get_path(conf, "resampler_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.resampler, tmp_str, sizeof(settings->directory.resampler));
-
-   if (config_get_path(conf, "cache_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.cache, tmp_str, sizeof(settings->directory.cache));
-
-   if (config_get_path(conf, "input_remapping_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.input_remapping, tmp_str, sizeof(settings->directory.input_remapping));
-
-   if (config_get_path(conf, "core_assets_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.core_assets, tmp_str, sizeof(settings->directory.core_assets));
-
-   if (config_get_path(conf, "assets_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.assets, tmp_str, sizeof(settings->directory.assets));
-
-   if (config_get_path(conf, "dynamic_wallpapers_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.dynamic_wallpapers, tmp_str, sizeof(settings->directory.dynamic_wallpapers));
-
-   if (config_get_path(conf, "thumbnails_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.thumbnails, tmp_str, sizeof(settings->directory.thumbnails));
-
-   if (config_get_path(conf, "playlist_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.playlist, tmp_str, sizeof(settings->directory.playlist));
 
    if (string_is_equal(settings->directory.core_assets, "default"))
       *settings->directory.core_assets = '\0';
@@ -1762,19 +1824,12 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (string_is_equal(settings->directory.playlist, "default"))
       *settings->directory.playlist = '\0';
 #ifdef HAVE_MENU
-   if (config_get_path(conf, "rgui_browser_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.menu_content, tmp_str, sizeof(settings->directory.menu_content));
 
    if (string_is_equal(settings->directory.menu_content, "default"))
       *settings->directory.menu_content = '\0';
-
-   if (config_get_path(conf, "rgui_config_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.menu_config, tmp_str, sizeof(settings->directory.menu_config));
-
    if (string_is_equal(settings->directory.menu_config, "default"))
       *settings->directory.menu_config = '\0';
 #endif
-   CONFIG_GET_INT_BASE(conf, settings, libretro_log_level, "libretro_log_level");
 
    if (!global->has_set.verbosity)
    {
@@ -1801,40 +1856,12 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
-#if TARGET_OS_IPHONE
-   CONFIG_GET_BOOL_BASE(conf, settings, input.small_keyboard_enable,   "small_keyboard_enable");
-#endif
-   CONFIG_GET_BOOL_BASE(conf, settings, input.keyboard_gamepad_enable, "keyboard_gamepad_enable");
-   CONFIG_GET_INT_BASE(conf, settings, input.keyboard_gamepad_mapping_type, "keyboard_gamepad_mapping_type");
-   CONFIG_GET_INT_BASE(conf, settings, input.poll_type_behavior, "input_poll_type_behavior");
-
-   if (config_get_path(conf, "recording_output_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(global->record.output_dir, tmp_str, sizeof(global->record.output_dir));
-   if (config_get_path(conf, "recording_config_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(global->record.config_dir, tmp_str, sizeof(global->record.config_dir));
-
 #ifdef HAVE_OVERLAY
-   if (config_get_path(conf, "overlay_directory", tmp_str, sizeof(tmp_str)))
-         strlcpy(settings->directory.overlay, tmp_str, sizeof(settings->directory.overlay));
-
    if (string_is_equal(settings->directory.overlay, "default"))
       *settings->directory.overlay = '\0';
-
-   CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_enable, "input_overlay_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_enable_autopreferred, "input_overlay_enable_autopreferred");
-   CONFIG_GET_BOOL_BASE(conf, settings, input.overlay_hide_in_menu, "input_overlay_hide_in_menu");
-   CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_opacity, "input_overlay_opacity");
-   CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_scale, "input_overlay_scale");
-
-   if (config_get_path(conf, "osk_overlay_directory", tmp_str, sizeof(tmp_str)))
-      strlcpy(global->dir.osk_overlay, tmp_str, sizeof(global->dir.osk_overlay));
-
    if (string_is_equal(global->dir.osk_overlay, "default"))
       *global->dir.osk_overlay = '\0';
-
-   CONFIG_GET_BOOL_BASE(conf, settings, osk.enable, "input_osk_overlay_enable");
 #endif
-
 
    {
       /* ugly hack around C89 not allowing mixing declarations and code */
@@ -1843,36 +1870,13 @@ static bool config_load_file(const char *path, bool set_defaults)
          settings->rewind_buffer_size = buffer_size * UINT64_C(1000000);
    }
 
-   CONFIG_GET_BOOL_BASE(conf, settings, bundle_assets_extract_enable, "bundle_assets_extract_enable");
-   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_version_current, "bundle_assets_extract_version_current");
-   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_last_version,    "bundle_assets_extract_last_version");
-
-   CONFIG_GET_INT_BASE(conf, settings, rewind_granularity, "rewind_granularity");
-   CONFIG_GET_FLOAT_BASE(conf, settings, slowmotion_ratio, "slowmotion_ratio");
    if (settings->slowmotion_ratio < 1.0f)
       settings->slowmotion_ratio = 1.0f;
-
-   CONFIG_GET_FLOAT_BASE(conf, settings, fastforward_ratio, "fastforward_ratio");
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
    if (settings->fastforward_ratio < 0.0f)
       settings->fastforward_ratio = 0.0f;
-
-   CONFIG_GET_BOOL_BASE(conf, settings, pause_nonactive, "pause_nonactive");
-   CONFIG_GET_INT_BASE(conf, settings, autosave_interval, "autosave_interval");
-
-
-   CONFIG_GET_BOOL_BASE(conf, settings, block_sram_overwrite, "block_sram_overwrite");
-   CONFIG_GET_BOOL_BASE(conf, settings, savestate_auto_index, "savestate_auto_index");
-   CONFIG_GET_BOOL_BASE(conf, settings, savestate_auto_save, "savestate_auto_save");
-   CONFIG_GET_BOOL_BASE(conf, settings, savestate_auto_load, "savestate_auto_load");
-
-#ifdef HAVE_COMMAND
-   CONFIG_GET_BOOL_BASE(conf, settings, network_cmd_enable, "network_cmd_enable");
-   CONFIG_GET_INT_BASE(conf, settings, network_cmd_port, "network_cmd_port");
-   CONFIG_GET_BOOL_BASE(conf, settings, stdin_cmd_enable, "stdin_cmd_enable");
-#endif
 
 #ifdef HAVE_LAKKA
    settings->ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
@@ -1881,7 +1885,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-   CONFIG_GET_BOOL_BASE(conf, settings, network_remote_enable, "network_remote_enable");
    for (i = 0; i < MAX_USERS; i++)
    {
       bool tmp_bool = false;
@@ -1896,42 +1899,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
 #endif
 
-   CONFIG_GET_BOOL_BASE(conf, settings, debug_panel_enable, "debug_panel_enable");
-
-   if (config_get_path(conf, "content_history_dir", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.content_history, tmp_str, sizeof(settings->directory.content_history));
-
-
-   CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
-
-   CONFIG_GET_INT_BASE(conf, settings, input.bind_timeout, "input_bind_timeout");
-   CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
-   CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
-
-   if (config_get_path(conf, "joypad_autoconfig_dir", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->directory.autoconfig, tmp_str, sizeof(settings->directory.autoconfig));
-
-   if (!rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
-   {
-      if (config_get_path(conf, "netplay_nickname",  tmp_str, sizeof(tmp_str)))
-            strlcpy(settings->username, tmp_str, sizeof(settings->username));
-   }
-#ifdef HAVE_LANGEXTRA
-   CONFIG_GET_INT_BASE(conf, settings, user_language, "user_language");
-#endif
 #ifdef HAVE_NETPLAY
-   if (!global->has_set.netplay_mode)
-      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_spectate,
-            "netplay_spectator_mode_enable");
-   if (!global->has_set.netplay_mode)
-      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_client, "netplay_mode");
-
-   if (!global->has_set.netplay_ip_address)
-   {
-      if (config_get_path(conf, "netplay_ip_address", tmp_str, sizeof(tmp_str)))
-            strlcpy(global->netplay.server, tmp_str, sizeof(global->netplay.server));
-   }
-
    if (!global->has_set.netplay_delay_frames)
       CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_delay_frames");
    if (!global->has_set.netplay_ip_port)
@@ -2000,7 +1968,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 
    config_read_keybinds_conf(conf);
-
 
    CONFIG_GET_INT_BASE(conf, settings, menu_ok_btn,          "menu_ok_btn");
    CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
