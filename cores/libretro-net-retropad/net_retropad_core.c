@@ -157,6 +157,10 @@ static unsigned retropad_update_input(void)
       value += pow(2, 10);
    if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R))
       value += pow(2, 11);
+   if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2))
+      value += pow(2, 12);
+   if (NETRETROPAD_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2))
+      value += pow(2, 13);
 
    return value;
 }
