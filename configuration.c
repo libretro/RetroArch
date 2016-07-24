@@ -1434,9 +1434,14 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
-
-
-
+   CONFIG_GET_INT_BASE(conf, settings, menu_ok_btn,          "menu_ok_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_search_btn,      "menu_search_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_info_btn,        "menu_info_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_default_btn,     "menu_default_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_down_btn, "menu_scroll_down_btn");
+   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_up_btn,   "menu_scroll_up_btn");
    CONFIG_GET_INT_BASE(conf, settings, video.fullscreen_x, "video_fullscreen_x");
    CONFIG_GET_INT_BASE(conf, settings, video.fullscreen_y, "video_fullscreen_y");
    CONFIG_GET_INT_BASE(conf, settings, video.monitor_index, "video_monitor_index");
@@ -1969,14 +1974,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    config_read_keybinds_conf(conf);
 
-   CONFIG_GET_INT_BASE(conf, settings, menu_ok_btn,          "menu_ok_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_search_btn,      "menu_search_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_info_btn,        "menu_info_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_default_btn,     "menu_default_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_down_btn, "menu_scroll_down_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_up_btn,   "menu_scroll_up_btn");
 
    config_file_free(conf);
    return true;
