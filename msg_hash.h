@@ -1859,16 +1859,6 @@ enum msg_hash_enums
 
 /* Input settings */
 #define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
-#define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
-
-#define MENU_LABEL_INPUT_HOTKEY_BINDS_BEGIN                                    0x5a56139bU
-#define MENU_LABEL_INPUT_SMALL_KEYBOARD_ENABLE                                 0xe6736fc3U
-#define MENU_LABEL_INPUT_ICADE_ENABLE                                          0xcd534dd0U
-#define MENU_LABEL_INPUT_AUTODETECT_ENABLE                                     0xb1e07facU
-#define MENU_LABEL_INPUT_DUTY_CYCLE                                            0xec787129U
-#define MENU_LABEL_INPUT_BIND_DEVICE_ID                                        0xd1ea94ecU
-#define MENU_LABEL_INPUT_BIND_DEVICE_TYPE                                      0xf6e9f041U
-
 #define MENU_LABEL_INPUT_OSK_OVERLAY                                           0x11f1c582U
 
 /* Record settings */
