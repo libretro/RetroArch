@@ -1468,6 +1468,47 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.y,      "custom_viewport_y");
    CONFIG_GET_INT_BASE(conf, settings, input.max_users, "input_max_users");
    CONFIG_GET_INT_BASE(conf, settings, input.menu_toggle_gamepad_combo, "input_menu_toggle_gamepad_combo");
+   CONFIG_GET_INT_BASE(conf, settings, libretro_log_level, "libretro_log_level");
+   CONFIG_GET_INT_BASE(conf, settings, input.keyboard_gamepad_mapping_type, "keyboard_gamepad_mapping_type");
+   CONFIG_GET_INT_BASE(conf, settings, input.poll_type_behavior, "input_poll_type_behavior");
+   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_version_current, "bundle_assets_extract_version_current");
+   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_last_version,    "bundle_assets_extract_last_version");
+
+   CONFIG_GET_INT_BASE(conf, settings, rewind_granularity, "rewind_granularity");
+   CONFIG_GET_INT_BASE(conf, settings, autosave_interval, "autosave_interval");
+#ifdef HAVE_COMMAND
+   CONFIG_GET_INT_BASE(conf, settings, network_cmd_port, "network_cmd_port");
+#endif
+   CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
+   CONFIG_GET_INT_BASE(conf, settings, input.bind_timeout, "input_bind_timeout");
+   CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
+   CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
+#ifdef HAVE_LANGEXTRA
+   CONFIG_GET_INT_BASE(conf, settings, user_language, "user_language");
+#endif
+   CONFIG_GET_INT_BASE(conf, settings, audio.out_rate, "audio_out_rate");
+   CONFIG_GET_INT_BASE(conf, settings, audio.block_frames, "audio_block_frames");
+   CONFIG_GET_INT_BASE(conf, settings, audio.latency, "audio_latency");
+#ifdef HAVE_MENU
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.scale_factor, "xmb_scale_factor");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.alpha_factor, "xmb_alpha_factor");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.theme, "xmb_theme");
+#ifdef HAVE_XMB
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.menu_color_theme, "xmb_menu_color_theme");
+#endif
+   CONFIG_GET_INT_BASE(conf, settings, menu.materialui.menu_color_theme, "materialui_menu_color_theme");
+   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.shader_pipeline, "menu_shader_pipeline");
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+   CONFIG_GET_INT_BASE(conf, settings, network_remote_base_port, "network_remote_base_port");
+#endif
+
+#ifdef HAVE_NETPLAY
+   if (!global->has_set.netplay_delay_frames)
+      CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_delay_frames");
+   if (!global->has_set.netplay_ip_port)
+      CONFIG_GET_INT_BASE(conf, global, netplay.port, "netplay_ip_port");
+#endif
    for (i = 0; i < MAX_USERS; i++)
    {
       char buf[64] = {0};
@@ -1482,6 +1523,12 @@ static bool config_load_file(const char *path, bool set_defaults)
          snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
          CONFIG_GET_INT_BASE(conf, settings, input.libretro_device[i], buf);
       }
+   }
+   {
+      /* ugly hack around C89 not allowing mixing declarations and code */
+      int buffer_size = 0;
+      if (config_get_int(conf, "rewind_buffer_size", &buffer_size))
+         settings->rewind_buffer_size = buffer_size * UINT64_C(1000000);
    }
 
 #ifdef RARCH_CONSOLE
@@ -1583,38 +1630,6 @@ static bool config_load_file(const char *path, bool set_defaults)
          settings->path.bundle_assets_dst_subdir,
          sizeof(settings->path.bundle_assets_dst_subdir));
 
-
-   CONFIG_GET_INT_BASE(conf, settings, libretro_log_level, "libretro_log_level");
-   CONFIG_GET_INT_BASE(conf, settings, input.keyboard_gamepad_mapping_type, "keyboard_gamepad_mapping_type");
-   CONFIG_GET_INT_BASE(conf, settings, input.poll_type_behavior, "input_poll_type_behavior");
-   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_version_current, "bundle_assets_extract_version_current");
-   CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_last_version,    "bundle_assets_extract_last_version");
-
-   CONFIG_GET_INT_BASE(conf, settings, rewind_granularity, "rewind_granularity");
-   CONFIG_GET_INT_BASE(conf, settings, autosave_interval, "autosave_interval");
-#ifdef HAVE_COMMAND
-   CONFIG_GET_INT_BASE(conf, settings, network_cmd_port, "network_cmd_port");
-#endif
-   CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
-   CONFIG_GET_INT_BASE(conf, settings, input.bind_timeout, "input_bind_timeout");
-   CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
-   CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
-#ifdef HAVE_LANGEXTRA
-   CONFIG_GET_INT_BASE(conf, settings, user_language, "user_language");
-#endif
-   CONFIG_GET_INT_BASE(conf, settings, audio.out_rate, "audio_out_rate");
-   CONFIG_GET_INT_BASE(conf, settings, audio.block_frames, "audio_block_frames");
-   CONFIG_GET_INT_BASE(conf, settings, audio.latency, "audio_latency");
-#ifdef HAVE_MENU
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.scale_factor, "xmb_scale_factor");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.alpha_factor, "xmb_alpha_factor");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.theme, "xmb_theme");
-#ifdef HAVE_XMB
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.menu_color_theme, "xmb_menu_color_theme");
-#endif
-   CONFIG_GET_INT_BASE(conf, settings, menu.materialui.menu_color_theme, "materialui_menu_color_theme");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb.shader_pipeline, "menu_shader_pipeline");
-#endif
 
 #ifdef HAVE_MENU
    if (config_get_path(conf, "xmb_font", tmp_str, sizeof(tmp_str)))
@@ -1878,12 +1893,6 @@ static bool config_load_file(const char *path, bool set_defaults)
       *global->dir.osk_overlay = '\0';
 #endif
 
-   {
-      /* ugly hack around C89 not allowing mixing declarations and code */
-      int buffer_size = 0;
-      if (config_get_int(conf, "rewind_buffer_size", &buffer_size))
-         settings->rewind_buffer_size = buffer_size * UINT64_C(1000000);
-   }
 
    if (settings->slowmotion_ratio < 1.0f)
       settings->slowmotion_ratio = 1.0f;
@@ -1899,17 +1908,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    settings->bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
-#ifdef HAVE_NETWORKGAMEPAD
-   CONFIG_GET_INT_BASE(conf, settings, network_remote_base_port, "network_remote_base_port");
-
-#endif
-
-#ifdef HAVE_NETPLAY
-   if (!global->has_set.netplay_delay_frames)
-      CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_delay_frames");
-   if (!global->has_set.netplay_ip_port)
-      CONFIG_GET_INT_BASE(conf, global, netplay.port, "netplay_ip_port");
-#endif
 
 
    if (!global->has_set.save_path &&
