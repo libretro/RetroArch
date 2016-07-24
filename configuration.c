@@ -2800,8 +2800,39 @@ bool config_save_file(const char *path)
 #ifdef HAVE_NETWORKGAMEPAD
       { "network_remote_base_port",     settings->network_remote_base_port},
 #endif
-      { "menu_scroll_up_btn",           settings->menu_scroll_up_btn}
+      { "menu_scroll_up_btn",           settings->menu_scroll_up_btn},
+#ifdef HAVE_GEKKO
+      { "video_viwidth",                settings->video.viwidth},
+#endif
+#ifdef HAVE_MENU
+      { "dpi_override_value",           settings->menu.dpi.override_value},
+      { "menu_thumbnails",              settings->menu.thumbnails},
+      { "xmb_scale_factor",             settings->menu.xmb.scale_factor},
+      { "xmb_alpha_factor",             settings->menu.xmb.alpha_factor},
+      { "xmb_theme",                    settings->menu.xmb.theme},
+#ifdef HAVE_XMB
+      { "xmb_menu_color_theme",         settings->menu.xmb.menu_color_theme},
+#endif
+      { "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme},
+      { "menu_shader_pipeline",        settings->menu.xmb.shader_pipeline},
+#endif
+      { "audio_out_rate",               settings->audio.out_rate},
+      { "custom_viewport_width",        settings->video_viewport_custom.width},
+      { "custom_viewport_height",       settings->video_viewport_custom.height},
+      { "custom_viewport_x",            settings->video_viewport_custom.x},
+      { "custom_viewport_y",            settings->video_viewport_custom.y},
+      { "content_history_size",         settings->content_history_size},
+      { "video_hard_sync_frames",       settings->video.hard_sync_frames},
+      { "video_frame_delay",            settings->video.frame_delay},
+      { "video_max_swapchain_images",   settings->video.max_swapchain_images},
+      { "video_swap_interval",          settings->video.swap_interval},
+      { "video_rotation",               settings->video.rotation},
+      { "aspect_ratio_index",           settings->video.aspect_ratio_idx},
+      { "state_slot",                   settings->state_slot},
+      { "bundle_assets_extract_version_current", settings->bundle_assets_extract_version_current},
+      { "bundle_assets_extract_last_version", settings->bundle_assets_extract_last_version}
    };
+
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -2898,14 +2929,6 @@ bool config_save_file(const char *path)
          settings->video.aspect_ratio);
    config_set_float(conf, "video_scale",
          settings->video.scale);
-#ifdef GEKKO
-   config_set_int(conf,   "video_viwidth",
-         settings->video.viwidth);
-#endif
-   config_set_int(conf,  "bundle_assets_extract_version_current",
-         settings->bundle_assets_extract_version_current);
-   config_set_int(conf,  "bundle_assets_extract_last_version",
-         settings->bundle_assets_extract_last_version);
    config_set_string(conf,  "playlist_names",
          settings->playlist_names);
    config_set_string(conf,  "playlist_cores",
@@ -2921,23 +2944,12 @@ bool config_save_file(const char *path)
    config_set_string(conf, "location_driver",
          settings->location.driver);
 #ifdef HAVE_MENU
-   config_set_int (conf, "dpi_override_value", settings->menu.dpi.override_value);
    config_set_string(conf,"menu_driver", settings->menu.driver);
-   config_set_int(conf,"menu_thumbnails", settings->menu.thumbnails);
 #endif
 
-
-   config_set_int(conf,   "video_hard_sync_frames",
-         settings->video.hard_sync_frames);
-   config_set_int(conf,   "video_frame_delay", settings->video.frame_delay);
-   config_set_int(conf,   "video_max_swapchain_images",
-         settings->video.max_swapchain_images);
-   config_set_int(conf, "video_swap_interval", settings->video.swap_interval);
-   config_set_int(conf, "video_rotation", settings->video.rotation);
    config_set_path(conf, "screenshot_directory",
          string_is_empty(settings->directory.screenshot) ? "default" :
          settings->directory.screenshot);
-   config_set_int(conf, "aspect_ratio_index", settings->video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", settings->audio.device);
    config_set_string(conf, "core_updater_buildbot_url",
          settings->network.buildbot_url);
@@ -2957,7 +2969,6 @@ bool config_save_file(const char *path)
    config_set_float(conf, "audio_volume", settings->audio.volume);
    config_set_string(conf, "video_context_driver", settings->video.context_driver);
    config_set_string(conf, "audio_driver", settings->audio.driver);
-   config_set_int(conf, "audio_out_rate", settings->audio.out_rate);
 
 
    config_set_float(conf, "video_font_size", settings->video.font_size);
@@ -3023,15 +3034,8 @@ bool config_save_file(const char *path)
    config_set_path(conf, "savestate_directory",
          string_is_empty(global->dir.savestate) ? "default" : global->dir.savestate);
 
+
 #ifdef HAVE_MENU
-   config_set_int(conf, "xmb_scale_factor", settings->menu.xmb.scale_factor);
-   config_set_int(conf, "xmb_alpha_factor", settings->menu.xmb.alpha_factor);
-   config_set_int(conf, "xmb_theme", settings->menu.xmb.theme);
-#ifdef HAVE_XMB
-   config_set_int(conf, "xmb_menu_color_theme", settings->menu.xmb.menu_color_theme);
-#endif
-   config_set_int(conf, "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme);
-   config_set_int(conf, "menu_shader_pipeline", settings->menu.xmb.shader_pipeline);
    config_set_path(conf, "xmb_font",
          !string_is_empty(settings->menu.xmb.font) ? settings->menu.xmb.font : "");
    config_set_hex(conf, "menu_entry_normal_color",
@@ -3042,8 +3046,6 @@ bool config_save_file(const char *path)
          settings->menu.title_color);
 #endif
 
-   config_set_int(conf, "content_history_size",
-         settings->content_history_size);
 
 #ifdef HAVE_OVERLAY
    config_set_float(conf, "input_overlay_opacity",
@@ -3059,14 +3061,6 @@ bool config_save_file(const char *path)
          settings->video.msg_pos_x);
    config_set_float(conf, "video_message_pos_y",
          settings->video.msg_pos_y);
-   config_set_int(conf, "custom_viewport_width",
-         settings->video_viewport_custom.width);
-   config_set_int(conf, "custom_viewport_height",
-         settings->video_viewport_custom.height);
-   config_set_int(conf, "custom_viewport_x",
-         settings->video_viewport_custom.x);
-   config_set_int(conf, "custom_viewport_y",
-         settings->video_viewport_custom.y);
 
    video_driver_save_settings(conf);
 
@@ -3099,7 +3093,6 @@ bool config_save_file(const char *path)
          settings->path.libretro);;
 #endif
 
-   config_set_int(conf, "state_slot", settings->state_slot);
 
 #ifdef HAVE_NETPLAY
    config_set_string(conf, "netplay_ip_address",
