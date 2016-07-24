@@ -1833,11 +1833,8 @@ enum msg_hash_enums
 #define MENU_LABEL_VIDEO_VFILTER                                               0x664f8397U
 #define MENU_LABEL_VIDEO_GAMMA                                                 0x08a951beU
 
-
 #define MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS                                 0x3d6e5ce5U
 #define MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER                                 0x4468cb1bU
-#define MENU_LABEL_VIDEO_SHADER_FILTER_PASS                                    0x1906c38dU
-#define MENU_LABEL_VIDEO_SHADER_SCALE_PASS                                     0x18f7b82fU
 #define MENU_LABEL_VIDEO_SHADER_NUM_PASSES                                     0x79b2992fU
 #define MENU_LABEL_VIDEO_SHADER_PARAMETERS                                     0x9895c3e5U
 #define MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS                              0xd18158d7U
@@ -1868,9 +1865,6 @@ enum msg_hash_enums
 
 #define MENU_LABEL_MENU_WALLPAPER                                              0x3b84de01U
 #define MENU_LABEL_MENU_SETTINGS                                               0x61e4544bU
-
-#define MENU_LABEL_ENABLE_HOTKEY                                               0xc04037bfU
-#define MENU_LABEL_GRAB_MOUSE_TOGGLE                                           0xb2869aaaU
 
 /* Directory settings */
 
@@ -1955,8 +1949,6 @@ enum msg_hash_enums
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U
-#define MENU_LABEL_OSK_ENABLE                                                  0x8e208498U
-#define MENU_LABEL_EXIT_EMULATOR                                               0x86d5d467U
 #define MENU_LABEL_COLLECTION                                                  0x5fea5991U
 
 #define MENU_LABEL_OPEN_ARCHIVE                                                0x78c0ca58U
@@ -1966,8 +1958,6 @@ enum msg_hash_enums
 
 /* Help */
 #define MENU_LABEL_LIBRETRO_INFO_PATH                                          0xe552b25fU
-
-#define MENU_LABEL_OVERLAY_NEXT                                                0x7a459145U
 
 #define MENU_LABEL_INPUT_DRIVER_LINUXRAW                                       0xc33c6b9fU
 #define MENU_LABEL_INPUT_DRIVER_UDEV                                           0x7c9eeeb9U
@@ -1984,9 +1974,6 @@ enum msg_hash_enums
 #define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
 #define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
 #define MENU_LABEL_VIDEO_DRIVER_DRM                                            0x61a89bfaU
-#define MENU_LABEL_VIDEO_SCALE                                                 0x09835d63U
-#define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
-#define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
 #define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
 #define MENU_LABEL_HELP_LIST                                                   0x006af669U
@@ -2003,8 +1990,6 @@ enum msg_hash_enums
 #define MENU_LABEL_ADD_CONTENT_LIST                                            0x046f4668U
 #define MENU_LABEL_ONLINE_UPDATER                                              0xcac0025eU
 #define MENU_LABEL_SETTINGS                                                    0x1304dc16U
-#define MENU_LABEL_SAVE_CURRENT_CONFIG                                         0x8840ba8bU
-#define MENU_LABEL_SAVE_NEW_CONFIG                                             0xcce9ab72U
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
