@@ -1752,9 +1752,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 #ifndef HAVE_DYNAMIC
    if (config_get_path(conf, "libretro_path", tmp_str, sizeof(tmp_str)))
-   {
       strlcpy(settings->path.libretro, tmp_str, sizeof(settings->path.libretro));
-   }
 #endif
 #ifdef HAVE_MENU
    if (config_get_path(conf, "rgui_browser_directory", tmp_str, sizeof(tmp_str)))
