@@ -516,16 +516,16 @@ static const bool overlay_hide_in_menu = true;
 
 static bool default_block_config_read = true;
 
+#ifdef HAVE_XMB
 static unsigned xmb_scale_factor = 100;
 static unsigned xmb_alpha_factor = 75;
-
 static unsigned xmb_icon_theme   = XMB_ICON_THEME_MONOCHROME;
 static unsigned xmb_theme        = XMB_THEME_ELECTRIC_BLUE;
-
 #ifdef HAVE_LAKKA
 static bool xmb_shadows_enable   = false;
 #else
 static bool xmb_shadows_enable   = true;
+#endif
 #endif
 
 static float menu_wallpaper_opacity = 0.300;
@@ -534,7 +534,9 @@ static float menu_footer_opacity = 1.000;
 
 static float menu_header_opacity = 1.000;
 
+#ifdef HAVE_MATERIALUI
 static unsigned menu_background_gradient = 4;
+#endif
 
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
 #if defined(HAVE_OPENGLES2) || defined(OSX_PPC)

@@ -1544,7 +1544,6 @@ static void menu_content_environment_get(int *argc, char *argv[],
    char *fullpath                    = NULL;
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
    global_t *global                  = global_get_ptr();
-   settings_t *settings              = config_get_ptr();
     
    if (!wrap_args)
       return;

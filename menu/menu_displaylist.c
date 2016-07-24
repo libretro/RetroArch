@@ -5558,6 +5558,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             union string_list_elem_attr attr = {0};
             struct string_list *str_list     = string_list_new();
 
+            (void)attr;
+
             menu_displaylist_reset_filebrowser();
             info->type_default = FILE_TYPE_SHADER_PRESET;
 
@@ -5581,6 +5583,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_displaylist_reset_filebrowser();
             info->type_default = FILE_TYPE_SHADER;
+
+            (void)attr;
 
 #ifdef HAVE_CG
             string_list_append(str_list, "cg", attr);

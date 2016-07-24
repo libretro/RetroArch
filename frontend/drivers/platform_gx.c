@@ -404,13 +404,12 @@ static void frontend_gx_exitspawn(char *s, size_t len)
 static void frontend_gx_process_args(int *argc, char *argv[])
 {
 #ifndef IS_SALAMANDER
-   char path[PATH_MAX_LENGTH] = {0};
-
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
     * active core path is set here. */
    if (config_active_core_path_is_empty() && *argc >= 1 && strrchr(argv[0], '/'))
    {
+      char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
       if (path_file_exists(path))
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, path);

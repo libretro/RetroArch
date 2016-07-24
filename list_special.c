@@ -87,6 +87,8 @@ struct string_list *dir_list_new_special(const char *input_dir,
             if (!str_list)
                return NULL;
 
+            (void)attr;
+
             dir  = input_dir;
 #ifdef HAVE_CG
             string_list_append(str_list, "cg", attr);

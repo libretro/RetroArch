@@ -6854,6 +6854,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE);
          }
 
+#ifdef HAVE_XMB
          /* only XMB uses these values, don't show them on other drivers */
          if (string_is_equal(settings->menu.driver, "xmb"))
          {
@@ -6959,7 +6960,9 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME);
          }
+#endif
 
+#ifdef HAVE_MATERIALUI
          /* only MaterialUI uses these values, don't show them on other drivers */
          if (string_is_equal(settings->menu.driver, "glui"))
          {
@@ -7007,6 +7010,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY);
          }
+#endif
 
          CONFIG_BOOL(
                list, list_info,
