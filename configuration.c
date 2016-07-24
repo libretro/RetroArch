@@ -2501,7 +2501,6 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
 void config_load(void)
 {
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    /* Flush out per-core configs before loading a new config. */
    if (!string_is_empty(path_core_specific_config) &&
