@@ -46,6 +46,43 @@
 #include "config.h"
 #endif
 
+struct config_bool_setting
+{ 
+   const char *ident;
+   bool value;
+};
+
+struct config_bool_setting_ptr
+{ 
+   const char *ident;
+   bool *value_ptr;
+};
+
+struct config_int_setting
+{ 
+   const char *ident;
+   unsigned value;
+};
+
+struct config_float_setting
+{ 
+   const char *ident;
+   float value;
+};
+
+struct config_string_setting
+{ 
+   const char *ident;
+   const char *value;
+};
+
+struct config_path_setting
+{ 
+   const char *ident;
+   bool defaults;
+   const char *value;
+};
+
 struct defaults g_defaults;
 static settings_t *configuration_settings = NULL;
 
@@ -1249,6 +1286,45 @@ static bool config_load_file(const char *path, bool set_defaults)
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
 
+   struct config_bool_setting_ptr bool_settings[] = {
+      { "video_windowed_fullscreen",   &settings->video.windowed_fullscreen},
+      { "video_disable_composition",   &settings->video.disable_composition},
+      { "video_vsync",                 &settings->video.vsync},
+      { "video_hard_sync",             &settings->video.hard_sync},
+      { "history_list_enable",         &settings->history_list_enable },
+      { "fps_show",                    &settings->fps_show},
+      { "video_black_frame_insertion", &settings->video.black_frame_insertion},
+      { "core_specific_config",        &settings->core_specific_config},
+      { "game_specific_options",       &settings->game_specific_options},
+      { "auto_overrides_enable",       &settings->auto_overrides_enable},
+      { "auto_remaps_enable",          &settings->auto_remaps_enable},
+      { "sort_savefiles_enable",       &settings->sort_savefiles_enable},
+      { "sort_savestates_enable",      &settings->sort_savestates_enable},
+      { "config_save_on_exit",         &settings->config_save_on_exit},
+      { "dpi_override_enable",         &settings->menu.dpi.override_enable},
+      { "ui_menubar_enable",           &settings->ui.menubar_enable},
+      { "suspend_screensaver_enable",  &settings->ui.suspend_screensaver_enable},
+      { "load_dummy_on_core_shutdown", &settings->load_dummy_on_core_shutdown},
+      { "builtin_mediaplayer_enable",  &settings->multimedia.builtin_mediaplayer_enable},
+      { "builtin_imageviewer_enable",  &settings->multimedia.builtin_imageviewer_enable},
+      { "input_autodetect_enable",     &settings->input.autodetect_enable},
+#ifdef HAVE_MENU
+#ifdef HAVE_THREADS
+      { "threaded_data_runloop_enable",&settings->threaded_data_runloop_enable},
+#endif
+      { "rgui_show_start_screen",      &settings->menu_show_start_screen},
+      { "xmb_shadows_enable",          &settings->menu.xmb.shadows_enable},
+#endif
+      { "camera_allow",                &settings->camera.allow},
+      { "audio_enable",                &settings->audio.enable},
+      { "audio_mute_enable",           &settings->audio.mute_enable},
+      { "audio_sync",                  &settings->audio.sync},
+      { "audio_rate_control",          &settings->audio.rate_control},
+      { "rewind_enable",               &settings->rewind_enable},
+      { "location_allow",              &settings->location.allow},
+      { "auto_screenshot_filename",    &settings->auto_screenshot_filename}
+   };
+
    if (path)
    {
       conf = config_file_new(path);
@@ -1297,25 +1373,15 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_array(conf, "playlist_names", settings->playlist_names, sizeof(settings->playlist_names));
    config_get_array(conf, "playlist_cores", settings->playlist_cores, sizeof(settings->playlist_cores));
 
-   CONFIG_GET_BOOL_BASE(conf, settings, video.windowed_fullscreen, "video_windowed_fullscreen");
    CONFIG_GET_INT_BASE (conf, settings, video.monitor_index, "video_monitor_index");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.disable_composition, "video_disable_composition");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.vsync, "video_vsync");
    CONFIG_GET_INT_BASE(conf, settings, video.max_swapchain_images, "video_max_swapchain_images");
-   CONFIG_GET_BOOL_BASE(conf, settings, video.hard_sync, "video_hard_sync");
 
 #ifdef HAVE_MENU
-#ifdef HAVE_THREADS
-   CONFIG_GET_BOOL_BASE(conf, settings, threaded_data_runloop_enable,
-         "threaded_data_runloop_enable");
-#endif
 
    CONFIG_GET_BOOL_BASE(conf, settings, menu.throttle_framerate,
          "menu_throttle_framerate");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.linear_filter,
          "menu_linear_filter");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.dpi.override_enable,
-         "dpi_override_enable");
    CONFIG_GET_INT_BASE (conf, settings, menu.dpi.override_value,
          "dpi_override_value");
 
@@ -1366,7 +1432,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (settings->video.frame_delay > 15)
       settings->video.frame_delay = 15;
 
-   CONFIG_GET_BOOL_BASE(conf, settings, video.black_frame_insertion, "video_black_frame_insertion");
    CONFIG_GET_INT_BASE(conf, settings, video.swap_interval, "video_swap_interval");
    settings->video.swap_interval = MAX(settings->video.swap_interval, 1);
    settings->video.swap_interval = MIN(settings->video.swap_interval, 4);
@@ -1402,7 +1467,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, video.rotation, "video_rotation");
 
    CONFIG_GET_BOOL_BASE(conf, settings, video.force_srgb_disable, "video_force_srgb_disable");
-
    CONFIG_GET_BOOL_BASE(conf, settings, set_supports_no_game_enable, "core_set_supports_no_game_enable");
 
 #ifdef RARCH_CONSOLE
@@ -1496,16 +1560,12 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 
    /* Audio settings. */
-   CONFIG_GET_BOOL_BASE(conf, settings, audio.enable, "audio_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, audio.mute_enable, "audio_mute_enable");
    CONFIG_GET_INT_BASE(conf, settings, audio.out_rate, "audio_out_rate");
    CONFIG_GET_INT_BASE(conf, settings, audio.block_frames, "audio_block_frames");
 
    config_get_array(conf, "audio_device", settings->audio.device, sizeof(settings->audio.device));
 
    CONFIG_GET_INT_BASE(conf, settings, audio.latency, "audio_latency");
-   CONFIG_GET_BOOL_BASE(conf, settings, audio.sync, "audio_sync");
-   CONFIG_GET_BOOL_BASE(conf, settings, audio.rate_control, "audio_rate_control");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.rate_control_delta, "audio_rate_control_delta");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.max_timing_skew, "audio_max_timing_skew");
    CONFIG_GET_FLOAT_BASE(conf, settings, audio.volume, "audio_volume");
@@ -1516,7 +1576,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    config_get_array(conf, "camera_device", settings->camera.device, sizeof(settings->camera.device));
 
-   CONFIG_GET_BOOL_BASE(conf, settings, camera.allow, "camera_allow");
 
 #ifdef HAVE_CHEEVOS
    CONFIG_GET_BOOL_BASE(conf, settings, cheevos.enable, "cheevos_enable");
@@ -1526,7 +1585,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_array(conf, "cheevos_password", settings->cheevos.password, sizeof(settings->cheevos.password));
 #endif
 
-   CONFIG_GET_BOOL_BASE(conf, settings, location.allow, "location_allow");
    config_get_array(conf, "video_driver",    settings->video.driver, sizeof(settings->video.driver));
    config_get_array(conf, "record_driver",   settings->record.driver, sizeof(settings->video.driver));
    config_get_array(conf, "camera_driver",   settings->camera.driver, sizeof(settings->camera.driver));
@@ -1540,7 +1598,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb.menu_color_theme, "xmb_menu_color_theme");
 #endif
    CONFIG_GET_INT_BASE(conf, settings, menu.materialui.menu_color_theme, "materialui_menu_color_theme");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.xmb.shadows_enable, "xmb_shadows_enable");
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb.shader_pipeline, "menu_shader_pipeline");
    if (config_get_path(conf, "xmb_font", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->menu.xmb.font, tmp_str, sizeof(settings->menu.xmb.font));
@@ -1562,12 +1619,6 @@ static bool config_load_file(const char *path, bool set_defaults)
          sizeof(settings->input.keyboard_layout));
 
 
-   CONFIG_GET_BOOL_BASE(conf, settings, ui.menubar_enable, "ui_menubar_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, ui.suspend_screensaver_enable, "suspend_screensaver_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, fps_show, "fps_show");
-   CONFIG_GET_BOOL_BASE(conf, settings, load_dummy_on_core_shutdown, "load_dummy_on_core_shutdown");
-   CONFIG_GET_BOOL_BASE(conf, settings, multimedia.builtin_mediaplayer_enable, "builtin_mediaplayer_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, multimedia.builtin_imageviewer_enable, "builtin_imageviewer_enable");
 
 #ifdef HAVE_OVERLAY
    if (config_get_path(conf, "input_overlay", tmp_str, sizeof(tmp_str)))
@@ -1630,7 +1681,12 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
-   CONFIG_GET_BOOL_BASE(conf, settings, auto_screenshot_filename, "auto_screenshot_filename");
+   for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
+   {
+      bool tmp = false;
+      if (config_get_bool(conf, bool_settings[i].ident, &tmp))
+         *bool_settings[i].value_ptr = tmp;
+   }
 
    if (config_get_path(conf, "screenshot_directory", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->directory.screenshot, tmp_str, sizeof(settings->directory.screenshot));
@@ -1717,7 +1773,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    if (string_is_equal(settings->directory.menu_config, "default"))
       *settings->directory.menu_config = '\0';
-   CONFIG_GET_BOOL_BASE(conf, settings, menu_show_start_screen, "rgui_show_start_screen");
 #endif
    CONFIG_GET_INT_BASE(conf, settings, libretro_log_level, "libretro_log_level");
 
@@ -1780,7 +1835,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, osk.enable, "input_osk_overlay_enable");
 #endif
 
-   CONFIG_GET_BOOL_BASE(conf, settings, rewind_enable, "rewind_enable");
 
    {
       /* ugly hack around C89 not allowing mixing declarations and code */
@@ -1821,8 +1875,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
 
 #ifdef HAVE_LAKKA
-   settings->ssh_enable = path_file_exists(LAKKA_SSH_PATH);
-   settings->samba_enable = path_file_exists(LAKKA_SAMBA_PATH);
+   settings->ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
+   settings->samba_enable     = path_file_exists(LAKKA_SAMBA_PATH);
    settings->bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
@@ -1847,7 +1901,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (config_get_path(conf, "content_history_dir", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->directory.content_history, tmp_str, sizeof(settings->directory.content_history));
 
-   CONFIG_GET_BOOL_BASE(conf, settings, history_list_enable, "history_list_enable");
 
    CONFIG_GET_INT_BASE(conf, settings, content_history_size, "content_history_size");
 
@@ -1855,7 +1908,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_period, "input_turbo_period");
    CONFIG_GET_INT_BASE(conf, settings, input.turbo_duty_cycle, "input_duty_cycle");
 
-   CONFIG_GET_BOOL_BASE(conf, settings, input.autodetect_enable, "input_autodetect_enable");
    if (config_get_path(conf, "joypad_autoconfig_dir", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->directory.autoconfig, tmp_str, sizeof(settings->directory.autoconfig));
 
@@ -1886,7 +1938,6 @@ static bool config_load_file(const char *path, bool set_defaults)
       CONFIG_GET_INT_BASE(conf, global, netplay.port, "netplay_ip_port");
 #endif
 
-   CONFIG_GET_BOOL_BASE(conf, settings, config_save_on_exit, "config_save_on_exit");
 
    if (!global->has_set.save_path &&
          config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
@@ -1950,13 +2001,6 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    config_read_keybinds_conf(conf);
 
-   CONFIG_GET_BOOL_BASE(conf, settings, core_specific_config, "core_specific_config");
-   CONFIG_GET_BOOL_BASE(conf, settings, game_specific_options, "game_specific_options");
-   CONFIG_GET_BOOL_BASE(conf, settings, auto_overrides_enable, "auto_overrides_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, auto_remaps_enable, "auto_remaps_enable");
-
-   CONFIG_GET_BOOL_BASE(conf, settings, sort_savefiles_enable, "sort_savefiles_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, sort_savestates_enable, "sort_savestates_enable");
 
    CONFIG_GET_INT_BASE(conf, settings, menu_ok_btn,          "menu_ok_btn");
    CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
@@ -2637,36 +2681,6 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    return ret;
 }
 
-struct config_bool_setting
-{ 
-   const char *ident;
-   bool value;
-};
-
-struct config_int_setting
-{ 
-   const char *ident;
-   unsigned value;
-};
-
-struct config_float_setting
-{ 
-   const char *ident;
-   float value;
-};
-
-struct config_string_setting
-{ 
-   const char *ident;
-   const char *value;
-};
-
-struct config_path_setting
-{ 
-   const char *ident;
-   bool defaults;
-   const char *value;
-};
 
 /**
  * config_save_file:
