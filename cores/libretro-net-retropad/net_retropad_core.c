@@ -244,7 +244,9 @@ void NETRETROPAD_CORE_PREFIX(retro_reset)(void)
 
 void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 {
-   char message[64];
+   unsigned rle, runs;
+   uint16_t *pixel      = NULL;
+   char message[64]     = {0};
    unsigned input_state = retropad_update_input();
 
    if (input_state > 0)
@@ -256,29 +258,26 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
           NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Error sending data\n");
    }
 
-   uint16_t *pixel = frame_buf + 49 * 320 + 32;
+   pixel = frame_buf + 49 * 320 + 32;
 
-   for (unsigned rle = 0; rle < sizeof(buttons); )
+   for (rle = 0; rle < sizeof(retropad_buttons); )
    {
       char paint = 0;
 
-      for (unsigned runs = buttons[rle++]; runs > 0; runs--)
+      for (runs = retropad_buttons[rle++]; runs > 0; runs--)
       {
-         unsigned button = paint ? 1 << buttons[rle++] : 0;
+         unsigned button = paint ? 1 << retropad_buttons[rle++] : 0;
 
          if (paint)
          {
+            unsigned count;
             uint16_t color = (input_state & button) ? 0x0500 : 0xffff;
 
-            for (unsigned count = buttons[rle++]; count > 0; count--)
-            {
+            for (count = retropad_buttons[rle++]; count > 0; count--)
                *pixel++ = color;
-            }
          }
          else
-         {
-            pixel += buttons[rle++];
-         }
+            pixel += retropad_buttons[rle++];
 
          paint = !paint;
       }

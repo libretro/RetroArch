@@ -149,7 +149,7 @@ static uint8_t body[] =
 
 /* sizeof( body ) = 721 */
 
-static uint8_t buttons[] =
+static uint8_t retropad_buttons[] =
 {
   /*   0 */   5,  38,  12,  13, 154,  13,  13,  37,
   /*   1 */   5,  35,  12,  21, 144,  13,  21,  34,
