@@ -35,28 +35,30 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
    {
 #if 0
       case RETRO_LANGUAGE_FRENCH:
-         ret = menu_hash_get_help_fr_enum(hash, s, len);
+         ret = menu_hash_get_help_fr_enum(msg, s, len);
          break;
       case RETRO_LANGUAGE_GERMAN:
-         ret = menu_hash_get_help_de_enum(hash, s, len);
+         ret = menu_hash_get_help_de_enum(msg, s, len);
          break;
       case RETRO_LANGUAGE_SPANISH:
-         ret = menu_hash_get_help_es_enum(hash, s, len);
+         ret = menu_hash_get_help_es_enum(msg, s, len);
          break;
       case RETRO_LANGUAGE_ITALIAN:
-         ret = menu_hash_get_help_it_enum(hash, s, len);
+         ret = menu_hash_get_help_it_enum(msg, s, len);
          break;
       case RETRO_LANGUAGE_PORTUGUESE:
-         ret = menu_hash_get_help_pt_enum(hash, s, len);
+         ret = menu_hash_get_help_pt_enum(msg, s, len);
          break;
+#endif
       case RETRO_LANGUAGE_DUTCH:
-         ret = menu_hash_get_help_nl_enum(hash, s, len);
+         ret = menu_hash_get_help_nl_enum(msg, s, len);
          break;
+#if 0
       case RETRO_LANGUAGE_ESPERANTO:
-         ret = menu_hash_get_help_eo_enum(hash, s, len);
+         ret = menu_hash_get_help_eo_enum(msg, s, len);
          break;
       case RETRO_LANGUAGE_POLISH:
-         ret = menu_hash_get_help_pl_enum(hash, s, len);
+         ret = menu_hash_get_help_pl_enum(msg, s, len);
          break;
 #endif
       default:

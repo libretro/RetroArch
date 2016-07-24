@@ -123,11 +123,6 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "This might take a while...\n"
                );
          break;
-      case MENU_LABEL_WELCOME_TO_RETROARCH:
-         snprintf(s, len,
-               "Welcome to RetroArch\n"
-               );
-         break;
       case MENU_LABEL_INPUT_DRIVER:
          if (settings)
             driver_hash = msg_hash_calculate(settings->input.driver);
