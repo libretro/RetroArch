@@ -29,6 +29,25 @@
 /* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
 extern const char force_iso_8859_1[sizeof("אטילעש")==6+1 ? 1 : -1];
 
+int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
+{
+   uint32_t driver_hash = 0;
+   settings_t      *settings = config_get_ptr();
+
+   (void)sizeof(force_iso_8859_1);
+
+   switch (msg)
+   {
+      case MSG_UNKNOWN:
+      default:
+         if (s[0] == '\0')
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
+         return -1;
+   }
+
+   return 0;
+}
+
 int menu_hash_get_help_it(uint32_t hash, char *s, size_t len)
 {
    uint32_t driver_hash = 0;

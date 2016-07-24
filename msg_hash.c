@@ -33,7 +33,6 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 #ifdef HAVE_LANGEXTRA
    switch (settings->user_language)
    {
-#if 0
       case RETRO_LANGUAGE_FRENCH:
          ret = menu_hash_get_help_fr_enum(msg, s, len);
          break;
@@ -49,18 +48,15 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_PORTUGUESE:
          ret = menu_hash_get_help_pt_enum(msg, s, len);
          break;
-#endif
       case RETRO_LANGUAGE_DUTCH:
          ret = menu_hash_get_help_nl_enum(msg, s, len);
          break;
-#if 0
       case RETRO_LANGUAGE_ESPERANTO:
          ret = menu_hash_get_help_eo_enum(msg, s, len);
          break;
       case RETRO_LANGUAGE_POLISH:
          ret = menu_hash_get_help_pl_enum(msg, s, len);
          break;
-#endif
       default:
          break;
    }

@@ -24,6 +24,21 @@
   * (e.g. German "Umlauts" and Portugese diacritics).
  */
 
+int menu_hash_get_help_pl_enum(enum msg_hash_enums msg, char *s, size_t len)
+{
+   int ret = 0;
+
+   switch (msg)
+   {
+      case MSG_UNKNOWN:
+      default:
+         ret = -1;
+         break;
+   }
+
+   return ret;
+}
+
 int menu_hash_get_help_pl(uint32_t hash, char *s, size_t len)
 {
    int ret = 0;

@@ -2132,6 +2132,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg);
 
 const char *msg_hash_to_str_fr(enum msg_hash_enums msg);
 int menu_hash_get_help_fr(uint32_t hash, char *s, size_t len);
+int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 #ifdef HAVE_UTF8
 const char *msg_hash_to_str_ru(enum msg_hash_enums msg);
@@ -2139,21 +2140,27 @@ const char *msg_hash_to_str_ru(enum msg_hash_enums msg);
 
 const char *msg_hash_to_str_de(enum msg_hash_enums msg);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
+int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_es(enum msg_hash_enums msg);
 int menu_hash_get_help_es(uint32_t hash, char *s, size_t len);
+int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_eo(enum msg_hash_enums msg);
 int menu_hash_get_help_eo(uint32_t hash, char *s, size_t len);
+int menu_hash_get_help_eo_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_it(enum msg_hash_enums msg);
 int menu_hash_get_help_it(uint32_t hash, char *s, size_t len);
+int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_pt(enum msg_hash_enums msg);
 int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len);
+int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_pl(enum msg_hash_enums msg);
 int menu_hash_get_help_pl(uint32_t hash, char *s, size_t len);
+int menu_hash_get_help_pl_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_nl(enum msg_hash_enums msg);
 int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len);

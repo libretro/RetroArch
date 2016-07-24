@@ -34,6 +34,23 @@
 /* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
 extern const char force_iso_8859_1[sizeof("äÄöÖßüÜ")==7+1 ? 1 : -1];
 
+int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
+{
+   uint32_t      driver_hash = 0;
+   settings_t      *settings = config_get_ptr();
+
+   (void)sizeof(force_iso_8859_1);
+
+   switch (msg)
+   {
+      case MSG_UNKNOWN:
+      default:
+         return -1;
+   }
+
+   return 0;
+}
+
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
 {
    uint32_t      driver_hash = 0;

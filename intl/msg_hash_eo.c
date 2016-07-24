@@ -16,7 +16,23 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "../configuration.h"
 #include "../msg_hash.h"
+
+int menu_hash_get_help_eo_enum(enum msg_hash_enums msg, char *s, size_t len)
+{
+   uint32_t      driver_hash = 0;
+   settings_t      *settings = config_get_ptr();
+
+   switch (msg)
+   {
+      case MSG_UNKNOWN:
+      default:
+         return -1;
+   }
+
+   return 0;
+}
 
 int menu_hash_get_help_eo(uint32_t hash, char *s, size_t len)
 {
