@@ -1874,9 +1874,6 @@ enum msg_hash_enums
 #define MENU_LABEL_VIDEO_SHADER_PASS                                           0x4fa31028U
 #define MENU_LABEL_VIDEO_SHADER_PRESET                                         0xc5d3bae4U
 
-/* Netplay settings */
-#define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
-
 /* Input settings */
 #define MENU_LABEL_INPUT_OVERLAY                                               0x24e24796U
 #define MENU_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE                         0x3665cbb0U
@@ -2052,29 +2049,7 @@ enum msg_hash_enums
 #define MENU_LABEL_VIDEO_CROP_OVERSCAN                                         0x861f7a2fU
 #define MENU_LABEL_VIDEO_SCALE_INTEGER                                         0x65c4b090U
 #define MENU_LABEL_VIDEO_VSYNC                                                 0x09c2d34eU
-#define MENU_LABEL_VIDEO_BLACK_FRAME_INSERTION                                 0x53477f5cU
-#define MENU_LABEL_VIDEO_HARD_SYNC_FRAMES                                      0xce0ece13U
-#define MENU_LABEL_VIDEO_FRAME_DELAY                                           0xd4aa9df4U
-#define MENU_LABEL_VIDEO_FULLSCREEN                                            0x9506dd4eU
-#define MENU_LABEL_VIDEO_SWAP_INTERVAL                                         0x5673ff9aU
-#define MENU_LABEL_VIDEO_GPU_SCREENSHOT                                        0xee2fcb44U
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
-#define MENU_LABEL_VIDEO_REFRESH_RATE_AUTO                                     0x9addb6cdU
-#define MENU_LABEL_VIDEO_THREADED                                              0x0626179cU
-#define MENU_LABEL_VIDEO_MONITOR_INDEX                                         0xb6fcdc9aU
-#define MENU_LABEL_VIDEO_HARD_SYNC                                             0xdcd623b6U
-#define MENU_LABEL_RGUI_SHOW_START_SCREEN                                      0x6b38f0e8U
-#define MENU_LABEL_PAUSE_NONACTIVE                                             0x580bf549U
-#define MENU_LABEL_AUDIO_DEVICE                                                0x2574eac6U
-#define MENU_LABEL_AUDIO_VOLUME                                                0x502173aeU
-#define MENU_LABEL_AUDIO_RATE_CONTROL_DELTA                                    0xc8bde3cbU
-#define MENU_LABEL_SLOWMOTION_RATIO                                            0x626b3ffeU
-#define MENU_LABEL_FASTFORWARD_RATIO                                           0x3a0c2706U
-#define MENU_LABEL_INPUT_TURBO_PERIOD                                          0xf7a97482U
-#define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
-#define MENU_LABEL_SLOWMOTION                                                  0x6a269ea0U
-#define MENU_LABEL_HOLD_FAST_FORWARD                                           0xebe2e4cdU
-#define MENU_LABEL_PAUSE_TOGGLE                                                0x557634e4U
 #define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
 #define MENU_LABEL_HELP_LIST                                                   0x006af669U
 #define MENU_LABEL_HELP_WHAT_IS_A_CORE                                         0x83fcbc44U
