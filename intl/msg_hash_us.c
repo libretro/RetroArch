@@ -1109,23 +1109,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
    return 0;
 }
 
-int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
-{
-   uint32_t driver_hash = 0;
-   settings_t      *settings = config_get_ptr();
-
-   switch (hash)
-   {
-      case 0:
-      default:
-         if (string_is_empty(s))
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
-         return -1;
-   }
-
-   return 0;
-}
-
 static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 {
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&

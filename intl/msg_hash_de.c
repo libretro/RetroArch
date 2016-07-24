@@ -60,27 +60,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "wird es in dem Verzeichnis starten, in dem \n"
                "sich die Datei befindet.");
          break;
-      case MSG_UNKNOWN:
-      default:
-         /* TODO/FIXME - translate */
-         if (string_is_empty(s))
-            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
-         return -1;
-   }
-
-   return 0;
-}
-
-int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
-{
-   uint32_t      driver_hash = 0;
-   settings_t      *settings = config_get_ptr();
-
-   (void)sizeof(force_iso_8859_1);
-
-   switch (hash)
-   {
-      case MENU_LABEL_INPUT_DRIVER:
+      case MENU_ENUM_LABEL_INPUT_DRIVER:
          if (settings)
             driver_hash = msg_hash_calculate(settings->input.driver);
 
@@ -138,7 +118,7 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                break;
          }
          break;
-      case MENU_LABEL_LOAD_CONTENT:
+      case MENU_ENUM_LABEL_LOAD_CONTENT:
          snprintf(s, len,
                "Lade Content. \n"
                "Suche nach Content. \n"
@@ -156,7 +136,7 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                "nutzen, wenn Content geladen wird."
                );
          break;
-      case MENU_LABEL_LOAD_CONTENT_HISTORY:
+      case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,
                "Lade Content aus dem Verlauf. \n"
                " \n"
@@ -170,7 +150,7 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                "im Hauptmenü angezeigt."
                );
          break;
-      case MENU_LABEL_VIDEO_DRIVER:
+      case MENU_ENUM_LABEL_VIDEO_DRIVER:
          if (settings)
             driver_hash = msg_hash_calculate(settings->video.driver);
 
@@ -241,14 +221,14 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                break;
          }
          break;
-      case MENU_LABEL_AUDIO_DSP_PLUGIN:
+      case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
          snprintf(s, len,
                "Audio-DSP-Plugin.\n"
                " Verarbeitet Audiodaten, bevor \n"
                "sie zum Treiber gesendet werden."
                );
          break;
-      case MENU_LABEL_AUDIO_RESAMPLER_DRIVER:
+      case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
          if (settings)
             driver_hash = msg_hash_calculate(settings->audio.resampler);
 
@@ -264,7 +244,7 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                break;
          }
          break;
-      case MENU_LABEL_VIDEO_SHADER_PRESET:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
          snprintf(s, len,
                "Lade Shader-Voreinstellung. \n"
                " \n"
@@ -294,7 +274,7 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                "angezeigte Skalierungsfaktor inkorrekt sein."
                );
          break;
-      case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
          snprintf(s, len,
                "Für diesen Durchgang skalieren. \n"
                " \n"
@@ -314,7 +294,7 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                "es der letzte Durchgang ist oder nicht."
                );
          break;
-      case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
          snprintf(s, len,
                "Shader-Durchgänge. \n"
                " \n"
@@ -329,14 +309,14 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                "Die 'Standardfilter'-Option beeinflusst den \n"
                "Streckungsfilter");
          break;
-      case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          snprintf(s, len,
                "Shader-Parameter. \n"
                " \n"
                "Verändert den momentanen Shader. Wird nicht in \n"
                "der CGP/GLSLP-Voreinstellungs-Datei gespeichert.");
          break;
-      case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
+      case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          snprintf(s, len,
                "Shader-Voreinstellung-Parameter. \n"
                " \n"
@@ -347,22 +327,22 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
       /*
        * FIXME: Some stuff still missing here.
        */
-      case MENU_LABEL_OSK_ENABLE:
+      case MENU_ENUM_LABEL_OSK_ENABLE:
          snprintf(s, len,
                "(De-)Aktiviere die Bildschirmtastatur.");
          break;
-      case MENU_LABEL_AUDIO_MUTE:
+      case MENU_ENUM_LABEL_AUDIO_MUTE:
          snprintf(s, len,
                "Audio stummschalten.");
          break;
-      case MENU_LABEL_REWIND:
+      case MENU_ENUM_LABEL_REWIND:
          snprintf(s, len,
                "Halte die Taste zum Zurückspulen gedrückt.\n"
                " \n"
                "Die Zurückspulfunktion muss eingeschaltet \n"
                "sein.");
          break;
-      case MENU_LABEL_EXIT_EMULATOR:
+      case MENU_ENUM_LABEL_EXIT_EMULATOR:
          snprintf(s, len,
                "Taste zum Beenden von RetroArch."
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
@@ -374,71 +354,71 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
 #endif
                );
          break;
-      case MENU_LABEL_LOAD_STATE:
+      case MENU_ENUM_LABEL_LOAD_STATE:
          snprintf(s, len,
                "Lädt einen Savestate.");
          break;
-      case MENU_LABEL_SAVE_STATE:
+      case MENU_ENUM_LABEL_SAVE_STATE:
          snprintf(s, len,
                "Speichert einen Savestate.");
          break;
-      case MENU_LABEL_NETPLAY_FLIP_PLAYERS:
+      case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
          snprintf(s, len,
                "Netplay-Spieler tauschen.");
          break;
-      case MENU_LABEL_CHEAT_INDEX_PLUS:
+      case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
                "Erhöht den Cheat-Index.\n");
          break;
-      case MENU_LABEL_CHEAT_INDEX_MINUS:
+      case MENU_ENUM_LABEL_CHEAT_INDEX_MINUS:
          snprintf(s, len,
                "Verringert den Cheat-Index.\n");
          break;
-      case MENU_LABEL_SHADER_PREV:
+      case MENU_ENUM_LABEL_SHADER_PREV:
          snprintf(s, len,
                "Wendet vorherigen Shader im Verzeichnis an.");
          break;
-      case MENU_LABEL_SHADER_NEXT:
+      case MENU_ENUM_LABEL_SHADER_NEXT:
          snprintf(s, len,
                "Wendet nächsten Shader im Verzeichnis an.");
          break;
-      case MENU_LABEL_RESET:
+      case MENU_ENUM_LABEL_RESET:
          snprintf(s, len,
                "Setzt den Content zurück.\n");
          break;
-      case MENU_LABEL_PAUSE_TOGGLE:
+      case MENU_ENUM_LABEL_PAUSE_TOGGLE:
          snprintf(s, len,
                "Pausiert den Content und setzt ihn wieder fort.");
          break;
-      case MENU_LABEL_CHEAT_TOGGLE:
+      case MENU_ENUM_LABEL_CHEAT_TOGGLE:
          snprintf(s, len,
                "Schaltet den Cheat-Index ein und aus.\n");
          break;
-      case MENU_LABEL_HOLD_FAST_FORWARD:
+      case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
          snprintf(s, len,
                "Halte den Knopf gedrückt, um vorzuspulen. Beim Loslassen \n"
                "wird das Vorspulen beendet.");
          break;
-      case MENU_LABEL_SLOWMOTION:
+      case MENU_ENUM_LABEL_SLOWMOTION:
          snprintf(s, len,
                "Halte den Knopf gedrückt, um die Zeitlupe einzuschalten.");
          break;
-      case MENU_LABEL_FRAME_ADVANCE:
+      case MENU_ENUM_LABEL_FRAME_ADVANCE:
          snprintf(s, len,
                "Frame-Advance, wenn der Content pausiert ist.");
          break;
-      case MENU_LABEL_MOVIE_RECORD_TOGGLE:
+      case MENU_ENUM_LABEL_MOVIE_RECORD_TOGGLE:
          snprintf(s, len,
                "Aufnahme ein- und ausschalten.");
          break;
-      case MENU_LABEL_L_X_PLUS:
-      case MENU_LABEL_L_X_MINUS:
-      case MENU_LABEL_L_Y_PLUS:
-      case MENU_LABEL_L_Y_MINUS:
-      case MENU_LABEL_R_X_PLUS:
-      case MENU_LABEL_R_X_MINUS:
-      case MENU_LABEL_R_Y_PLUS:
-      case MENU_LABEL_R_Y_MINUS:
+      case MENU_ENUM_LABEL_L_X_PLUS:
+      case MENU_ENUM_LABEL_L_X_MINUS:
+      case MENU_ENUM_LABEL_L_Y_PLUS:
+      case MENU_ENUM_LABEL_L_Y_MINUS:
+      case MENU_ENUM_LABEL_R_X_PLUS:
+      case MENU_ENUM_LABEL_R_X_MINUS:
+      case MENU_ENUM_LABEL_R_Y_PLUS:
+      case MENU_ENUM_LABEL_R_Y_MINUS:
          snprintf(s, len,
                "Achse für Analog-Stick (DualShock-artig).\n"
                " \n"
@@ -449,7 +429,11 @@ int menu_hash_get_help_de(uint32_t hash, char *s, size_t len)
                "Positive X-Achse ist rechts. \n"
                "Positive Y-Achse ist unten.");
          break;
+      case MSG_UNKNOWN:
       default:
+         /* TODO/FIXME - translate */
+         if (string_is_empty(s))
+            strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
          return -1;
    }
 

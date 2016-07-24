@@ -188,7 +188,7 @@ static int action_iterate_help(menu_handle_t *menu,
                s, len);
          break;
       case MENU_HELP_LOADING_CONTENT:
-         menu_hash_get_help_enum(MENU_ENUM_LABEL_LOAD_CONTENT,
+         menu_hash_get_help_enum(MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
                s, len);
          break;
       case MENU_HELP_CHANGE_VIRTUAL_GAMEPAD:
@@ -271,7 +271,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    enum action_iterate_type iterate_type;
    const char *label              = NULL;
    int ret                        = 0;
-   uint32_t label_hash            = 0;
    uint32_t hash                  = 0;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    menu_handle_t *menu            = (menu_handle_t*)data;
@@ -327,14 +326,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          {
             menu_file_list_cbs_t *cbs = 
                menu_entries_get_actiondata_at_offset(selection_buf, selection);
-            rarch_setting_t *setting  = cbs->setting;
-
-            if (setting)
-            {
-               char needle[PATH_MAX_LENGTH] = {0};
-               strlcpy(needle, menu_setting_get_name(setting), sizeof(needle));
-               label_hash       = msg_hash_calculate(needle);
-            }
 
             if (cbs->enum_idx != MSG_UNKNOWN)
             {
@@ -344,9 +335,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                RARCH_LOG("enum: %s\n", msg_hash_to_str(cbs->enum_idx));
 #endif
             }
-            else
-               ret = menu_hash_get_help(label_hash, 
-                     menu->menu_state.msg, sizeof(menu->menu_state.msg));
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
