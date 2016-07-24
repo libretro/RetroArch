@@ -678,7 +678,9 @@ void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
    char path_short[PATH_MAX_LENGTH] = {0};
+#ifdef HAVE_COMPRESSION
    char *last_hash                  = NULL;
+#endif
 
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
