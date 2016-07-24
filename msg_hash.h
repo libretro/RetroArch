@@ -2101,19 +2101,6 @@ enum msg_hash_enums
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 #define MENU_LABEL_VALUE_EXTRACTING_PLEASE_WAIT                                0xec5a348bU
 
-#define MENU_LABEL_VIDEO_DISABLE_COMPOSITION                                   0x5cbb6222U
-#define MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE                                   0xf3b0f77eU
-#define MENU_LABEL_VALUE_HELP_LOADING_CONTENT                                  0x70bab027U
-#define MENU_LABEL_VALUE_HELP_LIST                                             0x6c57426aU
-#define MENU_LABEL_VALUE_HELP_CONTROLS                                         0xe5c9f6a2U
-#define MENU_LABEL_VALUE_WHAT_IS_A_CORE_DESC                                   0xc832957eU
-#define MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD                           0x27ed0204U
-#define MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC                      0x9d0e79dbU
-#define MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING                      0xd0e5c3ffU
-#define MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC                 0x60031d7aU
-#define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT                                 0x74b36f11U
-#define MENU_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC                            0xac947056U
-
 /* Main menu */
 #define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
 #define MENU_LABEL_LOAD_CONTENT_LIST                                           0x5745de1fU
