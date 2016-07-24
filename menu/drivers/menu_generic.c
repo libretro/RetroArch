@@ -64,7 +64,8 @@ static int action_iterate_help(menu_handle_t *menu,
 
             timeout = (timeout_end - current) / 1000000;
 
-            menu_hash_get_help(MENU_LABEL_WELCOME_TO_RETROARCH,
+            menu_hash_get_help_enum(
+                  MENU_ENUM_LABEL_WELCOME_TO_RETROARCH,
                   s, len);
 
             if (!timer_end && timeout <= 0)

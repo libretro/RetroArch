@@ -22,6 +22,54 @@
 
 #include "configuration.h"
 
+int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
+{
+   int ret = -1;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      goto end;
+
+#ifdef HAVE_LANGEXTRA
+   switch (settings->user_language)
+   {
+#if 0
+      case RETRO_LANGUAGE_FRENCH:
+         ret = menu_hash_get_help_fr_enum(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_GERMAN:
+         ret = menu_hash_get_help_de_enum(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_SPANISH:
+         ret = menu_hash_get_help_es_enum(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_ITALIAN:
+         ret = menu_hash_get_help_it_enum(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_PORTUGUESE:
+         ret = menu_hash_get_help_pt_enum(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_DUTCH:
+         ret = menu_hash_get_help_nl_enum(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_ESPERANTO:
+         ret = menu_hash_get_help_eo_enum(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_POLISH:
+         ret = menu_hash_get_help_pl_enum(hash, s, len);
+         break;
+#endif
+      default:
+         break;
+   }
+#endif
+
+   if (ret == 0)
+      return ret;
+
+end:
+   return menu_hash_get_help_us_enum(msg, s, len);
+}
 
 int menu_hash_get_help(uint32_t hash, char *s, size_t len)
 {
