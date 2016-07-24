@@ -58,6 +58,12 @@ struct config_bool_setting_ptr
    bool *value_ptr;
 };
 
+struct config_int_setting_ptr
+{ 
+   const char *ident;
+   unsigned *value_ptr;
+};
+
 struct config_int_setting
 { 
    const char *ident;
@@ -1391,6 +1397,35 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive},
       { "auto_screenshot_filename",     &settings->auto_screenshot_filename}
    };
+   struct config_int_setting_ptr int_settings[] = {
+      { "video_fullscreen_x",  &settings->video.fullscreen_x},
+      { "video_fullscreen_y",  &settings->video.fullscreen_y},
+      { "video_monitor_index", &settings->video.monitor_index},
+      { "video_max_swapchain_images", &settings->video.max_swapchain_images},
+#ifdef HAVE_MENU
+      { "dpi_override_value", &settings->menu.dpi.override_value },
+      { "menu_thumbnails",    &settings->menu.thumbnails },
+#endif
+#ifdef GEKKO
+      { "video_viwidth",      &settings->video.viwidth},
+#endif
+      { "custom_viewport_width",  &settings->video_viewport_custom.width},
+      { "custom_viewport_height", &settings->video_viewport_custom.height},
+      { "aspect_ratio_index",     &settings->video.aspect_ratio_idx},
+      { "video_rotation",         &settings->video.rotation},
+      { "video_hard_sync_frames", &settings->video.hard_sync_frames },
+      { "video_frame_delay",      &settings->video.frame_delay },
+      { "video_swap_interval",    &settings->video.swap_interval},
+      { "input_poll_type_behavior", &settings->input.poll_type_behavior},
+      { "menu_ok_btn",            &settings->menu_ok_btn},
+      { "menu_cancel_btn",        &settings->menu_cancel_btn},
+      { "menu_search_btn",        &settings->menu_search_btn},
+      { "menu_info_btn",          &settings->menu_info_btn},
+      { "menu_default_btn",       &settings->menu_default_btn},
+      { "menu_cancel_btn",        &settings->menu_cancel_btn},
+      { "menu_scroll_down_btn",   &settings->menu_scroll_down_btn},
+      { "menu_scroll_up_btn",     &settings->menu_scroll_up_btn}
+   };
 
    if (path)
    {
@@ -1430,47 +1465,48 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 #endif
 
-
+   for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
+   {
+      bool tmp = false;
+      if (config_get_bool(conf, bool_settings[i].ident, &tmp))
+         *bool_settings[i].value_ptr = tmp;
+   }
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
-
-   CONFIG_GET_INT_BASE(conf, settings, menu_ok_btn,          "menu_ok_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_search_btn,      "menu_search_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_info_btn,        "menu_info_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_default_btn,     "menu_default_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_cancel_btn,      "menu_cancel_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_down_btn, "menu_scroll_down_btn");
-   CONFIG_GET_INT_BASE(conf, settings, menu_scroll_up_btn,   "menu_scroll_up_btn");
-   CONFIG_GET_INT_BASE(conf, settings, video.fullscreen_x, "video_fullscreen_x");
-   CONFIG_GET_INT_BASE(conf, settings, video.fullscreen_y, "video_fullscreen_y");
-   CONFIG_GET_INT_BASE(conf, settings, video.monitor_index, "video_monitor_index");
-   CONFIG_GET_INT_BASE(conf, settings, video.max_swapchain_images, "video_max_swapchain_images");
-#ifdef HAVE_MENU
-   CONFIG_GET_INT_BASE (conf, settings, menu.dpi.override_value,
-         "dpi_override_value");
-   CONFIG_GET_INT_BASE(conf, settings, menu.thumbnails,
-         "menu_thumbnails");
+   if (!global->has_set.ups_pref)
+   {
+      CONFIG_GET_BOOL_BASE(conf, global, patch.ups_pref, "ups_pref");
+   }
+   if (!global->has_set.bps_pref)
+   {
+      CONFIG_GET_BOOL_BASE(conf, global, patch.bps_pref, "bps_pref");
+   }
+   if (!global->has_set.ips_pref)
+   {
+      CONFIG_GET_BOOL_BASE(conf, global, patch.ips_pref, "ips_pref");
+   }
+#ifdef HAVE_NETPLAY
+   if (!global->has_set.netplay_mode)
+      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_spectate,
+            "netplay_spectator_mode_enable");
+   if (!global->has_set.netplay_mode)
+      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_client, "netplay_mode");
 #endif
-   CONFIG_GET_INT_BASE(conf, settings, video.hard_sync_frames, "video_hard_sync_frames");
-   CONFIG_GET_INT_BASE(conf, settings, video.frame_delay, "video_frame_delay");
-   CONFIG_GET_INT_BASE(conf, settings, video.swap_interval, "video_swap_interval");
-#ifdef GEKKO
-   CONFIG_GET_INT_BASE(conf, settings, video.viwidth, "video_viwidth");
-#endif
-   CONFIG_GET_INT_BASE(conf, settings, video.aspect_ratio_idx, "aspect_ratio_index");
-   CONFIG_GET_INT_BASE(conf, settings, video.rotation, "video_rotation");
-   CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
 
-   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.width,  "custom_viewport_width");
-   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.height, "custom_viewport_height");
-   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.x,      "custom_viewport_x");
-   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.y,      "custom_viewport_y");
+   for (i = 0; i < ARRAY_SIZE(int_settings); i++)
+   {
+      int tmp = 0;
+      if (config_get_int(conf, int_settings[i].ident, &tmp))
+         *int_settings[i].value_ptr = tmp;
+   }
+
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.x,  "custom_viewport_x");
+   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.y,  "custom_viewport_y");
+   CONFIG_GET_INT_BASE(conf, settings, state_slot,  "state_slot");
    CONFIG_GET_INT_BASE(conf, settings, input.max_users, "input_max_users");
    CONFIG_GET_INT_BASE(conf, settings, input.menu_toggle_gamepad_combo, "input_menu_toggle_gamepad_combo");
    CONFIG_GET_INT_BASE(conf, settings, libretro_log_level, "libretro_log_level");
    CONFIG_GET_INT_BASE(conf, settings, input.keyboard_gamepad_mapping_type, "keyboard_gamepad_mapping_type");
-   CONFIG_GET_INT_BASE(conf, settings, input.poll_type_behavior, "input_poll_type_behavior");
    CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_version_current, "bundle_assets_extract_version_current");
    CONFIG_GET_INT_BASE(conf, settings, bundle_assets_extract_last_version,    "bundle_assets_extract_last_version");
 
@@ -1550,25 +1586,6 @@ static bool config_load_file(const char *path, bool set_defaults)
          &settings->menu.title_color);
 #endif
 
-   if (!global->has_set.ups_pref)
-   {
-      CONFIG_GET_BOOL_BASE(conf, global, patch.ups_pref, "ups_pref");
-   }
-   if (!global->has_set.bps_pref)
-   {
-      CONFIG_GET_BOOL_BASE(conf, global, patch.bps_pref, "bps_pref");
-   }
-   if (!global->has_set.ips_pref)
-   {
-      CONFIG_GET_BOOL_BASE(conf, global, patch.ips_pref, "ips_pref");
-   }
-#ifdef HAVE_NETPLAY
-   if (!global->has_set.netplay_mode)
-      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_spectate,
-            "netplay_spectator_mode_enable");
-   if (!global->has_set.netplay_mode)
-      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_client, "netplay_mode");
-#endif
 
    CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_opacity, "input_overlay_opacity");
    CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_scale, "input_overlay_scale");
@@ -1801,12 +1818,6 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
-   for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
-   {
-      bool tmp = false;
-      if (config_get_bool(conf, bool_settings[i].ident, &tmp))
-         *bool_settings[i].value_ptr = tmp;
-   }
 
    if (!global->has_set.verbosity)
    {
