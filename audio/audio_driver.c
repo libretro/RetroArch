@@ -315,7 +315,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    /* Accomodate rewind since at some point we might have two full buffers. */
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
-      settings->slowmotion_ratio;
+      settings->slowmotion_ratio.value;
 
    audio_driver_data.output_samples.conv_buf =
       (int16_t*)malloc(outsamples_max * sizeof(int16_t));
@@ -577,7 +577,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    src_data.ratio = audio_driver_data.audio_rate.source_ratio.current;
 
    if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
-      src_data.ratio *= settings->slowmotion_ratio;
+      src_data.ratio *= settings->slowmotion_ratio.value;
 
    audio_driver_process_resampler(&src_data);
 

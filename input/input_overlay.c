@@ -543,7 +543,7 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
       input_overlay_enable(ol, settings->osk.enable);
    else
       input_overlay_enable(ol, settings->input.overlay_enable);
-   input_overlay_set_scale_factor(ol, settings->input.overlay_scale);
+   input_overlay_set_scale_factor(ol, settings->input.overlay_scale.value);
 
    ol->next_index = (ol->index + 1) % ol->size;
    ol->state      = OVERLAY_STATUS_NONE;

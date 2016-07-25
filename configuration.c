@@ -578,8 +578,8 @@ static void config_set_defaults(void)
    settings->rewind_enable                     = rewind_enable;
    settings->rewind_buffer_size                = rewind_buffer_size;
    settings->rewind_granularity                = rewind_granularity;
-   settings->slowmotion_ratio                  = slowmotion_ratio;
-   settings->fastforward_ratio                 = fastforward_ratio;
+   settings->slowmotion_ratio.value            = slowmotion_ratio;
+   settings->fastforward_ratio.value           = fastforward_ratio;
    settings->pause_nonactive                   = pause_nonactive;
    settings->autosave_interval                 = autosave_interval;
 
@@ -695,7 +695,7 @@ static void config_set_defaults(void)
    settings->input.overlay_enable_autopreferred    = true;
    settings->input.overlay_hide_in_menu            = overlay_hide_in_menu;
    settings->input.overlay_opacity                 = 0.7f;
-   settings->input.overlay_scale                   = 1.0f;
+   settings->input.overlay_scale.value             = 1.0f;
    settings->input.autodetect_enable               = input_autodetect_enable;
    *settings->input.keyboard_layout                = '\0';
 
@@ -1421,9 +1421,9 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    struct config_float_setting_ptr float_settings[] = {
       { "input_overlay_opacity", &settings->input.overlay_opacity},
-      { "input_overlay_scale", &settings->input.overlay_scale},
-      { "slowmotion_ratio", &settings->slowmotion_ratio},
-      { "fastforward_ratio", &settings->fastforward_ratio},
+      { "input_overlay_scale", &settings->input.overlay_scale.value},
+      { "slowmotion_ratio", &settings->slowmotion_ratio.value},
+      { "fastforward_ratio", &settings->fastforward_ratio.value},
       { "menu_wallpaper_opacity", &settings->menu.wallpaper.opacity},
       { "menu_footer_opacity", &settings->menu.footer.opacity},
       { "menu_header_opacity", &settings->menu.header.opacity},
@@ -1898,13 +1898,13 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (string_is_equal(settings->directory.system, "default"))
       *settings->directory.system = '\0';
 
-   if (settings->slowmotion_ratio < 1.0f)
-      settings->slowmotion_ratio = 1.0f;
+   if (settings->slowmotion_ratio.value < 1.0f)
+      settings->slowmotion_ratio.value = 1.0f;
 
    /* Sanitize fastforward_ratio value - previously range was -1
     * and up (with 0 being skipped) */
-   if (settings->fastforward_ratio < 0.0f)
-      settings->fastforward_ratio = 0.0f;
+   if (settings->fastforward_ratio.value < 0.0f)
+      settings->fastforward_ratio.value = 0.0f;
 
 #ifdef HAVE_LAKKA
    settings->ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
@@ -2827,7 +2827,7 @@ bool config_save_file(const char *path)
       { "video_font_size",          settings->video.font_size},
 #ifdef HAVE_OVERLAY
       { "input_overlay_opacity",    settings->input.overlay_opacity},
-      { "input_overlay_scale",      settings->input.overlay_scale},
+      { "input_overlay_scale",      settings->input.overlay_scale.value},
 #endif
 #ifdef HAVE_MENU
       { "menu_wallpaper_opacity",   settings->menu.wallpaper.opacity},
@@ -2837,8 +2837,8 @@ bool config_save_file(const char *path)
       { "video_message_pos_x",      settings->video.msg_pos_x},
       { "video_message_pos_y",      settings->video.msg_pos_y},
       { "video_font_size",          settings->video.font_size},
-      { "fastforward_ratio",        settings->fastforward_ratio},
-      { "slowmotion_ratio",         settings->slowmotion_ratio},
+      { "fastforward_ratio",        settings->fastforward_ratio.value},
+      { "slowmotion_ratio",         settings->slowmotion_ratio.value},
       { "input_axis_threshold",     settings->input.axis_threshold},
    };
 
