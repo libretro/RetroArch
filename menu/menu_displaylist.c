@@ -3150,7 +3150,7 @@ static int menu_displaylist_parse_playlists(
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_append_enum(info->list, "/", "",
-               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+               MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY, FILE_TYPE_DIRECTORY, 0, 0);
       return 0;
    }
 
@@ -3257,7 +3257,7 @@ static int menu_displaylist_parse_cores(
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_append_enum(info->list, "/", "",
-               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+               MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY, FILE_TYPE_DIRECTORY, 0, 0);
       return 0;
    }
 
@@ -3317,6 +3317,7 @@ static int menu_displaylist_parse_cores(
       bool is_dir;
       char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
+      enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
 
       switch (str_list->elems[i].attr.i)
@@ -3333,6 +3334,7 @@ static int menu_displaylist_parse_cores(
          case RARCH_PLAIN_FILE:
          default:
             file_type = (enum msg_file_type)info->type_default;
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
             break;
       }
 
@@ -3368,7 +3370,7 @@ static int menu_displaylist_parse_cores(
 
       items_found++;
       menu_entries_append_enum(info->list, path, label,
-            MSG_UNKNOWN,
+            enum_idx,
             file_type, 0, 0);
    }
 
@@ -3439,7 +3441,7 @@ static int menu_displaylist_parse_generic(
    {
       if (frontend_driver_parse_drive_list(info->list) != 0)
          menu_entries_append_enum(info->list, "/", "",
-               MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+               MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY, FILE_TYPE_DIRECTORY, 0, 0);
       return 0;
    }
 
@@ -3509,12 +3511,14 @@ static int menu_displaylist_parse_generic(
       bool is_dir;
       char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
+      enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
 
       switch (str_list->elems[i].attr.i)
       {
          case RARCH_DIRECTORY:
             file_type = FILE_TYPE_DIRECTORY;
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
             break;
          case RARCH_COMPRESSED_ARCHIVE:
             file_type = FILE_TYPE_CARCHIVE;
@@ -3525,6 +3529,7 @@ static int menu_displaylist_parse_generic(
          case RARCH_PLAIN_FILE:
          default:
             file_type = (enum msg_file_type)info->type_default;
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE;
             switch (type)
             {
                case DISPLAYLIST_CORES_DETECTED:
@@ -3597,7 +3602,7 @@ static int menu_displaylist_parse_generic(
 
       items_found++;
       menu_entries_append_enum(info->list, path, label,
-            MSG_UNKNOWN,
+            enum_idx,
             file_type, 0, 0);
    }
 

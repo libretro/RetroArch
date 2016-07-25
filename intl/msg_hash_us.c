@@ -2615,6 +2615,12 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "input_poll_type_behavior";
       case MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY:
          return "menu_wallpaper_opacity";
+      case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
+         return "file_browser_directory";
+      case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
+         return "file_browser_plain_file";
+      case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
+         return "file_browser_core";
       default:
          break;
    }
