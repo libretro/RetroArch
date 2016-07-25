@@ -55,13 +55,13 @@ struct config_bool_setting
 struct config_bool_setting_ptr
 { 
    const char *ident;
-   bool *value_ptr;
+   bool *ptr;
 };
 
 struct config_int_setting_ptr
 { 
    const char *ident;
-   unsigned *value_ptr;
+   unsigned *ptr;
 };
 
 struct config_int_setting
@@ -73,7 +73,7 @@ struct config_int_setting
 struct config_float_setting_ptr
 { 
    const char *ident;
-   float *value_ptr;
+   float *ptr;
 };
 
 struct config_float_setting
@@ -1536,7 +1536,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    {
       bool tmp = false;
       if (config_get_bool(conf, bool_settings[i].ident, &tmp))
-         *bool_settings[i].value_ptr = tmp;
+         *bool_settings[i].ptr = tmp;
    }
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
@@ -1608,7 +1608,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    {
       int tmp = 0;
       if (config_get_int(conf, int_settings[i].ident, &tmp))
-         *int_settings[i].value_ptr = tmp;
+         *int_settings[i].ptr = tmp;
    }
 
    CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.x,  "custom_viewport_x");
@@ -1673,7 +1673,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    {
       float tmp = 0.0f;
       if (config_get_float(conf, float_settings[i].ident, &tmp))
-         *float_settings[i].value_ptr = tmp;
+         *float_settings[i].ptr = tmp;
    }
 
    /*
