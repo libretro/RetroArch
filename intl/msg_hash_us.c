@@ -1121,6 +1121,57 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Increasing this value will increase \n"
                "performance, but introduce more latency.");
          break;
+      case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
+         snprintf(s, len,
+               "Maximum amount of swapchain images. This \n"
+               "can tell the video driver to use a specific \n"
+               "video buffering mode. \n"
+               " \n"
+               "Single buffering - 1\n"
+               "Double buffering - 2\n"
+               "Triple buffering - 3\n"
+               " \n"
+               "Setting the right buffering mode can have \n"
+               "a big impact on latency.");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_SMOOTH:
+         snprintf(s, len,
+               "Smoothens picture with bilinear filtering. \n"
+               "Should be disabled if using shaders.");
+         break;
+      case MENU_ENUM_LABEL_TIMEDATE_ENABLE:
+         snprintf(s, len,
+               "Shows current date and/or time inside menu.");
+         break;
+      case MENU_ENUM_LABEL_CORE_ENABLE:
+         snprintf(s, len,
+               "Shows current core inside menu.");
+         break;
+      case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
+         snprintf(s, len,
+               "Dynamically load a new wallpaper \n"
+               "depending on context.");
+         break;
+      case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
+         snprintf(s, len,
+               "URL to core updater directory on the \n"
+               "Libretro buildbot.");
+         break;
+      case MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL:
+         snprintf(s, len,
+               "URL to assets updater directory on the \n"
+               "Libretro buildbot.");
+         break;
+      case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
+         snprintf(s, len,
+               "After downloading, automatically extract \n"
+               "archives that the downloads are contained \n"
+               "inside.");
+         break;
+      case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
+         snprintf(s, len,
+               "Filter files being shown by supported extensions.");
+         break;
       case MENU_ENUM_LABEL_NETPLAY_NICKNAME:
          snprintf(s, len,
                "The username of the person running RetroArch. \n"
