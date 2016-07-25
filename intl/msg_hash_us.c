@@ -30,24 +30,41 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_AUDIO_ENABLE:
+         snprintf(s, len,
+               "Will enable audio or not.");
+         break;
+      case MENU_ENUM_LABEL_AUDIO_SYNC:
+         snprintf(s, len,
+               "Will synchronize audio (recommended).");
+         break;
+      case MENU_ENUM_LABEL_AUDIO_LATENCY:
+         snprintf(s, len,
+               "Desired audio latency in milliseconds. \n"
+               "Might not be honored if the audio driver \n"
+               "can't provide given latency.");
+         break;
       case MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE:
          snprintf(s, len,
                "Allow games to set rotation. If false, \n"
                "rotation requests are honored, but ignored.\n\n"
-               "Used for setups where one manually rotates the monitor.");
+               "Used for setups where one manually rotates \n"
+               "the monitor.");
          break;
       case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW:
          snprintf(s, len,
-               "Show the input descriptors set by the core instead \n"
-               "of the default ones.");
+               "Show the input descriptors set by the core \n"
+               "instead of the default ones.");
          break;
       case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
          snprintf(s, len,
-               "Number of entries that will be kept in content history playlist.");
+               "Number of entries that will be kept in \n"
+               "content history playlist.");
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN:
          snprintf(s, len,
-               "To use windowed mode or not when going fullscreen.");
+               "To use windowed mode or not when going \n"
+               "fullscreen.");
          break;
       case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
          snprintf(s, len,
@@ -55,14 +72,15 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
          snprintf(s, len,
-               "When saving savestates, state index is automatically \n"
-               "incremented before saving.\n\n"
-               "When the content is loaded, state index will be set \n"
-               "to the highest existing value.");
+               "When saving savestates, state index is \n"
+               "automatically incremented before saving.\n"
+               "When the content is loaded, state index will \n"
+               "be set to the highest existing value.");
          break;
       case MENU_ENUM_LABEL_FPS_SHOW:
          snprintf(s, len,
-               "Enables displaying the current frames per second.");
+               "Enables displaying the current frames \n"
+               "per second.");
          break;
       case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
          snprintf(s, len,
@@ -71,13 +89,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
       case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
          snprintf(s, len,
-               "Offset for where messages will be placed onscreen.\n"
-               "Values are in range [0.0, 1.0].");
+               "Offset for where messages will be placed \n"
+               "onscreen. Values are in range [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
          snprintf(s, len,
-               "Set to true if hardware-rendered cores should get their \n"
-               "private context.");
+               "Set to true if hardware-rendered cores \n"
+               "should get their private context.");
          break;
       case MENU_ENUM_LABEL_CORE_LIST:
          snprintf(s, len,
