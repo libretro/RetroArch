@@ -2689,6 +2689,7 @@ bool config_save_file(const char *path)
       { "video_smooth",                 settings->video.smooth},
       { "video_threaded",               settings->video.threaded},
       { "video_shared_context",         settings->video.shared_context},
+      { "cheevos_enable",               settings->cheevos.enable},
       { "custom_bgm_enable",            global->console.sound.system_bgm_enable},
       { "auto_screenshot_filename",     settings->auto_screenshot_filename},
       { "video_force_srgb_disable",     settings->video.force_srgb_disable},
