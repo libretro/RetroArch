@@ -1961,13 +1961,6 @@ enum msg_hash_enums
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC                                 0x7c9dec52U
 #define MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC                                   0x0059732bU
 
-#define MENU_LABEL_VIDEO_DRIVER_GL                                             0x005977f8U
-#define MENU_LABEL_VIDEO_DRIVER_SDL2                                           0x7c9dd69aU
-#define MENU_LABEL_VIDEO_DRIVER_SDL1                                           0x0b88a968U
-#define MENU_LABEL_VIDEO_DRIVER_D3D                                            0x0b886340U
-#define MENU_LABEL_VIDEO_DRIVER_EXYNOS                                         0xfc37c54bU
-#define MENU_LABEL_VIDEO_DRIVER_SUNXI                                          0x10620e3cU
-#define MENU_LABEL_VIDEO_DRIVER_DRM                                            0x61a89bfaU
 #define MENU_LABEL_VIDEO_FILTER                                                0x1c0eb741U
 #define MENU_LABEL_HELP_CONTROLS                                               0x04859221U
 #define MENU_LABEL_HELP_LIST                                                   0x006af669U

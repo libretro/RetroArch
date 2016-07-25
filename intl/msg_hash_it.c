@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../msg_hash.h"
 #include "../configuration.h"
@@ -209,75 +210,74 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->video.driver);
+         snprintf(s, len,
+               "Driver video attuale.");
 
-         switch (driver_hash)
+         if (string_is_equal(settings->video.driver, "gl"))
          {
-            case MENU_LABEL_VIDEO_DRIVER_GL:
-               snprintf(s, len,
-                     "Diver video OpenGL. \n"
-                     " \n"
-                     "Questo driver permette ai libretro core GL di \n"
-                     "essere usati in aggiunta alle implementazioni \n"
-                     "renderizzate via software dei core.\n"
-                     " \n"
-                     "Le performance per il rendering software e \n"
-                     "le implementazioni del libretro core G dipende \n"
-                     "dalla tua scheda grafica \n"
-                     "sottostante driver GL).");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_SDL2:
-               snprintf(s, len,
-                     "Driver video SDL 2.\n"
-                     " \n"
-                     "Questo è un driver video SDL 2 renderizzato \n"
-                     "via software.\n"
-                     " \n"
-                     "Le performance per le implementazioni dei core \n"
-                     "renderizzati via software dipende \n"
-                     "dall'implementazzione sulla tua piattaforma SDL.");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_SDL1:
-               snprintf(s, len,
-                     "Driver video SDL.\n"
-                     " \n"
-                     "Questo è un driver video SDL 1.2 renderizzato \n"
-                     "via software.\n"
-                     " \n"
-                     "Le performance sono considerate quasi ottimali. \n"
-                     "Considera di usare questo soltanto come ultima scelta.");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_D3D:
-               snprintf(s, len,
-                     "Driver video Direct3D. \n"
-                     " \n"
-                     "Le performance per i core renderizzati via \n"
-                     "software dipende dal driver D3D inerente \n"
-                     "alla tua scheda video).");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_EXYNOS:
-               snprintf(s, len,
-                     "Exynos-G2D Video Driver. \n"
-                     " \n"
-                     "Questo è un driver video Exynos a basso livello. \n"
-                     "Usa il blocco G2D nei SoC Samsung Exynos \n"
-                     "per operazioni blit. \n"
-                      " \n"
-                      "Le performance per i core renderizzati via software \n"
-                      "dovrebbero essere ottimali.");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_SUNXI:
-               snprintf(s, len,
-                     "Driver video Sunxi-G2D. \n"
-                     " \n"
-                     "Questo è un driver video Sunxi a basso livello. \n"
-                     "Usa il blocco G2D nei Soc Allwinner.");
-               break;
-            default:
-               snprintf(s, len,
-                     "Driver video attuale.");
-               break;
+            snprintf(s, len,
+                  "Diver video OpenGL. \n"
+                  " \n"
+                  "Questo driver permette ai libretro core GL di \n"
+                  "essere usati in aggiunta alle implementazioni \n"
+                  "renderizzate via software dei core.\n"
+                  " \n"
+                  "Le performance per il rendering software e \n"
+                  "le implementazioni del libretro core G dipende \n"
+                  "dalla tua scheda grafica \n"
+                  "sottostante driver GL).");
+         }
+         else if (string_is_equal(settings->video.driver, "sdl2"))
+         {
+            snprintf(s, len,
+                  "Driver video SDL 2.\n"
+                  " \n"
+                  "Questo è un driver video SDL 2 renderizzato \n"
+                  "via software.\n"
+                  " \n"
+                  "Le performance per le implementazioni dei core \n"
+                  "renderizzati via software dipende \n"
+                  "dall'implementazzione sulla tua piattaforma SDL.");
+         }
+         else if (string_is_equal(settings->video.driver, "sdl1"))
+         {
+            snprintf(s, len,
+                  "Driver video SDL.\n"
+                  " \n"
+                  "Questo è un driver video SDL 1.2 renderizzato \n"
+                  "via software.\n"
+                  " \n"
+                  "Le performance sono considerate quasi ottimali. \n"
+                  "Considera di usare questo soltanto come ultima scelta.");
+         }
+         else if (string_is_equal(settings->video.driver, "d3d"))
+         {
+            snprintf(s, len,
+                  "Driver video Direct3D. \n"
+                  " \n"
+                  "Le performance per i core renderizzati via \n"
+                  "software dipende dal driver D3D inerente \n"
+                  "alla tua scheda video).");
+         }
+         else if (string_is_equal(settings->video.driver, "exynos"))
+         {
+            snprintf(s, len,
+                  "Exynos-G2D Video Driver. \n"
+                  " \n"
+                  "Questo è un driver video Exynos a basso livello. \n"
+                  "Usa il blocco G2D nei SoC Samsung Exynos \n"
+                  "per operazioni blit. \n"
+                  " \n"
+                  "Le performance per i core renderizzati via software \n"
+                  "dovrebbero essere ottimali.");
+         }
+         else if (string_is_equal(settings->video.driver, "sunxi"))
+         {
+            snprintf(s, len,
+                  "Driver video Sunxi-G2D. \n"
+                  " \n"
+                  "Questo è un driver video Sunxi a basso livello. \n"
+                  "Usa il blocco G2D nei Soc Allwinner.");
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:

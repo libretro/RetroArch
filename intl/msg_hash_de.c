@@ -151,74 +151,73 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
-         if (settings)
-            driver_hash = msg_hash_calculate(settings->video.driver);
+         snprintf(s, len,
+               "Momentaner Grafiktreiber.");
 
-         switch (driver_hash)
+         if (string_is_equal(settings->video.driver, "gl"))
          {
-            case MENU_LABEL_VIDEO_DRIVER_GL:
-               snprintf(s, len,
-                     "OpenGL-Grafiktreiber. \n"
-                     " \n"
-                     "Dieser Treiber erlaubt es, neben software- \n"
-                     "gerenderten Cores aus Libretro-GL-Cores zu \n"
-                     "verwenden. \n"
-                     " \n"
-                     "Die Leistung, sowohl bei software-gerenderten, \n"
-                     "als auch bei Libretro-GL-Cores, hängt von dem \n"
-                     "GL-Treiber deiner Grafikkarte ab.");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_SDL2:
-               snprintf(s, len,
-                     "SDL2-Grafiktreiber.\n"
-                     " \n"
-                     "Dies ist ein SDL2-Grafiktreiber \n"
-                     "mit Software-Rendering."
-                     " \n"
-                     "Die Leistung hängt von der SDL- \n"
-                     "Implementierung deiner Plattform ab.");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_SDL1:
-               snprintf(s, len,
-                     "SDL-Grafiktreiber.\n"
-                     " \n"
-                     "Dies ist ein SDL1.2-Grafiktreiber \n"
-                     "mit Software-Rendering."
-                     " \n"
-                     "Die Leistung ist suboptimal und du \n"
-                     "solltest ihn nur als letzte \n"
-                     "Möglichkeit verwenden.");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_D3D:
-               snprintf(s, len,
-                     "Direct3D-Grafiktreiber. \n"
-                     " \n"
-                     "Die Leistung bei software-gerenderten \n"
-                     "Cores hängt von dem D3D-Treiber deiner \n"
-                     "Grafikkarte ab.");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_EXYNOS:
-               snprintf(s, len,
-                     "Exynos-G2D-Grafiktreiber. \n"
-                     " \n"
-                     "Dies ist ein Low-Level-Exynos-Grafiktreiber. \n"
-                     "Er verwendet den G2D-Block in Samsung-Exynos-SoCs. \n"
-                     "für Blitting-Operationen. \n"
-                     " \n"
-                     "Die Leistung bei software-gerendeten Cores sollte \n"
-                     "optimal sein.");
-               break;
-            case MENU_LABEL_VIDEO_DRIVER_SUNXI:
-               snprintf(s, len,
-                     "Sunxi-G2D-Grafiktreiber\n"
-                     " \n"
-                     "Dies ist ein Low-Level-Sunxi-Grafiktreiber. \n"
-                     "Er verwendet den G2D-Block in Allwinnder-SoCs.");
-               break;
-            default:
-               snprintf(s, len,
-                     "Momentaner Grafiktreiber.");
-               break;
+            snprintf(s, len,
+                  "OpenGL-Grafiktreiber. \n"
+                  " \n"
+                  "Dieser Treiber erlaubt es, neben software- \n"
+                  "gerenderten Cores aus Libretro-GL-Cores zu \n"
+                  "verwenden. \n"
+                  " \n"
+                  "Die Leistung, sowohl bei software-gerenderten, \n"
+                  "als auch bei Libretro-GL-Cores, hängt von dem \n"
+                  "GL-Treiber deiner Grafikkarte ab.");
+         }
+         else if (string_is_equal(settings->video.driver, "sdl2"))
+         {
+            snprintf(s, len,
+                  "SDL2-Grafiktreiber.\n"
+                  " \n"
+                  "Dies ist ein SDL2-Grafiktreiber \n"
+                  "mit Software-Rendering."
+                  " \n"
+                  "Die Leistung hängt von der SDL- \n"
+                  "Implementierung deiner Plattform ab.");
+         }
+         else if (string_is_equal(settings->video.driver, "sdl1"))
+         {
+            snprintf(s, len,
+                  "SDL-Grafiktreiber.\n"
+                  " \n"
+                  "Dies ist ein SDL1.2-Grafiktreiber \n"
+                  "mit Software-Rendering."
+                  " \n"
+                  "Die Leistung ist suboptimal und du \n"
+                  "solltest ihn nur als letzte \n"
+                  "Möglichkeit verwenden.");
+         }
+         else if (string_is_equal(settings->video.driver, "d3d"))
+         {
+            snprintf(s, len,
+                  "Direct3D-Grafiktreiber. \n"
+                  " \n"
+                  "Die Leistung bei software-gerenderten \n"
+                  "Cores hängt von dem D3D-Treiber deiner \n"
+                  "Grafikkarte ab.");
+         }
+         else if (string_is_equal(settings->video.driver, "exynos"))
+         {
+            snprintf(s, len,
+                  "Exynos-G2D-Grafiktreiber. \n"
+                  " \n"
+                  "Dies ist ein Low-Level-Exynos-Grafiktreiber. \n"
+                  "Er verwendet den G2D-Block in Samsung-Exynos-SoCs. \n"
+                  "für Blitting-Operationen. \n"
+                  " \n"
+                  "Die Leistung bei software-gerendeten Cores sollte \n"
+                  "optimal sein.");
+         }
+         else if (string_is_equal(settings->video.driver, "sunxi"))
+         {
+            snprintf(s, len,
+                  "Sunxi-G2D-Grafiktreiber\n"
+                  " \n"
+                  "Dies ist ein Low-Level-Sunxi-Grafiktreiber. \n"
+                  "Er verwendet den G2D-Block in Allwinnder-SoCs.");
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
