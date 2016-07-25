@@ -30,6 +30,42 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
+         snprintf(s, len,
+               "Influence how input polling is done inside \n"
+               "RetroArch. \n"
+               " \n"
+               "Early  - Input polling is performed before \n"
+               "the frame is processed. \n"
+               "Normal - Input polling is performed when \n"
+               "polling is requested. \n"
+               "Late   - Input polling is performed on \n"
+               "first input state request per frame.\n"
+               " \n"
+               "Setting it to 'Early' or 'Late' can result \n"
+               "in less latency, \n"
+               "depending on your configuration.\n\n"
+               "When netplay is enabled, the default polling \n"
+               "behavior (Normal) will be used, \n"
+               "regardless of the value set here."
+               );
+         break;
+      case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
+         snprintf(s, len,
+               "Hide input descriptors that were not set \n"
+               "by the core.");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE: 
+         snprintf(s, len,
+               "Video refresh rate of your monitor. \n"
+               "Used to calculate a suitable audio input rate.");
+         break;
+      case MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE:
+         snprintf(s, len,
+               "Forcibly disable sRGB FBO support. Some Intel \n"
+               "OpenGL drivers on Windows have video problems \n"
+               "with sRGB FBO support enabled.");
+         break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE:
          snprintf(s, len,
                "Will enable audio or not.");
@@ -92,10 +128,48 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Offset for where messages will be placed \n"
                "onscreen. Values are in range [0.0, 1.0].");
          break;
+      case MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE:
+         snprintf(s, len,
+               "Enable or disable the current overlay.");
+         break;
+      case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
+         snprintf(s, len,
+               "Hide the current overlay from appearing \n"
+               "in menu screens.");
+         break;
+      case MENU_ENUM_LABEL_OVERLAY_PRESET:
+         snprintf(s, len,
+               "Path to input overlay.");
+         break;
+      case MENU_ENUM_LABEL_OVERLAY_OPACITY:
+         snprintf(s, len,
+               "Overlay opacity.");
+         break;
+      case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
+         snprintf(s, len,
+               "Input bind timer timeout (in seconds). \n"
+               "Amount of seconds to wait until proceeding \n"
+               "to the next bind.");
+         break;
+      case MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET:
+         snprintf(s, len,
+               "Path to onscreen keyboard overlay.");
+         break;
+      case MENU_ENUM_LABEL_OVERLAY_SCALE:
+         snprintf(s, len,
+               "Overlay scale.");
+         break;
+      case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
+         snprintf(s, len,
+               "Audio output samplerate.");
+         break;
       case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
          snprintf(s, len,
                "Set to true if hardware-rendered cores \n"
-               "should get their private context.");
+               "should get their private context. \n"
+               "Avois having to assume hardware state changes \n"
+               "inbetween frames."
+               );
          break;
       case MENU_ENUM_LABEL_CORE_LIST:
          snprintf(s, len,
@@ -992,9 +1066,49 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, 
                "Turbo period.\n"
                " \n"
-               "Describes speed of which turbo-enabled\n"
-               "buttons toggle."
+               "Describes the period of which turbo-enabled\n"
+               "buttons toggle.\n"
+               " \n"
+               "Numbers are described in frames."
                );
+         break;
+      case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
+         snprintf(s, len, 
+               "Duty cycle.\n"
+               " \n"
+               "Describes how long the period of a turbo-enabled\n"
+               "should be.\n"
+               " \n"
+               "Numbers are described in frames."
+               );
+         break;
+      case MENU_ENUM_LABEL_MOUSE_ENABLE:
+         snprintf(s, len, "Enable mouse input inside the menu.");
+         break;
+      case MENU_ENUM_LABEL_POINTER_ENABLE:
+         snprintf(s, len, "Enable touch input inside the menu.");
+         break;
+      case MENU_ENUM_LABEL_MENU_WALLPAPER:
+         snprintf(s, len, "Path to an image to set as menu wallpaper.");
+         break;
+      case MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND:
+         snprintf(s, len,
+               "Wrap-around to beginning and/or end \n"
+               "if boundary of list is reached \n"
+               "horizontally and/or vertically.");
+         break;
+      case MENU_ENUM_LABEL_MENU_DRIVER:
+         snprintf(s, len, "Menu driver to use.");
+         break;
+      case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
+         snprintf(s, len,
+               "Gamepad button combination to toggle menu. \n"
+               " \n"
+               "0 - None \n"
+               "1 - Press L + R + Y + D-Pad Down \n"
+               "simultaneously. \n"
+               "2 - Press L3 + R3 simultaneously. \n"
+               "3 - Press Start + Select simultaneously.");
          break;
       case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
