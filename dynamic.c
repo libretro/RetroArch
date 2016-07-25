@@ -1176,9 +1176,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
       {
          const char **path = (const char**)data;
-         *path = NULL;
 #ifdef HAVE_DYNAMIC
-         *path = settings->path.libretro;
+         *path = config_get_active_core_path();
+#else
+         *path = NULL;
 #endif
          break;
       }

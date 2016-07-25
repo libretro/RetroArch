@@ -1768,7 +1768,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 #ifndef HAVE_DYNAMIC
    if (config_get_path(conf, "libretro_path", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->path.libretro, tmp_str, sizeof(settings->path.libretro));
+      config_set_active_core_path(tmp_str);
 #endif
 #ifdef HAVE_MENU
    if (config_get_path(conf, "rgui_browser_directory", tmp_str, sizeof(tmp_str)))
@@ -1877,12 +1877,12 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 
    /* Safe-guard against older behavior. */
-   if (path_is_directory(settings->path.libretro))
+   if (path_is_directory(config_get_active_core_path()))
    {
       RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
-      strlcpy(settings->directory.libretro, settings->path.libretro,
+      strlcpy(settings->directory.libretro, config_get_active_core_path(),
             sizeof(settings->directory.libretro));
-      *settings->path.libretro = '\0';
+      config_clear_active_core_path();
    }
 
    if (string_is_equal(settings->path.menu_wallpaper, "default"))
@@ -2021,7 +2021,7 @@ static void config_load_core_specific(void)
    }
 
    fill_pathname_dir(path_core_specific_config,
-         settings->path.libretro,
+         config_get_active_core_path(),
          file_path_str(FILE_PATH_CONFIG_EXTENSION),
          sizeof(path_core_specific_config));
 
@@ -2033,7 +2033,7 @@ static void config_load_core_specific(void)
       global->has_set.save_path = false;
       global->has_set.state_path = false;
 
-      strlcpy(tmp, settings->path.libretro, sizeof(tmp));
+      strlcpy(tmp, config_get_active_core_path(), sizeof(tmp));
       RARCH_LOG("Config: loading core-specific config from: %s.\n",
             path_core_specific_config);
 
@@ -2042,7 +2042,7 @@ static void config_load_core_specific(void)
 
       /* Force some parameters which are implied when using core specific configs.
        * Don't have the core config file overwrite the libretro path. */
-      strlcpy(settings->path.libretro, tmp, sizeof(settings->path.libretro));
+      config_set_active_core_path(tmp);
 
       /* This must be true for core specific configs. */
       settings->core_specific_config = true;
@@ -2173,7 +2173,7 @@ bool config_load_override(void)
 
    /* Store the libretro_path we're using since it will be 
     * overwritten by the override when reloading. */
-   strlcpy(buf, settings->path.libretro, sizeof(buf));
+   strlcpy(buf, config_get_active_core_path(), sizeof(buf));
 
    /* Toggle has_save_path to false so it resets */
    global->has_set.save_path  = false;
@@ -2184,7 +2184,7 @@ bool config_load_override(void)
 
    /* Restore the libretro_path we're using
     * since it will be overwritten by the override when reloading. */
-   strlcpy(settings->path.libretro, buf, sizeof(settings->path.libretro));
+   config_set_active_core_path(buf);
    runloop_msg_queue_push("Configuration override loaded.", 1, 100, true);
 
    /* Reset save paths. */
@@ -2986,7 +2986,7 @@ bool config_save_file(const char *path)
 #endif
 #ifndef HAVE_DYNAMIC
       {  "libretro_path", false,
-         settings->path.libretro},
+         config_get_active_core_path()},
 #endif
       { "screenshot_directory", true,
          settings->directory.screenshot}
@@ -3132,7 +3132,8 @@ bool config_replace(char *path)
 
    rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
-   *settings->path.libretro = '\0'; /* Load core in new config. */
+   /* Load core in new config. */
+   config_clear_active_core_path();
 
    if (!task_push_content_load_default(
          NULL, NULL,
