@@ -1527,6 +1527,11 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 #endif
 
+   /*
+    * Boolean settings 
+    *
+    */
+
    for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
    {
       bool tmp = false;
@@ -1554,6 +1559,50 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!global->has_set.netplay_mode)
       CONFIG_GET_BOOL_BASE(conf, global, netplay.is_client, "netplay_mode");
 #endif
+#ifdef HAVE_NETWORKGAMEPAD
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      char tmp[64]  = {0};
+
+      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
+
+      if (config_get_bool(conf, tmp, &tmp_bool))
+         settings->network_remote_enable_user[i] = tmp_bool;
+   }
+#endif
+#ifdef RARCH_CONSOLE
+   /* TODO - will be refactored later to make it more clean - it's more
+    * important that it works for consoles right now */
+   if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
+      global->console.sound.system_bgm_enable = tmp_bool;
+#endif
+   if (!global->has_set.verbosity)
+   {
+      if (config_get_bool(conf, "log_verbosity", &tmp_bool))
+      {
+         if (tmp_bool)
+            verbosity_enable();
+         else
+            verbosity_disable();
+      }
+   }
+   {
+      char tmp[64]  = {0};
+
+      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
+      if (config_get_bool(conf, tmp, &tmp_bool))
+      {
+         if (tmp_bool)
+            runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
+         else
+            runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
+      }
+   }
+
+   /*
+    * Integer settings 
+    *
+    */
 
    for (i = 0; i < ARRAY_SIZE(int_settings); i++)
    {
@@ -1594,9 +1643,11 @@ static bool config_load_file(const char *path, bool set_defaults)
          settings->rewind_buffer_size = buffer_size * UINT64_C(1000000);
    }
 
-#ifdef RARCH_CONSOLE
-   video_driver_load_settings(conf);
-#endif
+
+   /*
+    * Hexadecimal settings 
+    *
+    */
 
    if (config_get_hex(conf, "video_message_color", &msg_color))
    {
@@ -1613,6 +1664,11 @@ static bool config_load_file(const char *path, bool set_defaults)
          &settings->menu.title_color);
 #endif
 
+   /*
+    * Float settings 
+    *
+    */
+
    for (i = 0; i < ARRAY_SIZE(float_settings); i++)
    {
       float tmp = 0.0f;
@@ -1620,6 +1676,10 @@ static bool config_load_file(const char *path, bool set_defaults)
          *float_settings[i].value_ptr = tmp;
    }
 
+   /*
+    * Array settings 
+    *
+    */
 
    config_get_array(conf, "playlist_names", settings->playlist_names, sizeof(settings->playlist_names));
    config_get_array(conf, "playlist_cores", settings->playlist_cores, sizeof(settings->playlist_cores));
@@ -1663,6 +1723,10 @@ static bool config_load_file(const char *path, bool set_defaults)
          settings->path.bundle_assets_dst_subdir,
          sizeof(settings->path.bundle_assets_dst_subdir));
 
+   /*
+    * Path settings 
+    *
+    */
 
 #ifdef HAVE_MENU
    if (config_get_path(conf, "xmb_font", tmp_str, sizeof(tmp_str)))
@@ -1789,6 +1853,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 #endif
 
+#ifdef RARCH_CONSOLE
+   video_driver_load_settings(conf);
+#endif
+
    /* Post-settings load */
 
    if (settings->video.hard_sync_frames > 3)
@@ -1823,46 +1891,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 
 
-   if (!global->has_set.verbosity)
-   {
-      if (config_get_bool(conf, "log_verbosity", &tmp_bool))
-      {
-         if (tmp_bool)
-            verbosity_enable();
-         else
-            verbosity_disable();
-      }
-   }
-
-   {
-      char tmp[64]  = {0};
-
-      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
-      if (config_get_bool(conf, tmp, &tmp_bool))
-      {
-         if (tmp_bool)
-            runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
-         else
-            runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
-      }
-   }
-#ifdef HAVE_NETWORKGAMEPAD
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      char tmp[64]  = {0};
-
-      snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
-
-      if (config_get_bool(conf, tmp, &tmp_bool))
-         settings->network_remote_enable_user[i] = tmp_bool;
-   }
-#endif
-#ifdef RARCH_CONSOLE
-   /* TODO - will be refactored later to make it more clean - it's more
-    * important that it works for consoles right now */
-   if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
-      global->console.sound.system_bgm_enable = tmp_bool;
-#endif
 
 
    if (!string_is_empty(settings->directory.screenshot))
