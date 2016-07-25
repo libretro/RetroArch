@@ -1364,7 +1364,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "video_force_srgb_enable",     &settings->video.force_srgb_disable},
       {  "core_set_supports_no_game_enable", &settings->set_supports_no_game_enable},
       { "video_shared_context",        &settings->video.shared_context},
-#ifdef CHEEVOS
+#ifdef HAVE_CHEEVOS
       { "cheevos_enable",              &settings->cheevos.enable},
       { "cheevos_test_unofficial",     &settings->cheevos.test_unofficial},
       { "cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable},
