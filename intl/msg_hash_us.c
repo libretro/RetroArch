@@ -48,6 +48,106 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Releasing button disables fast-forward."
                   );
             break;
+         case RARCH_PAUSE_TOGGLE:
+            snprintf(s, len,
+                  "Toggle between paused and non-paused state.");
+            break;
+         case RARCH_FRAMEADVANCE:
+            snprintf(s, len,
+                  "Frame advance when content is paused.");
+            break;
+         case RARCH_SHADER_NEXT:
+            snprintf(s, len,
+                  "Applies next shader in directory.");
+            break;
+         case RARCH_SHADER_PREV:
+            snprintf(s, len,
+                  "Applies previous shader in directory.");
+            break;
+         case RARCH_CHEAT_INDEX_PLUS:
+         case RARCH_CHEAT_INDEX_MINUS:
+         case RARCH_CHEAT_TOGGLE:
+            snprintf(s, len,
+                  "Cheats.");
+            break;
+         case RARCH_RESET:
+            snprintf(s, len,
+                  "Reset the content.");
+            break;
+         case RARCH_SCREENSHOT:
+            snprintf(s, len,
+                  "Take screenshot.");
+            break;
+         case RARCH_MUTE:
+            snprintf(s, len,
+                  "Mute/unmute audio.");
+            break;
+         case RARCH_OSK:
+            snprintf(s, len,
+                  "Toggles onscreen keyboard.");
+            break;
+         case RARCH_NETPLAY_FLIP:
+            snprintf(s, len,
+                  "Netplay flip users.");
+            break;
+         case RARCH_SLOWMOTION:
+            snprintf(s, len,
+                  "Hold for slowmotion.");
+            break;
+         case RARCH_ENABLE_HOTKEY:
+            snprintf(s, len,
+                  "Enable other hotkeys. \n"
+                  " \n"
+                  "If this hotkey is bound to \n"
+                  "either keyboard, joybutton or joyaxis, \n"
+                  "all other hotkeys will be disabled unless \n"
+                  "this hotkey is also held at the same time. \n"
+                  " \n"
+                  "This is useful for RETRO_KEYBOARD centric \n"
+                  "implementations which query a large area of \n"
+                  "the keyboard, where it is not desirable that \n"
+                  "hotkeys get in the way. \n"
+                  " \n"
+                  "Alternatively, all hotkeys for keyboard \n"
+                  "could be disabled by the user.");
+            break;
+         case RARCH_VOLUME_UP:
+            snprintf(s, len,
+                  "Increases audio volume.");
+            break;
+         case RARCH_VOLUME_DOWN:
+            snprintf(s, len,
+                  "Decreases audio volume.");
+            break;
+         case RARCH_OVERLAY_NEXT:
+            snprintf(s, len,
+                  "Toggles to next overlay. Wraps around.");
+            break;
+         case RARCH_DISK_EJECT_TOGGLE:
+            snprintf(s, len,
+                  "Toggles eject for disks. \n"
+                  " \n"
+                  "Used for multiple-disk content. ");
+            break;
+         case RARCH_DISK_NEXT:
+         case RARCH_DISK_PREV:
+            snprintf(s, len,
+                  "Cycles through disk images. Use after ejecting. \n"
+                  " \n"
+                  "Complete by toggling eject again.");
+            break;
+         case RARCH_GRAB_MOUSE_TOGGLE:
+            snprintf(s, len, 
+                  "Toggles mouse grab. \n"
+                  " \n"
+                  "When mouse is grabbed, RetroArch hides the \n"
+                  "mouse, and keeps the mouse pointer inside \n"
+                  "the window to allow relative mouse input to \n"
+                  "work better.");
+            break;
+         case RARCH_MENU_TOGGLE:
+            snprintf(s, len, "Toggles menu.");
+            break;
          case RARCH_LOAD_STATE_KEY:
             snprintf(s, len,
                   "Loads state.");
