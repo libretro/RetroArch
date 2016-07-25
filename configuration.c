@@ -3021,6 +3021,11 @@ bool config_save_file(const char *path)
    if (!conf || runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
       return false;
 
+   /*
+    * Path settings 
+    *
+    */
+
    for (i = 0; i < ARRAY_SIZE(path_settings); i++)
    {
       if (path_settings[i].defaults)
@@ -3032,17 +3037,37 @@ bool config_save_file(const char *path)
                path_settings[i].value);
    }
 
+#ifdef HAVE_MENU
+   config_set_path(conf, "xmb_font",
+         !string_is_empty(settings->menu.xmb.font) ? settings->menu.xmb.font : "");
+#endif
+
+   /*
+    * String settings 
+    *
+    */
+
    for (i = 0; i < ARRAY_SIZE(string_settings); i++)
    {
       config_set_string(conf, string_settings[i].ident,
             string_settings[i].value);
    }
 
+   /*
+    * Float settings 
+    *
+    */
+
    for (i = 0; i < ARRAY_SIZE(float_settings); i++)
    {
       config_set_float(conf, float_settings[i].ident,
             float_settings[i].value);
    }
+
+   /*
+    * Integer settings 
+    *
+    */
 
    for (i = 0; i < ARRAY_SIZE(int_settings); i++)
    {
@@ -3063,6 +3088,11 @@ bool config_save_file(const char *path)
       snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
       config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
    }
+
+   /*
+    * Boolean settings 
+    *
+    */
 
    for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
    {
@@ -3091,6 +3121,12 @@ bool config_save_file(const char *path)
    msg_color = (((int)(settings->video.msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->video.msg_color_g * 255.0f) & 0xff) <<  8) +
                (((int)(settings->video.msg_color_b * 255.0f) & 0xff));
+
+   /*
+    * Hexadecimal settings 
+    *
+    */
+
    config_set_hex(conf, "video_message_color", msg_color);
 #ifdef HAVE_MENU
    config_set_hex(conf, "menu_entry_normal_color",
@@ -3101,10 +3137,6 @@ bool config_save_file(const char *path)
          settings->menu.title_color);
 #endif
 
-#ifdef HAVE_MENU
-   config_set_path(conf, "xmb_font",
-         !string_is_empty(settings->menu.xmb.font) ? settings->menu.xmb.font : "");
-#endif
 
    video_driver_save_settings(conf);
 
