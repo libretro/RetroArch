@@ -6283,7 +6283,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->fastforward_ratio.value,
+               &settings->fastforward_ratio,
                msg_hash_to_str(MENU_ENUM_LABEL_FASTFORWARD_RATIO),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO),
                fastforward_ratio,
@@ -6299,7 +6299,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->slowmotion_ratio.value,
+               &settings->slowmotion_ratio,
                msg_hash_to_str(MENU_ENUM_LABEL_SLOWMOTION_RATIO),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO),
                slowmotion_ratio,
@@ -6539,7 +6539,7 @@ static bool setting_append_list(
 
          CONFIG_FLOAT(
                list, list_info,
-               &settings->input.overlay_scale.value,
+               &settings->input.overlay_scale,
                msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_SCALE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE),
                1.0f,

@@ -320,7 +320,7 @@ typedef struct settings
       bool overlay_enable_autopreferred;
       bool overlay_hide_in_menu;
       float overlay_opacity;
-      struct config_float_setting overlay_scale;
+      float overlay_scale;
 
       unsigned bind_timeout;
       bool input_descriptor_label_show;
@@ -437,8 +437,8 @@ typedef struct settings
    size_t rewind_buffer_size;
    unsigned rewind_granularity;
 
-   struct config_float_setting slowmotion_ratio;
-   struct config_float_setting fastforward_ratio;
+   float slowmotion_ratio;
+   float fastforward_ratio;
 
    bool pause_nonactive;
    unsigned autosave_interval;

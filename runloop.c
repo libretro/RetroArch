@@ -1329,7 +1329,7 @@ static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
       return 1;
    }
 
-   if (!settings->menu.throttle_framerate && !settings->fastforward_ratio.value)
+   if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
       return 0;
 
    return -1;
@@ -1367,8 +1367,8 @@ int runloop_iterate(unsigned *sleep_ms)
       struct retro_system_av_info *av_info = 
          video_viewport_get_system_av_info();
       float fastforward_ratio              = 
-         (settings->fastforward_ratio.value == 0.0f) 
-         ? 1.0f : settings->fastforward_ratio.value;
+         (settings->fastforward_ratio == 0.0f) 
+         ? 1.0f : settings->fastforward_ratio;
 
       frame_limit_last_time    = cpu_features_get_time_usec();
       frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f 
@@ -1408,7 +1408,7 @@ int runloop_iterate(unsigned *sleep_ms)
          delta = runloop_frame_time.reference;
 
       if (!is_locked_fps && runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
-         delta /= settings->slowmotion_ratio.value;
+         delta /= settings->slowmotion_ratio;
 
       runloop_frame_time_last = current;
 
@@ -1541,7 +1541,7 @@ int runloop_iterate(unsigned *sleep_ms)
    autosave_unlock();
 #endif
 
-   if (!settings->fastforward_ratio.value)
+   if (!settings->fastforward_ratio)
       return 0;
 #ifdef HAVE_MENU
 end:
