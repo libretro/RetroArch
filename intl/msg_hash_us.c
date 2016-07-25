@@ -28,8 +28,101 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
    uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
+   if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
+         msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
+   {
+      unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
+
+      switch (idx)
+      {
+         case RARCH_FAST_FORWARD_KEY:
+            snprintf(s, len,
+                  "Toggles between fast-forwarding and \n"
+                  "normal speed."
+                  );
+            break;
+         case RARCH_FAST_FORWARD_HOLD_KEY:
+            snprintf(s, len,
+                  "Hold for fast-forward. \n"
+                  " \n"
+                  "Releasing button disables fast-forward."
+                  );
+            break;
+         case RARCH_LOAD_STATE_KEY:
+            snprintf(s, len,
+                  "Loads state.");
+            break;
+         case RARCH_FULLSCREEN_TOGGLE_KEY:
+            snprintf(s, len,
+                  "Toggles fullscreen.");
+            break;
+         case RARCH_QUIT_KEY:
+            snprintf(s, len,
+                  "Key to exit RetroArch cleanly. \n"
+                  " \n"
+                  "Killing it in any hard way (SIGKILL, etc.) will \n"
+                  "terminate RetroArch without saving RAM, etc."
+#ifdef __unix__
+                  "\nOn Unix-likes, SIGINT/SIGTERM allows a clean \n"
+                  "deinitialization."
+#endif
+                  "");
+            break;
+         case RARCH_STATE_SLOT_PLUS:
+         case RARCH_STATE_SLOT_MINUS:
+            snprintf(s, len,
+                  "State slots. \n"
+                  " \n"
+                  "With slot set to 0, save state name is \n"
+                  "*.state (or whatever defined on commandline). \n"
+                  " \n"
+                  "When slot is not 0, path will be <path><d>, \n"
+                  "where <d> is slot number.");
+            break;
+         case RARCH_SAVE_STATE_KEY:
+            snprintf(s, len,
+                  "Saves state.");
+            break;
+         case RARCH_REWIND:
+            snprintf(s, len,
+                  "Hold button down to rewind. \n"
+                  " \n"
+                  "Rewinding must be enabled.");
+            break;
+         case RARCH_MOVIE_RECORD_TOGGLE:
+            snprintf(s, len,
+                  "Toggle between recording and not.");
+            break;
+         default:
+            if (string_is_empty(s))
+               strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
+            break;
+      }
+
+      return 0;
+   }
+
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CACHE_DIRECTORY:
+         snprintf(s, len,
+               "Cache Directory. \n"
+               " \n"
+               "Content which is temporarily extracted \n"
+               "will be extracted to this directory.");
+         break;
+      case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
+         snprintf(s, len,
+               "If enabled, every content file loaded \n"
+               "in RetroArch will be automatically \n"
+               "added to the recent history list.");
+         break;
+      case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
+         snprintf(s, len,
+               "File Browser Directory. \n"
+               " \n"
+               "Sets start directory for menu file browser.");
+         break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          snprintf(s, len,
                "Influence how input polling is done inside \n"
@@ -167,7 +260,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Set to true if hardware-rendered cores \n"
                "should get their private context. \n"
-               "Avois having to assume hardware state changes \n"
+               "Avoids having to assume hardware state changes \n"
                "inbetween frames."
                );
          break;
@@ -1161,6 +1254,24 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "URL to assets updater directory on the \n"
                "Libretro buildbot.");
+         break;
+      case MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE:
+         snprintf(s, len,
+               "if enabled, overrides the input binds \n"
+               "with the remapped binds set for the \n"
+               "current core.");
+         break;
+      case MENU_ENUM_LABEL_OVERLAY_DIRECTORY:
+         snprintf(s, len,
+               "Overlay Directory. \n"
+               " \n"
+               "Defines a directory where overlays are \n"
+               "kept for easy access.");
+         break;
+      case MENU_ENUM_LABEL_INPUT_MAX_USERS:
+         snprintf(s, len,
+               "Maximum amount of users supported by \n"
+               "RetroArch.");
          break;
       case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          snprintf(s, len,
