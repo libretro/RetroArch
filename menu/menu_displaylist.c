@@ -3525,9 +3525,11 @@ static int menu_displaylist_parse_generic(
             break;
          case RARCH_COMPRESSED_ARCHIVE:
             file_type = FILE_TYPE_CARCHIVE;
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_ARCHIVE;
             break;
          case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
             file_type = FILE_TYPE_IN_CARCHIVE;
+            enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_FILE_IN_ARCHIVE;
             break;
          case RARCH_PLAIN_FILE:
          default:
