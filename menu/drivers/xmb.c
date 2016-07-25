@@ -713,7 +713,9 @@ static void xmb_update_thumbnail_image(void *data)
 
    if (path_file_exists(xmb->thumbnail_file_path))
    {
+#if 0
       RARCH_LOG("path: %s\n", xmb->thumbnail_file_path);
+#endif
       task_push_image_load(xmb->thumbnail_file_path,
             MENU_ENUM_LABEL_CB_MENU_THUMBNAIL,
             menu_display_handle_thumbnail_upload, NULL);
