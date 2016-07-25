@@ -913,7 +913,6 @@ static void mui_frame(void *data)
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = red_50;
          footer_bg_color         = footer_bg_color_real;
-         body_bg_color           = white_transp_bg;
          active_tab_marker_color = red_500;
 
          font_normal_color       = black_opaque_54;
@@ -931,7 +930,6 @@ static void mui_frame(void *data)
          hex32_to_rgba_normalized(0xFFF9C4, yellow_200,     0.90);
          hex32_to_rgba_normalized(0xFFFFFF, footer_bg_color_real, 1.00);
 
-         header_bg_color         = yellow_500;
          header_bg_color         = header_bg_color_real;
          body_bg_color           = white_transp_bg;
          highlighted_entry_color = yellow_200;
