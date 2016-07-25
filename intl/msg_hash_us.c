@@ -2621,6 +2621,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "file_browser_plain_file";
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
          return "file_browser_core";
+      case MENU_ENUM_LABEL_FILE_BROWSER_ARCHIVE:
+         return "file_browser_archive";
+      case MENU_ENUM_LABEL_FILE_BROWSER_FILE_IN_ARCHIVE:
+         return "file_browser_file_in_archive";
       default:
          break;
    }
