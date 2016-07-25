@@ -1858,7 +1858,7 @@ static int frontend_android_parse_drive_list(void *data)
          MSG_INTERNAL_MEMORY, FILE_TYPE_DIRECTORY, 0, 0);
 
    menu_entries_append_enum(list, "/", "",
-         MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY, FILE_TYPE_DIRECTORY, 0, 0);
+         MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 
    return 0;
 }
