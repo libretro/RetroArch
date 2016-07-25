@@ -1097,6 +1097,63 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "if boundary of list is reached \n"
                "horizontally and/or vertically.");
          break;
+      case MENU_ENUM_LABEL_PAUSE_LIBRETRO:
+         snprintf(s, len,
+               "If disabled, the libretro core will keep \n"
+               "running in the background when we are in the \n"
+               "menu.");
+         break;
+      case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
+         snprintf(s, len,
+               "Suspends the screensaver. Is a hint that \n"
+               "does not necessarily have to be \n"
+               "honored by the video driver.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_MODE:
+         snprintf(s, len,
+               "Netplay client mode for the current user. \n"
+               "Will be 'Server' mode if disabled.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
+         snprintf(s, len,
+               "The amount of delay frames to use for netplay. \n"
+               " \n"
+               "Increasing this value will increase \n"
+               "performance, but introduce more latency.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_NICKNAME:
+         snprintf(s, len,
+               "The username of the person running RetroArch. \n"
+               "This will be used for playing online games.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT:
+         snprintf(s, len,
+               "When being client over netplay, use \n"
+               "keybinds for player 1.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT:
+         snprintf(s, len,
+               "The port of the host IP address. \n"
+               "Can be either a TCP or UDP port.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
+         snprintf(s, len,
+               "Enable or disable spectator mode for \n"
+               "the user during netplay.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
+         snprintf(s, len,
+               "The IP address of the host to connect to.");
+         break;
+      case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
+         snprintf(s, len,
+               "Enable stdin command interface.");
+         break;
+      case MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT:
+         snprintf(s, len,
+               "Start User Interface companion driver \n"
+               "on boot (if available).");
+         break;
       case MENU_ENUM_LABEL_MENU_DRIVER:
          snprintf(s, len, "Menu driver to use.");
          break;
