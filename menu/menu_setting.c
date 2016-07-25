@@ -7310,7 +7310,7 @@ static bool setting_append_list(
                &settings->cheevos.enable,
                msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_ENABLE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ENABLE),
-               false,
+               cheevos_enable,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
                &group_info,

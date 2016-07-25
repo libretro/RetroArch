@@ -368,6 +368,10 @@ static const bool def_mouse_enable = true;
 static const bool def_mouse_enable = false;
 #endif
 
+#ifdef HAVE_CHEEVOS
+static const bool cheevos_enable = false;
+#endif
+
 /* VIDEO */
 
 #if defined(_XBOX360)
