@@ -26,6 +26,18 @@
 
 struct defaults
 {
+
+#ifdef HAVE_MENU
+   struct
+   {
+      struct
+      {
+         bool menu_color_theme_enable;
+         unsigned menu_color_theme;
+      } materialui;
+   } menu;
+#endif
+
    struct
    {
       char core_assets[PATH_MAX_LENGTH];

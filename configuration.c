@@ -474,7 +474,12 @@ static void config_set_defaults(void)
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
    settings->menu.xmb.font[0]          = '\0';
 #endif
-   settings->menu.materialui.menu_color_theme = 0;
+#ifdef HAVE_MATERIALUI
+   settings->menu.materialui.menu_color_theme = MATERIALUI_THEME_BLUE;
+
+   if (g_defaults.menu.materialui.menu_color_theme_enable)
+      settings->menu.materialui.menu_color_theme = g_defaults.menu.materialui.menu_color_theme;
+#endif
 
    settings->menu.throttle_framerate   = true;
    settings->menu.linear_filter        = true;

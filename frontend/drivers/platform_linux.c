@@ -54,6 +54,10 @@
 #include "../../verbosity.h"
 #include "platform_linux.h"
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_display.h"
+#endif
+
 #ifdef ANDROID
 enum
 {
@@ -1651,7 +1655,15 @@ static void frontend_linux_get_env(int *argc,
    else if (strstr(device_model, "GAMEMID_BT"))
       g_defaults.settings.out_latency = 160;
    else if (strstr(device_model, "SHIELD"))
+   {
       g_defaults.settings.video_refresh_rate = 60.0;
+#ifdef HAVE_MENU
+#ifdef HAVE_MATERIALUI
+      g_defaults.menu.materialui.menu_color_theme_enable = true;
+      g_defaults.menu.materialui.menu_color_theme        = MATERIALUI_THEME_NVIDIA_SHIELD;
+#endif
+#endif
+   }
    else if (strstr(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
 
