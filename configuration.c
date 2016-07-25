@@ -2689,7 +2689,11 @@ bool config_save_file(const char *path)
       { "video_smooth",                 settings->video.smooth},
       { "video_threaded",               settings->video.threaded},
       { "video_shared_context",         settings->video.shared_context},
+#ifdef HAVE_CHEEVOS
       { "cheevos_enable",               settings->cheevos.enable},
+      { "cheevos_test_unofficial",      settings->cheevos.test_unofficial},
+      { "cheevos_hardcore_mode_enable", settings->cheevos.hardcore_mode_enable},
+#endif
       { "custom_bgm_enable",            global->console.sound.system_bgm_enable},
       { "auto_screenshot_filename",     settings->auto_screenshot_filename},
       { "video_force_srgb_disable",     settings->video.force_srgb_disable},
