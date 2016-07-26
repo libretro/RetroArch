@@ -204,17 +204,27 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_PARENT_DIRECTORY:
+         snprintf(s, len,
+               "Go back to the parent directory.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
+         snprintf(s, len,
+               "Plain file.");
+         break;
       case MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN:
          snprintf(s, len,
                "Video. \n"
                " \n"
-               "Select it to open this file with the video player.");
+               "Select it to open this file with the \n"
+               "video player.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN:
          snprintf(s, len,
                "Music. \n"
                " \n"
-               "Select it to open this file with the music player.");
+               "Select it to open this file with the \n"
+               "music player.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE:
          snprintf(s, len,
@@ -224,13 +234,15 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Image. \n"
                " \n"
-               "Select it to open this file with the image viewer.");
+               "Select it to open this file with the \n"
+               "image viewer.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
          snprintf(s, len,
                "Libretro core. \n"
                " \n"
-               "Selecting this will associate this core to the game.");
+               "Selecting this will associate this core \n"
+               "to the game.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
          snprintf(s, len,
