@@ -204,6 +204,33 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
+         snprintf(s, len,
+               "Content Database Directory. \n"
+               " \n"
+               "Path to content database \n"
+               "directory.");
+         break;
+      case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
+         snprintf(s, len,
+               "Thumbnails Directory. \n"
+               " \n"
+               "To store thumbnail files.");
+         break;
+      case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
+         snprintf(s, len,
+               "Core Info Directory. \n"
+               " \n"
+               "A directory for where to search \n"
+               "for libretro core information.");
+         break;
+      case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
+         snprintf(s, len,
+               "Playlist Directory. \n"
+               " \n"
+               "Save all playlist files to this \n"
+               "directory.");
+         break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(s, len,
                "Some libretro cores might have \n"
