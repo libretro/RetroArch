@@ -377,10 +377,11 @@ static void mui_render_messagebox(const char *message)
 {
    unsigned i, width, height;
    uint32_t font_normal_color;
-   int x, y, font_size;
+   int x, y, font_size, longest = 0, longest_width = 0;
    settings_t *settings     = config_get_ptr();
    struct string_list *list = (struct string_list*)
       string_split(message, "\n");
+   void *fb_buf;
 
    if (!list)
       return;
@@ -396,13 +397,28 @@ static void mui_render_messagebox(const char *message)
 
    font_normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
 
+   fb_buf = menu_display_get_font_buffer();
+
+   /* find the longest line width */
+   for (i = 0; i < list->size; i++)
+   {
+      const char *msg = list->elems[i].data;
+      int len = strlen(msg);
+      if (len > longest)
+      {
+         longest = len;
+         longest_width = font_driver_get_message_width(fb_buf, msg, len, 1);
+      }
+   }
+
+   /* print each line */
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         mui_draw_text(x, y + i * font_size,
+         mui_draw_text(x - longest_width/2.0, y + i * font_size,
                width, height,
-               msg, font_normal_color, TEXT_ALIGN_CENTER);
+               msg, font_normal_color, TEXT_ALIGN_LEFT);
    }
 
 end:
