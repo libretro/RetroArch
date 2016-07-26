@@ -204,6 +204,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
+         snprintf(s, len,
+               "Libretro core. \n"
+               " \n"
+               "Select this file in order to load it.");
+         break;
       case MENU_ENUM_LABEL_CACHE_DIRECTORY:
          snprintf(s, len,
                "Cache Directory. \n"

@@ -3317,6 +3317,7 @@ static int menu_displaylist_parse_cores(
       bool is_dir;
       char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
+      enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
 
       switch (str_list->elems[i].attr.i)
@@ -3364,11 +3365,21 @@ static int menu_displaylist_parse_cores(
       if (file_type == FILE_TYPE_CARCHIVE)
          continue;
 
-      file_type = is_dir ? FILE_TYPE_DIRECTORY : FILE_TYPE_CORE;
+      if (is_dir)
+      {
+         file_type = FILE_TYPE_DIRECTORY;
+         enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+      }
+      else
+      {
+         file_type = FILE_TYPE_CORE;
+         enum_idx  = MENU_ENUM_LABEL_FILE_BROWSER_CORE;
+      }
 
       items_found++;
+
       menu_entries_append_enum(info->list, path, label,
-            MSG_UNKNOWN,
+            enum_idx,
             file_type, 0, 0);
    }
 
