@@ -3609,6 +3609,15 @@ static int menu_displaylist_parse_generic(
 
       switch (file_type)
       {
+         case FILE_TYPE_MOVIE:
+            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN;
+            break;
+         case FILE_TYPE_MUSIC:
+            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN;
+            break;
+         case FILE_TYPE_IMAGEVIEWER:
+            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER;
+            break;
          case FILE_TYPE_DIRECTORY:
             enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
             break;
