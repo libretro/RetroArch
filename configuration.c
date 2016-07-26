@@ -3169,6 +3169,12 @@ bool config_active_core_path_is_empty(void)
    return !settings->path.libretro[0];
 }
 
+size_t config_get_active_core_path_size(void)
+{
+   settings_t *settings        = config_get_ptr();
+   return sizeof(settings->path.libretro);
+}
+
 void config_set_active_core_path(const char *path)
 {
    settings_t *settings        = config_get_ptr();

@@ -655,6 +655,8 @@ void config_clear_active_core_path(void);
 
 bool config_active_core_path_is_empty(void);
 
+size_t config_get_active_core_path_size(void);
+
 void config_free_state(void);
 
 settings_t *config_get_ptr(void);
