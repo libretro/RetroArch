@@ -60,12 +60,6 @@
 #define OSInitCond(cond) LWP_CondInit(cond)
 #endif
 
-#if 0
-#ifndef OSSignalCond
-#define OSSignalCond(cond) LWP_ThreadSignal(cond)
-#endif
-#endif
-
 #ifndef OSWaitCond
 #define OSWaitCond(cond, mutex) LWP_CondWait(cond, mutex)
 #endif
@@ -80,10 +74,6 @@
 
 #ifndef OSJoinThread
 #define OSJoinThread(thread, val) LWP_JoinThread(thread, val)
-#endif
-
-#ifndef OSSignalCond
-#define OSSignalCond(thread) LWP_CondSignal(thread)
 #endif
 
 #ifndef OSCreateThread
@@ -177,8 +167,7 @@ static INLINE int pthread_cond_init(pthread_cond_t *cond,
 
 static INLINE int pthread_cond_signal(pthread_cond_t *cond)
 {
-   OSSignalCond(*cond);
-   return 0;
+   return LWP_CondSignal(*cond);
 }
 
 static INLINE int pthread_cond_broadcast(pthread_cond_t *cond)
