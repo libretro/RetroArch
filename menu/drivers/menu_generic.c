@@ -269,6 +269,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    size_t selection;
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
+   unsigned file_type             = 0;
    const char *label              = NULL;
    int ret                        = 0;
    uint32_t hash                  = 0;
@@ -277,7 +278,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
 
-   menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
+   menu_entries_get_last_stack(NULL, &label, &file_type, &enum_idx, NULL);
 
    if (!menu)
       return 0;
@@ -334,6 +335,50 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 #if 0
                RARCH_LOG("enum: %s\n", msg_hash_to_str(cbs->enum_idx));
 #endif
+            }
+            else
+            {
+               unsigned type = 0;
+               enum msg_hash_enums enum_idx = MSG_UNKNOWN;
+               menu_entries_get_at_offset(selection_buf, selection,
+                     NULL, NULL, &type, NULL, NULL);
+
+#if 0
+               RARCH_LOG("file_type: %d\n", type);
+#endif
+
+               switch (type)
+               {
+                  case FILE_TYPE_FONT:                   /* TODO/FIXME */
+                  case FILE_TYPE_CHEAT:                  /* TODO/FIXME */
+                  case FILE_TYPE_OVERLAY:                /* TODO/FIXME */
+                  case FILE_TYPE_RECORD_CONFIG:          /* TODO/FIXME */
+                  case FILE_TYPE_CURSOR:                 /* TODO/FIXME */
+                  case FILE_TYPE_VIDEOFILTER:            /* TODO/FIXME */
+                  case FILE_TYPE_AUDIOFILTER:            /* TODO/FIXME */
+                  case FILE_TYPE_REMAP:                  /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_PRESET:          /* TODO/FIXME */
+                  case FILE_TYPE_SHADER:                 /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_SLANG:           /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_GLSL:            /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_HLSL:            /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_CG:              /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_PRESET_GLSLP:    /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_PRESET_HLSLP:    /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_PRESET_CGP:      /* TODO/FIXME */
+                  case FILE_TYPE_SHADER_PRESET_SLANGP:   /* TODO/FIXME */
+                  case FILE_TYPE_RDB:                    /* TODO/FIXME */
+                  case FILE_TYPE_PLAIN:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE;
+                     break;
+                  default:
+                     break;
+               }
+
+               if (enum_idx != MSG_UNKNOWN)
+                  ret = menu_hash_get_help_enum(enum_idx, 
+                        menu->menu_state.msg, sizeof(menu->menu_state.msg));
+
             }
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
