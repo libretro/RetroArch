@@ -373,10 +373,10 @@ static void mui_get_message(void *data, const char *message)
    strlcpy(mui->box_message, message, sizeof(mui->box_message));
 }
 
-static void mui_render_messagebox(const char *message)
+static void mui_render_messagebox(mui_handle_t *mui,
+      const char *message, float *body_bg_color, uint32_t font_normal_color)
 {
    unsigned i, width, height;
-   uint32_t font_normal_color;
    int x, y, font_size, longest = 0, longest_width = 0;
    settings_t *settings     = config_get_ptr();
    struct string_list *list = (struct string_list*)
@@ -395,8 +395,6 @@ static void mui_render_messagebox(const char *message)
    x = width  / 2;
    y = height / 2 - (list->size-1) * font_size / 2;
 
-   font_normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
-
    fb_buf = menu_display_get_font_buffer();
 
    /* find the longest line width */
@@ -410,6 +408,15 @@ static void mui_render_messagebox(const char *message)
          longest_width = font_driver_get_message_width(fb_buf, msg, len, 1);
       }
    }
+
+   mui_render_quad(mui,
+         x - longest_width/2.0 - mui->margin,
+         y - font_size/2.0 - mui->margin,
+         longest_width + mui->margin*2.0,
+         font_size * list->size + mui->margin*2.0,
+         width,
+         height,
+         &body_bg_color[0]);
 
    /* print each line */
    for (i = 0; i < list->size; i++)
@@ -1199,13 +1206,13 @@ static void mui_frame(void *data)
          str = "";
       mui_render_quad(mui, 0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      mui_render_messagebox(msg);
+      mui_render_messagebox(mui, msg, &body_bg_color[0], font_normal_color);
    }
 
    if (!string_is_empty(mui->box_message))
    {
       mui_render_quad(mui, 0, 0, width, height, width, height, &black_bg[0]);
-      mui_render_messagebox(mui->box_message);
+      mui_render_messagebox(mui, mui->box_message, &body_bg_color[0], font_normal_color);
       mui->box_message[0] = '\0';
    }
 
