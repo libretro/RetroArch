@@ -6770,6 +6770,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE);
 #endif
 
+#if 0
          /* These colors are hints. The menu driver is not required to use them. */
          CONFIG_HEX(
                list, list_info,
@@ -6815,6 +6816,7 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_TITLE_COLOR);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
 
