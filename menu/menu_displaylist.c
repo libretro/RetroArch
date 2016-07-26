@@ -3317,7 +3317,6 @@ static int menu_displaylist_parse_cores(
       bool is_dir;
       char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
-      enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
 
       switch (str_list->elems[i].attr.i)
@@ -3369,7 +3368,7 @@ static int menu_displaylist_parse_cores(
 
       items_found++;
       menu_entries_append_enum(info->list, path, label,
-            enum_idx,
+            MSG_UNKNOWN,
             file_type, 0, 0);
    }
 
@@ -5683,7 +5682,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_CORES:
-      case DISPLAYLIST_CORES_DETECTED:
          if (menu_displaylist_parse_cores(menu, info, type) == 0)
          {
             info->need_refresh = true;
@@ -5706,6 +5704,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          extensions_honored = true;
          /* fall-through */
       case DISPLAYLIST_DEFAULT:
+      case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CONTENT_HISTORY:
          if (menu_displaylist_parse_generic(menu, info, type, extensions_honored) == 0)
          {
