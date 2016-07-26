@@ -393,7 +393,7 @@ static void mui_render_messagebox(const char *message)
    font_size = menu_display_get_font_size();
 
    x = width  / 2;
-   y = height / 2 - list->size * font_size / 2;
+   y = height / 2 - (list->size-1) * font_size / 2;
 
    font_normal_color = FONT_COLOR_ARGB_TO_RGBA(settings->menu.entry_normal_color);
 
