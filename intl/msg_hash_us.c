@@ -214,7 +214,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Libretro core. \n"
                " \n"
-               "Select this file in order to load it.");
+               "Select this file to have RetroArch load this core.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
+         snprintf(s, len,
+               "Directory. \n"
+               " \n"
+               "Select it to open this directory.");
          break;
       case MENU_ENUM_LABEL_CACHE_DIRECTORY:
          snprintf(s, len,
@@ -1393,7 +1399,8 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          snprintf(s, len,
-               "Filter files being shown by supported extensions.");
+               "Filter files being shown by \n"
+               "supported extensions.");
          break;
       case MENU_ENUM_LABEL_NETPLAY_NICKNAME:
          snprintf(s, len,

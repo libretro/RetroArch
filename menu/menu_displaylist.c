@@ -3607,6 +3607,15 @@ static int menu_displaylist_parse_generic(
          }
       }
 
+      switch (file_type)
+      {
+         case FILE_TYPE_DIRECTORY:
+            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+            break;
+         default:
+            break;
+      }
+
       items_found++;
       menu_entries_append_enum(info->list, path, label,
             enum_idx,
