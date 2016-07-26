@@ -3723,9 +3723,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_VIDEOFILTER:
             BIND_ACTION_OK(cbs, action_ok_set_path);
             break;
-#ifdef HAVE_COMPRESSION
          case FILE_TYPE_IN_CARCHIVE:
-#endif
          case FILE_TYPE_PLAIN:
             if (cbs->enum_idx != MSG_UNKNOWN)
             {
