@@ -3317,6 +3317,7 @@ static int menu_displaylist_parse_cores(
       bool is_dir;
       char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
+      enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
 
       switch (str_list->elems[i].attr.i)
@@ -3368,7 +3369,7 @@ static int menu_displaylist_parse_cores(
 
       items_found++;
       menu_entries_append_enum(info->list, path, label,
-            MSG_UNKNOWN,
+            enum_idx,
             file_type, 0, 0);
    }
 
