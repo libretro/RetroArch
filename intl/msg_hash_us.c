@@ -204,6 +204,21 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
+         snprintf(s, len,
+               "Some libretro cores might have \n"
+               "a shutdown feature. \n"
+               " \n"
+               "If this option is left disabled, \n"
+               "selecting the shutdown procedure \n"
+               "would trigger RetroArch being shut \n"
+               "down. \n"
+               " \n"
+               "Enabling this option will load a \n"
+               "dummy core instead so that we remain \n"
+               "inside the menu and RetroArch won't \n"
+               "shutdown.");
+         break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
                "Go back to the parent directory.");
