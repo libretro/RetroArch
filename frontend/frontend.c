@@ -58,7 +58,7 @@ void main_exit(void *args)
 
    frontend_driver_deinit(args);
    frontend_driver_exitspawn(settings->path.libretro,
-         sizeof(settings->path.libretro));
+         config_get_active_core_path_size());
 
    rarch_ctl(RARCH_CTL_DESTROY, NULL);
 

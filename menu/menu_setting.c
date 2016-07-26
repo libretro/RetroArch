@@ -4023,7 +4023,7 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
-               (*list)[list_info->index - 1].size         = sizeof(settings->path.libretro);
+               (*list)[list_info->index - 1].size         = config_get_active_core_path_size();
                (*list)[list_info->index - 1].value.target.string = settings->path.libretro;
                (*list)[list_info->index - 1].values       = ext_name;
                menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_LOAD_CORE);

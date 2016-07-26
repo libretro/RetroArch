@@ -332,7 +332,8 @@ static void load_dynamic_core(void)
    /* Need to use absolute path for this setting. It can be
     * saved to content history, and a relative path would
     * break in that scenario. */
-   path_resolve_realpath(settings->path.libretro, sizeof(settings->path.libretro));
+   path_resolve_realpath(settings->path.libretro,
+         config_get_active_core_path_size());
 
    RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
          config_get_active_core_path());
