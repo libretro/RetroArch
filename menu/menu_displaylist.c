@@ -5423,7 +5423,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   {
                      case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
                         menu_entries_append_enum(info->list, cores_paths->elems[i].data, "",
-                              MSG_UNKNOWN, FILE_TYPE_CORE, 0, 0);
+                              MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+                              FILE_TYPE_CORE, 0, 0);
                         break;
                      default:
                         menu_entries_append_enum(info->list, cores_paths->elems[i].data,
