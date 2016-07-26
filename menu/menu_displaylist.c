@@ -3615,6 +3615,9 @@ static int menu_displaylist_parse_generic(
          case FILE_TYPE_MUSIC:
             enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN;
             break;
+         case FILE_TYPE_IMAGE:
+            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE;
+            break;
          case FILE_TYPE_IMAGEVIEWER:
             enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER;
             break;

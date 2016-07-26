@@ -216,6 +216,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Select it to open this file with the music player.");
          break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE:
+         snprintf(s, len,
+               "Image file.");
+         break;
       case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER:
          snprintf(s, len,
                "Image. \n"
@@ -1902,6 +1906,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "file_browser_movie_open";
       case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER:
          return "file_browser_image_open_with_viewer";
+      case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE:
+         return "file_browser_image";
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE_DETECTED:
          return "file_browser_core_detected";
       case MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
