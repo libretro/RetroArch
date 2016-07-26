@@ -5682,6 +5682,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_CORES:
+      case DISPLAYLIST_CORES_DETECTED:
          if (menu_displaylist_parse_cores(menu, info, type) == 0)
          {
             info->need_refresh = true;
@@ -5704,7 +5705,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          extensions_honored = true;
          /* fall-through */
       case DISPLAYLIST_DEFAULT:
-      case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CONTENT_HISTORY:
          if (menu_displaylist_parse_generic(menu, info, type, extensions_honored) == 0)
          {

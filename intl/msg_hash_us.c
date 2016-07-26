@@ -1851,6 +1851,14 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "deferred_user_interface_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_MENU_FILE_BROWSER_SETTINGS_LIST:
          return "deferred_menu_file_browser_settings_list";
+      case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
+         return "file_browser_directory";
+      case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
+         return "file_browser_plain_file";
+      case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
+         return "file_browser_core";
+      case MENU_ENUM_LABEL_FILE_BROWSER_CORE_DETECTED:
+         return "file_browser_core_detected";
       case MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
          return "deferred_retro_achievements_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST:
