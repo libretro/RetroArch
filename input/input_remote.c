@@ -38,7 +38,8 @@
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
 
-struct message {
+struct remote_message
+{
    int port;
    int device;
    int index;
@@ -159,7 +160,7 @@ void input_remote_free(input_remote_t *handle)
 }
 
 #if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
-static void input_remote_parse_packet(struct message *msg, unsigned user)
+static void input_remote_parse_packet(struct remote_message *msg, unsigned user)
 {
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
 
@@ -232,7 +233,7 @@ void input_remote_poll(input_remote_t *handle)
       if (settings->network_remote_enable_user[user])
       {
 #if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
-         struct message msg;
+         struct remote_message msg;
          ssize_t ret;
          fd_set fds;
 

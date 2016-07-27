@@ -204,6 +204,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_FILE_BROWSER_COMPRESSED_ARCHIVE:
+         snprintf(s, len, "Compressed archive file.");
+         break;
       case MENU_ENUM_LABEL_FILE_BROWSER_RECORD_CONFIG:
          snprintf(s, len, "Recording configuration file.");
          break;
