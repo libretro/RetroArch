@@ -171,6 +171,9 @@ static void input_remote_parse_packet(struct message *msg, unsigned user)
          if (msg->state)
             ol_state->buttons[user] |= 1 << msg->id;
          break;
+      case RETRO_DEVICE_ANALOG:
+         ol_state->analog[msg->index * 2 + msg->id][user] = msg->state;
+         break;
    }
 }
 #endif
@@ -246,7 +249,13 @@ void input_remote_poll(input_remote_t *handle)
             input_remote_parse_packet(&msg, user);
          else if ((ret != -1) || (errno != EAGAIN))
 #endif
+         {
             ol_state->buttons[user] = 0;
+            ol_state->analog[0][user] = 0;
+            ol_state->analog[1][user] = 0;
+            ol_state->analog[2][user] = 0;
+            ol_state->analog[3][user] = 0;
+         }
       }
    }
 }
