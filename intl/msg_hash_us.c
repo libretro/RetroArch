@@ -215,6 +215,14 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Closes the content and unloads it from \n"
                "memory.");
          break;
+      case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
+         snprintf(s, len, "If a state was loaded, will roll it back  \n"
+               "in memory to prior state.");
+         break;
+      case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
+         snprintf(s, len, "If a state was saved, will roll it back  \n"
+               "in memory to prior state.");
+         break;
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          snprintf(s, len, "Create a screenshot. \n"
                " \n"
