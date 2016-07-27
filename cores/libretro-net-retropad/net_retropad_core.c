@@ -341,7 +341,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    retropad_update_input();
 
    /* Combine RetroPad input states into one value */
-   for (i = joypad.id_min; i < joypad.id_max; i++) {
+   for (i = joypad.id_min; i <= joypad.id_max; i++) {
       offset = DESC_OFFSET(&joypad, 0, 0, i);
       if (joypad.value[offset])
          input_state |= 1 << i;
