@@ -210,6 +210,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_FILE_BROWSER_CURSOR:
          snprintf(s, len, "Database cursor file.");
          break;
+      case MENU_ENUM_LABEL_FILE_CONFIG:
+         snprintf(s, len, "Configuration file.");
+         break;
       case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
          snprintf(s, len,
                "Select this to scan the current directory \n"

@@ -376,6 +376,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                   case FILE_TYPE_CURSOR:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CURSOR;
                      break;
+                  case FILE_TYPE_CONFIG:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CONFIG;
+                     break;
                   case FILE_TYPE_VIDEOFILTER:            /* TODO/FIXME */
                   case FILE_TYPE_AUDIOFILTER:            /* TODO/FIXME */
                   case FILE_TYPE_SHADER_SLANG:           /* TODO/FIXME */
