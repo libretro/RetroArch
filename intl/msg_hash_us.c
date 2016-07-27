@@ -250,6 +250,30 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Go back to the parent directory.");
          break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
+         snprintf(s, len,
+               "Shader preset file.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_SHADER:
+         snprintf(s, len,
+               "Shader file.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_CHEAT:
+         snprintf(s, len,
+               "Cheat file.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY:
+         snprintf(s, len,
+               "Overlay file.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_RDB:
+         snprintf(s, len,
+               "Database file.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_FONT:
+         snprintf(s, len,
+               "TrueType font file.");
+         break;
       case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
          snprintf(s, len,
                "Plain file.");

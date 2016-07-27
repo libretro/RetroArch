@@ -276,7 +276,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    menu_handle_t *menu            = (menu_handle_t*)data;
    file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
 
    menu_entries_get_last_stack(NULL, &label, &file_type, &enum_idx, NULL);
 
@@ -325,7 +324,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          break;
       case ITERATE_TYPE_INFO:
          {
-            menu_file_list_cbs_t *cbs = 
+            file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+            menu_file_list_cbs_t *cbs  = 
                menu_entries_get_actiondata_at_offset(selection_buf, selection);
 
             if (cbs->enum_idx != MSG_UNKNOWN)
@@ -349,16 +349,29 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
                switch (type)
                {
-                  case FILE_TYPE_FONT:                   /* TODO/FIXME */
-                  case FILE_TYPE_CHEAT:                  /* TODO/FIXME */
-                  case FILE_TYPE_OVERLAY:                /* TODO/FIXME */
+                  case FILE_TYPE_FONT:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_FONT;
+                     break;
+                  case FILE_TYPE_RDB:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_RDB;
+                     break;
+                  case FILE_TYPE_OVERLAY:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY;
+                     break;
+                  case FILE_TYPE_CHEAT:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_CHEAT;
+                     break;
+                  case FILE_TYPE_SHADER_PRESET:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET;
+                     break;
+                  case FILE_TYPE_SHADER:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_SHADER;
+                     break;
                   case FILE_TYPE_RECORD_CONFIG:          /* TODO/FIXME */
                   case FILE_TYPE_CURSOR:                 /* TODO/FIXME */
                   case FILE_TYPE_VIDEOFILTER:            /* TODO/FIXME */
                   case FILE_TYPE_AUDIOFILTER:            /* TODO/FIXME */
                   case FILE_TYPE_REMAP:                  /* TODO/FIXME */
-                  case FILE_TYPE_SHADER_PRESET:          /* TODO/FIXME */
-                  case FILE_TYPE_SHADER:                 /* TODO/FIXME */
                   case FILE_TYPE_SHADER_SLANG:           /* TODO/FIXME */
                   case FILE_TYPE_SHADER_GLSL:            /* TODO/FIXME */
                   case FILE_TYPE_SHADER_HLSL:            /* TODO/FIXME */
@@ -367,7 +380,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                   case FILE_TYPE_SHADER_PRESET_HLSLP:    /* TODO/FIXME */
                   case FILE_TYPE_SHADER_PRESET_CGP:      /* TODO/FIXME */
                   case FILE_TYPE_SHADER_PRESET_SLANGP:   /* TODO/FIXME */
-                  case FILE_TYPE_RDB:                    /* TODO/FIXME */
                   case FILE_TYPE_PLAIN:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE;
                      break;
