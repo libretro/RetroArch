@@ -198,8 +198,8 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
  *
  * Save a shader preset to disk.
  **/
-void menu_shader_manager_save_preset(
-      const char *basename, bool apply)
+bool menu_shader_manager_save_preset(
+      const char *basename, bool apply, bool fullpath)
 {
 #ifdef HAVE_SHADER_MANAGER
    char buffer[PATH_MAX_LENGTH]           = {0};
@@ -218,19 +218,19 @@ void menu_shader_manager_save_preset(
    {
       RARCH_ERR("Cannot save shader preset, menu handle"
             " is not initialized.\n");
-      return;
+      return false;
    }
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);
 
    if (!shader)
-      return;
+      return false;
 
    type = menu_shader_manager_get_type(shader);
 
    if (type == RARCH_SHADER_NONE)
-      return;
+      return false;
 
    *config_directory = '\0';
 
@@ -290,38 +290,63 @@ void menu_shader_manager_save_preset(
             global->path.config,
             sizeof(config_directory));
 
-   dirs[0] = settings->directory.video_shader;
-   dirs[1] = settings->directory.menu_config;
-   dirs[2] = config_directory;
+   if (!fullpath)
+   {
+      dirs[0] = settings->directory.video_shader;
+      dirs[1] = settings->directory.menu_config;
+      dirs[2] = config_directory;
+   }
 
    if (!(conf = (config_file_t*)config_file_new(NULL)))
-      return;
+      return false;
    video_shader_write_conf_cgp(conf, shader);
 
-   for (d = 0; d < ARRAY_SIZE(dirs); d++)
+   if (!fullpath)
    {
-      if (!*dirs[d])
-         continue;
-
-      fill_pathname_join(preset_path, dirs[d],
-            buffer, sizeof(preset_path));
-
-      if (config_file_write(conf, preset_path))
+      for (d = 0; d < ARRAY_SIZE(dirs); d++)
       {
-         RARCH_LOG("Saved shader preset to %s.\n", preset_path);
-         if (apply)
-            menu_shader_manager_set_preset(NULL, type, preset_path);
-         ret = true;
-         break;
+         if (!*dirs[d])
+            continue;
+
+         fill_pathname_join(preset_path, dirs[d],
+               buffer, sizeof(preset_path));
+
+         if (config_file_write(conf, preset_path))
+         {
+            RARCH_LOG("Saved shader preset to %s.\n", preset_path);
+            if (apply)
+               menu_shader_manager_set_preset(NULL, type, preset_path);
+            ret = true;
+            break;
+         }
+         else
+            RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
       }
-      else
-         RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
+   }
+   else
+   {
+      if (!string_is_empty(basename))
+         strlcpy(preset_path, buffer, sizeof(preset_path));
+         if (config_file_write(conf, preset_path))
+         {
+            RARCH_LOG("Saved shader preset to %s.\n", preset_path);
+            if (apply)
+               menu_shader_manager_set_preset(NULL, type, preset_path);
+            ret = true;
+         }
+         else
+            RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
    }
 
    config_file_free(conf);
    if (!ret)
+   {
       RARCH_ERR("Failed to save shader preset. Make sure config directory"
             " and/or shader dir are writable.\n");
+      return false;
+   }
+   else
+      return true;
 #endif
 }
 
@@ -390,7 +415,7 @@ void menu_shader_manager_apply_changes(void)
 
    if (shader->passes && shader_type != RARCH_SHADER_NONE)
    {
-      menu_shader_manager_save_preset(NULL, true);
+      menu_shader_manager_save_preset(NULL, true, false);
       return;
    }
 

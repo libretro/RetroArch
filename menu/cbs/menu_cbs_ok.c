@@ -1487,7 +1487,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
          menu_setting_generic(setting, false);
       }
       else if (!string_is_empty(label))
-         menu_shader_manager_save_preset(str, false);
+         menu_shader_manager_save_preset(str, false, false);
    }
 
    menu_input_key_end_line();
@@ -1507,6 +1507,86 @@ static int action_ok_shader_preset_save_as(const char *path,
    if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
       return -1;
    return 0;
+}
+
+enum
+{
+   ACTION_OK_SHADER_PRESET_SAVE_CORE = 0,
+   ACTION_OK_SHADER_PRESET_SAVE_GAME
+};
+
+static int generic_action_ok_shader_preset_save(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx,
+      unsigned action_type)
+{
+   char directory[PATH_MAX_LENGTH] = {0};
+   char file[PATH_MAX_LENGTH]      = {0};
+   char tmp[PATH_MAX_LENGTH]       = {0};
+   settings_t *settings            = config_get_ptr();
+   rarch_system_info_t *info       = NULL;
+   const char *core_name           = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+
+   if (info)
+      core_name           = info->info.library_name;
+
+   if (!string_is_empty(core_name))
+   {
+      fill_pathname_join(
+            tmp,
+            settings->directory.video_shader,
+            "presets",
+            sizeof(tmp));
+      fill_pathname_join(
+            directory,
+            tmp,
+            core_name,
+            sizeof(directory));
+   }
+   if(!path_file_exists(directory))
+       path_mkdir(directory);
+
+   switch (action_type)
+   {
+      case ACTION_OK_SHADER_PRESET_SAVE_CORE:
+         fill_pathname_join(file, directory, core_name, sizeof(file));
+         break;
+      case ACTION_OK_SHADER_PRESET_SAVE_GAME:
+         {
+            global_t *global      = global_get_ptr();
+            const char *game_name = path_basename(global->name.base);
+            fill_pathname_join(file, directory, game_name, sizeof(file));
+         }
+         break;
+   }
+
+
+
+   if(menu_shader_manager_save_preset(file, false, true))
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
+            1, 100, true);
+   else
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
+            1, 100, true);
+
+   return 0;
+}
+
+static int action_ok_shader_preset_save_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_save(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_CORE);
+}
+
+static int action_ok_shader_preset_save_game(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_shader_preset_save(path, label, type,
+         idx, entry_idx, ACTION_OK_SHADER_PRESET_SAVE_GAME);
 }
 
 static void menu_input_st_string_cb_cheat_file_save_as(
@@ -3351,6 +3431,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_shader_preset_save_as);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_GAME:
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_game);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_CORE:
+            BIND_ACTION_OK(cbs, action_ok_shader_preset_save_core);
             break;
          case MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS:
             BIND_ACTION_OK(cbs, action_ok_cheat_file_save_as);
