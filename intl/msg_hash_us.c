@@ -4007,7 +4007,11 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO:
          return "Shader Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
-         return "Shader Preset Save As";
+         return "Save Shader Preset As";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE:
+         return "Save Core Preset";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME:
+         return "Save Game Preset";
       case MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS:
          return "No shader parameters.";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET:
