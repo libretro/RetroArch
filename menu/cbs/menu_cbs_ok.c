@@ -1475,6 +1475,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
    {
       rarch_setting_t         *setting = NULL;
       const char                *label = NULL;
+      bool                         ret = false;
 
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
 
@@ -1487,7 +1488,16 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
          menu_setting_generic(setting, false);
       }
       else if (!string_is_empty(label))
-         menu_shader_manager_save_preset(str, false, false);
+         ret = menu_shader_manager_save_preset(str, false, false);
+
+      if(ret)
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
+               1, 100, true);
+      else
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
+               1, 100, true);
    }
 
    menu_input_key_end_line();
