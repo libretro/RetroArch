@@ -204,6 +204,23 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_RESUME_CONTENT:
+         snprintf(s, len, "Exits from the menu and returns back \n"
+               "to the content.");
+         break;
+      case MENU_ENUM_LABEL_RESTART_CONTENT:
+         snprintf(s, len, "Restarts the content from the beginning.");
+         break;
+      case MENU_ENUM_LABEL_CLOSE_CONTENT:
+         snprintf(s, len, "Closes the content and unloads it from \n"
+               "memory.");
+         break;
+      case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
+         snprintf(s, len, "Create a screenshot. \n"
+               " \n"
+               "The screenshot will be stored inside the \n"
+               "Screenshot Directory.");
+         break;
       case MENU_ENUM_LABEL_RUN:
          snprintf(s, len, "Start the content.");
          break;
