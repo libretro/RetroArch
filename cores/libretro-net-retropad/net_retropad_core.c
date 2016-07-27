@@ -94,8 +94,19 @@ static struct descriptor joypad = {
    .id_max = RETRO_DEVICE_ID_JOYPAD_R3
 };
 
+static struct descriptor analog = {
+   .device = RETRO_DEVICE_ANALOG,
+   .port_min = 0,
+   .port_max = 0,
+   .index_min = RETRO_DEVICE_INDEX_ANALOG_LEFT,
+   .index_max = RETRO_DEVICE_INDEX_ANALOG_RIGHT,
+   .id_min = RETRO_DEVICE_ID_ANALOG_X,
+   .id_max = RETRO_DEVICE_ID_ANALOG_Y
+};
+
 static struct descriptor *descriptors[] = {
-   &joypad
+   &joypad,
+   &analog
 };
 
 void NETRETROPAD_CORE_PREFIX(retro_init)(void)
