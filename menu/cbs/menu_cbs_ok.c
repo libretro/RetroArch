@@ -1565,11 +1565,11 @@ static int generic_action_ok_shader_preset_save(const char *path,
 
    if(menu_shader_manager_save_preset(file, false, true))
       runloop_msg_queue_push(
-            msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
+            msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
             1, 100, true);
    else
       runloop_msg_queue_push(
-            msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
+            msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
             1, 100, true);
 
    return 0;

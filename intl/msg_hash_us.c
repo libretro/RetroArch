@@ -2934,8 +2934,12 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Several patches are explicitly defined, ignoring all...";
       case MSG_REMAP_FILE_SAVED_SUCCESSFULLY:
          return "Remap file saved successfully.";
+      case MSG_SHADER_PRESET_SAVED_SUCCESSFULLY:
+         return "Shader preset saved successfully.";
       case MSG_ERROR_SAVING_REMAP_FILE:
          return "Error saving remap file.";
+      case MSG_ERROR_SAVING_SHADER_PRESET:
+         return "Error saving shader preset.";
       case MSG_INPUT_CHEAT_FILENAME:
          return "Cheat Filename";
       case MSG_INPUT_PRESET_FILENAME:
