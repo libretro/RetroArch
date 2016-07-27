@@ -38,6 +38,14 @@
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
 
+struct message {
+   int port;
+   int device;
+   int index;
+   int id;
+   uint16_t state;
+};
+
 struct input_remote
 {
 
@@ -151,11 +159,19 @@ void input_remote_free(input_remote_t *handle)
 }
 
 #if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
-static void input_remote_parse_packet(char *buffer, unsigned size, unsigned user)
+static void input_remote_parse_packet(struct message *msg, unsigned user)
 {
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
-   /* todo implement parsing of input_state from the packet */
-   ol_state->buttons[user] = atoi(buffer);
+
+   /* Parse message */
+   switch (msg->device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+         ol_state->buttons[user] &= ~(1 << msg->id);
+         if (msg->state)
+            ol_state->buttons[user] |= 1 << msg->id;
+         break;
+   }
 }
 #endif
 
@@ -213,7 +229,7 @@ void input_remote_poll(input_remote_t *handle)
       if (settings->network_remote_enable_user[user])
       {
 #if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
-         char buf[8];
+         struct message msg;
          ssize_t ret;
          fd_set fds;
 
@@ -223,12 +239,12 @@ void input_remote_poll(input_remote_t *handle)
          FD_ZERO(&fds);
          FD_SET(handle->net_fd[user], &fds);
 
-         ret = recvfrom(handle->net_fd[user], buf,
-               sizeof(buf) - 1, 0, NULL, NULL);
+         ret = recvfrom(handle->net_fd[user], &msg,
+               sizeof(msg), 0, NULL, NULL);
 
-         if (ret > 0)
-            input_remote_parse_packet(buf, sizeof(buf), user);
-         else
+         if (ret == sizeof(msg))
+            input_remote_parse_packet(&msg, user);
+         else if ((ret != -1) || (errno != EAGAIN))
 #endif
             ol_state->buttons[user] = 0;
       }
