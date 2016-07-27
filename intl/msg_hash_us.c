@@ -204,6 +204,15 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
+         snprintf(s, len,
+               "Select this to scan the current directory \n"
+               "for content.");
+         break;
+      case MENU_ENUM_LABEL_USE_THIS_DIRECTORY:
+         snprintf(s, len,
+               "Select this to set this as the directory.");
+         break;
       case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
          snprintf(s, len,
                "Content Database Directory. \n"
@@ -257,6 +266,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_FILE_BROWSER_SHADER:
          snprintf(s, len,
                "Shader file.");
+         break;
+      case MENU_ENUM_LABEL_FILE_BROWSER_REMAP:
+         snprintf(s, len,
+               "Remap controls file.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CHEAT:
          snprintf(s, len,
@@ -1974,6 +1987,12 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "file_browser_directory";
       case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
          return "file_browser_plain_file";
+      case MENU_ENUM_LABEL_FILE_BROWSER_REMAP:
+         return "file_browser_remap";
+      case MENU_ENUM_LABEL_FILE_BROWSER_SHADER:
+         return "file_browser_shader";
+      case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
+         return "file_browser_shader_preset";
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
          return "file_browser_core";
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
