@@ -1711,7 +1711,7 @@ static int action_ok_start_video_processor_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_file_load(NULL, NULL,
-         CORE_TYPE_FFMPEG,
+         CORE_TYPE_VIDEO_PROCESSOR,
          CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU);
 }
 
