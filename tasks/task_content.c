@@ -1901,8 +1901,8 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
 #ifdef HAVE_VIDEO_PROCESSOR
          retroarch_set_current_core_type(CORE_TYPE_VIDEO_PROCESSOR, true);
-#endif
          break;
+#endif
       default:
          break;
    }
