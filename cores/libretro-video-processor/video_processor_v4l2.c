@@ -102,7 +102,7 @@ static void audio_callback(void)
             audio_data, sizeof(audio_data) / 4);
 
 		for (frame = 0, i = 0; frame < frames; frame++, i += 2)
-			audio_sample_cb(audio_data[i+0], audio_data[i+1]);
+			VIDEOPROC_CORE_PREFIX(audio_sample_cb)(audio_data[i+0], audio_data[i+1]);
 	}
 }
 
