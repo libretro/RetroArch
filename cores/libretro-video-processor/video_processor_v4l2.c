@@ -95,15 +95,13 @@ static retro_input_state_t VIDEOPROC_CORE_PREFIX(input_state_cb);
 static void audio_callback(void)
 {
 	int16_t audio_data[128];
-	int i, frame;
 
 	if (audio_handle)
    {
 		const int frames = snd_pcm_readi(audio_handle,
             audio_data, sizeof(audio_data) / 4);
 
-		for (frame = 0, i = 0; frame < frames; frame++, i += 2)
-			VIDEOPROC_CORE_PREFIX(audio_sample_cb)(audio_data[i+0], audio_data[i+1]);
+		VIDEOPROC_CORE_PREFIX(audio_sample_batch_cb)(audio_data, frames);
 	}
 }
 
