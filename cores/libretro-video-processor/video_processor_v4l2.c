@@ -45,6 +45,7 @@
 
 #ifdef RARCH_INTERNAL
 #include "internal_cores.h"
+#include "../../config.h"
 #define VIDEOPROC_CORE_PREFIX(s) libretro_videoprocessor_##s
 #else
 #define VIDEOPROC_CORE_PREFIX(s) s
