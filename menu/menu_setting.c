@@ -3988,6 +3988,17 @@ static bool setting_append_list(
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_START_CORE);
 
+#if defined(HAVE_VIDEO_PROCESSOR)
+         CONFIG_ACTION(
+               list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_START_VIDEO_PROCESSOR);
+#endif
+
 #if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
          CONFIG_ACTION(
                list, list_info,

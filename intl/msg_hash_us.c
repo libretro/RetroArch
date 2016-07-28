@@ -2692,6 +2692,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "take_screenshot";
       case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
          return "core_updater_list";
+      case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
+         return "menu_start_video_processor";
       case MENU_ENUM_LABEL_START_NET_RETROPAD:
          return "menu_start_net_retropad";
       case MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST:
@@ -3296,6 +3298,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Unlocked Achievements:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
          return "Locked Achievements:";
+      case MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR:
+         return "Start Video Processor";
       case MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD:
          return "Start Remote RetroPad";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:

@@ -1707,6 +1707,14 @@ static int action_ok_start_net_retropad_core(const char *path,
          CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU);
 }
 
+static int action_ok_start_video_processor_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_file_load(NULL, NULL,
+         CORE_TYPE_FFMPEG,
+         CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU);
+}
+
 #ifdef HAVE_FFMPEG
 static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -3155,6 +3163,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_START_NET_RETROPAD:
             BIND_ACTION_OK(cbs, action_ok_start_net_retropad_core);
+            break;
+         case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
+            BIND_ACTION_OK(cbs, action_ok_start_video_processor_core);
             break;
          case MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE:
             BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);

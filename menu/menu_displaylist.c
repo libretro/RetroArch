@@ -4202,6 +4202,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      MENU_ENUM_LABEL_START_CORE, PARSE_ACTION, false);
 
             menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_START_VIDEO_PROCESSOR, PARSE_ACTION, false);
+
+            menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_START_NET_RETROPAD, PARSE_ACTION, false);
 
 #ifndef HAVE_DYNAMIC

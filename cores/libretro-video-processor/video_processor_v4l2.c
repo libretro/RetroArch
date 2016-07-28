@@ -434,9 +434,9 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_info)(struct retro_system_
 {
 	info->library_name = LIBRARY_NAME;
 	info->library_version = LIBRARY_VERSION;
-	info->valid_extensions = "";
-	info->need_fullpath = true;
-	info->block_extract = true;
+   info->valid_extensions = NULL; /* Anything is fine, we don't care. */
+	info->need_fullpath    = false;
+	info->block_extract    = true;
 }
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)

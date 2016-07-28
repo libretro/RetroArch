@@ -549,7 +549,7 @@ static void load_symbols(enum rarch_core_type type, struct retro_core_t *current
          SYMBOL_NETRETROPAD(retro_get_memory_size);
 #endif
          break;
-      case CORE_TYPE_VIDEOPROCESSOR:
+      case CORE_TYPE_VIDEO_PROCESSOR:
 #if defined(HAVE_VIDEO_PROCESSOR)
          SYMBOL_VIDEOPROCESSOR(retro_init);
          SYMBOL_VIDEOPROCESSOR(retro_deinit);
