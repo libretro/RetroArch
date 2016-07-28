@@ -1027,11 +1027,13 @@ ifeq ($(HAVE_ZLIB_DEFLATE),1)
 DEFINES += -DHAVE_ZLIB_DEFLATE
 endif
 
-# Camera
+# Video4Linux 2 
 
 ifeq ($(HAVE_V4L2),1)
-   OBJ += camera/drivers/video4linux2.o
+   OBJ += camera/drivers/video4linux2.o \
+			 cores/libretro-video-processor/video_processor_v4l2.o
    DEFINES += -DHAVE_V4L2
+   LIBS += $(V4L2_LIBS)
 endif
 
 # Things that depend on network availability
