@@ -81,7 +81,7 @@ static dylib_t lib_handle;
 #define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
 #endif
 
-#if defined(HAVE_V4L2)
+#if defined(HAVE_VIDEO_PROCESSOR)
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
@@ -550,7 +550,7 @@ static void load_symbols(enum rarch_core_type type, struct retro_core_t *current
 #endif
          break;
       case CORE_TYPE_VIDEOPROCESSOR:
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_VIDEO_PROCESSOR)
          SYMBOL_VIDEOPROCESSOR(retro_init);
          SYMBOL_VIDEOPROCESSOR(retro_deinit);
 

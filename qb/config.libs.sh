@@ -445,6 +445,10 @@ if [ "$HAVE_THREADS" = 'no' ] && [ "HAVE_LIBUSB" != 'no' ]; then
    echo "Notice: Threads are not available, libusb will also be disabled."
 fi
 
+if [ "$HAVE_V4L2" != 'no' ]; then
+   HAVE_VIDEO_PROCESSOR=yes
+fi
+
 # Creates config.mk and config.h.
 add_define_make GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
 VARS=$(eval set | grep ^HAVE_ | sed s/=.*// | sed s/^HAVE_//)
