@@ -684,14 +684,12 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
 {
-	enum v4l2_buf_type type;
-	uint32_t index;
-	int error;
 
 	if (video_fd != -1)
    {
-		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		error = v4l2_ioctl(video_fd, VIDIOC_STREAMOFF, &type);
+      uint32_t index;
+      enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		int               error = v4l2_ioctl(video_fd, VIDIOC_STREAMOFF, &type);
 		if (error != 0)
 			printf("VIDIOC_STREAMOFF failed: %s\n", strerror(errno));
 
@@ -699,7 +697,8 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_unload_game)(void)
 			v4l2_munmap(video_buffer[index].start, video_buffer[index].len);
 	}
 	
-	free(conv_data);
+   if (conv_data)
+      free(conv_data);
 	conv_data = NULL;
 
 	close_devices();
