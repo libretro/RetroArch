@@ -378,7 +378,6 @@ static void mui_render_messagebox(mui_handle_t *mui,
 {
    unsigned i, width, height;
    int x, y, font_size, longest = 0, longest_width = 0;
-   settings_t *settings     = config_get_ptr();
    struct string_list *list = (struct string_list*)
       string_split(message, "\n");
    void *fb_buf;
