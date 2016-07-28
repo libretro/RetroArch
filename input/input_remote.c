@@ -248,7 +248,7 @@ void input_remote_poll(input_remote_t *handle)
 
          if (ret == sizeof(msg))
             input_remote_parse_packet(&msg, user);
-         else if ((ret != -1) || (errno != EAGAIN))
+         else if ((ret != -1) || ((errno != EAGAIN) && (errno != ENOENT))
 #endif
          {
             ol_state->buttons[user] = 0;
