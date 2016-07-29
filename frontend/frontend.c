@@ -40,8 +40,6 @@
  **/
 void main_exit(void *args)
 {
-   settings_t *settings                  = config_get_ptr();
-
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #ifdef HAVE_MENU
@@ -57,7 +55,8 @@ void main_exit(void *args)
 #endif
 
    frontend_driver_deinit(args);
-   frontend_driver_exitspawn(settings->path.libretro,
+   frontend_driver_exitspawn(
+         config_get_active_core_path_ptr(),
          config_get_active_core_path_size());
 
    rarch_ctl(RARCH_CTL_DESTROY, NULL);

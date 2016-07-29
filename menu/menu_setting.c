@@ -4023,7 +4023,7 @@ static bool setting_append_list(
          if (frontend_driver_has_fork())
 #endif
          {
-            char ext_name[PATH_MAX_LENGTH];
+            char ext_name[PATH_MAX_LENGTH] = {0};
 
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
             {
@@ -4035,7 +4035,7 @@ static bool setting_append_list(
                      &subgroup_info,
                      parent_group);
                (*list)[list_info->index - 1].size         = config_get_active_core_path_size();
-               (*list)[list_info->index - 1].value.target.string = settings->path.libretro;
+               (*list)[list_info->index - 1].value.target.string = config_get_active_core_path_ptr();
                (*list)[list_info->index - 1].values       = ext_name;
                menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_LOAD_CORE);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);

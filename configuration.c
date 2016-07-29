@@ -3157,10 +3157,16 @@ bool config_replace(char *path)
    return true;
 }
 
-const char *config_get_active_core_path(void)
+char *config_get_active_core_path_ptr(void)
 {
    settings_t *settings        = config_get_ptr();
    return settings->path.libretro;
+}
+
+const char *config_get_active_core_path(void)
+{
+   const char *core_path = (const char *)config_get_active_core_path_ptr();
+   return core_path;
 }
 
 bool config_active_core_path_is_empty(void)

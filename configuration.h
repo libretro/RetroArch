@@ -649,6 +649,8 @@ const char *config_get_active_path(void);
 
 const char *config_get_active_core_path(void);
 
+char *config_get_active_core_path_ptr(void);
+
 void config_set_active_core_path(const char *path);
 
 void config_clear_active_core_path(void);
