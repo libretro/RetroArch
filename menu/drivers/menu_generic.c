@@ -382,6 +382,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                   case FILE_TYPE_CARCHIVE:
                      enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_COMPRESSED_ARCHIVE;
                      break;
+                  case FILE_TYPE_DIRECTORY:
+                     enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
+                     break;
                   case FILE_TYPE_VIDEOFILTER:            /* TODO/FIXME */
                   case FILE_TYPE_AUDIOFILTER:            /* TODO/FIXME */
                   case FILE_TYPE_SHADER_SLANG:           /* TODO/FIXME */
