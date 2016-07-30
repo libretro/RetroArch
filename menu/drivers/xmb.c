@@ -2684,8 +2684,10 @@ static const char *xmb_texture_path(unsigned id)
       case XMB_TEXTURE_VIDEO:
          return "movies.png";
 #endif
+#ifdef HAVE_IMAGEVIEWER
       case XMB_TEXTURE_IMAGES:
          return "images.png";
+#endif
       case XMB_TEXTURE_SETTING:
          return "setting.png";
       case XMB_TEXTURE_SUBSETTING:
