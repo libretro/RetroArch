@@ -561,6 +561,7 @@ static bool default_block_config_read = false;
 static bool default_game_specific_options = false;
 static bool default_auto_overrides_enable = true;
 static bool default_auto_remaps_enable = true;
+static bool default_auto_shaders_enable = true;
 
 static bool default_sort_savefiles_enable = false;
 static bool default_sort_savestates_enable = false;

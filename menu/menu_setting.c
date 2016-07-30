@@ -4710,6 +4710,22 @@ static bool setting_append_list(
                SD_FLAG_NONE);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE);
 
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->auto_shaders_enable,
+               msg_hash_to_str(MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE),
+               default_auto_shaders_enable,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE);
+
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
          break;

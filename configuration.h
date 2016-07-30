@@ -465,6 +465,7 @@ typedef struct settings
    bool game_specific_options;
    bool auto_overrides_enable;
    bool auto_remaps_enable;
+   bool auto_shaders_enable;
 
    bool sort_savefiles_enable;
    bool sort_savestates_enable;
@@ -616,6 +617,26 @@ bool config_unload_override(void);
  *
  */
 bool config_load_remap(void);
+
+/**
+ * config_load_shader_preset:
+ *
+ * Tries to append game-specific and core-specific shader presets.
+ *
+ * Returns: false if there was an error or no action was performed.
+ *
+ */
+bool config_load_shader_preset(void);
+
+/**
+ * config_unload_shader_preset:
+ *
+ * Restores the original preset that was loaded before a core/game.
+ * preset was loaded
+ *
+ * Returns: false if there was an error.
+ */
+bool config_unload_shader_preset(void);
 
 /**
  * config_save_autoconf_profile:

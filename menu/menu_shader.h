@@ -49,8 +49,8 @@ void menu_shader_manager_set_preset(
  *
  * Save a shader preset to disk.
  **/
-void menu_shader_manager_save_preset(
-      const char *basename, bool apply);
+bool menu_shader_manager_save_preset(
+      const char *basename, bool apply, bool fullpath);
 
 /**
  * menu_shader_manager_get_type:
