@@ -2404,6 +2404,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "fastforward_ratio";
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
          return "auto_remaps_enable";
+      case MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE:
+         return "auto_shaders_enable";
       case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
          return "slowmotion_ratio";
       case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
@@ -3686,6 +3688,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Maximum Run Speed";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Load Remap Files Automatically";
+      case MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE:
+         return "Load Shader Presets Automatically";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
          return "Slow-Motion Ratio";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:

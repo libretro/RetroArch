@@ -782,6 +782,7 @@ static void config_set_defaults(void)
    settings->game_specific_options = default_game_specific_options;
    settings->auto_overrides_enable = default_auto_overrides_enable;
    settings->auto_remaps_enable = default_auto_remaps_enable;
+   settings->auto_shaders_enable = default_auto_shaders_enable;
 
    settings->sort_savefiles_enable = default_sort_savefiles_enable;
    settings->sort_savestates_enable = default_sort_savestates_enable;
@@ -1264,6 +1265,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "game_specific_options",       &settings->game_specific_options},
       { "auto_overrides_enable",       &settings->auto_overrides_enable},
       { "auto_remaps_enable",          &settings->auto_remaps_enable},
+      { "auto_shaders_enable",         &settings->auto_shaders_enable},
       { "sort_savefiles_enable",       &settings->sort_savefiles_enable},
       { "sort_savestates_enable",      &settings->sort_savestates_enable},
       { "config_save_on_exit",         &settings->config_save_on_exit},
@@ -2655,6 +2657,7 @@ bool config_save_file(const char *path)
       { "game_specific_options",        settings->game_specific_options},
       { "auto_overrides_enable",        settings->auto_overrides_enable},
       { "auto_remaps_enable",           settings->auto_remaps_enable},
+      { "auto_shaders_enable",          settings->auto_shaders_enable},
       { "sort_savefiles_enable",        settings->sort_savefiles_enable},
       { "sort_savestates_enable",       settings->sort_savestates_enable},
       { "config_save_on_exit",          settings->config_save_on_exit},
