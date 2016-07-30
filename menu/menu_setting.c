@@ -4227,14 +4227,17 @@ static bool setting_append_list(
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_SETTINGS);
 
-         CONFIG_ACTION(
-               list, list_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_SETTINGS),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS),
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_SETTINGS);
+         if (settings->menu.show_advanced_settings)
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_CORE_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_SETTINGS);
+         }
 
          CONFIG_ACTION(
                list, list_info,
@@ -4254,14 +4257,17 @@ static bool setting_append_list(
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVING_SETTINGS);
 
-         CONFIG_ACTION(
-               list, list_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_LOGGING_SETTINGS),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS),
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOGGING_SETTINGS);
+         if (settings->menu.show_advanced_settings)
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_LOGGING_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOGGING_SETTINGS);
+         }
 
          CONFIG_ACTION(
                list, list_info,
