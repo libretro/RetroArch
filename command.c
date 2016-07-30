@@ -1170,6 +1170,7 @@ static void command_event_deinit_core(bool reinit)
    }
 
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+   command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 }
 
 static void command_event_init_cheats(void)
@@ -1346,6 +1347,11 @@ static bool command_event_init_core(enum rarch_core_type *data)
          runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
+   /* Auto-remap: apply shader preset files */
+   if(settings->auto_shaders_enable)
+      config_load_shader_preset();
+
+
    /* reset video format to libretro's default */
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
 
@@ -1379,6 +1385,22 @@ static void command_event_disable_overrides(void)
       config_unload_override();
       runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
+}
+
+static void command_event_restore_default_shader_preset(void)
+{
+   /* auto shader preset: reload the original shader */
+
+   char *preset = NULL;
+   settings_t *settings = config_get_ptr();
+   if (runloop_ctl(RUNLOOP_CTL_GET_DEFAULT_SHADER_PRESET, &preset) &&
+         !string_is_empty(preset))
+   {
+      RARCH_LOG("Shaders: restoring default shader preset to %s\n",
+            preset);
+      strlcpy(settings->path.shader, preset, sizeof(settings->path.shader));
+   }
+   runloop_ctl(RUNLOOP_CTL_CLEAR_DEFAULT_SHADER_PRESET,  NULL);
 }
 
 static bool command_event_save_auto_state(void)
@@ -1905,6 +1927,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_QUIT:
          command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
          command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+         command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 
          switch (cmd)
          {
@@ -2568,6 +2591,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_DISABLE_OVERRIDES:
          command_event_disable_overrides();
+         break;
+      case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
+         command_event_restore_default_shader_preset();
          break;
       case CMD_EVENT_NONE:
       default:
