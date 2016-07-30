@@ -2230,6 +2230,28 @@ bool config_load_remap(void)
    return false;
 }
 
+static bool check_shader_compatibility(enum file_path_enum enum_idx)
+{
+   settings_t *settings = config_get_ptr();
+   if (!strcmp("vulkan", settings->video.driver))
+   {
+      if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
+         return false;
+      else
+         return true;
+   }
+   if (!strcmp("gl", settings->video.driver) || 
+       !strcmp("d3d9", settings->video.driver))
+   {
+      if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
+         return false;
+      else
+         return true;
+   }
+   else
+      return false;
+}
+
 /**
  * config_load_shader_preset:
  *
@@ -2254,6 +2276,7 @@ bool config_load_shader_preset(void)
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
+   int idx;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -2275,76 +2298,70 @@ bool config_load_shader_preset(void)
 
    RARCH_LOG("Shaders: preset directory: %s\n", shader_directory);
 
-   /* Concatenate strings into full paths for core_path, game_path */
-   fill_pathname_join_special_ext(core_path,
-         shader_directory, core_name,
-         core_name,
-         ".cgp",
-         sizeof(core_path));
-
-   fill_pathname_join_special_ext(game_path,
-         shader_directory, core_name,
-         game_name,
-         ".cgp",
-         sizeof(game_path));
-
-   /* Create a new config file from game_path */
-   new_conf = config_file_new(game_path);
-
-   /* If a game remap file exists, load it. */
-   if (new_conf)
+   for(idx = FILE_PATH_CGP_EXTENSION; idx < FILE_PATH_SLANGP_EXTENSION; idx++)
    {
-      RARCH_LOG("Shaders: game-specific shader preset found at %s.\n", game_path);
-      runloop_ctl(RUNLOOP_CTL_SET_DEFAULT_SHADER_PRESET, settings->path.shader);
-      strlcpy(settings->path.shader, game_path, sizeof(settings->path.shader));
-      return true;
-   }
-   else
-   {
-      RARCH_LOG("Shaders: no game-specific preset found at %s.\n", game_path);
+      if (!check_shader_compatibility(idx))
+         continue;
+      /* Concatenate strings into full paths for core_path, game_path */
+      fill_pathname_join_special_ext(core_path,
+            shader_directory, core_name,
+            core_name,
+            file_path_str(idx),
+            sizeof(core_path));
+
+      fill_pathname_join_special_ext(game_path,
+            shader_directory, core_name,
+            game_name,
+            file_path_str(idx),
+            sizeof(game_path));
+
+      /* Create a new config file from game_path */
+      new_conf = config_file_new(game_path);
+
+      /* If a game shader preset exists, load it. */
+      if (new_conf)
+      {
+         RARCH_LOG("Shaders: game-specific shader preset found at %s.\n", game_path);
+         runloop_ctl(RUNLOOP_CTL_SET_DEFAULT_SHADER_PRESET, settings->path.shader);
+         strlcpy(settings->path.shader, game_path, sizeof(settings->path.shader));
+         return true;
+      }
+      else
+      {
+         RARCH_LOG("Shaders: no game-specific preset found at %s.\n", game_path);
+      }
    }
 
-   /* Create a new config file from core_path */
-   new_conf = config_file_new(core_path);
-
-   /* If a core remap file exists, load it. */
-   if (new_conf)
+   for(idx = FILE_PATH_CGP_EXTENSION; idx < FILE_PATH_SLANGP_EXTENSION; idx++)
    {
-      RARCH_LOG("Shaders: core-specific shader preset found at %s.\n", core_path);
-      runloop_ctl(RUNLOOP_CTL_SET_DEFAULT_SHADER_PRESET, settings->path.shader);
-      strlcpy(settings->path.shader, core_path, sizeof(settings->path.shader));
-      return true;
-   }
-   else
-   {
-      RARCH_LOG("Shaders: no core-specific preset found at %s.\n", core_path);
-   }
-   new_conf = NULL;
+      if (!check_shader_compatibility(idx))
+         continue;
+      /* Concatenate strings into full paths for core_path, game_path */
+      fill_pathname_join_special_ext(core_path,
+            shader_directory, core_name,
+            core_name,
+            file_path_str(idx),
+            sizeof(core_path));
 
+      /* Create a new config file from core_path */
+      new_conf = config_file_new(core_path);
+
+      /* If a core shader preset exists, load it. */
+      if (new_conf)
+      {
+         RARCH_LOG("Shaders: core-specific shader preset found at %s.\n", core_path);
+         runloop_ctl(RUNLOOP_CTL_SET_DEFAULT_SHADER_PRESET, settings->path.shader);
+         strlcpy(settings->path.shader, core_path, sizeof(settings->path.shader));
+         return true;
+      }
+      else
+      {
+         RARCH_LOG("Shaders: no core-specific preset found at %s.\n", core_path);
+      }
+      new_conf = NULL;
+   }
    return false;
 }
-
-/**
- * config_unload_shader_preset:
- *
- * Restores the original preset that was loaded before a core/game.
- * preset was loaded
- *
- * Returns: false if there was an error.
- */
-bool config_unload_shader_preset(void)
-{
-   char *preset = NULL;
-   settings_t *settings = config_get_ptr();
-   if (runloop_ctl(RUNLOOP_CTL_GET_DEFAULT_SHADER_PRESET, &preset) &&
-         preset)
-   {
-      RARCH_WARN("Shaders: restoring default shader preset to %s\n",
-            preset);
-      strlcpy(settings->path.shader, preset, sizeof(settings->path.shader));
-   }
-}
-
 
 static void parse_config_file(void)
 {

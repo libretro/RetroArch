@@ -629,16 +629,6 @@ bool config_load_remap(void);
 bool config_load_shader_preset(void);
 
 /**
- * config_unload_shader_preset:
- *
- * Restores the original preset that was loaded before a core/game.
- * preset was loaded
- *
- * Returns: false if there was an error.
- */
-bool config_unload_shader_preset(void);
-
-/**
  * config_save_autoconf_profile:
  * @path            : Path that shall be written to.
  * @user              : Controller number to save
