@@ -4037,6 +4037,42 @@ void menu_displaylist_reset_filebrowser(void)
    BIT32_CLEAR_ALL(filebrowser_types);
 }
 
+static void menu_displaylist_parse_playlist_history(
+      menu_handle_t *menu,
+      menu_displaylist_info_t *info,
+      playlist_t *playlist, int *ret)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (settings->history_list_enable)
+   {
+      char path_playlist[PATH_MAX_LENGTH] = {0};
+
+      if (!playlist)
+         command_event(CMD_EVENT_HISTORY_INIT, NULL);
+
+      strlcpy(path_playlist, "history", sizeof(path_playlist));
+      *ret = menu_displaylist_parse_playlist(info,
+            playlist, path_playlist, true);
+      strlcpy(
+            menu->db_playlist_file,
+            settings->path.content_history,
+            sizeof(menu->db_playlist_file));
+      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
+      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
+            (void*)menu->db_playlist_file);
+   }
+   else
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE),
+            msg_hash_to_str(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE),
+            MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
+            MENU_INFO_MESSAGE, 0, 0);
+      *ret = 0;
+   }
+}
+
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 {
    size_t i;
@@ -5473,34 +5509,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_HISTORY:
-         if (settings->history_list_enable)
-         {
-            char path_playlist[PATH_MAX_LENGTH] = {0};
-            playlist_t         *playlist        = g_defaults.content_history;
-
-            if (!playlist)
-               command_event(CMD_EVENT_HISTORY_INIT, NULL);
-
-            strlcpy(path_playlist, "history", sizeof(path_playlist));
-            ret = menu_displaylist_parse_playlist(info,
-                  playlist, path_playlist, true);
-            strlcpy(
-                  menu->db_playlist_file,
-                  settings->path.content_history,
-                  sizeof(menu->db_playlist_file));
-            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
-                  (void*)menu->db_playlist_file);
-         }
-         else
-         {
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE),
-                  MENU_ENUM_LABEL_NO_HISTORY_AVAILABLE,
-                  MENU_INFO_MESSAGE, 0, 0);
-            ret = 0;
-         }
+         menu_displaylist_parse_playlist_history(menu, info,
+               g_defaults.content_history, &ret);
 
          if (ret == 0)
          {
