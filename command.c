@@ -1170,6 +1170,7 @@ static void command_event_deinit_core(bool reinit)
    }
 
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+   command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 }
 
 static void command_event_init_cheats(void)
@@ -1384,6 +1385,12 @@ static void command_event_disable_overrides(void)
       config_unload_override();
       runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
+}
+
+static void command_event_restore_default_shader_preset(void)
+{
+   /* auto shader preset: reload the original shader */
+   config_unload_shader_preset();
 }
 
 static bool command_event_save_auto_state(void)
@@ -1910,6 +1917,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_QUIT:
          command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
          command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+         command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 
          switch (cmd)
          {
@@ -2522,6 +2530,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_DISABLE_OVERRIDES:
          command_event_disable_overrides();
+         break;
+      case CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET:
+         command_event_restore_default_shader_preset();
          break;
       case CMD_EVENT_NONE:
       default:
