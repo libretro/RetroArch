@@ -226,6 +226,7 @@ typedef struct gfx_ctx_ident
    const char *ident;
 } gfx_ctx_ident_t;
 
+extern const gfx_ctx_driver_t gfx_ctx_osmesa;
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;

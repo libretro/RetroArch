@@ -270,6 +270,8 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
 
       # fix undefined variables
       PKG_CONF_USED="$PKG_CONF_USED CG"
+
+      check_pkgconf OSMESA osmesa
    else
       echo "Notice: Ignoring Cg. Desktop OpenGL is not enabled."
       HAVE_CG='no'

@@ -732,7 +732,10 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
          LIBS += $(EGL_LIBS)
       endif
    endif
-
+   ifeq ($(HAVE_OSMESA), 1)
+      OBJ += gfx/drivers_context/osmesa_ctx.o
+      LIBS += -lOSMesa
+   endif
 ifeq ($(HAVE_FFMPEG), 1)
 ifneq ($(C89_BUILD), 1)
 ifneq ($(HAVE_GLES), 1)

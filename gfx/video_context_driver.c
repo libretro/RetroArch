@@ -78,6 +78,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && defined(HAVE_OPENGL)
    &gfx_ctx_sdl_gl,
 #endif
+#ifdef HAVE_OSMESA
+   &gfx_ctx_osmesa,
+#endif
 #ifdef EMSCRIPTEN
    &gfx_ctx_emscripten,
 #endif
