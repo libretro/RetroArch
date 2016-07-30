@@ -4040,7 +4040,10 @@ void menu_displaylist_reset_filebrowser(void)
 static void menu_displaylist_parse_playlist_history(
       menu_handle_t *menu,
       menu_displaylist_info_t *info,
-      playlist_t *playlist, int *ret)
+      playlist_t *playlist,
+      const char *playlist_name,
+      const char *playlist_path,
+      int *ret)
 {
    settings_t *settings = config_get_ptr();
 
@@ -4051,12 +4054,12 @@ static void menu_displaylist_parse_playlist_history(
       if (!playlist)
          command_event(CMD_EVENT_HISTORY_INIT, NULL);
 
-      strlcpy(path_playlist, "history", sizeof(path_playlist));
+      strlcpy(path_playlist, playlist_name, sizeof(path_playlist));
       *ret = menu_displaylist_parse_playlist(info,
             playlist, path_playlist, true);
       strlcpy(
             menu->db_playlist_file,
-            settings->path.content_history,
+            playlist_path,
             sizeof(menu->db_playlist_file));
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
@@ -5510,7 +5513,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_HISTORY:
          menu_displaylist_parse_playlist_history(menu, info,
-               g_defaults.content_history, &ret);
+               g_defaults.content_history,
+               "history",
+               settings->path.content_history,
+               &ret);
 
          if (ret == 0)
          {
