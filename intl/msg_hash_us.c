@@ -1872,6 +1872,12 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "add_tab";
       case MENU_ENUM_LABEL_PLAYLISTS_TAB:
          return "playlists_tab";
+      case MENU_ENUM_LABEL_MUSIC_TAB:
+         return "music_tab";
+      case MENU_ENUM_LABEL_VIDEO_TAB:
+         return "video_tab";
+      case MENU_ENUM_LABEL_IMAGES_TAB:
+         return "images_tab";
       case MENU_ENUM_LABEL_HORIZONTAL_MENU:
          return "horizontal_menu";
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
@@ -3422,6 +3428,12 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Ask";
       case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
          return "Privacy";
+      case MENU_ENUM_LABEL_VALUE_MUSIC_TAB:
+         return "Music";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_TAB:
+         return "Video";
+      case MENU_ENUM_LABEL_VALUE_IMAGES_TAB:
+         return "Images";
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
       case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
