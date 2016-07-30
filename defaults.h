@@ -84,7 +84,14 @@ struct defaults
    } settings; 
 
 #ifndef IS_SALAMANDER
-   playlist_t *history;
+   playlist_t *content_history;
+#ifdef HAVE_IMAGEVIEWER
+   playlist_t *image_history;
+#endif
+#ifdef HAVE_FFMPEG
+   playlist_t *video_history;
+   playlist_t *music_history;
+#endif
 #endif
 };
 

@@ -2844,6 +2844,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_LOADING_HISTORY_FILE:
+         return "Loading history file";
       case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED:
          return "Ribbon (simplified)";
       case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON:

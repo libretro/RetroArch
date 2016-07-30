@@ -5476,7 +5476,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          if (settings->history_list_enable)
          {
             char path_playlist[PATH_MAX_LENGTH] = {0};
-            playlist_t         *playlist        = g_defaults.history;
+            playlist_t         *playlist        = g_defaults.content_history;
 
             if (!playlist)
                command_event(CMD_EVENT_HISTORY_INIT, NULL);

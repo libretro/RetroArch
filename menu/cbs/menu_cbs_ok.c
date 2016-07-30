@@ -1011,7 +1011,7 @@ static int action_ok_playlist_entry(const char *path,
    size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
    size_t selection_ptr             = 0;
-   playlist_t *playlist             = g_defaults.history;
+   playlist_t *playlist             = g_defaults.content_history;
    const char *entry_path           = NULL;
    const char *entry_label          = NULL;
    const char *core_path            = NULL;

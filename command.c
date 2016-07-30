@@ -2102,23 +2102,74 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_HISTORY_DEINIT:
-         if (g_defaults.history)
+         if (g_defaults.content_history)
          {
-            playlist_write_file(g_defaults.history);
-            playlist_free(g_defaults.history);
+            playlist_write_file(g_defaults.content_history);
+            playlist_free(g_defaults.content_history);
          }
-         g_defaults.history = NULL;
+         g_defaults.content_history = NULL;
+
+#ifdef HAVE_FFMPEG
+         if (g_defaults.video_history)
+         {
+            playlist_write_file(g_defaults.video_history);
+            playlist_free(g_defaults.video_history);
+         }
+         g_defaults.video_history = NULL;
+
+         if (g_defaults.music_history)
+         {
+            playlist_write_file(g_defaults.music_history);
+            playlist_free(g_defaults.music_history);
+         }
+         g_defaults.music_history = NULL;
+#endif
+
+#ifdef HAVE_IMAGEVIEWER
+         if (g_defaults.image_history)
+         {
+            playlist_write_file(g_defaults.image_history);
+            playlist_free(g_defaults.image_history);
+         }
+         g_defaults.image_history = NULL;
+#endif
          break;
       case CMD_EVENT_HISTORY_INIT:
          command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
          if (!settings->history_list_enable)
             return false;
+
          RARCH_LOG("%s: [%s].\n",
                msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                settings->path.content_history);
-         g_defaults.history = playlist_init(
+         g_defaults.content_history = playlist_init(
                settings->path.content_history,
                settings->content_history_size);
+
+#ifdef HAVE_FFMPEG
+         RARCH_LOG("%s: [%s].\n",
+               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+               settings->path.content_music_history);
+         g_defaults.music_history = playlist_init(
+               settings->path.content_music_history,
+               settings->content_history_size);
+
+         RARCH_LOG("%s: [%s].\n",
+               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+               settings->path.content_video_history);
+         g_defaults.video_history = playlist_init(
+               settings->path.content_video_history,
+               settings->content_history_size);
+#endif
+
+#ifdef HAVE_IMAGEVIEWER
+         RARCH_LOG("%s: [%s].\n",
+               msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
+               settings->path.content_image_history);
+         g_defaults.image_history = playlist_init(
+               settings->path.content_image_history,
+               settings->content_history_size);
+#endif
          break;
       case CMD_EVENT_CORE_INFO_DEINIT:
          core_info_deinit_list();

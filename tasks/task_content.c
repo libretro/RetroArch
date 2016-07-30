@@ -1667,7 +1667,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
       if (info && *tmp)
       {
-         playlist_t *playlist_tmp         = g_defaults.history;
+         playlist_t *playlist_tmp         = g_defaults.content_history;
 
          if (content_push_to_history_playlist(playlist_tmp, tmp, info, mode))
             playlist_write_file(playlist_tmp);
