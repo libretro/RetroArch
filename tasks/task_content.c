@@ -800,17 +800,23 @@ static bool content_push_to_history_playlist(
 {
    settings_t *settings             = config_get_ptr();
    struct retro_system_info *info   = (struct retro_system_info*)data;
+   const char *core_path            = config_get_active_core_path();
+   const char *core_name            = info->library_name;
 
    switch (mode)
    {
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
 #ifdef HAVE_FFMPEG
+         core_name = "ffmpeg";
+         core_path = "builtin";
          break;
 #else
          return false;
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
 #ifdef HAVE_IMAGEVIEWER
+         core_name = "image display";
+         core_path = "builtin";
          break;
 #else
          return false;
@@ -827,8 +833,8 @@ static bool content_push_to_history_playlist(
    return playlist_push(playlist,
          path,
          NULL,
-         config_get_active_core_path(),
-         info->library_name,
+         core_path,
+         core_name,
          NULL,
          NULL);
 }
@@ -1668,6 +1674,23 @@ static bool task_load_content(content_ctx_info_t *content_info,
       if (info && *tmp)
       {
          playlist_t *playlist_tmp         = g_defaults.content_history;
+
+         switch (mode)
+         {
+            case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+#ifdef HAVE_FFMPEG
+               /* TODO/FIXME - we need to have a separate path for music too */
+               playlist_tmp = g_defaults.video_history;
+#endif
+               break;
+            case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+#ifdef HAVE_IMAGEVIEWER
+               playlist_tmp = g_defaults.image_history;
+#endif
+               break;
+            default:
+               break;
+         }
 
          if (content_push_to_history_playlist(playlist_tmp, tmp, info, mode))
             playlist_write_file(playlist_tmp);
