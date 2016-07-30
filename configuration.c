@@ -2254,9 +2254,7 @@ bool config_load_shader_preset(void)
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
-   struct video_shader *shader             = NULL;
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET, &shader);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
