@@ -760,6 +760,9 @@ static void config_set_defaults(void)
 
    *settings->path.core_options      = '\0';
    *settings->path.content_history   = '\0';
+   *settings->path.content_music_history   = '\0';
+   *settings->path.content_image_history   = '\0';
+   *settings->path.content_video_history   = '\0';
    *settings->path.cheat_settings    = '\0';
    *settings->path.shader            = '\0';
 #ifndef IOS
@@ -1737,6 +1740,15 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (config_get_path(conf, "content_history_path", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->path.content_history, tmp_str, sizeof(settings->path.content_history));
 
+   if (config_get_path(conf, "content_music_history_path", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->path.content_music_history, tmp_str, sizeof(settings->path.content_music_history));
+
+   if (config_get_path(conf, "content_image_history_path", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->path.content_image_history, tmp_str, sizeof(settings->path.content_image_history));
+
+   if (config_get_path(conf, "content_video_history_path", tmp_str, sizeof(tmp_str)))
+      strlcpy(settings->path.content_video_history, tmp_str, sizeof(settings->path.content_video_history));
+
    if (config_get_path(conf, "resampler_directory", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->directory.resampler, tmp_str, sizeof(settings->directory.resampler));
 
@@ -1844,7 +1856,62 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
+   if (string_is_empty(settings->path.content_music_history))
+   {
+      if (string_is_empty(settings->directory.content_history))
+      {
+         fill_pathname_resolve_relative(
+               settings->path.content_music_history,
+               global->path.config,
+               file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
+               sizeof(settings->path.content_music_history));
+      }
+      else
+      {
+         fill_pathname_join(settings->path.content_music_history,
+               settings->directory.content_history,
+               file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
+               sizeof(settings->path.content_music_history));
+      }
+   }
 
+   if (string_is_empty(settings->path.content_video_history))
+   {
+      if (string_is_empty(settings->directory.content_history))
+      {
+         fill_pathname_resolve_relative(
+               settings->path.content_video_history,
+               global->path.config,
+               file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
+               sizeof(settings->path.content_video_history));
+      }
+      else
+      {
+         fill_pathname_join(settings->path.content_video_history,
+               settings->directory.content_history,
+               file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
+               sizeof(settings->path.content_video_history));
+      }
+   }
+
+   if (string_is_empty(settings->path.content_image_history))
+   {
+      if (string_is_empty(settings->directory.content_history))
+      {
+         fill_pathname_resolve_relative(
+               settings->path.content_image_history,
+               global->path.config,
+               file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
+               sizeof(settings->path.content_image_history));
+      }
+      else
+      {
+         fill_pathname_join(settings->path.content_image_history,
+               settings->directory.content_history,
+               file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
+               sizeof(settings->path.content_image_history));
+      }
+   }
 
 
    if (!string_is_empty(settings->directory.screenshot))
@@ -2808,6 +2875,12 @@ bool config_save_file(const char *path)
 #endif
       { "content_history_path", false,
          settings->path.content_history},
+      { "content_music_history_path", false,
+         settings->path.content_music_history},
+      { "content_video_history_path", false,
+         settings->path.content_video_history},
+      { "content_image_history_path", false,
+         settings->path.content_image_history},
 #ifdef HAVE_OVERLAY
       { "input_overlay", false,
          settings->path.overlay},

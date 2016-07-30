@@ -393,6 +393,9 @@ typedef struct settings
       char softfilter_plugin[PATH_MAX_LENGTH];
       char core_options[PATH_MAX_LENGTH];
       char content_history[PATH_MAX_LENGTH];
+      char content_music_history[PATH_MAX_LENGTH];
+      char content_image_history[PATH_MAX_LENGTH];
+      char content_video_history[PATH_MAX_LENGTH];
       char libretro_info[PATH_MAX_LENGTH];
       char cheat_settings[PATH_MAX_LENGTH];
       char bundle_assets_src[PATH_MAX_LENGTH];

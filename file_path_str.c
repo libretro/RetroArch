@@ -119,6 +119,12 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return "autoconfig.zip";
       case FILE_PATH_CONTENT_HISTORY:
          return "content_history.lpl";
+      case FILE_PATH_CONTENT_MUSIC_HISTORY:
+         return "content_music_history.lpl";
+      case FILE_PATH_CONTENT_VIDEO_HISTORY:
+         return "content_video_history.lpl";
+      case FILE_PATH_CONTENT_IMAGE_HISTORY:
+         return "content_image_history.lpl";
       case FILE_PATH_CORE_OPTIONS_CONFIG:
          return "retroarch-core-options.cfg";
       case FILE_PATH_MAIN_CONFIG:
