@@ -558,13 +558,6 @@ static const uint32_t menu_title_color        = 0xff64ff64;
 static bool default_block_config_read = false;
 #endif
 
-/* Turn per-core configs off for PS3 for now until we can get this to work fine again */
-#if defined(RARCH_CONSOLE) && !defined(__CELLOS_LV2__)
-static bool default_core_specific_config = true;
-#else
-static bool default_core_specific_config = false;
-#endif
-
 static bool default_game_specific_options = false;
 static bool default_auto_overrides_enable = true;
 static bool default_auto_remaps_enable = true;

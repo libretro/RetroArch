@@ -462,7 +462,6 @@ typedef struct settings
    bool fps_show;
    bool load_dummy_on_core_shutdown;
 
-   bool core_specific_config;
    bool game_specific_options;
    bool auto_overrides_enable;
    bool auto_remaps_enable;

@@ -779,7 +779,6 @@ static void config_set_defaults(void)
    *settings->playlist_cores = '\0';
    *settings->directory.content_history = '\0';
    *settings->path.audio_dsp_plugin = '\0';
-   settings->core_specific_config = default_core_specific_config;
    settings->game_specific_options = default_game_specific_options;
    settings->auto_overrides_enable = default_auto_overrides_enable;
    settings->auto_remaps_enable = default_auto_remaps_enable;
@@ -1262,7 +1261,6 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "history_list_enable",         &settings->history_list_enable },
       { "fps_show",                    &settings->fps_show},
       { "video_black_frame_insertion", &settings->video.black_frame_insertion},
-      { "core_specific_config",        &settings->core_specific_config},
       { "game_specific_options",       &settings->game_specific_options},
       { "auto_overrides_enable",       &settings->auto_overrides_enable},
       { "auto_remaps_enable",          &settings->auto_remaps_enable},
@@ -1966,77 +1964,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    return true;
 }
 
-/* Config file associated with per-core configs. */
-static char path_core_specific_config[PATH_MAX_LENGTH];
-
-static void config_load_core_specific(void)
-{
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   *path_core_specific_config = '\0';
-
-   if (string_is_empty(config_get_active_core_path()))
-   {
-      RARCH_WARN("Active core path not set, cannot load core-specific config file...\n");
-      return;
-   }
-
-#ifdef HAVE_DYNAMIC
-   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-      return;
-#endif
-
-#ifdef HAVE_MENU
-   if (!string_is_empty(settings->directory.menu_config))
-   {
-      path_resolve_realpath(settings->directory.menu_config,
-            sizeof(settings->directory.menu_config));
-      strlcpy(path_core_specific_config,
-            settings->directory.menu_config,
-            sizeof(path_core_specific_config));
-   }
-   else
-#endif
-   {
-      /* Use original config file's directory as a fallback. */
-      fill_pathname_basedir(path_core_specific_config,
-            global->path.config, sizeof(path_core_specific_config));
-   }
-
-   fill_pathname_dir(path_core_specific_config,
-         config_get_active_core_path(),
-         file_path_str(FILE_PATH_CONFIG_EXTENSION),
-         sizeof(path_core_specific_config));
-
-   if (settings->core_specific_config)
-   {
-      char tmp[PATH_MAX_LENGTH] = {0};
-
-      /* Toggle has_save_path to false so it resets */
-      global->has_set.save_path = false;
-      global->has_set.state_path = false;
-
-      strlcpy(tmp, config_get_active_core_path(), sizeof(tmp));
-      RARCH_LOG("Config: loading core-specific config from: %s.\n",
-            path_core_specific_config);
-
-      if (!config_load_file(path_core_specific_config, true))
-         RARCH_WARN("Config: core-specific config not found, reusing last config.\n");
-
-      /* Force some parameters which are implied when using core specific configs.
-       * Don't have the core config file overwrite the libretro path. */
-      config_set_active_core_path(tmp);
-
-      /* This must be true for core specific configs. */
-      settings->core_specific_config = true;
-
-      /* Reset save paths */
-      global->has_set.save_path = true;
-      global->has_set.state_path = true;
-   }
-}
-
 /**
  * config_load_override:
  *
@@ -2101,11 +2028,6 @@ bool config_load_override(void)
    {
       config_file_free(new_conf);
 
-      if (settings->core_specific_config)
-      {
-         RARCH_LOG("Overrides: can't use overrides with with per-core configs, disabling overrides.\n");
-         return false;
-      }
       RARCH_LOG("Overrides: core-specific overrides found at %s.\n", core_path);
       strlcpy(global->path.append_config, core_path, sizeof(global->path.append_config));
 
@@ -2140,13 +2062,6 @@ bool config_load_override(void)
       return false;
 
    /* Re-load the configuration with any overrides that might have been found */
-
-   if (settings->core_specific_config)
-   {
-      RARCH_LOG("Overrides: can't use overrides with with per-core configs, disabling overrides.\n");
-      return false;
-   }
-
 #ifdef HAVE_NETPLAY
    if (global->netplay.enable)
    {
@@ -2509,11 +2424,6 @@ void config_load(void)
 {
    settings_t *settings = config_get_ptr();
 
-   /* Flush out per-core configs before loading a new config. */
-   if (!string_is_empty(path_core_specific_config) &&
-         settings->config_save_on_exit && settings->core_specific_config)
-      config_save_file(path_core_specific_config);
-
    /* Flush out some states that could have been 
     * set by core environment variables */
    core_unset_input_descriptors();
@@ -2523,9 +2433,6 @@ void config_load(void)
       config_set_defaults();
       parse_config_file();
    }
-
-   /* Per-core config handling. */
-   config_load_core_specific();
 }
 
 #if 0
@@ -2745,7 +2652,6 @@ bool config_save_file(const char *path)
       { "savestate_auto_save",          settings->savestate_auto_save},
       { "savestate_auto_load",          settings->savestate_auto_load},
       { "history_list_enable",          settings->history_list_enable},
-      { "core_specific_config",         settings->core_specific_config},
       { "game_specific_options",        settings->game_specific_options},
       { "auto_overrides_enable",        settings->auto_overrides_enable},
       { "auto_remaps_enable",           settings->auto_remaps_enable},
@@ -3202,10 +3108,6 @@ const char *config_get_active_path(void)
    settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
 
-   if (!string_is_empty(path_core_specific_config)
-         && settings->core_specific_config)
-      return path_core_specific_config;
-
    if (!string_is_empty(global->path.config))
       return global->path.config;
 
@@ -3214,5 +3116,4 @@ const char *config_get_active_path(void)
 
 void config_free_state(void)
 {
-   path_core_specific_config[0] = '\0';
 }
