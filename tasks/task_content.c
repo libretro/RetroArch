@@ -807,7 +807,7 @@ static bool content_push_to_history_playlist(
    {
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
 #ifdef HAVE_FFMPEG
-         core_name = "ffmpeg_video";
+         core_name = "movieplayer_video";
          core_path = "builtin";
          break;
 #else
