@@ -3797,9 +3797,6 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
    {
-#if 0
-      settings_t *settings  = config_get_ptr();
-#endif
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
@@ -3808,34 +3805,8 @@ static bool menu_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
 
-#if 0
-      if (string_is_empty(settings->directory.playlist))
-#endif
-      {
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
-               MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
-               MENU_INFO_MESSAGE, 0, 0);
-         info->need_refresh = true;
-         info->need_push    = true;
-      }
-#if 0
-      else
-      {
-         strlcpy(
-               info->path,
-               settings->directory.playlist,
-               sizeof(info->path));
-
-         if (!menu_displaylist_ctl(
-                  DISPLAYLIST_DATABASE_PLAYLISTS, info))
-            return false;
-      }
-#endif
+      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info);
       return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
@@ -3864,9 +3835,6 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
    {
-#if 0
-      settings_t *settings  = config_get_ptr();
-#endif
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
@@ -3875,41 +3843,26 @@ static bool menu_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
 
-#if 0
-      if (string_is_empty(settings->directory.playlist))
-#endif
-      {
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
-                  MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-                  MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
-         else
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
-                  MENU_INFO_MESSAGE, 0, 0);
-         info->need_refresh = true;
-         info->need_push    = true;
-      }
-#if 0
-      else
-      {
-         strlcpy(
-               info->path,
-               settings->directory.playlist,
-               sizeof(info->path));
+      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
-         if (!menu_displaylist_ctl(
-                  DISPLAYLIST_DATABASE_PLAYLISTS, info))
-            return false;
-      }
+#if 0
+      if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
+               msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
+               MENU_ENUM_LABEL_TAKE_SCREENSHOT,
+               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+      else
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
+               MENU_INFO_MESSAGE, 0, 0);
+
 #endif
+      menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info);
       return true;
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
@@ -5487,6 +5440,32 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                g_defaults.content_history,
                "history",
                settings->path.content_history,
+               &ret);
+
+         if (ret == 0)
+         {
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
+         break;
+      case DISPLAYLIST_IMAGES_HISTORY:
+         menu_displaylist_parse_playlist_history(menu, info,
+               g_defaults.image_history,
+               "images_history",
+               settings->path.content_image_history,
+               &ret);
+
+         if (ret == 0)
+         {
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
+         break;
+      case DISPLAYLIST_MUSIC_HISTORY:
+         menu_displaylist_parse_playlist_history(menu, info,
+               g_defaults.music_history,
+               "music_history",
+               settings->path.content_music_history,
                &ret);
 
          if (ret == 0)
