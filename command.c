@@ -1391,6 +1391,7 @@ static void command_event_restore_default_shader_preset(void)
 {
    /* auto shader preset: reload the original shader */
    config_unload_shader_preset();
+   runloop_ctl(RUNLOOP_CTL_CLEAR_DEFAULT_SHADER_PRESET,  NULL);
 }
 
 static bool command_event_save_auto_state(void)
