@@ -793,21 +793,38 @@ static void check_default_dirs(void)
       check_defaults_dir_create_dir(g_defaults.dir.thumbnails);
 }
 
-static void content_push_to_history_playlist(bool do_push,
-      const char *path, void *data)
+static bool content_push_to_history_playlist(
+      playlist_t *playlist,
+      const char *path, void *data,
+      enum content_mode_load mode)
 {
    settings_t *settings             = config_get_ptr();
    struct retro_system_info *info   = (struct retro_system_info*)data;
 
-   /* If the history list is not enabled, early return. */
-   if (!settings->history_list_enable)
-      return;
-   if (!g_defaults.history)
-      return;
-   if (!do_push)
-      return;
+   switch (mode)
+   {
+      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+#ifdef HAVE_FFMPEG
+         break;
+#else
+         return false;
+#endif
+      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+#ifdef HAVE_IMAGEVIEWER
+         break;
+#else
+         return false;
+#endif
+      default:
+         /* If the history list is not enabled, early return. */
+         if (!settings->history_list_enable)
+            return false;
+         if (!playlist)
+            return false;
+         break;
+   }
 
-   playlist_push(g_defaults.history,
+   return playlist_push(playlist,
          path,
          NULL,
          config_get_active_core_path(),
@@ -1650,9 +1667,10 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
       if (info && *tmp)
       {
-         content_push_to_history_playlist(
-               true, tmp, info);
-         playlist_write_file(g_defaults.history);
+         playlist_t *playlist_tmp         = g_defaults.history;
+
+         if (content_push_to_history_playlist(playlist_tmp, tmp, info, mode))
+            playlist_write_file(playlist_tmp);
       }
    }
 

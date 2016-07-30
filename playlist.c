@@ -220,7 +220,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
  *
  * Push entry to top of playlist.
  **/
-void playlist_push(playlist_t *playlist,
+bool playlist_push(playlist_t *playlist,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
       const char *crc32,
@@ -229,7 +229,7 @@ void playlist_push(playlist_t *playlist,
    size_t i;
 
    if (!playlist)
-      return;
+      return false;
 
    if (string_is_empty(core_path) || string_is_empty(core_name))
    {
@@ -247,7 +247,7 @@ void playlist_push(playlist_t *playlist,
       if (string_is_empty(core_path) || string_is_empty(core_name))
       {
          RARCH_ERR("cannot push NULL or empty core name into the playlist.\n");
-         return;
+         return false;
       }
    }
 
@@ -272,7 +272,7 @@ void playlist_push(playlist_t *playlist,
       /* If top entry, we don't want to push a new entry since
        * the top and the entry to be pushed are the same. */
       if (i == 0)
-         return;
+         return false;
 
       /* Seen it before, bump to top. */
       tmp = playlist->entries[i];
@@ -280,7 +280,7 @@ void playlist_push(playlist_t *playlist,
             i * sizeof(playlist_entry_t));
       playlist->entries[0] = tmp;
 
-      return;
+      return true;
    }
 
    if (playlist->size == playlist->cap)
@@ -312,6 +312,8 @@ void playlist_push(playlist_t *playlist,
       playlist->entries[0].crc32     = strdup(crc32);
 
    playlist->size++;
+
+   return true;
 }
 
 void playlist_write_file(playlist_t *playlist)

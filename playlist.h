@@ -21,6 +21,7 @@
 #include <stddef.h>
 
 #include <retro_common_api.h>
+#include <boolean.h>
 
 RETRO_BEGIN_DECLS
 
@@ -96,7 +97,7 @@ void playlist_get_index(playlist_t *playlist,
  *
  * Push entry to top of playlist.
  **/
-void playlist_push(playlist_t *playlist,
+bool playlist_push(playlist_t *playlist,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
       const char *db_name,
