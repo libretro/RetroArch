@@ -1586,7 +1586,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
  * Returns: true (1) if successful, otherwise false (0).
  **/
 static bool task_load_content(content_ctx_info_t *content_info, 
-      bool launched_from_menu)
+      bool launched_from_menu,
+      enum content_mode_load mode)
 {
    char name[PATH_MAX_LENGTH] = {0};
    char msg[PATH_MAX_LENGTH]  = {0};
@@ -1671,7 +1672,8 @@ error:
    return false;
 }
 
-static bool command_event_cmd_exec(void *data)
+static bool command_event_cmd_exec(const char *data,
+      enum content_mode_load mode)
 {
 #if defined(HAVE_DYNAMIC)
    content_ctx_info_t content_info;
@@ -1692,15 +1694,15 @@ static bool command_event_cmd_exec(void *data)
    fullpath = NULL;
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   if (fullpath != data)
+   if (fullpath != (void*)data)
    {
       runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-      if (data)
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, data);
+      if (!string_is_empty(data))
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)data);
    }
 
 #if defined(HAVE_DYNAMIC)
-   if (!task_load_content(&content_info, false))
+   if (!task_load_content(&content_info, false, mode))
    {
 #ifdef HAVE_MENU
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
@@ -1837,7 +1839,7 @@ bool task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-         if (!command_event_cmd_exec((void*)fullpath))
+         if (!command_event_cmd_exec(fullpath, mode))
             return false;
 #ifndef HAVE_DYNAMIC
          runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
@@ -1927,7 +1929,7 @@ bool task_push_content_load_default(
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         if (!task_load_content(content_info, loading_from_menu))
+         if (!task_load_content(content_info, loading_from_menu, mode))
             goto error;
          break;
 #ifndef HAVE_DYNAMIC
@@ -1936,7 +1938,7 @@ bool task_push_content_load_default(
             char *fullpath       = NULL;
 
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-            command_event_cmd_exec((void*)fullpath);
+            command_event_cmd_exec(fullpath, mode);
             command_event(CMD_EVENT_QUIT, NULL);
          }
          break;
