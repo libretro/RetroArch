@@ -2230,6 +2230,100 @@ bool config_load_remap(void)
    return false;
 }
 
+/**
+ * config_load_shader_preset:
+ *
+ * Tries to append game-specific and core-specific shader presets.
+ *
+ * This function only has an effect if a game-specific or core-specific
+ * configuration file exists at respective locations.
+ *
+ * core-specific: $SHADER_DIR/presets/$CORE_NAME/$CORE_NAME.cfg
+ * game-specific: $SHADER_DIR/presets/$CORE_NAME/$GAME_NAME.cfg
+ *
+ * Returns: false if there was an error or no action was performed.
+ */
+bool config_load_shader_preset(void)
+{
+   char shader_directory[PATH_MAX_LENGTH]   = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
+   char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
+   char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
+   config_file_t *new_conf                 = NULL;
+   const char *core_name                   = NULL;
+   const char *game_name                   = NULL;
+   global_t *global                        = global_get_ptr();
+   settings_t *settings                    = config_get_ptr();
+   rarch_system_info_t *system             = NULL;
+   struct video_shader *shader             = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET, &shader);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   if (system)
+      core_name = system->info.library_name;
+   if (global)
+      game_name = path_basename(global->name.base);
+
+   if (string_is_empty(core_name) || string_is_empty(game_name))
+      return false;
+
+   /* Shader directory: shader_directory.
+    * Try shader directory setting, no fallbacks defined */
+   if (string_is_empty(settings->directory.video_shader))
+      return false;
+
+   fill_pathname_join (shader_directory, settings->directory.video_shader,
+       "presets", sizeof(shader_directory));
+
+   RARCH_LOG("Shaders: preset directory: %s\n", shader_directory);
+
+   /* Concatenate strings into full paths for core_path, game_path */
+   fill_pathname_join_special_ext(core_path,
+         shader_directory, core_name,
+         core_name,
+         ".cgp",
+         sizeof(core_path));
+
+   fill_pathname_join_special_ext(game_path,
+         shader_directory, core_name,
+         game_name,
+         ".cgp",
+         sizeof(game_path));
+
+   /* Create a new config file from game_path */
+   new_conf = config_file_new(game_path);
+
+   /* If a game remap file exists, load it. */
+   if (new_conf)
+   {
+      RARCH_LOG("Shaders: game-specific shader preset found at %s.\n", game_path);
+      strlcpy(settings->path.shader, game_path, sizeof(settings->path.shader));
+      return true;
+   }
+   else
+   {
+      RARCH_LOG("Shaders: no game-specific preset found at %s.\n", game_path);
+   }
+
+   /* Create a new config file from core_path */
+   new_conf = config_file_new(core_path);
+
+   /* If a core remap file exists, load it. */
+   if (new_conf)
+   {
+      RARCH_LOG("Shaders: core-specific shader preset found at %s.\n", core_path);
+      strlcpy(settings->path.shader, core_path, sizeof(settings->path.shader));
+      return true;
+   }
+   else
+   {
+      RARCH_LOG("Shaders: no core-specific preset found at %s.\n", core_path);
+   }
+   new_conf = NULL;
+
+   return false;
+}
+
 static void parse_config_file(void)
 {
    global_t *global = global_get_ptr();

@@ -1346,6 +1346,11 @@ static bool command_event_init_core(enum rarch_core_type *data)
          runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
+   /* Auto-remap: apply shader preset files */
+   if(settings->auto_shaders_enable)
+      config_load_shader_preset();
+
+
    /* reset video format to libretro's default */
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
 
