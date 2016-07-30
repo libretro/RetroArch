@@ -907,6 +907,8 @@ static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection;
+   enum rarch_core_type action_type = CORE_TYPE_PLAIN;
+   enum content_mode_load content_enum_idx = CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU;
    menu_content_ctx_playlist_info_t playlist_info;
    char new_core_path[PATH_MAX_LENGTH]    = {0};
    size_t selection_ptr             = 0;
@@ -990,7 +992,9 @@ static int action_ok_playlist_entry_collection(const char *path,
       playlist_write_file(tmp_playlist);
    }
    else
+   {
       strlcpy(new_core_path, core_path, sizeof(new_core_path));
+   }
 
    playlist_info.data = playlist;
    playlist_info.idx  = selection_ptr;
@@ -1002,7 +1006,7 @@ static int action_ok_playlist_entry_collection(const char *path,
          playlist_info.idx, &path, NULL, NULL, NULL, NULL, NULL);
 
    return generic_action_ok_file_load(new_core_path, path,
-         CORE_TYPE_PLAIN, CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU);
+         action_type,  content_enum_idx);
 }
 
 static int action_ok_playlist_entry(const char *path,
