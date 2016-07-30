@@ -3856,6 +3856,15 @@ static bool menu_displaylist_push_internal(
 #endif
       {
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+#if defined(HAVE_VIDEO_PROCESSOR)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
+               MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
+               0, 0, 0);
+#else
          menu_entries_append_enum(info->list,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
@@ -3863,6 +3872,7 @@ static bool menu_displaylist_push_internal(
                   MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
                MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
                MENU_INFO_MESSAGE, 0, 0);
+#endif
          info->need_refresh = true;
          info->need_push    = true;
       }
