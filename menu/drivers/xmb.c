@@ -74,7 +74,7 @@ enum
    XMB_TEXTURE_HISTORY,
 #ifdef HAVE_FFMPEG
    XMB_TEXTURE_MUSICS,
-   XMB_TEXTURE_VIDEO,
+   XMB_TEXTURE_MOVIES,
 #endif
 #ifdef HAVE_IMAGEVIEWER
    XMB_TEXTURE_IMAGES,
@@ -1591,6 +1591,22 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_RPL_ENTRY:
          if (core_node)
             return core_node->content_icon;
+         else
+            switch (xmb->categories.selection_ptr)
+            {
+#ifdef HAVE_IMAGEVIEWER
+               case XMB_SYSTEM_TAB_IMAGES:
+                  return xmb->textures.list[XMB_TEXTURE_IMAGE];
+#endif
+#ifdef HAVE_FFMPEG
+               case XMB_SYSTEM_TAB_MUSIC:
+                  return xmb->textures.list[XMB_TEXTURE_MUSIC];
+               case XMB_SYSTEM_TAB_VIDEO:
+                  return xmb->textures.list[XMB_TEXTURE_MOVIE];
+#endif
+               default:
+                  return xmb->textures.list[XMB_TEXTURE_FILE];
+            }
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
@@ -2681,7 +2697,7 @@ static const char *xmb_texture_path(unsigned id)
 #ifdef HAVE_FFMPEG
       case XMB_TEXTURE_MUSICS:
          return "musics.png";
-      case XMB_TEXTURE_VIDEO:
+      case XMB_TEXTURE_MOVIES:
          return "movies.png";
 #endif
       case XMB_TEXTURE_IMAGES:
@@ -2780,7 +2796,7 @@ static void xmb_context_reset_textures(
    xmb->music_tab_node.alpha    = xmb->categories.active.alpha;
    xmb->music_tab_node.zoom     = xmb->categories.active.zoom;
 
-   xmb->video_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_VIDEO];
+   xmb->video_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_MOVIES];
    xmb->video_tab_node.alpha    = xmb->categories.active.alpha;
    xmb->video_tab_node.zoom     = xmb->categories.active.zoom;
 #endif
