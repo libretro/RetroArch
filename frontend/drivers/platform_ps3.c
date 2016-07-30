@@ -522,12 +522,29 @@ static int frontend_ps3_parse_drive_list(void *data)
    return 0;
 }
 
+static void frontend_ps3_process_args(int *argc, char *argv[])
+{
+#ifndef IS_SALAMANDER
+   /* A big hack: sometimes Salamander doesn't save the new core
+    * it loads on first boot, so we make sure
+    * active core path is set here. */
+
+   if (config_active_core_path_is_empty() && *argc >= 1 && strrchr(argv[0], '/'))
+   {
+      char path[PATH_MAX_LENGTH] = {0};
+      strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
+      if (path_file_exists(path))
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, path);
+   }
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_get_environment_settings,
    frontend_ps3_init,
    frontend_ps3_deinit,
    frontend_ps3_exitspawn,
-   NULL,                         /* process_args */
+   frontend_ps3_process_args,
    frontend_ps3_exec,
 #ifdef IS_SALAMANDER
    NULL,
