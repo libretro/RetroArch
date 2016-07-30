@@ -3795,6 +3795,129 @@ static bool menu_displaylist_push_internal(
          return false;
       return true;
    }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
+   {
+      settings_t *settings  = config_get_ptr();
+
+      menu_displaylist_reset_filebrowser();
+      info->type = 42;
+      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->label,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
+            sizeof(info->label));
+
+#if 0
+      if (string_is_empty(settings->directory.playlist))
+#endif
+      {
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
+               MENU_INFO_MESSAGE, 0, 0);
+         info->need_refresh = true;
+         info->need_push    = true;
+      }
+#if 0
+      else
+      {
+         strlcpy(
+               info->path,
+               settings->directory.playlist,
+               sizeof(info->path));
+
+         if (!menu_displaylist_ctl(
+                  DISPLAYLIST_DATABASE_PLAYLISTS, info))
+            return false;
+      }
+#endif
+      return true;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
+   {
+      settings_t *settings  = config_get_ptr();
+
+      menu_displaylist_reset_filebrowser();
+      info->type = 42;
+      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->label,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
+            sizeof(info->label));
+
+#if 0
+      if (string_is_empty(settings->directory.playlist))
+#endif
+      {
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
+               MENU_INFO_MESSAGE, 0, 0);
+         info->need_refresh = true;
+         info->need_push    = true;
+      }
+#if 0
+      else
+      {
+         strlcpy(
+               info->path,
+               settings->directory.playlist,
+               sizeof(info->path));
+
+         if (!menu_displaylist_ctl(
+                  DISPLAYLIST_DATABASE_PLAYLISTS, info))
+            return false;
+      }
+#endif
+      return true;
+   }
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
+   {
+      settings_t *settings  = config_get_ptr();
+
+      menu_displaylist_reset_filebrowser();
+      info->type = 42;
+      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->label,
+            msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
+            sizeof(info->label));
+
+#if 0
+      if (string_is_empty(settings->directory.playlist))
+#endif
+      {
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
+               MENU_INFO_MESSAGE, 0, 0);
+         info->need_refresh = true;
+         info->need_push    = true;
+      }
+#if 0
+      else
+      {
+         strlcpy(
+               info->path,
+               settings->directory.playlist,
+               sizeof(info->path));
+
+         if (!menu_displaylist_ctl(
+                  DISPLAYLIST_DATABASE_PLAYLISTS, info))
+            return false;
+      }
+#endif
+      return true;
+   }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
    {
       settings_t *settings  = config_get_ptr();

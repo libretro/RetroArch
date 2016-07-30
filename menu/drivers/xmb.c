@@ -72,6 +72,13 @@ enum
    XMB_TEXTURE_MAIN_MENU = 0,
    XMB_TEXTURE_SETTINGS,
    XMB_TEXTURE_HISTORY,
+#ifdef HAVE_FFMPEG
+   XMB_TEXTURE_MUSICS,
+   XMB_TEXTURE_VIDEO,
+#endif
+#ifdef HAVE_IMAGEVIEWER
+   XMB_TEXTURE_IMAGES,
+#endif
    XMB_TEXTURE_SETTING,
    XMB_TEXTURE_SUBSETTING,
    XMB_TEXTURE_ARROW,
@@ -110,6 +117,13 @@ enum
 {
    XMB_SYSTEM_TAB_MAIN = 0,
    XMB_SYSTEM_TAB_SETTINGS,
+#ifdef HAVE_IMAGEVIEWER
+   XMB_SYSTEM_TAB_IMAGES,
+#endif
+#ifdef HAVE_FFMPEG
+   XMB_SYSTEM_TAB_MUSIC,
+   XMB_SYSTEM_TAB_VIDEO,
+#endif
    XMB_SYSTEM_TAB_HISTORY,
    XMB_SYSTEM_TAB_ADD
 };
@@ -238,6 +252,13 @@ typedef struct xmb_handle
    } items;
 
    xmb_node_t main_menu_node;
+#ifdef HAVE_IMAGEVIEWER
+   xmb_node_t images_tab_node;
+#endif
+#ifdef HAVE_FFMPEG
+   xmb_node_t video_tab_node;
+   xmb_node_t music_tab_node;
+#endif
    xmb_node_t settings_tab_node;
    xmb_node_t history_tab_node;
    xmb_node_t add_tab_node;
@@ -1114,6 +1135,16 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
    {
       case XMB_SYSTEM_TAB_SETTINGS:
          return &xmb->settings_tab_node;
+#ifdef HAVE_IMAGEVIEWER
+      case XMB_SYSTEM_TAB_IMAGES:
+         return &xmb->images_tab_node;
+#endif
+#ifdef HAVE_FFMPEG
+      case XMB_SYSTEM_TAB_VIDEO:
+         return &xmb->video_tab_node;
+      case XMB_SYSTEM_TAB_MUSIC:
+         return &xmb->music_tab_node;
+#endif
       case XMB_SYSTEM_TAB_HISTORY:
          return &xmb->history_tab_node;
       case XMB_SYSTEM_TAB_ADD:
@@ -2647,6 +2678,12 @@ static const char *xmb_texture_path(unsigned id)
          return "settings.png";
       case XMB_TEXTURE_HISTORY:
          return "history.png";
+      case XMB_TEXTURE_MUSICS:
+         return "musics.png";
+      case XMB_TEXTURE_VIDEO:
+         return "movies.png";
+      case XMB_TEXTURE_IMAGES:
+         return "images.png";
       case XMB_TEXTURE_SETTING:
          return "setting.png";
       case XMB_TEXTURE_SUBSETTING:
@@ -2735,6 +2772,22 @@ static void xmb_context_reset_textures(
    xmb->history_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_HISTORY];
    xmb->history_tab_node.alpha  = xmb->categories.active.alpha;
    xmb->history_tab_node.zoom   = xmb->categories.active.zoom;
+
+#ifdef HAVE_FFMPEG
+   xmb->music_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_MUSICS];
+   xmb->music_tab_node.alpha    = xmb->categories.active.alpha;
+   xmb->music_tab_node.zoom     = xmb->categories.active.zoom;
+
+   xmb->video_tab_node.icon     = xmb->textures.list[XMB_TEXTURE_VIDEO];
+   xmb->video_tab_node.alpha    = xmb->categories.active.alpha;
+   xmb->video_tab_node.zoom     = xmb->categories.active.zoom;
+#endif
+
+#ifdef HAVE_IMAGEVIEWER
+   xmb->images_tab_node.icon    = xmb->textures.list[XMB_TEXTURE_IMAGES];
+   xmb->images_tab_node.alpha   = xmb->categories.active.alpha;
+   xmb->images_tab_node.zoom    = xmb->categories.active.zoom;
+#endif
 
    xmb->add_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_ADD];
    xmb->add_tab_node.alpha      = xmb->categories.active.alpha;
@@ -3004,6 +3057,28 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                menu_stack->list[stack_size - 1].type =
                   MENU_SETTINGS_TAB;
                break;
+#ifdef HAVE_IMAGEVIEWER
+            case XMB_SYSTEM_TAB_IMAGES:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_IMAGES_TAB;
+               break;
+#endif
+#ifdef HAVE_FFMPEG
+            case XMB_SYSTEM_TAB_VIDEO:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_VIDEO_TAB;
+               break;
+            case XMB_SYSTEM_TAB_MUSIC:
+               menu_stack->list[stack_size - 1].label =
+                  strdup(msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB));
+               menu_stack->list[stack_size - 1].type =
+                  MENU_MUSIC_TAB;
+               break;
+#endif
             case XMB_SYSTEM_TAB_HISTORY:
                menu_stack->list[stack_size - 1].label =
                   strdup(msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
