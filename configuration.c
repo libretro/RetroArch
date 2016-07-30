@@ -1991,7 +1991,6 @@ bool config_load_override(void)
    const char *game_name                  = NULL;
    bool should_append                     = false;
    global_t *global                       = global_get_ptr();
-   settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
@@ -2422,8 +2421,6 @@ static void save_keybinds_user(config_file_t *conf, unsigned user)
  */
 void config_load(void)
 {
-   settings_t *settings = config_get_ptr();
-
    /* Flush out some states that could have been 
     * set by core environment variables */
    core_unset_input_descriptors();
@@ -3105,7 +3102,6 @@ void config_clear_active_core_path(void)
 
 const char *config_get_active_path(void)
 {
-   settings_t *settings        = config_get_ptr();
    global_t   *global          = global_get_ptr();
 
    if (!string_is_empty(global->path.config))

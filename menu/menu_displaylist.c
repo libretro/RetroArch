@@ -3797,7 +3797,9 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
    {
+#if 0
       settings_t *settings  = config_get_ptr();
+#endif
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
@@ -3838,7 +3840,9 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
    {
+#if 0
       settings_t *settings  = config_get_ptr();
+#endif
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
@@ -3879,7 +3883,9 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
    {
+#if 0
       settings_t *settings  = config_get_ptr();
+#endif
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;

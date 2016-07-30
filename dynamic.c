@@ -311,7 +311,6 @@ bool libretro_get_system_info(const char *path,
 
 static void load_dynamic_core(void)
 {
-   settings_t *settings = config_get_ptr();
    function_t sym       = dylib_proc(NULL, "retro_init");
 
    if (sym)
