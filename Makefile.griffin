@@ -228,6 +228,7 @@ else ifeq ($(platform), vita)
   HAVE_RBMP					   := 1
   HAVE_RTGA					   := 1
   HAVE_ZLIB                := 1
+  HAVE_7ZIP                := 1
   HAVE_VITA2D              := 1
   HAVE_NETWORKING          := 1
   HAVE_NETPLAY             := 1
@@ -288,7 +289,7 @@ CFLAGS      += -DHAVE_RARCH_EXEC
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
-CFLAGS      += -DHAVE_ZLIB -DWANT_ZLIB
+CFLAGS      += -DHAVE_ZLIB -DWANT_ZLIB -DHAVE_COMPRESSION
 endif
 
 ifeq ($(HAVE_RPNG), 1)
