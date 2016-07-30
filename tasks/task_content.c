@@ -793,13 +793,14 @@ static void check_default_dirs(void)
       check_defaults_dir_create_dir(g_defaults.dir.thumbnails);
 }
 
-static bool content_push_to_history_playlist(
-      playlist_t *playlist,
+bool content_push_to_history_playlist(
+      void *data,
       const char *path,
       const char *core_name,
       const char *core_path)
 {
-   settings_t *settings             = config_get_ptr();
+   playlist_t *playlist   = (playlist_t*)data;
+   settings_t *settings   = config_get_ptr();
 
    /* If the history list is not enabled, early return. */
    if (!settings->history_list_enable)

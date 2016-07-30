@@ -137,6 +137,12 @@ void task_image_load_free(retro_task_t *task);
 
 void task_file_load_handler(retro_task_t *task);
 
+bool content_push_to_history_playlist(
+      void *data,
+      const char *path,
+      const char *core_name,
+      const char *core_path);
+
 /* TODO/FIXME - turn this into actual task */
 bool take_screenshot(void);
 bool dump_to_file_desperate(const void *data,

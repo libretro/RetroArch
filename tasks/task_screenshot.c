@@ -44,15 +44,19 @@
 #define IMG_EXT "bmp"
 #endif
 
+#include "../defaults.h"
 #include "../general.h"
 #include "../msg_hash.h"
 
 #include "../gfx/video_driver.h"
 #include "../gfx/video_frame.h"
 
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
+
+#include "tasks_internal.h"
 
 /* Take frame bottom-up. */
 static bool screenshot_dump(
@@ -130,6 +134,13 @@ static bool screenshot_dump(
          bmp_type);
 #endif
 
+   if (ret == true)
+   {
+      if (content_push_to_history_playlist(g_defaults.image_history, filename,  
+               "imageviewer", "builtin"))
+         playlist_write_file(g_defaults.image_history);
+   }
+
    return ret;
 }
 
@@ -197,9 +208,12 @@ static bool take_screenshot_raw(const char *global_name_base)
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
-   return screenshot_dump(global_name_base, screenshot_dir,
+   if (!screenshot_dump(global_name_base, screenshot_dir,
          (const uint8_t*)data + (height - 1) * pitch,
-         width, height, -pitch, false);
+         width, height, -pitch, false))
+      return false;
+
+   return true;
 }
 
 static bool take_screenshot_choice(const char *global_name_base)
