@@ -796,10 +796,8 @@ static void check_default_dirs(void)
 static bool content_push_to_history_playlist(
       playlist_t *playlist,
       const char *path,
-      void *data,
       const char *core_name,
-      const char *core_path,
-      enum content_mode_load mode)
+      const char *core_path)
 {
    settings_t *settings             = config_get_ptr();
 
@@ -1685,8 +1683,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
                break;
          }
 
-         if (content_push_to_history_playlist(playlist_tmp, tmp, info, 
-                  core_name, core_path, mode))
+         if (content_push_to_history_playlist(playlist_tmp, tmp,  
+                  core_name, core_path))
             playlist_write_file(playlist_tmp);
       }
    }
