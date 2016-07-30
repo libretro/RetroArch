@@ -586,6 +586,7 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
                   break;
                }
             case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
+            case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
                if (  string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))   ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
                      string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)) ||

@@ -3909,13 +3909,20 @@ static bool menu_displaylist_push_internal(
 #endif
       {
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
-               MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
-               MENU_INFO_MESSAGE, 0, 0);
+         if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
+                  MENU_ENUM_LABEL_TAKE_SCREENSHOT,
+                  MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+         else
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
+                  MENU_INFO_MESSAGE, 0, 0);
          info->need_refresh = true;
          info->need_push    = true;
       }
