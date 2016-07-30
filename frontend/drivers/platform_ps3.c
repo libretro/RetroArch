@@ -213,8 +213,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
       fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
             "cores", sizeof(g_defaults.dir.core));
-      fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,
-            "cores", sizeof(g_defaults.dir.core_info));
+      fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
+            "info", sizeof(g_defaults.dir.core_info));
       fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
             "savestates", sizeof(g_defaults.dir.savestate));
       fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
