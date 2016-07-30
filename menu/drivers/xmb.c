@@ -2678,10 +2678,12 @@ static const char *xmb_texture_path(unsigned id)
          return "settings.png";
       case XMB_TEXTURE_HISTORY:
          return "history.png";
+#ifdef HAVE_FFMPEG
       case XMB_TEXTURE_MUSICS:
          return "musics.png";
       case XMB_TEXTURE_VIDEO:
          return "movies.png";
+#endif
       case XMB_TEXTURE_IMAGES:
          return "images.png";
       case XMB_TEXTURE_SETTING:
