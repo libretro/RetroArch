@@ -795,40 +795,19 @@ static void check_default_dirs(void)
 
 static bool content_push_to_history_playlist(
       playlist_t *playlist,
-      const char *path, void *data,
+      const char *path,
+      void *data,
+      const char *core_name,
+      const char *core_path,
       enum content_mode_load mode)
 {
    settings_t *settings             = config_get_ptr();
-   struct retro_system_info *info   = (struct retro_system_info*)data;
-   const char *core_path            = config_get_active_core_path();
-   const char *core_name            = info->library_name;
 
-   switch (mode)
-   {
-      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-#ifdef HAVE_FFMPEG
-         core_name = "movieplayer_video";
-         core_path = "builtin";
-         break;
-#else
-         return false;
-#endif
-      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-#ifdef HAVE_IMAGEVIEWER
-         core_name = "image display";
-         core_path = "builtin";
-         break;
-#else
-         return false;
-#endif
-      default:
-         /* If the history list is not enabled, early return. */
-         if (!settings->history_list_enable)
-            return false;
-         if (!playlist)
-            return false;
-         break;
-   }
+   /* If the history list is not enabled, early return. */
+   if (!settings->history_list_enable)
+      return false;
+   if (!playlist)
+      return false;
 
    return playlist_push(playlist,
          path,
@@ -1673,26 +1652,41 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
       if (info && *tmp)
       {
+         const char *core_path            = NULL;
+         const char *core_name            = NULL;
          playlist_t *playlist_tmp         = g_defaults.content_history;
 
-         switch (mode)
+         switch (retroarch_path_is_media_type(tmp))
          {
-            case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+            case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG
-               /* TODO/FIXME - we need to have a separate path for music too */
                playlist_tmp = g_defaults.video_history;
+               core_name = "movieplayer";
+               core_path = "builtin";
 #endif
                break;
-            case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+            case RARCH_CONTENT_MUSIC:
+#ifdef HAVE_FFMPEG
+               playlist_tmp = g_defaults.music_history;
+               core_name = "musicplayer";
+               core_path = "builtin";
+#endif
+               break;
+            case RARCH_CONTENT_IMAGE:
 #ifdef HAVE_IMAGEVIEWER
                playlist_tmp = g_defaults.image_history;
+               core_name = "imageviewer";
+               core_path = "builtin";
 #endif
                break;
             default:
+               core_path            = config_get_active_core_path();
+               core_name            = info->library_name;
                break;
          }
 
-         if (content_push_to_history_playlist(playlist_tmp, tmp, info, mode))
+         if (content_push_to_history_playlist(playlist_tmp, tmp, info, 
+                  core_name, core_path, mode))
             playlist_write_file(playlist_tmp);
       }
    }
