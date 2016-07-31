@@ -1675,7 +1675,7 @@ bool Pass::init_feedback()
    framebuffer_feedback = unique_ptr<Framebuffer>(
          new Framebuffer(device, memory_properties,
             current_framebuffer_size,
-            pass_info.rt_format, 1));
+            pass_info.rt_format, pass_info.max_levels));
    return true;
 }
 
@@ -1689,7 +1689,7 @@ bool Pass::build()
       framebuffer = unique_ptr<Framebuffer>(
             new Framebuffer(device, memory_properties,
                current_framebuffer_size,
-               pass_info.rt_format, 1));
+               pass_info.rt_format, pass_info.max_levels));
    }
 
    reflection = slang_reflection{};
@@ -2036,15 +2036,15 @@ Framebuffer::Framebuffer(
       VkDevice device,
       const VkPhysicalDeviceMemoryProperties &mem_props,
       const Size2D &max_size, VkFormat format,
-      unsigned levels) :
+      unsigned max_levels) :
    device(device),
    memory_properties(mem_props),
    size(max_size),
    format(format),
-   levels(levels)
+   max_levels(max(max_levels, 1u))
 {
-   RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %u x %u.\n",
-         max_size.width, max_size.height);
+   RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %u x %u (max %u level(s)).\n",
+         max_size.width, max_size.height, max_levels);
    init_render_pass();
    init(nullptr);
 }
@@ -2744,6 +2744,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    for (unsigned i = 0; i < shader->passes; i++)
    {
       const video_shader_pass *pass = &shader->pass[i];
+      const video_shader_pass *next_pass =
+         i + 1 < shader->passes ? &shader->pass[i + 1] : nullptr;
       struct vulkan_filter_chain_pass_info pass_info;
       memset(&pass_info, 0, sizeof(pass_info));
 
@@ -2784,8 +2786,16 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       }
       pass_info.address = wrap_to_address(pass->wrap);
 
-      // TODO: Implement configurable mip modes.
-      pass_info.mip_filter = VULKAN_FILTER_CHAIN_NEAREST;
+      // TODO: Expose max_levels in slangp.
+      // CGP format is a bit awkward in that it uses mipmap_input,
+      // so we much check if next pass needs the mipmapping.
+      if (next_pass && next_pass->mipmap)
+         pass_info.max_levels = ~0u;
+      else
+         pass_info.max_levels = 1;
+
+      pass_info.mip_filter = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1
+         ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
 
       bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 

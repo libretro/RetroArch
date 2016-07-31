@@ -78,6 +78,9 @@ struct vulkan_filter_chain_pass_info
    enum vulkan_filter_chain_filter source_filter;
    enum vulkan_filter_chain_filter mip_filter;
    enum vulkan_filter_chain_address address;
+
+   /* Maximum number of mip-levels to use. */
+   unsigned max_levels;
 };
 
 struct vulkan_filter_chain_swapchain_info
