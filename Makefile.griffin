@@ -208,9 +208,9 @@ else ifeq ($(platform), vita)
   EXT_TARGET := $(TARGET_NAME)_$(platform).velf
   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
   MACHDEP := -DVITA
-  PLATCFLAGS :=  -O3 -mfloat-abi=hard -ffast-math -fsingle-precision-constant 
+  PLATCFLAGS :=  -O3 -mfloat-abi=hard -ffast-math -fsingle-precision-constant
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
-			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lUVLoader_stub \
+			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lfreetype -lz -lm -lc -lpng
 
   PLATOBJS += libretro-common/conversion/s16_to_float_neon.o \
@@ -376,7 +376,8 @@ all: $(EXT_TARGET)
 
 %.velf: %.elf
 	arm-vita-eabi-strip -g $<
-	vita-elf-create $< $@ $(VITASDK)/share/db.json $(VITASDK)/share/extra.json
+	vita-elf-create $< $@
+	make_fself $@ eboot.bin
 
 %.elf32: %.elf
 ifeq ($(platform), xenon360)
