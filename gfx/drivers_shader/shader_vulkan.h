@@ -31,7 +31,18 @@ typedef struct vulkan_filter_chain vulkan_filter_chain_t;
 enum vulkan_filter_chain_filter
 {
    VULKAN_FILTER_CHAIN_LINEAR  = 0,
-   VULKAN_FILTER_CHAIN_NEAREST = 1
+   VULKAN_FILTER_CHAIN_NEAREST = 1,
+   VULKAN_FILTER_CHAIN_COUNT
+};
+
+enum vulkan_filter_chain_address
+{
+   VULKAN_FILTER_CHAIN_ADDRESS_REPEAT = 0,
+   VULKAN_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT = 1,
+   VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE = 2,
+   VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER = 3,
+   VULKAN_FILTER_CHAIN_ADDRESS_MIRROR_CLAMP_TO_EDGE = 4,
+   VULKAN_FILTER_CHAIN_ADDRESS_COUNT
 };
 
 struct vulkan_filter_chain_texture
@@ -65,6 +76,8 @@ struct vulkan_filter_chain_pass_info
 
    /* The filter to use for source in this pass. */
    enum vulkan_filter_chain_filter source_filter;
+   enum vulkan_filter_chain_filter mip_filter;
+   enum vulkan_filter_chain_address address;
 };
 
 struct vulkan_filter_chain_swapchain_info

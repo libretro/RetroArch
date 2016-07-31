@@ -135,6 +135,8 @@ struct Texture
 {
    vulkan_filter_chain_texture texture;
    vulkan_filter_chain_filter filter;
+   vulkan_filter_chain_filter mip_filter;
+   vulkan_filter_chain_address address;
 };
 
 class DeferredDisposer
@@ -278,7 +280,7 @@ struct CommonResources
    size_t ubo_offset = 0;
    size_t ubo_alignment = 1;
 
-   VkSampler samplers[2];
+   VkSampler samplers[VULKAN_FILTER_CHAIN_COUNT][VULKAN_FILTER_CHAIN_COUNT][VULKAN_FILTER_CHAIN_ADDRESS_COUNT];
 
    vector<Texture> original_history;
    vector<Texture> framebuffer_feedback;
@@ -369,6 +371,16 @@ class Pass
       vulkan_filter_chain_filter get_source_filter() const
       {
          return pass_info.source_filter;
+      }
+
+      vulkan_filter_chain_filter get_mip_filter() const
+      {
+         return pass_info.mip_filter;
+      }
+
+      vulkan_filter_chain_address get_address_mode() const
+      {
+         return pass_info.address;
       }
 
       void set_common_resources(CommonResources *common)
@@ -630,6 +642,12 @@ void vulkan_filter_chain::add_static_texture(unique_ptr<StaticTexture> texture)
    common.luts.push_back(move(texture));
 }
 
+void vulkan_filter_chain::release_staging_buffers()
+{
+   for (auto &lut : common.luts)
+      lut->release_staging_buffer();
+}
+
 void vulkan_filter_chain::set_frame_count(uint64_t count)
 {
    for (auto &pass : passes)
@@ -674,6 +692,8 @@ void vulkan_filter_chain::update_history_info()
       source.texture.width    = texture->get_size().width;
       source.texture.height   = texture->get_size().height;
       source.filter           = passes.front()->get_source_filter();
+      source.mip_filter       = passes.front()->get_mip_filter();
+      source.address          = passes.front()->get_address_mode();
       i++;
    }
 }
@@ -696,6 +716,8 @@ void vulkan_filter_chain::update_feedback_info()
       source.texture.width    = fb->get_size().width;
       source.texture.height   = fb->get_size().height;
       source.filter           = passes[i]->get_source_filter();
+      source.mip_filter       = passes[i]->get_mip_filter();
+      source.address          = passes[i]->get_address_mode();
    }
 }
 
@@ -931,9 +953,13 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
    unsigned i;
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
    const Texture original = { 
-      input_texture, passes.front()->get_source_filter() };
-   Texture source         = { 
-      input_texture, passes.front()->get_source_filter() };
+      input_texture,
+      passes.front()->get_source_filter(),
+      passes.front()->get_mip_filter(),
+      passes.front()->get_address_mode(),
+   };
+
+   Texture source = original;
 
    for (i = 0; i < passes.size() - 1; i++)
    {
@@ -946,6 +972,8 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       source.texture.width    = fb.get_size().width;
       source.texture.height   = fb.get_size().height;
       source.filter           = passes[i + 1]->get_source_filter();
+      source.mip_filter       = passes[i + 1]->get_mip_filter();
+      source.address          = passes[i + 1]->get_address_mode();
 
       common.pass_outputs[i] = source;
    }
@@ -1013,10 +1041,21 @@ void vulkan_filter_chain::build_viewport_pass(
    Texture source;
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
    const Texture original = { 
-      input_texture, passes.front()->get_source_filter() };
+      input_texture,
+      passes.front()->get_source_filter(),
+      passes.front()->get_mip_filter(),
+      passes.front()->get_address_mode(),
+   };
 
    if (passes.size() == 1)
-      source = { input_texture, passes.back()->get_source_filter() };
+   {
+      source = {
+         input_texture,
+         passes.back()->get_source_filter(),
+         passes.back()->get_mip_filter(),
+         passes.back()->get_address_mode(),
+      };
+   }
    else
    {
       auto &fb = passes[passes.size() - 2]->get_framebuffer();
@@ -1025,6 +1064,8 @@ void vulkan_filter_chain::build_viewport_pass(
       source.texture.width   = fb.get_size().width;
       source.texture.height  = fb.get_size().height;
       source.filter          = passes.back()->get_source_filter();
+      source.mip_filter      = passes.back()->get_mip_filter();
+      source.address         = passes.back()->get_address_mode();
    }
 
    passes.back()->build_commands(disposer, cmd,
@@ -1059,6 +1100,8 @@ StaticTexture::StaticTexture(string id,
      buffer(move(buffer))
 {
    texture.filter = VULKAN_FILTER_CHAIN_LINEAR;
+   texture.mip_filter = VULKAN_FILTER_CHAIN_NEAREST;
+   texture.address = VULKAN_FILTER_CHAIN_ADDRESS_REPEAT;
    texture.texture.image = image;
    texture.texture.view = view;
    texture.texture.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -1473,35 +1516,94 @@ CommonResources::CommonResources(VkDevice device,
    vbo->unmap();
 
    VkSamplerCreateInfo info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-   info.magFilter               = VK_FILTER_NEAREST;
-   info.minFilter               = VK_FILTER_NEAREST;
-   info.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-   info.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-   info.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-   info.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
    info.mipLodBias              = 0.0f;
    info.maxAnisotropy           = 1.0f;
    info.compareEnable           = false;
    info.minLod                  = 0.0f;
-   info.maxLod                  = 0.0f;
+   info.maxLod                  = VK_LOD_CLAMP_NONE;
    info.unnormalizedCoordinates = false;
-   info.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+   info.borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 
-   vkCreateSampler(device,
-            &info, nullptr, &samplers[VULKAN_FILTER_CHAIN_NEAREST]);
+   for (unsigned i = 0; i < VULKAN_FILTER_CHAIN_COUNT; i++)
+   {
+      switch (static_cast<vulkan_filter_chain_filter>(i))
+      {
+         case VULKAN_FILTER_CHAIN_LINEAR:
+            info.magFilter = VK_FILTER_LINEAR;
+            info.minFilter = VK_FILTER_LINEAR;
+            break;
 
-   info.magFilter = VK_FILTER_LINEAR;
-   info.minFilter = VK_FILTER_LINEAR;
+         case VULKAN_FILTER_CHAIN_NEAREST:
+            info.magFilter = VK_FILTER_NEAREST;
+            info.minFilter = VK_FILTER_NEAREST;
+            break;
 
-   vkCreateSampler(device,
-            &info, nullptr, &samplers[VULKAN_FILTER_CHAIN_LINEAR]);
+         default:
+            break;
+      }
+
+      for (unsigned j = 0; j < VULKAN_FILTER_CHAIN_COUNT; j++)
+      {
+         switch (static_cast<vulkan_filter_chain_filter>(j))
+         {
+            case VULKAN_FILTER_CHAIN_LINEAR:
+               info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+               break;
+
+            case VULKAN_FILTER_CHAIN_NEAREST:
+               info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+               break;
+
+            default:
+               break;
+         }
+
+         for (unsigned k = 0; k < VULKAN_FILTER_CHAIN_ADDRESS_COUNT; k++)
+         {
+            VkSamplerAddressMode mode = VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
+
+            switch (static_cast<vulkan_filter_chain_address>(k))
+            {
+               case VULKAN_FILTER_CHAIN_ADDRESS_REPEAT:
+                  mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+                  break;
+
+               case VULKAN_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
+                  mode = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+                  break;
+
+               case VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
+                  mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+                  break;
+
+               case VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
+                  mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+                  break;
+
+               case VULKAN_FILTER_CHAIN_ADDRESS_MIRROR_CLAMP_TO_EDGE:
+                  mode = VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+                  break;
+
+               default:
+                  break;
+            }
+
+            info.addressModeU = mode;
+            info.addressModeV = mode;
+            info.addressModeW = mode;
+            vkCreateSampler(device, &info, nullptr, &samplers[i][j][k]);
+         }
+      }
+   }
 }
 
 CommonResources::~CommonResources()
 {
-   for (auto &samp : samplers)
-      if (samp != VK_NULL_HANDLE)
-         vkDestroySampler(device, samp, nullptr);
+   for (auto &i : samplers)
+      for (auto &j : i)
+         for (auto &k : j)
+            if (k != VK_NULL_HANDLE)
+               vkDestroySampler(device, k, nullptr);
 }
 
 void Pass::allocate_buffers()
@@ -1588,7 +1690,7 @@ void Pass::set_texture(VkDescriptorSet set, unsigned binding,
       const Texture &texture)
 {
    VkDescriptorImageInfo image_info;
-   image_info.sampler         = common->samplers[texture.filter];
+   image_info.sampler         = common->samplers[texture.filter][texture.mip_filter][texture.address];
    image_info.imageView       = texture.texture.view;
    image_info.imageLayout     = texture.texture.layout;
 
@@ -2143,6 +2245,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    pass_info.scale_y       = 1.0f;
    pass_info.rt_format     = tmpinfo.swapchain.format;
    pass_info.source_filter = filter;
+   pass_info.mip_filter    = VULKAN_FILTER_CHAIN_NEAREST;
+   pass_info.address       = VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
    chain->set_pass_info(0, pass_info);
 
    chain->set_shader(0, VK_SHADER_STAGE_VERTEX_BIT,
@@ -2356,6 +2460,7 @@ static bool vulkan_filter_chain_load_luts(
    vkQueueSubmit(info->queue, 1, &submit_info, VK_NULL_HANDLE);
    vkQueueWaitIdle(info->queue);
    vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
+   chain->release_staging_buffers();
    return true;
 
 error:
@@ -2436,6 +2541,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             pass->filter == RARCH_FILTER_LINEAR ? VULKAN_FILTER_CHAIN_LINEAR : 
             VULKAN_FILTER_CHAIN_NEAREST;
       }
+
+      // TODO: Implement configurable mip/address modes.
+      pass_info.mip_filter = VULKAN_FILTER_CHAIN_NEAREST;
+      pass_info.address = VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
 
       bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
@@ -2531,7 +2640,11 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       pass_info.scale_x = 1.0f;
       pass_info.scale_y = 1.0f;
       pass_info.rt_format = tmpinfo.swapchain.format;
+
       pass_info.source_filter = filter;
+      pass_info.mip_filter = VULKAN_FILTER_CHAIN_NEAREST;
+      pass_info.address = VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+
       chain->set_pass_info(shader->passes, pass_info);
 
       chain->set_shader(shader->passes,
