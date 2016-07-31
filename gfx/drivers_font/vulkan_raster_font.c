@@ -241,7 +241,7 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
    const struct vk_draw_triangles call = {
       font->vk->pipelines.font,
       &font->texture,
-      font->vk->samplers.nearest,
+      font->vk->samplers.mipmap_linear,
       &font->vk->mvp,
       sizeof(font->vk->mvp),
       &font->range,

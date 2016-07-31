@@ -267,7 +267,7 @@ void vulkan_sync_texture_to_cpu(vk_t *vk, const struct vk_texture *tex)
 
 static unsigned vulkan_num_miplevels(unsigned width, unsigned height)
 {
-   unsigned size = width > height ? width : height;
+   unsigned size = MAX(width, height);
    unsigned levels = 0;
    while (size)
    {
@@ -488,7 +488,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          view.components.a             = VK_COMPONENT_SWIZZLE_A;
       }
       view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      view.subresourceRange.levelCount = 1;
+      view.subresourceRange.levelCount = info.mipLevels;
       view.subresourceRange.layerCount = 1;
 
       vkCreateImageView(device, &view, NULL, &tex.view);
