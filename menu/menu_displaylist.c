@@ -5459,6 +5459,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_IMAGES_HISTORY:
+#ifdef HAVE_IMAGEVIEWER
          menu_displaylist_parse_playlist_history(menu, info,
                g_defaults.image_history,
                "images_history",
@@ -5470,8 +5471,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->need_refresh = true;
             info->need_push    = true;
          }
+#endif
          break;
       case DISPLAYLIST_MUSIC_HISTORY:
+#ifdef HAVE_FFMPEG
          menu_displaylist_parse_playlist_history(menu, info,
                g_defaults.music_history,
                "music_history",
@@ -5483,8 +5486,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->need_refresh = true;
             info->need_push    = true;
          }
+#endif
          break;
       case DISPLAYLIST_VIDEO_HISTORY:
+#ifdef HAVE_FFMPEG
          menu_displaylist_parse_playlist_history(menu, info,
                g_defaults.video_history,
                "video_history",
@@ -5496,6 +5501,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             info->need_refresh = true;
             info->need_push    = true;
          }
+#endif
          break;
       case DISPLAYLIST_OPTIONS_DISK:
          menu_entries_append_enum(info->list,

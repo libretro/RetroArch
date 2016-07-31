@@ -134,12 +134,14 @@ static bool screenshot_dump(
          bmp_type);
 #endif
 
+#ifdef HAVE_IMAGEVIEWER
    if (ret == true)
    {
       if (content_push_to_history_playlist(g_defaults.image_history, filename,  
                "imageviewer", "builtin"))
          playlist_write_file(g_defaults.image_history);
    }
+#endif
 
    return ret;
 }
