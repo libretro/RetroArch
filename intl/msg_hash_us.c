@@ -204,6 +204,34 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
+         snprintf(s, len, "Login details for your \n"
+               "Retro Achievements account. \n"
+               " \n"
+               "Visit retroachievements.org and sign up \n"
+               "for a free account. \n"
+               " \n"
+               "After you are done registering, you need \n"
+               "to input the username and password into \n"
+               "RetroArch.");
+         break;
+      case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
+         snprintf(s, len, "Username for your Retro Achievements account.");
+         break;
+      case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
+         snprintf(s, len, "Password for your Retro Achievements account.");
+         break;
+      case MENU_ENUM_LABEL_USER_LANGUAGE:
+         snprintf(s, len, "Localizes the menu and all onscreen messages \n"
+               "according to the language you have selected \n"
+               "here. \n"
+               " \n"
+               "Note: not all languages might be currently \n"
+               "implemented. \n"
+               " \n"
+               "In case a language is not implemented, \n"
+               "we fallback to English.");
+         break;
       case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
          snprintf(s, len, "Change the font that is used \n"
                "for the Onscreen Display text.");
