@@ -227,6 +227,7 @@ else ifeq ($(platform), vita)
   HAVE_RJPEG					:= 1
   HAVE_RBMP					   := 1
   HAVE_RTGA					   := 1
+  HAVE_IMAGEVIEWER         := 1
   HAVE_ZLIB                := 1
   HAVE_7ZIP                := 1
   HAVE_VITA2D              := 1
@@ -302,6 +303,10 @@ endif
 
 ifeq ($(HAVE_RTGA), 1)
 CFLAGS		+=	-DHAVE_RTGA
+endif
+
+ifeq ($(HAVE_IMAGEVIEWER), 1)
+CFLAGS		+=	-DHAVE_IMAGEVIEWER
 endif
 
 ifeq ($(HAVE_7ZIP), 1)
