@@ -280,6 +280,7 @@ class Framebuffer
       const VkPhysicalDeviceMemoryProperties &memory_properties;
       VkImage image = VK_NULL_HANDLE;
       VkImageView view = VK_NULL_HANDLE;
+      VkImageView fb_view = VK_NULL_HANDLE;
       Size2D size;
       VkFormat format;
       unsigned max_levels;
@@ -2175,7 +2176,7 @@ void Framebuffer::generate_mips(VkCommandBuffer cmd)
    // and the last one still on TRANSFER_DST_OPTIMAL, so do a final barrier which
    // moves everything to SHADER_READ_ONLY_OPTIMAL in one go along with the execution barrier to next pass.
    // Read-to-read memory barrier, so only need execution barrier for first transition.
-   barriers[0].srcAccessMask                 = 0;
+   barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
    barriers[0].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
    barriers[0].subresourceRange.baseMipLevel = 0;
    barriers[0].subresourceRange.levelCount   = levels - 1;
@@ -2300,6 +2301,8 @@ void Framebuffer::init(DeferredDisposer *disposer)
    view_info.components.a                    = VK_COMPONENT_SWIZZLE_A;
 
    vkCreateImageView(device, &view_info, nullptr, &view);
+   view_info.subresourceRange.levelCount = 1;
+   vkCreateImageView(device, &view_info, nullptr, &fb_view);
 
    init_framebuffer();
 }
@@ -2343,7 +2346,7 @@ void Framebuffer::init_framebuffer()
       VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
    info.renderPass      = render_pass;
    info.attachmentCount = 1;
-   info.pAttachments    = &view;
+   info.pAttachments    = &fb_view;
    info.width           = size.width;
    info.height          = size.height;
    info.layers          = 1;
@@ -2366,16 +2369,19 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size)
       //
       // Fake lambda init captures for C++11.
       //
-      auto d  = device;
-      auto i  = image;
-      auto v  = view;
-      auto fb = framebuffer;
+      auto d   = device;
+      auto i   = image;
+      auto v   = view;
+      auto fbv = fb_view;
+      auto fb  = framebuffer;
       disposer.defer([=]
       {
          if (fb != VK_NULL_HANDLE)
             vkDestroyFramebuffer(d, fb, nullptr);
          if (v != VK_NULL_HANDLE)
             vkDestroyImageView(d, v, nullptr);
+         if (fbv != VK_NULL_HANDLE)
+            vkDestroyImageView(d, fbv, nullptr);
          if (i != VK_NULL_HANDLE)
             vkDestroyImage(d, i, nullptr);
       });
@@ -2392,6 +2398,8 @@ Framebuffer::~Framebuffer()
       vkDestroyRenderPass(device, render_pass, nullptr);
    if (view != VK_NULL_HANDLE)
       vkDestroyImageView(device, view, nullptr);
+   if (fb_view != VK_NULL_HANDLE)
+      vkDestroyImageView(device, fb_view, nullptr);
    if (image != VK_NULL_HANDLE)
       vkDestroyImage(device, image, nullptr);
    if (memory.memory != VK_NULL_HANDLE)
