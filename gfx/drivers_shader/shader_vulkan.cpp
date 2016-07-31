@@ -1898,7 +1898,8 @@ void Pass::build_commands(
    {
       set_uniform_buffer(sets[sync_index], reflection.ubo_binding,
             common->ubo->get_buffer(),
-            ubo_offset, reflection.ubo_size);
+            ubo_offset + sync_index * common->ubo_sync_index_stride,
+            reflection.ubo_size);
    }
 
    // The final pass is always executed inside 
