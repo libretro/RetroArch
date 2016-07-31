@@ -1993,7 +1993,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS:
          return "Input";
       case MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
-         return "Overlay sullo schermo";
+         return "Mostra sullo schermo";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
          return "Overlay sullo schermo";
 	  case MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS:
