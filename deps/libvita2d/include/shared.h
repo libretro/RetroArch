@@ -11,7 +11,7 @@ extern SceGxmFragmentProgram *_vita2d_textureFragmentProgram;
 extern SceGxmFragmentProgram *_vita2d_textureTintFragmentProgram;
 extern const SceGxmProgramParameter *_vita2d_colorWvpParam;
 extern const SceGxmProgramParameter *_vita2d_textureWvpParam;
-extern SceGxmProgramParameter *_vita2d_textureTintColorParam;
+extern const SceGxmProgramParameter *_vita2d_textureTintColorParam;
 
 
 #endif

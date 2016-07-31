@@ -82,7 +82,7 @@ void vita2d_free_pgf(vita2d_pgf *font)
 	}
 }
 
-static int atlas_add_glyph(vita2d_pgf *font, unsigned int character)
+static int atlas_add_glyph_pgf(vita2d_pgf *font, unsigned int character)
 {
 	SceFontCharInfo char_info;
 	if (sceFontGetCharInfo(font->font_handle, character, &char_info) < 0)
@@ -121,7 +121,7 @@ int vita2d_pgf_draw_text(vita2d_pgf *font, int x, int y, unsigned int color, flo
 		unsigned int character = *text++;
 
 		if (!texture_atlas_exists(font->tex_atlas, character)) {
-			if (!atlas_add_glyph(font, character)) {
+			if (!atlas_add_glyph_pgf(font, character)) {
 				continue;
 			}
 		}
@@ -168,7 +168,7 @@ void vita2d_pgf_text_dimensions(vita2d_pgf *font, float scale, const char *text,
 		unsigned int character = *text++;
 
 		if (!texture_atlas_exists(font->tex_atlas, character)) {
-			if (!atlas_add_glyph(font, character)) {
+			if (!atlas_add_glyph_pgf(font, character)) {
 				continue;
 			}
 		}

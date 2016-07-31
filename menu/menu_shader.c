@@ -347,6 +347,8 @@ bool menu_shader_manager_save_preset(
    }
    else
       return true;
+#else
+   return false;
 #endif
 }
 
