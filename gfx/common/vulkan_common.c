@@ -1627,6 +1627,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       info.pfnCallback = vulkan_debug_cb;
       vkCreateDebugReportCallbackEXT(vk->context.instance, &info, NULL, &vk->context.debug_callback);
    }
+   RARCH_LOG("[Vulkan]: Enabling Vulkan debug layers.\n");
 #endif
 
    /* Try different API versions if driver has compatible
