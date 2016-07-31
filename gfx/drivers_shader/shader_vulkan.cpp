@@ -2340,11 +2340,11 @@ static vulkan_filter_chain_address wrap_to_address(gfx_wrap_type type)
    switch (type)
    {
       default:
-      case RARCH_WRAP_BORDER:
-         return VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER;
-
       case RARCH_WRAP_EDGE:
          return VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+
+      case RARCH_WRAP_BORDER:
+         return VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER;
 
       case RARCH_WRAP_REPEAT:
          return VULKAN_FILTER_CHAIN_ADDRESS_REPEAT;
@@ -2622,10 +2622,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             pass->filter == RARCH_FILTER_LINEAR ? VULKAN_FILTER_CHAIN_LINEAR : 
             VULKAN_FILTER_CHAIN_NEAREST;
       }
+      pass_info.address = wrap_to_address(pass->wrap);
 
-      // TODO: Implement configurable mip/address modes.
+      // TODO: Implement configurable mip modes.
       pass_info.mip_filter = VULKAN_FILTER_CHAIN_NEAREST;
-      pass_info.address = VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
 
       bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
