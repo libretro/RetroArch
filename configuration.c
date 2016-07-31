@@ -2333,7 +2333,7 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
  */
 bool config_load_shader_preset(void)
 {
-   enum file_path_enum idx;
+   unsigned idx;
    char shader_directory[PATH_MAX_LENGTH]   = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
    char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
    char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
@@ -2366,19 +2366,19 @@ bool config_load_shader_preset(void)
 
    for(idx = FILE_PATH_CGP_EXTENSION; idx < FILE_PATH_SLANGP_EXTENSION; idx++)
    {
-      if (!check_shader_compatibility(idx))
+      if (!check_shader_compatibility((enum file_path_enum)(idx)))
          continue;
       /* Concatenate strings into full paths for core_path, game_path */
       fill_pathname_join_special_ext(core_path,
             shader_directory, core_name,
             core_name,
-            file_path_str(idx),
+            file_path_str((enum file_path_enum)(idx)),
             sizeof(core_path));
 
       fill_pathname_join_special_ext(game_path,
             shader_directory, core_name,
             game_name,
-            file_path_str(idx),
+            file_path_str((enum file_path_enum)(idx)),
             sizeof(game_path));
 
       /* Create a new config file from game_path */
@@ -2400,13 +2400,13 @@ bool config_load_shader_preset(void)
 
    for(idx = FILE_PATH_CGP_EXTENSION; idx < FILE_PATH_SLANGP_EXTENSION; idx++)
    {
-      if (!check_shader_compatibility(idx))
+      if (!check_shader_compatibility((enum file_path_enum)(idx)))
          continue;
       /* Concatenate strings into full paths for core_path, game_path */
       fill_pathname_join_special_ext(core_path,
             shader_directory, core_name,
             core_name,
-            file_path_str(idx),
+            file_path_str((enum file_path_enum)(idx)),
             sizeof(core_path));
 
       /* Create a new config file from core_path */
