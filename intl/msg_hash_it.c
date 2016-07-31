@@ -176,7 +176,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                break;
          }
          break;
-      case MENU_ENUM_LABEL_LOAD_CONTENT:
+      case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
          snprintf(s, len,
                "Carica Contenuto. \n"
                "Seleziona per contenuto. \n"
@@ -1858,10 +1858,18 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Supporto Cocoa";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT:
          return "Supporto PNG (RPNG)";
+	  case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT:
+         return "Supporto JPEG (RJPEG)";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT:
+         return "Supporto BMP (RBMP)";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT:
+		 return "Supporto RTGA (RTGA)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT:
          return "Supporto SDL1.2";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:
          return "Supporto SDL2";
+	  case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT:
+		 return "Supporto Vulkan";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT:
          return "Supporto OpenGL";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT:
@@ -1908,6 +1916,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Supporto 7zip";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
          return "Supporto libreria dinamica";
+	  case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT:
+		 return "Caricamento run-time dinamico della libreria libretro";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT:
          return "Supporto Cg";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
@@ -1919,7 +1929,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT:
          return "Supporto immagine SDL";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
-         return "Supporto renderizza-a-texture (multi-pass shaders) OpenGL/Direct3D";
+         return "Supporto render-to-texture (multi-pass shaders) OpenGL/Direct3D";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
          return "Supporto FFmpeg";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT:
@@ -1983,9 +1993,11 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS:
          return "Input";
       case MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
-         return "Mostra sullo schermo";
+         return "Overlay sullo schermo";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
          return "Overlay sullo schermo";
+	  case MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS:
+		 return "Overlay sullo schermo";
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
          return "Menù";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
@@ -1996,6 +2008,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Seleziona file";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS:
          return "Aggiorna";
+	  case MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS:
+		 return "Aggiorna";
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
          return "Rete";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
