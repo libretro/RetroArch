@@ -31,6 +31,30 @@ function createConfig()
    if(localStorage.getItem("cfg_inited")!="true")
    {
       var config = 'input_player1_select = shift\n';
+      
+      //SDL2 ADD focus to html element
+			
+		if (document.getElementById('sdl2').checked) {
+				config += 'video_driver = sdl2\n';
+				config +="input_driver = sdl2\n";
+				config +="input_joypad_driver = sdl2\n";
+				config += "video_context_driver = sdl_gl\n";
+			   document.getElementById("canvas").focus();
+	         document.getElementById("canvas").addEventListener("keydown",function(e){
+		        e.preventDefault();
+		        return false;
+			      });
+				  
+				document.getElementById("canvas").onclick = function(){
+				document.getElementById("canvas").focus();
+	          
+			    };
+			
+			}else{
+				config += "video_context_driver = emscripten\n";
+				
+				};
+				
       config += 'audio_latency = 96\n'
       config += 'video_font_size = 16\n'
       config += 'rgui_browser_directory = /content\n';
