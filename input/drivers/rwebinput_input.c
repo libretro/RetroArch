@@ -67,20 +67,19 @@ error:
    return NULL;
 }
 
-static bool rwebinput_key_pressed(void *data, int key)
+static bool rwebinput_key_pressed__(void *data, int key)
 {
    unsigned sym;
+   bool ret;
    rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
    
    if (key >= RETROK_LAST)
       return false;
 
    sym = input_keymaps_translate_rk_to_keysym((enum retro_key)key);
+   ret = rwebinput->state.keys[sym >> 3] & (1 << (sym & 7));
 
-   if (rwebinput->state.keys[sym >> 3] & (1 << (sym & 7)))
-      return true;
-
-   return false;
+   return ret;
 }
 
 static bool rwebinput_meta_key_pressed(void *data, int key)
@@ -96,12 +95,18 @@ static bool rwebinput_is_pressed(rwebinput_input_t *rwebinput,
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *bind = &binds[id];
-      return bind->valid && rwebinput_key_pressed(rwebinput, binds[id].key);
+      return bind->valid && rwebinput_key_pressed__(rwebinput, binds[id].key);
    }
 
    return false;
 }
 
+static bool rwebinput_key_pressed(void *data, int key)
+{
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+   settings_t         *settings = config_get_ptr();
+   return rwebinput_is_pressed(rwebinput, settings->input.binds[0], key);
+}
 static int16_t rwebinput_mouse_state(rwebinput_input_t *rwebinput, unsigned id)
 {
    switch (id)
