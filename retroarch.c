@@ -1502,6 +1502,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             for (i = 0; i < MAX_USERS; i++)
                settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
          }
+         runloop_ctl(RUNLOOP_CTL_HTTPSERVER_INIT, NULL);
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
          break;
       case RARCH_CTL_SET_PATHS_REDIRECT:

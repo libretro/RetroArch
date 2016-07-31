@@ -68,6 +68,10 @@
 #include "network/netplay/netplay.h"
 #endif
 
+#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
+#include "httpserver/httpserver.h"
+#endif
+
 #include "verbosity.h"
 
 #ifdef HAVE_ZLIB
@@ -1231,6 +1235,16 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
             *key_event = &runloop_frontend_key_event;
          }
+         break;
+      case RUNLOOP_CTL_HTTPSERVER_INIT:
+#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
+         httpserver_init(8888);
+#endif
+         break;
+      case RUNLOOP_CTL_HTTPSERVER_DESTROY:
+#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
+         httpserver_destroy();
+#endif
          break;
       case RUNLOOP_CTL_NONE:
       default:

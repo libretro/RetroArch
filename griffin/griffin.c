@@ -1012,6 +1012,13 @@ XML
 #include "../database_info.c"
 #endif
 
+/*============================================================
+HTTP SERVER
+============================================================ */
+#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
+#include "httpserver/civetweb.c"
+#include "httpserver/httpserver.c"
+#endif
 
 #ifdef __cplusplus
 }
