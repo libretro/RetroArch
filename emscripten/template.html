@@ -22,7 +22,7 @@
       <progress value="0" max="100" id="progress" hidden=1></progress>  
     </div>
     <div class="emscripten_border" id="canvas_div" style="display: none">
-      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+      <canvas class="emscripten" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()"></canvas>
     </div>
     <div class="emscripten emscripten_border" id="openrom">
       <button id="fakerom" onclick="document.getElementById('rom').click()">Select content</button>
@@ -37,6 +37,7 @@
       <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, 
                                                                                 document.getElementById('resize').checked)"><br>
       <input type="checkbox" id="vsync"><label for="vsync" id="vsync-label">Enable V-sync (can only be done before loading game)</label><br>
+      <input type="checkbox" id="sdl2"><label for="sdl2" id="sdl2-label">Enable SDL2</label><br>
       <input type="textbox" id="latency" size="3" maxlength="3" value="96"> <label for="latency" id="latency-label">Audio latency (ms) (increase if you hear pops at fullspeed, can only be done before loading game)</label>
     </div>
     
