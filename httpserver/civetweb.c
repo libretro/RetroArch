@@ -808,7 +808,7 @@ static void mg_snprintf(const struct mg_connection *conn,
 #endif
 
 #define MD5_STATIC static
-#include "md5.inl"
+#include "utils/md5.h"
 
 /* Darwin prior to 7.0 and Win32 do not have socklen_t */
 #ifdef NO_SOCKLEN_T
@@ -5075,20 +5075,20 @@ bin2str(char *to, const unsigned char *p, size_t len)
 char *
 mg_md5(char buf[33], ...)
 {
-  md5_byte_t hash[16];
+  unsigned char hash[16];
   const char *p;
   va_list ap;
-  md5_state_t ctx;
+  MD5_CTX ctx;
 
-  md5_init(&ctx);
+  MD5_Init(&ctx);
 
   va_start(ap, buf);
   while ((p = va_arg(ap, const char *)) != NULL) {
-    md5_append(&ctx, (const md5_byte_t *)p, strlen(p));
+    MD5_Update(&ctx, (const void *)p, strlen(p));
   }
   va_end(ap);
 
-  md5_finish(&ctx, hash);
+  MD5_Final(hash, &ctx);
   bin2str(buf, hash, sizeof(hash));
   return buf;
 }
