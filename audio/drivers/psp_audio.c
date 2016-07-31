@@ -93,8 +93,8 @@ static int audioMainLoop(SceSize args, void* argp)
    sceAudioOutReleasePort(port);
 #else
    sceAudioSRCChRelease();
-#endif
    sceKernelExitThread(0);
+#endif
    return 0;
 }
 
@@ -219,7 +219,6 @@ static bool psp_audio_stop(void *data)
 #else
    sceKernelWaitThreadEnd(psp->thread, &timeout);
 #endif
-
    return true;
 }
 

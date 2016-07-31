@@ -21,7 +21,7 @@
 #ifdef VITA
 #include <psp2/moduleinfo.h>
 #include <psp2/power.h>
-
+#include <psp2/sysmodule.h>
 int scePowerSetArmClockFrequency(int freq);
 #else
 #include <pspkernel.h>
@@ -78,12 +78,14 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 #elif defined(HAVE_FILE_LOGGER)
 #ifndef VITA
    retro_main_log_file_init("ms0:/retroarch-log.txt");
+#else
+   retro_main_log_file_init("ux0:/temp/retroarch-log.txt");
 #endif
 #endif
 #endif
 
 #ifdef VITA
-   strlcpy(eboot_path, "cache0:/retroarch/", sizeof(eboot_path));
+   strlcpy(eboot_path, "ux0:/data/retroarch/", sizeof(eboot_path));
    strlcpy(g_defaults.dir.port, eboot_path, sizeof(g_defaults.dir.port));
 #else
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
@@ -91,6 +93,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 #endif
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
+   strlcpy(g_defaults.dir.content_history,
+         g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
    fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
          "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
@@ -113,6 +117,10 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "cheats", sizeof(g_defaults.dir.cheats));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.core,
+         "database/cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.core,
+         "database/rdb", sizeof(g_defaults.dir.database));
 
 #ifdef VITA
    fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
@@ -227,6 +235,7 @@ static void frontend_psp_init(void *data)
    scePowerSetClockFrequency(333,333,166);
 #else
    scePowerSetArmClockFrequency(444);
+   sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
 #endif
 #endif
 
@@ -371,7 +380,7 @@ static int frontend_psp_parse_drive_list(void *data)
 
 #ifdef VITA
    menu_entries_append_enum(list,
-         "cache0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "ux0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #else
    menu_entries_append_enum(list,
          "ms0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
