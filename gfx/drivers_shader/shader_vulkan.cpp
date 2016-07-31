@@ -186,7 +186,10 @@ class StaticTexture
             VkImageView view,
             VkDeviceMemory memory,
             unique_ptr<Buffer> buffer,
-            unsigned width, unsigned height);
+            unsigned width, unsigned height,
+            bool linear,
+            bool mipmap,
+            vulkan_filter_chain_address address);
       ~StaticTexture();
 
       StaticTexture(StaticTexture&&) = delete;
@@ -1091,7 +1094,10 @@ StaticTexture::StaticTexture(string id,
       VkImageView view,
       VkDeviceMemory memory,
       unique_ptr<Buffer> buffer,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height,
+      bool linear,
+      bool mipmap,
+      vulkan_filter_chain_address address)
    : id(move(id)),
      device(device),
      image(image),
@@ -1099,9 +1105,10 @@ StaticTexture::StaticTexture(string id,
      memory(memory),
      buffer(move(buffer))
 {
-   texture.filter = VULKAN_FILTER_CHAIN_LINEAR;
-   texture.mip_filter = VULKAN_FILTER_CHAIN_NEAREST;
-   texture.address = VULKAN_FILTER_CHAIN_ADDRESS_REPEAT;
+   texture.filter = linear ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
+   texture.mip_filter =
+      mipmap && linear ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST;
+   texture.address = address;
    texture.texture.image = image;
    texture.texture.view = view;
    texture.texture.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -2316,6 +2323,37 @@ static VkFormat glslang_format_to_vk(glslang_format fmt)
    }
 }
 
+static unsigned num_miplevels(unsigned width, unsigned height)
+{
+   unsigned size = std::max(width, height);
+   unsigned levels = 0;
+   while (size)
+   {
+      levels++;
+      size >>= 1;
+   }
+   return levels;
+}
+
+static vulkan_filter_chain_address wrap_to_address(gfx_wrap_type type)
+{
+   switch (type)
+   {
+      default:
+      case RARCH_WRAP_BORDER:
+         return VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER;
+
+      case RARCH_WRAP_EDGE:
+         return VULKAN_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
+
+      case RARCH_WRAP_REPEAT:
+         return VULKAN_FILTER_CHAIN_ADDRESS_REPEAT;
+
+      case RARCH_WRAP_MIRRORED_REPEAT:
+         return VULKAN_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT;
+   }
+}
+
 static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cmd,
       const struct vulkan_filter_chain_create_info *info,
       vulkan_filter_chain *chain,
@@ -2341,7 +2379,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
    image_info.extent.width  = image.width;
    image_info.extent.height = image.height;
    image_info.extent.depth  = 1;
-   image_info.mipLevels     = 1;
+   image_info.mipLevels     = shader->mipmap ? num_miplevels(image.width, image.height) : 1;
    image_info.arrayLayers   = 1;
    image_info.samples       = VK_SAMPLE_COUNT_1_BIT;
    image_info.tiling        = VK_IMAGE_TILING_OPTIMAL;
@@ -2370,7 +2408,7 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
    view_info.components.b                = VK_COMPONENT_SWIZZLE_B;
    view_info.components.a                = VK_COMPONENT_SWIZZLE_A;
    view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   view_info.subresourceRange.levelCount = 1;
+   view_info.subresourceRange.levelCount = image_info.mipLevels;
    view_info.subresourceRange.layerCount = 1;
    vkCreateImageView(info->device, &view_info, nullptr, &view);
 
@@ -2381,7 +2419,8 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
    buffer->unmap();
 
    image_layout_transition(cmd, tex,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         VK_IMAGE_LAYOUT_UNDEFINED,
+         shader->mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
@@ -2393,11 +2432,50 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
    region.imageExtent.height = image.height;
    region.imageExtent.depth = 1;
 
-   vkCmdCopyBufferToImage(cmd, buffer->get_buffer(), tex, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+   vkCmdCopyBufferToImage(cmd, buffer->get_buffer(), tex,
+         shader->mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
 
+   for (unsigned i = 1; i < image_info.mipLevels; i++)
+   {
+      VkImageBlit blit_region = {};
+      unsigned src_width = std::max(image.width >> (i - 1), 1u);
+      unsigned src_height = std::max(image.height >> (i - 1), 1u);
+      unsigned target_width = std::max(image.width >> i, 1u);
+      unsigned target_height = std::max(image.height >> i, 1u);
+
+      blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit_region.srcSubresource.mipLevel = i - 1;
+      blit_region.srcSubresource.baseArrayLayer = 0;
+      blit_region.srcSubresource.layerCount = 1;
+      blit_region.dstSubresource = blit_region.srcSubresource;
+      blit_region.dstSubresource.mipLevel = i;
+      blit_region.srcOffsets[1].x = src_width;
+      blit_region.srcOffsets[1].y = src_height;
+      blit_region.srcOffsets[1].z = 1;
+      blit_region.dstOffsets[1].x = target_width;
+      blit_region.dstOffsets[1].y = target_height;
+      blit_region.dstOffsets[1].z = 1;
+
+      // Only injects execution and memory barriers,
+      // not actual transition.
+      image_layout_transition(cmd, tex,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_LAYOUT_GENERAL,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_ACCESS_TRANSFER_READ_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+      vkCmdBlitImage(cmd,
+            tex, VK_IMAGE_LAYOUT_GENERAL,
+            tex, VK_IMAGE_LAYOUT_GENERAL,
+            1, &blit_region, VK_FILTER_LINEAR);
+   }
+
    image_layout_transition(cmd, tex,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         shader->mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
@@ -2405,7 +2483,10 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
    image.pixels = nullptr;
 
    return unique_ptr<StaticTexture>(new StaticTexture(shader->id, info->device,
-            tex, view, memory, move(buffer), image.width, image.height));
+            tex, view, memory, move(buffer), image.width, image.height,
+            shader->filter != RARCH_FILTER_NEAREST,
+            image_info.mipLevels > 1,
+            wrap_to_address(shader->wrap)));
 
 error:
    if (image.pixels)

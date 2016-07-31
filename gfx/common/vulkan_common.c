@@ -552,8 +552,13 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
             VK_PIPELINE_STAGE_HOST_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT);
 
+      /* If doing mipmapping on upload, keep in general so we can easily do transfers to
+       * and transfers from the images without having to
+       * mess around with lots of extra transitions at per-level granularity.
+       */
       vulkan_image_layout_transition(vk, staging, tex.image,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            tex.mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             0, VK_ACCESS_TRANSFER_WRITE_BIT,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -568,23 +573,12 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
       vkCmdCopyImage(staging,
             tmp.image, VK_IMAGE_LAYOUT_GENERAL,
-            tex.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            tex.image,
+            tex.mipmap ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             1, &region);
 
       if (tex.mipmap)
       {
-         /* Keep in general so we can easily do transfers to
-          * and transfers from the images without having to
-          * mess around with lots of extra transitions at per-level granularity.
-          */
-         vulkan_image_layout_transition(vk, staging, tex.image,
-               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-               VK_IMAGE_LAYOUT_GENERAL,
-               VK_ACCESS_TRANSFER_WRITE_BIT,
-               VK_ACCESS_TRANSFER_READ_BIT,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               VK_PIPELINE_STAGE_TRANSFER_BIT);
-
          for (i = 1; i < info.mipLevels; i++)
          {
             VkImageBlit blit_region;
@@ -607,23 +601,20 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
             blit_region.dstOffsets[1].y = target_height;
             blit_region.dstOffsets[1].z = 1;
 
+            /* Only injects execution and memory barriers,
+             * not actual transition. */
+            vulkan_image_layout_transition(vk, staging, tex.image,
+                  VK_IMAGE_LAYOUT_GENERAL,
+                  VK_IMAGE_LAYOUT_GENERAL,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_ACCESS_TRANSFER_READ_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+
             vkCmdBlitImage(staging,
                   tex.image, VK_IMAGE_LAYOUT_GENERAL,
                   tex.image, VK_IMAGE_LAYOUT_GENERAL,
                   1, &blit_region, VK_FILTER_LINEAR);
-
-            if (i + 1 < info.mipLevels)
-            {
-               /* Only injects execution and memory barriers,
-                * not actual transition. */
-               vulkan_image_layout_transition(vk, staging, tex.image,
-                     VK_IMAGE_LAYOUT_GENERAL,
-                     VK_IMAGE_LAYOUT_GENERAL,
-                     VK_ACCESS_TRANSFER_WRITE_BIT,
-                     VK_ACCESS_TRANSFER_READ_BIT,
-                     VK_PIPELINE_STAGE_TRANSFER_BIT,
-                     VK_PIPELINE_STAGE_TRANSFER_BIT);
-            }
          }
 
          /* Complete our texture. */
