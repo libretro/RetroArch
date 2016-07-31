@@ -128,7 +128,11 @@ enum runloop_ctl_state
    /* System info */
    RUNLOOP_CTL_SYSTEM_INFO_GET,
    RUNLOOP_CTL_SYSTEM_INFO_INIT,
-   RUNLOOP_CTL_SYSTEM_INFO_FREE
+   RUNLOOP_CTL_SYSTEM_INFO_FREE,
+
+   /* HTTP server */
+   RUNLOOP_CTL_HTTPSERVER_INIT,
+   RUNLOOP_CTL_HTTPSERVER_DESTROY
 };
 
 typedef struct rarch_dir_list rarch_dir_list_t;
