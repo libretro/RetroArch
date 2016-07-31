@@ -208,12 +208,20 @@ else ifeq ($(platform), vita)
   EXT_TARGET := $(TARGET_NAME)_$(platform).velf
   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
   MACHDEP := -DVITA
+  INCLUDE += -I$(VITASDK)/arm-vita-eabi/include/freetype2 -Ideps/libvita2d/include
   PLATCFLAGS :=  -O3 -mfloat-abi=hard -ffast-math -fsingle-precision-constant
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lfreetype -lz -lm -lc -lpng
 
-  PLATOBJS += libretro-common/conversion/s16_to_float_neon.o \
+  PLATOBJS += deps/libvita2d/shader/compiled/clear_v_gxp.o \
+				  deps/libvita2d/shader/compiled/clear_f_gxp.o \
+				  deps/libvita2d/shader/compiled/color_v_gxp.o \
+				  deps/libvita2d/shader/compiled/color_f_gxp.o \
+				  deps/libvita2d/shader/compiled/texture_v_gxp.o \
+				  deps/libvita2d/shader/compiled/texture_f_gxp.o \
+				  deps/libvita2d/shader/compiled/texture_tint_f_gxp.o\
+				  libretro-common/conversion/s16_to_float_neon.o \
 				  audio/drivers_resampler/sinc_resampler_neon.o \
               audio/drivers_resampler/cc_resampler_neon.o
 
@@ -266,7 +274,7 @@ CFLAGS		+= -DHAVE_WIIUSB_HID -DHAVE_HID
 endif
 
 ifeq ($(HAVE_VITA2D), 1)
-CFLAGS		+= -DHAVE_VITA2D
+CFLAGS		+= -DHAVE_VITA2D -
 endif
 
 ifeq ($(HAVE_LIBRETRODB), 1)
@@ -352,10 +360,6 @@ CFLAGS += -DHAVE_THREADS
 ifeq ($(platform), psp1)
 LIBS += -lpthread-psp
 endif
-endif
-
-ifeq ($(HAVE_VITA2D), 1)
-LIBS := -lvita2d $(LIBS)
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
