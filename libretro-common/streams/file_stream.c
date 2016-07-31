@@ -284,6 +284,11 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
       return NULL;
 #if defined(HAVE_BUFFERED_IO)
    return fgets(s, len, stream->fp);
+#elif defined(VITA) || defined(PSP)
+   if(filestream_read(stream,s,len)==len)
+      return s;
+   else
+      return NULL;
 #else
    return gets(s);
 #endif
