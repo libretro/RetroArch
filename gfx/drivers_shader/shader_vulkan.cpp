@@ -175,6 +175,7 @@ class Buffer
       VkBuffer buffer;
       VkDeviceMemory memory;
       size_t size;
+      void *mapped = nullptr;
 };
 
 class StaticTexture
@@ -891,6 +892,7 @@ bool vulkan_filter_chain::init_ubo()
                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
    }
 
+   common.ubo_mapped = static_cast<uint8_t*>(common.ubo->map());
    return true;
 }
 
@@ -950,8 +952,6 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
 
    update_history_info();
    update_feedback_info();
-
-   common.ubo_mapped = static_cast<uint8_t*>(common.ubo->map());
 
    unsigned i;
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
@@ -1074,9 +1074,6 @@ void vulkan_filter_chain::build_viewport_pass(
    passes.back()->build_commands(disposer, cmd,
          original, source, vp, mvp);
 
-   common.ubo->unmap();
-   common.ubo_mapped = nullptr;
-
    // If we need to keep old frames, copy it after fragment is complete.
    // TODO: We can improve pipelining by figuring out which pass is the last that reads from
    // the history and dispatch the copy earlier.
@@ -1154,19 +1151,27 @@ Buffer::Buffer(VkDevice device,
 
 void *Buffer::map()
 {
-   void *ptr = nullptr;
-   if (vkMapMemory(device, memory, 0, size, 0, &ptr) == VK_SUCCESS)
-      return ptr;
-   return nullptr;
+   if (!mapped)
+   {
+      if (vkMapMemory(device, memory, 0, size, 0, &mapped) == VK_SUCCESS)
+         return mapped;
+      else
+         return nullptr;
+   }
+   return mapped;
 }
 
 void Buffer::unmap()
 {
-   vkUnmapMemory(device, memory);
+   if (mapped)
+      vkUnmapMemory(device, memory);
+   mapped = nullptr;
 }
 
 Buffer::~Buffer()
 {
+   if (mapped)
+      unmap();
    if (memory != VK_NULL_HANDLE)
       vkFreeMemory(device, memory, nullptr);
    if (buffer != VK_NULL_HANDLE)
@@ -1807,6 +1812,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
          current_framebuffer_size.width, current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
          unsigned(current_viewport.width), unsigned(current_viewport.height));
+
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
          frame_count_period ? uint32_t(frame_count % frame_count_period) : uint32_t(frame_count));
 
