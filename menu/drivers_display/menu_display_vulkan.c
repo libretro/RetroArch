@@ -193,8 +193,9 @@ static void menu_display_vk_draw(void *data)
             vk->display.pipelines[
                to_display_pipeline(draw->prim_type, vk->display.blend)],
                texture,
-               texture->default_smooth 
-                  ? vk->samplers.linear : vk->samplers.nearest,
+               texture->mipmap ?
+                  vk->samplers.mipmap_linear :
+                  (texture->default_smooth ? vk->samplers.linear : vk->samplers.nearest),
                draw->matrix_data
                   ? draw->matrix_data : menu_display_vk_get_default_mvp(),
                sizeof(math_matrix_4x4),

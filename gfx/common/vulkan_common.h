@@ -173,6 +173,7 @@ struct vk_texture
    enum vk_texture_type type;
    bool default_smooth;
    bool need_manual_cache_management;
+   bool mipmap;
 };
 
 struct vk_buffer
@@ -352,6 +353,8 @@ typedef struct vk
    {
       VkSampler linear;
       VkSampler nearest;
+      VkSampler mipmap_nearest;
+      VkSampler mipmap_linear;
    } samplers;
 
    unsigned last_valid_index;
