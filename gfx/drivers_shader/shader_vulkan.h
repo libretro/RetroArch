@@ -81,6 +81,8 @@ struct vulkan_filter_chain_create_info
    VkPhysicalDevice gpu;
    const VkPhysicalDeviceMemoryProperties *memory_properties;
    VkPipelineCache pipeline_cache;
+   VkQueue queue;
+   VkCommandPool command_pool;
    unsigned num_passes;
 
    VkFormat original_format;

@@ -651,6 +651,8 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.gpu                   = vk->context->gpu;
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
+   info.queue                 = vk->context->queue;
+   info.command_pool          = vk->swapchain[vk->context->current_swapchain_index].cmd_pool;
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
@@ -683,6 +685,8 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.gpu                   = vk->context->gpu;
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
+   info.queue                 = vk->context->queue;
+   info.command_pool          = vk->swapchain[vk->context->current_swapchain_index].cmd_pool;
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;

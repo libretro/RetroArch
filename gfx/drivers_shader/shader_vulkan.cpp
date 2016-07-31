@@ -27,6 +27,7 @@
 #include "../video_shader_driver.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
+#include "../../libretro-common/include/formats/image.h"
 
 using namespace std;
 
@@ -164,11 +165,52 @@ class Buffer
 
       const VkBuffer &get_buffer() const { return buffer; }
 
+      Buffer(Buffer&&) = delete;
+      void operator=(Buffer&&) = delete;
+
    private:
       VkDevice device;
       VkBuffer buffer;
       VkDeviceMemory memory;
       size_t size;
+};
+
+class StaticTexture
+{
+   public:
+      StaticTexture(string id,
+            VkDevice device,
+            VkImage image,
+            VkImageView view,
+            VkDeviceMemory memory,
+            unique_ptr<Buffer> buffer);
+      ~StaticTexture();
+
+      StaticTexture(StaticTexture&&) = delete;
+      void operator=(StaticTexture&&) = delete;
+
+      void release_staging_buffer()
+      {
+         buffer.reset();
+      }
+
+      void set_id(string name)
+      {
+         id = move(name);
+      }
+
+      const string &get_id() const
+      {
+         return id;
+      }
+
+   private:
+      VkDevice device;
+      VkImage image;
+      VkImageView view;
+      VkDeviceMemory memory;
+      unique_ptr<Buffer> buffer;
+      string id;
 };
 
 class Framebuffer
@@ -234,6 +276,7 @@ struct CommonResources
    vector<Texture> original_history;
    vector<Texture> framebuffer_feedback;
    vector<Texture> pass_outputs;
+   vector<unique_ptr<StaticTexture>> luts;
 
    unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
    unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
@@ -447,6 +490,9 @@ struct vulkan_filter_chain
       void set_frame_count_period(unsigned pass, unsigned period);
       void set_pass_name(unsigned pass, const char *name);
 
+      void add_static_texture(unique_ptr<StaticTexture> texture);
+      void release_staging_buffers();
+
    private:
       VkDevice device;
       VkPhysicalDevice gpu;
@@ -570,6 +616,11 @@ void vulkan_filter_chain::set_input_texture(
       const vulkan_filter_chain_texture &texture)
 {
    input_texture = texture;
+}
+
+void vulkan_filter_chain::add_static_texture(unique_ptr<StaticTexture> texture)
+{
+   common.luts.push_back(move(texture));
 }
 
 void vulkan_filter_chain::set_frame_count(uint64_t count)
@@ -971,6 +1022,30 @@ void vulkan_filter_chain::build_viewport_pass(
    // For feedback FBOs, swap current and previous.
    for (auto &pass : passes)
       pass->end_frame();
+}
+
+StaticTexture::StaticTexture(string id,
+      VkDevice device,
+      VkImage image,
+      VkImageView view,
+      VkDeviceMemory memory,
+      unique_ptr<Buffer> buffer)
+   : id(move(id)),
+     device(device),
+     image(image),
+     view(view),
+     memory(memory),
+     buffer(move(buffer))
+{}
+
+StaticTexture::~StaticTexture()
+{
+   if (view != VK_NULL_HANDLE)
+      vkDestroyImageView(device, view, nullptr);
+   if (image != VK_NULL_HANDLE)
+      vkDestroyImage(device, image, nullptr);
+   if (memory != VK_NULL_HANDLE)
+      vkFreeMemory(device, memory, nullptr);
 }
 
 Buffer::Buffer(VkDevice device,
@@ -2099,6 +2174,158 @@ static VkFormat glslang_format_to_vk(glslang_format fmt)
    }
 }
 
+static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cmd,
+      const struct vulkan_filter_chain_create_info *info,
+      vulkan_filter_chain *chain,
+      const video_shader_lut *shader)
+{
+   texture_image image;
+   VkMemoryRequirements mem_reqs;
+   VkImageCreateInfo image_info    = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+   VkImageViewCreateInfo view_info = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+   VkMemoryAllocateInfo alloc      = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+   VkImage tex                     = VK_NULL_HANDLE;
+   VkDeviceMemory memory           = VK_NULL_HANDLE;
+   VkImageView view                = VK_NULL_HANDLE;
+   VkBufferImageCopy region        = {};
+   void *ptr                       = nullptr;
+   unique_ptr<Buffer> buffer;
+
+   if (!image_texture_load(&image, shader->path))
+      return {};
+
+   image_info.imageType     = VK_IMAGE_TYPE_2D;
+   image_info.format        = VK_FORMAT_B8G8R8A8_UNORM;
+   image_info.extent.width  = image.width;
+   image_info.extent.height = image.height;
+   image_info.extent.depth  = 1;
+   image_info.mipLevels     = 1;
+   image_info.arrayLayers   = 1;
+   image_info.samples       = VK_SAMPLE_COUNT_1_BIT;
+   image_info.tiling        = VK_IMAGE_TILING_OPTIMAL;
+   image_info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT |
+                              VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                              VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+   image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+   vkCreateImage(info->device, &image_info, nullptr, &tex);
+   vkGetImageMemoryRequirements(info->device, tex, &mem_reqs);
+   alloc.allocationSize = mem_reqs.size;
+   alloc.memoryTypeIndex = find_memory_type(
+         *info->memory_properties,
+         mem_reqs.memoryTypeBits,
+         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+   if (vkAllocateMemory(info->device, &alloc, nullptr, &memory) != VK_SUCCESS)
+      goto error;
+
+   vkBindImageMemory(info->device, tex, memory, 0);
+
+   view_info.image                       = tex;
+   view_info.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
+   view_info.format                      = VK_FORMAT_B8G8R8A8_UNORM;
+   view_info.components.r                = VK_COMPONENT_SWIZZLE_R;
+   view_info.components.g                = VK_COMPONENT_SWIZZLE_G;
+   view_info.components.b                = VK_COMPONENT_SWIZZLE_B;
+   view_info.components.a                = VK_COMPONENT_SWIZZLE_A;
+   view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   view_info.subresourceRange.levelCount = 1;
+   view_info.subresourceRange.layerCount = 1;
+   vkCreateImageView(info->device, &view_info, nullptr, &view);
+
+   buffer = unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
+            image.width * image.height * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
+   ptr = buffer->map();
+   memcpy(ptr, image.pixels, image.width * image.height * sizeof(uint32_t));
+   buffer->unmap();
+   image_texture_free(&image);
+   image.pixels = nullptr;
+
+   image_layout_transition(cmd, tex,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.imageSubresource.mipLevel = 0;
+   region.imageSubresource.baseArrayLayer = 0;
+   region.imageSubresource.layerCount = 1;
+   region.imageExtent.width = image.width;
+   region.imageExtent.height = image.height;
+   region.imageExtent.depth = 1;
+
+   vkCmdCopyBufferToImage(cmd, buffer->get_buffer(), tex, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         1, &region);
+
+   image_layout_transition(cmd, tex,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+   return unique_ptr<StaticTexture>(new StaticTexture(shader->id, info->device, tex, view, memory, move(buffer)));
+
+error:
+   if (image.pixels)
+      image_texture_free(&image);
+   if (tex != VK_NULL_HANDLE)
+      vkDestroyImage(info->device, tex, nullptr);
+   if (view != VK_NULL_HANDLE)
+      vkDestroyImageView(info->device, view, nullptr);
+   if (memory != VK_NULL_HANDLE)
+      vkFreeMemory(info->device, memory, nullptr);
+   return {};
+}
+
+static bool vulkan_filter_chain_load_luts(
+      const struct vulkan_filter_chain_create_info *info,
+      vulkan_filter_chain *chain,
+      video_shader *shader)
+{
+   VkCommandBufferBeginInfo begin_info           = {
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+   VkSubmitInfo submit_info                      = {
+      VK_STRUCTURE_TYPE_SUBMIT_INFO };
+   VkCommandBuffer cmd = VK_NULL_HANDLE;
+   VkCommandBufferAllocateInfo cmd_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+   bool recording = false;
+
+   cmd_info.commandPool        = info->command_pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = 1;
+
+   vkAllocateCommandBuffers(info->device, &cmd_info, &cmd);
+   begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   vkBeginCommandBuffer(cmd, &begin_info);
+   recording = true;
+
+   for (unsigned i = 0; i < shader->luts; i++)
+   {
+      auto image = vulkan_filter_chain_load_lut(cmd, info, chain, &shader->lut[i]);
+      if (!image)
+      {
+         RARCH_ERR("[Vulkan]: Failed to load LUT \"%s\".\n", shader->lut[i].path);
+         goto error;
+      }
+
+      chain->add_static_texture(move(image));
+   }
+
+   vkEndCommandBuffer(cmd);
+   recording = false;
+   submit_info.commandBufferCount = 1;
+   submit_info.pCommandBuffers = &cmd;
+   vkQueueSubmit(info->queue, 1, &submit_info, VK_NULL_HANDLE);
+   vkQueueWaitIdle(info->queue);
+   vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
+   return true;
+
+error:
+   if (recording)
+      vkEndCommandBuffer(cmd);
+   if (cmd != VK_NULL_HANDLE)
+      vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
+   return false;
+}
+
 vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const struct vulkan_filter_chain_create_info *info,
       const char *path, vulkan_filter_chain_filter filter)
@@ -2123,6 +2350,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
    unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
    if (!chain)
+      return nullptr;
+
+   if (shader->luts && !vulkan_filter_chain_load_luts(info, chain.get(), shader.get()))
       return nullptr;
 
    for (unsigned i = 0; i < shader->passes; i++)

@@ -48,6 +48,11 @@ enum slang_texture_semantic
    // Canonical name: "PassFeedback#", e.g. "PassFeedback2".
    SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK = 4,
 
+   // Inputs from static textures, defined by the user.
+   // There is no canonical name, and the only way to use these semantics are by
+   // remapping.
+   SLANG_TEXTURE_SEMANTIC_USER = 5,
+
    SLANG_NUM_TEXTURE_SEMANTICS,
    SLANG_INVALID_TEXTURE_SEMANTIC = -1
 };
