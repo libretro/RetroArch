@@ -230,6 +230,7 @@ typedef struct settings
          unsigned shader_pipeline;
          char     font[PATH_MAX_LENGTH];
          unsigned scale_factor;
+         float    aspect_ratio;
          unsigned alpha_factor;
          unsigned theme;
          unsigned menu_color_theme;

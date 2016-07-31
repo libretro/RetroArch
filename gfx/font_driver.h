@@ -78,7 +78,8 @@ struct font_params
 {
    float x;
    float y;
-   float scale;
+   float scale_x;
+   float scale_y;
    /* Drop shadow color multiplier. */
    float drop_mod;
    /* Drop shadow offset.
@@ -104,7 +105,7 @@ typedef struct font_renderer
    void (*bind_block)(void *data, void *block);
    void (*flush)(void *data);
    
-   int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
+   int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale_x);
 } font_renderer_t;
 
 typedef struct font_renderer_driver
@@ -135,7 +136,7 @@ void font_driver_render_msg(void *data, const char *msg, const struct font_param
 
 void font_driver_bind_block(void *font_data, void *block);
 
-int font_driver_get_message_width(void *data, const char *msg, unsigned len, float scale);
+int font_driver_get_message_width(void *data, const char *msg, unsigned len, float scale_x);
 
 void font_driver_flush(void *data);
 

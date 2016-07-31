@@ -467,6 +467,7 @@ static void config_set_defaults(void)
             def_menu,  sizeof(settings->menu.driver));
 #ifdef HAVE_XMB
    settings->menu.xmb.scale_factor     = xmb_scale_factor;
+   settings->menu.xmb.aspect_ratio     = xmb_aspect_ratio;
    settings->menu.xmb.alpha_factor     = xmb_alpha_factor;
    settings->menu.xmb.theme            = xmb_icon_theme;
    settings->menu.xmb.menu_color_theme = menu_background_gradient;
@@ -1435,6 +1436,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "menu_wallpaper_opacity", &settings->menu.wallpaper.opacity},
       { "menu_footer_opacity", &settings->menu.footer.opacity},
       { "menu_header_opacity", &settings->menu.header.opacity},
+      { "xmb_aspect_ratio", &settings->menu.xmb.aspect_ratio},
       { "video_aspect_ratio", &settings->video.aspect_ratio},
       { "video_refresh_rate", &settings->video.refresh_rate},
       { "video_font_size", &settings->video.font_size},
@@ -2944,6 +2946,7 @@ bool config_save_file(const char *path)
       { "menu_wallpaper_opacity",   settings->menu.wallpaper.opacity},
       { "menu_footer_opacity",      settings->menu.footer.opacity},
       { "menu_header_opacity",      settings->menu.header.opacity},
+      { "xmb_aspect_ratio",         settings->menu.xmb.aspect_ratio},
 #endif
       { "video_message_pos_x",      settings->video.msg_pos_x},
       { "video_message_pos_y",      settings->video.msg_pos_y},

@@ -247,7 +247,8 @@ static void mui_draw_text(float x, float y, unsigned width, unsigned height,
 
    params.x           = x / width;
    params.y           = 1.0f - (y + font_size / 3) / height;
-   params.scale       = 1.0f;
+   params.scale_x     = 1.0f;
+   params.scale_y     = 1.0f;
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
    params.drop_y      = 0.0f;

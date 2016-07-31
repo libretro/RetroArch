@@ -1080,6 +1080,8 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Filtre linéaire";
       case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
          return "XMB : Zoom";
+      case MENU_ENUM_LABEL_VALUE_XMB_ASPECT_RATIO:
+         return "XMB : Rapport d'aspect";
       case MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR:
          return "XMB : Transparence";
       case MENU_ENUM_LABEL_VALUE_XMB_FONT:

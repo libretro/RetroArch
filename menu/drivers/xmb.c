@@ -52,6 +52,9 @@
 #define XMB_RIBBON_COLS 64
 #define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
 
+#define XMB_MOD_AR_X(ASPECT_RATIO) (ASPECT_RATIO > 1 ? ASPECT_RATIO : 1)
+#define XMB_MOD_AR_Y(ASPECT_RATIO) (ASPECT_RATIO < 1 ? 2 - ASPECT_RATIO : 1)
+
 #ifndef XMB_DELAY
 #define XMB_DELAY 10
 #endif
@@ -488,7 +491,8 @@ static void xmb_draw_icon(
       float rotation,
       float scale_factor,
       float *color,
-      float shadow_offset)
+      float shadow_offset,
+      bool fixed_pos)
 {
    menu_display_ctx_draw_t draw;
    struct video_coords coords;
@@ -508,8 +512,8 @@ static void xmb_draw_icon(
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
-   draw.width           = icon_size;
-   draw.height          = icon_size;
+   draw.width           = icon_size * XMB_MOD_AR_X(settings->menu.xmb.aspect_ratio);
+   draw.height          = icon_size * XMB_MOD_AR_Y(settings->menu.xmb.aspect_ratio);
    draw.coords          = &coords;
    draw.matrix_data     = mymat;
    draw.texture         = texture;
@@ -524,15 +528,31 @@ static void xmb_draw_icon(
       menu_display_set_alpha(shadow, color[3] * 0.35f);
 
       coords.color      = shadow;
-      draw.x            = x + shadow_offset;
-      draw.y            = height - y - shadow_offset;
+      if (fixed_pos)
+      {
+         draw.x         = x + shadow_offset;
+         draw.y         = height - y + shadow_offset;
+      }
+      else
+      {
+         draw.x         = (x + shadow_offset) * XMB_MOD_AR_X(settings->menu.xmb.aspect_ratio);
+         draw.y         = height - (y + shadow_offset) * XMB_MOD_AR_Y(settings->menu.xmb.aspect_ratio);
+      }
 
       menu_display_draw(&draw);
    }
 
    coords.color         = (const float*)color;
-   draw.x               = x;
-   draw.y               = height - y;
+   if (fixed_pos)
+   {
+      draw.x            = x;
+      draw.y            = height - y;
+   }
+   else
+   {
+      draw.x            = x * XMB_MOD_AR_X(settings->menu.xmb.aspect_ratio);
+      draw.y            = height - y * XMB_MOD_AR_Y(settings->menu.xmb.aspect_ratio);
+   }
 
    menu_display_draw(&draw);
 }
@@ -589,8 +609,8 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
 
    coords.color         = (const float*)color;
    menu_display_set_alpha((float*)coords.color, 1.0f);
-   draw.x               = x;
-   draw.y               = height - y;
+   draw.x               = x * XMB_MOD_AR_X(settings->menu.xmb.aspect_ratio);
+   draw.y               = (height - y) * XMB_MOD_AR_Y(settings->menu.xmb.aspect_ratio);
 
    menu_display_draw(&draw);
 }
@@ -599,7 +619,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
       const char *str, float x,
       float y, float scale_factor, float alpha,
       enum text_alignment text_align,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height, bool fixed_pos)
 {
    settings_t *settings = config_get_ptr();
    struct font_params params;
@@ -617,9 +637,18 @@ static void xmb_draw_text(xmb_handle_t *xmb,
          || y < -xmb->icon.size || y > height + xmb->icon.size)
       return;
 
-   params.x           = x / width;
-   params.y           = 1.0f - y / height;
-   params.scale       = scale_factor;
+   if (fixed_pos)
+   {
+      params.x           = x / width;
+      params.y           = 1.0f - y / height;
+   }
+   else
+   {
+      params.x           = x / width * XMB_MOD_AR_X(settings->menu.xmb.aspect_ratio);
+      params.y           = 1.0f - y / height * XMB_MOD_AR_Y(settings->menu.xmb.aspect_ratio);
+   }
+   params.scale_x     = scale_factor * XMB_MOD_AR_X(settings->menu.xmb.aspect_ratio);
+   params.scale_y     = scale_factor * XMB_MOD_AR_Y(settings->menu.xmb.aspect_ratio);
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
    params.drop_y      = 0.0f;
@@ -629,8 +658,16 @@ static void xmb_draw_text(xmb_handle_t *xmb,
 
    if (settings->menu.xmb.shadows_enable)
    {
-      params.drop_x      = xmb->shadow_offset;
-      params.drop_y      = -xmb->shadow_offset;
+      if (fixed_pos)
+      {
+         params.drop_x      = xmb->shadow_offset;
+         params.drop_y      = -xmb->shadow_offset;
+      }
+      else
+      {
+         params.drop_x      = xmb->shadow_offset * XMB_MOD_AR_X(settings->menu.xmb.aspect_ratio);
+         params.drop_y      = -xmb->shadow_offset * XMB_MOD_AR_Y(settings->menu.xmb.aspect_ratio);
+      }
       params.drop_alpha  = 0.35f;
    }
 
@@ -685,7 +722,8 @@ static void xmb_render_messagebox_internal(
                1,
                TEXT_ALIGN_LEFT,
                width,
-               height);
+               height,
+               false);
    }
 
 end:
@@ -1811,7 +1849,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             xmb->icon.spacing.horizontal + xmb->margins.label.left,
             xmb->margins.screen.top + node->y + xmb->margins.label.top,
             1, node->label_alpha, TEXT_ALIGN_LEFT,
-            width, height);
+            width, height, false);
 
       ticker.s        = value;
       ticker.len      = 35;
@@ -1832,7 +1870,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                1,
                node->label_alpha,
                TEXT_ALIGN_LEFT,
-               width, height);
+               width, height, false);
 
 
       menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
@@ -1869,7 +1907,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                rotation,
                scale_factor,
                &color[0],
-               xmb->shadow_offset);
+               xmb->shadow_offset,
+               false);
       }
 
       menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
@@ -1888,7 +1927,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                0,
                1,
                &color[0],
-               xmb->shadow_offset);
+               xmb->shadow_offset,
+               false);
    }
 
    menu_display_blend_end();
@@ -2123,7 +2163,7 @@ static void xmb_frame(void *data)
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
-         width, height);
+         width, height, false);
 
 /* uncomment to print the messages on the XMB status line
    if (string_is_empty(runloop_msg_queue_pull()))
@@ -2131,7 +2171,7 @@ static void xmb_frame(void *data)
       if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
          xmb_draw_text(xmb, title_msg, xmb->margins.title.left,
                height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
-               width, height);
+               width, height, true);
 /*   }
    else
       xmb_draw_text(xmb, runloop_msg_queue_pull(), xmb->margins.title.left,
@@ -2167,7 +2207,8 @@ static void xmb_frame(void *data)
             0,
             1,
             &coord_white[0],
-            xmb->shadow_offset);
+            xmb->shadow_offset,
+            true);
 
    if (settings->menu.timedate_enable)
    {
@@ -2183,7 +2224,7 @@ static void xmb_frame(void *data)
       xmb_draw_text(xmb, timedate,
             width - xmb->margins.title.left - xmb->icon.size / 4,
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
-            width, height);
+            width, height, true);
    }
 
    /* Arrow image */
@@ -2205,7 +2246,8 @@ static void xmb_frame(void *data)
             0,
             1,
             &coord_white[0],
-            xmb->shadow_offset);
+            xmb->shadow_offset,
+            false);
 
    menu_display_blend_begin();
 
@@ -2253,7 +2295,8 @@ static void xmb_frame(void *data)
                rotation,
                scale_factor,
                &item_color[0],
-               xmb->shadow_offset);
+               xmb->shadow_offset,
+               false);
       }
    }
 
@@ -2332,7 +2375,7 @@ static void xmb_frame(void *data)
    menu_display_unset_viewport();
 }
 
-static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
+static void xmb_layout_ps3(xmb_handle_t *xmb, int width, int height)
 {
    unsigned new_font_size, new_header_height;
    float scale_factor;
@@ -2380,7 +2423,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    menu_display_set_header_height(new_header_height);
 }
 
-static void xmb_layout_psp(xmb_handle_t *xmb, int width)
+static void xmb_layout_psp(xmb_handle_t *xmb, int width, int height)
 {
    unsigned new_font_size, new_header_height;
    float scale_factor;
@@ -2441,9 +2484,9 @@ static void xmb_layout(xmb_handle_t *xmb)
 
    /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
    if (width > 320)
-      xmb_layout_ps3(xmb, width);
+      xmb_layout_ps3(xmb, width, height);
    else
-      xmb_layout_psp(xmb, width);
+      xmb_layout_psp(xmb, width, height);
 
    current = selection;
    end     = menu_entries_get_end();
