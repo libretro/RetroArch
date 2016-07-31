@@ -764,7 +764,7 @@ static const bool menu_dpi_override_enable = true;
 #ifdef RARCH_MOBILE
 static const unsigned menu_dpi_override_value = 72;
 #else
-static const unsigned menu_dpi_override_value = 200;
+static const unsigned menu_dpi_override_value = 500;
 #endif
 
 /* Log level for libretro cores (GET_LOG_INTERFACE). */
