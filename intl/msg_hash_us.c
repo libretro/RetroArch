@@ -204,6 +204,30 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+         snprintf(s, len, "Change the font that is used \n"
+               "for the Onscreen Display text.");
+         break;
+      case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
+         snprintf(s, len, "Load content-specific core options \n"
+               "automatically if found.");
+         break;
+      case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
+         snprintf(s, len, "Load override configurations \n"
+               "automatically if found.");
+         break;
+      case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
+         snprintf(s, len, "Load input remapping files \n"
+               "automatically if found.");
+         break;
+      case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
+         snprintf(s, len, "Sort save states in folders \n"
+               "named after the libretro core used.");
+         break;
+      case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
+         snprintf(s, len, "Sort save files in folders \n"
+               "named after the libretro core used.");
+         break;
       case MENU_ENUM_LABEL_RESUME_CONTENT:
          snprintf(s, len, "Exits from the menu and returns back \n"
                "to the content.");
@@ -3709,7 +3733,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuration Per-Core";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
-         return "Use per-game core options if available";
+         return "Load Content-specific core options automatically";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
          return "Create game-options file";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
