@@ -3269,44 +3269,36 @@ bool config_replace(char *path)
    return true;
 }
 
+static char path_libretro[PATH_MAX_LENGTH];
+
 char *config_get_active_core_path_ptr(void)
 {
-   settings_t *settings        = config_get_ptr();
-   return settings->path.libretro;
+   return path_libretro;
 }
 
 const char *config_get_active_core_path(void)
 {
-   const char *core_path = (const char *)config_get_active_core_path_ptr();
-   return core_path;
+   return path_libretro;
 }
 
 bool config_active_core_path_is_empty(void)
 {
-   settings_t *settings        = config_get_ptr();
-   return !settings->path.libretro[0];
+   return !path_libretro[0];
 }
 
 size_t config_get_active_core_path_size(void)
 {
-   settings_t *settings        = config_get_ptr();
-   return sizeof(settings->path.libretro);
+   return sizeof(path_libretro);
 }
 
 void config_set_active_core_path(const char *path)
 {
-   settings_t *settings        = config_get_ptr();
-   if (!settings)
-      return;
-   strlcpy(settings->path.libretro, path, sizeof(settings->path.libretro));
+   strlcpy(path_libretro, path, sizeof(path_libretro));
 }
 
 void config_clear_active_core_path(void)
 {
-   settings_t *settings        = config_get_ptr();
-   if (!settings)
-      return;
-   *settings->path.libretro = '\0';
+   *path_libretro = '\0';
 }
 
 const char *config_get_active_path(void)
