@@ -29,6 +29,7 @@ static bool slang_texture_semantic_is_array(slang_texture_semantic sem)
       case SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY:
       case SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT:
       case SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK:
+      case SLANG_TEXTURE_SEMANTIC_USER:
          return true;
 
       default:
@@ -52,6 +53,7 @@ static const char *texture_semantic_names[] = {
    "OriginalHistory",
    "PassOutput",
    "PassFeedback",
+   "User",
    nullptr
 };
 
@@ -61,6 +63,7 @@ static const char *texture_semantic_uniform_names[] = {
    "OriginalHistorySize",
    "PassOutputSize",
    "PassFeedbackSize",
+   "UserSize",
    nullptr
 };
 

@@ -483,16 +483,31 @@ static void vulkan_init_samplers(vk_t *vk)
    vkCreateSampler(vk->context->device,
          &info, NULL, &vk->samplers.nearest);
 
-   info.magFilter               = VK_FILTER_LINEAR;
-   info.minFilter               = VK_FILTER_LINEAR;
+   info.magFilter = VK_FILTER_LINEAR;
+   info.minFilter = VK_FILTER_LINEAR;
    vkCreateSampler(vk->context->device,
          &info, NULL, &vk->samplers.linear);
+
+   info.maxLod     = VK_LOD_CLAMP_NONE;
+   info.magFilter  = VK_FILTER_NEAREST;
+   info.minFilter  = VK_FILTER_NEAREST;
+   info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+   vkCreateSampler(vk->context->device,
+         &info, NULL, &vk->samplers.mipmap_nearest);
+
+   info.magFilter  = VK_FILTER_LINEAR;
+   info.minFilter  = VK_FILTER_LINEAR;
+   info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+   vkCreateSampler(vk->context->device,
+         &info, NULL, &vk->samplers.mipmap_linear);
 }
 
 static void vulkan_deinit_samplers(vk_t *vk)
 {
    vkDestroySampler(vk->context->device, vk->samplers.nearest, NULL);
    vkDestroySampler(vk->context->device, vk->samplers.linear, NULL);
+   vkDestroySampler(vk->context->device, vk->samplers.mipmap_nearest, NULL);
+   vkDestroySampler(vk->context->device, vk->samplers.mipmap_linear, NULL);
 }
 
 static void vulkan_init_buffers(vk_t *vk)
@@ -651,6 +666,8 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.gpu                   = vk->context->gpu;
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
+   info.queue                 = vk->context->queue;
+   info.command_pool          = vk->swapchain[vk->context->current_swapchain_index].cmd_pool;
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
@@ -683,6 +700,8 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.gpu                   = vk->context->gpu;
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
+   info.queue                 = vk->context->queue;
+   info.command_pool          = vk->swapchain[vk->context->current_swapchain_index].cmd_pool;
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
    info.swapchain.viewport    = vk->vk_vp;
@@ -1745,7 +1764,9 @@ static bool vulkan_frame(void *data, const void *frame,
             quad.texture = optimal;
          }
 
-         quad.sampler = vk->samplers.linear;
+         quad.sampler = optimal->mipmap ?
+            vk->samplers.mipmap_linear : vk->samplers.linear;
+
          quad.mvp     = &vk->mvp_no_rot;
          quad.color.r = 1.0f;
          quad.color.g = 1.0f;
@@ -2133,10 +2154,9 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
          image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
          image->pixels, NULL, VULKAN_TEXTURE_STATIC);
 
-   /* TODO: Actually add mipmapping support.
-    * Optimal tiling would make sense here as well ... */
    texture->default_smooth =
       filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_LINEAR;
+   texture->mipmap = filter_type == TEXTURE_FILTER_MIPMAP_LINEAR;
 
    return (uintptr_t)texture;
 }
@@ -2366,7 +2386,8 @@ static void vulkan_render_overlay(vk_t *vk)
       memset(&call, 0, sizeof(call));
       call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
       call.texture      = &vk->overlay.images[i];
-      call.sampler      = vk->samplers.linear;
+      call.sampler      = call.texture->mipmap ?
+         vk->samplers.mipmap_linear : vk->samplers.linear;
       call.uniform      = &vk->mvp;
       call.uniform_size = sizeof(vk->mvp);
       call.vbo          = &range;
