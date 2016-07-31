@@ -1591,22 +1591,22 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_RPL_ENTRY:
          if (core_node)
             return core_node->content_icon;
-         else
-            switch (xmb->categories.selection_ptr)
-            {
+
+         switch (xmb->categories.selection_ptr)
+         {
 #ifdef HAVE_IMAGEVIEWER
-               case XMB_SYSTEM_TAB_IMAGES:
-                  return xmb->textures.list[XMB_TEXTURE_IMAGE];
+            case XMB_SYSTEM_TAB_IMAGES:
+               return xmb->textures.list[XMB_TEXTURE_IMAGE];
 #endif
 #ifdef HAVE_FFMPEG
-               case XMB_SYSTEM_TAB_MUSIC:
-                  return xmb->textures.list[XMB_TEXTURE_MUSIC];
-               case XMB_SYSTEM_TAB_VIDEO:
-                  return xmb->textures.list[XMB_TEXTURE_MOVIE];
+            case XMB_SYSTEM_TAB_MUSIC:
+               return xmb->textures.list[XMB_TEXTURE_MUSIC];
+            case XMB_SYSTEM_TAB_VIDEO:
+               return xmb->textures.list[XMB_TEXTURE_MOVIE];
 #endif
-               default:
-                  return xmb->textures.list[XMB_TEXTURE_FILE];
-            }
+            default:
+               break;
+         }
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];

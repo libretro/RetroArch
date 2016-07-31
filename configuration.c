@@ -2333,6 +2333,7 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
  */
 bool config_load_shader_preset(void)
 {
+   enum file_path_enum idx;
    char shader_directory[PATH_MAX_LENGTH]   = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
    char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
    char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
@@ -2342,7 +2343,6 @@ bool config_load_shader_preset(void)
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
-   int idx;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 

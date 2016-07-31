@@ -201,11 +201,12 @@ void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c)
 
 static bool imageviewer_load(const char *path, int image_index)
 {
+#ifdef HAVE_STB_IMAGE
    int comp;
+#endif
 
    imageviewer_free_image();
 
-   (void)comp;
 #ifdef HAVE_STB_IMAGE
    image_buffer           = (uint32_t*)stbi_load(
          path,
