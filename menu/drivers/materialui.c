@@ -374,10 +374,10 @@ static void mui_get_message(void *data, const char *message)
 }
 
 static void mui_render_messagebox(mui_handle_t *mui,
-      const char *message, float *body_bg_color, uint32_t font_normal_color)
+      const char *message, float *body_bg_color, uint32_t font_color)
 {
    unsigned i, width, height;
-   int x, y, font_size, longest = 0, longest_width = 0;
+   int x, y, line_height, longest = 0, longest_width = 0;
    struct string_list *list = (struct string_list*)
       string_split(message, "\n");
    void *fb_buf;
@@ -389,10 +389,10 @@ static void mui_render_messagebox(mui_handle_t *mui,
 
    video_driver_get_size(&width, &height);
 
-   font_size = menu_display_get_font_size();
+   line_height = menu_display_get_font_size() * 1.2;
 
    x = width  / 2;
-   y = height / 2 - (list->size-1) * font_size / 2;
+   y = height / 2 - (list->size-1) * line_height / 2;
 
    fb_buf = menu_display_get_font_buffer();
 
@@ -408,11 +408,13 @@ static void mui_render_messagebox(mui_handle_t *mui,
       }
    }
 
+   menu_display_set_alpha(body_bg_color, 1.0);
+
    mui_render_quad(mui,
-         x - longest_width/2.0 - mui->margin,
-         y - font_size/2.0 - mui->margin,
-         longest_width + mui->margin*2.0,
-         font_size * list->size + mui->margin*2.0,
+         x - longest_width/2.0 - mui->margin*2.0,
+         y - line_height/2.0 - mui->margin*2.0,
+         longest_width + mui->margin*4.0,
+         line_height * list->size + mui->margin*4.0,
          width,
          height,
          &body_bg_color[0]);
@@ -422,9 +424,9 @@ static void mui_render_messagebox(mui_handle_t *mui,
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         mui_draw_text(x - longest_width/2.0, y + i * font_size,
+         mui_draw_text(x - longest_width/2.0, y + i * line_height,
                width, height,
-               msg, font_normal_color, TEXT_ALIGN_LEFT);
+               msg, font_color, TEXT_ALIGN_LEFT);
    }
 
 end:
@@ -1205,13 +1207,13 @@ static void mui_frame(void *data)
          str = "";
       mui_render_quad(mui, 0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-      mui_render_messagebox(mui, msg, &body_bg_color[0], font_normal_color);
+      mui_render_messagebox(mui, msg, &body_bg_color[0], font_hover_color);
    }
 
    if (!string_is_empty(mui->box_message))
    {
       mui_render_quad(mui, 0, 0, width, height, width, height, &black_bg[0]);
-      mui_render_messagebox(mui, mui->box_message, &body_bg_color[0], font_normal_color);
+      mui_render_messagebox(mui, mui->box_message, &body_bg_color[0], font_hover_color);
       mui->box_message[0] = '\0';
    }
 
