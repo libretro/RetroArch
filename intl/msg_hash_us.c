@@ -3698,13 +3698,13 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
          return "DPI Override";
       case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
-         return "XMB Scale Factor";
+         return "Menu Scale Factor";
       case MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR:
-         return "XMB Alpha Factor";
+         return "Menu Alpha Factor";
       case MENU_ENUM_LABEL_VALUE_XMB_FONT:
-         return "XMB Font";
+         return "Menu Font";
       case MENU_ENUM_LABEL_VALUE_XMB_THEME:
-         return "XMB Theme";
+         return "Menu Icon Theme";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
          return "Menu Color Theme";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME:
