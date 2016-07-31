@@ -183,7 +183,8 @@ class StaticTexture
             VkImage image,
             VkImageView view,
             VkDeviceMemory memory,
-            unique_ptr<Buffer> buffer);
+            unique_ptr<Buffer> buffer,
+            unsigned width, unsigned height);
       ~StaticTexture();
 
       StaticTexture(StaticTexture&&) = delete;
@@ -204,6 +205,11 @@ class StaticTexture
          return id;
       }
 
+      const Texture &get_texture() const
+      {
+         return texture;
+      }
+
    private:
       VkDevice device;
       VkImage image;
@@ -211,6 +217,7 @@ class StaticTexture
       VkDeviceMemory memory;
       unique_ptr<Buffer> buffer;
       string id;
+      Texture texture;
 };
 
 class Framebuffer
@@ -816,6 +823,19 @@ bool vulkan_filter_chain::init_alias()
                slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
          return false;
    }
+
+   for (auto &lut : common.luts)
+   {
+      unsigned i = &lut - common.luts.data();
+      if (!set_unique_map(common.texture_semantic_map, lut->get_id(),
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+         return false;
+
+      if (!set_unique_map(common.texture_semantic_uniform_map, lut->get_id() + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+         return false;
+   }
+
    return true;
 }
 
@@ -1029,14 +1049,22 @@ StaticTexture::StaticTexture(string id,
       VkImage image,
       VkImageView view,
       VkDeviceMemory memory,
-      unique_ptr<Buffer> buffer)
+      unique_ptr<Buffer> buffer,
+      unsigned width, unsigned height)
    : id(move(id)),
      device(device),
      image(image),
      view(view),
      memory(memory),
      buffer(move(buffer))
-{}
+{
+   texture.filter = VULKAN_FILTER_CHAIN_LINEAR;
+   texture.texture.image = image;
+   texture.texture.view = view;
+   texture.texture.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   texture.texture.width = width;
+   texture.texture.height = height;
+}
 
 StaticTexture::~StaticTexture()
 {
@@ -1709,6 +1737,16 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
             texture);
       i++;
    }
+
+   // LUTs.
+   i = 0;
+   for (auto &lut : common->luts)
+   {
+      build_semantic_texture_array(set, buffer,
+            SLANG_TEXTURE_SEMANTIC_USER, i,
+            lut->get_texture());
+      i++;
+   }
 }
 
 void Pass::build_commands(
@@ -2261,7 +2299,8 @@ static unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(VkCommandBuffer cm
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-   return unique_ptr<StaticTexture>(new StaticTexture(shader->id, info->device, tex, view, memory, move(buffer)));
+   return unique_ptr<StaticTexture>(new StaticTexture(shader->id, info->device,
+            tex, view, memory, move(buffer), image.width, image.height));
 
 error:
    if (image.pixels)
