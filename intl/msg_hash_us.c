@@ -446,7 +446,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
          snprintf(s, len,
-               "If enabled, every content file loaded \n"
+               "If enabled, every file loaded \n"
                "in RetroArch will be automatically \n"
                "added to the recent history list.");
          break;
