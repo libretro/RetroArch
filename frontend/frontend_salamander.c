@@ -128,7 +128,9 @@ static void salamander_init(char *s, size_t len)
       {
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
          config_file_free(conf);
-         strlcpy(s, tmp_str, len);
+
+         if (strcmp(tmp_str, "builtin") != 0)
+            strlcpy(s, tmp_str, len);
       }
 #ifdef GEKKO
       /* stupid libfat bug or something; sometimes it says 
