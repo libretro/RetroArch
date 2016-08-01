@@ -318,7 +318,8 @@ enum gl_capability_enum
    GL_CAPS_ARGB8,
    GL_CAPS_DEBUG,
    GL_CAPS_PACKED_DEPTH_STENCIL,
-   GL_CAPS_ES2_COMPAT
+   GL_CAPS_ES2_COMPAT,
+   GL_CAPS_UNPACK_ROW_LENGTH
 };
 
 static bool gl_check_capability(enum gl_capability_enum enum_idx)
@@ -389,7 +390,7 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
 #endif
       case GL_CAPS_ARGB8:
-#ifdef HAVE_OPENGLES2
+#ifdef HAVE_OPENGLES
          if (gl_query_extension("OES_rgb8_rgba8")
                || gl_query_extension("ARM_argb8"))
             return true;
@@ -407,14 +408,14 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
       case GL_CAPS_PACKED_DEPTH_STENCIL:
          {
-#ifdef HAVE_OPENGLES2
+#ifdef HAVE_OPENGLES
             struct retro_hw_render_callback *hwr =
                video_driver_get_hw_context();
             if (hwr->stencil 
                   && gl_query_extension("OES_packed_depth_stencil"))
                return true;
 #else
-            /* TODO/FIXME - implement this for non-GLES2? */
+            /* TODO/FIXME - implement this for non-GLES? */
 #endif
          }
          break;
@@ -431,6 +432,34 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
 
             if (gl_query_extension("ARB_ES2_compatibility"))
                return true;
+         }
+#endif
+         break;
+      case GL_CAPS_UNPACK_ROW_LENGTH:
+#ifdef HAVE_OPENGLES
+         {
+            unsigned major      = 0;
+            unsigned minor      = 0;
+            bool gles3          = false;
+            const char *version = (const char*)glGetString(GL_VERSION);
+
+            if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+               major = minor = 0;
+
+            if (major >= 3)
+            {
+               RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
+               gles3 = true;
+            }
+
+            if (gles3)
+               return true;
+
+            if (gl_query_extension("GL_EXT_unpack_subimage"))
+            {
+               RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
+               return true;
+            }
          }
 #endif
          break;
@@ -2412,7 +2441,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #endif
 
    video_driver_unset_rgba();
-#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES2)
+#if defined(HAVE_OPENGLES)
    bool gles3          = false;
 
    if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
@@ -2432,9 +2461,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       bool oes_npot = gl_query_extension("OES_texture_npot");
       gl->have_full_npot_support = arb_npot || oes_npot;
    }
-#endif
 
-#ifdef HAVE_OPENGLES2
    /* There are both APPLE and EXT variants. */
    /* Videocore hardware supports BGRA8888 extension, but
     * should be purposefully avoided. */
@@ -2448,13 +2475,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    }
 
    /* GLES3 has unpack_subimage and sRGB in core. */
-
-   gl->support_unpack_row_length = gles3;
-   if (!gles3 && gl_query_extension("GL_EXT_unpack_subimage"))
-   {
-      RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
-      gl->support_unpack_row_length = true;
-   }
+   gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
 
    /* No extensions for float FBO currently. */
    gl->has_srgb_fbo       = gles3 || gl_query_extension("EXT_sRGB");
