@@ -3636,6 +3636,42 @@ unsigned *height_p, size_t *pitch_p)
 }
 #endif
 
+static bool gl_renderchain_add_lut(const struct video_shader *shader,
+      unsigned i, GLuint *textures_lut)
+{
+   struct texture_image img = {0};
+   enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
+
+   RARCH_LOG("Loading texture image from: \"%s\" ...\n",
+         shader->lut[i].path);
+
+   if (!image_texture_load(&img, shader->lut[i].path))
+   {
+      RARCH_ERR("Failed to load texture image from: \"%s\"\n",
+            shader->lut[i].path);
+      return false;
+   }
+
+   if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
+      filter_type = TEXTURE_FILTER_NEAREST;
+
+   if (shader->lut[i].mipmap)
+   {
+      if (filter_type == TEXTURE_FILTER_NEAREST)
+         filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
+      else
+         filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
+   }
+
+   gl_load_texture_data(textures_lut[i],
+         shader->lut[i].wrap,
+         filter_type, 4,
+         img.width, img.height,
+         img.pixels, sizeof(uint32_t));
+   image_texture_free(&img);
+
+   return true;
+}
 
 bool gl_load_luts(const struct video_shader *shader,
       GLuint *textures_lut)
@@ -3650,36 +3686,8 @@ bool gl_load_luts(const struct video_shader *shader,
 
    for (i = 0; i < num_luts; i++)
    {
-      struct texture_image img = {0};
-      enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
-
-      RARCH_LOG("Loading texture image from: \"%s\" ...\n",
-            shader->lut[i].path);
-
-      if (!image_texture_load(&img, shader->lut[i].path))
-      {
-         RARCH_ERR("Failed to load texture image from: \"%s\"\n",
-               shader->lut[i].path);
+      if (!gl_renderchain_add_lut(shader, i, textures_lut))
          return false;
-      }
-
-      if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
-         filter_type = TEXTURE_FILTER_NEAREST;
-
-      if (shader->lut[i].mipmap)
-      {
-         if (filter_type == TEXTURE_FILTER_NEAREST)
-            filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
-         else
-            filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
-      }
-
-      gl_load_texture_data(textures_lut[i],
-            shader->lut[i].wrap,
-            filter_type, 4,
-            img.width, img.height,
-            img.pixels, sizeof(uint32_t));
-      image_texture_free(&img);
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);
