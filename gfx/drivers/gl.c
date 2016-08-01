@@ -346,6 +346,8 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
    if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
       major = minor = 0;
 #endif
+    
+   (void)vendor;
 
    switch (enum_idx)
    {
