@@ -327,7 +327,7 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
    switch (enum_idx)
    {
       case GL_CAPS_EGLIMAGE:
-#if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
+#if defined(HAVE_EGL) && defined(HAVE_OPENGLES)
          if (glEGLImageTargetTexture2DOES != NULL)
             return true;
 #endif
@@ -1622,12 +1622,10 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
    (void)texture_type;
    (void)texture_fmt;
 
-#if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
+#if defined(HAVE_EGL) && defined(HAVE_OPENGLES)
    /* Use regular textures if we use HW render. */
    gl->egl_images = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
       video_context_driver_init_image_buffer((void*)video);
-#else
-   (void)video;
 #endif
 
 #ifdef HAVE_PSGL
@@ -1685,8 +1683,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    performance_counter_init(&copy_frame, "copy_frame");
    performance_counter_start(&copy_frame);
 
-#if defined(HAVE_OPENGLES2)
-#if defined(HAVE_EGL)
+#if defined(HAVE_OPENGLES) && defined(HAVE_EGL)
    if (gl->egl_images)
    {
       gfx_ctx_image_t img_info;
