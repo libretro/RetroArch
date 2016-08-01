@@ -3538,7 +3538,11 @@ void general_write_handler(void *data)
 #ifdef HAVE_NETPLAY
          {
             bool val = (global->netplay.sync_frames > 0);
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
+            
+            if (val)
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
+            else
+               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
          }
 #endif
          break;
