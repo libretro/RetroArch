@@ -248,8 +248,8 @@ static void retroarch_print_help(const char *arg0)
          "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/"
          "retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\t"
          "and $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, "
-         "the program will attempt to create one based on the skeleton "
-         "config (" GLOBAL_CONFIG_DIR "/retroarch.cfg)."
+         "the program will attempt to create one based on the \n\t\t"
+         "skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg). \n"
 #endif
          );
    puts("      --appendconfig=FILE\n"
@@ -735,6 +735,15 @@ static void retroarch_parse_input(int argc, char *argv[])
    optind    = 0;
    optstring = "hs:fvS:A:c:U:DN:d:"
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
+
+#ifndef HAVE_MENU
+   if (argc == 1)
+   {
+      printf("No arguments supplied and no menu builtin, displaying help...\n");
+      retroarch_print_help(argv[0]);
+      exit(0);
+   }
+#endif
 
    for (;;)
    {
