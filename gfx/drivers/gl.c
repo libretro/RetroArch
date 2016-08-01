@@ -550,6 +550,127 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
    return false;
 }
 
+static void gl_set_projection(gl_t *gl,
+      struct video_ortho *ortho, bool allow_rotate)
+{
+   math_matrix_4x4 rot;
+
+   /* Calculate projection. */
+   matrix_4x4_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
+         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
+
+   if (!allow_rotate)
+   {
+      gl->mvp = gl->mvp_no_rot;
+      return;
+   }
+
+   matrix_4x4_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
+   matrix_4x4_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
+}
+
+static void gl_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate)
+{
+   gfx_ctx_aspect_t aspect_data;
+   unsigned width, height;
+   int x                  = 0;
+   int y                  = 0;
+   float device_aspect    = (float)viewport_width / viewport_height;
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
+   settings_t *settings   = config_get_ptr();
+   gl_t           *gl     = (gl_t*)data;
+
+   video_driver_get_size(&width, &height);
+
+   aspect_data.aspect   = &device_aspect;
+   aspect_data.width    = viewport_width;
+   aspect_data.height   = viewport_height;
+
+   video_context_driver_translate_aspect(&aspect_data);
+
+   if (settings->video.scale_integer && !force_full)
+   {
+      video_viewport_get_scaled_integer(&gl->vp,
+            viewport_width, viewport_height,
+            video_driver_get_aspect_ratio(), gl->keep_aspect);
+      viewport_width  = gl->vp.width;
+      viewport_height = gl->vp.height;
+   }
+   else if (gl->keep_aspect && !force_full)
+   {
+      float desired_aspect = video_driver_get_aspect_ratio();
+
+#if defined(HAVE_MENU)
+      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         const struct video_viewport *custom = video_viewport_get_custom();
+
+         /* GL has bottom-left origin viewport. */
+         x      = custom->x;
+         y      = height - custom->y - custom->height;
+         viewport_width  = custom->width;
+         viewport_height = custom->height;
+      }
+      else
+#endif
+      {
+         float delta;
+
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+         {
+            /* If the aspect ratios of screen and desired aspect 
+             * ratio are sufficiently equal (floating point stuff), 
+             * assume they are actually equal.
+             */
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+            x     = (int)roundf(viewport_width * (0.5f - delta));
+            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
+         }
+         else
+         {
+            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+            y      = (int)roundf(viewport_height * (0.5f - delta));
+            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
+         }
+      }
+
+      gl->vp.x      = x;
+      gl->vp.y      = y;
+      gl->vp.width  = viewport_width;
+      gl->vp.height = viewport_height;
+   }
+   else
+   {
+      gl->vp.x      = gl->vp.y = 0;
+      gl->vp.width  = viewport_width;
+      gl->vp.height = viewport_height;
+   }
+
+#if defined(RARCH_MOBILE)
+   /* In portrait mode, we want viewport to gravitate to top of screen. */
+   if (device_aspect < 1.0f)
+      gl->vp.y *= 2;
+#endif
+
+   glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+   gl_set_projection(gl, &ortho, allow_rotate);
+
+   /* Set last backbuffer viewport. */
+   if (!force_full)
+   {
+      gl->vp_out_width  = viewport_width;
+      gl->vp_out_height = viewport_height;
+   }
+
+#if 0
+   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
+#endif
+}
+
 
 /* Shaders */
 
@@ -645,6 +766,12 @@ static INLINE GLenum min_filter_to_mag(GLenum type)
 }
 
 #ifdef HAVE_FBO
+static uintptr_t gl_get_current_framebuffer(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+   return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
+}
+
 /* Compute FBO geometry.
  * When width/height changes or window sizes change, 
  * we have to recalculate geometry of our FBO. */
@@ -1158,154 +1285,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    context_bind_hw_render(false);
    return true;
 }
-#endif
 
-static void gl_set_projection(gl_t *gl,
-      struct video_ortho *ortho, bool allow_rotate)
-{
-   math_matrix_4x4 rot;
-
-   /* Calculate projection. */
-   matrix_4x4_ortho(&gl->mvp_no_rot, ortho->left, ortho->right,
-         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
-
-   if (!allow_rotate)
-   {
-      gl->mvp = gl->mvp_no_rot;
-      return;
-   }
-
-   matrix_4x4_rotate_z(&rot, M_PI * gl->rotation / 180.0f);
-   matrix_4x4_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
-}
-
-static void gl_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-   gfx_ctx_aspect_t aspect_data;
-   unsigned width, height;
-   int x                  = 0;
-   int y                  = 0;
-   float device_aspect    = (float)viewport_width / viewport_height;
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
-   settings_t *settings   = config_get_ptr();
-   gl_t           *gl     = (gl_t*)data;
-
-   video_driver_get_size(&width, &height);
-
-   aspect_data.aspect   = &device_aspect;
-   aspect_data.width    = viewport_width;
-   aspect_data.height   = viewport_height;
-
-   video_context_driver_translate_aspect(&aspect_data);
-
-   if (settings->video.scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&gl->vp,
-            viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), gl->keep_aspect);
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
-   }
-   else if (gl->keep_aspect && !force_full)
-   {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         const struct video_viewport *custom = video_viewport_get_custom();
-
-         /* GL has bottom-left origin viewport. */
-         x      = custom->x;
-         y      = height - custom->y - custom->height;
-         viewport_width  = custom->width;
-         viewport_height = custom->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect 
-             * ratio are sufficiently equal (floating point stuff), 
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      gl->vp.x      = x;
-      gl->vp.y      = y;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
-   }
-   else
-   {
-      gl->vp.x      = gl->vp.y = 0;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
-   }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl->vp.y *= 2;
-#endif
-
-   glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
-   gl_set_projection(gl, &ortho, allow_rotate);
-
-   /* Set last backbuffer viewport. */
-   if (!force_full)
-   {
-      gl->vp_out_width  = viewport_width;
-      gl->vp_out_height = viewport_height;
-   }
-
-#if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
-#endif
-}
-
-static void gl_set_rotation(void *data, unsigned rotation)
-{
-   gl_t               *gl = (gl_t*)data;
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
-
-   if (!gl)
-      return;
-
-   gl->rotation = 90 * rotation;
-   gl_set_projection(gl, &ortho, true);
-}
-
-static void gl_set_video_mode(void *data, unsigned width, unsigned height,
-      bool fullscreen)
-{
-   gfx_ctx_mode_t mode;
-
-   mode.width      = width;
-   mode.height     = height;
-   mode.fullscreen = fullscreen;
-
-   video_context_driver_set_video_mode(&mode);
-}
-
-#ifdef HAVE_FBO
 static INLINE void gl_start_frame_fbo(gl_t *gl)
 {
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -1594,6 +1574,33 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    gl->coords.tex_coord = gl->tex_info.coord;
 }
 #endif
+
+
+
+static void gl_set_rotation(void *data, unsigned rotation)
+{
+   gl_t               *gl = (gl_t*)data;
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
+
+   if (!gl)
+      return;
+
+   gl->rotation = 90 * rotation;
+   gl_set_projection(gl, &ortho, true);
+}
+
+static void gl_set_video_mode(void *data, unsigned width, unsigned height,
+      bool fullscreen)
+{
+   gfx_ctx_mode_t mode;
+
+   mode.width      = width;
+   mode.height     = height;
+   mode.fullscreen = fullscreen;
+
+   video_context_driver_set_video_mode(&mode);
+}
+
 
 static void gl_update_input_size(gl_t *gl, unsigned width,
       unsigned height, unsigned pitch, bool clear)
@@ -3426,12 +3433,11 @@ unsigned *height_p, size_t *pitch_p)
    unsigned width       = gl->last_width[gl->tex_index];
    unsigned height      = gl->last_height[gl->tex_index];
    size_t pitch         = gl->tex_w * gl->base_size;
-#ifdef HAVE_FBO
-   void* buffer         = NULL;
-#endif
    void* buffer_texture = NULL;
 
 #ifdef HAVE_FBO
+   void* buffer         = NULL;
+
    if (gl->hw_render_use)
    {
       buffer = malloc(pitch * height);
@@ -3714,13 +3720,6 @@ static void gl_get_overlay_interface(void *data,
 }
 #endif
 
-#ifdef HAVE_FBO
-static uintptr_t gl_get_current_framebuffer(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-   return gl->hw_render_fbo[(gl->tex_index + 1) % gl->textures];
-}
-#endif
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
