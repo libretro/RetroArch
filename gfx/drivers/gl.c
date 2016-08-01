@@ -824,7 +824,7 @@ static void gl_renderchain_convert_geometry(gl_t *gl,
    }
 }
 
-static void gl_compute_fbo_geometry(gl_t *gl,
+static void gl_recompute_pass_sizes(gl_t *gl,
       unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
 {
@@ -1154,7 +1154,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
       }
    }
 
-   gl_compute_fbo_geometry(gl, fbo_width, fbo_height, width, height);
+   gl_recompute_pass_sizes(gl, fbo_width, fbo_height, width, height);
 
    for (i = 0; i < gl->fbo_pass; i++)
    {
@@ -2249,7 +2249,7 @@ static bool gl_frame(void *data, const void *frame,
    /* Render to texture in first pass. */
    if (gl->fbo_inited)
    {
-      gl_compute_fbo_geometry(gl, frame_width, frame_height,
+      gl_recompute_pass_sizes(gl, frame_width, frame_height,
             gl->vp_out_width, gl->vp_out_height);
       gl_start_frame_fbo(gl);
    }
