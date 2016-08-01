@@ -371,16 +371,17 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
                && !gl_query_extension("EXT_framebuffer_object"))
             return false;
 
-         return glGenFramebuffers 
-            && glBindFramebuffer 
-            && glFramebufferTexture2D 
-            && glCheckFramebufferStatus 
-            && glDeleteFramebuffers 
-            && glGenRenderbuffers 
-            && glBindRenderbuffer 
-            && glFramebufferRenderbuffer 
-            && glRenderbufferStorage 
-            && glDeleteRenderbuffers;
+         if (glGenFramebuffers 
+               && glBindFramebuffer 
+               && glFramebufferTexture2D 
+               && glCheckFramebufferStatus 
+               && glDeleteFramebuffers 
+               && glGenRenderbuffers 
+               && glBindRenderbuffer 
+               && glFramebufferRenderbuffer 
+               && glRenderbufferStorage 
+               && glDeleteRenderbuffers)
+            return true;
 #else
          return true;
 #endif
@@ -2352,13 +2353,10 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
    settings_t *settings = config_get_ptr();
 #endif
+#ifndef HAVE_OPENGLES
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
-    
-   (void)renderer;
-   (void)version;
-   (void)hwr;
-#ifndef HAVE_OPENGLES
+
    gl_core_context     = 
       (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
    
