@@ -602,8 +602,8 @@ static inline void draw_texture_scale_rotate_hotspot_generic(const vita2d_textur
 	for (i = 0; i < 4; ++i) { // Rotate and translate
 		float _x = vertices[i].x;
 		float _y = vertices[i].y;
-		vertices[i].x = _x*c - _y*s + x;
-		vertices[i].y = _x*s + _y*c + y;
+		vertices[i].x = _x*c - _y*s + x + center_x_scaled;
+		vertices[i].y = _x*s + _y*c + y + center_y_scaled;
 	}
 
 	indices[0] = 0;

@@ -239,9 +239,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          const float rad = vita->rotation * radian;
          float scalex = vita->vp.width / (float)vita->width;
          float scaley = vita->vp.height / (float)vita->height;
-         vita2d_draw_texture_scale_rotate(vita->texture,
-		vita->vp.x + PSP_FB_WIDTH / (float)vita->width,
-                vita->vp.y + PSP_FB_HEIGHT / (float)vita->height, scalex, scaley, rad);
+         vita2d_draw_texture_scale_rotate(vita->texture,vita->vp.x,
+                vita->vp.y, scalex, scaley, rad);
       }
    }
 
