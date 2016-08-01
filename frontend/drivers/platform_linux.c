@@ -546,8 +546,8 @@ static bool device_is_game_console(const char *name)
 
 bool test_permissions(const char *path)
 {
-   char buf[PATH_MAX_LENGTH];
-   bool ret;
+   bool ret                  = false;
+   char buf[PATH_MAX_LENGTH] = {0};
 
    __android_log_print(ANDROID_LOG_INFO,
       "RetroArch", "Testing permissions for %s\n",path);
@@ -626,7 +626,7 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       bool * charging, int *seconds, int *percent)
 {
    const char *base  = proc_acpi_battery_path;
-   char path[1024];
+   char path[1024]   = {0};
    ssize_t length    = 0;
    char         *ptr = NULL;
    char  *buf        = NULL;
