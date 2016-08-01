@@ -1125,7 +1125,6 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
 #if defined(_XBOX1)
    strlcpy(g_defaults.dir.core, "D:", sizeof(g_defaults.dir.core));
-   strlcpy(g_defaults.dir.core_info, "D:", sizeof(g_defaults.dir.core_info));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.core,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
    fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
@@ -1138,8 +1137,6 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          "screenshots", sizeof(g_defaults.dir.screenshot));
 #elif defined(_XBOX360)
    strlcpy(g_defaults.dir.core, "game:", sizeof(g_defaults.dir.core));
-   strlcpy(g_defaults.dir.core_info,
-         "game:", sizeof(g_defaults.dir.core_info));
    strlcpy(g_defaults.path.config,
          "game:\\retroarch.cfg", sizeof(g_defaults.path.config));
    strlcpy(g_defaults.dir.screenshot,
@@ -1153,10 +1150,11 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    strlcpy(g_defaults.dir.system,
          "game:\\system", sizeof(g_defaults.dir.system));
 #endif
+   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
+         "info", sizeof(g_defaults.dir.core_info));
 
 #ifndef IS_SALAMANDER
-   static char path[PATH_MAX_LENGTH];
-   *path = '\0';
+   static char path[PATH_MAX_LENGTH] = {0};
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;
    DWORD launch_type;
