@@ -197,6 +197,18 @@ void video_shader_resolve_relative(struct video_shader *shader,
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
  *
+ * Reads the current value for all parameters from config file.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool video_shader_resolve_current_parameters(config_file_t *conf,
+      struct video_shader *shader);
+
+/** 
+ * video_shader_resolve_parameters:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader passes handle.
+ *
  * Resolves all shader parameters belonging to shaders. 
  *
  * Returns: true (1) if successful, otherwise false (0).

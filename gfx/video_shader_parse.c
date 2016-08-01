@@ -392,6 +392,47 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
 }
 
 /** 
+ * video_shader_set_current_parameters:
+ * @conf              : Preset file to read from.
+ * @shader            : Shader passes handle.
+ *
+ * Reads the current value for all parameters from config file.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool video_shader_resolve_current_parameters(config_file_t *conf,
+      struct video_shader *shader)
+{
+   if (!conf)
+      return false;
+
+   /* Read in parameters which override the defaults. */
+   char parameters[4096] = {0};
+   const char *id        = NULL;
+   char *save            = NULL;
+
+   if (!config_get_array(conf, "parameters",
+            parameters, sizeof(parameters)))
+      return true;
+
+   for (id = strtok_r(parameters, ";", &save); id; 
+         id = strtok_r(NULL, ";", &save))
+   {
+      struct video_shader_parameter *parameter = (struct video_shader_parameter*)
+         video_shader_parse_find_parameter(shader->parameters, shader->num_parameters, id);
+
+      if (!parameter)
+      {
+         RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset, but no shader uses this parameter, ignoring.\n", id);
+         continue;
+      }
+
+      if (!config_get_float(conf, id, &parameter->current))
+         RARCH_WARN("[CGP/GLSLP]: Parameter %s is not set in preset.\n", id);
+   }
+}
+
+/** 
  * video_shader_resolve_parameters:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
@@ -447,33 +488,8 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       filestream_close(file);
    }
 
-   if (conf)
-   {
-      /* Read in parameters which override the defaults. */
-      char parameters[4096] = {0};
-      const char *id        = NULL;
-      char *save            = NULL;
-
-      if (!config_get_array(conf, "parameters",
-               parameters, sizeof(parameters)))
-         return true;
-
-      for (id = strtok_r(parameters, ";", &save); id; 
-            id = strtok_r(NULL, ";", &save))
-      {
-         struct video_shader_parameter *parameter = (struct video_shader_parameter*)
-            video_shader_parse_find_parameter(shader->parameters, shader->num_parameters, id);
-
-         if (!parameter)
-         {
-            RARCH_WARN("[CGP/GLSLP]: Parameter %s is set in the preset, but no shader uses this parameter, ignoring.\n", id);
-            continue;
-         }
-
-         if (!config_get_float(conf, id, &parameter->current))
-            RARCH_WARN("[CGP/GLSLP]: Parameter %s is not set in preset.\n", id);
-      }
-   }
+   if (conf && !video_shader_resolve_current_parameters(conf, shader))
+      return false;
 
    return true;
 }
