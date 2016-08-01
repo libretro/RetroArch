@@ -56,7 +56,7 @@
 #define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0
 #endif
 
-#if defined(HAVE_OPENGLES2)
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES31) || defined(HAVE_OPENGLES32)
 #define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER
 #define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
 #define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT
@@ -146,16 +146,16 @@
 #define NO_GL_READ_PIXELS
 #endif
 
-#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
+#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES31) || defined(HAVE_OPENGLES32) || defined(HAVE_PSGL)
+
 #ifndef NO_GL_FF_VERTEX
 #define NO_GL_FF_VERTEX
 #endif
-#endif
 
-#if defined(HAVE_OPENGL_MODERN) || defined(HAVE_OPENGLES2) || defined(HAVE_PSGL)
 #ifndef NO_GL_FF_MATRIX
 #define NO_GL_FF_MATRIX
 #endif
+
 #endif
 
 #if defined(HAVE_OPENGLES2) /* TODO: Figure out exactly what. */
