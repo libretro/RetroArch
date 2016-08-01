@@ -315,7 +315,8 @@ enum gl_capability_enum
    GL_CAPS_MIPMAP,
    GL_CAPS_VAO,
    GL_CAPS_FBO,
-   GL_CAPS_ARGB8
+   GL_CAPS_ARGB8,
+   GL_CAPS_DEBUG
 };
 
 static bool gl_check_capability(enum gl_capability_enum enum_idx)
@@ -386,13 +387,21 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
 #endif
       case GL_CAPS_ARGB8:
 #ifdef HAVE_OPENGLES2
-      if (gl_query_extension("OES_rgb8_rgba8")
-         || gl_query_extension("ARM_argb8"))
-         return true;
+         if (gl_query_extension("OES_rgb8_rgba8")
+               || gl_query_extension("ARM_argb8"))
+            return true;
 #else
-      /* TODO/FIXME - implement this for non_GLES2? */
+         /* TODO/FIXME - implement this for non_GLES2? */
 #endif
-      break;
+         break;
+      case GL_CAPS_DEBUG:
+         if (gl_query_extension("KHR_debug"))
+            return true;
+#ifndef HAVE_OPENGLES2
+         if (gl_query_extension("ARB_debug_output"))
+            return true;
+#endif
+         break;
       case GL_CAPS_NONE:
       default:
          break;
@@ -2717,7 +2726,7 @@ static void DEBUG_CALLBACK_TYPE gl_debug_cb(GLenum source, GLenum type,
 
 static void gl_begin_debug(gl_t *gl)
 {
-   if (gl_query_extension("KHR_debug"))
+   if (gl_check_capability(GL_CAPS_DEBUG))
    {
 #ifdef HAVE_OPENGLES2
       glDebugMessageCallbackKHR(gl_debug_cb, gl);
@@ -2729,14 +2738,6 @@ static void gl_begin_debug(gl_t *gl)
       glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 #endif
    }
-#ifndef HAVE_OPENGLES2
-   else if (gl_query_extension("ARB_debug_output"))
-   {
-      glDebugMessageCallbackARB(gl_debug_cb, gl);
-      glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-      glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-   }
-#endif
    else
       RARCH_ERR("Neither GL_KHR_debug nor GL_ARB_debug_output are implemented. Cannot start GL debugging.\n");
 }
