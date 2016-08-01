@@ -319,7 +319,8 @@ enum gl_capability_enum
    GL_CAPS_DEBUG,
    GL_CAPS_PACKED_DEPTH_STENCIL,
    GL_CAPS_ES2_COMPAT,
-   GL_CAPS_UNPACK_ROW_LENGTH
+   GL_CAPS_UNPACK_ROW_LENGTH,
+   GL_CAPS_FULL_NPOT_SUPPORT
 };
 
 static bool gl_check_capability(enum gl_capability_enum enum_idx)
@@ -460,6 +461,62 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
                RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
                return true;
             }
+         }
+#endif
+         break;
+      case GL_CAPS_FULL_NPOT_SUPPORT:
+#ifdef HAVE_OPENGLES
+         {
+            unsigned major = 0, minor = 0;
+            bool gles3             = false;
+            const char *version    = (const char*)glGetString(GL_VERSION);
+
+            if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+               major = minor = 0;
+
+            if (major >= 3)
+            {
+               RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
+               gles3 = true;
+            }
+
+            if (gles3)
+               return true;
+
+            if (gl_query_extension("ARB_texture_non_power_of_two") ||
+                  gl_query_extension("OES_texture_npot"))
+               return true;
+         }
+#else
+         {
+            unsigned major = 0, minor = 0;
+            GLint max_texture_size = 0;
+            GLint max_native_instr = 0;
+            bool arb_npot          = false;
+            bool arb_frag_program  = false;
+            const char *version    = (const char*)glGetString(GL_VERSION);
+
+            if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
+               major = minor = 0;
+
+            if (major >= 3)
+               return true;
+
+            /* try to detect actual npot support. might fail for older cards. */
+            arb_npot         = gl_query_extension("ARB_texture_non_power_of_two");
+            arb_frag_program = gl_query_extension("ARB_fragment_program");
+
+            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+
+#ifdef GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS_ARB
+            if (arb_frag_program && glGetProgramivARB)
+               glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB,
+                     GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS_ARB, &max_native_instr);
+#endif
+
+            if (arb_npot && arb_frag_program &&
+               (max_texture_size >= 8192) && (max_native_instr >= 4096))
+               return true;
          }
 #endif
          break;
@@ -1683,7 +1740,8 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    performance_counter_init(&copy_frame, "copy_frame");
    performance_counter_start(&copy_frame);
 
-#if defined(HAVE_OPENGLES) && defined(HAVE_EGL)
+#if defined(HAVE_OPENGLES)
+#if defined(HAVE_EGL)
    if (gl->egl_images)
    {
       gfx_ctx_image_t img_info;
@@ -2397,9 +2455,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       glGenVertexArrays(1, &gl->vao);
    }
 
-   if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
-         major = minor = 0;
-
    /* GL_RGB565 internal format support.
     * Even though ES2 support is claimed, the format 
     * is not supported on older ATI catalyst drivers.
@@ -2408,27 +2463,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     * adding some workarounds for.
     */
    gl->have_es2_compat = gl_check_capability(GL_CAPS_ES2_COMPAT);
-
-   if (major >= 3)
-      gl->have_full_npot_support = true;
-   else
-   {  /* try to detect actual npot support. might fail for older cards. */
-      GLint max_texture_size = 0;
-      GLint max_native_instr = 0;
-      bool arb_npot = gl_query_extension("ARB_texture_non_power_of_two");
-      bool arb_frag_program = gl_query_extension("ARB_fragment_program");
-
-      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
-
-#ifdef GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS_ARB
-      if (arb_frag_program && glGetProgramivARB)
-         glGetProgramivARB(GL_FRAGMENT_PROGRAM_ARB,
-               GL_MAX_PROGRAM_NATIVE_INSTRUCTIONS_ARB, &max_native_instr);
-#endif
-
-      gl->have_full_npot_support = arb_npot && arb_frag_program &&
-            (max_texture_size >= 8192) && (max_native_instr >= 4096);
-   }
+   gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 #endif
 
 #ifdef HAVE_GL_SYNC
@@ -2450,14 +2485,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       gles3 = true;
    }
 
-   if (gles3)
-      gl->have_full_npot_support = true;
-   else
-   {
-      bool arb_npot = gl_query_extension("ARB_texture_non_power_of_two");
-      bool oes_npot = gl_query_extension("OES_texture_npot");
-      gl->have_full_npot_support = arb_npot || oes_npot;
-   }
+   gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 
    /* There are both APPLE and EXT variants. */
    /* Videocore hardware supports BGRA8888 extension, but
