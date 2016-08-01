@@ -627,7 +627,6 @@ enum rarch_content_type retroarch_path_is_media_type(const char *path)
  **/
 static void retroarch_parse_input(int argc, char *argv[])
 {
-   unsigned i;
    const char *optstring = NULL;
    global_t  *global     = global_get_ptr();
    settings_t *settings  = config_get_ptr();
@@ -707,8 +706,7 @@ static void retroarch_parse_input(int argc, char *argv[])
 
    *global->subsystem                    = '\0';
 
-   for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
-      retroarch_override_setting_unset((enum rarch_override_setting)(i));
+   retroarch_override_setting_free_state();
 
    global->has_set.save_path             = false;
    global->has_set.state_path            = false;
@@ -1672,6 +1670,9 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx)
 
 void retroarch_override_setting_free_state(void)
 {
+   unsigned i;
+   for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
+      retroarch_override_setting_unset((enum rarch_override_setting)(i));
 }
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
