@@ -19,7 +19,7 @@
 #include <xtl.h>
 #endif
 
-#include "../d3d/d3d.h"
+#include "../drivers/d3d.h"
 #include "../common/win32_common.h"
 
 #include "../../runloop.h"
