@@ -20,19 +20,21 @@
 #include <string>
 #include <vector>
 
-#include "../include/Cg/cg.h"
-#include "../include/Cg/cgD3D9.h"
+#include "../../include/Cg/cg.h"
+#include "../../include/Cg/cgD3D9.h"
 
 #include <retro_inline.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
 #include "render_chain_driver.h"
-#include "../video_driver.h"
-#include "../../general.h"
-#include "../../performance_counters.h"
-#include "../../verbosity.h"
-#include "d3d.h"
+#include "../../video_driver.h"
+#include "../../../general.h"
+#include "../../../performance_counters.h"
+#include "../../../verbosity.h"
+#include "../d3d.h"
+
+#include "../d3d_shaders/opaque.cg.d3d9.h"
 
 #define cg_d3d9_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
 namespace {
@@ -86,7 +88,6 @@ typedef struct cg_renderchain
    CGcontext cgCtx;
 } cg_renderchain_t;
 
-#include "../drivers/d3d_shaders/opaque.cg.d3d9.h"
 
 static INLINE bool validate_param_name(const char *name)
 {

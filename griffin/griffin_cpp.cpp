@@ -161,12 +161,12 @@ VIDEO DRIVER
 
 #if defined(HAVE_D3D)
 #include "../gfx/common/d3d_common.cpp"
-#include "../gfx/d3d/d3d.cpp"
+#include "../gfx/drivers/d3d.cpp"
 #ifdef _XBOX
-#include "../gfx/d3d/render_chain_xdk.cpp"
+#include "../gfx/drivers/d3d_renderchains/render_chain_xdk.cpp"
 #endif
 #ifdef HAVE_CG
-#include "../gfx/d3d/render_chain_cg.cpp"
+#include "../gfx/drivers/d3d_renderchains/render_chain_cg.cpp"
 #endif
 #endif
 

@@ -20,10 +20,10 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
-#include "../video_driver.h"
-#include "../video_shader_parse.h"
-#include "../video_state_tracker.h"
-#include "../../defines/d3d_defines.h"
+#include "../../video_driver.h"
+#include "../../video_shader_parse.h"
+#include "../../video_state_tracker.h"
+#include "../../../defines/d3d_defines.h"
 
 RETRO_BEGIN_DECLS
 

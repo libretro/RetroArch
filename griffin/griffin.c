@@ -305,8 +305,8 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_D3D)
-#include "../gfx/d3d/render_chain_driver.c"
-#include "../gfx/d3d/render_chain_null.c"
+#include "../gfx/drivers/d3d_renderchains/render_chain_driver.c"
+#include "../gfx/drivers/d3d_renderchains/render_chain_null.c"
 #endif
 
 #if defined(GEKKO)
