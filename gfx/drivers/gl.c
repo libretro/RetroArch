@@ -322,6 +322,7 @@ enum gl_capability_enum
    GL_CAPS_UNPACK_ROW_LENGTH,
    GL_CAPS_FULL_NPOT_SUPPORT,
    GL_CAPS_SRGB_FBO,
+   GL_CAPS_SRGB_FBO_ES3,
    GL_CAPS_FP_FBO
 };
 
@@ -502,6 +503,12 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          }
 #endif
          break;
+      case GL_CAPS_SRGB_FBO_ES3:
+#ifdef HAVE_OPENGLES
+         return gles3;
+#else
+         break;
+#endif
       case GL_CAPS_SRGB_FBO:
 #if defined(HAVE_OPENGLES)
          /* No extensions for float FBO currently. */
@@ -2436,9 +2443,7 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
-   unsigned major = 0, minor = 0;
    const char *renderer = (const char*)glGetString(GL_RENDERER);
-   const char *version  = (const char*)glGetString(GL_VERSION);
 #if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
    settings_t *settings = config_get_ptr();
 #endif
@@ -2479,17 +2484,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
    video_driver_unset_rgba();
 #if defined(HAVE_OPENGLES)
-   bool gles3          = false;
-
-   if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-         major = minor = 0;
-
-   if (major >= 3)
-   {
-      RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
-      gles3 = true;
-   }
-
    gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 
    /* There are both APPLE and EXT variants. */
@@ -2508,7 +2502,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
 
    /* No extensions for float FBO currently. */
-   gl->has_srgb_fbo_gles3 = gles3;
+   gl->has_srgb_fbo_gles3 = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
 #endif
 
    gl->has_fp_fbo   = gl_check_capability(GL_CAPS_FP_FBO);
