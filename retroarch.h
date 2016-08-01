@@ -100,7 +100,8 @@ enum rarch_capabilities
 
 enum rarch_override_setting
 {
-   RARCH_OVERRIDE_SETTING_NONE = 0
+   RARCH_OVERRIDE_SETTING_NONE = 0,
+   RARCH_OVERRIDE_SETTING_LAST
 };
 
 struct rarch_main_wrap
