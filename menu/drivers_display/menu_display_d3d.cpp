@@ -21,7 +21,7 @@
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
-#include "../../gfx/d3d/d3d.h"
+#include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
 
 #include "../menu_display.h"
