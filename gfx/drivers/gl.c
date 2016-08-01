@@ -130,7 +130,7 @@ static INLINE bool gl_query_extension(const char *ext)
 {
    bool ret = false;
 
-   if (gl_core_context)
+   if (gl_query_core_context_in_use())
    {
 #ifdef GL_NUM_EXTENSIONS
       GLint i;
@@ -381,7 +381,7 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
       case GL_CAPS_VAO:
 #ifndef HAVE_OPENGLES
-         if (!gl_core_context && !gl_query_extension("ARB_vertex_array_object"))
+         if (!gl_query_core_context_in_use() && !gl_query_extension("ARB_vertex_array_object"))
             return false;
 
          if (glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays)
@@ -393,7 +393,7 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
 #ifdef HAVE_PSGL
          return true;
 #elif !defined(HAVE_OPENGLES2)
-         if (!gl_core_context && !gl_query_extension("ARB_framebuffer_object")
+         if (!gl_query_core_context_in_use() && !gl_query_extension("ARB_framebuffer_object")
                && !gl_query_extension("EXT_framebuffer_object"))
             return false;
 
@@ -517,7 +517,7 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
             return true;
 #else
 #ifdef HAVE_FBO
-         if (gl_core_context || 
+         if (gl_query_core_context_in_use() || 
                (gl_query_extension("EXT_texture_sRGB")
                 && gl_query_extension("ARB_framebuffer_sRGB")))
             return true;
@@ -528,7 +528,7 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
 #ifndef HAVE_OPENGLES
 #ifdef HAVE_FBO
          /* Float FBO is core in 3.2. */
-         if (gl_core_context || gl_query_extension("ARB_texture_float"))
+         if (gl_query_core_context_in_use() || gl_query_extension("ARB_texture_float"))
             return true;
 #endif
 #endif
@@ -691,13 +691,14 @@ static bool gl_shader_init(gl_t *gl)
    }
 
    type = video_shader_parse_type(shader_path,
-         gl_core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
+         gl_query_core_context_in_use() 
+         ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
    switch (type)
    {
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-         if (gl_core_context)
+         if (gl_query_core_context_in_use())
             shader_path = NULL;
          break;
 #endif
@@ -712,7 +713,7 @@ static bool gl_shader_init(gl_t *gl)
          return true;
    }
 
-   init_data.gl.core_context_enabled = gl_core_context;
+   init_data.gl.core_context_enabled = gl_query_core_context_in_use();
    init_data.shader_type             = type;
    init_data.shader                  = NULL;
    init_data.data                    = gl;
@@ -732,7 +733,7 @@ static bool gl_shader_init(gl_t *gl)
 #ifndef NO_GL_FF_VERTEX
 static void gl_disable_client_arrays(void)
 {
-   if (gl_core_context)
+   if (gl_query_core_context_in_use())
       return;
 
    glClientActiveTexture(GL_TEXTURE1);
@@ -2213,7 +2214,7 @@ static bool gl_frame(void *data, const void *frame,
    context_bind_hw_render(false);
 
 #ifndef HAVE_OPENGLES
-   if (gl_core_context)
+   if (gl_query_core_context_in_use())
       glBindVertexArray(gl->vao);
 #endif
 
@@ -2298,7 +2299,7 @@ static bool gl_frame(void *data, const void *frame,
       }
 
 #ifndef HAVE_OPENGLES
-      if (!gl_core_context)
+      if (!gl_query_core_context_in_use())
          glEnable(GL_TEXTURE_2D);
 #endif
       glDisable(GL_DEPTH_TEST);
@@ -2476,7 +2477,7 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
 #ifndef HAVE_OPENGLES
-   if (gl_core_context)
+   if (gl_query_core_context_in_use())
       glBindVertexArray(0);
 #endif
 
@@ -2564,7 +2565,7 @@ static void gl_free(void *data)
 #endif
 
 #ifndef HAVE_OPENGLES
-   if (gl_core_context)
+   if (gl_query_core_context_in_use())
    {
       glBindVertexArray(0);
       glDeleteVertexArrays(1, &gl->vao);
@@ -2608,7 +2609,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    gl_core_context     = 
       (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
    
-   if (gl_core_context)
+   if (gl_query_core_context_in_use())
    {
       RARCH_LOG("[GL]: Using Core GL context.\n");
       if (!gl_check_capability(GL_CAPS_VAO))
@@ -2666,7 +2667,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    /* Useful for debugging, but kinda obnoxious otherwise. */
    RARCH_LOG("[GL]: Supported extensions:\n");
 
-   if (gl_core_context)
+   if (gl_query_core_context_in_use())
    {
 #ifdef GL_NUM_EXTENSIONS
       GLint exts = 0;
@@ -3089,7 +3090,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 #ifdef HAVE_GLSL
    gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
-   gl_glsl_set_context_type(gl_core_context,
+   gl_glsl_set_context_type(gl_query_core_context_in_use(),
          hwr->version_major, hwr->version_minor);
 #endif
 
@@ -3156,7 +3157,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_texture_fmts(gl, video->rgb32);
 
 #ifndef HAVE_OPENGLES
-   if (!gl_core_context)
+   if (!gl_query_core_context_in_use())
       glEnable(GL_TEXTURE_2D);
 #endif
 
