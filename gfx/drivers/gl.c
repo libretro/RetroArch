@@ -321,7 +321,8 @@ enum gl_capability_enum
    GL_CAPS_ES2_COMPAT,
    GL_CAPS_UNPACK_ROW_LENGTH,
    GL_CAPS_FULL_NPOT_SUPPORT,
-   GL_CAPS_SRGB_FBO
+   GL_CAPS_SRGB_FBO,
+   GL_CAPS_FP_FBO
 };
 
 static bool gl_check_capability(enum gl_capability_enum enum_idx)
@@ -511,6 +512,15 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          if (gl_core_context || 
                (gl_query_extension("EXT_texture_sRGB")
                 && gl_query_extension("ARB_framebuffer_sRGB")))
+            return true;
+#endif
+#endif
+         break;
+      case GL_CAPS_FP_FBO:
+#ifndef HAVE_OPENGLES
+#ifdef HAVE_FBO
+         /* Float FBO is core in 3.2. */
+         if (gl_core_context || gl_query_extension("ARB_texture_float"))
             return true;
 #endif
 #endif
@@ -2499,13 +2509,9 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
    /* No extensions for float FBO currently. */
    gl->has_srgb_fbo_gles3 = gles3;
-#else
-#ifdef HAVE_FBO
-   /* Float FBO is core in 3.2. */
-   gl->has_fp_fbo   = gl_core_context || gl_query_extension("ARB_texture_float");
-#endif
 #endif
 
+   gl->has_fp_fbo   = gl_check_capability(GL_CAPS_FP_FBO);
    gl->has_srgb_fbo = gl_check_capability(GL_CAPS_SRGB_FBO);
 
 #ifdef HAVE_FBO
