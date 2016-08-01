@@ -124,6 +124,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data);
 int retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len);
 
+void retroarch_override_setting_set(enum rarch_override_setting enum_idx);
+
+void retroarch_override_setting_unset(enum rarch_override_setting enum_idx);
+
+void retroarch_override_setting_free_state(void);
+
+bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx);
+
 enum rarch_content_type retroarch_path_is_media_type(const char *path);
 
 const char *retroarch_get_current_savefile_dir(void);

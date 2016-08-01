@@ -987,6 +987,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             global = global_get_ptr();
             memset(global, 0, sizeof(struct global));
+            retroarch_override_setting_free_state();
             config_free_state();
          }
          break;

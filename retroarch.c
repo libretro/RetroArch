@@ -1637,6 +1637,30 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx)
    return false;
 }
 
+void retroarch_override_setting_set(enum rarch_override_setting enum_idx)
+{
+   switch (enum_idx)
+   {
+      case RARCH_OVERRIDE_SETTING_NONE:
+      default:
+         break;
+   }
+}
+
+void retroarch_override_setting_unset(enum rarch_override_setting enum_idx)
+{
+   switch (enum_idx)
+   {
+      case RARCH_OVERRIDE_SETTING_NONE:
+      default:
+         break;
+   }
+}
+
+void retroarch_override_setting_free_state(void)
+{
+}
+
 int retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len)
 {
