@@ -197,7 +197,7 @@ for f in *_${platform}.${EXT} ; do
       mkdir -p ../pkg/${platform}/${name}_libretro/vpk/sce_sys/
       vita-make-fself ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro/vpk/eboot.bin
       vita-mksfoex -s TITLE_ID=RETR0000${COUNTER} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro/vpk/sce_sys/param.sfo
-      zip ../pkg/${platform}/${name}_libretro/${name}_libretro.vpk -r ../pkg/${platform}/${name}_libretro/vpk/*
+      zip ../pkg/${platform}/${name}_libretro/${name}_libretro.vpk -r -j ../pkg/${platform}/${name}_libretro/vpk/*
       rm -rf ../pkg/${platform}/${name}_libretro/vpk
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
