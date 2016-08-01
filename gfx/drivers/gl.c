@@ -779,6 +779,51 @@ static uintptr_t gl_get_current_framebuffer(void *data)
  * When width/height changes or window sizes change, 
  * we have to recalculate geometry of our FBO. */
 
+
+static void gl_renderchain_convert_geometry(gl_t *gl,
+      struct video_fbo_rect *fbo_rect,
+      struct gfx_fbo_scale *fbo_scale,
+      unsigned last_width, unsigned last_max_width,
+      unsigned last_height, unsigned last_max_height,
+      unsigned vp_width, unsigned vp_height)
+{
+   switch (fbo_scale->type_x)
+   {
+      case RARCH_SCALE_INPUT:
+         fbo_rect->img_width      = fbo_scale->scale_x * last_width;
+         fbo_rect->max_img_width  = last_max_width     * fbo_scale->scale_x;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         fbo_rect->img_width      = fbo_rect->max_img_width = 
+            fbo_scale->abs_x;
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         fbo_rect->img_width      = fbo_rect->max_img_width = 
+            fbo_scale->scale_x * vp_width;
+         break;
+   }
+
+   switch (fbo_scale->type_y)
+   {
+      case RARCH_SCALE_INPUT:
+         fbo_rect->img_height     = last_height * fbo_scale->scale_y;
+         fbo_rect->max_img_height = last_max_height * fbo_scale->scale_y;
+         break;
+
+      case RARCH_SCALE_ABSOLUTE:
+         fbo_rect->img_height     = fbo_scale->abs_y;
+         fbo_rect->max_img_height = fbo_scale->abs_y;
+         break;
+
+      case RARCH_SCALE_VIEWPORT:
+         fbo_rect->img_height     = fbo_rect->max_img_height = 
+            fbo_scale->scale_y * vp_height;
+         break;
+   }
+}
+
 static void gl_compute_fbo_geometry(gl_t *gl,
       unsigned width, unsigned height,
       unsigned vp_width, unsigned vp_height)
@@ -799,41 +844,12 @@ static void gl_compute_fbo_geometry(gl_t *gl,
       struct video_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
       struct gfx_fbo_scale *fbo_scale    = &gl->fbo_scale[i];
 
-      switch (gl->fbo_scale[i].type_x)
-      {
-         case RARCH_SCALE_INPUT:
-            fbo_rect->img_width      = last_width * fbo_scale->scale_x;
-            fbo_rect->max_img_width  = last_max_width * fbo_scale->scale_x;
-            break;
+      gl_renderchain_convert_geometry(gl, fbo_rect, fbo_scale,
+            last_width, last_max_width,
+            last_height, last_max_height,
+            vp_width, vp_height
+            );
 
-         case RARCH_SCALE_ABSOLUTE:
-            fbo_rect->img_width      = fbo_rect->max_img_width = 
-               fbo_scale->abs_x;
-            break;
-
-         case RARCH_SCALE_VIEWPORT:
-            fbo_rect->img_width      = fbo_rect->max_img_width = 
-               fbo_scale->scale_x * vp_width;
-            break;
-      }
-
-      switch (fbo_scale->type_y)
-      {
-         case RARCH_SCALE_INPUT:
-            fbo_rect->img_height     = last_height * fbo_scale->scale_y;
-            fbo_rect->max_img_height = last_max_height * fbo_scale->scale_y;
-            break;
-
-         case RARCH_SCALE_ABSOLUTE:
-            fbo_rect->img_height     = fbo_scale->abs_y;
-            fbo_rect->max_img_height = fbo_scale->abs_y;
-            break;
-
-         case RARCH_SCALE_VIEWPORT:
-            fbo_rect->img_height     = fbo_rect->max_img_height = 
-               fbo_scale->scale_y * vp_height;
-            break;
-      }
 
       if (fbo_rect->img_width > (unsigned)max_size)
       {
