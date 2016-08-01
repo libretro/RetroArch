@@ -134,13 +134,18 @@ static slang_texture_semantic slang_uniform_name_to_texture_semantic(
 }
 
 static slang_semantic slang_uniform_name_to_semantic(
-      const unordered_map<string, slang_semantic> &semantic_map,
-      const string &name)
+      const unordered_map<string, slang_semantic_map> &semantic_map,
+      const string &name, unsigned *index)
 {
    auto itr = semantic_map.find(name);
    if (itr != end(semantic_map))
-      return itr->second;
+   {
+      *index = itr->second.index;
+      return itr->second.semantic;
+   }
 
+   // No builtin semantics are arrayed.
+   *index = 0;
    unsigned i = 0;
    for (auto n : semantic_uniform_names)
    {
@@ -180,6 +185,29 @@ static bool set_ubo_texture_offset(slang_reflection *reflection,
    }
    sem.uniform = true;
    sem.ubo_offset = offset;
+   return true;
+}
+
+static bool set_ubo_float_parameter_offset(slang_reflection *reflection,
+      unsigned index, size_t offset, unsigned num_components)
+{
+   resize_minimum(reflection->semantic_float_parameters, index + 1);
+   auto &sem = reflection->semantic_float_parameters[index];
+
+   if (sem.uniform)
+   {
+      if (sem.ubo_offset != offset)
+      {
+         RARCH_ERR("[slang]: Vertex and fragment have different offsets for same parameter #%u (%u vs. %u).\n",
+               index,
+               unsigned(sem.ubo_offset),
+               unsigned(offset));
+         return false;
+      }
+   }
+   sem.uniform = true;
+   sem.ubo_offset = offset;
+   sem.num_components = num_components;
    return true;
 }
 
@@ -230,6 +258,10 @@ static bool validate_type_for_semantic(const SPIRType &type, slang_semantic sem)
          // uint
          return type.basetype == SPIRType::UInt && type.vecsize == 1 && type.columns == 1;
 
+      case SLANG_SEMANTIC_FLOAT_PARAMETER:
+         // float
+         return type.basetype == SPIRType::Float && type.vecsize == 1 && type.columns == 1;
+
       default:
          // vec4
          return type.basetype == SPIRType::Float && type.vecsize == 4 && type.columns == 1;
@@ -253,8 +285,9 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
       auto &name = compiler.get_member_name(resource.base_type_id, range.index);
       auto &type = compiler.get_type(compiler.get_type(resource.base_type_id).member_types[range.index]);
 
+      unsigned sem_index = 0;
       unsigned tex_sem_index = 0;
-      auto sem = slang_uniform_name_to_semantic(*reflection->semantic_map, name);
+      auto sem = slang_uniform_name_to_semantic(*reflection->semantic_map, name, &sem_index);
       auto tex_sem = slang_uniform_name_to_texture_semantic(*reflection->texture_semantic_uniform_map,
             name, &tex_sem_index);
 
@@ -273,8 +306,18 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
             return false;
          }
 
-         if (!set_ubo_offset(reflection, sem, range.offset, type.vecsize))
-            return false;
+         switch (sem)
+         {
+            case SLANG_SEMANTIC_FLOAT_PARAMETER:
+               if (!set_ubo_float_parameter_offset(reflection, sem_index, range.offset, type.vecsize))
+                  return false;
+               break;
+
+            default:
+               if (!set_ubo_offset(reflection, sem, range.offset, type.vecsize))
+                  return false;
+               break;
+         }
       }
       else if (tex_sem != SLANG_INVALID_TEXTURE_SEMANTIC)
       {
@@ -508,6 +551,16 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
          }
          index++;
       }
+   }
+
+   RARCH_LOG("[slang]:\n");
+   RARCH_LOG("[slang]:   Parameters:\n");
+   unsigned i = 0;
+   for (auto &param : reflection->semantic_float_parameters)
+   {
+      if (param.uniform)
+         RARCH_LOG("[slang]:     #%u (Offset: %u)\n", i, param.ubo_offset);
+      i++;
    }
 
    return true;

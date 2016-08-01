@@ -19,6 +19,7 @@
 #include <memory>
 #include <functional>
 #include <utility>
+#include <algorithm>
 #include <string.h>
 #include <math.h>
 
@@ -323,7 +324,7 @@ struct CommonResources
 
    unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
    unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
-   unordered_map<string, slang_semantic> semantic_map;
+   unique_ptr<video_shader> shader_preset;
 
    VkDevice device;
 };
@@ -432,6 +433,8 @@ class Pass
          pass_number = pass;
       }
 
+      void add_parameter(unsigned parameter_index, const std::string &id);
+
       void end_frame();
       void allocate_buffers();
 
@@ -488,6 +491,7 @@ class Pass
       void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
             unsigned width, unsigned height);
       void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
+      void build_semantic_parameter(uint8_t *data, unsigned index, float value);
       void build_semantic_texture_vec4(uint8_t *data,
             slang_texture_semantic semantic,
             unsigned width, unsigned height);
@@ -505,6 +509,16 @@ class Pass
 
       size_t ubo_offset = 0;
       string pass_name;
+
+      struct Parameter
+      {
+         string id;
+         unsigned index;
+         unsigned semantic_index;
+      };
+
+      vector<Parameter> parameters;
+      vector<Parameter> filtered_parameters;
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -516,12 +530,12 @@ struct vulkan_filter_chain
 
       inline void set_shader_preset(unique_ptr<video_shader> shader)
       {
-         shader_preset = move(shader);
+         common.shader_preset = move(shader);
       }
 
       inline video_shader *get_shader_preset()
       {
-         return shader_preset.get();
+         return common.shader_preset.get();
       }
 
       void set_pass_info(unsigned pass,
@@ -544,6 +558,7 @@ struct vulkan_filter_chain
       void set_pass_name(unsigned pass, const char *name);
 
       void add_static_texture(unique_ptr<StaticTexture> texture);
+      void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
       void release_staging_buffers();
 
    private:
@@ -562,8 +577,6 @@ struct vulkan_filter_chain
       Size2D max_input_size;
       vulkan_filter_chain_swapchain_info swapchain_info;
       unsigned current_sync_index;
-
-      unique_ptr<video_shader> shader_preset;
 
       void flush();
 
@@ -608,6 +621,11 @@ void vulkan_filter_chain::set_swapchain_info(
 {
    swapchain_info = info;
    set_num_sync_indices(info.num_indices);
+}
+
+void vulkan_filter_chain::add_parameter(unsigned pass, unsigned index, const std::string &id)
+{
+   passes[pass]->add_parameter(index, id);
 }
 
 void vulkan_filter_chain::set_num_sync_indices(unsigned num_indices)
@@ -852,7 +870,6 @@ bool vulkan_filter_chain::init_alias()
 {
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
-   common.semantic_map.clear();
 
    unsigned i = 0;
    for (auto &pass : passes)
@@ -1211,6 +1228,11 @@ Buffer::~Buffer()
 Pass::~Pass()
 {
    clear_vk();
+}
+
+void Pass::add_parameter(unsigned index, const std::string &id)
+{
+   parameters.push_back({ id, index, unsigned(parameters.size()) });
 }
 
 void Pass::set_shader(VkShaderStageFlags stage,
@@ -1693,14 +1715,32 @@ bool Pass::build()
                pass_info.rt_format, pass_info.max_levels));
    }
 
+   unordered_map<string, slang_semantic_map> semantic_map;
+   unsigned j = 0;
+   for (auto &param : parameters)
+   {
+      if (!set_unique_map(semantic_map, param.id,
+               slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
+         return false;
+      j++;
+   }
+
    reflection = slang_reflection{};
    reflection.pass_number = pass_number;
    reflection.texture_semantic_map = &common->texture_semantic_map;
    reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
-   reflection.semantic_map = &common->semantic_map;
+   reflection.semantic_map = &semantic_map;
 
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
+
+   // Filter out parameters which we will never use anyways.
+   filtered_parameters.clear();
+   for (unsigned i = 0; i < reflection.semantic_float_parameters.size(); i++)
+   {
+      if (reflection.semantic_float_parameters[i].uniform)
+         filtered_parameters.push_back(parameters[i]);
+   }
 
    if (!init_pipeline())
       return false;
@@ -1801,6 +1841,13 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    }
 }
 
+void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
+{
+   // We will have filtered out stale parameters.
+   if (data)
+      *reinterpret_cast<float*>(data + reflection.semantic_float_parameters[index].ubo_offset) = value;
+}
+
 void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
       uint32_t value)
 {
@@ -1852,6 +1899,13 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
 
    // ORIGINAL_HISTORY[0] is an alias of ORIGINAL.
    build_semantic_texture_array(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
+
+   // Parameters.
+   for (auto &param : filtered_parameters)
+   {
+      float value = common->shader_preset->parameters[param.index].current;
+      build_semantic_parameter(buffer, param.semantic_index, value);
+   }
 
    // Previous inputs.
    unsigned i = 0;
@@ -2736,7 +2790,6 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       return nullptr;
 
    video_shader_resolve_relative(shader.get(), path);
-   video_shader_resolve_parameters(conf.get(), shader.get());
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
    auto tmpinfo          = *info;
@@ -2748,6 +2801,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
    if (shader->luts && !vulkan_filter_chain_load_luts(info, chain.get(), shader.get()))
       return nullptr;
+
+   shader->num_parameters = 0;
 
    for (unsigned i = 0; i < shader->passes; i++)
    {
@@ -2763,6 +2818,49 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          RARCH_ERR("Failed to compile shader: \"%s\".\n",
                pass->source.path);
          return nullptr;
+      }
+
+      for (auto &meta_param : output.meta.parameters)
+      {
+         if (shader->num_parameters >= GFX_MAX_PARAMETERS)
+         {
+            RARCH_ERR("[Vulkan]: Exceeded maximum number of parameters.\n");
+            return nullptr;
+         }
+
+         auto itr = find_if(shader->parameters, shader->parameters + shader->num_parameters,
+               [&](const video_shader_parameter &param) {
+                  return meta_param.id == param.id;
+               });
+
+         if (itr != shader->parameters + shader->num_parameters)
+         {
+            // Allow duplicate #pragma parameter, but only if they are exactly the same.
+            if (meta_param.desc != itr->desc ||
+                meta_param.initial != itr->initial ||
+                meta_param.minimum != itr->minimum ||
+                meta_param.maximum != itr->maximum ||
+                meta_param.step != itr->step)
+            {
+               RARCH_ERR("[Vulkan]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
+                     itr->id);
+               return nullptr;
+            }
+            chain->add_parameter(i, itr - shader->parameters, meta_param.id);
+         }
+         else
+         {
+            auto &param = shader->parameters[shader->num_parameters];
+            strlcpy(param.id, meta_param.id.c_str(), sizeof(param.id));
+            strlcpy(param.desc, meta_param.desc.c_str(), sizeof(param.desc));
+            param.current = meta_param.initial;
+            param.initial = meta_param.initial;
+            param.minimum = meta_param.minimum;
+            param.maximum = meta_param.maximum;
+            param.step = meta_param.step;
+            chain->add_parameter(i, shader->num_parameters, meta_param.id);
+            shader->num_parameters++;
+         }
       }
 
       chain->set_shader(i,
@@ -2916,6 +3014,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             opaque_frag,
             sizeof(opaque_frag) / sizeof(uint32_t));
    }
+
+   if (!video_shader_resolve_current_parameters(conf.get(), shader.get()))
+      return nullptr;
 
    chain->set_shader_preset(move(shader));
 
