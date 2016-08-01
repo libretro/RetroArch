@@ -289,7 +289,6 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
       }
       else
       {
-         // TODO: Handle invalid semantics as user defined.
          RARCH_ERR("[slang]: Unknown semantic found.\n");
          return false;
       }
