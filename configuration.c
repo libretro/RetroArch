@@ -814,6 +814,7 @@ static void config_set_defaults(void)
    settings->sort_savefiles_enable = default_sort_savefiles_enable;
    settings->sort_savestates_enable = default_sort_savestates_enable;
 
+#ifdef HAVE_MENU
    settings->menu_ok_btn          = config_menu_btn_ok_default();
    settings->menu_cancel_btn      = config_menu_btn_cancel_default();
    settings->menu_search_btn      = default_menu_btn_search;
@@ -821,6 +822,7 @@ static void config_set_defaults(void)
    settings->menu_info_btn        = default_menu_btn_info;
    settings->menu_scroll_down_btn = default_menu_btn_scroll_down;
    settings->menu_scroll_up_btn   = default_menu_btn_scroll_up;
+#endif
 
 #ifdef HAVE_LANGEXTRA
    settings->user_language = 0;
