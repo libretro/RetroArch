@@ -28,12 +28,14 @@
 
 using namespace std;
 
-static bool read_shader_file(const char *path, vector<string> *output)
+static bool read_shader_file(const char *path, vector<string> *output, bool root_file)
 {
    char                *buf = nullptr;
    ssize_t              len = 0;
-   struct string_list *list = NULL;
+   const char *basename     = path_basename(path);
    char include_path[PATH_MAX];
+   char tmp[PATH_MAX];
+   vector<const char *> lines;
 
    if (!filestream_read_file(path, (void**)&buf, &len))
    {
@@ -41,30 +43,57 @@ static bool read_shader_file(const char *path, vector<string> *output)
       return false;
    }
 
-   list = string_split(buf, "\n");
+   // Cannot use string_split since it removes blank lines (strtok).
+   char *ptr = buf;
+   while (ptr && *ptr)
+   {
+      lines.push_back(ptr);
 
-   if (!list)
+      char *next_ptr = strchr(ptr, '\n');
+      if (next_ptr)
+      {
+         ptr = next_ptr + 1;
+         *next_ptr = '\0';
+      }
+      else
+         ptr = nullptr;
+   }
+
+   if (lines.empty())
    {
       free(buf);
       return false;
    }
 
-   if (list->size == 0)
+   if (root_file)
    {
-      free(buf);
-      string_list_free(list);
-      return false;
+      if (strstr(lines[0], "#version ") != lines[0])
+      {
+         RARCH_ERR("First line of the shader must contain a valid #version string.\n");
+         return false;
+      }
+
+      output->push_back(lines[0]);
+      // Allows us to use #line to make dealing with shader errors easier.
+      // This is supported by glslang, but since we always use glslang statically,
+      // this is fine.
+      output->push_back("#extension GL_GOOGLE_cpp_style_line_directive : require");
    }
 
-   for (size_t i = 0; i < list->size; i++)
+   // At least VIM treats the first line as line #1, so offset everything by one.
+   snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", root_file ? 2 : 1, basename);
+   output->push_back(tmp);
+
+   for (size_t i = root_file ? 1 : 0; i < lines.size(); i++)
    {
-      const char *line = list->elems[i].data;
+      const char *line = lines[i];
       if (strstr(line, "#include ") == line)
       {
          char *c = (char*)strchr(line, '"');
          if (!c)
          {
             RARCH_ERR("Invalid include statement \"%s\".\n", line);
+            free(buf);
             return false;
          }
          c++;
@@ -72,19 +101,36 @@ static bool read_shader_file(const char *path, vector<string> *output)
          if (!closing)
          {
             RARCH_ERR("Invalid include statement \"%s\".\n", line);
+            free(buf);
             return false;
          }
          *closing = '\0';
          fill_pathname_resolve_relative(include_path, path, c, sizeof(include_path));
 
-         if (!read_shader_file(include_path, output))
+         if (!read_shader_file(include_path, output, false))
+         {
+            free(buf);
             return false;
+         }
+
+         // After including a file, use line directive to pull it back to current file.
+         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 1), basename);
+         output->push_back(tmp);
+      }
+      else if (strstr(line, "#endif") || strstr(line, "#pragma"))
+      {
+         // #line seems to be ignored if preprocessor tests fail,
+         // so we should reapply #line after each #endif.
+         // Add extra offset here since we're setting #line for the line after this one.
+         snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 2), basename);
+         output->push_back(line);
+         output->push_back(tmp);
       }
       else
          output->push_back(line);
    }
 
-   string_list_free(list);
+   free(buf);
    return true;
 }
 
@@ -105,14 +151,6 @@ static string build_stage_source(const vector<string> &lines, const char *stage)
          {
             auto expected = string("#pragma stage ") + stage;
             active = itr->find(expected) != string::npos;
-         }
-
-         // Improve debuggability.
-         if (active)
-         {
-            str << "#line ";
-            str << (itr - begin(lines)) + 2;
-            str << '\n';
          }
       }
       else if (itr->find("#pragma name ") == 0 ||
@@ -258,18 +296,11 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    vector<string> lines;
 
    RARCH_LOG("[slang]: Compiling shader \"%s\".\n", shader_path);
-   if (!read_shader_file(shader_path, &lines))
+   if (!read_shader_file(shader_path, &lines, true))
       return false;
 
    if (!glslang_parse_meta(lines, &output->meta))
       return false;
-
-   auto &header = lines.front();
-   if (header.find_first_of("#version ") != 0)
-   {
-      RARCH_ERR("First line of the shader must contain a valid #version string.\n");
-      return false;
-   }
 
    if (!glslang::compile_spirv(build_stage_source(lines, "vertex"),
             glslang::StageVertex, &output->vertex))
