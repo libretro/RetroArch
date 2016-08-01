@@ -430,6 +430,7 @@ bool video_shader_resolve_current_parameters(config_file_t *conf,
       if (!config_get_float(conf, id, &parameter->current))
          RARCH_WARN("[CGP/GLSLP]: Parameter %s is not set in preset.\n", id);
    }
+   return true;
 }
 
 /** 

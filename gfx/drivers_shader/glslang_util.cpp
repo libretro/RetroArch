@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
@@ -277,14 +278,39 @@ static bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
          int ret = sscanf(line.c_str(), "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
                id, desc, &initial, &minimum, &maximum, &step);
 
-         if (ret == 4)
+         if (ret == 5)
          {
             step = 0.1f * (maximum - minimum);
-            ret = 5;
+            ret = 6;
          }
 
-         if (ret == 5)
-            meta->parameters.push_back({ id, desc, initial, minimum, maximum, step });
+         if (ret == 6)
+         {
+            auto itr = find_if(begin(meta->parameters), end(meta->parameters), [&](const glslang_parameter &param) {
+                     return param.id == id;
+                  });
+
+            // Allow duplicate #pragma parameter, but only if they are exactly the same.
+            if (itr != end(meta->parameters))
+            {
+               if (itr->desc != desc ||
+                   itr->initial != initial ||
+                   itr->minimum != minimum ||
+                   itr->maximum != maximum ||
+                   itr->step != step)
+               {
+                  RARCH_ERR("[slang]: Duplicate parameters found for \"%s\", but arguments do not match.\n", id);
+                  return false;
+               }
+            }
+            else
+               meta->parameters.push_back({ id, desc, initial, minimum, maximum, step });
+         }
+         else
+         {
+            RARCH_ERR("[slang]: Invalid #pragma parameter line: \"%s\".\n", line.c_str());
+            return false;
+         }
       }
       else if (line.find("#pragma format ") == 0)
       {

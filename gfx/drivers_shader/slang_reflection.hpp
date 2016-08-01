@@ -59,10 +59,16 @@ enum slang_texture_semantic
 
 enum slang_semantic
 {
+   // mat4, MVP
    SLANG_SEMANTIC_MVP = 0,
+   // vec4, viewport size of current pass
    SLANG_SEMANTIC_OUTPUT = 1,
+   // vec4, viewport size of final pass
    SLANG_SEMANTIC_FINAL_VIEWPORT = 2,
+   // uint, frame count with modulo
    SLANG_SEMANTIC_FRAME_COUNT = 3,
+   // float, user defined parameter, arrayed
+   SLANG_SEMANTIC_FLOAT_PARAMETER = 4,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC = -1
@@ -100,6 +106,12 @@ struct slang_texture_semantic_map
    unsigned index;
 };
 
+struct slang_semantic_map
+{
+   slang_semantic semantic;
+   unsigned index;
+};
+
 struct slang_reflection
 {
    slang_reflection();
@@ -110,10 +122,11 @@ struct slang_reflection
 
    std::vector<slang_texture_semantic_meta> semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
    slang_semantic_meta semantics[SLANG_NUM_SEMANTICS];
+   std::vector<slang_semantic_meta> semantic_float_parameters;
 
    const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_map = nullptr;
    const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_uniform_map = nullptr;
-   const std::unordered_map<std::string, slang_semantic> *semantic_map = nullptr;
+   const std::unordered_map<std::string, slang_semantic_map> *semantic_map = nullptr;
    unsigned pass_number = 0;
 };
 
