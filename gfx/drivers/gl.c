@@ -326,6 +326,22 @@ enum gl_capability_enum
 
 static bool gl_check_capability(enum gl_capability_enum enum_idx)
 {
+   unsigned major      = 0;
+   unsigned minor      = 0;
+   const char *version = (const char*)glGetString(GL_VERSION);
+#ifdef HAVE_OPENGLES
+   bool gles3          = false;
+
+   if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+      major = minor = 0;
+
+   if (major >= 3)
+      gles3 = true;
+#else
+   if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
+      major = minor = 0;
+#endif
+
    switch (enum_idx)
    {
       case GL_CAPS_EGLIMAGE:
@@ -439,66 +455,30 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
       case GL_CAPS_UNPACK_ROW_LENGTH:
 #ifdef HAVE_OPENGLES
+         if (gles3)
+            return true;
+
+         if (gl_query_extension("GL_EXT_unpack_subimage"))
          {
-            unsigned major      = 0;
-            unsigned minor      = 0;
-            bool gles3          = false;
-            const char *version = (const char*)glGetString(GL_VERSION);
-
-            if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-               major = minor = 0;
-
-            if (major >= 3)
-            {
-               RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
-               gles3 = true;
-            }
-
-            if (gles3)
-               return true;
-
-            if (gl_query_extension("GL_EXT_unpack_subimage"))
-            {
-               RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
-               return true;
-            }
+            RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
+            return true;
          }
 #endif
          break;
       case GL_CAPS_FULL_NPOT_SUPPORT:
 #ifdef HAVE_OPENGLES
-         {
-            unsigned major = 0, minor = 0;
-            bool gles3             = false;
-            const char *version    = (const char*)glGetString(GL_VERSION);
+         if (gles3)
+            return true;
 
-            if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-               major = minor = 0;
-
-            if (major >= 3)
-            {
-               RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
-               gles3 = true;
-            }
-
-            if (gles3)
-               return true;
-
-            if (gl_query_extension("ARB_texture_non_power_of_two") ||
-                  gl_query_extension("OES_texture_npot"))
-               return true;
-         }
+         if (gl_query_extension("ARB_texture_non_power_of_two") ||
+               gl_query_extension("OES_texture_npot"))
+            return true;
 #else
          {
-            unsigned major = 0, minor = 0;
             GLint max_texture_size = 0;
             GLint max_native_instr = 0;
             bool arb_npot          = false;
             bool arb_frag_program  = false;
-            const char *version    = (const char*)glGetString(GL_VERSION);
-
-            if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
-               major = minor = 0;
 
             if (major >= 3)
                return true;
@@ -516,36 +496,21 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
 #endif
 
             if (arb_npot && arb_frag_program &&
-               (max_texture_size >= 8192) && (max_native_instr >= 4096))
+                  (max_texture_size >= 8192) && (max_native_instr >= 4096))
                return true;
          }
 #endif
          break;
       case GL_CAPS_SRGB_FBO:
 #if defined(HAVE_OPENGLES)
-         {
-            unsigned major = 0, minor = 0;
-            bool gles3          = false;
-            const char *version    = (const char*)glGetString(GL_VERSION);
-
-            if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-               major = minor = 0;
-
-            if (major >= 3)
-            {
-               RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
-               gles3 = true;
-            }
-
-            /* No extensions for float FBO currently. */
-            if (gles3 || gl_query_extension("EXT_sRGB"))
-               return true;
-         }
+         /* No extensions for float FBO currently. */
+         if (gles3 || gl_query_extension("EXT_sRGB"))
+            return true;
 #else
 #ifdef HAVE_FBO
          if (gl_core_context || 
-            (gl_query_extension("EXT_texture_sRGB")
-             && gl_query_extension("ARB_framebuffer_sRGB")))
+               (gl_query_extension("EXT_texture_sRGB")
+                && gl_query_extension("ARB_framebuffer_sRGB")))
             return true;
 #endif
 #endif
