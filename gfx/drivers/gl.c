@@ -323,16 +323,19 @@ enum gl_capability_enum
    GL_CAPS_FULL_NPOT_SUPPORT,
    GL_CAPS_SRGB_FBO,
    GL_CAPS_SRGB_FBO_ES3,
-   GL_CAPS_FP_FBO
+   GL_CAPS_FP_FBO,
+   GL_CAPS_BGRA8888
 };
 
 static bool gl_check_capability(enum gl_capability_enum enum_idx)
 {
-   unsigned major      = 0;
-   unsigned minor      = 0;
-   const char *version = (const char*)glGetString(GL_VERSION);
+   unsigned major       = 0;
+   unsigned minor       = 0;
+   const char *vendor   = (const char*)glGetString(GL_VENDOR);
+   const char *renderer = (const char*)glGetString(GL_RENDERER);
+   const char *version  = (const char*)glGetString(GL_VERSION);
 #ifdef HAVE_OPENGLES
-   bool gles3          = false;
+   bool gles3           = false;
 
    if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
       major = minor = 0;
@@ -415,7 +418,7 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
                || gl_query_extension("ARM_argb8"))
             return true;
 #else
-         /* TODO/FIXME - implement this for non-GLES2? */
+         /* TODO/FIXME - implement this for non-GLES? */
 #endif
          break;
       case GL_CAPS_DEBUG:
@@ -441,18 +444,14 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
       case GL_CAPS_ES2_COMPAT:
 #ifndef HAVE_OPENGLES
+         if (vendor && renderer && (strstr(vendor, "ATI") || strstr(renderer, "ATI")))
          {
-            const char *vendor   = (const char*)glGetString(GL_VENDOR);
-            const char *renderer = (const char*)glGetString(GL_RENDERER);
-            if (vendor && renderer && (strstr(vendor, "ATI") || strstr(renderer, "ATI")))
-            {
-               RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
-               return false;
-            }
-
-            if (gl_query_extension("ARB_ES2_compatibility"))
-               return true;
+            RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
+            return false;
          }
+
+         if (gl_query_extension("ARB_ES2_compatibility"))
+            return true;
 #endif
          break;
       case GL_CAPS_UNPACK_ROW_LENGTH:
@@ -530,6 +529,17 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          if (gl_core_context || gl_query_extension("ARB_texture_float"))
             return true;
 #endif
+#endif
+         break;
+      case GL_CAPS_BGRA8888:
+#ifdef HAVE_OPENGLES
+         /* There are both APPLE and EXT variants. */
+         /* Videocore hardware supports BGRA8888 extension, but
+          * should be purposefully avoided. */
+         if (gl_query_extension("BGRA8888") && !strstr(renderer, "VideoCore"))
+            return true;
+#else
+         /* TODO/FIXME - implement this for non-GLES? */
 #endif
          break;
       case GL_CAPS_NONE:
@@ -2443,7 +2453,6 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
-   const char *renderer = (const char*)glGetString(GL_RENDERER);
 #if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
    settings_t *settings = config_get_ptr();
 #endif
@@ -2486,12 +2495,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #if defined(HAVE_OPENGLES)
    gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 
-   /* There are both APPLE and EXT variants. */
-   /* Videocore hardware supports BGRA8888 extension, but
-    * should be purposefully avoided. */
-   if (gl_query_extension("BGRA8888") && !strstr(renderer, "VideoCore"))
-      RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
-   else
+   if (!gl_check_capability(GL_CAPS_BGRA8888))
    {
       video_driver_set_rgba();
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
@@ -2500,9 +2504,9 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
    /* GLES3 has unpack_subimage and sRGB in core. */
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
+   gl->has_srgb_fbo_gles3        = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
 
-   /* No extensions for float FBO currently. */
-   gl->has_srgb_fbo_gles3 = gl_check_capability(GL_CAPS_SRGB_FBO_ES3);
+   /* TODO/FIXME - No extensions for float FBO currently. */
 #endif
 
    gl->has_fp_fbo   = gl_check_capability(GL_CAPS_FP_FBO);
@@ -2516,6 +2520,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #ifdef GL_DEBUG
    /* Useful for debugging, but kinda obnoxious otherwise. */
    RARCH_LOG("[GL]: Supported extensions:\n");
+
    if (gl_core_context)
    {
 #ifdef GL_NUM_EXTENSIONS
