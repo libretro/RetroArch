@@ -712,7 +712,6 @@ static void retroarch_parse_input(int argc, char *argv[])
 
    global->has_set.save_path             = false;
    global->has_set.state_path            = false;
-   global->has_set.libretro              = false;
    global->has_set.libretro_directory    = false;
    global->has_set.verbosity             = false;
 
@@ -863,7 +862,8 @@ static void retroarch_parse_input(int argc, char *argv[])
                config_clear_active_core_path();
                strlcpy(settings->directory.libretro, optarg,
                      sizeof(settings->directory.libretro));
-               global->has_set.libretro = true;
+
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
                global->has_set.libretro_directory = true;
                RARCH_WARN("Using old --libretro behavior. "
                      "Setting libretro_directory to \"%s\" instead.\n",
@@ -872,7 +872,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             else if (path_file_exists(optarg))
             {
                runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, optarg);
-               global->has_set.libretro = true;
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
 
                /* We requested explicit core, so use PLAIN core type. */
                retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
@@ -1339,8 +1339,7 @@ bool retroarch_main_init(int argc, char *argv[])
                   if (settings->multimedia.builtin_mediaplayer_enable)
                   {
 #ifdef HAVE_FFMPEG
-                     global_t *global  = global_get_ptr();
-                     global->has_set.libretro  = false;
+                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
                      retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
 #endif
                   }
@@ -1349,8 +1348,7 @@ bool retroarch_main_init(int argc, char *argv[])
                case RARCH_CONTENT_IMAGE:
                   if (settings->multimedia.builtin_imageviewer_enable)
                   {
-                     global_t *global  = global_get_ptr();
-                     global->has_set.libretro  = false;
+                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
                      retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
                   }
                   break;
@@ -1630,10 +1628,14 @@ void retroarch_fill_pathnames(void)
             sizeof(global->name.ips));
 }
 
+static bool has_set_libretro = false;
+
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx)
 {
    switch (enum_idx)
    {
+      case RARCH_OVERRIDE_SETTING_LIBRETRO:
+         return has_set_libretro;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -1646,6 +1648,9 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx)
 {
    switch (enum_idx)
    {
+      case RARCH_OVERRIDE_SETTING_LIBRETRO:
+         has_set_libretro = true;
+         break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -1656,6 +1661,9 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx)
 {
    switch (enum_idx)
    {
+      case RARCH_OVERRIDE_SETTING_LIBRETRO:
+         has_set_libretro = false;
+         break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;

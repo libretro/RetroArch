@@ -184,7 +184,6 @@ typedef struct global
       bool verbosity;
 
       bool libretro_device[MAX_USERS];
-      bool libretro;
       bool libretro_directory;
 
       bool netplay_mode;

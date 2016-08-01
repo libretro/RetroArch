@@ -1571,7 +1571,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
       wrap_args->state_path    = global->dir.savestate;
    if (fullpath && *fullpath)
       wrap_args->content_path  = fullpath;
-   if (!global->has_set.libretro)
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO))
       wrap_args->libretro_path = string_is_empty(config_get_active_core_path()) ? NULL :
          config_get_active_core_path();
 
