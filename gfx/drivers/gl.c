@@ -317,7 +317,8 @@ enum gl_capability_enum
    GL_CAPS_FBO,
    GL_CAPS_ARGB8,
    GL_CAPS_DEBUG,
-   GL_CAPS_PACKED_DEPTH_STENCIL
+   GL_CAPS_PACKED_DEPTH_STENCIL,
+   GL_CAPS_ES2_COMPAT
 };
 
 static bool gl_check_capability(enum gl_capability_enum enum_idx)
@@ -415,6 +416,22 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
             /* TODO/FIXME - implement this for non-GLES2? */
 #endif
          }
+         break;
+      case GL_CAPS_ES2_COMPAT:
+#ifndef HAVE_OPENGLES
+         {
+            const char *vendor   = (const char*)glGetString(GL_VENDOR);
+            const char *renderer = (const char*)glGetString(GL_RENDERER);
+            if (vendor && renderer && (strstr(vendor, "ATI") || strstr(renderer, "ATI")))
+            {
+               RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
+               return false;
+            }
+
+            if (gl_query_extension("ARB_ES2_compatibility"))
+               return true;
+         }
+#endif
          break;
       case GL_CAPS_NONE:
       default:
@@ -2330,7 +2347,6 @@ static void gl_set_nonblock_state(void *data, bool state)
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
    unsigned major = 0, minor = 0;
-   const char *vendor   = (const char*)glGetString(GL_VENDOR);
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
 #if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
@@ -2339,7 +2355,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
     
-   (void)vendor;
    (void)renderer;
    (void)version;
    (void)hwr;
@@ -2368,11 +2383,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     * The speed gain from using GL_RGB565 is worth 
     * adding some workarounds for.
     */
-
-   if (vendor && renderer && (strstr(vendor, "ATI") || strstr(renderer, "ATI")))
-      RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
-   else
-      gl->have_es2_compat = gl_query_extension("ARB_ES2_compatibility");
+   gl->have_es2_compat = gl_check_capability(GL_CAPS_ES2_COMPAT);
 
    if (major >= 3)
       gl->have_full_npot_support = true;
