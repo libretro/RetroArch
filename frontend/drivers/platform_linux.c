@@ -1668,12 +1668,19 @@ static void frontend_linux_get_env(int *argc,
       g_defaults.settings.video_refresh_rate = 59.65;
 
 
-   /* Explicitly disable input overlay by default
-    * for gamepad-like/console devices. */
+   /* For gamepad-like/console devices:
+    *
+    * - Explicitly disable input overlay by default
+    * - Use XMB menu driver by default
+    *
+    * */
 
    if (device_is_game_console(device_model))
+   {
+      g_defaults.overlay.set    = true;
+      g_defaults.overlay.enable = false;
       snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
-
+   }
 #else
    char base_path[PATH_MAX] = {0};
    const char *xdg          = getenv("XDG_CONFIG_HOME");

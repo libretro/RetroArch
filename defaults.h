@@ -40,6 +40,12 @@ struct defaults
 
    struct
    {
+      bool set;
+      bool enable;
+   } overlay;
+
+   struct
+   {
       char core_assets[PATH_MAX_LENGTH];
       char menu_config[PATH_MAX_LENGTH];
       char autoconfig[PATH_MAX_LENGTH];

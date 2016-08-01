@@ -696,7 +696,11 @@ static void config_set_defaults(void)
          sizeof(settings->network.buildbot_assets_url));
    settings->network.buildbot_auto_extract_archive = true;
 
-   settings->input.overlay_enable                  = true;
+   if (g_defaults.overlay.set)
+      settings->input.overlay_enable               = g_defaults.overlay.enable;
+   else
+      settings->input.overlay_enable               = true;
+
    settings->input.overlay_enable_autopreferred    = true;
    settings->input.overlay_hide_in_menu            = overlay_hide_in_menu;
    settings->input.overlay_opacity                 = 0.7f;
