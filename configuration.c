@@ -430,7 +430,7 @@ static unsigned config_menu_btn_ok_default(void)
 static unsigned config_menu_btn_cancel_default(void)
 {
    if (g_defaults.menu.controls.set)
-      return g_defaults.menu.controls.menu_btn_ok;
+      return g_defaults.menu.controls.menu_btn_cancel;
    return default_menu_btn_cancel;
 }
 #endif
