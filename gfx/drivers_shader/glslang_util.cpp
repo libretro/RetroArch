@@ -252,6 +252,9 @@ static glslang_format glslang_find_format(const char *fmt)
 
 static bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
 {
+   char id[64] = {};
+   char desc[64] = {};
+
    *meta = glslang_meta{};
    for (auto &line : lines)
    {
@@ -267,6 +270,21 @@ static bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
          while (*str == ' ')
             str++;
          meta->name = str;
+      }
+      else if (line.find("#pragma parameter ") == 0)
+      {
+         float initial, minimum, maximum, step;
+         int ret = sscanf(line.c_str(), "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
+               id, desc, &initial, &minimum, &maximum, &step);
+
+         if (ret == 4)
+         {
+            step = 0.1f * (maximum - minimum);
+            ret = 5;
+         }
+
+         if (ret == 5)
+            meta->parameters.push_back({ id, desc, initial, minimum, maximum, step });
       }
       else if (line.find("#pragma format ") == 0)
       {

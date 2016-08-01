@@ -2736,7 +2736,6 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       return nullptr;
 
    video_shader_resolve_relative(shader.get(), path);
-   video_shader_resolve_parameters(conf.get(), shader.get());
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.valid;
    auto tmpinfo          = *info;

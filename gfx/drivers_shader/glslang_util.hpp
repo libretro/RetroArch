@@ -63,8 +63,19 @@ enum glslang_format
    SLANG_FORMAT_UNKNOWN
 };
 
+struct glslang_parameter
+{
+   std::string id;
+   std::string desc;
+   float initial;
+   float minimum;
+   float maximum;
+   float step;
+};
+
 struct glslang_meta
 {
+   std::vector<glslang_parameter> parameters;
    std::string name;
    glslang_format rt_format = SLANG_FORMAT_UNKNOWN;
 };
