@@ -98,6 +98,11 @@ enum rarch_capabilities
    RARCH_CAPABILITIES_COMPILER
 };
 
+enum rarch_override_setting
+{
+   RARCH_OVERRIDE_SETTING_NONE = 0
+};
+
 struct rarch_main_wrap
 {
    int argc;
@@ -112,6 +117,7 @@ struct rarch_main_wrap
 
    bool touched;
 };
+
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
 
