@@ -34,7 +34,7 @@ elif [ $PLATFORM = "vita" ] ; then
 platform=vita
 MAKEFILE_GRIFFIN=yes
 EXT=a
-
+mkdir -p ../pkg/vita/vpk
 # CTR/3DS
 elif [ $PLATFORM = "ctr" ] ; then
 platform=ctr
@@ -124,6 +124,8 @@ if [ $SALAMANDER = "yes" ]; then
    fi
 fi
 
+counter=0
+
 for f in *_${platform}.${EXT} ; do
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
    lto=0
@@ -191,7 +193,12 @@ for f in *_${platform}.${EXT} ; do
    elif [ $PLATFORM = "psp1" ] ; then
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
-      mv -f ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro_${platform}.velf
+      let COUNTER=COUNTER+1
+      mv -f ../eboot.bin ../pkg/${platform}/${name}_libretro/eboot.bin
+      mkdir -p ../pkg/${platform}/${name}_libretro/vpk/sce_sys/
+      vita-mksfoex -s TITLE_ID=RETR0000${COUNTER} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro/vpk/sce_sys/param.sfo
+      zip ../pkg/${platform}/${name}_libretro/${name}_libretro.vpk -r ../pkg/${platform}/${name}_libretro/vpk/*
+      rm -rf ../pkg/${platform}/${name}_libretro/vpk
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
       mv -f ../retroarch_3ds.3ds ../pkg/3ds/rom/${name}_libretro.3ds
@@ -215,7 +222,7 @@ for f in *_${platform}.${EXT} ; do
    elif [ $PLATFORM = "psp1" ] ; then
       rm -f ../retroarchpsp.elf
    elif [ $PLATFORM = "vita" ] ; then
-      rm -f ../retroarch_${platform}.velf ../retroarch_${platform}.elf
+      rm -f ../retroarch_${platform}.velf ../retroarch_${platform}.elf ../eboot.bin
    elif [ $PLATFORM = "ctr" ] ; then
       rm -f ../retroarch_3ds.elf
       rm -f ../retroarch_3ds.bnr
