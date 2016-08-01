@@ -294,55 +294,7 @@ static void gl_render_overlay(gl_t *gl)
    coords[5] = yamt; \
    coords[7] = yamt
 
-#if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
-static bool gl_check_eglimage_proc(void)
-{
-   return glEGLImageTargetTexture2DOES != NULL;
-}
-#endif
-
-#ifdef HAVE_GL_SYNC
-static bool gl_check_sync_proc(void)
-{
-   if (!gl_query_extension("ARB_sync"))
-      return false;
-
-   return glFenceSync && glDeleteSync && glClientWaitSync;
-}
-#endif
-
-static bool gl_check_mipmap(void)
-{
-   static bool extension_queried = false;
-   static bool extension         = false;
-
-   if (!extension_queried)
-   {
-      extension         = gl_query_extension("ARB_framebuffer_object");
-      extension_queried = true;
-   }
-
-   if (!extension)
-      return false;
-
-   return true;
-}
-
-#ifndef HAVE_OPENGLES
-static bool gl_check_vao(void)
-{
-   if (!gl_core_context && !gl_query_extension("ARB_vertex_array_object"))
-      return false;
-
-   if (!(glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays))
-      return false;
-
-   return true;
-}
-#endif
-
-#ifdef HAVE_FBO
-#if defined(HAVE_PSGL)
+#if defined(HAVE_FBO) && defined(HAVE_PSGL)
 #define glGenFramebuffers glGenFramebuffersOES
 #define glBindFramebuffer glBindFramebufferOES
 #define glFramebufferTexture2D glFramebufferTexture2DOES
@@ -353,29 +305,102 @@ static bool gl_check_vao(void)
 #define glFramebufferRenderbuffer glFramebufferRenderbufferOES
 #define glRenderbufferStorage glRenderbufferStorageOES
 #define glDeleteRenderbuffers glDeleteRenderbuffersOES
-#define gl_check_fbo_proc() (true)
-#elif !defined(HAVE_OPENGLES2)
-static bool gl_check_fbo_proc(void)
-{
-   if (!gl_core_context && !gl_query_extension("ARB_framebuffer_object")
-         && !gl_query_extension("EXT_framebuffer_object"))
-      return false;
+#endif
 
-   return glGenFramebuffers 
-      && glBindFramebuffer 
-      && glFramebufferTexture2D 
-      && glCheckFramebufferStatus 
-      && glDeleteFramebuffers 
-      && glGenRenderbuffers 
-      && glBindRenderbuffer 
-      && glFramebufferRenderbuffer 
-      && glRenderbufferStorage 
-      && glDeleteRenderbuffers;
-}
+enum gl_capability_enum
+{
+   GL_CAPS_NONE = 0,
+   GL_CAPS_EGLIMAGE,
+   GL_CAPS_SYNC,
+   GL_CAPS_MIPMAP,
+   GL_CAPS_VAO,
+   GL_CAPS_FBO,
+   GL_CAPS_ARGB8
+};
+
+static bool gl_check_capability(enum gl_capability_enum enum_idx)
+{
+   switch (enum_idx)
+   {
+      case GL_CAPS_EGLIMAGE:
+#if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
+         if (glEGLImageTargetTexture2DOES != NULL)
+            return true;
+#endif
+         break;
+      case GL_CAPS_SYNC:
+#ifdef HAVE_GL_SYNC
+         if (gl_query_extension("ARB_sync") &&
+               glFenceSync && glDeleteSync && glClientWaitSync)
+            return true;
+#endif
+         break;
+      case GL_CAPS_MIPMAP:
+         {
+            static bool extension_queried = false;
+            static bool extension         = false;
+
+            if (!extension_queried)
+            {
+               extension         = gl_query_extension("ARB_framebuffer_object");
+               extension_queried = true;
+            }
+
+            if (extension)
+               return true;
+         }
+         break;
+      case GL_CAPS_VAO:
+#ifndef HAVE_OPENGLES
+         if (!gl_core_context && !gl_query_extension("ARB_vertex_array_object"))
+            return false;
+
+         if (glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays)
+            return true;
+#endif
+         break;
+      case GL_CAPS_FBO:
+#ifdef HAVE_FBO
+#ifdef HAVE_PSGL
+         return true;
+#elif !defined(HAVE_OPENGLES2)
+         if (!gl_core_context && !gl_query_extension("ARB_framebuffer_object")
+               && !gl_query_extension("EXT_framebuffer_object"))
+            return false;
+
+         return glGenFramebuffers 
+            && glBindFramebuffer 
+            && glFramebufferTexture2D 
+            && glCheckFramebufferStatus 
+            && glDeleteFramebuffers 
+            && glGenRenderbuffers 
+            && glBindRenderbuffer 
+            && glFramebufferRenderbuffer 
+            && glRenderbufferStorage 
+            && glDeleteRenderbuffers;
 #else
-#define gl_check_fbo_proc() (true)
+         return true;
 #endif
+#else
+         break;
 #endif
+      case GL_CAPS_ARGB8:
+#ifdef HAVE_OPENGLES2
+      if (gl_query_extension("OES_rgb8_rgba8")
+         || gl_query_extension("ARM_argb8"))
+         return true;
+#else
+      /* TODO/FIXME - implement this for non_GLES2? */
+#endif
+      break;
+      case GL_CAPS_NONE:
+      default:
+         break;
+   }
+
+   return false;
+}
+
 
 /* Shaders */
 
@@ -798,7 +823,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    if (shader_info.num == 1 && !scale.valid)
       return;
 
-   if (!gl_check_fbo_proc())
+   if (!gl_check_capability(GL_CAPS_FBO))
    {
       RARCH_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
@@ -909,7 +934,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %d px.\n",
          max_fbo_size, max_renderbuffer_size);
 
-   if (!gl_check_fbo_proc())
+   if (!gl_check_capability(GL_CAPS_FBO))
       return false;
 
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -1304,7 +1329,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       mip_level = i + 1;
 
       if (video_shader_driver_mipmap_input(&mip_level)
-            && gl_check_mipmap())
+            && gl_check_capability(GL_CAPS_MIPMAP))
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1380,7 +1405,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    mip_level = gl->fbo_pass + 1;
 
    if (video_shader_driver_mipmap_input(&mip_level)
-         && gl_check_mipmap())
+         && gl_check_capability(GL_CAPS_MIPMAP))
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -1529,7 +1554,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    /* Use regular textures if we use HW render. */
-   gl->egl_images = !gl->hw_render_use && gl_check_eglimage_proc() &&
+   gl->egl_images = !gl->hw_render_use && gl_check_capability(GL_CAPS_EGLIMAGE) &&
       video_context_driver_init_image_buffer((void*)video);
 #else
    (void)video;
@@ -1557,10 +1582,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
    if (gl->hw_render_use && gl->base_size == sizeof(uint32_t))
    {
-      bool support_argb = gl_query_extension("OES_rgb8_rgba8")
-         || gl_query_extension("ARM_argb8");
-
-      if (support_argb)
+      if (gl_check_capability(GL_CAPS_ARGB8))
       {
          internal_fmt = GL_RGBA;
          texture_type = GL_RGBA;
@@ -1967,7 +1989,7 @@ static bool gl_frame(void *data, const void *frame,
 
       /* No point regenerating mipmaps 
        * if there are no new frames. */
-      if (gl->tex_mipmap && gl_check_mipmap())
+      if (gl->tex_mipmap && gl_check_capability(GL_CAPS_MIPMAP))
          glGenerateMipmap(GL_TEXTURE_2D);
    }
 
@@ -2305,7 +2327,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    if (gl_core_context)
    {
       RARCH_LOG("[GL]: Using Core GL context.\n");
-      if (!gl_check_vao())
+      if (!gl_check_capability(GL_CAPS_VAO))
       {
          RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
          return false;
@@ -2352,7 +2374,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #endif
 
 #ifdef HAVE_GL_SYNC
-   gl->have_sync = gl_check_sync_proc();
+   gl->have_sync = gl_check_capability(GL_CAPS_SYNC);
    if (gl->have_sync && settings->video.hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
@@ -3409,7 +3431,7 @@ static void gl_load_texture_data(
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
     
-   if (!gl_check_mipmap())
+   if (!gl_check_capability(GL_CAPS_MIPMAP))
    {
       /* Assume no mipmapping support. */
       switch (filter_type)
@@ -3459,7 +3481,7 @@ static void gl_load_texture_data(
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
          (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
 
-   if (want_mipmap && gl_check_mipmap())
+   if (want_mipmap && gl_check_capability(GL_CAPS_MIPMAP))
       glGenerateMipmap(GL_TEXTURE_2D);
 }
 
