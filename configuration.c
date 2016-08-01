@@ -1567,7 +1567,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
       global->console.sound.system_bgm_enable = tmp_bool;
 #endif
-   if (!global->has_set.verbosity)
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY))
    {
       if (config_get_bool(conf, "log_verbosity", &tmp_bool))
       {

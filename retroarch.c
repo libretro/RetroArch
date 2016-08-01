@@ -711,7 +711,6 @@ static void retroarch_parse_input(int argc, char *argv[])
    global->has_set.save_path             = false;
    global->has_set.state_path            = false;
    global->has_set.libretro_directory    = false;
-   global->has_set.verbosity             = false;
 
    global->has_set.netplay_mode          = false;
 
@@ -819,10 +818,8 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'v':
-            {
-               verbosity_enable();
-               global->has_set.verbosity = true;
-            }
+            verbosity_enable();
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY);
             break;
 
          case 'N':
@@ -1626,12 +1623,15 @@ void retroarch_fill_pathnames(void)
             sizeof(global->name.ips));
 }
 
-static bool has_set_libretro = false;
+static bool has_set_verbosity = false;
+static bool has_set_libretro  = false;
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx)
 {
    switch (enum_idx)
    {
+      case RARCH_OVERRIDE_SETTING_VERBOSITY:
+         return has_set_verbosity;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
          return has_set_libretro;
       case RARCH_OVERRIDE_SETTING_NONE:
@@ -1646,6 +1646,9 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx)
 {
    switch (enum_idx)
    {
+      case RARCH_OVERRIDE_SETTING_VERBOSITY:
+         has_set_verbosity = true;
+         break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
          has_set_libretro = true;
          break;
@@ -1659,6 +1662,9 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx)
 {
    switch (enum_idx)
    {
+      case RARCH_OVERRIDE_SETTING_VERBOSITY:
+         has_set_verbosity = false;
+         break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
          has_set_libretro = false;
          break;

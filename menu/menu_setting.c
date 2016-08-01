@@ -61,6 +61,7 @@
 #include "../config.def.h"
 #include "../performance_counters.h"
 #include "../lakka.h"
+#include "../retroarch.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -3464,7 +3465,10 @@ void general_write_handler(void *data)
             else
                verbosity_disable();
 
-            global->has_set.verbosity = *setting->value.target.boolean;
+            if (*setting->value.target.boolean)
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY);
+            else
+               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:

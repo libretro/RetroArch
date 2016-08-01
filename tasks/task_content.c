@@ -1554,7 +1554,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
    wrap_args->no_content       = menu_driver_ctl(
          RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
 
-   if (!global->has_set.verbosity)
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY))
       wrap_args->verbose       = verbosity_is_enabled();
 
    wrap_args->touched          = true;

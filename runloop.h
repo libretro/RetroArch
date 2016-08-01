@@ -181,7 +181,6 @@ typedef struct global
    {
       bool save_path;
       bool state_path;
-      bool verbosity;
 
       bool libretro_device[MAX_USERS];
       bool libretro_directory;
