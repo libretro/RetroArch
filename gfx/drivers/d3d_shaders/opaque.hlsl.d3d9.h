@@ -19,7 +19,7 @@ static const char *stock_hlsl_program = CG(
          otexCoord = texCoord;
       }
 
-      struct outpu
+      struct output
       {
          float4 color: COLOR;
       };
