@@ -212,16 +212,17 @@ else ifeq ($(platform), vita)
   PLATCFLAGS :=  -O3 -mfloat-abi=hard -ffast-math -fsingle-precision-constant
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
-			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lfreetype -lz -lm -lc -lpng
+			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
+			 -lfreetype -lz -lm -lc -lpng -ljpeg
 
-  PLATOBJS += deps/libvita2d/shader/compiled/clear_v_gxp.o \
+  PLATEXTRA := deps/libvita2d/shader/compiled/clear_v_gxp.o \
 				  deps/libvita2d/shader/compiled/clear_f_gxp.o \
 				  deps/libvita2d/shader/compiled/color_v_gxp.o \
 				  deps/libvita2d/shader/compiled/color_f_gxp.o \
 				  deps/libvita2d/shader/compiled/texture_v_gxp.o \
 				  deps/libvita2d/shader/compiled/texture_f_gxp.o \
-				  deps/libvita2d/shader/compiled/texture_tint_f_gxp.o\
-				  libretro-common/conversion/s16_to_float_neon.o \
+				  deps/libvita2d/shader/compiled/texture_tint_f_gxp.o
+  PLATOBJS +=			  libretro-common/conversion/s16_to_float_neon.o \
 				  audio/drivers_resampler/sinc_resampler_neon.o \
               audio/drivers_resampler/cc_resampler_neon.o
 
@@ -399,7 +400,7 @@ ifeq ($(platform),psp1)
 endif
 
 $(EXT_INTER_TARGET): $(OBJ)
-	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
