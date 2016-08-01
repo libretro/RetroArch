@@ -404,8 +404,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
       struct video_shader *shader)
 {
    unsigned i;
-   struct video_shader_parameter *param = 
-      &shader->parameters[shader->num_parameters];
+   struct video_shader_parameter *param = &shader->parameters[0];
 
    shader->num_parameters = 0;
 
