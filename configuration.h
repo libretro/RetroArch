@@ -655,6 +655,8 @@ bool config_replace(char *path);
 
 bool config_init(void);
 
+bool config_overlay_enable_default(void);
+
 void config_free(void);
 
 const char *config_get_active_path(void);

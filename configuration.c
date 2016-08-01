@@ -412,6 +412,13 @@ const char *config_get_default_location(void)
    return "null";
 }
 
+bool config_overlay_enable_default(void)
+{
+   if (g_defaults.overlay.set)
+      return g_defaults.overlay.enable;
+   return true;
+}
+
 /**
  * config_set_defaults:
  *
@@ -696,10 +703,7 @@ static void config_set_defaults(void)
          sizeof(settings->network.buildbot_assets_url));
    settings->network.buildbot_auto_extract_archive = true;
 
-   if (g_defaults.overlay.set)
-      settings->input.overlay_enable               = g_defaults.overlay.enable;
-   else
-      settings->input.overlay_enable               = true;
+   settings->input.overlay_enable                  = config_overlay_enable_default();
 
    settings->input.overlay_enable_autopreferred    = true;
    settings->input.overlay_hide_in_menu            = overlay_hide_in_menu;

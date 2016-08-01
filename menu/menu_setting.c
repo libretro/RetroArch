@@ -6457,7 +6457,7 @@ static bool setting_append_list(
                &settings->input.overlay_enable,
                msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE),
-               true,
+               config_overlay_enable_default(),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
                &group_info,
