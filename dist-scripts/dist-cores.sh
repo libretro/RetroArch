@@ -193,9 +193,9 @@ for f in *_${platform}.${EXT} ; do
    elif [ $PLATFORM = "psp1" ] ; then
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
-      let COUNTER=COUNTER+1
-      mv -f ../eboot.bin ../pkg/${platform}/${name}_libretro/eboot.bin
+      COUNTER=COUNTER+1
       mkdir -p ../pkg/${platform}/${name}_libretro/vpk/sce_sys/
+      vita-make-fself ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro/vpk/eboot.bin
       vita-mksfoex -s TITLE_ID=RETR0000${COUNTER} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro/vpk/sce_sys/param.sfo
       zip ../pkg/${platform}/${name}_libretro/${name}_libretro.vpk -r ../pkg/${platform}/${name}_libretro/vpk/*
       rm -rf ../pkg/${platform}/${name}_libretro/vpk
