@@ -1940,7 +1940,144 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
    gl_set_viewport(gl, width, height, false, true);
 }
 
-#if defined(HAVE_GL_ASYNC_READBACK) && defined(HAVE_MENU)
+static void gl_load_texture_data(
+      uint32_t id_data,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame, unsigned base_size)
+{
+   GLint mag_filter, min_filter;
+   bool want_mipmap = false;
+   bool use_rgba    = video_driver_supports_rgba();
+   bool rgb32       = (base_size == (sizeof(uint32_t)));
+   GLenum wrap      = gl_wrap_type_to_enum(wrap_type);
+   GLuint id        = (GLuint)id_data;
+
+   glBindTexture(GL_TEXTURE_2D, id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
+    
+   if (!gl_check_capability(GL_CAPS_MIPMAP))
+   {
+      /* Assume no mipmapping support. */
+      switch (filter_type)
+      {
+         case TEXTURE_FILTER_MIPMAP_LINEAR:
+            filter_type = TEXTURE_FILTER_LINEAR;
+            break;
+         case TEXTURE_FILTER_MIPMAP_NEAREST:
+            filter_type = TEXTURE_FILTER_NEAREST;
+            break;
+         default:
+            break;
+      }
+   }
+
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+         min_filter = GL_LINEAR_MIPMAP_NEAREST;
+         mag_filter = GL_LINEAR;
+         want_mipmap = true;
+         break;
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+         min_filter = GL_NEAREST_MIPMAP_NEAREST;
+         mag_filter = GL_NEAREST;
+         want_mipmap = true;
+         break;
+      case TEXTURE_FILTER_NEAREST:
+         min_filter = GL_NEAREST;
+         mag_filter = GL_NEAREST;
+         break;
+      case TEXTURE_FILTER_LINEAR:
+      default:
+         min_filter = GL_LINEAR;
+         mag_filter = GL_LINEAR;
+         break;
+   }
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+
+   glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+   glTexImage2D(GL_TEXTURE_2D,
+         0,
+         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+         width, height, 0,
+         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
+         (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
+
+   if (want_mipmap && gl_check_capability(GL_CAPS_MIPMAP))
+      glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+
+#if defined(HAVE_MENU)
+static void gl_set_texture_frame(void *data,
+      const void *frame, bool rgb32, unsigned width, unsigned height,
+      float alpha)
+{
+   enum texture_filter_type menu_filter;
+   settings_t *settings            = config_get_ptr();
+   unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   gl_t *gl                        = (gl_t*)data;
+   if (!gl)
+      return;
+
+   context_bind_hw_render(false);
+
+   menu_filter = settings->menu.linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
+
+   if (!gl->menu_texture)
+      glGenTextures(1, &gl->menu_texture);
+
+
+   gl_load_texture_data(gl->menu_texture,
+         RARCH_WRAP_EDGE, menu_filter,
+         video_pixel_get_alignment(width * base_size),
+         width, height, frame,
+         base_size);
+
+   gl->menu_texture_alpha = alpha;
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+   context_bind_hw_render(true);
+}
+
+static void gl_set_texture_enable(void *data, bool state, bool full_screen)
+{
+   gl_t *gl                     = (gl_t*)data;
+
+   if (!gl)
+      return;
+
+   gl->menu_texture_enable      = state;
+   gl->menu_texture_full_screen = full_screen;
+}
+
+static void gl_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
+{
+   font_driver_render_msg(font, msg, params);
+}
+
+static void gl_show_mouse(void *data, bool state)
+{
+   video_context_driver_show_mouse(&state);
+}
+
+static struct video_shader *gl_get_current_shader(void *data)
+{
+   video_shader_ctx_t shader_info;
+
+   video_shader_driver_direct_get_current_shader(&shader_info);
+
+   return shader_info.data;
+}
+
+#if defined(HAVE_GL_ASYNC_READBACK)
 static void gl_pbo_async_readback(gl_t *gl)
 {
    static struct retro_perf_counter async_readback = {0};
@@ -1975,7 +2112,6 @@ static void gl_pbo_async_readback(gl_t *gl)
 }
 #endif
 
-#if defined(HAVE_MENU)
 static INLINE void gl_draw_texture(gl_t *gl)
 {
    video_shader_ctx_mvp_t mvp;
@@ -3481,78 +3617,6 @@ unsigned *height_p, size_t *pitch_p)
 }
 #endif
 
-static void gl_load_texture_data(
-      uint32_t id_data,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame, unsigned base_size)
-{
-   GLint mag_filter, min_filter;
-   bool want_mipmap = false;
-   bool use_rgba    = video_driver_supports_rgba();
-   bool rgb32       = (base_size == (sizeof(uint32_t)));
-   GLenum wrap      = gl_wrap_type_to_enum(wrap_type);
-   GLuint id        = (GLuint)id_data;
-
-   glBindTexture(GL_TEXTURE_2D, id);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
-    
-   if (!gl_check_capability(GL_CAPS_MIPMAP))
-   {
-      /* Assume no mipmapping support. */
-      switch (filter_type)
-      {
-         case TEXTURE_FILTER_MIPMAP_LINEAR:
-            filter_type = TEXTURE_FILTER_LINEAR;
-            break;
-         case TEXTURE_FILTER_MIPMAP_NEAREST:
-            filter_type = TEXTURE_FILTER_NEAREST;
-            break;
-         default:
-            break;
-      }
-   }
-
-   switch (filter_type)
-   {
-      case TEXTURE_FILTER_MIPMAP_LINEAR:
-         min_filter = GL_LINEAR_MIPMAP_NEAREST;
-         mag_filter = GL_LINEAR;
-         want_mipmap = true;
-         break;
-      case TEXTURE_FILTER_MIPMAP_NEAREST:
-         min_filter = GL_NEAREST_MIPMAP_NEAREST;
-         mag_filter = GL_NEAREST;
-         want_mipmap = true;
-         break;
-      case TEXTURE_FILTER_NEAREST:
-         min_filter = GL_NEAREST;
-         mag_filter = GL_NEAREST;
-         break;
-      case TEXTURE_FILTER_LINEAR:
-      default:
-         min_filter = GL_LINEAR;
-         mag_filter = GL_LINEAR;
-         break;
-   }
-
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-
-   glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-   glTexImage2D(GL_TEXTURE_2D,
-         0,
-         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
-         width, height, 0,
-         (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-         (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
-
-   if (want_mipmap && gl_check_capability(GL_CAPS_MIPMAP))
-      glGenerateMipmap(GL_TEXTURE_2D);
-}
 
 bool gl_load_luts(const struct video_shader *shader,
       GLuint *textures_lut)
@@ -3764,69 +3828,6 @@ static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gl->should_resize = true;
 }
 
-#if defined(HAVE_MENU)
-static void gl_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
-      float alpha)
-{
-   enum texture_filter_type menu_filter;
-   settings_t *settings            = config_get_ptr();
-   unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   gl_t *gl                        = (gl_t*)data;
-   if (!gl)
-      return;
-
-   context_bind_hw_render(false);
-
-   menu_filter = settings->menu.linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
-
-   if (!gl->menu_texture)
-      glGenTextures(1, &gl->menu_texture);
-
-
-   gl_load_texture_data(gl->menu_texture,
-         RARCH_WRAP_EDGE, menu_filter,
-         video_pixel_get_alignment(width * base_size),
-         width, height, frame,
-         base_size);
-
-   gl->menu_texture_alpha = alpha;
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-
-   context_bind_hw_render(true);
-}
-
-static void gl_set_texture_enable(void *data, bool state, bool full_screen)
-{
-   gl_t *gl                     = (gl_t*)data;
-
-   if (!gl)
-      return;
-
-   gl->menu_texture_enable      = state;
-   gl->menu_texture_full_screen = full_screen;
-}
-
-static void gl_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
-{
-   font_driver_render_msg(font, msg, params);
-}
-
-static void gl_show_mouse(void *data, bool state)
-{
-   video_context_driver_show_mouse(&state);
-}
-
-static struct video_shader *gl_get_current_shader(void *data)
-{
-   video_shader_ctx_t shader_info;
-
-   video_shader_driver_direct_get_current_shader(&shader_info);
-
-   return shader_info.data;
-}
-#endif
 
 static void gl_apply_state_changes(void *data)
 {
