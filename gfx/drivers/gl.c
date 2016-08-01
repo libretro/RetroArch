@@ -2644,20 +2644,16 @@ static void gl_init_pbo_readback(gl_t *gl)
 static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 {
    enum gfx_ctx_api api;
-   unsigned major, minor;
    const char                 *api_name = NULL;
-   struct retro_hw_render_callback *hwr = NULL;
    settings_t                 *settings = config_get_ptr();
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+   unsigned major                       = hwr->version_major;
+   unsigned minor                       = hwr->version_minor;
 
-   hwr = video_driver_get_hw_context();
-
-   major       = hwr->version_major;
-   minor       = hwr->version_minor;
 #ifdef HAVE_OPENGLES
    api         = GFX_CTX_OPENGL_ES_API;
    api_name    = "OpenGL ES 2.0";
 
-#ifdef HAVE_OPENGLES3
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
       major    = 3;
@@ -2666,7 +2662,6 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    }
    else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
       api_name = "OpenGL ES 3.1+";
-#endif
 #else
    api         = GFX_CTX_OPENGL_API;
    api_name    = "OpenGL";
