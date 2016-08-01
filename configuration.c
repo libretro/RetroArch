@@ -1298,7 +1298,9 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "sort_savefiles_enable",       &settings->sort_savefiles_enable},
       { "sort_savestates_enable",      &settings->sort_savestates_enable},
       { "config_save_on_exit",         &settings->config_save_on_exit},
+#ifdef HAVE_MENU
       { "dpi_override_enable",         &settings->menu.dpi.override_enable},
+#endif
       { "ui_menubar_enable",           &settings->ui.menubar_enable},
       { "suspend_screensaver_enable",  &settings->ui.suspend_screensaver_enable},
       { "load_dummy_on_core_shutdown", &settings->load_dummy_on_core_shutdown},
@@ -1458,9 +1460,11 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "input_overlay_scale", &settings->input.overlay_scale},
       { "slowmotion_ratio", &settings->slowmotion_ratio},
       { "fastforward_ratio", &settings->fastforward_ratio},
+#ifdef HAVE_MENU
       { "menu_wallpaper_opacity", &settings->menu.wallpaper.opacity},
       { "menu_footer_opacity", &settings->menu.footer.opacity},
       { "menu_header_opacity", &settings->menu.header.opacity},
+#endif
       { "video_aspect_ratio", &settings->video.aspect_ratio},
       { "video_refresh_rate", &settings->video.refresh_rate},
       { "video_font_size", &settings->video.font_size},

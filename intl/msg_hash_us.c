@@ -1848,6 +1848,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
    return 0;
 }
 
+#ifdef HAVE_MENU
 static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 {
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
@@ -2889,6 +2890,7 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 
    return "null";
 }
+#endif
 
 const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 {
