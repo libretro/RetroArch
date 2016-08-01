@@ -320,7 +320,8 @@ enum gl_capability_enum
    GL_CAPS_PACKED_DEPTH_STENCIL,
    GL_CAPS_ES2_COMPAT,
    GL_CAPS_UNPACK_ROW_LENGTH,
-   GL_CAPS_FULL_NPOT_SUPPORT
+   GL_CAPS_FULL_NPOT_SUPPORT,
+   GL_CAPS_SRGB_FBO
 };
 
 static bool gl_check_capability(enum gl_capability_enum enum_idx)
@@ -518,6 +519,35 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
                (max_texture_size >= 8192) && (max_native_instr >= 4096))
                return true;
          }
+#endif
+         break;
+      case GL_CAPS_SRGB_FBO:
+#if defined(HAVE_OPENGLES)
+         {
+            unsigned major = 0, minor = 0;
+            bool gles3          = false;
+            const char *version    = (const char*)glGetString(GL_VERSION);
+
+            if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+               major = minor = 0;
+
+            if (major >= 3)
+            {
+               RARCH_LOG("[GL]: GLES3 or newer detected. Auto-enabling some extensions.\n");
+               gles3 = true;
+            }
+
+            /* No extensions for float FBO currently. */
+            if (gles3 || gl_query_extension("EXT_sRGB"))
+               return true;
+         }
+#else
+#ifdef HAVE_FBO
+         if (gl_core_context || 
+            (gl_query_extension("EXT_texture_sRGB")
+             && gl_query_extension("ARB_framebuffer_sRGB")))
+            return true;
+#endif
 #endif
          break;
       case GL_CAPS_NONE:
@@ -2462,7 +2492,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
     * The speed gain from using GL_RGB565 is worth 
     * adding some workarounds for.
     */
-   gl->have_es2_compat = gl_check_capability(GL_CAPS_ES2_COMPAT);
+   gl->have_es2_compat        = gl_check_capability(GL_CAPS_ES2_COMPAT);
    gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 #endif
 
@@ -2503,17 +2533,15 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    gl->support_unpack_row_length = gl_check_capability(GL_CAPS_UNPACK_ROW_LENGTH);
 
    /* No extensions for float FBO currently. */
-   gl->has_srgb_fbo       = gles3 || gl_query_extension("EXT_sRGB");
    gl->has_srgb_fbo_gles3 = gles3;
 #else
 #ifdef HAVE_FBO
    /* Float FBO is core in 3.2. */
    gl->has_fp_fbo   = gl_core_context || gl_query_extension("ARB_texture_float");
-   gl->has_srgb_fbo = gl_core_context || 
-      (gl_query_extension("EXT_texture_sRGB")
-       && gl_query_extension("ARB_framebuffer_sRGB"));
 #endif
 #endif
+
+   gl->has_srgb_fbo = gl_check_capability(GL_CAPS_SRGB_FBO);
 
 #ifdef HAVE_FBO
    if (settings->video.force_srgb_disable)
