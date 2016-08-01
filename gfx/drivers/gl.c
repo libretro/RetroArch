@@ -316,7 +316,8 @@ enum gl_capability_enum
    GL_CAPS_VAO,
    GL_CAPS_FBO,
    GL_CAPS_ARGB8,
-   GL_CAPS_DEBUG
+   GL_CAPS_DEBUG,
+   GL_CAPS_PACKED_DEPTH_STENCIL
 };
 
 static bool gl_check_capability(enum gl_capability_enum enum_idx)
@@ -391,7 +392,7 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
                || gl_query_extension("ARM_argb8"))
             return true;
 #else
-         /* TODO/FIXME - implement this for non_GLES2? */
+         /* TODO/FIXME - implement this for non-GLES2? */
 #endif
          break;
       case GL_CAPS_DEBUG:
@@ -401,6 +402,19 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          if (gl_query_extension("ARB_debug_output"))
             return true;
 #endif
+         break;
+      case GL_CAPS_PACKED_DEPTH_STENCIL:
+         {
+#ifdef HAVE_OPENGLES2
+            struct retro_hw_render_callback *hwr =
+               video_driver_get_hw_context();
+            if (hwr->stencil 
+                  && gl_query_extension("OES_packed_depth_stencil"))
+               return true;
+#else
+            /* TODO/FIXME - implement this for non-GLES2? */
+#endif
+         }
          break;
       case GL_CAPS_NONE:
       default:
@@ -953,7 +967,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    stencil = hwr->stencil;
 
 #ifdef HAVE_OPENGLES2
-   if (stencil && !gl_query_extension("OES_packed_depth_stencil"))
+   if (!gl_check_capability(GL_CAPS_PACKED_DEPTH_STENCIL))
       return false;
 #endif
 
