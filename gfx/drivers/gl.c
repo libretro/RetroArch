@@ -3731,17 +3731,7 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
    gl->menu_texture_enable      = state;
    gl->menu_texture_full_screen = full_screen;
 }
-#endif
 
-static void gl_apply_state_changes(void *data)
-{
-   gl_t *gl = (gl_t*)data;
-
-   if (gl)
-      gl->should_resize = true;
-}
-
-#ifdef HAVE_MENU
 static void gl_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
@@ -3762,6 +3752,15 @@ static struct video_shader *gl_get_current_shader(void *data)
    return shader_info.data;
 }
 #endif
+
+static void gl_apply_state_changes(void *data)
+{
+   gl_t *gl = (gl_t*)data;
+
+   if (gl)
+      gl->should_resize = true;
+}
+
 
 static void gl_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
