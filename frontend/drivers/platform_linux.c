@@ -1663,6 +1663,12 @@ static void frontend_linux_get_env(int *argc,
       g_defaults.menu.materialui.menu_color_theme        = MATERIALUI_THEME_NVIDIA_SHIELD;
 #endif
 #endif
+
+      /* Set the OK/cancel menu buttons to the default 
+       * ones used for Shield */
+      g_defaults.menu.controls.set = true;
+      g_defaults.menu.controls.menu_btn_ok     = RETRO_DEVICE_ID_JOYPAD_B;
+      g_defaults.menu.controls.menu_btn_cancel = RETRO_DEVICE_ID_JOYPAD_A;
    }
    else if (strstr(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;

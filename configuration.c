@@ -419,6 +419,22 @@ bool config_overlay_enable_default(void)
    return true;
 }
 
+#ifdef HAVE_MENU
+static unsigned config_menu_btn_ok_default(void)
+{
+   if (g_defaults.menu.controls.set)
+      return g_defaults.menu.controls.menu_btn_ok;
+   return default_menu_btn_ok;
+}
+
+static unsigned config_menu_btn_cancel_default(void)
+{
+   if (g_defaults.menu.controls.set)
+      return g_defaults.menu.controls.menu_btn_ok;
+   return default_menu_btn_cancel;
+}
+#endif
+
 /**
  * config_set_defaults:
  *
@@ -798,8 +814,8 @@ static void config_set_defaults(void)
    settings->sort_savefiles_enable = default_sort_savefiles_enable;
    settings->sort_savestates_enable = default_sort_savestates_enable;
 
-   settings->menu_ok_btn          = default_menu_btn_ok;
-   settings->menu_cancel_btn      = default_menu_btn_cancel;
+   settings->menu_ok_btn          = config_menu_btn_ok_default();
+   settings->menu_cancel_btn      = config_menu_btn_cancel_default();
    settings->menu_search_btn      = default_menu_btn_search;
    settings->menu_default_btn     = default_menu_btn_default;
    settings->menu_info_btn        = default_menu_btn_info;

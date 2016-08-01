@@ -26,7 +26,6 @@
 
 struct defaults
 {
-
 #ifdef HAVE_MENU
    struct
    {
@@ -35,6 +34,13 @@ struct defaults
          bool menu_color_theme_enable;
          unsigned menu_color_theme;
       } materialui;
+
+      struct
+      {
+         bool set;
+         unsigned menu_btn_ok;
+         unsigned menu_btn_cancel;
+      } controls;
    } menu;
 #endif
 
