@@ -127,7 +127,8 @@ static bool d3d_init_imports(d3d_video_t *d3d)
       return false;
    }
 
-   d3d->renderchain_driver->add_state_tracker(d3d->renderchain_data, state_tracker);
+   d3d->renderchain_driver->add_state_tracker(
+         d3d->renderchain_data, state_tracker);
 
    return true;
 }
@@ -196,7 +197,8 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       current_width = out_width;
       current_height = out_height;
 
-      if (!d3d->renderchain_driver->add_pass(d3d->renderchain_data, &link_info))
+      if (!d3d->renderchain_driver->add_pass(
+               d3d->renderchain_data, &link_info))
       {
          RARCH_ERR("[D3D9]: Failed to add pass.\n");
          return false;
@@ -233,7 +235,8 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    memset(&d3d->shader, 0, sizeof(d3d->shader));
    d3d->shader.passes                    = 1;
 
-   pass                                  = (video_shader_pass*)&d3d->shader.pass[0];
+   pass                                  = (video_shader_pass*)
+      &d3d->shader.pass[0];
 
    pass->fbo.valid                       = true;
    pass->fbo.scale_y                     = 1.0;
@@ -327,7 +330,9 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 
-   if (!d3d || !d3d->renderchain_driver || !d3d->renderchain_driver->viewport_info)
+   if (  !d3d || 
+         !d3d->renderchain_driver || 
+         !d3d->renderchain_driver->viewport_info)
       return;
 
    d3d->renderchain_driver->viewport_info(d3d, vp);
@@ -499,7 +504,8 @@ void d3d_make_d3dpp(void *data,
 
    d3dpp->Windowed             = false;
 #ifndef _XBOX
-   d3dpp->Windowed             = settings->video.windowed_fullscreen || !info->fullscreen;
+   d3dpp->Windowed             = settings->video.windowed_fullscreen 
+      || !info->fullscreen;
 #endif
    d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
@@ -529,12 +535,14 @@ void d3d_make_d3dpp(void *data,
    d3dpp->BackBufferFormat =
 #ifdef _XBOX360
       global->console.screen.gamma_correction ?
-      (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
+      (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? 
+            D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
 #else
    d3dpp->hDeviceWindow    = win32_get_window();
-   d3dpp->BackBufferFormat = !d3dpp->Windowed ? D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
+   d3dpp->BackBufferFormat = !d3dpp->Windowed ? 
+      D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
 #endif
 
    if (!d3dpp->Windowed)
@@ -552,7 +560,8 @@ void d3d_make_d3dpp(void *data,
       mode.height             = 0;
       video_driver_set_size(&width, &height);
 #endif
-      video_driver_get_size(&d3dpp->BackBufferWidth, &d3dpp->BackBufferHeight);
+      video_driver_get_size(&d3dpp->BackBufferWidth,
+            &d3dpp->BackBufferHeight);
    }
 
 #ifdef _XBOX
@@ -594,7 +603,8 @@ void d3d_make_d3dpp(void *data,
       d3dpp->Flags |= D3DPRESENTFLAG_NO_LETTERBOX;
 
    if (global->console.screen.gamma_correction)
-      d3dpp->FrontBufferFormat       = (D3DFORMAT)MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
+      d3dpp->FrontBufferFormat       = (D3DFORMAT)
+         MAKESRGBFMT(D3DFMT_LE_X8R8G8B8);
    else
       d3dpp->FrontBufferFormat       = D3DFMT_LE_X8R8G8B8;
    d3dpp->MultiSampleQuality      = 0;
@@ -805,7 +815,8 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
          sizeof(settings->path.font));
 #endif
    if (!font_driver_init_first(NULL, NULL,
-            d3d, settings->path.font, 0, false, FONT_DRIVER_RENDER_DIRECT3D_API))
+            d3d, settings->path.font, 0, false,
+            FONT_DRIVER_RENDER_DIRECT3D_API))
    {
       RARCH_ERR("[D3D]: Failed to initialize font renderer.\n");
       return false;
@@ -932,7 +943,8 @@ static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
          break;
    }
 
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
+   video_driver_set_aspect_ratio_value(
+         aspectratio_lut[aspect_ratio_idx].value);
 
    if (!d3d)
       return;
@@ -1036,7 +1048,8 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    video_driver_get_size(&win_width, &win_height);
 
-   win32_set_style(&current_mon, &hm_to_use, &win_width, &win_height, info->fullscreen, windowed_full, &rect, &mon_rect, &style);
+   win32_set_style(&current_mon, &hm_to_use, &win_width, &win_height,
+         info->fullscreen, windowed_full, &rect, &mon_rect, &style);
 
    win32_window_create(d3d, style, &mon_rect, win_width,
          win_height, info->fullscreen);
@@ -1549,7 +1562,9 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 
-   if (!d3d || !d3d->renderchain_driver || !d3d->renderchain_driver->read_viewport)
+   if (  !d3d || 
+         !d3d->renderchain_driver || 
+         !d3d->renderchain_driver->read_viewport)
       return false;
 
    return d3d->renderchain_driver->read_viewport(d3d, buffer);
@@ -1699,14 +1714,16 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
 static int video_texture_load_wrap_d3d_mipmap(void *data)
 {
    uintptr_t id = 0;
-   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true), (struct texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
+         (struct texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return id;
 }
 
 static int video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
-   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true), (struct texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
+   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true),
+         (struct texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
    return id;
 }
 
@@ -1733,7 +1750,8 @@ static uintptr_t d3d_load_texture(void *video_data, void *data,
       return video_thread_texture_load(data, func);
    }
 
-   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(false), (struct texture_image*)data, filter_type, &id);
+   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(false),
+         (struct texture_image*)data, filter_type, &id);
    return id;
 }
 
