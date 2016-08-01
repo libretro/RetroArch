@@ -3512,14 +3512,20 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
 #ifdef HAVE_NETPLAY
-         global->has_set.netplay_ip_address = (!string_is_empty(setting->value.target.string));
+         {
+            bool val = (!string_is_empty(setting->value.target.string));
+            if (val)
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
+            else
+               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
+         }
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_MODE:
 #ifdef HAVE_NETPLAY
          if (!global->netplay.is_client)
             *global->netplay.server = '\0';
-         global->has_set.netplay_mode = true;
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -3530,7 +3536,10 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
 #ifdef HAVE_NETPLAY
-         global->has_set.netplay_delay_frames = (global->netplay.sync_frames > 0);
+         {
+            bool val = (global->netplay.sync_frames > 0);
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
+         }
 #endif
          break;
       default:

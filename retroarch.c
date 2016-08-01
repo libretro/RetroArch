@@ -389,7 +389,7 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
    /* We defer SRAM path updates until we can resolve it.
     * It is more complicated for special content types. */
 
-   if (!global->has_set.state_path)
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
       fill_pathname_noext(global->name.savestate, global->name.base,
             file_path_str(FILE_PATH_STATE_EXTENSION),
             sizeof(global->name.savestate));
@@ -708,21 +708,8 @@ static void retroarch_parse_input(int argc, char *argv[])
 
    retroarch_override_setting_free_state();
 
-   global->has_set.save_path             = false;
-   global->has_set.state_path            = false;
-   global->has_set.libretro_directory    = false;
-
-   global->has_set.netplay_mode          = false;
-
    rarch_ctl(RARCH_CTL_USERNAME_UNSET, NULL);
 
-   global->has_set.netplay_ip_address    = false;
-   global->has_set.netplay_delay_frames  = false;
-   global->has_set.netplay_ip_port       = false;
-
-   global->has_set.ups_pref              = false;
-   global->has_set.bps_pref              = false;
-   global->has_set.ips_pref              = false;
    global->patch.ups_pref                = false;
    global->patch.bps_pref                = false;
    global->patch.ips_pref                = false;
@@ -804,7 +791,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 's':
             strlcpy(global->name.savefile, optarg,
                   sizeof(global->name.savefile));
-            global->has_set.save_path = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
             break;
 
          case 'f':
@@ -814,7 +801,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'S':
             strlcpy(global->name.savestate, optarg,
                   sizeof(global->name.savestate));
-            global->has_set.state_path = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
             break;
 
          case 'v':
@@ -859,7 +846,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                      sizeof(settings->directory.libretro));
 
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
-               global->has_set.libretro_directory = true;
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY);
                RARCH_WARN("Using old --libretro behavior. "
                      "Setting libretro_directory to \"%s\" instead.\n",
                      optarg);
@@ -915,13 +902,13 @@ static void retroarch_parse_input(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
          case 'H':
-            global->has_set.netplay_ip_address = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
             global->netplay.enable = true;
             *global->netplay.server = '\0';
             break;
 
          case 'C':
-            global->has_set.netplay_ip_address = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
             global->netplay.enable = true;
             strlcpy(global->netplay.server, optarg,
                   sizeof(global->netplay.server));
@@ -929,7 +916,7 @@ static void retroarch_parse_input(int argc, char *argv[])
 
          case 'F':
             global->netplay.sync_frames = strtol(optarg, NULL, 0);
-            global->has_set.netplay_delay_frames = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
             break;
 #endif
 
@@ -937,21 +924,21 @@ static void retroarch_parse_input(int argc, char *argv[])
             strlcpy(global->name.bps, optarg,
                   sizeof(global->name.bps));
             global->patch.bps_pref   = true;
-            global->has_set.bps_pref = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF);
             break;
 
          case 'U':
             strlcpy(global->name.ups, optarg,
                   sizeof(global->name.ups));
             global->patch.ups_pref   = true;
-            global->has_set.ups_pref = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF);
             break;
 
          case RA_OPT_IPS:
             strlcpy(global->name.ips, optarg,
                   sizeof(global->name.ips));
             global->patch.ips_pref   = true;
-            global->has_set.ips_pref = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF);
             break;
 
          case RA_OPT_NO_PATCH:
@@ -970,12 +957,12 @@ static void retroarch_parse_input(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
          case RA_OPT_PORT:
-            global->has_set.netplay_ip_port = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
             global->netplay.port = strtoul(optarg, NULL, 0);
             break;
 
          case RA_OPT_SPECTATE:
-            global->has_set.netplay_mode = true;
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
             global->netplay.is_spectate = true;
             break;
 
@@ -1087,12 +1074,12 @@ static void retroarch_parse_input(int argc, char *argv[])
       content_set_does_not_need_content();
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
-   if (global->has_set.save_path &&
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH) &&
          path_is_directory(global->name.savefile))
       strlcpy(global->dir.savefile, global->name.savefile,
             sizeof(global->dir.savefile));
 
-   if (global->has_set.state_path &&
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH) &&
          path_is_directory(global->name.savestate))
       strlcpy(global->dir.savestate, global->name.savestate,
             sizeof(global->dir.savestate));
@@ -1161,11 +1148,12 @@ static void retroarch_init_savefile_paths(void)
       }
 
       /* Let other relevant paths be inferred from the main SRAM location. */
-      if (!global->has_set.save_path)
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
          fill_pathname_noext(global->name.savefile,
                global->name.base,
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
+
       if (path_is_directory(global->name.savefile))
       {
          fill_pathname_dir(global->name.savefile,
@@ -1583,11 +1571,11 @@ void retroarch_set_pathnames(const char *path)
 
    retroarch_set_basename(path);
 
-   if (!global->has_set.save_path)
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
       fill_pathname_noext(global->name.savefile, global->name.base,
             file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
 
-   if (!global->has_set.state_path)
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
       fill_pathname_noext(global->name.savestate, global->name.base,
             file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
 
@@ -1623,8 +1611,18 @@ void retroarch_fill_pathnames(void)
             sizeof(global->name.ips));
 }
 
-static bool has_set_verbosity = false;
-static bool has_set_libretro  = false;
+static bool has_set_verbosity           = false;
+static bool has_set_libretro            = false;
+static bool has_set_libretro_directory  = false;
+static bool has_set_save_path           = false;
+static bool has_set_state_path          = false;
+static bool has_set_netplay_mode        = false;
+static bool has_set_netplay_ip_address  = false;
+static bool has_set_netplay_ip_port     = false;
+static bool has_set_netplay_delay_frames= false;
+static bool has_set_ups_pref            = false;
+static bool has_set_bps_pref            = false;
+static bool has_set_ips_pref            = false;
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx)
 {
@@ -1634,6 +1632,27 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx)
          return has_set_verbosity;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
          return has_set_libretro;
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
+         return has_set_libretro_directory;
+      case RARCH_OVERRIDE_SETTING_SAVE_PATH:
+         return has_set_save_path;
+      case RARCH_OVERRIDE_SETTING_STATE_PATH:
+         return has_set_state_path;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
+         return has_set_netplay_mode;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
+         return has_set_netplay_ip_address;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
+         return has_set_netplay_ip_port;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
+         return has_set_netplay_delay_frames;
+      case RARCH_OVERRIDE_SETTING_UPS_PREF:
+         return has_set_ups_pref;
+      case RARCH_OVERRIDE_SETTING_BPS_PREF:
+         return has_set_bps_pref;
+      case RARCH_OVERRIDE_SETTING_IPS_PREF:
+         return has_set_ips_pref;
+
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -1652,6 +1671,36 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx)
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
          has_set_libretro = true;
          break;
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
+         has_set_libretro_directory = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_SAVE_PATH:
+         has_set_save_path = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_STATE_PATH:
+         has_set_state_path = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
+         has_set_netplay_mode = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
+         has_set_netplay_ip_address = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
+         has_set_netplay_ip_port = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
+         has_set_netplay_delay_frames = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_UPS_PREF:
+         has_set_ups_pref = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_BPS_PREF:
+         has_set_bps_pref = true;
+         break;
+      case RARCH_OVERRIDE_SETTING_IPS_PREF:
+         has_set_ips_pref = true;
+         break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -1667,6 +1716,36 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx)
          break;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
          has_set_libretro = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY:
+         has_set_libretro_directory = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_SAVE_PATH:
+         has_set_save_path = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_STATE_PATH:
+         has_set_state_path = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_MODE:
+         has_set_netplay_mode = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS:
+         has_set_netplay_ip_address = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT:
+         has_set_netplay_ip_port = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
+         has_set_netplay_delay_frames = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_UPS_PREF:
+         has_set_ups_pref = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_BPS_PREF:
+         has_set_bps_pref = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_IPS_PREF:
+         has_set_ips_pref = false;
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:

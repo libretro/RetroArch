@@ -179,20 +179,7 @@ typedef struct global
 
    struct
    {
-      bool save_path;
-      bool state_path;
-
       bool libretro_device[MAX_USERS];
-      bool libretro_directory;
-
-      bool netplay_mode;
-      bool netplay_ip_address;
-      bool netplay_delay_frames;
-      bool netplay_ip_port;
-
-      bool ups_pref;
-      bool bps_pref;
-      bool ips_pref;
    } has_set;
    
    struct
