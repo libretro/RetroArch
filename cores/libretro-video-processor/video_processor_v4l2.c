@@ -500,8 +500,8 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
       return;
    }
 
-   src = video_buffer[buf.index].start;
-   dst = conv_data;
+   src = (uint8_t*)video_buffer[buf.index].start;
+   dst = (uint16_t*)conv_data;
 
    /* RGB24 to RGB565 */
    for (i = 0; i < video_format.fmt.pix.width * video_format.fmt.pix.height; i++, src += 3, dst += 1)
@@ -657,12 +657,14 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       }
    }
 
-   conv_data = calloc(1, video_format.fmt.pix.width * video_format.fmt.pix.height * 2);   
-   if (conv_data == NULL)
+   conv_data = (uint16_t*)calloc(1, 
+         video_format.fmt.pix.width * video_format.fmt.pix.height * 2);   
+   if (!conv_data)
    {
       printf("Cannot allocate conversion buffer\n");
       return false;
    }
+
    printf("Allocated %u byte conversion buffer\n",
          video_format.fmt.pix.width * video_format.fmt.pix.height * 2);
 

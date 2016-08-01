@@ -143,7 +143,7 @@ void NETRETROPAD_CORE_PREFIX(retro_init)(void)
    for (i = 0; i < ARRAY_SIZE(descriptors); i++) {
       desc = descriptors[i];
       size = DESC_NUM_PORTS(desc) * DESC_NUM_INDICES(desc) * DESC_NUM_IDS(desc);
-      descriptors[i]->value = calloc(size, sizeof(uint16_t));
+      descriptors[i]->value = (uint16_t*)calloc(size, sizeof(uint16_t));
    }
 
    NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Initialising sockets...\n");
