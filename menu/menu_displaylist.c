@@ -4633,6 +4633,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_XMB_SCALE_FACTOR,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_ASPECT_RATIO,
+               PARSE_ONLY_FLOAT, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_FONT,
                PARSE_ONLY_PATH, false);
          menu_displaylist_parse_settings_enum(menu, info,

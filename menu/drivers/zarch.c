@@ -278,7 +278,8 @@ static void zarch_zui_draw_text(zui_t *zui,
     * uses a different model-view-projection (MVP). */
    params.x           = x / (float)zui->width;
    params.y           = (zui->height - y) / (float)zui->height;
-   params.scale       = 1.0f;
+   params.scale_x     = 1.0f;
+   params.scale_y     = 1.0f;
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
    params.drop_y      = 0.0f;

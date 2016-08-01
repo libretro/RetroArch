@@ -268,12 +268,12 @@ void font_driver_flush(void *data)
 }
 
 int font_driver_get_message_width(void *data,
-      const char *msg, unsigned len, float scale)
+      const char *msg, unsigned len, float scale_x)
 {
 
    if (!font_osd_driver || !font_osd_driver->get_message_width)
       return -1;
-   return font_osd_driver->get_message_width(data, msg, len, scale);
+   return font_osd_driver->get_message_width(data, msg, len, scale_x);
 }
 
 void font_driver_free(void *data)

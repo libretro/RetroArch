@@ -6907,6 +6907,21 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SCALE_FACTOR);
 
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->menu.xmb.aspect_ratio,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_ASPECT_RATIO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ASPECT_RATIO),
+                  xmb_aspect_ratio,
+                  "%.2f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0.1, 1.9, 0.01, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_ASPECT_RATIO);
+
             CONFIG_PATH(
                   list, list_info,
                   settings->menu.xmb.font,

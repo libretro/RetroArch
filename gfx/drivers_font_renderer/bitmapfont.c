@@ -29,7 +29,8 @@
 
 typedef struct bm_renderer
 {
-   unsigned scale_factor;
+   unsigned scale_factor_x;
+   unsigned scale_factor_y;
    struct font_glyph glyphs[BMP_ATLAS_SIZE];
    struct font_atlas atlas;
 } bm_renderer_t;
@@ -68,11 +69,11 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
          uint8_t col         = (bitmap_bin[FONT_OFFSET(letter) + offset] & rem) ? 0xff : 0;
          uint8_t *dst        = target;
 
-         dst += x * handle->scale_factor;
-         dst += y * handle->scale_factor * handle->atlas.width;
+         dst += x * handle->scale_factor_x;
+         dst += y * handle->scale_factor_y * handle->atlas.width;
 
-         for (yo = 0; yo < handle->scale_factor; yo++)
-            for (xo = 0; xo < handle->scale_factor; xo++)
+         for (yo = 0; yo < handle->scale_factor_y; yo++)
+            for (xo = 0; xo < handle->scale_factor_x; xo++)
                dst[xo + yo * handle->atlas.width] = col;
       }
    }
@@ -88,28 +89,32 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
 
    (void)font_path;
 
-   handle->scale_factor = (unsigned)roundf(font_size / FONT_HEIGHT);
-   if (!handle->scale_factor)
-      handle->scale_factor = 1;
+   handle->scale_factor_x = (unsigned)roundf(font_size / FONT_WIDTH);
+   handle->scale_factor_y = (unsigned)roundf(font_size / FONT_HEIGHT);
 
-   handle->atlas.width  = FONT_WIDTH * handle->scale_factor * BMP_ATLAS_COLS;
-   handle->atlas.height = FONT_HEIGHT * handle->scale_factor * BMP_ATLAS_ROWS;
+   if (!handle->scale_factor_x)
+      handle->scale_factor_x = 1;
+   if (!handle->scale_factor_y)
+      handle->scale_factor_y = 1;
+
+   handle->atlas.width  = FONT_WIDTH * handle->scale_factor_x * BMP_ATLAS_COLS;
+   handle->atlas.height = FONT_HEIGHT * handle->scale_factor_y * BMP_ATLAS_ROWS;
    handle->atlas.buffer = (uint8_t*)calloc(handle->atlas.width * handle->atlas.height, 1);
 
    for (i = 0; i < BMP_ATLAS_SIZE; i++)
    {
-      unsigned x = (i % BMP_ATLAS_COLS) * handle->scale_factor * FONT_WIDTH;
-      unsigned y = (i / BMP_ATLAS_COLS) * handle->scale_factor * FONT_HEIGHT;
+      unsigned x = (i % BMP_ATLAS_COLS) * handle->scale_factor_x * FONT_WIDTH;
+      unsigned y = (i / BMP_ATLAS_COLS) * handle->scale_factor_y * FONT_HEIGHT;
 
       char_to_texture(handle, i, x, y);
 
-      handle->glyphs[i].width = FONT_WIDTH * handle->scale_factor;
-      handle->glyphs[i].height = FONT_HEIGHT * handle->scale_factor;
+      handle->glyphs[i].width = FONT_WIDTH * handle->scale_factor_x;
+      handle->glyphs[i].height = FONT_HEIGHT * handle->scale_factor_y;
       handle->glyphs[i].atlas_offset_x = x;
       handle->glyphs[i].atlas_offset_y = y;
       handle->glyphs[i].draw_offset_x  = 0;
-      handle->glyphs[i].draw_offset_y  = -FONT_HEIGHT_BASELINE * (int)handle->scale_factor;
-      handle->glyphs[i].advance_x = (FONT_WIDTH + 1) * handle->scale_factor;
+      handle->glyphs[i].draw_offset_y  = -FONT_HEIGHT_BASELINE * (int)handle->scale_factor_y;
+      handle->glyphs[i].advance_x = (FONT_WIDTH + 1) * handle->scale_factor_x;
       handle->glyphs[i].advance_y = 0;
    }
 
@@ -137,7 +142,7 @@ static int font_renderer_bmp_get_line_height(void* data)
     if (!handle)
       return FONT_HEIGHT;
       
-    return FONT_HEIGHT * handle->scale_factor;
+    return FONT_HEIGHT * handle->scale_factor_y;
 }
 
 font_renderer_driver_t bitmap_font_renderer = {

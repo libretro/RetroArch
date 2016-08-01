@@ -2429,6 +2429,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "xmb_ribbon_enable";
       case MENU_ENUM_LABEL_XMB_SCALE_FACTOR:
          return "xmb_scale_factor";
+      case MENU_ENUM_LABEL_XMB_ASPECT_RATIO:
+         return "xmb_aspect_ratio";
       case MENU_ENUM_LABEL_XMB_ALPHA_FACTOR:
          return "xmb_alpha_factor";
       case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
@@ -3699,6 +3701,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "DPI Override";
       case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
          return "Menu Scale Factor";
+      case MENU_ENUM_LABEL_VALUE_XMB_ASPECT_RATIO:
+         return "Menu Aspect Ratio";
       case MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR:
          return "Menu Alpha Factor";
       case MENU_ENUM_LABEL_VALUE_XMB_FONT:
