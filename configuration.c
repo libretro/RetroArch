@@ -1444,7 +1444,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
       { "audio_out_rate", &settings->audio.out_rate},
       { "audio_block_frames", &settings->audio.block_frames},
-      { "audio_latency", &settings->audio.latency},
+#ifdef HAVE_MENU
       { "menu_ok_btn",            &settings->menu_ok_btn},
       { "menu_cancel_btn",        &settings->menu_cancel_btn},
       { "menu_search_btn",        &settings->menu_search_btn},
@@ -1452,7 +1452,9 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "menu_default_btn",       &settings->menu_default_btn},
       { "menu_cancel_btn",        &settings->menu_cancel_btn},
       { "menu_scroll_down_btn",   &settings->menu_scroll_down_btn},
-      { "menu_scroll_up_btn",     &settings->menu_scroll_up_btn}
+      { "menu_scroll_up_btn",     &settings->menu_scroll_up_btn},
+#endif
+      { "audio_latency", &settings->audio.latency}
    };
 
    struct config_float_setting_ptr float_settings[] = {
@@ -2904,12 +2906,14 @@ bool config_save_file(const char *path)
       { "libretro_log_level",           settings->libretro_log_level},
       { "keyboard_gamepad_mapping_type",settings->input.keyboard_gamepad_mapping_type},
       { "input_poll_type_behavior",     settings->input.poll_type_behavior},
+#ifdef HAVE_MENU
       { "menu_ok_btn",                  settings->menu_ok_btn},
       { "menu_cancel_btn",              settings->menu_cancel_btn},
       { "menu_search_btn",              settings->menu_search_btn},
       { "menu_info_btn",                settings->menu_info_btn},
       { "menu_default_btn",             settings->menu_default_btn},
       { "menu_scroll_down_btn",         settings->menu_scroll_down_btn},
+#endif
       { "video_monitor_index",          settings->video.monitor_index},
       { "video_fullscreen_x",           settings->video.fullscreen_x},
       { "video_fullscreen_y",           settings->video.fullscreen_y},
