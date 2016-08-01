@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../d3d/d3d.h"
+#include "../drivers/d3d.h"
 #include "../font_driver.h"
 #include "../../general.h"
 
