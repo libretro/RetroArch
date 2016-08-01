@@ -215,6 +215,9 @@ static void frontend_gx_get_environment_settings(
    else
       fill_pathname_join(g_defaults.dir.port, g_defaults.dir.port,
             "retroarch", sizeof(g_defaults.dir.port));
+
+   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
+         "info", sizeof(g_defaults.dir.core_info));
    fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
          "overlays", sizeof(g_defaults.dir.overlay));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
