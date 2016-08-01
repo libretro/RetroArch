@@ -1921,7 +1921,8 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    performance_counter_stop(&copy_frame);
 }
 
-static INLINE void gl_set_prev_texture(gl_t *gl,
+static INLINE void gl_renderchain_bind_prev_texture(
+      gl_t *gl,
       const struct video_tex_info *tex_info)
 {
    memmove(gl->prev_info + 1, gl->prev_info,
@@ -2390,7 +2391,8 @@ static bool gl_frame(void *data, const void *frame,
       gl_frame_fbo(gl, frame_count, &gl->tex_info, &feedback_info);
 #endif
 
-   gl_set_prev_texture(gl, &gl->tex_info);
+   /* Set prev textures. */
+   gl_renderchain_bind_prev_texture(gl, &gl->tex_info);
 
 #if defined(HAVE_MENU)
    if (gl->menu_texture_enable)
