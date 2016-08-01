@@ -387,7 +387,7 @@ all: $(EXT_TARGET)
 %.velf: %.elf
 	arm-vita-eabi-strip -g $<
 	vita-elf-create $< $@
-	make_fself $@ eboot.bin
+	vita-make-fself $@ eboot.bin
 
 %.elf32: %.elf
 ifeq ($(platform), xenon360)
