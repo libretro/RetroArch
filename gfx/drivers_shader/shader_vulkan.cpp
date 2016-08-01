@@ -19,6 +19,7 @@
 #include <memory>
 #include <functional>
 #include <utility>
+#include <algorithm>
 #include <string.h>
 #include <math.h>
 
@@ -513,9 +514,11 @@ class Pass
       {
          string id;
          unsigned index;
+         unsigned semantic_index;
       };
 
       vector<Parameter> parameters;
+      vector<Parameter> filtered_parameters;
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -1229,7 +1232,7 @@ Pass::~Pass()
 
 void Pass::add_parameter(unsigned index, const std::string &id)
 {
-   parameters.push_back({ id, index });
+   parameters.push_back({ id, index, unsigned(parameters.size()) });
 }
 
 void Pass::set_shader(VkShaderStageFlags stage,
@@ -1731,6 +1734,14 @@ bool Pass::build()
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
 
+   // Filter out parameters which we will never use anyways.
+   filtered_parameters.clear();
+   for (unsigned i = 0; i < reflection.semantic_float_parameters.size(); i++)
+   {
+      if (reflection.semantic_float_parameters[i].uniform)
+         filtered_parameters.push_back(parameters[i]);
+   }
+
    if (!init_pipeline())
       return false;
 
@@ -1832,7 +1843,8 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
 
 void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
 {
-   if (data && reflection.semantic_float_parameters[index].uniform)
+   // We will have filtered out stale parameters.
+   if (data)
       *reinterpret_cast<float*>(data + reflection.semantic_float_parameters[index].ubo_offset) = value;
 }
 
@@ -1889,16 +1901,14 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_texture_array(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
 
    // Parameters.
-   unsigned i = 0;
-   for (auto &param : parameters)
+   for (auto &param : filtered_parameters)
    {
       float value = common->shader_preset->parameters[param.index].current;
-      build_semantic_parameter(buffer, i, value);
-      i++;
+      build_semantic_parameter(buffer, param.semantic_index, value);
    }
 
    // Previous inputs.
-   i = 0;
+   unsigned i = 0;
    for (auto &texture : common->original_history)
    {
       build_semantic_texture_array(set, buffer,
@@ -2818,17 +2828,39 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             return nullptr;
          }
 
-         auto &param = shader->parameters[shader->num_parameters];
-         strlcpy(param.id, meta_param.id.c_str(), sizeof(param.id));
-         strlcpy(param.desc, meta_param.desc.c_str(), sizeof(param.desc));
-         param.current = meta_param.initial;
-         param.initial = meta_param.initial;
-         param.minimum = meta_param.minimum;
-         param.maximum = meta_param.maximum;
-         param.step = meta_param.step;
-         chain->add_parameter(i, shader->num_parameters, meta_param.id);
+         auto itr = find_if(shader->parameters, shader->parameters + shader->num_parameters,
+               [&](const video_shader_parameter &param) {
+                  return meta_param.id == param.id;
+               });
 
-         shader->num_parameters++;
+         if (itr != shader->parameters + shader->num_parameters)
+         {
+            // Allow duplicate #pragma parameter, but only if they are exactly the same.
+            if (meta_param.desc != itr->desc ||
+                meta_param.initial != itr->initial ||
+                meta_param.minimum != itr->minimum ||
+                meta_param.maximum != itr->maximum ||
+                meta_param.step != itr->step)
+            {
+               RARCH_ERR("[Vulkan]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
+                     itr->id);
+               return nullptr;
+            }
+            chain->add_parameter(i, itr - shader->parameters, meta_param.id);
+         }
+         else
+         {
+            auto &param = shader->parameters[shader->num_parameters];
+            strlcpy(param.id, meta_param.id.c_str(), sizeof(param.id));
+            strlcpy(param.desc, meta_param.desc.c_str(), sizeof(param.desc));
+            param.current = meta_param.initial;
+            param.initial = meta_param.initial;
+            param.minimum = meta_param.minimum;
+            param.maximum = meta_param.maximum;
+            param.step = meta_param.step;
+            chain->add_parameter(i, shader->num_parameters, meta_param.id);
+            shader->num_parameters++;
+         }
       }
 
       chain->set_shader(i,
