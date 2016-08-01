@@ -248,17 +248,17 @@ static void frontend_psp_init(void *data)
 
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
+#ifndef IS_SALAMANDER
+   char *fullpath = NULL;
+#endif
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
    char argp[512] = {0};
    SceSize   args = 0;
 
-   argp[0] = '\0';
    strlcpy(argp, eboot_path, sizeof(argp));
    args = strlen(argp) + 1;
 
 #ifndef IS_SALAMANDER
-   char *fullpath = NULL;
-
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (should_load_game && !string_is_empty(fullpath))
