@@ -331,6 +331,7 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
 {
    unsigned major       = 0;
    unsigned minor       = 0;
+   settings_t *settings = config_get_ptr();
    const char *vendor   = (const char*)glGetString(GL_VENDOR);
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
@@ -511,6 +512,10 @@ static bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
 #endif
       case GL_CAPS_SRGB_FBO:
+#ifdef HAVE_FBO
+         if (settings->video.force_srgb_disable)
+            return false;
+#endif
 #if defined(HAVE_OPENGLES)
          /* No extensions for float FBO currently. */
          if (gles3 || gl_query_extension("EXT_sRGB"))
@@ -2675,11 +2680,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 
    gl->has_fp_fbo   = gl_check_capability(GL_CAPS_FP_FBO);
    gl->has_srgb_fbo = gl_check_capability(GL_CAPS_SRGB_FBO);
-
-#ifdef HAVE_FBO
-   if (settings->video.force_srgb_disable)
-      gl->has_srgb_fbo = false;
-#endif
 
 #ifdef GL_DEBUG
    /* Useful for debugging, but kinda obnoxious otherwise. */
