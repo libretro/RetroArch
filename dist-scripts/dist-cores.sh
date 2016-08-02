@@ -195,7 +195,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
       COUNTER=$((COUNTER + 1))
-      printf -v COUNTER_ID "%05d" ${COUNTER}
+      COUNTER_ID=`printf  "%05d" ${COUNTER}`
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/
       vita-make-fself ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
       vita-mksfoex -s TITLE_ID=RETR${COUNTER_ID} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
