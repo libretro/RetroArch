@@ -37,7 +37,7 @@
 #include <formats/rbmp.h>
 #endif
 
-#if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
+#ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #define IMG_EXT "png"
 #else
@@ -71,7 +71,7 @@ static bool screenshot_dump(
    char shotname[256]             = {0};
    bool ret                       = false;
    settings_t *settings           = config_get_ptr();
-#if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
+#if defined(HAVE_RPNG)
    uint8_t *out_buffer            = NULL;
    struct scaler_ctx scaler       = {0};
 #endif
@@ -95,7 +95,7 @@ static bool screenshot_dump(
    if (XGWriteSurfaceToFile(surf, filename) == S_OK)
       ret = true;
    surf->Release();
-#elif defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
+#elif defined(HAVE_RPNG)
    out_buffer = (uint8_t*)malloc(width * height * 3);
    if (!out_buffer)
       return false;

@@ -51,12 +51,10 @@ int rpng_process_image(rpng_t *rpng,
 
 bool rpng_start(rpng_t *rpng);
 
-#ifdef HAVE_ZLIB_DEFLATE
 bool rpng_save_image_argb(const char *path, const uint32_t *data,
       unsigned width, unsigned height, unsigned pitch);
 bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
       unsigned width, unsigned height, unsigned pitch);
-#endif
 
 RETRO_END_DECLS
 

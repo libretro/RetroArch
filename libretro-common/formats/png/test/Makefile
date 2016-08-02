@@ -27,7 +27,7 @@ SOURCES_C := 	\
 
 OBJS := $(SOURCES_C:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DHAVE_ZLIB_DEFLATE -DRPNG_TEST -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DRPNG_TEST -I$(LIBRETRO_COMM_DIR)/include
 
 all: $(TARGET)
 

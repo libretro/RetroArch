@@ -36,8 +36,6 @@
    goto end; \
 } while(0)
 
-#ifdef HAVE_ZLIB_DEFLATE
-
 static void dword_write_be(uint8_t *buf, uint32_t val)
 {
    *buf++ = (uint8_t)(val >> 24);
@@ -385,5 +383,3 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
    return rpng_save_image(path, (const uint8_t*)data,
          width, height, pitch, 3);
 }
-
-#endif

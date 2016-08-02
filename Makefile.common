@@ -976,7 +976,6 @@ ifeq ($(HAVE_ZLIB), 1)
       DEFINES += -DWANT_ZLIB
    else
       LIBS += -lz
-      HAVE_ZLIB_DEFLATE = 1
    endif
 endif
 
@@ -1027,12 +1026,7 @@ ifeq ($(HAVE_BUILTINZLIB),1)
 else
 ifeq ($(HAVE_ZLIB),1)
 OBJ += $(ZLIB_OBJS)
-HAVE_ZLIB_DEFLATE = 1
 endif
-endif
-
-ifeq ($(HAVE_ZLIB_DEFLATE),1)
-DEFINES += -DHAVE_ZLIB_DEFLATE
 endif
 
 # Video4Linux 2 
