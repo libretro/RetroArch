@@ -91,7 +91,7 @@
 /* Used when rendering to an FBO.
  * Texture coords have to be aligned 
  * with vertex coordinates. */
-static const GLfloat vertexes[] = {
+static const GLfloat fbo_vertexes[] = {
    0, 0,
    1, 0,
    0, 1,
@@ -683,7 +683,7 @@ void gl_renderchain_start_render(gl_t *gl)
     * as well to have consistent texture coordinates.
     *
     * We will "flip" it in place on last pass. */
-   gl->coords.vertex = vertexes;
+   gl->coords.vertex = fbo_vertexes;
 
 #if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
    if (gl->has_srgb_fbo)
