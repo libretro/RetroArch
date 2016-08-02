@@ -860,15 +860,18 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    if (!gl_check_capability(GL_CAPS_FBO))
       return false;
 
+   RARCH_LOG("[GL]: Supports FBO (render-to-texture).\n");
+
    glBindTexture(GL_TEXTURE_2D, 0);
    glGenFramebuffers(gl->textures, gl->hw_render_fbo);
 
    depth   = hwr->depth;
    stencil = hwr->stencil;
 
-#ifdef HAVE_OPENGLES2
+#ifdef HAVE_OPENGLES
    if (!gl_check_capability(GL_CAPS_PACKED_DEPTH_STENCIL))
       return false;
+   RARCH_LOG("[GL]: Supports Packed depth stencil.\n");
 #endif
 
    if (depth)
