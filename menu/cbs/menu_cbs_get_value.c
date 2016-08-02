@@ -899,18 +899,22 @@ static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
 
    strlcpy(s2, path, len2);
    *w = 19;
+
    switch (settings->input.menu_toggle_gamepad_combo)
    {
-      case 0:
+      case INPUT_TOGGLE_NONE:
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          break;
-      case 1:
+      case INPUT_TOGGLE_DOWN_Y_L_R:
          strlcpy(s, "Down + L1 + R1 + Y", len);
          break;
-      case 2:
+      case INPUT_TOGGLE_L3_R3:
          strlcpy(s, "L3 + R3", len);
-	 break;
-      case 3:
+         break;
+      case INPUT_TOGGLE_L1_R1_START_SELECT:
+         strlcpy(s, "L1 + R1 + Start + Select", len);
+         break;
+      case INPUT_TOGGLE_START_SELECT:
          strlcpy(s, "Start + Select", len);
          break;
    }
