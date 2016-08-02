@@ -418,8 +418,11 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #ifdef HAVE_OPENGLES
             struct retro_hw_render_callback *hwr =
                video_driver_get_hw_context();
+            if (gles3)
+               return true;
             if (hwr->stencil 
-                  && !gl_query_extension("OES_packed_depth_stencil"))
+                  && !gl_query_extension("OES_packed_depth_stencil")
+                  && !gl_query_extension("EXT_packed_depth_stencil"))
                return false;
             return true;
 #else
