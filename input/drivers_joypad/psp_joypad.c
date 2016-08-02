@@ -161,15 +161,8 @@ static void psp_joypad_poll(void)
 
 #ifdef HAVE_KERNEL_PRX
    if (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE)
-#else
-      if (
-            (pad_state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L))
-            && (pad_state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R))
-            && (pad_state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT))
-            && (pad_state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START))
-         )
+      BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 #endif
-         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 }
 
 static bool psp_joypad_query_pad(unsigned pad)
