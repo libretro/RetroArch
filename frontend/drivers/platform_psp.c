@@ -378,6 +378,8 @@ static int frontend_psp_parse_drive_list(void *data)
 
 #ifdef VITA
    menu_entries_append_enum(list,
+         "ur0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list,
          "ux0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 #else
    menu_entries_append_enum(list,
