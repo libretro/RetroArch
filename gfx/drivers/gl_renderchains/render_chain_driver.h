@@ -73,8 +73,26 @@ void gl_renderchain_render(gl_t *gl,
       const struct video_tex_info *tex_info,
       const struct video_tex_info *feedback_info);
 
+void gl_renderchain_init(gl_t *gl, unsigned fbo_width, unsigned fbo_height);
+
 void gl_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);
+
+void gl_deinit_hw_render(gl_t *gl);
+
+void gl_deinit_fbo(gl_t *gl);
+
+GLenum min_filter_to_mag(GLenum type);
+
+void gl_renderchain_recompute_pass_sizes(gl_t *gl,
+      unsigned width, unsigned height,
+      unsigned vp_width, unsigned vp_height);
+
+void gl_renderchain_start_render(gl_t *gl);
+
+void gl_check_fbo_dimensions(gl_t *gl);
+
+void gl_renderchain_free(gl_t *gl);
 
 bool gl_check_capability(enum gl_capability_enum enum_idx);
 
