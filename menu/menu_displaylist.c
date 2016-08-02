@@ -2901,6 +2901,14 @@ static int menu_displaylist_parse_add_content_list(
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
+#if !defined(HAVE_NETWORKING) && !defined(HAVE_LIBRETRODB)
+   menu_entries_append_enum(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+         msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+         MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+         FILE_TYPE_NONE, 0, 0);
+#endif
+
    return 0;
 }
 
