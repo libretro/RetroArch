@@ -117,10 +117,12 @@ static void osmesa_fifo_write(gfx_ctx_osmesa_data_t *osmesa) {
             osmesa->client = -1;
       }
 
-//      int res = write(osmesa->client, osmesa->screen, osmesa->width * osmesa->height * 4);
+#if 0
+      int res = write(osmesa->client, osmesa->screen, osmesa->width * osmesa->height * 4);
 
-//      if (res < 0)
-//         osmesa->client = 0;
+      if (res < 0)
+         osmesa->client = 0;
+#endif
    }
 }
 
@@ -246,21 +248,26 @@ static bool osmesa_ctx_set_video_mode(void *data, unsigned width, unsigned heigh
 
    osmesa->screen = screen;
 
-   if (!osmesa->socket) {
-//      unlink(g_osmesa_fifo);
-//      if (mkfifo(g_osmesa_fifo, 0666) == 0) {
-//         RARCH_WARN("[osmesa]: Please connect the sink to the fifo...\n");
-//         RARCH_WARN("[osmesa]: Picture size is %ux%u\n", width, height);
-//         osmesa->socket = open(g_osmesa_fifo, O_WRONLY);
+   if (!osmesa->socket)
+   {
+#if 0
+      unlink(g_osmesa_fifo);
+      if (mkfifo(g_osmesa_fifo, 0666) == 0)
+      {
+         RARCH_WARN("[osmesa]: Please connect the sink to the fifo...\n");
+         RARCH_WARN("[osmesa]: Picture size is %ux%u\n", width, height);
+         osmesa->socket = open(g_osmesa_fifo, O_WRONLY);
 
-//         if (osmesa->socket)
-//            RARCH_WARN("[osmesa]: Initialized fifo at %s\n", g_osmesa_fifo);
-//      }
+         if (osmesa->socket)
+            RARCH_WARN("[osmesa]: Initialized fifo at %s\n", g_osmesa_fifo);
+      }
 
-//      if (!osmesa->socket || osmesa->socket < 0) {
-//         unlink(g_osmesa_fifo);
-//         RARCH_WARN("[osmesa]: Failed to initialize fifo: %s\n", strerror(errno));
-//      }
+      if (!osmesa->socket || osmesa->socket < 0)
+      {
+         unlink(g_osmesa_fifo);
+         RARCH_WARN("[osmesa]: Failed to initialize fifo: %s\n", strerror(errno));
+      }
+#endif
       osmesa_fifo_open(osmesa);
    }
 
@@ -343,7 +350,9 @@ static void osmesa_ctx_swap_buffers(void *data)
    osmesa_fifo_accept(osmesa);
    osmesa_fifo_write(osmesa);
 
-//   write(osmesa->socket, osmesa->screen, osmesa->width * osmesa->height * 4);
+#if 0
+   write(osmesa->socket, osmesa->screen, osmesa->width * osmesa->height * 4);
+#endif
 }
 
 static void osmesa_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)
