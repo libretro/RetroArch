@@ -194,11 +194,9 @@ for f in *_${platform}.${EXT} ; do
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
       COUNTER=COUNTER+1
-      mkdir -p ../pkg/${platform}/${name}_libretro/vpk/sce_sys/
-      vita-make-fself ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro/vpk/eboot.bin
-      vita-mksfoex -s TITLE_ID=RETR0000${COUNTER} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro/vpk/sce_sys/param.sfo
-      zip ../pkg/${platform}/${name}_libretro/${name}_libretro.vpk -r -j ../pkg/${platform}/${name}_libretro/vpk/*
-      rm -rf ../pkg/${platform}/${name}_libretro/vpk
+      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/
+      vita-make-fself ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
+      vita-mksfoex -s TITLE_ID=RETR0000${COUNTER} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
       mv -f ../retroarch_3ds.3ds ../pkg/3ds/rom/${name}_libretro.3ds
