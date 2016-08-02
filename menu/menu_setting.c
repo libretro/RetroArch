@@ -6623,52 +6623,59 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-         CONFIG_PATH(
-               list, list_info,
-               settings->path.menu_wallpaper,
-               sizeof(settings->path.menu_wallpaper),
-               msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER),
-               "",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_values(list, list_info, "png");
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER);
+         if (!string_is_equal(settings->menu.driver, "rgui"))
+         {
+            CONFIG_PATH(
+                  list, list_info,
+                  settings->path.menu_wallpaper,
+                  sizeof(settings->path.menu_wallpaper),
+                  msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER),
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_values(list, list_info, "png");
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER);
 
-         CONFIG_FLOAT(
-               list, list_info,
-               &settings->menu.wallpaper.opacity,
-               msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY),
-               menu_wallpaper_opacity,
-               "%.3f",
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY);
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->menu.wallpaper.opacity,
+                  msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY),
+                  menu_wallpaper_opacity,
+                  "%.3f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY);
+         }
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->menu.dynamic_wallpaper_enable,
-               msg_hash_to_str(MENU_ENUM_LABEL_DYNAMIC_WALLPAPER),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER),
-               true,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DYNAMIC_WALLPAPER);
+
+         if (string_is_equal(settings->menu.driver, "xmb"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.dynamic_wallpaper_enable,
+                  msg_hash_to_str(MENU_ENUM_LABEL_DYNAMIC_WALLPAPER),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER),
+                  true,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DYNAMIC_WALLPAPER);
+         }
 
 
          CONFIG_BOOL(
@@ -7066,19 +7073,22 @@ static bool setting_append_list(
                SD_FLAG_NONE);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN);
 
-         CONFIG_UINT(
-               list, list_info,
-               &settings->menu.thumbnails,
-               msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS),
-               menu_thumbnails_default,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_THUMBNAILS);
+         if (string_is_equal(settings->menu.driver, "xmb"))
+         {
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.thumbnails,
+                  msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS),
+                  menu_thumbnails_default,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_THUMBNAILS);
+         }
 
          CONFIG_BOOL(
                list, list_info,
