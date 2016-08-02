@@ -4327,6 +4327,7 @@ static bool setting_append_list(
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_SETTINGS);
 
+#if !defined(RARCH_CONSOLE)
          CONFIG_ACTION(
                list, list_info,
                msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS),
@@ -4335,6 +4336,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
