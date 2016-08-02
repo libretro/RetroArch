@@ -5021,6 +5021,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
+#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
          CONFIG_BOOL(
                list, list_info,
                &settings->ui.suspend_screensaver_enable,
@@ -5036,6 +5037,7 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
+#endif
 
          CONFIG_BOOL(
                list, list_info,
