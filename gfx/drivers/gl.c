@@ -122,7 +122,7 @@ bool gl_query_core_context_in_use(void)
    return gl_core_context;
 }
 
-static INLINE void context_bind_hw_render(bool enable)
+void context_bind_hw_render(bool enable)
 {
    if (gl_shared_context_use)
       video_context_driver_bind_hw_render(&enable);

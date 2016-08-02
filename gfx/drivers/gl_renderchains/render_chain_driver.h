@@ -98,6 +98,8 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height);
 
 bool gl_check_capability(enum gl_capability_enum enum_idx);
 
+void context_bind_hw_render(bool enable);
+
 RETRO_END_DECLS
 
 #endif
