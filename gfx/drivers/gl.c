@@ -531,6 +531,8 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
           * should be purposefully avoided. */
          if (gl_query_extension("BGRA8888") && !strstr(renderer, "VideoCore"))
             return true;
+         if (gl_query_extension("APPLE_texture_format_BGRA8888"))
+            return true;
 #else
          /* TODO/FIXME - implement this for non-GLES? */
 #endif
