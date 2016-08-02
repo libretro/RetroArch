@@ -133,6 +133,7 @@ endif
   HAVE_OVERLAY             := 1
   HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_ZLIB                := 1
+  WANT_ZLIB						:= 1
   HAVE_7ZIP                := 1
   RARCH_CONSOLE          = 1
 
@@ -299,7 +300,11 @@ CFLAGS      += -DHAVE_RARCH_EXEC
 endif
 
 ifeq ($(HAVE_ZLIB), 1)
-CFLAGS      += -DHAVE_ZLIB -DWANT_ZLIB
+CFLAGS      += -DHAVE_ZLIB
+endif
+
+ifeq ($(WANT_ZLIB), 1)
+CFLAGS		+= -DWANT_ZLIB
 endif
 
 ifeq ($(HAVE_RPNG), 1)
