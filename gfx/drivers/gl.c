@@ -33,7 +33,7 @@
 #include <string/stdstring.h>
 #include <libretro.h>
 
-#include "gl_renderchains/render_chain_driver.h"
+#include "gl_renderchains/render_chain_gl.h"
 
 #include "../../driver.h"
 #include "../../record/record_driver.h"

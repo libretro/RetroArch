@@ -42,7 +42,7 @@
 #include "../../../verbosity.h"
 #include "../../common/gl_common.h"
 
-#include "render_chain_driver.h"
+#include "render_chain_gl.h"
 
 #ifdef HAVE_THREADS
 #include "../../video_thread_wrapper.h"
