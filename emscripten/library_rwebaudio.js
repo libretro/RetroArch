@@ -1,9 +1,9 @@
-"use strict";
+//"use strict";
 
 var LibraryRWebAudio = {
    $RA__deps: ['$Browser', 'usleep'],
    $RA: {
-      BUFFER_SIZE: 256,
+      BUFFER_SIZE: 2048,
 
       context: null,
       buffers: [],
@@ -11,33 +11,19 @@ var LibraryRWebAudio = {
       bufIndex: 0,
       bufOffset: 0,
       startTime: 0,
-      performance: null,
       nonblock: false,
-      performanceSupported: false,
+      currentTimeWorkaround: false,
 
       setStartTime: function() {
-         RA.performance = window['performance'] || window['webkitPerformance'] || window['msPerformance'] || window['mozPerformance'];
-         if (RA.performance) {
-            RA.performanceSupported = true;
-         } else {
-            RA.performanceSupported = false;
-         }
-
          if (RA.context.currentTime) {
-            var now = RA.performanceSupported ? RA.performance.now() : Date.now();
-            RA.startTime = now - RA.context.currentTime * 1000;
-            Module["resumeMainLoop"];
-         } else {
-            window.setTimeout(RA.setStartTime, 0);
-         }
+            RA.startTime = window['performance']['now']() - RA.context.currentTime * 1000;
+            Module["resumeMainLoop"]();
+         } else window['setTimeout'](RA.setStartTime, 0);
       },
 
       getCurrentPerfTime: function() {
-         if (true === RA.performanceSupported) {
-            return (RA.performance.now() - RA.startTime) / 1000;
-         } else {
-            return (Date.now() - RA.startTime) / 1000;
-         }
+         if (RA.startTime) return (window['performance']['now']() - RA.startTime) / 1000;
+         else throw 'getCurrentPerfTime() called before start time set';
       },
 
       process: function(queueBuffers) {
@@ -92,14 +78,11 @@ var LibraryRWebAudio = {
    },
 
    RWebAudioInit: function(latency) {
-       Module.pauseMainLoop();
-       if (!RA.context) {
-           var ac = window['AudioContext'] || window['webkitAudioContext'];
-           if (!ac) {
-              return 0;
-           }
-           RA.context = new ac();
-       }
+      var ac = window['AudioContext'] || window['webkitAudioContext'];
+
+      if (!ac) return 0;
+
+      RA.context = new ac();
 
       RA.numBuffers = ((latency * RA.context.sampleRate) / (1000 * RA.BUFFER_SIZE))|0;
       if (RA.numBuffers < 2) RA.numBuffers = 2;
@@ -110,8 +93,8 @@ var LibraryRWebAudio = {
       RA.startTime = 0;
       // chrome hack to get currentTime running
       RA.context.createGain();
-      RA.setStartTime();
-
+      window['setTimeout'](RA.setStartTime, 0);
+      Module["pauseMainLoop"]();
       return 1;
    },
    
