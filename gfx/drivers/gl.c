@@ -309,27 +309,7 @@ static void gl_render_overlay(gl_t *gl)
 #define glDeleteRenderbuffers glDeleteRenderbuffersOES
 #endif
 
-enum gl_capability_enum
-{
-   GL_CAPS_NONE = 0,
-   GL_CAPS_EGLIMAGE,
-   GL_CAPS_SYNC,
-   GL_CAPS_MIPMAP,
-   GL_CAPS_VAO,
-   GL_CAPS_FBO,
-   GL_CAPS_ARGB8,
-   GL_CAPS_DEBUG,
-   GL_CAPS_PACKED_DEPTH_STENCIL,
-   GL_CAPS_ES2_COMPAT,
-   GL_CAPS_UNPACK_ROW_LENGTH,
-   GL_CAPS_FULL_NPOT_SUPPORT,
-   GL_CAPS_SRGB_FBO,
-   GL_CAPS_SRGB_FBO_ES3,
-   GL_CAPS_FP_FBO,
-   GL_CAPS_BGRA8888
-};
-
-static bool gl_check_capability(enum gl_capability_enum enum_idx)
+bool gl_check_capability(enum gl_capability_enum enum_idx)
 {
    unsigned major       = 0;
    unsigned minor       = 0;
@@ -578,7 +558,7 @@ static void gl_set_projection(gl_t *gl,
    matrix_4x4_multiply(&gl->mvp, &rot, &gl->mvp_no_rot);
 }
 
-static void gl_set_viewport(void *data, unsigned viewport_width,
+void gl_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
    gfx_ctx_aspect_t aspect_data;
@@ -1378,185 +1358,7 @@ static void gl_check_fbo_dimensions(gl_t *gl)
             gl->fbo_texture[i], update_feedback);
    }
 }
-
-static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
-      const struct video_tex_info *tex_info,
-      const struct video_tex_info *feedback_info)
-{
-   unsigned mip_level;
-   video_shader_ctx_mvp_t mvp;
-   video_shader_ctx_coords_t coords;
-   video_shader_ctx_params_t params;
-   video_shader_ctx_info_t shader_info;
-   unsigned width, height;
-   const struct video_fbo_rect *prev_rect;
-   struct video_tex_info *fbo_info;
-   struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
-   int i;
-   GLfloat xamt, yamt;
-   unsigned fbo_tex_info_cnt = 0;
-   GLfloat fbo_tex_coords[8] = {0.0f};
-
-   video_driver_get_size(&width, &height);
-
-   /* Render the rest of our passes. */
-   gl->coords.tex_coord = fbo_tex_coords;
-
-   /* Calculate viewports, texture coordinates etc,
-    * and render all passes from FBOs, to another FBO. */
-   for (i = 1; i < gl->fbo_pass; i++)
-   {
-      video_shader_ctx_mvp_t mvp;
-      video_shader_ctx_coords_t coords;
-      video_shader_ctx_params_t params;
-      const struct video_fbo_rect *rect = &gl->fbo_rect[i];
-
-      prev_rect = &gl->fbo_rect[i - 1];
-      fbo_info  = &fbo_tex_info[i - 1];
-
-      xamt      = (GLfloat)prev_rect->img_width / prev_rect->width;
-      yamt      = (GLfloat)prev_rect->img_height / prev_rect->height;
-
-      set_texture_coords(fbo_tex_coords, xamt, yamt);
-
-      fbo_info->tex           = gl->fbo_texture[i - 1];
-      fbo_info->input_size[0] = prev_rect->img_width;
-      fbo_info->input_size[1] = prev_rect->img_height;
-      fbo_info->tex_size[0]   = prev_rect->width;
-      fbo_info->tex_size[1]   = prev_rect->height;
-      memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
-      fbo_tex_info_cnt++;
-
-      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
-
-      shader_info.data       = gl;
-      shader_info.idx        = i + 1;
-      shader_info.set_active = true;
-
-      video_shader_driver_use(&shader_info);
-      glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
-
-      mip_level = i + 1;
-
-      if (video_shader_driver_mipmap_input(&mip_level)
-            && gl_check_capability(GL_CAPS_MIPMAP))
-         glGenerateMipmap(GL_TEXTURE_2D);
-
-      glClear(GL_COLOR_BUFFER_BIT);
-
-      /* Render to FBO with certain size. */
-      gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
-
-      params.data          = gl;
-      params.width         = prev_rect->img_width;
-      params.height        = prev_rect->img_height;
-      params.tex_width     = prev_rect->width;
-      params.tex_height    = prev_rect->height;
-      params.out_width     = gl->vp.width;
-      params.out_height    = gl->vp.height;
-      params.frame_counter = (unsigned int)frame_count;
-      params.info          = tex_info;
-      params.prev_info     = gl->prev_info;
-      params.feedback_info = feedback_info;
-      params.fbo_info      = fbo_tex_info;
-      params.fbo_info_cnt  = fbo_tex_info_cnt;
-
-      video_shader_driver_set_parameters(&params);
-
-      gl->coords.vertices = 4;
-
-      coords.handle_data  = NULL;
-      coords.data         = &gl->coords;
-
-      video_shader_driver_set_coords(&coords);
-
-      mvp.data = gl;
-      mvp.matrix = &gl->mvp;
-
-      video_shader_driver_set_mvp(&mvp);
-
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   }
-
-#if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
-   if (gl->has_srgb_fbo)
-      glDisable(GL_FRAMEBUFFER_SRGB);
 #endif
-
-   /* Render our last FBO texture directly to screen. */
-   prev_rect = &gl->fbo_rect[gl->fbo_pass - 1];
-   xamt      = (GLfloat)prev_rect->img_width / prev_rect->width;
-   yamt      = (GLfloat)prev_rect->img_height / prev_rect->height;
-
-   set_texture_coords(fbo_tex_coords, xamt, yamt);
-
-   /* Push final FBO to list. */
-   fbo_info = &fbo_tex_info[gl->fbo_pass - 1];
-
-   fbo_info->tex           = gl->fbo_texture[gl->fbo_pass - 1];
-   fbo_info->input_size[0] = prev_rect->img_width;
-   fbo_info->input_size[1] = prev_rect->img_height;
-   fbo_info->tex_size[0]   = prev_rect->width;
-   fbo_info->tex_size[1]   = prev_rect->height;
-   memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
-   fbo_tex_info_cnt++;
-
-   /* Render our FBO texture to back buffer. */
-   gl_bind_backbuffer();
-
-   shader_info.data       = gl;
-   shader_info.idx        = gl->fbo_pass + 1;
-   shader_info.set_active = true;
-
-   video_shader_driver_use(&shader_info);
-
-   glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
-
-   mip_level = gl->fbo_pass + 1;
-
-   if (video_shader_driver_mipmap_input(&mip_level)
-         && gl_check_capability(GL_CAPS_MIPMAP))
-      glGenerateMipmap(GL_TEXTURE_2D);
-
-   glClear(GL_COLOR_BUFFER_BIT);
-   gl_set_viewport(gl, width, height, false, true);
-
-   params.data          = gl;
-   params.width         = prev_rect->img_width;
-   params.height        = prev_rect->img_height;
-   params.tex_width     = prev_rect->width;
-   params.tex_height    = prev_rect->height;
-   params.out_width     = gl->vp.width;
-   params.out_height    = gl->vp.height;
-   params.frame_counter = (unsigned int)frame_count;
-   params.info          = tex_info;
-   params.prev_info     = gl->prev_info;
-   params.feedback_info = feedback_info;
-   params.fbo_info      = fbo_tex_info;
-   params.fbo_info_cnt  = fbo_tex_info_cnt;
-
-   video_shader_driver_set_parameters(&params);
-
-   gl->coords.vertex    = gl->vertex_ptr;
-
-   gl->coords.vertices  = 4;
-
-   coords.handle_data   = NULL;
-   coords.data          = &gl->coords;
-
-   video_shader_driver_set_coords(&coords);
-
-   mvp.data             = gl;
-   mvp.matrix           = &gl->mvp;
-
-   video_shader_driver_set_mvp(&mvp);
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-   gl->coords.tex_coord = gl->tex_info.coord;
-}
-#endif
-
-
 
 static void gl_set_rotation(void *data, unsigned rotation)
 {
@@ -2326,7 +2128,7 @@ static bool gl_frame(void *data, const void *frame,
 
 #ifdef HAVE_FBO
    if (gl->fbo_inited)
-      gl_frame_fbo(gl, frame_count, &gl->tex_info, &feedback_info);
+      gl_renderchain_render(gl, frame_count, &gl->tex_info, &feedback_info);
 #endif
 
    /* Set prev textures. */

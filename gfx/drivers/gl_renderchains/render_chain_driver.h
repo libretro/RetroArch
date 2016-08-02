@@ -26,6 +26,26 @@
 
 RETRO_BEGIN_DECLS
 
+enum gl_capability_enum
+{
+   GL_CAPS_NONE = 0,
+   GL_CAPS_EGLIMAGE,
+   GL_CAPS_SYNC,
+   GL_CAPS_MIPMAP,
+   GL_CAPS_VAO,
+   GL_CAPS_FBO,
+   GL_CAPS_ARGB8,
+   GL_CAPS_DEBUG,
+   GL_CAPS_PACKED_DEPTH_STENCIL,
+   GL_CAPS_ES2_COMPAT,
+   GL_CAPS_UNPACK_ROW_LENGTH,
+   GL_CAPS_FULL_NPOT_SUPPORT,
+   GL_CAPS_SRGB_FBO,
+   GL_CAPS_SRGB_FBO_ES3,
+   GL_CAPS_FP_FBO,
+   GL_CAPS_BGRA8888
+};
+
 void gl_renderchain_convert_geometry(gl_t *gl,
       struct video_fbo_rect *fbo_rect,
       struct gfx_fbo_scale *fbo_scale,
@@ -47,6 +67,16 @@ void gl_load_texture_data(
       unsigned alignment,
       unsigned width, unsigned height,
       const void *frame, unsigned base_size);
+
+void gl_renderchain_render(gl_t *gl,
+      uint64_t frame_count,
+      const struct video_tex_info *tex_info,
+      const struct video_tex_info *feedback_info);
+
+void gl_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate);
+
+bool gl_check_capability(enum gl_capability_enum enum_idx);
 
 RETRO_END_DECLS
 
