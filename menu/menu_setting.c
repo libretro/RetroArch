@@ -7231,6 +7231,7 @@ static bool setting_append_list(
                SD_FLAG_NONE);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PAUSE_NONACTIVE);
 
+#if !defined(RARCH_MOBILE)
          CONFIG_BOOL(
                list, list_info,
                &settings->video.disable_composition,
@@ -7247,6 +7248,7 @@ static bool setting_append_list(
                SD_FLAG_CMD_APPLY_AUTO);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION);
+#endif
 
          CONFIG_BOOL(
                list, list_info,
