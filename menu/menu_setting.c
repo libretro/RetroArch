@@ -5809,6 +5809,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+#if !defined(RARCH_CONSOLE)
          CONFIG_STRING(
                list, list_info,
                settings->audio.device,
@@ -5825,6 +5826,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
          (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_DEVICE);
+#endif
 
          CONFIG_UINT(
                list, list_info,
