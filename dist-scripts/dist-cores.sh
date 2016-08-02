@@ -195,9 +195,11 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
       COUNTER=$((COUNTER + 1))
+      printf -v COUNTER_ID "%05d" ${COUNTER}
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/
       vita-make-fself ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
-      vita-mksfoex -s TITLE_ID=RETR0000${COUNTER} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
+      vita-mksfoex -s TITLE_ID=RETR${COUNTER_ID} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
+      cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/icon0.png
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
       mv -f ../retroarch_3ds.3ds ../pkg/3ds/rom/${name}_libretro.3ds
