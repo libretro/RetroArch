@@ -763,29 +763,6 @@ static uintptr_t gl_get_current_framebuffer(void *data)
 }
 
 
-void gl_deinit_fbo(gl_t *gl)
-{
-   if (!gl->fbo_inited)
-      return;
-
-   glDeleteTextures(gl->fbo_pass, gl->fbo_texture);
-   glDeleteFramebuffers(gl->fbo_pass, gl->fbo);
-   memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
-   memset(gl->fbo, 0, sizeof(gl->fbo));
-   gl->fbo_inited = false;
-   gl->fbo_pass   = 0;
-
-   if (gl->fbo_feedback)
-      glDeleteFramebuffers(1, &gl->fbo_feedback);
-   if (gl->fbo_feedback_texture)
-      glDeleteTextures(1, &gl->fbo_feedback_texture);
-
-   gl->fbo_feedback_enable = false;
-   gl->fbo_feedback_pass = -1;
-   gl->fbo_feedback_texture = 0;
-   gl->fbo_feedback = 0;
-}
-
 void gl_deinit_hw_render(gl_t *gl)
 {
    if (!gl)
