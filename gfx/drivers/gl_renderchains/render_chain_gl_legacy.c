@@ -151,66 +151,7 @@ void gl_renderchain_convert_geometry(gl_t *gl,
    }
 }
 
-void gl_renderchain_bind_prev_texture(
-      gl_t *gl,
-      const struct video_tex_info *tex_info)
-{
-   memmove(gl->prev_info + 1, gl->prev_info,
-         sizeof(*tex_info) * (gl->textures - 1));
-   memcpy(&gl->prev_info[0], tex_info,
-         sizeof(*tex_info));
 
-#ifdef HAVE_FBO
-   /* Implement feedback by swapping out FBO/textures 
-    * for FBO pass #N and feedbacks. */
-   if (gl->fbo_feedback_enable)
-   {
-      GLuint tmp_fbo                 = gl->fbo_feedback;
-      GLuint tmp_tex                 = gl->fbo_feedback_texture;
-      gl->fbo_feedback               = gl->fbo[gl->fbo_feedback_pass];
-      gl->fbo_feedback_texture       = gl->fbo_texture[gl->fbo_feedback_pass];
-      gl->fbo[gl->fbo_feedback_pass] = tmp_fbo;
-      gl->fbo_texture[gl->fbo_feedback_pass] = tmp_tex;
-   }
-#endif
-}
-
-bool gl_renderchain_add_lut(const struct video_shader *shader,
-      unsigned i, GLuint *textures_lut)
-{
-   struct texture_image img = {0};
-   enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
-
-   RARCH_LOG("Loading texture image from: \"%s\" ...\n",
-         shader->lut[i].path);
-
-   if (!image_texture_load(&img, shader->lut[i].path))
-   {
-      RARCH_ERR("Failed to load texture image from: \"%s\"\n",
-            shader->lut[i].path);
-      return false;
-   }
-
-   if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
-      filter_type = TEXTURE_FILTER_NEAREST;
-
-   if (shader->lut[i].mipmap)
-   {
-      if (filter_type == TEXTURE_FILTER_NEAREST)
-         filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
-      else
-         filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
-   }
-
-   gl_load_texture_data(textures_lut[i],
-         shader->lut[i].wrap,
-         filter_type, 4,
-         img.width, img.height,
-         img.pixels, sizeof(uint32_t));
-   image_texture_free(&img);
-
-   return true;
-}
 
 
 static bool gl_recreate_fbo(
@@ -879,3 +820,66 @@ void gl_renderchain_init(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    gl->fbo_inited = true;
 }
 #endif
+
+void gl_renderchain_bind_prev_texture(
+      void *data,
+      const struct video_tex_info *tex_info)
+{
+   gl_t *gl = (gl_t*)data;
+
+   memmove(gl->prev_info + 1, gl->prev_info,
+         sizeof(*tex_info) * (gl->textures - 1));
+   memcpy(&gl->prev_info[0], tex_info,
+         sizeof(*tex_info));
+
+#ifdef HAVE_FBO
+   /* Implement feedback by swapping out FBO/textures 
+    * for FBO pass #N and feedbacks. */
+   if (gl->fbo_feedback_enable)
+   {
+      GLuint tmp_fbo                 = gl->fbo_feedback;
+      GLuint tmp_tex                 = gl->fbo_feedback_texture;
+      gl->fbo_feedback               = gl->fbo[gl->fbo_feedback_pass];
+      gl->fbo_feedback_texture       = gl->fbo_texture[gl->fbo_feedback_pass];
+      gl->fbo[gl->fbo_feedback_pass] = tmp_fbo;
+      gl->fbo_texture[gl->fbo_feedback_pass] = tmp_tex;
+   }
+#endif
+}
+
+bool gl_renderchain_add_lut(const struct video_shader *shader,
+      unsigned i, GLuint *textures_lut)
+{
+   struct texture_image img = {0};
+   enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
+
+   RARCH_LOG("Loading texture image from: \"%s\" ...\n",
+         shader->lut[i].path);
+
+   if (!image_texture_load(&img, shader->lut[i].path))
+   {
+      RARCH_ERR("Failed to load texture image from: \"%s\"\n",
+            shader->lut[i].path);
+      return false;
+   }
+
+   if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
+      filter_type = TEXTURE_FILTER_NEAREST;
+
+   if (shader->lut[i].mipmap)
+   {
+      if (filter_type == TEXTURE_FILTER_NEAREST)
+         filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
+      else
+         filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
+   }
+
+   gl_load_texture_data(textures_lut[i],
+         shader->lut[i].wrap,
+         filter_type, 4,
+         img.width, img.height,
+         img.pixels, sizeof(uint32_t));
+   image_texture_free(&img);
+
+   return true;
+}

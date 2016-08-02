@@ -54,7 +54,7 @@ void gl_renderchain_convert_geometry(gl_t *gl,
       unsigned vp_width, unsigned vp_height);
 
 void gl_renderchain_bind_prev_texture(
-      gl_t *gl,
+      void *data,
       const struct video_tex_info *tex_info);
 
 bool gl_renderchain_add_lut(const struct video_shader *shader,
