@@ -86,18 +86,22 @@ enum slang_stage
 struct slang_texture_semantic_meta
 {
    size_t ubo_offset = 0;
+   size_t push_constant_offset = 0;
    unsigned binding = 0;
    uint32_t stage_mask = 0;
 
    bool texture = false;
    bool uniform = false;
+   bool push_constant = false;
 };
 
 struct slang_semantic_meta
 {
    size_t ubo_offset = 0;
+   size_t push_constant_offset = 0;
    unsigned num_components = 0;
    bool uniform = false;
+   bool push_constant = false;
 };
 
 struct slang_texture_semantic_map
@@ -117,8 +121,11 @@ struct slang_reflection
    slang_reflection();
 
    size_t ubo_size = 0;
+   size_t push_constant_size = 0;
+
    unsigned ubo_binding = 0;
    uint32_t ubo_stage_mask = 0;
+   uint32_t push_constant_stage_mask = 0;
 
    std::vector<slang_texture_semantic_meta> semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
    slang_semantic_meta semantics[SLANG_NUM_SEMANTICS];

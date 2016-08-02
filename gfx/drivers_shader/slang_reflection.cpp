@@ -166,77 +166,97 @@ static void resize_minimum(T &vec, unsigned minimum)
 
 static bool set_ubo_texture_offset(slang_reflection *reflection,
       slang_texture_semantic semantic, unsigned index,
-      size_t offset)
+      size_t offset, bool push_constant)
 {
    resize_minimum(reflection->semantic_textures[semantic], index + 1);
    auto &sem = reflection->semantic_textures[semantic][index];
+   auto &active = push_constant ? sem.push_constant : sem.uniform;
+   auto &active_offset = push_constant ? sem.push_constant_offset : sem.ubo_offset;
 
-   if (sem.uniform)
+   if (active)
    {
-      if (sem.ubo_offset != offset)
+      if (active_offset != offset)
       {
          RARCH_ERR("[slang]: Vertex and fragment have different offsets for same semantic %s #%u (%u vs. %u).\n",
                texture_semantic_uniform_names[semantic],
                index,
-               unsigned(sem.ubo_offset),
+               unsigned(active_offset),
                unsigned(offset));
          return false;
       }
    }
-   sem.uniform = true;
-   sem.ubo_offset = offset;
+
+   active = true;
+   active_offset = offset;
    return true;
 }
 
 static bool set_ubo_float_parameter_offset(slang_reflection *reflection,
-      unsigned index, size_t offset, unsigned num_components)
+      unsigned index, size_t offset, unsigned num_components, bool push_constant)
 {
    resize_minimum(reflection->semantic_float_parameters, index + 1);
    auto &sem = reflection->semantic_float_parameters[index];
+   auto &active = push_constant ? sem.push_constant : sem.uniform;
+   auto &active_offset = push_constant ? sem.push_constant_offset : sem.ubo_offset;
 
-   if (sem.uniform)
+   if (active)
    {
-      if (sem.ubo_offset != offset)
+      if (active_offset != offset)
       {
          RARCH_ERR("[slang]: Vertex and fragment have different offsets for same parameter #%u (%u vs. %u).\n",
                index,
-               unsigned(sem.ubo_offset),
+               unsigned(active_offset),
                unsigned(offset));
          return false;
       }
    }
-   sem.uniform = true;
-   sem.ubo_offset = offset;
+
+   if (sem.num_components != num_components && (sem.uniform || sem.push_constant))
+   {
+      RARCH_ERR("[slang]: Vertex and fragment have different components for same parameter #%u (%u vs. %u).\n",
+            index,
+            unsigned(sem.num_components),
+            unsigned(num_components));
+      return false;
+   }
+
+   active = true;
+   active_offset = offset;
    sem.num_components = num_components;
    return true;
 }
 
 static bool set_ubo_offset(slang_reflection *reflection, slang_semantic semantic,
-      size_t offset, unsigned num_components)
+      size_t offset, unsigned num_components, bool push_constant)
 {
    auto &sem = reflection->semantics[semantic];
+   auto &active = push_constant ? sem.push_constant : sem.uniform;
+   auto &active_offset = push_constant ? sem.push_constant_offset : sem.ubo_offset;
 
-   if (sem.uniform)
+   if (active)
    {
-      if (sem.ubo_offset != offset)
+      if (active_offset != offset)
       {
          RARCH_ERR("[slang]: Vertex and fragment have different offsets for same semantic %s (%u vs. %u).\n",
                semantic_uniform_names[semantic],
-               unsigned(sem.ubo_offset),
+               unsigned(active_offset),
                unsigned(offset));
          return false;
       }
 
-      if (sem.num_components != num_components)
-      {
-         RARCH_ERR("[slang]: Vertex and fragment have different components for same semantic %s (%u vs. %u).\n",
-               semantic_uniform_names[semantic],
-               unsigned(sem.num_components),
-               unsigned(num_components));
-      }
    }
-   sem.uniform = true;
-   sem.ubo_offset = offset;
+
+   if (sem.num_components != num_components && (sem.uniform || sem.push_constant))
+   {
+      RARCH_ERR("[slang]: Vertex and fragment have different components for same semantic %s (%u vs. %u).\n",
+            semantic_uniform_names[semantic],
+            unsigned(sem.num_components),
+            unsigned(num_components));
+      return false;
+   }
+
+   active = true;
+   active_offset = offset;
    sem.num_components = num_components;
    return true;
 }
@@ -276,7 +296,7 @@ static bool validate_type_for_texture_semantic(const SPIRType &type)
 }
 
 static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &resource,
-      slang_reflection *reflection)
+      slang_reflection *reflection, bool push_constant)
 {
    // Get which uniforms are actually in use by this shader.
    auto ranges = compiler.get_active_buffer_ranges(resource.id);
@@ -309,12 +329,12 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
          switch (sem)
          {
             case SLANG_SEMANTIC_FLOAT_PARAMETER:
-               if (!set_ubo_float_parameter_offset(reflection, sem_index, range.offset, type.vecsize))
+               if (!set_ubo_float_parameter_offset(reflection, sem_index, range.offset, type.vecsize, push_constant))
                   return false;
                break;
 
             default:
-               if (!set_ubo_offset(reflection, sem, range.offset, type.vecsize))
+               if (!set_ubo_offset(reflection, sem, range.offset, type.vecsize, push_constant))
                   return false;
                break;
          }
@@ -327,7 +347,7 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
             return false;
          }
 
-         if (!set_ubo_texture_offset(reflection, tex_sem, tex_sem_index, range.offset))
+         if (!set_ubo_texture_offset(reflection, tex_sem, tex_sem_index, range.offset, push_constant))
             return false;
       }
       else
@@ -350,12 +370,10 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
          !vertex.subpass_inputs.empty() ||
          !vertex.storage_images.empty() ||
          !vertex.atomic_counters.empty() ||
-         !vertex.push_constant_buffers.empty() ||
          !fragment.storage_buffers.empty() ||
          !fragment.subpass_inputs.empty() ||
          !fragment.storage_images.empty() ||
-         !fragment.atomic_counters.empty() ||
-         !fragment.push_constant_buffers.empty())
+         !fragment.atomic_counters.empty())
    {
       RARCH_ERR("[slang]: Invalid resource type detected.\n");
       return false;
@@ -403,8 +421,23 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
       return false;
    }
 
+   // Validate the single push constant buffer.
+   if (vertex.push_constant_buffers.size() > 1)
+   {
+      RARCH_ERR("[slang]: Vertex must use zero or one push constant buffers.\n");
+      return false;
+   }
+
+   if (fragment.push_constant_buffers.size() > 1)
+   {
+      RARCH_ERR("[slang]: Fragment must use zero or one push cosntant buffer.\n");
+      return false;
+   }
+
    uint32_t vertex_ubo = vertex.uniform_buffers.empty() ? 0 : vertex.uniform_buffers[0].id;
    uint32_t fragment_ubo = fragment.uniform_buffers.empty() ? 0 : fragment.uniform_buffers[0].id;
+   uint32_t vertex_push = vertex.push_constant_buffers.empty() ? 0 : vertex.push_constant_buffers[0].id;
+   uint32_t fragment_push = fragment.push_constant_buffers.empty() ? 0 : fragment.push_constant_buffers[0].id;
 
    if (vertex_ubo &&
          vertex_compiler.get_decoration(vertex_ubo, spv::DecorationDescriptorSet) != 0)
@@ -445,6 +478,8 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
    reflection->ubo_binding = has_ubo ? ubo_binding : 0;
    reflection->ubo_stage_mask = 0;
    reflection->ubo_size = 0;
+   reflection->push_constant_size = 0;
+   reflection->push_constant_stage_mask = 0;
 
    if (vertex_ubo)
    {
@@ -460,10 +495,35 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
             fragment_compiler.get_declared_struct_size(fragment_compiler.get_type(fragment.uniform_buffers[0].base_type_id)));
    }
 
-   // Find all relevant uniforms.
-   if (vertex_ubo && !add_active_buffer_ranges(vertex_compiler, vertex.uniform_buffers[0], reflection))
+   if (vertex_push)
+   {
+      reflection->push_constant_stage_mask |= SLANG_STAGE_VERTEX_MASK;
+      reflection->push_constant_size = max(reflection->push_constant_size,
+            vertex_compiler.get_declared_struct_size(vertex_compiler.get_type(vertex.push_constant_buffers[0].base_type_id)));
+   }
+
+   if (fragment_push)
+   {
+      reflection->push_constant_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
+      reflection->push_constant_size = max(reflection->push_constant_size,
+            fragment_compiler.get_declared_struct_size(fragment_compiler.get_type(fragment.push_constant_buffers[0].base_type_id)));
+   }
+
+   // Validate push constant size against Vulkan's minimum spec to avoid cross-vendor issues.
+   if (reflection->push_constant_size > 128)
+   {
+      RARCH_ERR("[slang]: Exceeded maximum size of 128 bytes for push constant buffer.\n");
       return false;
-   if (fragment_ubo && !add_active_buffer_ranges(fragment_compiler, fragment.uniform_buffers[0], reflection))
+   }
+
+   // Find all relevant uniforms and push constants.
+   if (vertex_ubo && !add_active_buffer_ranges(vertex_compiler, vertex.uniform_buffers[0], reflection, false))
+      return false;
+   if (fragment_ubo && !add_active_buffer_ranges(fragment_compiler, fragment.uniform_buffers[0], reflection, false))
+      return false;
+   if (vertex_push && !add_active_buffer_ranges(vertex_compiler, vertex.push_constant_buffers[0], reflection, true))
+      return false;
+   if (fragment_push && !add_active_buffer_ranges(fragment_compiler, fragment.push_constant_buffers[0], reflection, true))
       return false;
 
    uint32_t binding_mask = has_ubo ? (1 << ubo_binding) : 0;
@@ -529,12 +589,22 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
    RARCH_LOG("[slang]:   Uniforms (Vertex: %s, Fragment: %s):\n",
          reflection->ubo_stage_mask & SLANG_STAGE_VERTEX_MASK ? "yes": "no",
          reflection->ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK ? "yes": "no");
+   RARCH_LOG("[slang]:   Push Constants (Vertex: %s, Fragment: %s):\n",
+         reflection->push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK ? "yes": "no",
+         reflection->push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK ? "yes": "no");
+
    for (unsigned i = 0; i < SLANG_NUM_SEMANTICS; i++)
    {
       if (reflection->semantics[i].uniform)
       {
          RARCH_LOG("[slang]:      %s (Offset: %u)\n", semantic_uniform_names[i],
                unsigned(reflection->semantics[i].ubo_offset));
+      }
+
+      if (reflection->semantics[i].push_constant)
+      {
+         RARCH_LOG("[slang]:      %s (PushOffset: %u)\n", semantic_uniform_names[i],
+               unsigned(reflection->semantics[i].push_constant_offset));
       }
    }
 
@@ -549,6 +619,13 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
                   index,
                   unsigned(sem.ubo_offset));
          }
+
+         if (sem.push_constant)
+         {
+            RARCH_LOG("[slang]:      %s (#%u) (PushOffset: %u)\n", texture_semantic_uniform_names[i],
+                  index,
+                  unsigned(sem.push_constant_offset));
+         }
          index++;
       }
    }
@@ -560,6 +637,8 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
    {
       if (param.uniform)
          RARCH_LOG("[slang]:     #%u (Offset: %u)\n", i, param.ubo_offset);
+      if (param.push_constant)
+         RARCH_LOG("[slang]:     #%u (PushOffset: %u)\n", i, param.push_constant_offset);
       i++;
    }
 

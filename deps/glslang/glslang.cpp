@@ -355,15 +355,18 @@ bool glslang::compile_spirv(const string &source, Stage stage, std::vector<uint3
    const char *src = source.c_str();
    shader.setStrings(&src, 1);
 
+   EShMessages messages = static_cast<EShMessages>(EShMsgDefault | EShMsgVulkanRules | EShMsgSpvRules);
+
    string msg;
    auto forbid_include = TShader::ForbidInclude();
-   if (!shader.preprocess(&process.GetResources(), 100, ENoProfile, false, false, EShMsgDefault, &msg, forbid_include))
+   if (!shader.preprocess(&process.GetResources(), 100, ENoProfile, false, false,
+            messages, &msg, forbid_include))
    {
       fprintf(stderr, "%s\n", msg.c_str());
       return {};
    }
 
-   if (!shader.parse(&process.GetResources(), 100, false, EShMsgDefault))
+   if (!shader.parse(&process.GetResources(), 100, false, messages))
    {
       RARCH_ERR("%s\n", shader.getInfoLog());
       RARCH_ERR("%s\n", shader.getInfoDebugLog());
@@ -372,7 +375,7 @@ bool glslang::compile_spirv(const string &source, Stage stage, std::vector<uint3
 
    program.addShader(&shader);
 
-   if (!program.link(EShMsgDefault))
+   if (!program.link(messages))
    {
       RARCH_ERR("%s\n", program.getInfoLog());
       RARCH_ERR("%s\n", program.getInfoDebugLog());
