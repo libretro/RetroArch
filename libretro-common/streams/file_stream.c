@@ -287,8 +287,7 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
 #elif defined(VITA) || defined(PSP)
    if(filestream_read(stream,s,len)==len)
       return s;
-   else
-      return NULL;
+   return NULL;
 #else
    return gets(s);
 #endif
