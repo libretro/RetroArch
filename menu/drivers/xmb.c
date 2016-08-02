@@ -3259,11 +3259,9 @@ static int xmb_list_push(void *data, void *userdata,
          entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-#if defined(HAVE_NETWORKING)
-#if defined(HAVE_LIBRETRODB)
          entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
-#endif
+#if defined(HAVE_NETWORKING)
          entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
