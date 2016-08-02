@@ -415,19 +415,20 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
       case GL_CAPS_PACKED_DEPTH_STENCIL:
          {
-#ifdef HAVE_OPENGLES
             struct retro_hw_render_callback *hwr =
                video_driver_get_hw_context();
+#ifdef HAVE_OPENGLES
             if (gles3)
                return true;
+#else
+            if (major >= 3)
+               return true;
+#endif
             if (hwr->stencil 
                   && !gl_query_extension("OES_packed_depth_stencil")
                   && !gl_query_extension("EXT_packed_depth_stencil"))
                return false;
             return true;
-#else
-            /* TODO/FIXME - implement this for non-GLES? */
-#endif
          }
          break;
       case GL_CAPS_ES2_COMPAT:
