@@ -124,7 +124,7 @@ if [ $SALAMANDER = "yes" ]; then
    fi
 fi
 
-counter=0
+COUNTER=0
 
 for f in *_${platform}.${EXT} ; do
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
@@ -193,7 +193,7 @@ for f in *_${platform}.${EXT} ; do
    elif [ $PLATFORM = "psp1" ] ; then
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
    elif [ $PLATFORM = "vita" ] ; then
-      COUNTER=COUNTER+1
+      COUNTER=$((COUNTER + 1))
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/
       vita-make-fself ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
       vita-mksfoex -s TITLE_ID=RETR0000${COUNTER} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
