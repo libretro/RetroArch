@@ -126,7 +126,8 @@ fi
 
 COUNTER=0
 
-for f in *_${platform}.${EXT} ; do
+#for f in *_${platform}.${EXT} ; do
+for i in `ls -v _${platform}.${EXT}`; do echo $i; done;
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
    lto=0
    whole_archive=
