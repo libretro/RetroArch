@@ -819,6 +819,120 @@ void gl_renderchain_init(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    gl->fbo_inited = true;
 }
+
+void gl_deinit_hw_render(gl_t *gl)
+{
+   if (!gl)
+      return;
+
+   context_bind_hw_render(true);
+
+   if (gl->hw_render_fbo_init)
+      glDeleteFramebuffers(gl->textures, gl->hw_render_fbo);
+   if (gl->hw_render_depth_init)
+      glDeleteRenderbuffers(gl->textures, gl->hw_render_depth);
+   gl->hw_render_fbo_init = false;
+
+   context_bind_hw_render(false);
+}
+
+bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
+{
+   GLenum status;
+   unsigned i;
+   bool depth                           = false;
+   bool stencil                         = false;
+   GLint max_fbo_size                   = 0;
+   GLint max_renderbuffer_size          = 0;
+   struct retro_hw_render_callback *hwr =
+      video_driver_get_hw_context();
+
+   /* We can only share texture objects through contexts.
+    * FBOs are "abstract" objects and are not shared. */
+   context_bind_hw_render(true);
+
+   RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
+   glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
+   glGetIntegerv(RARCH_GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size);
+   RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %d px.\n",
+         max_fbo_size, max_renderbuffer_size);
+
+   if (!gl_check_capability(GL_CAPS_FBO))
+      return false;
+
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glGenFramebuffers(gl->textures, gl->hw_render_fbo);
+
+   depth   = hwr->depth;
+   stencil = hwr->stencil;
+
+#ifdef HAVE_OPENGLES2
+   if (!gl_check_capability(GL_CAPS_PACKED_DEPTH_STENCIL))
+      return false;
+#endif
+
+   if (depth)
+   {
+      glGenRenderbuffers(gl->textures, gl->hw_render_depth);
+      gl->hw_render_depth_init = true;
+   }
+
+   for (i = 0; i < gl->textures; i++)
+   {
+      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->hw_render_fbo[i]);
+      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
+            RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->texture[i], 0);
+
+      if (depth)
+      {
+         glBindRenderbuffer(RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         glRenderbufferStorage(RARCH_GL_RENDERBUFFER,
+               stencil ? RARCH_GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT16,
+               width, height);
+         glBindRenderbuffer(RARCH_GL_RENDERBUFFER, 0);
+
+         if (stencil)
+         {
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES1) || defined(OSX_PPC)
+            /* GLES2 is a bit weird, as always.
+             * There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL. */
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER,
+                  RARCH_GL_DEPTH_ATTACHMENT,
+                  RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER,
+                  RARCH_GL_STENCIL_ATTACHMENT,
+                  RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
+#else
+            /* We use ARB FBO extensions, no need to check. */
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER,
+                  GL_DEPTH_STENCIL_ATTACHMENT,
+                  RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
+#endif
+         }
+         else
+         {
+            glFramebufferRenderbuffer(RARCH_GL_FRAMEBUFFER,
+                  RARCH_GL_DEPTH_ATTACHMENT,
+                  RARCH_GL_RENDERBUFFER, gl->hw_render_depth[i]);
+         }
+      }
+
+      status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
+      if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
+      {
+         RARCH_ERR("[GL]: Failed to create HW render FBO #%u, error: 0x%u.\n",
+               i, (unsigned)status);
+         return false;
+      }
+   }
+
+   gl_bind_backbuffer();
+   gl->hw_render_fbo_init = true;
+
+   context_bind_hw_render(false);
+   return true;
+}
+
 #endif
 
 void gl_renderchain_bind_prev_texture(

@@ -94,6 +94,8 @@ void gl_check_fbo_dimensions(gl_t *gl);
 
 void gl_renderchain_free(gl_t *gl);
 
+bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height);
+
 bool gl_check_capability(enum gl_capability_enum enum_idx);
 
 RETRO_END_DECLS
