@@ -248,10 +248,8 @@ static void frontend_psp_init(void *data)
 
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
-#ifndef IS_SALAMANDER
-   char *fullpath = NULL;
-#endif
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
+   char *fullpath = NULL;
    char argp[512] = {0};
    SceSize   args = 0;
 
