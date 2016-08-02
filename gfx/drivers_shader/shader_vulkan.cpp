@@ -519,6 +519,13 @@ class Pass
 
       vector<Parameter> parameters;
       vector<Parameter> filtered_parameters;
+
+      struct PushConstant
+      {
+         VkShaderStageFlags stages = 0;
+         vector<uint32_t> buffer; // uint32_t to have correct alignment.
+      };
+      PushConstant push;
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -1394,6 +1401,25 @@ bool Pass::init_pipeline_layout()
    layout_info.setLayoutCount             = 1;
    layout_info.pSetLayouts                = &set_layout;
 
+   // Push constants
+   VkPushConstantRange push_range = {};
+   if (reflection.push_constant_stage_mask && reflection.push_constant_size)
+   {
+      if (reflection.push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK)
+         push_range.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
+      if (reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+         push_range.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+
+      RARCH_LOG("[Vulkan]: Push Constant Block: %u bytes.\n", reflection.push_constant_size);
+
+      layout_info.pushConstantRangeCount = 1;
+      layout_info.pPushConstantRanges = &push_range;
+      push.buffer.resize((reflection.push_constant_size + sizeof(uint32_t) - 1) / sizeof(uint32_t));
+   }
+
+   push.stages = push_range.stageFlags;
+   push_range.size = reflection.push_constant_size;
+
    if (vkCreatePipelineLayout(device,
             &layout_info, NULL, &pipeline_layout) != VK_SUCCESS)
       return false;
@@ -1738,8 +1764,11 @@ bool Pass::build()
    filtered_parameters.clear();
    for (unsigned i = 0; i < reflection.semantic_float_parameters.size(); i++)
    {
-      if (reflection.semantic_float_parameters[i].uniform)
+      if (reflection.semantic_float_parameters[i].uniform ||
+          reflection.semantic_float_parameters[i].push_constant)
+      {
          filtered_parameters.push_back(parameters[i]);
+      }
    }
 
    if (!init_pipeline())
@@ -1804,38 +1833,52 @@ void Pass::set_semantic_texture_array(VkDescriptorSet set,
    }
 }
 
-void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
-      unsigned width, unsigned height)
+void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
+      unsigned index, unsigned width, unsigned height)
 {
-   if (data && reflection.semantic_textures[semantic][0].uniform)
+   auto &refl = reflection.semantic_textures[semantic];
+   if (index >= refl.size())
+      return;
+
+   if (data && refl[index].uniform)
    {
       build_vec4(
-            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic][0].ubo_offset),
+            reinterpret_cast<float *>(data + refl[index].ubo_offset),
+            width,
+            height);
+   }
+
+   if (refl[index].push_constant)
+   {
+      build_vec4(
+            reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2)),
             width,
             height);
    }
 }
 
-void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
-      unsigned index, unsigned width, unsigned height)
+void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
+      unsigned width, unsigned height)
 {
-   if (data && index < reflection.semantic_textures[semantic].size() &&
-         reflection.semantic_textures[semantic][index].uniform)
-   {
-      build_vec4(
-            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic][index].ubo_offset),
-            width,
-            height);
-   }
+   build_semantic_texture_array_vec4(data, semantic, 0, width, height);
 }
 
 void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       unsigned width, unsigned height)
 {
-   if (data && reflection.semantics[semantic].uniform)
+   auto &refl = reflection.semantics[semantic];
+   if (data && refl.uniform)
    {
       build_vec4(
-            reinterpret_cast<float *>(data + reflection.semantics[semantic].ubo_offset),
+            reinterpret_cast<float *>(data + refl.ubo_offset),
+            width,
+            height);
+   }
+
+   if (refl.push_constant)
+   {
+      build_vec4(
+            reinterpret_cast<float *>(push.buffer.data() + (refl.push_constant_offset >> 2)),
             width,
             height);
    }
@@ -1843,16 +1886,26 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
 
 void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
 {
+   auto &refl = reflection.semantic_float_parameters[index];
+
    // We will have filtered out stale parameters.
-   if (data)
-      *reinterpret_cast<float*>(data + reflection.semantic_float_parameters[index].ubo_offset) = value;
+   if (data && refl.uniform)
+      *reinterpret_cast<float*>(data + refl.ubo_offset) = value;
+
+   if (refl.push_constant)
+      *reinterpret_cast<float*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
 }
 
 void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
       uint32_t value)
 {
-   if (data && reflection.semantics[semantic].uniform)
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
       *reinterpret_cast<uint32_t*>(data + reflection.semantics[semantic].ubo_offset) = value;
+
+   if (refl.push_constant)
+      *reinterpret_cast<uint32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
 }
 
 void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
@@ -1882,6 +1935,15 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
          memcpy(buffer + offset, mvp, sizeof(float) * 16);
       else
          build_identity_matrix(reinterpret_cast<float *>(buffer + offset));
+   }
+
+   if (reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
+   {
+      size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].push_constant_offset;
+      if (mvp)
+         memcpy(push.buffer.data() + (offset >> 2), mvp, sizeof(float) * 16);
+      else
+         build_identity_matrix(reinterpret_cast<float *>(push.buffer.data() + (offset >> 2)));
    }
 
    // Output information
@@ -2022,6 +2084,13 @@ void Pass::build_commands(
    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
          0, 1, &sets[sync_index], 0, nullptr);
+
+   if (push.stages != 0)
+   {
+      vkCmdPushConstants(cmd, pipeline_layout,
+            push.stages, 0, reflection.push_constant_size,
+            push.buffer.data());
+   }
 
    VkDeviceSize offset = final_pass ? 16 * sizeof(float) : 0;
    vkCmdBindVertexBuffers(cmd, 0, 1,
