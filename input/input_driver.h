@@ -49,6 +49,15 @@ enum input_device_type
    INPUT_DEVICE_TYPE_JOYPAD
 };
 
+enum input_toggle_type
+{
+   INPUT_TOGGLE_NONE = 0,
+   INPUT_TOGGLE_DOWN_Y_L_R,
+   INPUT_TOGGLE_L3_R3,
+   INPUT_TOGGLE_START_SELECT,
+   INPUT_TOGGLE_LAST
+};
+
 struct retro_keybind
 {
    bool valid;

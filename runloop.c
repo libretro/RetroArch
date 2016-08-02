@@ -320,9 +320,9 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
 {
    switch (settings->input.menu_toggle_gamepad_combo)
    {
-      case 0:
+      case INPUT_TOGGLE_NONE:
          return false;
-      case 1:
+      case INPUT_TOGGLE_DOWN_Y_L_R:
          if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
          if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_Y))
@@ -332,13 +332,13 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
          if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
-      case 2:
+      case INPUT_TOGGLE_L3_R3:
          if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_L3))
             return false;
          if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_R3))
             return false;
          break;
-      case 3:
+      case INPUT_TOGGLE_START_SELECT:
          if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
          if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_SELECT))
