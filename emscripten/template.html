@@ -7,26 +7,25 @@
    <script type="text/javascript" src="browserfs.js"></script>
 
    <style>
-      .webplayer { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
-      textarea.webplayer { border: 0px; font-family: 'Share Tech Mono'; font-size: 12px; width: 100%; overflow:hide; resize:none; color:black; }
-      div.webplayer, h1 { text-align: left; }
+      .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
+      textarea.emscripten { border: 0px; font-family: 'Share Tech Mono'; font-size: 12px; width: 100%; overflow:hide; resize:none; color:black; }
+      div.emscripten, h1 { text-align: left; }
       div.canvas_border { background-color:gray; width:800px; height:600px; margin-left: auto; margin-right: auto; }
-      canvas.webplayer { border: 0px none; }
+      canvas.emscripten { border: 0px none; }
    </style>
 </head>
 <body>
    <hr/>
-   <div class="webplayer_border" id="canvas_div" style="display: none">
-      <canvas class="webplayer" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()"></canvas>
+   <div class="emscripten_border" id="canvas_div" style="display: none">
+      <canvas class="emscripten" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()"></canvas>
    </div>
-   <hr/>
-   <div class="webplayer webplayer_border" id="openrom">
+   <div class="emscripten emscripten_border" id="openrom">
       <button id="btnLoad" onclick="document.getElementById('rom').click()">Upload Content</button>
-      <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" multiple />
+      <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" onchange="runEmulator(event.target.files);" multiple />
       <button id="btnStart" onclick="startRetroArch()">Start RetroArch</button>
    </div>
    <hr/>
-   <div class="webplayer">
+   <div class="emscripten">
       <input type="checkbox" id="resize"><label for="resize">Resize canvas</label>
       <input type="checkbox" id="pointerLock" checked><label for="pointerLock">Lock/hide mouse pointer</label>
       <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)"><br>
@@ -36,14 +35,46 @@
    </div>
 
    <hr/>
-   <textarea class="webplayer" id="output" rows="15"></textarea>
+   <textarea class="emscripten" id="output" rows="8"></textarea>
    <hr>
+   <div class="emscripten" id="controls">
+      Controls:<br>
+      <br>
+      A button (OK in menu): X<br>
+      B button (Back in menu): Z<br>
+      X Button: S<br>
+      Y Button: A<br>
+      L Button: Q<br>
+      R Button: W<br>
+      D-pad: Arrow Keys<br>
+      Start Button: Enter<br>
+      Select Button: Shift<br>
+      Toggle Menu: F1<br>
+      Fast forward: Spacebar (toggle)<br>
+      Slow motion: E (hold)</br>
+      Save state: F2<br>
+      Load state: F4
+   </div>
+
 </body>
 </html>
 <script type='text/javascript'>
    var count = 0;
-   function startRetroArch()
+   function runEmulator(files)
    {
+      count = files.length;
+      document.getElementById("openrom").innerHTML = '';
+      document.getElementById("openrom").style.display = 'none';
+      for (var i = 0; i < files.length; i++) 
+      {
+         filereader = new FileReader();
+         filereader.file_name = files[i].name;
+         filereader.onload = function(){uploadData(this.result, this.file_name)};
+         filereader.readAsArrayBuffer(files[i]);
+    }
+  }
+  function startRetroArch()
+  {
       Module.FS_createFolder('/', 'etc', true, true);
       Module.FS_createFolder('/', 'config', true, true);
       Module.FS_createFolder('/', 'content', true, true);
@@ -64,7 +95,7 @@
       document.getElementById('latency').disabled = true;
       document.getElementById('latency-label').style.color = 'gray';
       Module['callMain'](Module['arguments']);
-   }
+  }
 
    function uploadData(data, name)
    {

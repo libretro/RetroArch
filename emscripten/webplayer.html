@@ -22,7 +22,7 @@
    <hr/>
    <div class="webplayer webplayer_border" id="openrom">
       <button id="btnLoad" onclick="document.getElementById('rom').click()">Upload Content</button>
-      <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" multiple />
+      <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" onchange="selectFiles(event.target.files)" multiple />
       <button id="btnStart" onclick="startRetroArch()">Start RetroArch</button>
    </div>
    <hr/>
@@ -42,30 +42,109 @@
 </html>
 <script type='text/javascript'>
    var count = 0;
+
+   function setupFileSystem()
+   {
+      if(localStorage.getItem("fs_inited")!="true")
+      {
+         var lsfs = new BrowserFS.FileSystem.LocalStorage();
+         BrowserFS.initialize(lsfs);
+         var BFS = new BrowserFS.EmscriptenFS();
+   
+         FS.mount(BFS, {root: '/'}, '/home');
+   
+         console.log('WEBPLAYER: Filesystem initialized');
+      }
+      else
+      {
+         console.log('WEBPLAYER: Filesystem already initialized');
+      }
+   }
+
+
+   function setupFolderStructure()
+   {
+      FS.createPath('/', '/home/web_user', true, true);
+      FS.createPath('/', '/home/web_user/.config', true, true);
+      FS.createPath('/', '/home/web_user/.config/retroarch', true, true);
+      FS.createPath('/', '/home/web_user/content', true, true);
+      FS.createPath('/', '/home/web_user/saves', true, true);
+      FS.createPath('/', '/home/web_user/states', true, true);
+      FS.createPath('/', '/home/web_user/system', true, true);
+   }
+
+   function stat(path)
+   {
+      try{
+         FS.stat(path);
+      }
+      catch(err)
+      {
+         console.log("WEBPLAYER: file " + path + " doesn't exist");
+         return false;
+      }
+      return true;
+   }
+
    function startRetroArch()
    {
-      setupFileSystem();
-      var config = 'input_player1_select = shift\n';
-      var latency = parseInt(document.getElementById('latency').value, 10);
-      if (isNaN(latency)) latency = 96;
-      config += 'audio_latency = ' + latency + '\n'
-      if (document.getElementById('vsync').checked)
-         config += 'video_vsync = true\n';
-      else
-         config += 'video_vsync = false\n';
-      Module.FS_createDataFile('/etc', 'retroarch.cfg', config, true, true);
       document.getElementById('canvas_div').style.display = 'block';
       document.getElementById('vsync').disabled = true;
       document.getElementById('vsync-label').style.color = 'gray';
       document.getElementById('latency').disabled = true;
       document.getElementById('latency-label').style.color = 'gray';
+
+      setupFileSystem();
+      setupFolderStructure();
+      cfgFile = '/home/web_user/.config/retroarch/retroarch.cfg'
+
+      if (!stat(cfgFile))
+      {
+         console.log ("WEBPLAYER: first run, setting defaults");
+         var config = 'input_player1_select = shift\n';
+         var latency = parseInt(document.getElementById('latency').value, 10);
+         if (isNaN(latency)) latency = 96;
+         config += 'audio_latency = ' + latency + '\n'
+         if (document.getElementById('vsync').checked)
+            config += 'video_vsync = true\n';
+         else
+         config += 'video_vsync = false\n';
+         config += 'system_directory = /home/web_user/system/\n';
+         config += 'savefile_directory = /home/web_user/saves/\n';
+         config += 'savestate_directory = /home/web_user/saves/\n';
+         config += 'rgui_browser_directory = /home/web_user/content/\n';
+
+         FS.writeFile(cfgFile, config);
+      }
+      else 
+      {
+         console.log ("WEBPLAYER: loading config from " + cfgFile);
+      }
       Module['callMain'](Module['arguments']);
    }
+   
+   function selectFiles(files)
+   {
+      count = files.length;
 
-   function uploadData(data, name)
+      for (var i = 0; i < files.length; i++) 
+      {
+         filereader = new FileReader();
+         filereader.file_name = files[i].name;
+         filereader.readAsArrayBuffer(files[i]);
+         filereader.onload = function(){uploadData(this.result, this.file_name)};
+      }
+   }
+
+   function uploadData(data,name)
    {
       var dataView = new Uint8Array(data);
-      Module.FS_createDataFile('/', name, dataView, true, false);
+      FS.createDataFile('/', name, dataView, true, false);
+
+      var data = FS.readFile(name,{ encoding: 'binary' });
+      FS.writeFile('/home/web_user/content/' + name, data ,{ encoding: 'binary' });
+      FS.unlink(name);
+
    }
 
    var Module = 
