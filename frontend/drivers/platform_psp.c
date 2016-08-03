@@ -218,13 +218,12 @@ static int setup_callback(void)
 static void frontend_psp_init(void *data)
 {
 #ifndef IS_SALAMANDER
-#ifndef VITA
+
+#ifdef VITA
+   scePowerSetArmClockFrequency(444);
+   sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
+#else
    (void)data;
-
-   /* TODO/FIXME - Err on the safe side for now and
-    * assume these aren't there with the PSP2/Vita SDKs.
-    */
-
    /* initialize debug screen */
    pspDebugScreenInit();
    pspDebugScreenClear();
@@ -233,10 +232,8 @@ static void frontend_psp_init(void *data)
 
    pspFpuSetEnable(0); /* disable FPU exceptions */
    scePowerSetClockFrequency(333,333,166);
-#else
-   scePowerSetArmClockFrequency(444);
-   sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
 #endif
+
 #endif
 
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
