@@ -167,6 +167,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 {
    void *tex_p;
    vita_video_t *vita = (vita_video_t *)data;
+   settings_t *settings = config_get_ptr();
+
 
    (void)frame;
    (void)width;
@@ -225,7 +227,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
    vita2d_start_drawing();
    vita2d_clear_screen();
-
+   
    if (vita->texture)
    {
       if (vita->fullscreen)
@@ -242,6 +244,15 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
          vita2d_draw_texture_scale_rotate(vita->texture,vita->vp.x,
                 vita->vp.y, scalex, scaley, rad);
       }
+   }
+   
+   if (settings->fps_show)
+   {
+      char buffer[128]     = {0};
+      char buffer_fps[128] = {0};
+      video_monitor_get_fps(buffer, sizeof(buffer),
+            settings->fps_show ? buffer_fps : NULL, sizeof(buffer_fps));
+      runloop_msg_queue_push(buffer_fps, 1, 1, false);
    }
 
 #ifdef HAVE_OVERLAY
