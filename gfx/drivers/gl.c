@@ -958,7 +958,23 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    performance_counter_init(&copy_frame, "copy_frame");
    performance_counter_start(&copy_frame);
 
-#if defined(HAVE_OPENGLES)
+#if defined(HAVE_PSGL)
+   {
+      unsigned h;
+      size_t buffer_addr        = gl->tex_w * gl->tex_h * 
+         gl->tex_index * gl->base_size;
+      size_t buffer_stride      = gl->tex_w * gl->base_size;
+      const uint8_t *frame_copy = frame;
+      size_t frame_copy_size    = width * gl->base_size;
+
+      uint8_t *buffer = (uint8_t*)glMapBuffer(
+            GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
+      for (h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
+         memcpy(buffer, frame_copy, frame_copy_size);
+
+      glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
+   }
+#elif defined(HAVE_OPENGLES)
 #if defined(HAVE_EGL)
    if (gl->egl_images)
    {
@@ -1040,22 +1056,6 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
                0, 0, 0, width, height, gl->texture_type,
                gl->texture_fmt, data_buf);         
       }
-   }
-#elif defined(HAVE_PSGL)
-   {
-      unsigned h;
-      size_t buffer_addr        = gl->tex_w * gl->tex_h * 
-         gl->tex_index * gl->base_size;
-      size_t buffer_stride      = gl->tex_w * gl->base_size;
-      const uint8_t *frame_copy = frame;
-      size_t frame_copy_size    = width * gl->base_size;
-
-      uint8_t *buffer = (uint8_t*)glMapBuffer(
-            GL_TEXTURE_REFERENCE_BUFFER_SCE, GL_READ_WRITE) + buffer_addr;
-      for (h = 0; h < height; h++, buffer += buffer_stride, frame_copy += pitch)
-         memcpy(buffer, frame_copy, frame_copy_size);
-
-      glUnmapBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE);
    }
 #else
    {
