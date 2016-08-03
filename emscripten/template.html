@@ -20,9 +20,9 @@
       <canvas class="emscripten" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()"></canvas>
    </div>
    <div class="emscripten emscripten_border" id="openrom">
-      <button id="btnLoad" onclick="document.getElementById('rom').click()">Select content</button>
-      <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" onchange="runEmulator(event.target.files);" multiple />
-      <button id="btnStart" onclick="startRetroArch()">Select content</button>
+      <button id="btnLoad" onclick="document.getElementById('rom').click()">Upload Content</button>
+      <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" multiple />
+      <button id="btnStart" onclick="startRetroArch()">Start RetroArch</button>
    </div>
    <hr/>
    <div class="emscripten">
@@ -139,4 +139,4 @@
 
 </script>
 <script type="text/javascript" src="browserfs.js"></script>
-<script type="text/javascript" src="retroarch.js"></script>
+<script type="text/javascript" src="gambatte.js"></script>
