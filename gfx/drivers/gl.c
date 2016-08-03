@@ -428,9 +428,8 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
                   && !gl_query_extension("OES_packed_depth_stencil")
                   && !gl_query_extension("EXT_packed_depth_stencil"))
                return false;
-            return true;
          }
-         break;
+         return true;
       case GL_CAPS_ES2_COMPAT:
 #ifndef HAVE_OPENGLES
          if (vendor && renderer && (strstr(vendor, "ATI") || strstr(renderer, "ATI")))
