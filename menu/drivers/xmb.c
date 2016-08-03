@@ -1592,6 +1592,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          if (core_node)
             return core_node->content_icon;
 
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG)
          switch (xmb->categories.selection_ptr)
          {
 #ifdef HAVE_IMAGEVIEWER
@@ -1607,6 +1608,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             default:
                break;
          }
+#endif
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];

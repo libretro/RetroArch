@@ -1801,7 +1801,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #endif
 
    video_driver_unset_rgba();
-#if defined(HAVE_OPENGLES)
+#if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    gl->have_full_npot_support = gl_check_capability(GL_CAPS_FULL_NPOT_SUPPORT);
 
    if (!gl_check_capability(GL_CAPS_BGRA8888))
