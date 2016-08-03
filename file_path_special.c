@@ -258,7 +258,7 @@ void fill_pathname_application_path(char *s, size_t len)
       }
    }
    
-   RARCH_ERR("Cannot resolve application path! This should not happen.");
+   RARCH_ERR("Cannot resolve application path! This should not happen.\n");
 #endif
 }
 #endif
