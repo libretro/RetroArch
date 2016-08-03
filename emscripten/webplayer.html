@@ -1,0 +1,107 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+   <meta charset="utf-8">
+   <title>RetroArch Web Player</title>
+   <script type="text/javascript" src="browserfs.js"></script>
+
+   <style>
+      .webplayer { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
+      textarea.webplayer { border: 0px; font-family: 'Share Tech Mono'; font-size: 12px; width: 100%; overflow:hide; resize:none; color:black; }
+      div.webplayer, h1 { text-align: left; }
+      div.canvas_border { background-color:gray; width:800px; height:600px; margin-left: auto; margin-right: auto; }
+      canvas.webplayer { border: 0px none; }
+   </style>
+</head>
+<body>
+   <hr/>
+   <div class="webplayer_border" id="canvas_div" style="display: none">
+      <canvas class="webplayer" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()"></canvas>
+   </div>
+   <hr/>
+   <div class="webplayer webplayer_border" id="openrom">
+      <button id="btnLoad" onclick="document.getElementById('rom').click()">Upload Content</button>
+      <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" multiple />
+      <button id="btnStart" onclick="startRetroArch()">Start RetroArch</button>
+   </div>
+   <hr/>
+   <div class="webplayer">
+      <input type="checkbox" id="resize"><label for="resize">Resize canvas</label>
+      <input type="checkbox" id="pointerLock" checked><label for="pointerLock">Lock/hide mouse pointer</label>
+      <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)"><br>
+      <input type="checkbox" id="vsync"><label for="vsync" id="vsync-label">Enable V-sync (can only be done before loading game)</label><br>
+      <input type="checkbox" id="sdl2"><label for="sdl2" id="sdl2-label">Enable SDL2</label><br>
+      <input type="textbox" id="latency" size="3" maxlength="3" value="96"> <label for="latency" id="latency-label">Audio latency (ms) (increase if you hear pops at fullspeed, can only be done before loading game)</label>
+   </div>
+
+   <hr/>
+   <textarea class="webplayer" id="output" rows="15"></textarea>
+   <hr>
+</body>
+</html>
+<script type='text/javascript'>
+   var count = 0;
+   function startRetroArch()
+   {
+      setupFileSystem();
+      var config = 'input_player1_select = shift\n';
+      var latency = parseInt(document.getElementById('latency').value, 10);
+      if (isNaN(latency)) latency = 96;
+      config += 'audio_latency = ' + latency + '\n'
+      if (document.getElementById('vsync').checked)
+         config += 'video_vsync = true\n';
+      else
+         config += 'video_vsync = false\n';
+      Module.FS_createDataFile('/etc', 'retroarch.cfg', config, true, true);
+      document.getElementById('canvas_div').style.display = 'block';
+      document.getElementById('vsync').disabled = true;
+      document.getElementById('vsync-label').style.color = 'gray';
+      document.getElementById('latency').disabled = true;
+      document.getElementById('latency-label').style.color = 'gray';
+      Module['callMain'](Module['arguments']);
+   }
+
+   function uploadData(data, name)
+   {
+      var dataView = new Uint8Array(data);
+      Module.FS_createDataFile('/', name, dataView, true, false);
+   }
+
+   var Module = 
+   {
+      noInitialRun: true,
+      arguments: ["-v", "--menu"],
+      preRun: [],
+      postRun: [],
+      print: (function() 
+      {
+         var element = document.getElementById('output');
+         element.value = ''; // clear browser cache
+         return function(text) 
+         {
+            text = Array.prototype.slice.call(arguments).join(' ');
+            element.value += text + "\n";
+            element.scrollTop = 99999; // focus on bottom
+         };
+      })(),
+
+      printErr: function(text)
+      {
+         var text = Array.prototype.slice.call(arguments).join(' ');
+         var element = document.getElementById('output');
+         element.value += text + "\n";
+         element.scrollTop = 99999; // focus on bottom
+      },
+      canvas: document.getElementById('canvas'),
+
+      totalDependencies: 0,
+      monitorRunDependencies: function(left) 
+      {
+         this.totalDependencies = Math.max(this.totalDependencies, left);
+      }
+   };
+
+</script>
+<script type="text/javascript" src="browserfs.js"></script>
+<script type="text/javascript" src="gambatte.js"></script>
