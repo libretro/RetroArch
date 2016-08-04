@@ -28,8 +28,7 @@
       <button id="btnLoad" onclick="document.getElementById('rom').click()">Upload Content</button>
       <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" onchange="selectFiles(event.target.files)" multiple />
       <button id="btnStart" onclick="startRetroArch()">Start RetroArch</button>
-      <button id="btnAuth" onclick="dropboxInit()">Link to Dropbox</button>
-      <button id="btnBack" onclick="dropboxCopy()">Backup Config to Dropbox</button>
+      <button id="btnAuth" onclick="dropboxInit()">Use DropBox</button>
    </div>
    <hr/>
    <div class="webplayer">
@@ -91,6 +90,8 @@
 
    function dropboxInit()
    {
+      document.getElementById('btnStart').disabled = true;
+      document.getElementById('btnAuth').disabled = true;
       client.authDriver(new Dropbox.AuthDriver.Redirect());
       client.authenticate({ rememberUser: true }, function(error, client)
       {
@@ -98,25 +99,62 @@
          {
             return showError(error);
          }
+         dropboxSync(client, success);
+      });
+   }
+   function success()
+   {
+      document.getElementById('btnStart').disabled = false;
+      console.log("WEBPLAYER: Sync successful");
+   }
+   function dropboxSync(dropboxClient, cb)
+   {
+      var dbfs = new BrowserFS.FileSystem.Dropbox(dropboxClient);
+      // Wrap in AsyncMirrorFS.
+      var asyncMirror = new BrowserFS.FileSystem.AsyncMirror(
+         new BrowserFS.FileSystem.InMemory(), dbfs);
+
+      asyncMirror.initialize(function(err)
+      {
+          // Initialize it as the root file system.
+         BrowserFS.initialize(asyncMirror);
+
+         cb();
       });
    }
 
    var count = 0;
    function setupFileSystem()
    {
-      console.log(client.isAuthenticated());
-      if(localStorage.getItem("fs_inited")!="true")
+      console.log("WEBPLAYER: Initializing Filesystem");
+      if(!client.isAuthenticated())
       {
-         var lsfs = new BrowserFS.FileSystem.LocalStorage();
+         console.log("WEBPLAYER: Initializing LocalStorage");
+         if(localStorage.getItem("fs_inited")!="true")
+         {
+            var lsfs = new BrowserFS.FileSystem.LocalStorage();
 
-         BrowserFS.initialize(lsfs);
-         var BFS = new BrowserFS.EmscriptenFS();
-         FS.mount(BFS, {root: '/'}, '/home');
-         console.log('WEBPLAYER: Filesystem initialized');
+            BrowserFS.initialize(lsfs);
+            var BFS = new BrowserFS.EmscriptenFS();
+            FS.mount(BFS, {root: '/'}, '/home');
+            console.log('WEBPLAYER: Filesystem initialized');
+         }
+         else
+         {
+            console.log('WEBPLAYER: Filesystem already initialized');
+         }
       }
       else
       {
-         console.log('WEBPLAYER: Filesystem already initialized');
+         console.log("WEBPLAYER: Initializing DropBoxFS");
+         // Grab the BrowserFS Emscripten FS plugin.
+         var BFS = new BrowserFS.EmscriptenFS();
+         // Create the folder that we'll turn into a mount point.
+         FS.createPath(FS.root, 'home', true, true);
+         // Mount BFS's root folder into the '/data' folder.
+         console.log('WEBPLAYER: Mounting');
+         FS.mount(BFS, {root: '/'}, '/home');
+         console.log('WEBPLAYER: DropBox initialized');
       }
    }
 
@@ -130,8 +168,6 @@
       FS.createPath('/', '/home/web_user/saves', true, true);
       FS.createPath('/', '/home/web_user/states', true, true);
       FS.createPath('/', '/home/web_user/system', true, true);
-      
-      FS.createPath('/', '/data/test', true, true);
    }
 
    function stat(path)
@@ -183,7 +219,7 @@
       }
       Module['callMain'](Module['arguments']);
    }
-   
+
    function selectFiles(files)
    {
       count = files.length;
