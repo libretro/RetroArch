@@ -115,6 +115,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
    fill_pathname_join(g_defaults.dir.cheats, g_defaults.dir.port,
          "cheats", sizeof(g_defaults.dir.cheats));
+   fill_pathname_join(g_defaults.dir.menu_config, g_defaults.dir.port,
+         "config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.core,
