@@ -153,7 +153,7 @@ else ifeq ($(LIBRETRO), mame2003)
 
 
 else ifeq ($(LIBRETRO), snes9x2002)
-	APP_TITLE           = SNES9x 2002
+	APP_TITLE           = Snes9x 2002
 	APP_AUTHOR          = various
 	APP_PRODUCT_CODE    = RARCH-POCKETSNES
 	APP_UNIQUE_ID       = 0xBAC1A
@@ -161,20 +161,20 @@ else ifeq ($(LIBRETRO), snes9x2002)
 	APP_BANNER          = ctr/assets/snes9x2002_banner.png
 
 else ifeq ($(LIBRETRO), snes9x2005)
-	APP_TITLE           = SNES9x 2005
+	APP_TITLE           = Snes9x 2005
 	APP_PRODUCT_CODE    = RARCH-CATSFC
 	APP_UNIQUE_ID       = 0xBAC07
 	APP_ICON            = ctr/assets/snes9x2005.png
 	APP_BANNER          = ctr/assets/snes9x2005_banner.png
 
 else ifeq ($(LIBRETRO), snes9x2005_plus)
-	APP_TITLE           = SNES9x 2005 Plus
+	APP_TITLE           = Snes9x 2005 Plus
 	APP_PRODUCT_CODE    = RARCH-CATSFCPLUS
 	APP_UNIQUE_ID       = 0xBAC13
 	APP_ICON            = ctr/assets/snes9x2005_plus.png
 
 else ifeq ($(LIBRETRO), snes9x2010)
-	APP_TITLE           = SNES9x 2010
+	APP_TITLE           = Snes9x 2010
 	APP_PRODUCT_CODE    = RARCH-SNES9XNEXT
 	APP_UNIQUE_ID       = 0xBAC0D
 	APP_ICON            = ctr/assets/snes9x2010.png
