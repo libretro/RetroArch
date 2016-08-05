@@ -36,12 +36,6 @@ else ifeq ($(LIBRETRO), genesis_plus_gx)
 	APP_UNIQUE_ID       = 0xBAC06
 	APP_ICON            = ctr/assets/genesis_plus_gx.png
 
-else ifeq ($(LIBRETRO), catsfc)
-	APP_TITLE           = CATSFC Libretro
-	APP_PRODUCT_CODE    = RARCH-CATSFC
-	APP_UNIQUE_ID       = 0xBAC07
-	APP_ICON            = ctr/assets/catsfc.png
-	APP_BANNER          = ctr/assets/catsfc_banner.png
 
 else ifeq ($(LIBRETRO), mednafen_wswan)
 	APP_TITLE           = Mednafen wswan Libretro
@@ -75,11 +69,6 @@ else ifeq ($(LIBRETRO), picodrive)
 	APP_BANNER          = ctr/assets/picodrive_banner.png
 	APP_USE_SVCHAX      = 1
 
-else ifeq ($(LIBRETRO), snes9x_next)
-	APP_TITLE           = Snes9x Next Libretro
-	APP_PRODUCT_CODE    = RARCH-SNES9XNEXT
-	APP_UNIQUE_ID       = 0xBAC0D
-	APP_ICON            = ctr/assets/snes9x_next.png
 
 else ifeq ($(LIBRETRO), mgba)
 	APP_TITLE           = mGBA Libretro
@@ -152,6 +141,13 @@ else ifeq ($(LIBRETRO), fb_alpha)
 	APP_PRODUCT_CODE    = RARCH-FBA
 	APP_UNIQUE_ID       = 0xBAC17
 	APP_BIG_TEXT_SECTION = 1
+
+else ifeq ($(LIBRETRO), mame2000)
+	APP_TITLE           = MAME-2000
+	APP_PRODUCT_CODE    = RARCH-MAME2000
+	APP_UNIQUE_ID       = 0xBAC19
+	APP_ICON            = ctr/assets/mame.png
+	APP_BIG_TEXT_SECTION = 1
 	
 else ifeq ($(LIBRETRO), mame2003)
 	APP_TITLE           = MAME-2003
@@ -160,20 +156,27 @@ else ifeq ($(LIBRETRO), mame2003)
 	APP_ICON            = ctr/assets/mame.png
 	APP_BIG_TEXT_SECTION = 1
 
-else ifeq ($(LIBRETRO), mame2000)
-	APP_TITLE           = MAME-2000
-	APP_PRODUCT_CODE    = RARCH-MAME2000
-	APP_UNIQUE_ID       = 0xBAC19
-	APP_ICON            = ctr/assets/mame.png
-	APP_BIG_TEXT_SECTION = 1
 
-else ifeq ($(LIBRETRO), pocketsnes)
-	APP_TITLE           = Pocket Snes
+else ifeq ($(LIBRETRO), snes9x2002)
+	APP_TITLE           = SNES9x 2002
 	APP_AUTHOR          = various
 	APP_PRODUCT_CODE    = RARCH-POCKETSNES
 	APP_UNIQUE_ID       = 0xBAC1A
-	APP_ICON            = ctr/assets/pocketsnes.png
-	APP_BANNER          = ctr/assets/pocketsnes_banner.png
+	APP_ICON            = ctr/assets/snes9x2002.png
+	APP_BANNER          = ctr/assets/snes9x2002_banner.png
+
+else ifeq ($(LIBRETRO), snes9x2005)
+	APP_TITLE           = SNES9x 2005
+	APP_PRODUCT_CODE    = RARCH-CATSFC
+	APP_UNIQUE_ID       = 0xBAC07
+	APP_ICON            = ctr/assets/snes9x2005.png
+	APP_BANNER          = ctr/assets/snes9x2005_banner.png
+
+else ifeq ($(LIBRETRO), snes9x2010)
+	APP_TITLE           = SNES9x 2010
+	APP_PRODUCT_CODE    = RARCH-SNES9XNEXT
+	APP_UNIQUE_ID       = 0xBAC0D
+	APP_ICON            = ctr/assets/snes9x2010.png
 
 else ifeq ($(LIBRETRO), dosbox)
 	APP_TITLE           = DosBox
