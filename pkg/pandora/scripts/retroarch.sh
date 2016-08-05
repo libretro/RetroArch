@@ -16,7 +16,7 @@ case "${BACKEND}" in
 	libretro-fceu*.so | libretro-bnes.so)
 		FILTER='NES (*.nes)|*.nes'
 		;;
-	libretro-pocketsnes.so | libretro-snes9x*.so | libretro-bsnes*.so)
+	libretro-snes9x*.so | libretro-bsnes*.so)
 		FILTER='SNES (*.sfc; *.smc)|*.sfc *.smc'
 		;;
 	libretro-gambatte.so)
