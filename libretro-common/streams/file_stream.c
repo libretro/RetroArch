@@ -38,22 +38,15 @@
 #    include <direct.h>
 #    include <windows.h>
 #  endif
-#elif defined(VITA)
-#  include <psp2/io/fcntl.h>
-#  include <psp2/io/dirent.h>
-
-#define PSP_O_RDONLY SCE_O_RDONLY
-#define PSP_O_RDWR   SCE_O_RDWR
-#define PSP_O_CREAT  SCE_O_CREAT
-#define PSP_O_WRONLY SCE_O_WRONLY
-#define PSP_O_TRUNC  SCE_O_TRUNC
 #else
 #  if defined(PSP)
 #    include <pspiofilemgr.h>
 #  endif
 #  include <sys/types.h>
 #  include <sys/stat.h>
+#  if !defined(VITA)
 #  include <dirent.h>
+#  endif
 #  include <unistd.h>
 #endif
 
@@ -74,7 +67,7 @@
 struct RFILE
 {
    unsigned hints;
-#if defined(PSP) || defined(VITA)
+#if defined(PSP)
    SceUID fd;
 #else
 
@@ -130,7 +123,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    switch (mode & 0xff)
    {
       case RFILE_MODE_READ_TEXT:
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
          mode_int = 0666;
          flags    = PSP_O_RDONLY;
 #else
@@ -143,7 +136,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #endif
          break;
       case RFILE_MODE_READ:
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
          mode_int = 0666;
          flags    = PSP_O_RDONLY;
 #else
@@ -156,8 +149,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #endif
          break;
       case RFILE_MODE_WRITE:
-#if defined(VITA) || defined(PSP)
-         mode_int = 0777;
+#if  defined(PSP)
+         mode_int = 0666;
          flags    = PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC;
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -174,8 +167,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #endif
          break;
       case RFILE_MODE_READ_WRITE:
-#if defined(VITA) || defined(PSP)
-         mode_int = 0777;
+#if  defined(PSP)
+         mode_int = 0666;
          flags    = PSP_O_RDWR;
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -193,7 +186,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
          break;
    }
 
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    stream->fd = sceIoOpen(path, flags, mode_int);
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -231,7 +224,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    }
 #endif
 
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    if (stream->fd == -1)
       goto error;
 #endif
@@ -284,7 +277,7 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
       return NULL;
 #if defined(HAVE_BUFFERED_IO)
    return fgets(s, len, stream->fp);
-#elif defined(VITA) || defined(PSP)
+#elif  defined(PSP)
    if(filestream_read(stream,s,len)==len)
       return s;
    return NULL;
@@ -301,7 +294,7 @@ int filestream_getc(RFILE *stream)
       return 0;
 #if defined(HAVE_BUFFERED_IO)
     return fgetc(stream->fp);
-#elif defined(VITA) || defined(PSP)
+#elif  defined(PSP)
     if(filestream_read(stream, &c, 1) == 1)
        return (int)c;
     return EOF;
@@ -315,7 +308,7 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
    if (!stream)
       goto error;
 
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    if (sceIoLseek(stream->fd, (SceOff)offset, whence) == -1)
       goto error;
 #else
@@ -387,7 +380,7 @@ ssize_t filestream_tell(RFILE *stream)
 {
    if (!stream)
       goto error;
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
   if (sceIoLseek(stream->fd, 0, SEEK_CUR) < 0)
      goto error;
 #else
@@ -420,7 +413,7 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
 {
    if (!stream || !s)
       goto error;
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    return sceIoRead(stream->fd, s, len);
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -453,7 +446,7 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)
       goto error;
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    return sceIoWrite(stream->fd, s, len);
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -489,7 +482,7 @@ int filestream_close(RFILE *stream)
    if (!stream)
       goto error;
 
-#if defined(VITA) || defined(PSP)
+#if  defined(PSP)
    if (stream->fd > 0)
       sceIoClose(stream->fd);
 #else
