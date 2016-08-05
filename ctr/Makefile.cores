@@ -84,27 +84,34 @@ else ifeq ($(LIBRETRO), quicknes)
 	APP_UNIQUE_ID       = 0xBAC0F
 	APP_ICON            = ctr/assets/quicknes.png
 
-else ifeq ($(LIBRETRO), fb_alpha_neo)
-	APP_TITLE           = Neo Geo (FB Alpha)
+else ifeq ($(LIBRETRO), fbalpha2012)
+	APP_TITLE           = Final Burn Alpha 2012
+	APP_AUTHOR          = Team FB Alpha
+	APP_PRODUCT_CODE    = RARCH-FBA
+	APP_UNIQUE_ID       = 0xBAC17
+	APP_BIG_TEXT_SECTION = 1
+
+else ifeq ($(LIBRETRO), fbalpha2012_neogeo)
+	APP_TITLE           = Final Burn Alpha 2012 - NeoGeo
 	APP_AUTHOR          = Team FB Alpha
 	APP_PRODUCT_CODE    = RARCH-FBANEOGEO
 	APP_UNIQUE_ID       = 0xBAC10
-	APP_ICON            = ctr/assets/fb_alpha_neo.png
+	APP_ICON            = ctr/assets/fbalpha2012_neogeo.png
 	APP_SYSTEM_MODE     = 80MB
 
-else ifeq ($(LIBRETRO), fb_alpha_cps1)
-	APP_TITLE           = Final Burn Alpha - CPS-1
+else ifeq ($(LIBRETRO), fbalpha2012_cps1)
+	APP_TITLE           = Final Burn Alpha 2012 - CPS-1
 	APP_AUTHOR          = Team FB Alpha
 	APP_PRODUCT_CODE    = RARCH-FBACPS1
 	APP_UNIQUE_ID       = 0xBAC11
-	APP_ICON            = ctr/assets/fb_alpha_cps1.png
+	APP_ICON            = ctr/assets/fbalpha2012_cps1.png
 
-else ifeq ($(LIBRETRO), fb_alpha_cps2)
-	APP_TITLE           = Final Burn Alpha - CPS-2
+else ifeq ($(LIBRETRO), fbalpha2012_cps2)
+	APP_TITLE           = Final Burn Alpha 2012 - CPS-2
 	APP_AUTHOR          = Team FB Alpha
 	APP_PRODUCT_CODE    = RARCH-FBACPS2
 	APP_UNIQUE_ID       = 0xBAC12
-	APP_ICON            = ctr/assets/fb_alpha_cps2.png
+	APP_ICON            = ctr/assets/fbalpha2012_cps2.png
 	APP_SYSTEM_MODE     = 80MB
 
 
@@ -130,12 +137,6 @@ else ifeq ($(LIBRETRO), fmsx)
 	APP_UNIQUE_ID       = 0xBAC16
 	APP_ICON            = ctr/assets/fmsx.png
 	
-else ifeq ($(LIBRETRO), fb_alpha)
-	APP_TITLE           = Final Burn Alpha
-	APP_AUTHOR          = Team FB Alpha
-	APP_PRODUCT_CODE    = RARCH-FBA
-	APP_UNIQUE_ID       = 0xBAC17
-	APP_BIG_TEXT_SECTION = 1
 
 else ifeq ($(LIBRETRO), mame2000)
 	APP_TITLE           = MAME-2000
