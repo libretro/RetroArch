@@ -495,24 +495,20 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
 #endif
       case GL_CAPS_SRGB_FBO:
-#ifdef HAVE_FBO
          if (settings->video.force_srgb_disable)
             return false;
-#endif
 #if defined(HAVE_OPENGLES)
-         /* No extensions for float FBO currently. */
          if (gles3 || gl_query_extension("EXT_sRGB"))
             return true;
-#else
-#ifdef HAVE_FBO
+#elif defined(HAVE_FBO)
          if (gl_query_core_context_in_use() || 
                (gl_query_extension("EXT_texture_sRGB")
                 && gl_query_extension("ARB_framebuffer_sRGB")))
             return true;
 #endif
-#endif
          break;
       case GL_CAPS_FP_FBO:
+         /* GLES - No extensions for float FBO currently. */
 #ifndef HAVE_OPENGLES
 #ifdef HAVE_FBO
          /* Float FBO is core in 3.2. */
