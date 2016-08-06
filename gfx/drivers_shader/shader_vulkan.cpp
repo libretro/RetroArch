@@ -559,6 +559,7 @@ struct vulkan_filter_chain
       void build_offscreen_passes(VkCommandBuffer cmd, const VkViewport &vp);
       void build_viewport_pass(VkCommandBuffer cmd,
             const VkViewport &vp, const float *mvp);
+      void end_frame(VkCommandBuffer cmd);
 
       void set_frame_count(uint64_t count);
       void set_frame_count_period(unsigned pass, unsigned period);
@@ -1085,6 +1086,18 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBu
    swap(original_history.front(), tmp);
 }
 
+void vulkan_filter_chain::end_frame(VkCommandBuffer cmd)
+{
+   // If we need to keep old frames, copy it after fragment is complete.
+   // TODO: We can improve pipelining by figuring out which pass is the last that reads from
+   // the history and dispatch the copy earlier.
+   if (!original_history.empty())
+   {
+      DeferredDisposer disposer(deferred_calls[current_sync_index]);
+      update_history(disposer, cmd);
+   }
+}
+
 void vulkan_filter_chain::build_viewport_pass(
       VkCommandBuffer cmd, const VkViewport &vp, const float *mvp)
 {
@@ -1127,12 +1140,6 @@ void vulkan_filter_chain::build_viewport_pass(
 
    passes.back()->build_commands(disposer, cmd,
          original, source, vp, mvp);
-
-   // If we need to keep old frames, copy it after fragment is complete.
-   // TODO: We can improve pipelining by figuring out which pass is the last that reads from
-   // the history and dispatch the copy earlier.
-   if (!original_history.empty())
-      update_history(disposer, cmd);
 
    // For feedback FBOs, swap current and previous.
    for (auto &pass : passes)
@@ -3186,5 +3193,12 @@ void vulkan_filter_chain_build_viewport_pass(
       VkCommandBuffer cmd, const VkViewport *vp, const float *mvp)
 {
    chain->build_viewport_pass(cmd, *vp, mvp);
+}
+
+void vulkan_filter_chain_end_frame(
+      vulkan_filter_chain_t *chain,
+      VkCommandBuffer cmd)
+{
+   chain->end_frame(cmd);
 }
 

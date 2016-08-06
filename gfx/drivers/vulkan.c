@@ -1789,6 +1789,11 @@ static bool vulkan_frame(void *data, const void *frame,
    /* End the render pass. We're done rendering to backbuffer now. */
    vkCmdEndRenderPass(vk->cmd);
 
+   /* End the filter chain frame.
+    * This must happen outside a render pass.
+    */
+   vulkan_filter_chain_end_frame(vk->filter_chain, vk->cmd);
+
    if (vk->readback.pending || vk->readback.streamed)
    {
       /* We cannot safely read back from an image which 
