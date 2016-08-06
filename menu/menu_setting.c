@@ -989,6 +989,7 @@ static int setting_int_action_right_default(void *data, bool wraparound)
    return 0;
 }
 
+#if !defined(RARCH_CONSOLE)
 static int setting_string_action_left_audio_device(void *data, bool wraparound)
 {
    int audio_device_index;
@@ -1038,6 +1039,7 @@ static int setting_string_action_right_audio_device(void *data, bool wraparound)
 
    return 0;
 }
+#endif
 
 static int setting_fraction_action_left_default(
       void *data, bool wraparound)
