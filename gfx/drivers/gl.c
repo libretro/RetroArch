@@ -2730,11 +2730,10 @@ unsigned *height_p, size_t *pitch_p)
    unsigned width       = gl->last_width[gl->tex_index];
    unsigned height      = gl->last_height[gl->tex_index];
    size_t pitch         = gl->tex_w * gl->base_size;
+   void* buffer         = NULL;
    void* buffer_texture = NULL;
 
 #ifdef HAVE_FBO
-   void* buffer         = NULL;
-
    if (gl->hw_render_use)
    {
       buffer = malloc(pitch * height);
@@ -2742,14 +2741,13 @@ unsigned *height_p, size_t *pitch_p)
          return NULL;
    }
 #endif
+
    buffer_texture = malloc(pitch * gl->tex_h);
 
    if (!buffer_texture)
    {
-#ifdef HAVE_FBO
       if (buffer)
          free(buffer);
-#endif
       return NULL;
    }
 
@@ -2757,9 +2755,9 @@ unsigned *height_p, size_t *pitch_p)
    glGetTexImage(GL_TEXTURE_2D, 0,
          gl->texture_type, gl->texture_fmt, buffer_texture);
 
-   *width_p = width;
+   *width_p  = width;
    *height_p = height;
-   *pitch_p = pitch;
+   *pitch_p  = pitch;
 
 #ifdef HAVE_FBO
    if (gl->hw_render_use)
