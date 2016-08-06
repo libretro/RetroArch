@@ -494,6 +494,13 @@ static void config_set_defaults(void)
    settings->menu.xmb.theme            = xmb_icon_theme;
    settings->menu.xmb.menu_color_theme = menu_background_gradient;
    settings->menu.xmb.shadows_enable   = xmb_shadows_enable;
+   settings->menu.xmb.hide_main        = xmb_hide_main;
+   settings->menu.xmb.hide_settings    = xmb_hide_settings;
+   settings->menu.xmb.hide_images      = xmb_hide_images;
+   settings->menu.xmb.hide_music       = xmb_hide_music;
+   settings->menu.xmb.hide_video       = xmb_hide_video;
+   settings->menu.xmb.hide_history     = xmb_hide_history;
+   settings->menu.xmb.hide_import      = xmb_hide_import;
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
    settings->menu.xmb.font[0]          = '\0';
 #endif
@@ -1318,6 +1325,13 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
       { "rgui_show_start_screen",      &settings->menu_show_start_screen},
       { "xmb_shadows_enable",          &settings->menu.xmb.shadows_enable},
+      { "xmb_hide_main",               &settings->menu.xmb.hide_main},
+      { "xmb_hide_settings",           &settings->menu.xmb.hide_settings},
+      { "xmb_hide_images",             &settings->menu.xmb.hide_images},
+      { "xmb_hide_music",              &settings->menu.xmb.hide_music},
+      { "xmb_hide_video",              &settings->menu.xmb.hide_video},
+      { "xmb_hide_history",            &settings->menu.xmb.hide_history},
+      { "xmb_hide_import",             &settings->menu.xmb.hide_import},
       { "menu_throttle_framerate",     &settings->menu.throttle_framerate},
       { "menu_linear_filter",          &settings->menu.linear_filter},
       { "menu_pause_libretro",         &settings->menu.pause_libretro},
@@ -2859,6 +2873,13 @@ bool config_save_file(const char *path)
       { "menu_core_enable",             settings->menu.core_enable},
       { "menu_dynamic_wallpaper_enable",settings->menu.dynamic_wallpaper_enable},
       { "xmb_shadows_enable",           settings->menu.xmb.shadows_enable},
+      { "xmb_hide_main",                settings->menu.xmb.hide_main},
+      { "xmb_hide_settings",            settings->menu.xmb.hide_settings},
+      { "xmb_hide_images",              settings->menu.xmb.hide_images},
+      { "xmb_hide_music",               settings->menu.xmb.hide_music},
+      { "xmb_hide_video",               settings->menu.xmb.hide_video},
+      { "xmb_hide_history",             settings->menu.xmb.hide_history},
+      { "xmb_hide_import",              settings->menu.xmb.hide_import},
       { "rgui_show_start_screen",       settings->menu_show_start_screen},
       { "menu_navigation_wraparound_enable", settings->menu.navigation.wraparound.enable},
       { "menu_navigation_browser_filter_supported_extensions_enable", 
