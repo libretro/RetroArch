@@ -19,7 +19,7 @@
 #if defined(SN_TARGET_PSP2) || defined(VITA)
 #define PSP_MAX_PADS 4
 #else
-#define PSP_MAX_PADS 1
+#define PSP_MAX_PADS 2
 #endif
 static uint64_t pad_state[PSP_MAX_PADS];
 static int16_t analog_state[PSP_MAX_PADS][2][2];
