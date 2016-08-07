@@ -138,7 +138,7 @@ static void psp_joypad_poll(void)
       unsigned j, k;
       SceCtrlData state_tmp;
 #if defined(SN_TARGET_PSP2) || defined(VITA)
-      int32_t ret = CtrlPeekBufferPositive(i + 1, &state_tmp, 1);
+      int32_t ret = CtrlPeekBufferPositive(i, &state_tmp, 1);
 #else
       int32_t ret = CtrlPeekBufferPositive(i, &state_tmp, 1);
 #endif
@@ -186,7 +186,7 @@ static void psp_joypad_poll(void)
 
 static bool psp_joypad_query_pad(unsigned pad)
 {
-   return pad < PSP_MAX_PADS && pad_state;
+   return pad < PSP_MAX_PADS && pad_state[pad];
 }
 
 
