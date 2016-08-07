@@ -749,9 +749,11 @@ endif
 
    ifeq ($(HAVE_GLES), 1)
       LIBS += $(GLES_LIBS)
-      DEFINES += $(GLES_CFLAGS) -DHAVE_OPENGLES -DHAVE_OPENGLES2
+      DEFINES += $(GLES_CFLAGS) -DHAVE_OPENGLES
       ifeq ($(HAVE_GLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
+      else
+         DEFINES += -DHAVE_OPENGLES2
       endif
       OBJ += libretro-common/glsym/glsym_es2.o
    else

@@ -520,7 +520,9 @@ static void *gfx_ctx_wl_init(void *video_driver)
          else
 #endif
 #endif
+#ifdef HAVE_OPENGLES2
             attrib_ptr = egl_attribs_gles;
+#endif
 #endif
          break;
       case GFX_CTX_OPENVG_API:
