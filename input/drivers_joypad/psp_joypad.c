@@ -16,7 +16,7 @@
 
 #include "../input_autodetect.h"
 
-#ifdef VITA
+#if defined(SN_TARGET_PSP2) || defined(VITA)
 #define PSP_MAX_PADS 4
 #else
 #define PSP_MAX_PADS 1
@@ -120,21 +120,20 @@ static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void psp_joypad_poll(void)
 {
-   int32_t ret;
-   unsigned i, j, k;
-   SceCtrlData state_tmp;
+   unsigned i;
+   unsigned players_count = PSP_MAX_PADS;
 #ifdef PSP
-   unsigned players_count = 1;
    sceCtrlSetSamplingCycle(0);
-#else
-   unsigned players_count = 4;
 #endif
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
+   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
    for (i = 0; i < players_count; i++)
    {
-      ret = CtrlPeekBufferPositive(i, &state_tmp, 1);
+      unsigned j, k;
+      SceCtrlData state_tmp;
+      int32_t ret = CtrlPeekBufferPositive(i, &state_tmp, 1);
 
 #ifdef HAVE_KERNEL_PRX
       state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
@@ -165,18 +164,16 @@ static void psp_joypad_poll(void)
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGRY(state_tmp)-128) * 256;
 #endif
 
+#ifdef HAVE_KERNEL_PRX
+      if (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE)
+         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+#endif
+
       for (j = 0; j < 2; j++)
          for (k = 0; k < 2; k++)
             if (analog_state[i][j][k] == -0x8000)
                analog_state[i][j][k] = -0x7fff;
    }
-
-   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
-
-#ifdef HAVE_KERNEL_PRX
-   if (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE)
-      BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
-#endif
 }
 
 static bool psp_joypad_query_pad(unsigned pad)
