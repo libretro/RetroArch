@@ -123,17 +123,19 @@ static void psp_joypad_poll(void)
    int32_t ret;
    unsigned i, j, k;
    SceCtrlData state_tmp;
-   unsigned players_count = 1;
-
 #ifdef PSP
+   unsigned players_count = 1;
    sceCtrlSetSamplingCycle(0);
+#else
+   unsigned players_count = 4;
 #endif
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
-   ret = CtrlPeekBufferPositive(0, &state_tmp, 1);
 
    for (i = 0; i < players_count; i++)
    {
+      ret = CtrlPeekBufferPositive(i, &state_tmp, 1);
+
 #ifdef HAVE_KERNEL_PRX
       state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
          | (read_system_buttons() & 0xFFFF0000);
