@@ -137,20 +137,14 @@ static void psp_joypad_poll(void)
    {
       unsigned j, k;
       SceCtrlData state_tmp;
-      int32_t ret;
-      unsigned p;
-      unsigned i = p = player;
-
-#if defined(SN_TARGET_PSP2) || defined(VITA)
+      unsigned i  = player;
       /* Dumb hack, but here's the explanation - 
        * sceCtrlPeekBufferPositive's port parameter
        * can be 0 or 1 to read the first controller on
        * a PSTV, but HAS to be 0 for a real VITA and 2 
        * for the 2nd controller on a PSTV */
-      if (p == 1)
-         p  = 2;
-#endif
-      ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
+      unsigned p  = (p == 1) ? 2 : i;
+      int32_t ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
 #ifdef HAVE_KERNEL_PRX
       state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
