@@ -17,7 +17,7 @@
 #include "../input_autodetect.h"
 
 #if defined(SN_TARGET_PSP2) || defined(VITA)
-#define PSP_MAX_PADS 4
+#define PSP_MAX_PADS 2
 #else
 #define PSP_MAX_PADS 1
 #endif
@@ -137,7 +137,8 @@ static void psp_joypad_poll(void)
    {
       unsigned j, k;
       SceCtrlData state_tmp;
-      int32_t ret = CtrlPeekBufferPositive(i, &state_tmp, 1);
+      unsigned int p = (i == 1 ? 2 : i);
+      int32_t ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
 #ifdef HAVE_KERNEL_PRX
       state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
