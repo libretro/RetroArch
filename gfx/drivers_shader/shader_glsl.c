@@ -38,12 +38,6 @@
 #include "../common/gl_common.h"
 #endif
 
-#ifdef HAVE_OPENGLES2
-#define BORDER_FUNC GL_CLAMP_TO_EDGE
-#else
-#define BORDER_FUNC GL_CLAMP_TO_BORDER
-#endif
-
 #define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
 
 /* Cache the VBO. */
