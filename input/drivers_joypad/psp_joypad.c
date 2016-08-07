@@ -143,7 +143,7 @@ static void psp_joypad_poll(void)
        * can be 0 or 1 to read the first controller on
        * a PSTV, but HAS to be 0 for a real VITA and 2 
        * for the 2nd controller on a PSTV */
-      unsigned p  = (p == 1) ? 2 : i;
+      unsigned p  = (player == 1) ? 2 : player;
       int32_t ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
 #ifdef HAVE_KERNEL_PRX
