@@ -51,7 +51,7 @@ int scePowerSetArmClockFrequency(int freq);
 
 #ifdef VITA
 PSP2_MODULE_INFO(0, 0, "RetroArch");
-int _newlib_heap_size_user = 128 * 1024 * 1024;
+int _newlib_heap_size_user = 192 * 1024 * 1024;
 #else
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
