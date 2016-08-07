@@ -99,7 +99,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
    vita2d_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
    vita2d_set_vblank_wait(video->vsync);
 
-   if (vita->rgb32)
+   if (video->rgb32)
    {
       RARCH_LOG("Format: SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB\n");
       vita->format = SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB;
