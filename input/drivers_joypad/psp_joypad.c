@@ -53,9 +53,13 @@ static void psp_joypad_autodetect_add(unsigned autoconf_pad)
 
 static bool psp_joypad_init(void *data)
 {
+   unsigned i;
+   unsigned players_count = PSP_MAX_PADS;
+
    (void)data;
 
-   psp_joypad_autodetect_add(0);
+   for (i = 0; i < players_count; i++)
+      psp_joypad_autodetect_add(i);
 
    return true;
 }
