@@ -133,7 +133,11 @@ static void psp_joypad_poll(void)
    {
       unsigned j, k;
       SceCtrlData state_tmp;
+#if defined(SN_TARGET_PSP2) || defined(VITA)
+      int32_t ret = CtrlPeekBufferPositive(i + 1, &state_tmp, 1);
+#else
       int32_t ret = CtrlPeekBufferPositive(i, &state_tmp, 1);
+#endif
 
 #ifdef HAVE_KERNEL_PRX
       state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
