@@ -39,8 +39,6 @@
 #include "../../bootstrap/psp1/kernel_functions.h"
 #endif
 
-#define MAX_PADS 1
-
 typedef struct psp_input
 {
    bool blocked;
@@ -63,8 +61,10 @@ static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
 {
    psp_input_t *psp = (psp_input_t*)data;
 
+#if !defined(SN_TARGET_PSP2) && !defined(VITA)
    if (port > 0)
       return 0;
+#endif
 
    switch (device)
    {
