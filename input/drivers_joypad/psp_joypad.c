@@ -17,7 +17,7 @@
 #include "../input_autodetect.h"
 
 #if defined(SN_TARGET_PSP2) || defined(VITA)
-#define PSP_MAX_PADS 4
+#define PSP_MAX_PADS 2
 #else
 #define PSP_MAX_PADS 1
 #endif
@@ -124,7 +124,7 @@ static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void psp_joypad_poll(void)
 {
-   unsigned i;
+   unsigned player;
    unsigned players_count = PSP_MAX_PADS;
 #ifdef PSP
    sceCtrlSetSamplingCycle(0);
@@ -133,11 +133,24 @@ static void psp_joypad_poll(void)
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   for (i = 0; i < players_count; i++)
+   for (player = 0; player < players_count; player++)
    {
       unsigned j, k;
       SceCtrlData state_tmp;
-      int32_t ret = CtrlPeekBufferPositive(i, &state_tmp, 1);
+      int32_t ret;
+      unsigned i_tmp;
+      unsigned i = i_tmp = player;
+
+#if defined(SN_TARGET_PSP2) || defined(VITA)
+      /* Dumb hack, but here's the explanation - 
+       * sceCtrlPeekBufferPositive's port parameter
+       * can be 0 or 1 to read the first controller on
+       * a PSTV, but HAS to be 0 for a real VITA and 2 
+       * for the 2nd controller on a PSTV */
+      if (i_tmp == 1)
+         i_tmp  = 2;
+#endif
+      ret = CtrlPeekBufferPositive(i_tmp, &state_tmp, 1);
 
 #ifdef HAVE_KERNEL_PRX
       state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
