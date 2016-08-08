@@ -124,11 +124,14 @@ static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void psp_joypad_poll(void)
 {
+   settings_t *settings = config_get_ptr();
+
    unsigned player;
    unsigned players_count = PSP_MAX_PADS;
 #ifdef PSP
    sceCtrlSetSamplingCycle(0);
 #endif
+
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
@@ -146,15 +149,21 @@ static void psp_joypad_poll(void)
       unsigned p  = (player == 1) ? 2 : player;
       int32_t ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
+      pad_state[i] = 0;
+
+#if defined(SN_TARGET_PSP2) || defined(VITA)
+      if(ret<0){
+        continue;
+      }
+#endif
+
 #ifdef HAVE_KERNEL_PRX
       state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
          | (read_system_buttons() & 0xFFFF0000);
 #endif
-      (void)ret;
 
       analog_state[i][0][0] = analog_state[i][0][1] =
          analog_state[i][1][0] = analog_state[i][1][1] = 0;
-      pad_state[i] = 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
