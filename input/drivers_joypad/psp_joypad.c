@@ -130,9 +130,6 @@ static void psp_joypad_poll(void)
    unsigned players_count = PSP_MAX_PADS;
 #ifdef PSP
    sceCtrlSetSamplingCycle(0);
-#else
-   if(settings->input.max_users<PSP_MAX_PADS)
-      players_count = settings->input.max_users;
 #endif
 
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
@@ -152,11 +149,16 @@ static void psp_joypad_poll(void)
       unsigned p  = (player == 1) ? 2 : player;
       int32_t ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
+#if defined(SN_TARGET_PSP2) || defined(VITA)
+      if(ret<0){
+        continue;
+      }
+#endif
+
 #ifdef HAVE_KERNEL_PRX
       state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
          | (read_system_buttons() & 0xFFFF0000);
 #endif
-      (void)ret;
 
       analog_state[i][0][0] = analog_state[i][0][1] =
          analog_state[i][1][0] = analog_state[i][1][1] = 0;
