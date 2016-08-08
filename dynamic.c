@@ -1124,19 +1124,20 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                RARCH_LOG("Requesting no HW context.\n");
                break;
 
-#ifdef HAVE_VULKAN
             case RETRO_HW_CONTEXT_VULKAN:
+#ifdef HAVE_VULKAN
                RARCH_LOG("Requesting Vulkan context.\n");
                break;
 #else
-            case RETRO_HW_CONTEXT_VULKAN:
                RARCH_ERR("Requesting Vulkan context, but RetroArch is not compiled against Vulkan. Cannot use HW context.\n");
                return false;
 #endif
 
 #if defined(HAVE_OPENGLES)
+
+#if (defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3))
             case RETRO_HW_CONTEXT_OPENGLES2:
-#if defined(HAVE_OPENGLES3)
+#ifdef HAVE_OPENGLES3
             case RETRO_HW_CONTEXT_OPENGLES3:
 #endif
                RARCH_LOG("Requesting OpenGLES%u context.\n",
@@ -1150,11 +1151,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                break;
 #endif
 
+#endif
             case RETRO_HW_CONTEXT_OPENGL:
             case RETRO_HW_CONTEXT_OPENGL_CORE:
                RARCH_ERR("Requesting OpenGL context, but RetroArch "
-                     "is compiled against OpenGLES2. Cannot use HW context.\n");
+                     "is compiled against OpenGLES. Cannot use HW context.\n");
                return false;
+
 #elif defined(HAVE_OPENGL)
             case RETRO_HW_CONTEXT_OPENGLES2:
             case RETRO_HW_CONTEXT_OPENGLES3:
