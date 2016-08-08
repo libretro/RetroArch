@@ -62,6 +62,10 @@
 
 #ifdef GL_DEBUG
 #include <lists/string_list.h>
+
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1) || defined(HAVE_OPENGLES_3_2)
+#define HAVE_GL_DEBUG_ES
+#endif
 #endif
 
 #ifdef HAVE_MENU
@@ -1975,7 +1979,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 }
 
 #ifdef GL_DEBUG
-#ifdef HAVE_OPENGLES2
+#ifdef HAVE_GL_DEBUG_ES
 #define DEBUG_CALLBACK_TYPE GL_APIENTRY
 
 #define GL_DEBUG_SOURCE_API GL_DEBUG_SOURCE_API_KHR
@@ -1999,6 +2003,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 #else
 #define DEBUG_CALLBACK_TYPE APIENTRY
 #endif
+
 static void DEBUG_CALLBACK_TYPE gl_debug_cb(GLenum source, GLenum type,
       GLuint id, GLenum severity, GLsizei length,
       const GLchar *message, void *userParam)
@@ -2088,7 +2093,7 @@ static void gl_begin_debug(gl_t *gl)
 {
    if (gl_check_capability(GL_CAPS_DEBUG))
    {
-#ifdef HAVE_OPENGLES2
+#ifdef HAVE_GL_DEBUG_ES
       glDebugMessageCallbackKHR(gl_debug_cb, gl);
       glDebugMessageControlKHR(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
       glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_KHR);
