@@ -410,7 +410,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
       case GL_CAPS_DEBUG:
          if (gl_query_extension("KHR_debug"))
             return true;
-#ifndef HAVE_OPENGLES2
+#ifndef HAVE_OPENGLES
          if (gl_query_extension("ARB_debug_output"))
             return true;
 #endif
