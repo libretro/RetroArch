@@ -122,7 +122,7 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
-#if !defined(HAVE_OPENGLES2)
+#if !defined(HAVE_OPENGLES)
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
@@ -702,7 +702,7 @@ static void *gl_glsl_init(void *data, const char *path)
    if (!glsl)
       return NULL;
 
-#ifndef HAVE_OPENGLES2
+#ifndef HAVE_OPENGLES
    RARCH_LOG("Checking GLSL shader support ...\n");
    bool shader_support = glCreateProgram && glUseProgram && glCreateShader
       && glDeleteShader && glShaderSource && glCompileShader && glAttachShader
@@ -789,7 +789,7 @@ static void *gl_glsl_init(void *data, const char *path)
       stock_fragment = stock_fragment_core;
    }
 
-#ifdef HAVE_OPENGLES2
+#ifdef HAVE_OPENGLES
    if (!glsl->shader->modern)
    {
       RARCH_ERR("[GL]: GLES context is used, but shader is not modern. Cannot use it.\n");
@@ -899,7 +899,7 @@ static void *gl_glsl_init(void *data, const char *path)
    }
 
 #ifdef HAVE_SHADERPIPELINE
-#if defined(HAVE_OPENGLES2)
+#if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_simple_legacy;
    shader_prog_info.fragment = stock_fragment_xmb_simple;
 #else

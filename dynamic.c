@@ -1134,7 +1134,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                return false;
 #endif
 
-#if defined(HAVE_OPENGLES2)
+#if defined(HAVE_OPENGLES)
             case RETRO_HW_CONTEXT_OPENGLES2:
 #if defined(HAVE_OPENGLES3)
             case RETRO_HW_CONTEXT_OPENGLES3:
