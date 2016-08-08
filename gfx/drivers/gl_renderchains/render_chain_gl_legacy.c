@@ -970,15 +970,15 @@ bool gl_renderchain_add_lut(const struct video_shader *shader,
    struct texture_image img = {0};
    enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
 
-   RARCH_LOG("Loading texture image from: \"%s\" ...\n",
-         shader->lut[i].path);
-
    if (!image_texture_load(&img, shader->lut[i].path))
    {
       RARCH_ERR("Failed to load texture image from: \"%s\"\n",
             shader->lut[i].path);
       return false;
    }
+
+   RARCH_LOG("Loaded texture image from: \"%s\" ...\n",
+         shader->lut[i].path);
 
    if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
       filter_type = TEXTURE_FILTER_NEAREST;
