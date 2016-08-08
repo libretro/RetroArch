@@ -493,6 +493,19 @@ static void config_set_defaults(void)
    settings->menu.xmb.alpha_factor     = xmb_alpha_factor;
    settings->menu.xmb.theme            = xmb_icon_theme;
    settings->menu.xmb.menu_color_theme = menu_background_gradient;
+   settings->menu.xmb.weight_main      = xmb_weight_main;
+   settings->menu.xmb.weight_settings  = xmb_weight_settings;
+#ifdef HAVE_IMAGEVIEWER
+   settings->menu.xmb.weight_images    = xmb_weight_images;
+#endif
+#ifdef HAVE_FFMPEG
+   settings->menu.xmb.weight_music     = xmb_weight_music;
+   settings->menu.xmb.weight_video     = xmb_weight_video;
+#endif
+   settings->menu.xmb.weight_history   = xmb_weight_history;
+#ifdef HAVE_LIBRETRODB
+   settings->menu.xmb.weight_add       = xmb_weight_add;
+#endif
    settings->menu.xmb.shadows_enable   = xmb_shadows_enable;
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
    settings->menu.xmb.font[0]          = '\0';
@@ -1440,6 +1453,19 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "xmb_theme", &settings->menu.xmb.theme},
 #ifdef HAVE_XMB
       { "xmb_menu_color_theme", &settings->menu.xmb.menu_color_theme},
+      { "xmb_weight_main",      &settings->menu.xmb.weight_main},
+      { "xmb_weight_settings",  &settings->menu.xmb.weight_settings},
+#ifdef HAVE_IMAGEVIEWER
+      { "xmb_weight_images",    &settings->menu.xmb.weight_images},
+#endif
+#ifdef HAVE_FFMPEG
+      { "xmb_weight_music",     &settings->menu.xmb.weight_music},
+      { "xmb_weight_video",     &settings->menu.xmb.weight_video},
+#endif
+      { "xmb_weight_history",   &settings->menu.xmb.weight_history},
+#ifdef HAVE_LIBRETRODB
+      { "xmb_weight_add",       &settings->menu.xmb.weight_add},
+#endif
 #endif
       { "materialui_menu_color_theme", &settings->menu.materialui.menu_color_theme},
       { "menu_shader_pipeline", &settings->menu.xmb.shader_pipeline},
@@ -2944,6 +2970,19 @@ bool config_save_file(const char *path)
       { "xmb_theme",                    settings->menu.xmb.theme},
 #ifdef HAVE_XMB
       { "xmb_menu_color_theme",         settings->menu.xmb.menu_color_theme},
+      { "xmb_weight_main",              settings->menu.xmb.weight_main},
+      { "xmb_weight_settings",          settings->menu.xmb.weight_settings},
+#ifdef HAVE_IMAGEVIEWER
+      { "xmb_weight_images",            settings->menu.xmb.weight_images},
+#endif
+#ifdef HAVE_FFMPEG
+      { "xmb_weight_music",             settings->menu.xmb.weight_music},
+      { "xmb_weight_video",             settings->menu.xmb.weight_video},
+#endif
+      { "xmb_weight_history",           settings->menu.xmb.weight_history},
+#ifdef HAVE_LIBRETRODB
+      { "xmb_weight_add",               settings->menu.xmb.weight_add},
+#endif
 #endif
       { "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme},
       { "menu_shader_pipeline",        settings->menu.xmb.shader_pipeline},

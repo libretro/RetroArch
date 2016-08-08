@@ -233,6 +233,19 @@ typedef struct settings
          unsigned alpha_factor;
          unsigned theme;
          unsigned menu_color_theme;
+         unsigned weight_main;
+         unsigned weight_settings;
+#ifdef HAVE_IMAGEVIEWER
+         unsigned weight_images;
+#endif
+#ifdef HAVE_FFMPEG
+         unsigned weight_music;
+         unsigned weight_video;
+#endif
+         unsigned weight_history;
+#ifdef HAVE_LIBRETRODB
+         unsigned weight_add;
+#endif
          bool     shadows_enable;
       } xmb;
 
