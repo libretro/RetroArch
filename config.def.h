@@ -528,6 +528,19 @@ static bool xmb_shadows_enable   = false;
 #else
 static bool xmb_shadows_enable   = true;
 #endif
+static unsigned xmb_weight_main       = 1;
+static unsigned xmb_weight_settings   = 1;
+#ifdef HAVE_IMAGEVIEWER
+static unsigned xmb_weight_images     = 1;
+#endif
+#ifdef HAVE_FFMPEG
+static unsigned xmb_weight_music      = 1;
+static unsigned xmb_weight_video      = 1;
+#endif
+static unsigned xmb_weight_history    = 1;
+#ifdef HAVE_LIBRETRODB
+static unsigned xmb_weight_add        = 1;
+#endif
 #endif
 
 static float menu_wallpaper_opacity = 0.300;

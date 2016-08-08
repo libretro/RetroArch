@@ -7021,6 +7021,110 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME);
          }
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.xmb.weight_main,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_MAIN),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_MAIN),
+                  xmb_weight_main,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_MAIN);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.xmb.weight_settings,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_SETTINGS),
+                  xmb_weight_settings,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_SETTINGS);
+
+#ifdef HAVE_IMAGEVIEWER
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.xmb.weight_images,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_IMAGES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_IMAGES),
+                  xmb_weight_images,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_IMAGES);
+#endif
+
+#ifdef HAVE_FFMPEG
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.xmb.weight_music,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_MUSIC),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_MUSIC),
+                  xmb_weight_music,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_MUSIC);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.xmb.weight_video,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_VIDEO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_VIDEO),
+                  xmb_weight_video,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_VIDEO);
+#endif
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.xmb.weight_history,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_HISTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_HISTORY),
+                  xmb_weight_history,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_HISTORY);
+
+#ifdef HAVE_LIBRETRODB
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.xmb.weight_add,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_ADD),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_ADD),
+                  xmb_weight_add,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_ADD);
+#endif
 #endif
 
 #ifdef HAVE_MATERIALUI

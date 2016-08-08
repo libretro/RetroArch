@@ -2426,6 +2426,26 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "materialui_menu_header_opacity";
       case MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY:
          return "materialui_menu_footer_opacity";
+      case MENU_ENUM_LABEL_XMB_WEIGHT_MAIN:
+         return "xmb_weight_main";
+      case MENU_ENUM_LABEL_XMB_WEIGHT_SETTINGS:
+         return "xmb_weight_history";
+#ifdef HAVE_IMAGEVIEWER
+      case MENU_ENUM_LABEL_XMB_WEIGHT_IMAGES:
+         return "xmb_weight_images";
+#endif
+#ifdef HAVE_FFMPEG
+      case MENU_ENUM_LABEL_XMB_WEIGHT_MUSIC:
+         return "xmb_weight_music";
+      case MENU_ENUM_LABEL_XMB_WEIGHT_VIDEO:
+         return "xmb_weight_video";
+#endif
+      case MENU_ENUM_LABEL_XMB_WEIGHT_HISTORY:
+         return "xmb_weight_settings";
+#ifdef HAVE_LIBRETRODB
+      case MENU_ENUM_LABEL_XMB_WEIGHT_ADD:
+         return "xmb_weight_add";
+#endif
       case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
          return "xmb_shadows_enable";
       case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
@@ -3713,6 +3733,26 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Menu Color Theme";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME:
          return "Menu Color Theme";
+      case MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_MAIN:
+         return "Offset Main Tab";
+      case MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_SETTINGS:
+         return "Offset Settings Tab";
+#ifdef HAVE_IMAGEVIEWER
+      case MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_IMAGES:
+         return "Offset Images Tab";
+#endif
+#ifdef HAVE_FFMPEG
+      case MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_MUSIC:
+         return "Offset Music Tab";
+      case MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_VIDEO:
+         return "Offset Video Tab";
+#endif
+      case MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_HISTORY:
+         return "Offset History Tab";
+#ifdef HAVE_LIBRETRODB
+      case MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_ADD:
+         return "Offset Import Content Tab";
+#endif
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
          return "Icon Shadows Enable";
       case MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE:
