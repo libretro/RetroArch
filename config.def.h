@@ -796,7 +796,11 @@ static const bool input_descriptor_label_show = true;
 
 static const bool input_descriptor_hide_unbound = false;
 
+#if defined(PSP) || defined(VITA)
+static const unsigned input_max_users = 1;
+#else
 static const unsigned input_max_users = 5;
+#endif
 
 static const unsigned input_poll_type_behavior = 2;
 

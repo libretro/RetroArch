@@ -124,11 +124,17 @@ static int16_t psp_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void psp_joypad_poll(void)
 {
+   settings_t *settings = config_get_ptr();
+
    unsigned player;
    unsigned players_count = PSP_MAX_PADS;
 #ifdef PSP
    sceCtrlSetSamplingCycle(0);
+#else
+   if(settings->input.max_users<PSP_MAX_PADS)
+      players_count = settings->input.max_users;
 #endif
+
    sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
