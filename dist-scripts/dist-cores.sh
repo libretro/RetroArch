@@ -183,7 +183,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "cex-ps3" ] ; then
       $SCETOOL_PATH $SCETOOL_FLAGS_CORE ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "ode-ps3" ] ; then
-      $SCETOOL_PATH $SCETOOL_FLAGS --encrypt ../retroarch_${platform}.elf ../CORE.SELF
+      $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch_${platform}.elf ../CORE.SELF
    fi
 
    # Move executable files
@@ -270,8 +270,8 @@ elif [ $PLATFORM = "cex-ps3" ] ; then
    rm -rf ../retroarch-salamander_${platform}.elf
    ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/ RetroArch.PS3.$RARCH_VERSION.CEX.PS3.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
-   $SCETOOL_PATH $SCETOOL_FLAGS --encrypt ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN
+   $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
 
-   $GENPS3ISO_PATH ../pkg/${platform}_iso/RetroArch-COBRA-ODE.iso
+   $GENPS3ISO_PATH ../pkg/${platform}_iso RetroArch.PS3.$RARCH_VERSION.ODE.PS3.iso
 fi
