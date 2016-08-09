@@ -82,7 +82,10 @@ platform=ps3
 SALAMANDER=yes
 EXT=a
 
-EXE_PATH=/usr/local/cell/host-win32/bin
+EXE_PATH=$CELL_SDK/host-win32/bin
+SCETOOL_PATH=$PS3TOOLS_PATH/scetool/scetool.exe
+SCETOOL_FLAGS_CORE="--sce-type=SELF --compress-data=TRUE --skip-sections=TRUE --key-revision=1C --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-type=APP --self-app-version=0001000000000000 --self-fw-version=0004002000000000 --encrypt"
+SCETOOL_FLAGS_EBOOT="--sce-type=SELF --compress-data=TRUE --skip-sections=TRUE --key-revision=1C --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-type=NPDRM --self-fw-version=0004002000000000 --np-license-type=FREE --np-content-id=UP0001-SSNE10000_00-0000000000000001 --np-app-type=EXEC --self-app-version=0001000000000000 --np-real-fname=EBOOT.BIN --encrypt"
 
 # ODE PS3
 elif [ $PLATFORM = "ode-ps3" ]; then
