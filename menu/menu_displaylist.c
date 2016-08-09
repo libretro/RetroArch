@@ -4123,6 +4123,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
+      case DISPLAYLIST_LAKKA_SERVICES_LIST:
       case DISPLAYLIST_USER_SETTINGS_LIST:
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
       case DISPLAYLIST_PRIVACY_SETTINGS_LIST:
@@ -4773,6 +4774,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
+               PARSE_ONLY_BOOL, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_LAKKA_SERVICES_LIST:
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SSH_ENABLE,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAMBA_ENABLE,
+               PARSE_ONLY_BOOL, false);
+
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_BLUETOOTH_ENABLE,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;

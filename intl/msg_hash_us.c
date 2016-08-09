@@ -2122,6 +2122,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "deferred_updater_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST:
          return "deferred_network_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST:
+         return "deferred_lakka_services_list";
       case MENU_ENUM_LABEL_DEFERRED_USER_SETTINGS_LIST:
          return "deferred_user_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST:
