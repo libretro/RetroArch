@@ -72,7 +72,7 @@ platform=ps3
 SALAMANDER=yes
 EXT=a
 
-EXE_PATH=/usr/local/cell/host-win32/bin
+EXE_PATH=$CELL_SDK/host-win32/bin
 MAKE_FSELF_NPDRM=$EXE_PATH/make_fself_npdrm.exe
 MAKE_PACKAGE_NPDRM=$EXE_PATH/make_package_npdrm.exe
 
@@ -264,7 +264,8 @@ fi
 if [ $PLATFORM = "dex-ps3" ] ; then
    $MAKE_FSELF_NPDRM -c ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
-   $MAKE_PACKAGE_NPDRM ../pkg/${platform}/package.conf ../pkg/${platform}
+   $MAKE_PACKAGE_NPDRM ../pkg/${platform}_dex/package.conf ../pkg/${platform}
+   mv UP0001-SSNE10000_00-0000000000000001.pkg RetroArch.PS3.$RARCH_VERSION.DEX.PS3.pkg
 elif [ $PLATFORM = "cex-ps3" ] ; then
    $SCETOOL_PATH $SCETOOL_FLAGS_EBOOT ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
