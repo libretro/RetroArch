@@ -165,9 +165,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    fi
 
    # Compile core
-   if [ $PLATFORM = "ode-ps3" ] ; then
-      make -C ../ -f Makefile.${platform}.cobra $whole_archive -j3 || exit 1
-   elif [ $MAKEFILE_GRIFFIN = "yes" ]; then
+   if [ $MAKEFILE_GRIFFIN = "yes" ]; then
       make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
       make -C ../ -f Makefile.emscripten LTO=$lto -j7 || exit 1
