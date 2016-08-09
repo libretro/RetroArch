@@ -94,9 +94,10 @@ platform=ps3
 SALAMANDER=yes
 EXT=a
 
-GENPS3ISO_PATH=/cygdrive/c/Cobra_ODE_GenPS3iso_v2.3/genps3iso.exe
-SCETOOL_PATH=/cygdrive/c/Users/aaa801/ps3tools/ps3tools/tools/scetool/scetool.exe
-SCETOOL_FLAGS="--sce-type SELF --compress-data FALSE --self-type APP --key-revision 0004 --self-fw-version 0003004100000000 --self-app-version 0001000000000000 --self-auth-id 1010000001000003 --self-vendor-id 01000002 --self-cap-flags 00000000000000000000000000000000000000000000003b0000000100040000"
+EXE_PATH=$CELL_SDK/host-win32/bin
+GENPS3ISO_PATH=$PS3TOOLS_PATH/ODE/genps3iso_v2.5
+SCETOOL_PATH=$PS3TOOLS_PATH/scetool/scetool.exe
+SCETOOL_FLAGS_ODE="--sce-type=SELF --compress-data=TRUE --self-type=APP --key-revision=04 --self-fw-version=0003004100000000 --self-app-version=0001000000000000 --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-cap-flags=00000000000000000000000000000000000000000000003b0000000100040000  --encrypt"
 fi
 
 # Cleanup Salamander core if it exists
@@ -164,9 +165,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    fi
 
    # Compile core
-   if [ $PLATFORM = "ode-ps3" ] ; then
-      make -C ../ -f Makefile.${platform}.cobra $whole_archive -j3 || exit 1
-   elif [ $MAKEFILE_GRIFFIN = "yes" ]; then
+   if [ $MAKEFILE_GRIFFIN = "yes" ]; then
       make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
       make -C ../ -f Makefile.emscripten LTO=$lto -j7 || exit 1
@@ -184,7 +183,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "cex-ps3" ] ; then
       $SCETOOL_PATH $SCETOOL_FLAGS_CORE ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "ode-ps3" ] ; then
-      $SCETOOL_PATH $SCETOOL_FLAGS --encrypt ../retroarch_${platform}.elf ../CORE.SELF
+      $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch_${platform}.elf ../CORE.SELF
    fi
 
    # Move executable files
@@ -271,8 +270,8 @@ elif [ $PLATFORM = "cex-ps3" ] ; then
    rm -rf ../retroarch-salamander_${platform}.elf
    ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/ RetroArch.PS3.$RARCH_VERSION.CEX.PS3.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
-   $SCETOOL_PATH $SCETOOL_FLAGS --encrypt ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN
+   $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
 
-   $GENPS3ISO_PATH ../pkg/${platform}_iso/RetroArch-COBRA-ODE.iso
+   $GENPS3ISO_PATH ../pkg/${platform}_iso RetroArch.PS3.$RARCH_VERSION.ODE.PS3.iso
 fi
