@@ -182,7 +182,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $PLATFORM = "dex-ps3" ] ; then
       $MAKE_FSELF_NPDRM -c ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "cex-ps3" ] ; then
-      make_self_wc ../retroarch_${platform}.elf ../CORE.SELF
+      $SCETOOL_PATH $SCETOOL_FLAGS_CORE ../retroarch_${platform}.elf ../CORE.SELF
    elif [ $PLATFORM = "ode-ps3" ] ; then
       $SCETOOL_PATH $SCETOOL_FLAGS --encrypt ../retroarch_${platform}.elf ../CORE.SELF
    fi
@@ -266,7 +266,7 @@ if [ $PLATFORM = "dex-ps3" ] ; then
    rm -rf ../retroarch-salamander_${platform}.elf
    $MAKE_PACKAGE_NPDRM ../pkg/${platform}/package.conf ../pkg/${platform}
 elif [ $PLATFORM = "cex-ps3" ] ; then
-   make_self_wc ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
+   $SCETOOL_PATH $SCETOOL_FLAGS_EBOOT ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
    python2 ../ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform} retroarch-${platform}-cfw-$RARCH_VERSION.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
