@@ -263,8 +263,42 @@ for f in `ls -v *_${platform}.${EXT}`; do
 done
 
 # Additional build step
-if [ $PLATFORM = "ps3" ] ; then
-   make -C ../ -f Makefile.griffin platform=${platform} shaders-deploy
+if [ $platform = "ps3" ] ; then
+   if [ $PLATFORM = "ode-ps3" ] ; then
+      echo Deploy : Assets...
+   if [ -d ../media/assets ]; then
+      mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
+      cp -r ../media/assets/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
+      echo Deploy : Databases...
+   if [ -d ../media/libretrodb/rdb ]; then
+      mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
+      cp -r ../media/libretrodb/rdb/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
+      echo Deploy : Overlays...
+   if [ -d ../media/overlays ]; then
+      mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
+      cp -r ../media/overlays/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
+      echo Deploy : Shaders...
+   if [ -d ../media/shaders_cg ]; then
+      mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
+      cp -r ../media/shaders_cg/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
+   else
+      echo Deploy : Assets...
+   if [ -d ../media/assets ]; then
+      mkdir -p ../pkg/${platform}/USRDIR/cores/assets
+      cp -r ../media/assets/* ../pkg/${platform}/USRDIR/cores/assets
+      echo Deploy : Databases...
+   if [ -d ../media/libretrodb/rdb ]; then
+      mkdir -p ../pkg/${platform}/USRDIR/cores/database/rdb
+      cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/USRDIR/cores/database/rdb
+      echo Deploy : Overlays...
+   if [ -d ../media/overlays ]; then
+      mkdir -p ../pkg/${platform}/USRDIR/cores/overlays
+      cp -r ../media/overlays/* ../pkg/${platform}/USRDIR/cores/overlays
+      echo Deploy : Shaders...
+   if [ -d ../media/shaders_cg ]; then
+      mkdir -p ../pkg/${platform}/USRDIR/cores/shaders_cg
+      cp -r ../media/shaders_cg/* ../pkg/${platform}/USRDIR/cores/shaders_cg
+   fi
 fi
 
 # Packaging
