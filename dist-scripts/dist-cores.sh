@@ -94,9 +94,10 @@ platform=ps3
 SALAMANDER=yes
 EXT=a
 
-GENPS3ISO_PATH=/cygdrive/c/Cobra_ODE_GenPS3iso_v2.3/genps3iso.exe
-SCETOOL_PATH=/cygdrive/c/Users/aaa801/ps3tools/ps3tools/tools/scetool/scetool.exe
-SCETOOL_FLAGS="--sce-type SELF --compress-data FALSE --self-type APP --key-revision 0004 --self-fw-version 0003004100000000 --self-app-version 0001000000000000 --self-auth-id 1010000001000003 --self-vendor-id 01000002 --self-cap-flags 00000000000000000000000000000000000000000000003b0000000100040000"
+EXE_PATH=$CELL_SDK/host-win32/bin
+GENPS3ISO_PATH=$PS3TOOLS_PATH/ODE/genps3iso_v2.5
+SCETOOL_PATH=$PS3TOOLS_PATH/scetool/scetool.exe
+SCETOOL_FLAGS_ODE="--sce-type=SELF --compress-data=TRUE --self-type=APP --key-revision=04 --self-fw-version=0003004100000000 --self-app-version=0001000000000000 --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-cap-flags=00000000000000000000000000000000000000000000003b0000000100040000  --encrypt"
 fi
 
 # Cleanup Salamander core if it exists
