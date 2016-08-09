@@ -2599,6 +2599,7 @@ static int menu_displaylist_parse_horizontal_list(
    list_info.type       = MENU_LIST_TABS;
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE,      &list_info);
    list_horiz_info.type = MENU_LIST_HORIZONTAL;
+
    list_horiz_info.idx  = list_info.selection - (list_info.size +1);
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_ENTRY,      &list_horiz_info);
