@@ -284,6 +284,13 @@ static int action_get_network_settings_list(const char *path, const char *label,
    return 0;
 }
 
+static int action_get_lakka_services_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES), len);
+   return 0;
+}
+
 static int action_get_user_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -954,6 +961,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_network_settings_list);
+      return 0;
+   }
+
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST)))
+   {
+      BIND_ACTION_GET_TITLE(cbs, action_get_lakka_services_list);
       return 0;
    }
 

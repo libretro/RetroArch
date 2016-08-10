@@ -487,7 +487,7 @@ typedef struct settings
 
    bool config_save_on_exit;
 
-#ifdef HAVE_SYSTEMD
+#ifdef HAVE_LAKKA
    bool ssh_enable;
    bool samba_enable;
    bool bluetooth_enable;

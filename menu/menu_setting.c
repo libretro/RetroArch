@@ -3625,7 +3625,7 @@ static void overlay_enable_toggle_change_handler(void *data)
 }
 #endif
 
-#ifdef HAVE_SYSTEMD
+#ifdef HAVE_LAKKA
 static void systemd_service_toggle(const char *path, char *unit, bool enable)
 {
    int pid = fork();
@@ -4375,6 +4375,17 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETWORK_SETTINGS);
+
+#ifdef HAVE_LAKKA
+         CONFIG_ACTION(
+               list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_LAKKA_SERVICES),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LAKKA_SERVICES);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -7722,7 +7733,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_LAKKA_SERVICES:
          {
-#if defined(HAVE_SYSTEMD)
+#if defined(HAVE_LAKKA)
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),
                   parent_group);
