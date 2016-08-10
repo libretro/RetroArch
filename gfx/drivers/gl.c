@@ -1760,7 +1760,7 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
-#if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
+#if defined(HAVE_GL_SYNC)
    settings_t *settings = config_get_ptr();
 #endif
 #ifndef HAVE_OPENGLES
