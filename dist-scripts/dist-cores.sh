@@ -269,18 +269,18 @@ if [ $platform = "ps3" ] ; then
       if [ -d ../media/assets ]; then
          mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
          cp -r ../media/assets/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
-      echo Deploy : Databases...
       fi
+      echo Deploy : Databases...
       if [ -d ../media/libretrodb/rdb ]; then
          mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
          cp -r ../media/libretrodb/rdb/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
-      echo Deploy : Overlays...
       fi
+      echo Deploy : Overlays...
       if [ -d ../media/overlays ]; then
          mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
          cp -r ../media/overlays/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
-      echo Deploy : Shaders...
       fi
+      echo Deploy : Shaders...
       if [ -d ../media/shaders_cg ]; then
          mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
          cp -r ../media/shaders_cg/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
@@ -306,6 +306,7 @@ if [ $platform = "ps3" ] ; then
          mkdir -p ../pkg/${platform}/USRDIR/cores/shaders_cg
          cp -r ../media/shaders_cg/* ../pkg/${platform}/USRDIR/cores/shaders_cg
       fi
+   fi
 fi
 
 # Packaging
