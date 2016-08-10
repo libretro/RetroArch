@@ -274,6 +274,10 @@ if [ $platform = "ps3" ] ; then
       if [ -d ../media/libretrodb/rdb ]; then
          mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
          cp -r ../media/libretrodb/rdb/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
+	  fi
+	  if [ -d ../media/libretrodb/cursors ]; then
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/cursors
+         cp -r ../media/libretrodb/cursors/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/cursors
       fi
       echo Deploy : Overlays...
       if [ -d ../media/overlays ]; then
@@ -295,6 +299,10 @@ if [ $platform = "ps3" ] ; then
       if [ -d ../media/libretrodb/rdb ]; then
          mkdir -p ../pkg/${platform}/USRDIR/cores/database/rdb
          cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/USRDIR/cores/database/rdb
+	  fi
+	  if [ -d ../media/libretrodb/cursors ]; then
+         mkdir -p ../pkg/${platform}/USRDIR/cores/database/cursors
+         cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/USRDIR/cores/database/cursors
       fi
       echo Deploy : Overlays...
       if [ -d ../media/overlays ]; then
