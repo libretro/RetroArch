@@ -189,16 +189,16 @@ for f in `ls -v *_${platform}.${EXT}`; do
    # Move executable files
    if [ $platform = "ps3" ] ; then
       if [ $PLATFORM = "ode-ps3" ] ; then
-         mv -f ../CORE.SELF ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/"${name}_libretro_${platform}.SELF"
+         mv -fv ../CORE.SELF ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/"${name}_libretro_${platform}.SELF"
          if [ -d ../../dist/info ]; then
             mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/info
-            cp -f ../../dist/info/"${name}_libretro.info" ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/info/"${name}_libretro.info"
+            cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/info/"${name}_libretro.info"
          fi
       else
-         mv -f ../CORE.SELF ../pkg/${platform}/USRDIR/cores/"${name}_libretro_${platform}.SELF"
+         mv -fv ../CORE.SELF ../pkg/${platform}/USRDIR/cores/"${name}_libretro_${platform}.SELF"
          if [ -d ../../dist/info ]; then
             mkdir -p ../pkg/${platform}/USRDIR/cores/info
-            cp -f ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/USRDIR/cores/info/"${name}_libretro.info"
+            cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/USRDIR/cores/info/"${name}_libretro.info"
          fi
       fi
    elif [ $PLATFORM = "psp1" ] ; then
