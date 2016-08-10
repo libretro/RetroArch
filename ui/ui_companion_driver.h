@@ -218,6 +218,8 @@ const ui_application_t *ui_companion_driver_get_application_ptr(void);
 
 void *ui_companion_driver_get_main_window(void);
 
+const char *ui_companion_driver_get_ident(void);
+
 RETRO_END_DECLS
 
 #endif

@@ -59,6 +59,7 @@
 #include "../input/input_config.h"
 #include "../input/input_autodetect.h"
 #include "../config.def.h"
+#include "../ui/ui_companion_driver.h"
 #include "../performance_counters.h"
 #include "../lakka.h"
 #include "../retroarch.h"
@@ -7263,53 +7264,56 @@ static bool setting_append_list(
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION);
 #endif
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->ui.companion_enable,
-               msg_hash_to_str(MENU_ENUM_LABEL_UI_COMPANION_ENABLE),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE),
-               ui_companion_enable,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UI_COMPANION_ENABLE);
+         if (!string_is_equal(ui_companion_driver_get_ident(), "null"))
+         {
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->ui.companion_enable,
+                  msg_hash_to_str(MENU_ENUM_LABEL_UI_COMPANION_ENABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE),
+                  ui_companion_enable,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UI_COMPANION_ENABLE);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->ui.companion_start_on_boot,
-               msg_hash_to_str(MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT),
-               ui_companion_start_on_boot,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT);
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->ui.companion_start_on_boot,
+                  msg_hash_to_str(MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT),
+                  ui_companion_start_on_boot,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->ui.menubar_enable,
-               msg_hash_to_str(MENU_ENUM_LABEL_UI_MENUBAR_ENABLE),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE),
-               true,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UI_MENUBAR_ENABLE);
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->ui.menubar_enable,
+                  msg_hash_to_str(MENU_ENUM_LABEL_UI_MENUBAR_ENABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE),
+                  true,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UI_MENUBAR_ENABLE);
+         }
 
 
          END_SUB_GROUP(list, list_info, parent_group);
