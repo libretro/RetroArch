@@ -25,7 +25,7 @@ import sys
 import os
 import re
 
-banned_ext = [ 'AMD', 'APPLE', 'EXT', 'NV', 'NVX', 'ATI', '3DLABS', 'SUN', 'SGI', 'SGIX', 'SGIS', 'INTEL', '3DFX', 'IBM', 'MESA', 'GREMEDY', 'OML', 'PGI', 'I3D', 'INGL', 'MTX', 'QCOM', 'IMG', 'ANGLE', 'SUNX', 'INGR' ]
+banned_ext = [ 'AMD', 'APPLE', 'NV', 'NVX', 'ATI', '3DLABS', 'SUN', 'SGI', 'SGIX', 'SGIS', 'INTEL', '3DFX', 'IBM', 'MESA', 'GREMEDY', 'OML', 'PGI', 'I3D', 'INGL', 'MTX', 'QCOM', 'IMG', 'ANGLE', 'SUNX', 'INGR' ]
 
 def noext(sym):
    for ext in banned_ext:
@@ -128,7 +128,7 @@ if __name__ == '__main__':
       f.write('#endif\n')
 
    with open(sys.argv[3], 'w') as f:
-      f.write('#include "glsym.h"\n')
+      f.write('#include "glsym/glsym.h"\n')
       f.write('#include <stddef.h>\n')
       f.write('#define SYM(x) { "gl" #x, &(gl##x) }\n')
       f.write('const struct rglgen_sym_map rglgen_symbol_map[] = {\n')
