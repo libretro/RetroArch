@@ -650,10 +650,11 @@ static void xmb_messagebox(void *data, const char *message)
 static void xmb_render_messagebox_internal(
       xmb_handle_t *xmb, const char *message)
 {
-   int x, y, font_size;
+   int x, y, font_size, longest = 0, longest_width = 0;
    unsigned i;
    unsigned width, height;
    struct string_list *list = NULL;
+   void *fb_buf;
 
    if (!xmb)
       return;
@@ -669,8 +670,22 @@ static void xmb_render_messagebox_internal(
 
    font_size = menu_display_get_font_size();
 
-   x = width  / 2 - strlen(list->elems[0].data) * font_size / 4;
-   y = height / 2 - list->size * font_size / 2;
+   x = width  / 2;
+   y = height / 2 - (list->size-1) * font_size / 2;
+
+   fb_buf = menu_display_get_font_buffer();
+
+   /* find the longest line width */
+   for (i = 0; i < list->size; i++)
+   {
+      const char *msg = list->elems[i].data;
+      int len = strlen(msg);
+      if (len > longest)
+      {
+         longest = len;
+         longest_width = font_driver_get_message_width(fb_buf, msg, len, 1);
+      }
+   }
 
    for (i = 0; i < list->size; i++)
    {
@@ -679,7 +694,7 @@ static void xmb_render_messagebox_internal(
       if (msg)
          xmb_draw_text(
                xmb, msg,
-               x,
+               x - longest_width/2.0,
                y + i * font_size,
                1,
                1,
