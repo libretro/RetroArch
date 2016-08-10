@@ -213,7 +213,7 @@ void *ui_companion_driver_get_main_window(void)
 const char *ui_companion_driver_get_ident(void)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
-   if (!ui || !ui->ident)
+   if (!ui)
       return "null";
    return ui->ident;
 }
