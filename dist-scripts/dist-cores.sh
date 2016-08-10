@@ -190,16 +190,16 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $platform = "ps3" ] ; then
       if [ $PLATFORM = "ode-ps3" ] ; then
          mv -f ../CORE.SELF ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/"${name}_libretro_${platform}.SELF"
-       if [ -d ../../dist/info ]; then
-		   mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/info
-		   cp -f ../../dist/info/"${name}_libretro.info" ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/info/"${name}_libretro.info"
-       fi
+         if [ -d ../../dist/info ]; then
+            mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/info
+            cp -f ../../dist/info/"${name}_libretro.info" ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/info/"${name}_libretro.info"
+         fi
       else
          mv -f ../CORE.SELF ../pkg/${platform}/USRDIR/cores/"${name}_libretro_${platform}.SELF"
-       if [ -d ../../dist/info ]; then
-		   mkdir -p ../pkg/${platform}/USRDIR/cores/info
-		   cp -f ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/USRDIR/cores/info/"${name}_libretro.info"
-       fi
+         if [ -d ../../dist/info ]; then
+            mkdir -p ../pkg/${platform}/USRDIR/cores/info
+            cp -f ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/USRDIR/cores/info/"${name}_libretro.info"
+         fi
       fi
    elif [ $PLATFORM = "psp1" ] ; then
       mv -f ../EBOOT.PBP ../pkg/${platform}/cores/${name}_libretro.PBP
@@ -266,39 +266,46 @@ done
 if [ $platform = "ps3" ] ; then
    if [ $PLATFORM = "ode-ps3" ] ; then
       echo Deploy : Assets...
-   if [ -d ../media/assets ]; then
-      mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
-      cp -r ../media/assets/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
+      if [ -d ../media/assets ]; then
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
+         cp -r ../media/assets/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
       echo Deploy : Databases...
-   if [ -d ../media/libretrodb/rdb ]; then
-      mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
-      cp -r ../media/libretrodb/rdb/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
+      fi
+      if [ -d ../media/libretrodb/rdb ]; then
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
+         cp -r ../media/libretrodb/rdb/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
       echo Deploy : Overlays...
-   if [ -d ../media/overlays ]; then
-      mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
-      cp -r ../media/overlays/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
+      fi
+      if [ -d ../media/overlays ]; then
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
+         cp -r ../media/overlays/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
       echo Deploy : Shaders...
-   if [ -d ../media/shaders_cg ]; then
-      mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
-      cp -r ../media/shaders_cg/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
+      fi
+      if [ -d ../media/shaders_cg ]; then
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
+         cp -r ../media/shaders_cg/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
+      fi
    else
       echo Deploy : Assets...
-   if [ -d ../media/assets ]; then
-      mkdir -p ../pkg/${platform}/USRDIR/cores/assets
-      cp -r ../media/assets/* ../pkg/${platform}/USRDIR/cores/assets
+      if [ -d ../media/assets ]; then
+         mkdir -p ../pkg/${platform}/USRDIR/cores/assets
+         cp -r ../media/assets/* ../pkg/${platform}/USRDIR/cores/assets
+      fi
       echo Deploy : Databases...
-   if [ -d ../media/libretrodb/rdb ]; then
-      mkdir -p ../pkg/${platform}/USRDIR/cores/database/rdb
-      cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/USRDIR/cores/database/rdb
+      if [ -d ../media/libretrodb/rdb ]; then
+         mkdir -p ../pkg/${platform}/USRDIR/cores/database/rdb
+         cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/USRDIR/cores/database/rdb
+      fi
       echo Deploy : Overlays...
-   if [ -d ../media/overlays ]; then
-      mkdir -p ../pkg/${platform}/USRDIR/cores/overlays
-      cp -r ../media/overlays/* ../pkg/${platform}/USRDIR/cores/overlays
+      if [ -d ../media/overlays ]; then
+         mkdir -p ../pkg/${platform}/USRDIR/cores/overlays
+         cp -r ../media/overlays/* ../pkg/${platform}/USRDIR/cores/overlays
+      fi
       echo Deploy : Shaders...
-   if [ -d ../media/shaders_cg ]; then
-      mkdir -p ../pkg/${platform}/USRDIR/cores/shaders_cg
-      cp -r ../media/shaders_cg/* ../pkg/${platform}/USRDIR/cores/shaders_cg
-   fi
+      if [ -d ../media/shaders_cg ]; then
+         mkdir -p ../pkg/${platform}/USRDIR/cores/shaders_cg
+         cp -r ../media/shaders_cg/* ../pkg/${platform}/USRDIR/cores/shaders_cg
+      fi
 fi
 
 # Packaging
