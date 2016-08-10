@@ -75,3 +75,28 @@ int main(int argc, char *argv[])
 
    return 0;
 }
+
+frontend_ctx_driver_t frontend_ctx_emscripten = {
+   NULL,                         /* environment_get */
+   NULL,                         /* init */
+   NULL,                         /* deinit */
+   NULL,                         /* exitspawn */
+   NULL,                         /* process_args */
+   NULL,                         /* exec */
+   NULL,                         /* set_fork */
+   NULL,                         /* shutdown */
+   NULL,                         /* get_name */
+   NULL,                         /* get_os */
+   NULL,                         /* get_rating */
+   NULL,                         /* load_content */
+   NULL,                         /* get_architecture */
+   NULL,                         /* get_powerstate */
+   NULL,                         /* parse_drive_list */
+   NULL,                         /* get_mem_total */
+   NULL,                         /* get_mem_used */
+   NULL,                         /* install_sighandlers */
+   NULL,                         /* get_signal_handler_state */
+   NULL,                         /* set_signal_handler_state */
+   NULL,                         /* destroy_signal_handler_state */
+   "emscripten"
+};

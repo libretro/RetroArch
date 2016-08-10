@@ -209,12 +209,14 @@ else ifeq ($(platform), vita)
   EXT_TARGET := $(TARGET_NAME)_$(platform).velf
   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
   MACHDEP := -DVITA
+  WANT_ZLIB						:= 1
   INCLUDE += -I$(VITASDK)/arm-vita-eabi/include/freetype2 -Ideps/libvita2d/include
+  INCLUDE += -Ideps/zlib
   PLATCFLAGS :=  -O3 -mfloat-abi=hard -ffast-math -fsingle-precision-constant
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
-			 -lfreetype -lz -lm -lc -lpng -ljpeg
+			 -lfreetype -lm -lc -lpng -ljpeg
 
   PLATEXTRA := deps/libvita2d/shader/compiled/clear_v_gxp.o \
 				  deps/libvita2d/shader/compiled/clear_f_gxp.o \

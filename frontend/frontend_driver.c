@@ -25,7 +25,9 @@
 #endif
 
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
-#if defined(__CELLOS_LV2__)
+#if defined(EMSCRIPTEN)
+   &frontend_ctx_emscripten,
+#elif defined(__CELLOS_LV2__)
    &frontend_ctx_ps3,
 #endif
 #if defined(_XBOX)
