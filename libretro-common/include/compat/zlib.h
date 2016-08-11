@@ -4,7 +4,7 @@
 #ifdef WANT_ZLIB
 
 #ifdef RARCH_INTERNAL
-#include "../../../deps/zlib/zconf.h.in"
+#include "zconf.h.in"
 #endif
 
 /* zlib.h -- interface of the 'zlib' general purpose compression library
