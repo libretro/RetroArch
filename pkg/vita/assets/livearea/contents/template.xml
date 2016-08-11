@@ -11,7 +11,7 @@
 	
 	<frame id="frame1">
 		<liveitem>
-			<target>http://www.libretro.com/</target>
+         <target>http://buildbot.libretro.com/nightly/playstation/vita/</target>
 			<background x="20" y="-10" >website.png</background>
 		</liveitem>
 	</frame>
