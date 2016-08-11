@@ -328,14 +328,14 @@ if [ $PLATFORM = "dex-ps3" ] ; then
    $MAKE_FSELF_NPDRM -c ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
    $MAKE_PACKAGE_NPDRM ../pkg/${platform}_dex/package.conf ../pkg/${platform}
-   mv UP0001-SSNE10000_00-0000000000000001.pkg RetroArch.PS3.$RARCH_VERSION.DEX.PS3.pkg
+   mv UP0001-SSNE10000_00-0000000000000001.pkg ../pkg/${platform}/RetroArch.PS3.DEX.PS3.pkg
 elif [ $PLATFORM = "cex-ps3" ] ; then
    $SCETOOL_PATH $SCETOOL_FLAGS_EBOOT ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
-   ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/ RetroArch.PS3.$RARCH_VERSION.CEX.PS3.pkg
+   ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/RetroArch.PS3.CEX.PS3.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
    $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
 
-   $GENPS3ISO_PATH ../pkg/${platform}_iso RetroArch.PS3.$RARCH_VERSION.ODE.PS3.iso
+   $GENPS3ISO_PATH ../pkg/${platform}_iso ../pkg/${platform}/RetroArch.PS3.ODE.PS3.iso
 fi
