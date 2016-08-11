@@ -207,9 +207,15 @@ for f in `ls -v *_${platform}.${EXT}`; do
       COUNTER=$((COUNTER + 1))
       COUNTER_ID=`printf  "%05d" ${COUNTER}`
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/
+      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea
+      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents
       vita-make-fself ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
       vita-mksfoex -s TITLE_ID=RETR${COUNTER_ID} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
       cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/icon0.png
+      cp ../pkg/${platform}/assets/livearea/contents/bg.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/bg.png
+      cp ../pkg/${platform}/assets/livearea/contents/startup.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/startup.png
+      cp ../pkg/${platform}/assets/livearea/contents/website.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/website.png
+      cp ../pkg/${platform}/assets/livearea/contents/template.xml ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/template.xml
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
       mv -f ../retroarch_3ds.3ds ../pkg/3ds/rom/${name}_libretro.3ds

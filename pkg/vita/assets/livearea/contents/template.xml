@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<livearea style="a4" format-ver="01.00" content-rev="1">
+	<livearea-background>
+		<image>bg.png</image>
+	</livearea-background>
+	
+	<gate>
+		<startup-image>startup.png</startup-image>
+	</gate>
+	
+	<frame id="frame1">
+		<liveitem>
+			<target>http://www.libretro.com/</target>
+			<background x="20" y="-10" >website.png</background>
+		</liveitem>
+	</frame>
+</livearea>
+
