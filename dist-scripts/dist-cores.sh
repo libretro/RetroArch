@@ -72,9 +72,9 @@ platform=ps3
 SALAMANDER=yes
 EXT=a
 
-EXE_PATH=$CELL_SDK/host-win32/bin
-MAKE_FSELF_NPDRM=$EXE_PATH/make_fself_npdrm.exe
-MAKE_PACKAGE_NPDRM=$EXE_PATH/make_package_npdrm.exe
+EXE_PATH=${CELL_SDK}/host-win32/bin
+MAKE_FSELF_NPDRM=${EXE_PATH}/make_fself_npdrm.exe
+MAKE_PACKAGE_NPDRM=${EXE_PATH}/make_package_npdrm.exe
 
 # CEX PS3
 elif [ $PLATFORM = "cex-ps3" ]; then
@@ -82,8 +82,8 @@ platform=ps3
 SALAMANDER=yes
 EXT=a
 
-EXE_PATH=$CELL_SDK/host-win32/bin
-SCETOOL_PATH=$PS3TOOLS_PATH/scetool/scetool.exe
+EXE_PATH=${CELL_SDK}/host-win32/bin
+SCETOOL_PATH=${PS3TOOLS_PATH}/scetool/scetool.exe
 SCETOOL_FLAGS_CORE="--sce-type=SELF --compress-data=TRUE --skip-sections=TRUE --key-revision=04 --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-type=APP --self-app-version=0001000000000000 --self-fw-version=0003004100000000 --encrypt"
 SCETOOL_FLAGS_EBOOT="--sce-type=SELF --compress-data=TRUE --skip-sections=TRUE --key-revision=04 --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-type=NPDRM --self-fw-version=0003004100000000 --np-license-type=FREE --np-content-id=UP0001-SSNE10000_00-0000000000000001 --np-app-type=EXEC --self-app-version=0001000000000000 --np-real-fname=EBOOT.BIN --encrypt"
 
@@ -94,9 +94,9 @@ platform=ps3
 SALAMANDER=yes
 EXT=a
 
-EXE_PATH=$CELL_SDK/host-win32/bin
-GENPS3ISO_PATH=$PS3TOOLS_PATH/ODE/genps3iso_v2.5
-SCETOOL_PATH=$PS3TOOLS_PATH/scetool/scetool.exe
+EXE_PATH=${CELL_SDK}/host-win32/bin
+GENPS3ISO_PATH=${PS3TOOLS_PATH}/ODE/genps3iso_v2.5
+SCETOOL_PATH=${PS3TOOLS_PATH}/scetool/scetool.exe
 SCETOOL_FLAGS_ODE="--sce-type=SELF --compress-data=TRUE --self-type=APP --key-revision=04 --self-fw-version=0003004100000000 --self-app-version=0001000000000000 --self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-cap-flags=00000000000000000000000000000000000000000000003b0000000100040000  --encrypt"
 fi
 
