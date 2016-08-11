@@ -41,7 +41,7 @@ void matrix_3x3_transpose(math_matrix_3x3 *out, const math_matrix_3x3 *in);
 
 void matrix_3x3_multiply(math_matrix_3x3 *out,
       const math_matrix_3x3 *a, const math_matrix_3x3 *b);
-void matrix_3x3_divide_scalar(math_matrix_3x3 *mat, float s);
+void matrix_3x3_divide_scalar(math_matrix_3x3 *mat, const float s);
 float matrix_3x3_determinant(const math_matrix_3x3 *mat);
 void matrix_3x3_adjoint(math_matrix_3x3 *mat);
 bool matrix_3x3_invert(math_matrix_3x3 *mat);
