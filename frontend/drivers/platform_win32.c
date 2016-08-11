@@ -31,7 +31,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#include <defaults.h>
+#include "../../defaults.h"
 
 
 /* We only load this library once, so we let it be 
