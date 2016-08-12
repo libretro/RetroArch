@@ -489,26 +489,26 @@ static void config_set_defaults(void)
       strlcpy(settings->menu.driver,
             def_menu,  sizeof(settings->menu.driver));
 #ifdef HAVE_XMB
-   settings->menu.xmb.scale_factor     = xmb_scale_factor;
-   settings->menu.xmb.alpha_factor     = xmb_alpha_factor;
-   settings->menu.xmb.theme            = xmb_icon_theme;
-   settings->menu.xmb.menu_color_theme = menu_background_gradient;
-   settings->menu.xmb.weight_main      = xmb_weight_main;
-   settings->menu.xmb.weight_settings  = xmb_weight_settings;
+   settings->menu.xmb.scale_factor           = xmb_scale_factor;
+   settings->menu.xmb.alpha_factor           = xmb_alpha_factor;
+   settings->menu.xmb.theme                  = xmb_icon_theme;
+   settings->menu.xmb.menu_color_theme       = menu_background_gradient;
+   settings->menu.xmb.node_position_main     = xmb_node_position_main;
+   settings->menu.xmb.node_position_settings = xmb_node_position_settings;
 #ifdef HAVE_IMAGEVIEWER
-   settings->menu.xmb.weight_images    = xmb_weight_images;
+   settings->menu.xmb.node_position_images   = xmb_node_position_images;
 #endif
 #ifdef HAVE_FFMPEG
-   settings->menu.xmb.weight_music     = xmb_weight_music;
-   settings->menu.xmb.weight_video     = xmb_weight_video;
+   settings->menu.xmb.node_position_music    = xmb_node_position_music;
+   settings->menu.xmb.node_position_video    = xmb_node_position_video;
 #endif
-   settings->menu.xmb.weight_history   = xmb_weight_history;
+   settings->menu.xmb.node_position_history  = xmb_node_position_history;
 #ifdef HAVE_LIBRETRODB
-   settings->menu.xmb.weight_add       = xmb_weight_add;
+   settings->menu.xmb.node_position_add      = xmb_node_position_add;
 #endif
-   settings->menu.xmb.shadows_enable   = xmb_shadows_enable;
-   settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
-   settings->menu.xmb.font[0]          = '\0';
+   settings->menu.xmb.shadows_enable         = xmb_shadows_enable;
+   settings->menu.xmb.shader_pipeline        = menu_shader_pipeline;
+   settings->menu.xmb.font[0]                = '\0';
 #endif
 #ifdef HAVE_MATERIALUI
    settings->menu.materialui.menu_color_theme = MATERIALUI_THEME_BLUE;
@@ -1452,19 +1452,19 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "xmb_alpha_factor", &settings->menu.xmb.alpha_factor},
       { "xmb_theme", &settings->menu.xmb.theme},
 #ifdef HAVE_XMB
-      { "xmb_menu_color_theme", &settings->menu.xmb.menu_color_theme},
-      { "xmb_weight_main",      &settings->menu.xmb.weight_main},
-      { "xmb_weight_settings",  &settings->menu.xmb.weight_settings},
+      { "xmb_menu_color_theme",        &settings->menu.xmb.menu_color_theme},
+      { "xmb_node_position_main",      &settings->menu.xmb.node_position_main},
+      { "xmb_node_position_settings",  &settings->menu.xmb.node_position_settings},
 #ifdef HAVE_IMAGEVIEWER
-      { "xmb_weight_images",    &settings->menu.xmb.weight_images},
+      { "xmb_node_position_images",    &settings->menu.xmb.node_position_images},
 #endif
 #ifdef HAVE_FFMPEG
-      { "xmb_weight_music",     &settings->menu.xmb.weight_music},
-      { "xmb_weight_video",     &settings->menu.xmb.weight_video},
+      { "xmb_node_position_music",     &settings->menu.xmb.node_position_music},
+      { "xmb_node_position_video",     &settings->menu.xmb.node_position_video},
 #endif
-      { "xmb_weight_history",   &settings->menu.xmb.weight_history},
+      { "xmb_node_position_history",   &settings->menu.xmb.node_position_history},
 #ifdef HAVE_LIBRETRODB
-      { "xmb_weight_add",       &settings->menu.xmb.weight_add},
+      { "xmb_node_position_add",       &settings->menu.xmb.node_position_add},
 #endif
 #endif
       { "materialui_menu_color_theme", &settings->menu.materialui.menu_color_theme},
@@ -2970,22 +2970,22 @@ bool config_save_file(const char *path)
       { "xmb_theme",                    settings->menu.xmb.theme},
 #ifdef HAVE_XMB
       { "xmb_menu_color_theme",         settings->menu.xmb.menu_color_theme},
-      { "xmb_weight_main",              settings->menu.xmb.weight_main},
-      { "xmb_weight_settings",          settings->menu.xmb.weight_settings},
+      { "xmb_node_position_main",       settings->menu.xmb.node_position_main},
+      { "xmb_node_position_settings",   settings->menu.xmb.node_position_settings},
 #ifdef HAVE_IMAGEVIEWER
-      { "xmb_weight_images",            settings->menu.xmb.weight_images},
+      { "xmb_node_position_images",     settings->menu.xmb.node_position_images},
 #endif
 #ifdef HAVE_FFMPEG
-      { "xmb_weight_music",             settings->menu.xmb.weight_music},
-      { "xmb_weight_video",             settings->menu.xmb.weight_video},
+      { "xmb_node_position_music",      settings->menu.xmb.node_position_music},
+      { "xmb_node_position_video",      settings->menu.xmb.node_position_video},
 #endif
-      { "xmb_weight_history",           settings->menu.xmb.weight_history},
+      { "xmb_node_position_history",    settings->menu.xmb.node_position_history},
 #ifdef HAVE_LIBRETRODB
-      { "xmb_weight_add",               settings->menu.xmb.weight_add},
+      { "xmb_node_position_add",        settings->menu.xmb.node_position_add},
 #endif
 #endif
-      { "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme},
-      { "menu_shader_pipeline",        settings->menu.xmb.shader_pipeline},
+      { "materialui_menu_color_theme",  settings->menu.materialui.menu_color_theme},
+      { "menu_shader_pipeline",         settings->menu.xmb.shader_pipeline},
 #endif
       { "audio_out_rate",               settings->audio.out_rate},
       { "custom_viewport_width",        settings->video_viewport_custom.width},
