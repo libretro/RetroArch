@@ -528,18 +528,18 @@ static bool xmb_shadows_enable   = false;
 #else
 static bool xmb_shadows_enable   = true;
 #endif
-static unsigned xmb_weight_main       = 1;
-static unsigned xmb_weight_settings   = 1;
+static unsigned xmb_node_position_main     = XMB_NODE_POSITION_LEFT0;
+static unsigned xmb_node_position_settings = XMB_NODE_POSITION_LEFT0;
 #ifdef HAVE_IMAGEVIEWER
-static unsigned xmb_weight_images     = 1;
+static unsigned xmb_node_position_images   = XMB_NODE_POSITION_LEFT0;
 #endif
 #ifdef HAVE_FFMPEG
-static unsigned xmb_weight_music      = 1;
-static unsigned xmb_weight_video      = 1;
+static unsigned xmb_node_position_music    = XMB_NODE_POSITION_LEFT0;
+static unsigned xmb_node_position_video    = XMB_NODE_POSITION_LEFT0;
 #endif
-static unsigned xmb_weight_history    = 1;
+static unsigned xmb_node_position_history  = XMB_NODE_POSITION_LEFT0;
 #ifdef HAVE_LIBRETRODB
-static unsigned xmb_weight_add        = 1;
+static unsigned xmb_node_position_add      = XMB_NODE_POSITION_LEFT0;
 #endif
 #endif
 

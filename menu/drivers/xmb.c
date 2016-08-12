@@ -417,8 +417,10 @@ static float *xmb_gradient_ident(void)
 static size_t xmb_list_get_selection(void *data)
 {
    xmb_handle_t *xmb      = (xmb_handle_t*)data;
+
    if (!xmb)
       return 0;
+
    return xmb->categories.selection_ptr;
 }
 
@@ -1325,18 +1327,18 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    settings_t *settings         = config_get_ptr();
    xmb_tab_weight_t weights[XMB_SYSTEM_TAB_END + 1] = {
 #ifdef HAVE_IMAGEVIEWER
-      {XMB_SYSTEM_TAB_IMAGES, settings->menu.xmb.weight_images},
+      {XMB_SYSTEM_TAB_IMAGES, settings->menu.xmb.node_position_images},
 #endif
 #ifdef HAVE_FFMPEG
-      {XMB_SYSTEM_TAB_MUSIC, settings->menu.xmb.weight_music},
-      {XMB_SYSTEM_TAB_VIDEO, settings->menu.xmb.weight_video},
+      {XMB_SYSTEM_TAB_MUSIC, settings->menu.xmb.node_position_music},
+      {XMB_SYSTEM_TAB_VIDEO, settings->menu.xmb.node_position_video},
 #endif
 #ifdef HAVE_LIBRETRODB
-      {XMB_SYSTEM_TAB_ADD, settings->menu.xmb.weight_add},
+      {XMB_SYSTEM_TAB_ADD, settings->menu.xmb.node_position_add},
 #endif
-      {XMB_SYSTEM_TAB_MAIN, settings->menu.xmb.weight_main},
-      {XMB_SYSTEM_TAB_SETTINGS, settings->menu.xmb.weight_settings},
-      {XMB_SYSTEM_TAB_HISTORY, settings->menu.xmb.weight_history}
+      {XMB_SYSTEM_TAB_MAIN, settings->menu.xmb.node_position_main},
+      {XMB_SYSTEM_TAB_SETTINGS, settings->menu.xmb.node_position_settings},
+      {XMB_SYSTEM_TAB_HISTORY, settings->menu.xmb.node_position_history}
    };
    unsigned playlists;
    unsigned i;
@@ -1372,12 +1374,12 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
       {
          xmb->system_tab_indices[weights[i].system] = UINT_MAX;
       }
-      for (; i < ARRAY_SIZE(weights) && weights[i].player <= 4; i++)
+      for (; i < ARRAY_SIZE(weights) && weights[i].player < XMB_NODE_POSITION_RIGHT0; i++)
       {
          xmb->system_tab_indices[weights[i].system] = xmb->system_tab_indices[XMB_PLAYLIST_DIFFERENCE]++;
          xmb->system_tab_indices[XMB_PLAYLIST_LEFT] += 1;
       }
-      for (; i < ARRAY_SIZE(weights) && weights[i].player > 4; i++)
+      for (; i < ARRAY_SIZE(weights) && weights[i].player >= XMB_NODE_POSITION_RIGHT0; i++)
       {
          xmb->system_tab_indices[weights[i].system] = playlists + xmb->system_tab_indices[XMB_PLAYLIST_DIFFERENCE]++;
          xmb->system_tab_indices[XMB_PLAYLIST_RIGHT] += 1;
@@ -1550,9 +1552,11 @@ static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
 static void xmb_list_open(xmb_handle_t *xmb)
 {
    menu_animation_ctx_entry_t entry;
+
    size_t selection;
    int                    dir = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
@@ -1569,6 +1573,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
          dir, xmb->selection_ptr_old);
    xmb_list_open_new(xmb, selection_buf,
          dir, selection);
+
 
    entry.duration     = XMB_DELAY;
    entry.target_value = xmb->icon.size * -(xmb->depth*2-2);
@@ -1669,23 +1674,17 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          if (core_node)
             return core_node->content_icon;
 
-#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG)
-         switch (xmb->categories.selection_ptr)
-         {
 #ifdef HAVE_IMAGEVIEWER
-            case XMB_SYSTEM_TAB_IMAGES:
-               return xmb->textures.list[XMB_TEXTURE_IMAGE];
+         if (xmb->categories.selection_ptr == xmb->system_tab_indices[XMB_SYSTEM_TAB_IMAGES])
+            return xmb->textures.list[XMB_TEXTURE_IMAGE];
 #endif
 #ifdef HAVE_FFMPEG
-            case XMB_SYSTEM_TAB_MUSIC:
-               return xmb->textures.list[XMB_TEXTURE_MUSIC];
-            case XMB_SYSTEM_TAB_VIDEO:
-               return xmb->textures.list[XMB_TEXTURE_MOVIE];
+         if (xmb->categories.selection_ptr == xmb->system_tab_indices[XMB_SYSTEM_TAB_MUSIC])
+            return xmb->textures.list[XMB_TEXTURE_MUSIC];
+         else if (xmb->categories.selection_ptr == xmb->system_tab_indices[XMB_SYSTEM_TAB_VIDEO])
+            return xmb->textures.list[XMB_TEXTURE_MOVIE];
 #endif
-            default:
-               break;
-         }
-#endif
+
          return xmb->textures.list[XMB_TEXTURE_FILE];
       case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
@@ -2044,6 +2043,7 @@ static void xmb_draw_bg(
 {
    menu_display_ctx_draw_t draw;
    settings_t *settings = config_get_ptr();
+
    bool running = menu_display_libretro_running();
 
    draw.x                    = 0;
@@ -3104,7 +3104,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    xmb->selection_ptr_old = selection;
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
-      + xmb->system_tab_indices[XMB_PLAYLIST_DIFFERENCE] - 1;
+      + xmb->system_tab_indices[XMB_PLAYLIST_DIFFERENCE];
 
    switch (type)
    {
@@ -3118,14 +3118,14 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
             case MENU_ACTION_LEFT:
                if (xmb->categories.selection_ptr == 0)
                {
-                  xmb->categories.selection_ptr = list_size;
-                  xmb->categories.active.idx = list_size - 1;
+                  xmb->categories.selection_ptr = list_size - 1;
+                  xmb->categories.active.idx = list_size - 2;
                }
                else
                   xmb->categories.selection_ptr--;
                break;
             default:
-               if (xmb->categories.selection_ptr == list_size)
+               if (xmb->categories.selection_ptr == (list_size - 1))
                {
                   xmb->categories.selection_ptr = 0;
                   xmb->categories.active.idx = 1;

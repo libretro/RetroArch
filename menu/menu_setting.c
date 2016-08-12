@@ -7024,106 +7024,106 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.weight_main,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_MAIN),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_MAIN),
-                  xmb_weight_main,
+                  &settings->menu.xmb.node_position_main,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_MAIN),
+                  xmb_node_position_main,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_MAIN);
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN);
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.weight_settings,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_SETTINGS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_SETTINGS),
-                  xmb_weight_settings,
+                  &settings->menu.xmb.node_position_settings,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_SETTINGS),
+                  xmb_node_position_settings,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_SETTINGS);
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS);
 
 #ifdef HAVE_IMAGEVIEWER
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.weight_images,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_IMAGES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_IMAGES),
-                  xmb_weight_images,
+                  &settings->menu.xmb.node_position_images,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_IMAGES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_IMAGES),
+                  xmb_node_position_images,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_IMAGES);
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_IMAGES);
 #endif
 
 #ifdef HAVE_FFMPEG
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.weight_music,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_MUSIC),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_MUSIC),
-                  xmb_weight_music,
+                  &settings->menu.xmb.node_position_music,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_MUSIC),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_MUSIC),
+                  xmb_node_position_music,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_MUSIC);
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_MUSIC);
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.weight_video,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_VIDEO),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_VIDEO),
-                  xmb_weight_video,
+                  &settings->menu.xmb.node_position_video,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_VIDEO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_VIDEO),
+                  xmb_node_position_video,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_VIDEO);
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_VIDEO);
 #endif
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.weight_history,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_HISTORY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_HISTORY),
-                  xmb_weight_history,
+                  &settings->menu.xmb.node_position_history,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_HISTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_HISTORY),
+                  xmb_node_position_history,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_HISTORY);
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_HISTORY);
 
 #ifdef HAVE_LIBRETRODB
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb.weight_add,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_WEIGHT_ADD),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_WEIGHT_ADD),
-                  xmb_weight_add,
+                  &settings->menu.xmb.node_position_add,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_ADD),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_ADD),
+                  xmb_node_position_add,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, 9, 1, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_WEIGHT_ADD);
+            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_ADD);
 #endif
 #endif
 
