@@ -332,7 +332,7 @@ if [ $PLATFORM = "dex-ps3" ] ; then
 elif [ $PLATFORM = "cex-ps3" ] ; then
    $SCETOOL_PATH $SCETOOL_FLAGS_EBOOT ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
-   ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/RetroArch.PS3.CEX.PS3.pkg
+   ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/SSNE10000/ ../pkg/${platform}/RetroArch.PS3.CEX.PS3.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
    $SCETOOL_PATH $SCETOOL_FLAGS_ODE ../retroarch-salamander_${platform}.elf ../pkg/${platform}_iso/PS3_GAME/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
