@@ -196,10 +196,10 @@ for f in `ls -v *_${platform}.${EXT}`; do
             cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/info/"${name}_libretro.info"
          fi
       else
-         mv -fv ../CORE.SELF ../pkg/${platform}/USRDIR/cores/"${name}_libretro_${platform}.SELF"
+         mv -fv ../CORE.SELF ../pkg/${platform}/SSNE10000/USRDIR/cores/"${name}_libretro_${platform}.SELF"
          if [ -d ../../dist/info ]; then
-            mkdir -p ../pkg/${platform}/USRDIR/cores/info
-            cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/USRDIR/cores/info/"${name}_libretro.info"
+            mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/info
+            cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/SSNE10000/USRDIR/cores/info/"${name}_libretro.info"
          fi
       fi
    elif [ $PLATFORM = "psp1" ] ; then
@@ -299,39 +299,39 @@ if [ $platform = "ps3" ] ; then
    else
       echo Deploy : Assets...
       if [ -d ../media/assets ]; then
-         mkdir -p ../pkg/${platform}/USRDIR/cores/assets
-         cp -r ../media/assets/* ../pkg/${platform}/USRDIR/cores/assets
+         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/assets
+         cp -r ../media/assets/* ../pkg/${platform}/SSNE10000/USRDIR/cores/assets
       fi
       echo Deploy : Databases...
       if [ -d ../media/libretrodb/rdb ]; then
-         mkdir -p ../pkg/${platform}/USRDIR/cores/database/rdb
-         cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/USRDIR/cores/database/rdb
+         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/database/rdb
+         cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/SSNE10000/USRDIR/cores/database/rdb
 	  fi
 	  if [ -d ../media/libretrodb/cursors ]; then
-         mkdir -p ../pkg/${platform}/USRDIR/cores/database/cursors
-         cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/USRDIR/cores/database/cursors
+         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/database/cursors
+         cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/SSNE10000/USRDIR/cores/database/cursors
       fi
       echo Deploy : Overlays...
       if [ -d ../media/overlays ]; then
-         mkdir -p ../pkg/${platform}/USRDIR/cores/overlays
-         cp -r ../media/overlays/* ../pkg/${platform}/USRDIR/cores/overlays
+         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/overlays
+         cp -r ../media/overlays/* ../pkg/${platform}/SSNE10000/USRDIR/cores/overlays
       fi
       echo Deploy : Shaders...
       if [ -d ../media/shaders_cg ]; then
-         mkdir -p ../pkg/${platform}/USRDIR/cores/shaders_cg
-         cp -r ../media/shaders_cg/* ../pkg/${platform}/USRDIR/cores/shaders_cg
+         mkdir -p ../pkg/${platform}/SSNE10000/USRDIR/cores/shaders_cg
+         cp -r ../media/shaders_cg/* ../pkg/${platform}/SSNE10000/USRDIR/cores/shaders_cg
       fi
    fi
 fi
 
 # Packaging
 if [ $PLATFORM = "dex-ps3" ] ; then
-   $MAKE_FSELF_NPDRM -c ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
+   $MAKE_FSELF_NPDRM -c ../retroarch-salamander_${platform}.elf ../pkg/${platform}/SSNE10000/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
-   $MAKE_PACKAGE_NPDRM ../pkg/${platform}_dex/package.conf ../pkg/${platform}
+   $MAKE_PACKAGE_NPDRM ../pkg/${platform}_dex/package.conf ../pkg/${platform}/SSNE10000
    mv UP0001-SSNE10000_00-0000000000000001.pkg ../pkg/${platform}/RetroArch.PS3.DEX.PS3.pkg
 elif [ $PLATFORM = "cex-ps3" ] ; then
-   $SCETOOL_PATH $SCETOOL_FLAGS_EBOOT ../retroarch-salamander_${platform}.elf ../pkg/${platform}/USRDIR/EBOOT.BIN
+   $SCETOOL_PATH $SCETOOL_FLAGS_EBOOT ../retroarch-salamander_${platform}.elf ../pkg/${platform}/SSNE10000/USRDIR/EBOOT.BIN
    rm -rf ../retroarch-salamander_${platform}.elf
    ../tools/ps3/ps3py/pkg.py --contentid UP0001-SSNE10000_00-0000000000000001 ../pkg/${platform}/SSNE10000/ ../pkg/${platform}/RetroArch.PS3.CEX.PS3.pkg
 elif [ $PLATFORM = "ode-ps3" ] ; then
