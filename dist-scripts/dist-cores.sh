@@ -78,6 +78,7 @@ MAKE_PACKAGE_NPDRM=${EXE_PATH}/make_package_npdrm.exe
 
 # CEX PS3
 elif [ $PLATFORM = "cex-ps3" ]; then
+#For this script to work correctly, you must place scetool.exe and the "data" folder containing your ps3 keys for scetool to use in the dist-scripts folder.
 platform=ps3
 SALAMANDER=yes
 EXT=a
@@ -89,7 +90,7 @@ SCETOOL_FLAGS_EBOOT="--sce-type=SELF --compress-data=TRUE --skip-sections=TRUE -
 
 # ODE PS3
 elif [ $PLATFORM = "ode-ps3" ]; then
-#For this script to work correctly, you must place the "data" folder containing your ps3 keys for scetool to use in the dist-scripts folder.
+#For this script to work correctly, you must place scetool.exe and the "data" folder containing your ps3 keys for scetool to use in the dist-scripts folder.
 platform=ps3
 SALAMANDER=yes
 EXT=a
