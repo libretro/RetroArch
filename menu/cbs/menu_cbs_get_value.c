@@ -783,6 +783,8 @@ static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
    }
 }
 
+#ifdef HAVE_XMB
+#ifndef HAVE_KIOSK
 static void menu_action_setting_disp_set_label_xmb_menu_node_position(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -790,159 +792,32 @@ static void menu_action_setting_disp_set_label_xmb_menu_node_position(
       char *s, size_t len,
       const char *entry_label,
       const char *path,
-      char *s2, size_t len2, unsigned node)
+      char *s2, size_t len2, unsigned position)
 {
    strlcpy(s2, path, len2);
-   *w = 22;
+   *w = 7;
 
-   switch (node)
+   switch (position)
    {
       case XMB_NODE_POSITION_HIDDEN:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_HIDDEN),
+                  MENU_ENUM_LABEL_VALUE_OFF),
                len);
          break;
-      case XMB_NODE_POSITION_LEFT0:
+      case XMB_NODE_POSITION_NORMAL:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT0),
+                  MENU_ENUM_LABEL_VALUE_ON),
                len);
          break;
-      case XMB_NODE_POSITION_LEFT1:
+      default:
          strlcpy(s,
                msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT1),
-               len);
-         break;
-      case XMB_NODE_POSITION_LEFT2:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT2),
-               len);
-         break;
-      case XMB_NODE_POSITION_LEFT3:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT3),
-               len);
-         break;
-      case XMB_NODE_POSITION_LEFT4:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT4),
-               len);
-         break;
-      case XMB_NODE_POSITION_LEFT5:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT5),
-               len);
-         break;
-      case XMB_NODE_POSITION_LEFT6:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT6),
-               len);
-         break;
-      case XMB_NODE_POSITION_LEFT7:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT7),
-               len);
-         break;
-      case XMB_NODE_POSITION_LEFT8:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT8),
-               len);
-         break;
-      case XMB_NODE_POSITION_LEFT9:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT9),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT0:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT0),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT1:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT1),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT2:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT2),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT3:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT3),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT4:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT4),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT5:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT5),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT6:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT6),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT7:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT7),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT8:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT8),
-               len);
-         break;
-      case XMB_NODE_POSITION_RIGHT9:
-         strlcpy(s,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT9),
+                  MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_REORDERED),
                len);
          break;
    }
-}
-
-static void menu_action_setting_disp_set_label_xmb_menu_node_position_main(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings        = config_get_ptr();
-
-   if (!settings)
-      return;
-
-   menu_action_setting_disp_set_label_xmb_menu_node_position(list,
-         w, type, i, label, s, len, entry_label, path, s2, len2,
-         settings->menu.xmb.node_position_main);
 }
 
 static void menu_action_setting_disp_set_label_xmb_menu_node_position_settings(
@@ -1025,6 +900,25 @@ static void menu_action_setting_disp_set_label_xmb_menu_node_position_video(
 }
 #endif
 
+static void menu_action_setting_disp_set_label_xmb_menu_node_position_history(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings        = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   menu_action_setting_disp_set_label_xmb_menu_node_position(list,
+         w, type, i, label, s, len, entry_label, path, s2, len2,
+         settings->menu.xmb.node_position_history);
+}
+
 #ifdef HAVE_LIBRETRODB
 static void menu_action_setting_disp_set_label_xmb_menu_node_position_add(
       file_list_t* list,
@@ -1045,25 +939,8 @@ static void menu_action_setting_disp_set_label_xmb_menu_node_position_add(
          settings->menu.xmb.node_position_add);
 }
 #endif
-
-static void menu_action_setting_disp_set_label_xmb_menu_node_position_history(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   settings_t *settings        = config_get_ptr();
-
-   if (!settings)
-      return;
-
-   menu_action_setting_disp_set_label_xmb_menu_node_position(list,
-         w, type, i, label, s, len, entry_label, path, s2, len2,
-         settings->menu.xmb.node_position_history);
-}
+#endif
+#endif
 
 static void menu_action_setting_disp_set_label_materialui_menu_color_theme(
       file_list_t* list,
@@ -1814,10 +1691,8 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_xmb_menu_color_theme);
             break;
-         case MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_xmb_menu_node_position_main);
-            break;
+#ifdef HAVE_XMB
+#ifndef HAVE_KIOSK
          case MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_xmb_menu_node_position_settings);
@@ -1847,6 +1722,8 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_xmb_menu_node_position_add);
             break;
+#endif
+#endif
 #endif
          case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
             BIND_ACTION_GET_VALUE(cbs,
