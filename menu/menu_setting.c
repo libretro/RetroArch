@@ -7020,35 +7020,38 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME);
-         }
 
+#ifdef HAVE_KIOSK
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.xmb.node_position_main,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_MAIN),
-                  xmb_node_position_main,
+                  XMB_NODE_POSITION_NORMAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN);
+#endif
 
+#if !defined(HAVE_XMB_REQUIRESETTINGS) || defined(HAVE_KIOSK)
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.xmb.node_position_settings,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_SETTINGS),
-                  xmb_node_position_settings,
+                  XMB_NODE_POSITION_NORMAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS);
+#endif
 
 #ifdef HAVE_IMAGEVIEWER
             CONFIG_UINT(
@@ -7056,13 +7059,13 @@ static bool setting_append_list(
                   &settings->menu.xmb.node_position_images,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_IMAGES),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_IMAGES),
-                  xmb_node_position_images,
+                  XMB_NODE_POSITION_NORMAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_IMAGES);
 #endif
 
@@ -7072,13 +7075,13 @@ static bool setting_append_list(
                   &settings->menu.xmb.node_position_music,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_MUSIC),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_MUSIC),
-                  xmb_node_position_music,
+                  XMB_NODE_POSITION_NORMAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_MUSIC);
 
             CONFIG_UINT(
@@ -7086,13 +7089,13 @@ static bool setting_append_list(
                   &settings->menu.xmb.node_position_video,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_VIDEO),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_VIDEO),
-                  xmb_node_position_video,
+                  XMB_NODE_POSITION_NORMAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_VIDEO);
 #endif
 
@@ -7101,13 +7104,13 @@ static bool setting_append_list(
                   &settings->menu.xmb.node_position_history,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_HISTORY),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_HISTORY),
-                  xmb_node_position_history,
+                  XMB_NODE_POSITION_NORMAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_HISTORY);
 
 #ifdef HAVE_LIBRETRODB
@@ -7116,15 +7119,16 @@ static bool setting_append_list(
                   &settings->menu.xmb.node_position_add,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_NODE_POSITION_ADD),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_ADD),
-                  xmb_node_position_add,
+                  XMB_NODE_POSITION_NORMAL,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 0, XMB_NODE_POSITION_LAST-1, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_ADD);
 #endif
+         }
 #endif
 
 #ifdef HAVE_MATERIALUI

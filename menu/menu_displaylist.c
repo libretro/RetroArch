@@ -54,6 +54,10 @@
 #include "../cheevos.h"
 #endif
 
+#ifdef HAVE_KIOSK
+#include "menu_display.h"
+#endif
+
 #ifdef __linux__
 #include "../frontend/drivers/platform_linux.h"
 #endif
@@ -2647,14 +2651,24 @@ static int menu_displaylist_parse_load_content_settings(
       menu_displaylist_info_t *info)
 {
    menu_handle_t *menu    = NULL;
-#ifdef HAVE_CHEEVOS
+#if defined(HAVE_CHEEVOS) || defined(HAVE_KIOSK)
    settings_t *settings   = config_get_ptr();
 #endif
+   bool hide_entries = false;
+
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
+#ifdef HAVE_KIOSK
+#ifdef HAVE_XMB
+      if (settings->menu.xmb.node_position_main == XMB_NODE_POSITION_HIDDEN &&
+            settings->menu.xmb.node_position_settings == XMB_NODE_POSITION_HIDDEN)
+         hide_entries = true;
+#endif
+#endif
+
       rarch_system_info_t *system = NULL;
 
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
@@ -2677,11 +2691,12 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_CLOSE_CONTENT,
             MENU_SETTING_ACTION_CLOSE, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
-            msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
-            MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-            MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+      if (!hide_entries)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
+               msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
+               MENU_ENUM_LABEL_TAKE_SCREENSHOT,
+               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
 
       menu_displaylist_parse_settings_enum(menu, info,
             MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
@@ -2710,39 +2725,44 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_UNDO_SAVE_STATE,
             MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
-            MENU_ENUM_LABEL_CORE_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0);
-
-      if (core_has_set_input_descriptor())
+      if (!hide_entries)
+      {
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
-               MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
+               MENU_ENUM_LABEL_CORE_OPTIONS,
                MENU_SETTING_ACTION, 0, 0);
 
+         if (core_has_set_input_descriptor())
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
+                  MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
+                  MENU_SETTING_ACTION, 0, 0);
 
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
-            MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0);
-      if (     (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            && system && system->disk_control_cb.get_num_images)
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
-               MENU_ENUM_LABEL_DISK_OPTIONS,
-               MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
+               MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0);
+
+         if (     (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               && system && system->disk_control_cb.get_num_images)
+            menu_entries_append_enum(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
+                  MENU_ENUM_LABEL_DISK_OPTIONS,
+                  MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
+
 #ifdef HAVE_SHADER_MANAGER
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
-            msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
-            MENU_ENUM_LABEL_SHADER_OPTIONS,
-            MENU_SETTING_ACTION, 0, 0);
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
+               MENU_ENUM_LABEL_SHADER_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0);
 #endif
+      }
+
 #ifdef HAVE_CHEEVOS
       if(settings->cheevos.enable)
          menu_entries_append_enum(info->list,
@@ -4654,12 +4674,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,
                PARSE_ONLY_UINT, false);
+#ifdef HAVE_XMB
+#ifdef HAVE_KIOSK
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN,
                PARSE_ONLY_UINT, false);
+#endif
+#if !defined(HAVE_XMB_REQUIRESETTINGS) || defined(HAVE_KIOSK)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS,
                PARSE_ONLY_UINT, false);
+#endif
 #ifdef HAVE_IMAGEVIEWER
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_NODE_POSITION_IMAGES,
@@ -4681,7 +4706,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_XMB_NODE_POSITION_ADD,
                PARSE_ONLY_UINT, false);
 #endif
-
+#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
                PARSE_ONLY_UINT, false);

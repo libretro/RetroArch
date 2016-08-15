@@ -2420,10 +2420,13 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "xmb_theme";
       case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
          return "xmb_menu_color_theme";
+#ifdef HAVE_XMB
+#ifdef HAVE_KIOSK
       case MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN:
          return "xmb_node_position_main";
+#endif
       case MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS:
-         return "xmb_node_position_history";
+         return "xmb_node_position_settings";
 #ifdef HAVE_IMAGEVIEWER
       case MENU_ENUM_LABEL_XMB_NODE_POSITION_IMAGES:
          return "xmb_node_position_images";
@@ -2435,10 +2438,11 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "xmb_node_position_video";
 #endif
       case MENU_ENUM_LABEL_XMB_NODE_POSITION_HISTORY:
-         return "xmb_node_position_settings";
+         return "xmb_node_position_history";
 #ifdef HAVE_LIBRETRODB
       case MENU_ENUM_LABEL_XMB_NODE_POSITION_ADD:
          return "xmb_node_position_add";
+#endif
 #endif
       case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
          return "materialui_menu_color_theme";
@@ -2969,48 +2973,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Volcanic Red";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK:
          return "Dark";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_HIDDEN:
-         return "Hidden";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT0:
-         return "Left of Playlists";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT1:
-         return "Left of Playlists +1";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT2:
-         return "Left of Playlists +2";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT3:
-         return "Left of Playlists +3";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT4:
-         return "Left of Playlists +4";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT5:
-         return "Left of Playlists +5";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT6:
-         return "Left of Playlists +6";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT7:
-         return "Left of Playlists +7";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT8:
-         return "Left of Playlists +8";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_LEFT9:
-         return "Left of Playlists +9";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT0:
-         return "Right of Playlists";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT1:
-         return "Right of Playlists +1";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT2:
-         return "Right of Playlists +2";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT3:
-         return "Right of Playlists +3";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT4:
-         return "Right of Playlists +4";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT5:
-         return "Right of Playlists +5";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT6:
-         return "Right of Playlists +6";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT7:
-         return "Right of Playlists +7";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT8:
-         return "Right of Playlists +8";
-      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_RIGHT9:
-         return "Right of Playlists +9";
+#ifdef HAVE_XMB
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_REORDERED:
+         return "REORDERED";
+#endif
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY:
          return "Unlocked";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
@@ -3773,25 +3739,29 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Menu Icon Theme";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
          return "Menu Color Theme";
+#ifdef HAVE_XMB
+#ifdef HAVE_KIOSK
       case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_MAIN:
-         return "Position Main Menu";
+         return "Show Main Menu";
+#endif
       case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_SETTINGS:
-         return "Position Settings Menu";
+         return "Show Settings Menu";
 #ifdef HAVE_IMAGEVIEWER
       case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_IMAGES:
-         return "Position Images Menu";
+         return "Show Images Menu";
 #endif
 #ifdef HAVE_FFMPEG
       case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_MUSIC:
-         return "Position Music Menu";
+         return "Show Music Menu";
       case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_VIDEO:
-         return "Position Video Menu";
+         return "Show Video Menu";
 #endif
       case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_HISTORY:
-         return "Position History Menu";
+         return "Show History Menu";
 #ifdef HAVE_LIBRETRODB
       case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_ADD:
-         return "Position Import Menu";
+         return "Show Import Menu";
+#endif
 #endif
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME:
          return "Menu Color Theme";
