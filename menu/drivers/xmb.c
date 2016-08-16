@@ -3439,8 +3439,7 @@ static int xmb_list_push(void *data, void *userdata,
 #ifdef HAVE_KIOSK
          settings = config_get_ptr();
 
-         if (settings->menu.xmb.node_position_main == XMB_NODE_POSITION_HIDDEN &&
-               settings->menu.xmb.node_position_settings == XMB_NODE_POSITION_HIDDEN)
+         if (settings->menu.xmb.node_position_main == XMB_NODE_POSITION_HIDDEN)
             hide_entries = true;
 #endif
 
