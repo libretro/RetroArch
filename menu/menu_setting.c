@@ -7034,6 +7034,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN);
 #endif
 
@@ -7050,6 +7051,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS);
 #endif
 
@@ -7066,6 +7068,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_IMAGES);
 #endif
 
@@ -7082,6 +7085,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_MUSIC);
 
             CONFIG_UINT(
@@ -7096,6 +7100,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_VIDEO);
 #endif
 
@@ -7111,6 +7116,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_HISTORY);
 
 #ifdef HAVE_LIBRETRODB
@@ -7126,6 +7132,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, XMB_NODE_POSITION_HIDDEN, XMB_NODE_POSITION_END, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_NODE_POSITION_ADD);
 #endif
          }

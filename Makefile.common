@@ -478,7 +478,6 @@ ifeq ($(HAVE_ZARCH), 1)
    OBJ += menu/drivers/zarch.o
    DEFINES += -DHAVE_ZARCH
 endif
-
 ifeq ($(HAVE_XMB), 1)
    OBJ += menu/drivers/xmb.o
    DEFINES += -DHAVE_XMB

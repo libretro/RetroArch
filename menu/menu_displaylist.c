@@ -54,10 +54,6 @@
 #include "../cheevos.h"
 #endif
 
-#ifdef HAVE_KIOSK
-#include "menu_display.h"
-#endif
-
 #ifdef __linux__
 #include "../frontend/drivers/platform_linux.h"
 #endif
@@ -2663,8 +2659,7 @@ static int menu_displaylist_parse_load_content_settings(
    {
 #ifdef HAVE_KIOSK
 #ifdef HAVE_XMB
-      if (settings->menu.xmb.node_position_main == XMB_NODE_POSITION_HIDDEN &&
-            settings->menu.xmb.node_position_settings == XMB_NODE_POSITION_HIDDEN)
+      if (!settings->menu.xmb.node_position_main && !settings->menu.show_advanced_settings)
          hide_entries = true;
 #endif
 #endif
