@@ -2686,12 +2686,11 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_CLOSE_CONTENT,
             MENU_SETTING_ACTION_CLOSE, 0, 0);
 
-      if (!hide_entries)
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
-               msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
-               MENU_ENUM_LABEL_TAKE_SCREENSHOT,
-               MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT),
+            msg_hash_to_str(MENU_ENUM_LABEL_TAKE_SCREENSHOT),
+            MENU_ENUM_LABEL_TAKE_SCREENSHOT,
+            MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
 
       menu_displaylist_parse_settings_enum(menu, info,
             MENU_ENUM_LABEL_STATE_SLOT, PARSE_ONLY_INT, true);
