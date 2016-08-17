@@ -528,6 +528,13 @@ static bool xmb_shadows_enable   = false;
 #else
 static bool xmb_shadows_enable   = true;
 #endif
+static bool xmb_hide_main        = false;
+static bool xmb_hide_settings    = false;
+static bool xmb_hide_images      = false;
+static bool xmb_hide_music      = false;
+static bool xmb_hide_video      = false;
+static bool xmb_hide_history     = false;
+static bool xmb_hide_import      = false;
 #endif
 
 static float menu_wallpaper_opacity = 0.300;

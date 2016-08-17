@@ -2428,6 +2428,20 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "materialui_menu_footer_opacity";
       case MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE:
          return "xmb_shadows_enable";
+      case MENU_ENUM_LABEL_XMB_HIDE_MAIN:
+         return "xmb_hide_main";
+      case MENU_ENUM_LABEL_XMB_HIDE_SETTINGS:
+         return "xmb_hide_history";
+      case MENU_ENUM_LABEL_XMB_HIDE_IMAGES:
+         return "xmb_hide_images";
+      case MENU_ENUM_LABEL_XMB_HIDE_MUSIC:
+         return "xmb_hide_music";
+      case MENU_ENUM_LABEL_XMB_HIDE_VIDEO:
+         return "xmb_hide_video";
+      case MENU_ENUM_LABEL_XMB_HIDE_HISTORY:
+         return "xmb_hide_settings";
+      case MENU_ENUM_LABEL_XMB_HIDE_IMPORT:
+         return "xmb_hide_import";
       case MENU_ENUM_LABEL_XMB_RIBBON_ENABLE:
          return "xmb_ribbon_enable";
       case MENU_ENUM_LABEL_XMB_SCALE_FACTOR:
@@ -3715,6 +3729,20 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Menu Color Theme";
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
          return "Icon Shadows Enable";
+      case MENU_ENUM_LABEL_VALUE_XMB_HIDE_MAIN:
+         return "Hide Main Tab";
+      case MENU_ENUM_LABEL_VALUE_XMB_HIDE_SETTINGS:
+         return "Hide Settings Tab";
+      case MENU_ENUM_LABEL_VALUE_XMB_HIDE_IMAGES:
+         return "Hide Images Tab";
+      case MENU_ENUM_LABEL_VALUE_XMB_HIDE_MUSIC:
+         return "Hide Music Tab";
+      case MENU_ENUM_LABEL_VALUE_XMB_HIDE_VIDEO:
+         return "Hide Video Tab";
+      case MENU_ENUM_LABEL_VALUE_XMB_HIDE_HISTORY:
+         return "Hide History Tab";
+      case MENU_ENUM_LABEL_VALUE_XMB_HIDE_IMPORT:
+         return "Hide Import Content Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE:
          return "Menu Shader Pipeline";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:

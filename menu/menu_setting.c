@@ -6991,6 +6991,118 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE);
 
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.hide_main,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_HIDE_MAIN),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_HIDE_MAIN),
+                  xmb_hide_main,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_HIDE_MAIN);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.hide_settings,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_HIDE_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_HIDE_SETTINGS),
+                  xmb_hide_settings,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_HIDE_SETTINGS);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.hide_images,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_HIDE_IMAGES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_HIDE_IMAGES),
+                  xmb_hide_images,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_HIDE_IMAGES);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.hide_music,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_HIDE_MUSIC),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_HIDE_MUSIC),
+                  xmb_hide_music,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_HIDE_MUSIC);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.hide_video,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_HIDE_VIDEO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_HIDE_VIDEO),
+                  xmb_hide_video,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_HIDE_VIDEO);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.hide_history,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_HIDE_HISTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_HIDE_HISTORY),
+                  xmb_hide_history,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_HIDE_HISTORY);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.hide_import,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_HIDE_IMPORT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_HIDE_IMPORT),
+                  xmb_hide_import,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_HIDE_IMPORT);
+
 #ifdef HAVE_SHADERPIPELINE
             CONFIG_UINT(
                   list, list_info,
