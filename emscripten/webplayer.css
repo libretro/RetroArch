@@ -4,14 +4,10 @@
  * This provides the basic styling for the RetroArch web player.
  */
 textarea.webplayer {
-  border: 0px;
-  font-family: 'Share Tech Mono';
-  font-size: 12px;
-  width: 100%;
-  overflow:hide;
-  resize:none;
-  color:black;
+  font-family: monospace;
+  font-size: 0.8em;
 }
+
 h1 {
   text-align: left;
 }
