@@ -2420,6 +2420,30 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "xmb_theme";
       case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
          return "xmb_menu_color_theme";
+#ifdef HAVE_XMB
+#ifdef HAVE_KIOSK
+      case MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN:
+         return "xmb_node_position_main";
+#endif
+      case MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS:
+         return "xmb_node_position_settings";
+#ifdef HAVE_IMAGEVIEWER
+      case MENU_ENUM_LABEL_XMB_NODE_POSITION_IMAGES:
+         return "xmb_node_position_images";
+#endif
+#ifdef HAVE_FFMPEG
+      case MENU_ENUM_LABEL_XMB_NODE_POSITION_MUSIC:
+         return "xmb_node_position_music";
+      case MENU_ENUM_LABEL_XMB_NODE_POSITION_VIDEO:
+         return "xmb_node_position_video";
+#endif
+      case MENU_ENUM_LABEL_XMB_NODE_POSITION_HISTORY:
+         return "xmb_node_position_history";
+#ifdef HAVE_LIBRETRODB
+      case MENU_ENUM_LABEL_XMB_NODE_POSITION_ADD:
+         return "xmb_node_position_add";
+#endif
+#endif
       case MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME:
          return "materialui_menu_color_theme";
       case MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY:
@@ -2949,6 +2973,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Volcanic Red";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK:
          return "Dark";
+#ifdef HAVE_XMB
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_NODE_POSITION_REORDERED:
+         return "REORDERED";
+#endif
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY:
          return "Unlocked";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
@@ -3711,6 +3739,30 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Menu Icon Theme";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
          return "Menu Color Theme";
+#ifdef HAVE_XMB
+#ifdef HAVE_KIOSK
+      case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_MAIN:
+         return "Show Main Menu";
+#endif
+      case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_SETTINGS:
+         return "Show Settings Menu";
+#ifdef HAVE_IMAGEVIEWER
+      case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_IMAGES:
+         return "Show Images Menu";
+#endif
+#ifdef HAVE_FFMPEG
+      case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_MUSIC:
+         return "Show Music Menu";
+      case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_VIDEO:
+         return "Show Video Menu";
+#endif
+      case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_HISTORY:
+         return "Show History Menu";
+#ifdef HAVE_LIBRETRODB
+      case MENU_ENUM_LABEL_VALUE_XMB_NODE_POSITION_ADD:
+         return "Show Import Menu";
+#endif
+#endif
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME:
          return "Menu Color Theme";
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:

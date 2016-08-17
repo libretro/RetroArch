@@ -496,6 +496,21 @@ static void config_set_defaults(void)
    settings->menu.xmb.shadows_enable   = xmb_shadows_enable;
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
    settings->menu.xmb.font[0]          = '\0';
+#ifdef HAVE_KIOSK
+   settings->menu.xmb.node_position_main     = XMB_NODE_POSITION_NORMAL;
+#endif
+   settings->menu.xmb.node_position_settings = XMB_NODE_POSITION_NORMAL;
+#ifdef HAVE_IMAGEVIEWER
+   settings->menu.xmb.node_position_images   = XMB_NODE_POSITION_NORMAL;
+#endif
+#ifdef HAVE_FFMPEG
+   settings->menu.xmb.node_position_music    = XMB_NODE_POSITION_NORMAL;
+   settings->menu.xmb.node_position_video    = XMB_NODE_POSITION_NORMAL;
+#endif
+   settings->menu.xmb.node_position_history  = XMB_NODE_POSITION_NORMAL;
+#ifdef HAVE_LIBRETRODB
+   settings->menu.xmb.node_position_add      = XMB_NODE_POSITION_NORMAL;
+#endif
 #endif
 #ifdef HAVE_MATERIALUI
    settings->menu.materialui.menu_color_theme = MATERIALUI_THEME_BLUE;
@@ -1440,6 +1455,21 @@ static bool config_load_file(const char *path, bool set_defaults)
       { "xmb_theme", &settings->menu.xmb.theme},
 #ifdef HAVE_XMB
       { "xmb_menu_color_theme", &settings->menu.xmb.menu_color_theme},
+#ifdef HAVE_KIOSK
+      { "xmb_node_position_main",     &settings->menu.xmb.node_position_main},
+#endif
+      { "xmb_node_position_settings", &settings->menu.xmb.node_position_settings},
+#ifdef HAVE_IMAGEVIEWER
+      { "xmb_node_position_images",   &settings->menu.xmb.node_position_images},
+#endif
+#ifdef HAVE_FFMPEG
+      { "xmb_node_position_music",    &settings->menu.xmb.node_position_music},
+      { "xmb_node_position_video",    &settings->menu.xmb.node_position_video},
+#endif
+      { "xmb_node_position_history",  &settings->menu.xmb.node_position_history},
+#ifdef HAVE_LIBRETRODB
+      { "xmb_node_position_add",      &settings->menu.xmb.node_position_add},
+#endif
 #endif
       { "materialui_menu_color_theme", &settings->menu.materialui.menu_color_theme},
       { "menu_shader_pipeline", &settings->menu.xmb.shader_pipeline},
@@ -2944,6 +2974,21 @@ bool config_save_file(const char *path)
       { "xmb_theme",                    settings->menu.xmb.theme},
 #ifdef HAVE_XMB
       { "xmb_menu_color_theme",         settings->menu.xmb.menu_color_theme},
+#ifdef HAVE_KIOSK
+      { "xmb_node_position_main",       settings->menu.xmb.node_position_main},
+#endif
+      { "xmb_node_position_settings",   settings->menu.xmb.node_position_settings},
+#ifdef HAVE_IMAGEVIEWER
+      { "xmb_node_position_images",     settings->menu.xmb.node_position_images},
+#endif
+#ifdef HAVE_FFMPEG
+      { "xmb_node_position_music",      settings->menu.xmb.node_position_music},
+      { "xmb_node_position_video",      settings->menu.xmb.node_position_video},
+#endif
+      { "xmb_node_position_history",    settings->menu.xmb.node_position_history},
+#ifdef HAVE_LIBRETRODB
+      { "xmb_node_position_add",        settings->menu.xmb.node_position_add},
+#endif
 #endif
       { "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme},
       { "menu_shader_pipeline",        settings->menu.xmb.shader_pipeline},
