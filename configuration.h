@@ -233,6 +233,23 @@ typedef struct settings
          unsigned alpha_factor;
          unsigned theme;
          unsigned menu_color_theme;
+#ifdef HAVE_XMB
+#ifdef HAVE_KIOSK
+         unsigned node_position_main;
+#endif
+         unsigned node_position_settings;
+#ifdef HAVE_IMAGEVIEWER
+         unsigned node_position_images;
+#endif
+#ifdef HAVE_FFMPEG
+         unsigned node_position_music;
+         unsigned node_position_video;
+#endif
+         unsigned node_position_history;
+#ifdef HAVE_LIBRETRODB
+         unsigned node_position_add;
+#endif
+#endif
          bool     shadows_enable;
       } xmb;
 
