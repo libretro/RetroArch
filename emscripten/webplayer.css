@@ -4,12 +4,8 @@
  * This provides the basic styling for the RetroArch web player.
  */
 textarea.webplayer {
-  border: none;
   font-family: monospace;
-  font-size: 0.7em;
-  width: 100%;
-  overflow: hide;
-  resize: none;
+  font-size: 0.8em;
 }
 
 h1 {
