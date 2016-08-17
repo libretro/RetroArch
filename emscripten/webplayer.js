@@ -142,8 +142,11 @@ function stat(path)
 function startRetroArch()
 {
   document.getElementById('canvas_div').style.display = 'block';
-  document.getElementById('vsync').disabled = true;
-  document.getElementById('vsync-label').style.color = 'gray';
+  // Disable the VSync option.
+  jQuery('#vsync')
+    .attr('disabled', true)
+    .parents('.form-check')
+    .addClass('disabled');
   document.getElementById('latency').disabled = true;
   document.getElementById('latency-label').style.color = 'gray';
 
