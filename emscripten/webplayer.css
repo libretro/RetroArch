@@ -1,6 +1,33 @@
-
-.webplayer { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
-textarea.webplayer { border: 0px; font-family: 'Share Tech Mono'; font-size: 12px; width: 100%; overflow:hide; resize:none; color:black; }
-div.webplayer, h1 { text-align: left; }
-div.canvas_border { background-color:gray; width:800px; height:600px; margin-left: auto; margin-right: auto; }
-canvas.webplayer { border: 0px none; }
+/**
+ * RetroArch Web Player
+ *
+ * This provides the basic styling for the RetroArch web player.
+ */
+.webplayer {
+  padding-right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+textarea.webplayer {
+  border: 0px;
+  font-family: 'Share Tech Mono';
+  font-size: 12px;
+  width: 100%;
+  overflow:hide;
+  resize:none;
+  color:black;
+}
+div.webplayer,
+h1 {
+  text-align: left;
+}
+div.canvas_border {
+  background-color:gray;
+  width:800px; height:600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+canvas.webplayer {
+  border: 0px none;
+}

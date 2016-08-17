@@ -1,3 +1,8 @@
+/**
+ * RetroArch Web Player
+ *
+ * This provides the basic JavaScript for the RetroArch web player.
+ */
 var dropbox = false;
 var client = new Dropbox.Client({ key: "il6e10mfd7pgf8r" });
 
