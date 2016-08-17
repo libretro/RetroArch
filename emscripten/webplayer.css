@@ -3,12 +3,6 @@
  *
  * This provides the basic styling for the RetroArch web player.
  */
-.webplayer {
-  padding-right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  display: block;
-}
 textarea.webplayer {
   border: 0px;
   font-family: 'Share Tech Mono';
@@ -18,7 +12,6 @@ textarea.webplayer {
   resize:none;
   color:black;
 }
-div.webplayer,
 h1 {
   text-align: left;
 }

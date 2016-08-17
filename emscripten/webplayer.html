@@ -4,34 +4,86 @@
    <meta charset="utf-8">
    <title>RetroArch Web Player</title>
    <meta name="viewport" content="width=device-width, initial-scale=1">
+   <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/css/bootstrap.min.css" rel="stylesheet" type="text/css">
    <link href="webplayer.css" rel="stylesheet" type="text/css">
 </head>
 <body>
-   <hr/>
-   <div class="webplayer_border" id="canvas_div" style="display: none">
-      <canvas class="webplayer" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()"></canvas>
+   <nav class="navbar navbar-static-top navbar-light bg-faded">
+      <div class="container">
+         <a class="navbar-brand" href="#">RetroArch</a>
+         <ul class="nav navbar-nav">
+           <li class="nav-item active">
+               <a class="nav-link" href="#">Gambatte <span class="sr-only">(current)</span></a>
+            </li>
+         </ul>
+      </div>
+   </nav>
+   <div class="jumbotron">
+      <div class="container">
+         <div class="webplayer_border" id="canvas_div" style="display: none">
+            <canvas class="webplayer" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()"></canvas>
+         </div>
+      </div>
    </div>
-   <hr/>
-   <div class="webplayer webplayer_border" id="openrom">
-      <button id="btnLoad" onclick="document.getElementById('rom').click()">Upload Content</button>
-      <input style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" onchange="selectFiles(event.target.files)" multiple />
-      <button id="btnStart" onclick="startRetroArch()">Start RetroArch</button>
-      <button id="btnAuth" onclick="dropboxInit()">Use DropBox</button>
-   </div>
-   <hr/>
-   <div class="webplayer">
-      <input type="checkbox" id="resize"><label for="resize">Resize canvas</label>
-      <input type="checkbox" id="pointerLock" checked><label for="pointerLock">Lock/hide mouse pointer</label>
-      <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)"><br>
-      <input type="checkbox" id="vsync"><label for="vsync" id="vsync-label">Enable V-sync (can only be done before loading game)</label><br>
-      <input type="checkbox" id="sdl2"><label for="sdl2" id="sdl2-label">Enable SDL2</label><br>
-      <input type="textbox" id="latency" size="3" maxlength="3" value="96"> <label for="latency" id="latency-label">Audio latency (ms) (increase if you hear pops at fullspeed, can only be done before loading game)</label>
+   <div class="container">
+      <div class="row">
+         <div class="col-sm-12 form-group btn-group text-xs-center" id="openrom">
+            <button class="btn btn-secondary" id="btnLoad" onclick="document.getElementById('rom').click()">Upload Content</button>
+            <input class="btn btn-secondary" style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" onchange="selectFiles(event.target.files)" multiple />
+            <button class="btn btn-primary" id="btnStart" onclick="startRetroArch()">Start RetroArch</button>
+            <button class="btn btn-secondary" id="btnAuth" onclick="dropboxInit()">Use DropBox</button>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-sm-12">
+            <h2>Settings</h2>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-sm-6">
+            <div class="form-group">
+               <div class="form-check">
+                  <label class="form-check-label">
+                     <input class="form-check-input" type="checkbox" id="resize"> Resize canvas
+                  </label>
+               </div>
+               <div class="form-check">
+                  <label class="form-check-label">
+                     <input class="form-check-input" type="checkbox" id="pointerLock" checked> Lock/hide mouse pointer
+                  </label>
+               </div>
+               <div class="form-check">
+                  <label class="form-check-label">
+                     <input class="form-check-input" type="checkbox" id="vsync"> Enable V-sync (can only be done before loading game)
+                  </label>
+               </div>
+               <div class="form-check">
+                  <label class="form-check-label">
+                     <input class="form-check-input" type="checkbox" id="sdl2"> Enable SDL2
+                  </label>
+               </div>
+            </div>
+         </div>
+         <div class="col-sm-6">
+            <div class="form-group">
+               <label for="latency" id="latency-label" placeholder="Audio Latency (ms)">Audio Latency (ms)</label>
+               <input class="form-control" type="number" value="96" id="latency">
+               <small class="form-text text-muted">Increase if you hear pops at fullspeed, can only be done before loading game</small>
+            </div>
+            <div class="form-group">
+               <input class="btn btn-info" type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)">
+            </div>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-sm-12">
+            <textarea class="webplayer" id="output" rows="15"></textarea>
+         </div>
+      </div>
    </div>
 
-   <hr/>
-   <textarea class="webplayer" id="output" rows="15"></textarea>
-   <hr>
-
+   <script src="//code.jquery.com/jquery-3.1.0.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/js/bootstrap.min.js"></script>
    <script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
    <script src="browserfs.js"></script>
    <script src="webplayer.js"></script>
