@@ -145,7 +145,7 @@ function startRetroArch()
   // Disable the VSync option.
   jQuery('#vsync')
     .attr('disabled', true)
-    .parent('.form-check')
+    .parents('.form-check')
     .addClass('disabled');
   document.getElementById('latency').disabled = true;
   document.getElementById('latency-label').style.color = 'gray';
