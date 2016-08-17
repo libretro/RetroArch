@@ -270,27 +270,6 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
    return true;
 }
 
-#ifdef HAVE_MENU
-/**
- * menu_update_libretro_info:
- *
- * Update menu state which depends on config.
- **/
-static void menu_update_libretro_info(void)
-{
-   struct retro_system_info *info = NULL;
-   
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-         &info);
-   
-   if (!info)
-      return;
-
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
-}
-#endif
-
 /**
  * init_drivers:
  * @flags              : Bitmask of drivers to initialize.
@@ -350,8 +329,6 @@ static void init_drivers(int flags)
       init_location();
 
 #ifdef HAVE_MENU
-   menu_update_libretro_info();
-
    if (flags & DRIVER_MENU)
    {
       menu_driver_ctl(RARCH_MENU_CTL_INIT, NULL);

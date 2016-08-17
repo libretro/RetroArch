@@ -283,6 +283,25 @@ const char *menu_driver_ident(void)
   return menu_driver_ctx->ident;
 }
 
+/**
+ * menu_update_libretro_info:
+ *
+ * Update menu state which depends on config.
+ **/
+static void menu_update_libretro_info(void)
+{
+   struct retro_system_info *info = NULL;
+   
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+         &info);
+   
+   if (!info)
+      return;
+
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+}
+
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    switch (state)
@@ -555,6 +574,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_INIT:
          {
             settings_t *settings  = config_get_ptr();
+            menu_update_libretro_info();
             if (menu_driver_data)
                return true;
 
