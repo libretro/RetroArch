@@ -137,7 +137,7 @@ char *path_remove_extension(char *path)
  **/
 bool path_contains_compressed_file(const char *path)
 {
-   return (strchr(path,'#') != NULL);
+   return (strchr(path, '#') != NULL);
 }
 
 /**

@@ -327,15 +327,15 @@ bool menu_shader_manager_save_preset(
    {
       if (!string_is_empty(basename))
          strlcpy(preset_path, buffer, sizeof(preset_path));
-         if (config_file_write(conf, preset_path))
-         {
-            RARCH_LOG("Saved shader preset to %s.\n", preset_path);
-            if (apply)
-               menu_shader_manager_set_preset(NULL, type, preset_path);
-            ret = true;
-         }
-         else
-            RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
+      if (config_file_write(conf, preset_path))
+      {
+         RARCH_LOG("Saved shader preset to %s.\n", preset_path);
+         if (apply)
+            menu_shader_manager_set_preset(NULL, type, preset_path);
+         ret = true;
+      }
+      else
+         RARCH_LOG("Failed writing shader preset to %s.\n", preset_path);
    }
 
    config_file_free(conf);
