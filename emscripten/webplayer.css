@@ -3,20 +3,26 @@
  *
  * This provides the basic styling for the RetroArch web player.
  */
+
+/**
+ * The logging textarea.
+ */
 textarea.webplayer {
   font-family: monospace;
   font-size: 0.8em;
 }
 
-h1 {
-  text-align: left;
+/**
+ * Make sure the background of the player is black.
+ */
+.webplayer-container {
+  background-color: black;
 }
-div.canvas_border {
-  background-color:gray;
-  width:800px; height:600px;
-  margin-left: auto;
-  margin-right: auto;
-}
+
+/**
+ * Disable the border around the player.
+ */
 canvas.webplayer {
-  border: 0px none;
+  border: none;
+  outline: none;
 }
