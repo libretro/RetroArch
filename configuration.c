@@ -495,6 +495,15 @@ static void config_set_defaults(void)
    settings->menu.xmb.menu_color_theme = menu_background_gradient;
    settings->menu.xmb.shadows_enable   = xmb_shadows_enable;
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
+   settings->menu.xmb.show_settings    = xmb_show_settings;
+#ifdef HAVE_IMAGEVIEWER
+   settings->menu.xmb.show_images      = xmb_show_images;
+#endif
+#ifdef HAVE_FFMPEG
+   settings->menu.xmb.show_music       = xmb_show_music;
+   settings->menu.xmb.show_video       = xmb_show_video;
+#endif
+   settings->menu.xmb.show_history     = xmb_show_history;
    settings->menu.xmb.font[0]          = '\0';
 #endif
 #ifdef HAVE_MATERIALUI
@@ -1318,6 +1327,15 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
       { "rgui_show_start_screen",      &settings->menu_show_start_screen},
       { "xmb_shadows_enable",          &settings->menu.xmb.shadows_enable},
+      { "xmb_show_settings",           &settings->menu.xmb.show_settings},
+#ifdef HAVE_IMAGEVIEWER
+      { "xmb_show_images",             &settings->menu.xmb.show_images},
+#endif
+#ifdef HAVE_FFMPEG
+      { "xmb_show_music",              &settings->menu.xmb.show_music},
+      { "xmb_show_video",              &settings->menu.xmb.show_video},
+#endif
+      { "xmb_show_history",            &settings->menu.xmb.show_history},
       { "menu_throttle_framerate",     &settings->menu.throttle_framerate},
       { "menu_linear_filter",          &settings->menu.linear_filter},
       { "menu_pause_libretro",         &settings->menu.pause_libretro},
@@ -2861,6 +2879,15 @@ bool config_save_file(const char *path)
       { "menu_core_enable",             settings->menu.core_enable},
       { "menu_dynamic_wallpaper_enable",settings->menu.dynamic_wallpaper_enable},
       { "xmb_shadows_enable",           settings->menu.xmb.shadows_enable},
+      { "xmb_show_settings",            settings->menu.xmb.show_settings},
+#ifdef HAVE_IMAGEVIEWER
+      { "xmb_show_images",              settings->menu.xmb.show_images},
+#endif
+#ifdef HAVE_FFMPEG
+      { "xmb_show_music",               settings->menu.xmb.show_music},
+      { "xmb_show_video",               settings->menu.xmb.show_video},
+#endif
+      { "xmb_show_history",             settings->menu.xmb.show_history},
       { "rgui_show_start_screen",       settings->menu_show_start_screen},
       { "menu_navigation_wraparound_enable", settings->menu.navigation.wraparound.enable},
       { "menu_navigation_browser_filter_supported_extensions_enable", 

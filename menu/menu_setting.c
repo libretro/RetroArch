@@ -7020,7 +7020,92 @@ static bool setting_append_list(
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.show_settings,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_SHOW_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS),
+                  xmb_show_settings,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_SETTINGS);
+
+#ifdef HAVE_IMAGEVIEWER
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.show_images,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_SHOW_IMAGES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES),
+                  xmb_show_images,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_IMAGES);
+#endif
+
+#ifdef HAVE_FFMPEG
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.show_music,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_SHOW_MUSIC),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC),
+                  xmb_show_music,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_MUSIC);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.show_video,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_SHOW_VIDEO),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO),
+                  xmb_show_video,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_VIDEO);
+#endif
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->menu.xmb.show_history,
+                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_SHOW_HISTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY),
+                  xmb_show_history,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_HISTORY);
          }
+
 #endif
 
 #ifdef HAVE_MATERIALUI

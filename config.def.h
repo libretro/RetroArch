@@ -528,6 +528,15 @@ static bool xmb_shadows_enable   = false;
 #else
 static bool xmb_shadows_enable   = true;
 #endif
+static bool xmb_show_settings    = true;
+#ifdef HAVE_IMAGEVIEWER
+static bool xmb_show_images      = true;
+#endif
+#ifdef HAVE_FFMPEG
+static bool xmb_show_music       = true;
+static bool xmb_show_video       = true;
+#endif
+static bool xmb_show_history     = true;
 #endif
 
 static float menu_wallpaper_opacity = 0.300;

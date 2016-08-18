@@ -234,6 +234,11 @@ typedef struct settings
          unsigned theme;
          unsigned menu_color_theme;
          bool     shadows_enable;
+         bool     show_settings;
+         bool     show_images;
+         bool     show_music;
+         bool     show_video;
+         bool     show_history;
       } xmb;
 
       struct
