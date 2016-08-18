@@ -2737,12 +2737,18 @@ static int menu_displaylist_parse_load_content_settings(
                   msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
                   MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
                   MENU_SETTING_ACTION, 0, 0);
+      }
 
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
-               MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
+            MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
+            MENU_SETTING_ACTION, 0, 0);
+
+#ifdef HAVE_KIOSK
+      if (!hide_entries)
+#endif
+      {
          if (     (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                && system && system->disk_control_cb.get_num_images)
             menu_entries_append_enum(info->list,
@@ -3042,25 +3048,44 @@ static int menu_displaylist_parse_options_cheats(
       menu_displaylist_info_t *info)
 {
    unsigned i;
+#ifdef HAVE_KIOSK
+   bool hide_entries    = false;
+   settings_t *settings;
+#endif
 
    if (!cheat_manager_alloc_if_empty())
       return -1;
 
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
-         MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS),
-         MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
-         MENU_SETTING_ACTION, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_NUM_PASSES),
-         MENU_ENUM_LABEL_CHEAT_NUM_PASSES,
-         0, 0, 0);
+#ifdef HAVE_KIOSK
+#ifdef HAVE_XMB
+   settings = config_get_ptr();
+
+   if (!settings->menu.xmb.node_position_main && !settings->menu.show_advanced_settings)
+      hide_entries = true;
+#endif
+#endif
+
+#ifdef HAVE_KIOSK
+   if (!hide_entries)
+#endif
+   {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
+            MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
+            MENU_SETTING_ACTION, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS),
+            MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
+            MENU_SETTING_ACTION, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES),
+            msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_NUM_PASSES),
+            MENU_ENUM_LABEL_CHEAT_NUM_PASSES,
+            0, 0, 0);
+   }
+
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),

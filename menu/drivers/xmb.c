@@ -1403,19 +1403,9 @@ static void xmb_init_tab_positions(xmb_handle_t *xmb, settings_t *settings)
 #endif
          )
       {
-         /* reset history tabs if history is enabled without any way to see the history */
-         configured_position_history = XMB_NODE_POSITION_NORMAL;
-         settings->menu.xmb.node_position_history = configured_position_history;
-#ifdef HAVE_IMAGEVIEWER
-         configured_position_images = XMB_NODE_POSITION_NORMAL;
-         settings->menu.xmb.node_position_images = configured_position_images;
-#endif
-#ifdef HAVE_FFMPEG
-         configured_position_music = XMB_NODE_POSITION_NORMAL;
-         settings->menu.xmb.node_position_music = configured_position_music;
-         configured_position_video = XMB_NODE_POSITION_NORMAL;
-         settings->menu.xmb.node_position_video = configured_position_video;
-#endif
+         /* disable history if no history tabs are shown */
+         settings->history_list_enable = false;
+         command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 #ifndef HAVE_KIOSK
          command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 #endif
@@ -1433,7 +1423,7 @@ static void xmb_init_tab_positions(xmb_handle_t *xmb, settings_t *settings)
 #endif
          )
       {
-         /* enable history if any tabs are history shown */
+         /* enable history if any history tabs are shown */
          settings->history_list_enable = true;
          if (!settings->content_history_size)
             settings->content_history_size = 1;
@@ -1463,6 +1453,8 @@ static void xmb_init_tab_positions(xmb_handle_t *xmb, settings_t *settings)
    qsort(&keys, ARRAY_SIZE(keys),
          sizeof(*keys),
          (int (*)(const void *, const void *))xmb_sort_tab_position);
+
+   memset(xmb->tab_positions, 0, sizeof(xmb->tab_positions));
 
    /* discard hidden tabs */
    for (i = 0; i < ARRAY_SIZE(keys) && keys[i].configured == XMB_NODE_POSITION_HIDDEN; i++)
