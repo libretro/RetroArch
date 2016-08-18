@@ -2647,26 +2647,15 @@ static int menu_displaylist_parse_load_content_settings(
       menu_displaylist_info_t *info)
 {
    menu_handle_t *menu    = NULL;
-#if defined(HAVE_CHEEVOS) || defined(HAVE_KIOSK)
+#ifdef HAVE_CHEEVOS
    settings_t *settings   = config_get_ptr();
 #endif
-#ifdef HAVE_KIOSK
-   bool hide_entries = false;
-#endif
-
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       rarch_system_info_t *system = NULL;
-
-#ifdef HAVE_KIOSK
-#ifdef HAVE_XMB
-      if (!settings->menu.xmb.node_position_main && !settings->menu.show_advanced_settings)
-         hide_entries = true;
-#endif
-#endif
 
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -2721,43 +2710,39 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_UNDO_SAVE_STATE,
             MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
-#ifdef HAVE_KIOSK
-      if (!hide_entries)
-#endif
-      {
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
+            MENU_ENUM_LABEL_CORE_OPTIONS,
+            MENU_SETTING_ACTION, 0, 0);
+
+      if (core_has_set_input_descriptor())
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_OPTIONS),
-               MENU_ENUM_LABEL_CORE_OPTIONS,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
+               MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
                MENU_SETTING_ACTION, 0, 0);
 
-         if (core_has_set_input_descriptor())
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
-                  MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,
-                  MENU_SETTING_ACTION, 0, 0);
 
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
+            MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
+            MENU_SETTING_ACTION, 0, 0);
+      if (     (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            && system && system->disk_control_cb.get_num_images)
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS),
-               MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0);
-         if (     (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-               && system && system->disk_control_cb.get_num_images)
-            menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
-                  MENU_ENUM_LABEL_DISK_OPTIONS,
-                  MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS),
+               MENU_ENUM_LABEL_DISK_OPTIONS,
+               MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0);
 #ifdef HAVE_SHADER_MANAGER
-         menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
-               msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
-               MENU_ENUM_LABEL_SHADER_OPTIONS,
-               MENU_SETTING_ACTION, 0, 0);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
+            msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
+            MENU_ENUM_LABEL_SHADER_OPTIONS,
+            MENU_SETTING_ACTION, 0, 0);
 #endif
-      }
 #ifdef HAVE_CHEEVOS
       if(settings->cheevos.enable)
          menu_entries_append_enum(info->list,
@@ -4669,39 +4654,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,
                PARSE_ONLY_UINT, false);
-#ifdef HAVE_XMB
-#ifdef HAVE_KIOSK
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_XMB_NODE_POSITION_MAIN,
-               PARSE_ONLY_UINT, false);
-#endif
-#if !defined(HAVE_XMB_REQUIRESETTINGS) || defined(HAVE_KIOSK)
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_XMB_NODE_POSITION_SETTINGS,
-               PARSE_ONLY_UINT, false);
-#endif
-#ifdef HAVE_IMAGEVIEWER
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_XMB_NODE_POSITION_IMAGES,
-               PARSE_ONLY_UINT, false);
-#endif
-#ifdef HAVE_FFMPEG
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_XMB_NODE_POSITION_MUSIC,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_XMB_NODE_POSITION_VIDEO,
-               PARSE_ONLY_UINT, false);
-#endif
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_XMB_NODE_POSITION_HISTORY,
-               PARSE_ONLY_UINT, false);
-#ifdef HAVE_LIBRETRODB
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_XMB_NODE_POSITION_ADD,
-               PARSE_ONLY_UINT, false);
-#endif
-#endif
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
                PARSE_ONLY_UINT, false);

@@ -65,21 +65,6 @@ enum xmb_icon_theme
    XMB_ICON_THEME_CUSTOM
 };
 
-#ifdef HAVE_XMB
-enum xmb_node_position
-{
-   XMB_NODE_POSITION_HIDDEN = 0,
-   XMB_NODE_POSITION_NORMAL = 1,
-   XMB_NODE_POSITION_RIGHT  = 9,
-   XMB_NODE_POSITION_LAST   = (XMB_NODE_POSITION_RIGHT - 1) * 2
-};
-#ifdef HAVE_KIOSK
-#define XMB_NODE_POSITION_END XMB_NODE_POSITION_LAST
-#else
-#define XMB_NODE_POSITION_END XMB_NODE_POSITION_NORMAL
-#endif
-#endif
-
 enum xmb_shader_pipeline
 {
    XMB_SHADER_PIPELINE_WALLPAPER = 0,
