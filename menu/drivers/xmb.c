@@ -264,6 +264,9 @@ typedef struct xmb_handle
    xmb_node_t add_tab_node;
 
    video_font_raster_block_t raster_block;
+
+   unsigned tabs[8];
+   unsigned system_tab_end;
 } xmb_handle_t;
 
 float gradient_dark_purple[16] = {
@@ -424,7 +427,7 @@ static size_t xmb_list_get_size(void *data, enum menu_list_type type)
             return file_list_get_size(xmb->horizontal_list);
          break;
       case MENU_LIST_TABS:
-         return XMB_SYSTEM_TAB_END;
+         return xmb->system_tab_end;
    }
 
    return 0;
@@ -997,7 +1000,7 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
    node->alpha = xmb->categories.passive.alpha;
    node->zoom  = xmb->categories.passive.zoom;
 
-   if ((i + XMB_SYSTEM_TAB_END) == xmb->categories.active.idx)
+   if ((i + xmb->system_tab_end) == xmb->categories.active.idx)
    {
       node->alpha = xmb->categories.active.alpha;
       node->zoom  = xmb->categories.active.zoom;
@@ -1125,7 +1128,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
 static void xmb_set_title(xmb_handle_t *xmb)
 {
-   if (xmb->categories.selection_ptr <= XMB_SYSTEM_TAB_END)
+   if (xmb->categories.selection_ptr <= xmb->system_tab_end)
    {
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
    }
@@ -1134,7 +1137,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
       const char *path = NULL;
       menu_entries_get_at_offset(
             xmb->horizontal_list,
-            xmb->categories.selection_ptr - (XMB_SYSTEM_TAB_END + 1),
+            xmb->categories.selection_ptr - (xmb->system_tab_end + 1),
             &path, NULL, NULL, NULL, NULL);
 
       if (!path)
@@ -1144,9 +1147,18 @@ static void xmb_set_title(xmb_handle_t *xmb)
    }
 }
 
+static unsigned xmb_get_system_tab(xmb_handle_t *xmb, unsigned i)
+{
+   if (i <= xmb->system_tab_end)
+   {
+      return xmb->tabs[i];
+   }
+   return UINT_MAX;
+}
+
 static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 {
-   switch (i)
+   switch (xmb_get_system_tab(xmb, i))
    {
       case XMB_SYSTEM_TAB_SETTINGS:
          return &xmb->settings_tab_node;
@@ -1165,9 +1177,9 @@ static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
       case XMB_SYSTEM_TAB_ADD:
          return &xmb->add_tab_node;
       default:
-         if (i > XMB_SYSTEM_TAB_END)
+         if (i > xmb->system_tab_end)
             return xmb_get_userdata_from_horizontal_list(
-                  xmb, i - (XMB_SYSTEM_TAB_END + 1));
+                  xmb, i - (xmb->system_tab_end + 1));
    }
 
    return &xmb->main_menu_node;
@@ -1177,7 +1189,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned j;
    size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
-      + XMB_SYSTEM_TAB_END;
+      + xmb->system_tab_end;
 
    for (j = 0; j <= list_size; j++)
    {
@@ -1257,7 +1269,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned j;
    size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
-      + XMB_SYSTEM_TAB_END;
+      + xmb->system_tab_end;
 
    for (j = 0; j <= list_size; j++)
    {
@@ -1340,7 +1352,7 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned i;
    size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
-      + XMB_SYSTEM_TAB_END;
+      + xmb->system_tab_end;
 
    for (i = 0; i <= list_size; i++)
    {
@@ -1608,7 +1620,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             return core_node->content_icon;
 
 #if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG)
-         switch (xmb->categories.selection_ptr)
+         switch (xmb_get_system_tab(xmb, xmb->categories.selection_ptr))
          {
 #ifdef HAVE_IMAGEVIEWER
             case XMB_SYSTEM_TAB_IMAGES:
@@ -1694,9 +1706,9 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    if (!list || !list->size)
       return;
 
-   if (cat_selection_ptr > XMB_SYSTEM_TAB_END)
+   if (cat_selection_ptr > xmb->system_tab_end)
       core_node = xmb_get_userdata_from_horizontal_list(
-            xmb, cat_selection_ptr - (XMB_SYSTEM_TAB_END + 1));
+            xmb, cat_selection_ptr - (xmb->system_tab_end + 1));
 
    end = file_list_get_size(list);
 
@@ -2228,7 +2240,7 @@ static void xmb_frame(void *data)
 
    /* Horizontal tab icons */
    for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
-      + XMB_SYSTEM_TAB_END; i++)
+      + xmb->system_tab_end; i++)
    {
       xmb_node_t *node = xmb_get_node(xmb, i);
 
@@ -2560,6 +2572,7 @@ static void *xmb_init(void **userdata)
 {
    unsigned width, height;
    xmb_handle_t *xmb          = NULL;
+   settings_t *settings       = config_get_ptr();
    menu_handle_t *menu        = (menu_handle_t*)calloc(1, sizeof(*menu));
 
    if (!menu)
@@ -2595,6 +2608,27 @@ static void *xmb_init(void **userdata)
    xmb->depth                   = 1;
    xmb->old_depth               = 1;
    xmb->alpha                   = 0;
+
+   xmb->system_tab_end                = 0;
+   xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
+   if (settings->menu.xmb.show_settings)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
+#ifdef HAVE_IMAGEVIEWER
+   if (settings->menu.xmb.show_images)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
+#endif
+#ifdef HAVE_FFMPEG
+   if (settings->menu.xmb.show_music)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
+   if (settings->menu.xmb.show_video)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
+#endif
+   if (settings->menu.xmb.show_history)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
+#ifdef HAVE_LIBRETRODB
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
+#endif
+
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
    /* TODO/FIXME - we don't use framebuffer at all
@@ -3043,7 +3077,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
    xmb->selection_ptr_old = selection;
 
    list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
-      + XMB_SYSTEM_TAB_END;
+      + xmb->system_tab_end;
 
    switch (type)
    {
@@ -3080,7 +3114,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
             free(menu_stack->list[stack_size - 1].label);
          menu_stack->list[stack_size - 1].label = NULL;
 
-         switch (xmb->categories.selection_ptr)
+         switch (xmb_get_system_tab(xmb, xmb->categories.selection_ptr))
          {
             case XMB_SYSTEM_TAB_MAIN:
                menu_stack->list[stack_size - 1].label =

@@ -4655,6 +4655,25 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_SHOW_SETTINGS,
+               PARSE_ONLY_BOOL, false);
+#ifdef HAVE_IMAGEVIEWER
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_SHOW_IMAGES,
+               PARSE_ONLY_BOOL, false);
+#endif
+#ifdef HAVE_FFMPEG
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_SHOW_MUSIC,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_SHOW_VIDEO,
+               PARSE_ONLY_BOOL, false);
+#endif
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_XMB_SHOW_HISTORY,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
