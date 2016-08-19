@@ -494,7 +494,9 @@ static void config_set_defaults(void)
    settings->menu.xmb.theme            = xmb_icon_theme;
    settings->menu.xmb.menu_color_theme = menu_background_gradient;
    settings->menu.xmb.shadows_enable   = xmb_shadows_enable;
+#ifdef HAVE_SHADERPIPELINE
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
+#endif
    settings->menu.xmb.show_settings    = xmb_show_settings;
 #ifdef HAVE_IMAGEVIEWER
    settings->menu.xmb.show_images      = xmb_show_images;
@@ -1455,12 +1457,14 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef HAVE_MENU
       { "xmb_scale_factor", &settings->menu.xmb.scale_factor},
       { "xmb_alpha_factor", &settings->menu.xmb.alpha_factor},
-      { "xmb_theme", &settings->menu.xmb.theme},
 #ifdef HAVE_XMB
+      { "xmb_theme", &settings->menu.xmb.theme},
       { "xmb_menu_color_theme", &settings->menu.xmb.menu_color_theme},
 #endif
       { "materialui_menu_color_theme", &settings->menu.materialui.menu_color_theme},
+#ifdef HAVE_SHADERPIPELINE
       { "menu_shader_pipeline", &settings->menu.xmb.shader_pipeline},
+#endif
 #endif
       { "audio_out_rate", &settings->audio.out_rate},
       { "audio_block_frames", &settings->audio.block_frames},
@@ -2970,12 +2974,14 @@ bool config_save_file(const char *path)
       { "menu_thumbnails",              settings->menu.thumbnails},
       { "xmb_scale_factor",             settings->menu.xmb.scale_factor},
       { "xmb_alpha_factor",             settings->menu.xmb.alpha_factor},
-      { "xmb_theme",                    settings->menu.xmb.theme},
 #ifdef HAVE_XMB
+      { "xmb_theme",                    settings->menu.xmb.theme},
       { "xmb_menu_color_theme",         settings->menu.xmb.menu_color_theme},
 #endif
       { "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme},
+#ifdef HAVE_SHADERPIPELINE
       { "menu_shader_pipeline",        settings->menu.xmb.shader_pipeline},
+#endif
 #endif
       { "audio_out_rate",               settings->audio.out_rate},
       { "custom_viewport_width",        settings->video_viewport_custom.width},

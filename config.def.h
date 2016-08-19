@@ -545,7 +545,7 @@ static float menu_footer_opacity = 1.000;
 
 static float menu_header_opacity = 1.000;
 
-#ifdef HAVE_MATERIALUI
+#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB)
 static unsigned menu_background_gradient = 4;
 #endif
 

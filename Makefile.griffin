@@ -245,6 +245,7 @@ else ifeq ($(platform), vita)
   HAVE_NETWORKING          := 1
   HAVE_NETPLAY             := 1
   HAVE_OVERLAY             := 1
+  #HAVE_XMB						:= 1
   RARCH_CONSOLE          = 1
   HAVE_THREADS     := 1
 endif
@@ -354,6 +355,10 @@ CFLAGS += -DRARCH_MOBILE
 endif
 
 CFLAGS += -std=gnu99 -DSINC_LOWER_QUALITY -DHAVE_RGUI -DHAVE_MENU -DHAVE_GRIFFIN=1 -Wno-char-subscripts  -DRARCH_INTERNAL
+
+ifeq ($(HAVE_XMB), 1)
+CFLAGS += -DHAVE_XMB
+endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)
 CFLAGS += -DHAVE_LANGEXTRA
