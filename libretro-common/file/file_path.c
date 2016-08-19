@@ -415,11 +415,35 @@ void fill_pathname_parent_dir(char *out_dir,
 void fill_dated_filename(char *out_filename,
       const char *ext, size_t size)
 {
-   time_t cur_time;
-   time(&cur_time);
+   time_t cur_time = time(NULL);
 
    strftime(out_filename, size,
          "RetroArch-%m%d-%H%M%S.", localtime(&cur_time));
+   strlcat(out_filename, ext, size);
+}
+
+/**
+ * fill_str_dated_filename:
+ * @out_filename       : output filename
+ * @in_str             : input string
+ * @ext                : extension of output filename
+ * @size               : buffer size of output filename
+ *
+ * Creates a 'dated' filename prefixed by the string @in_str, and
+ * concatenates extension (@ext) to it.
+ *
+ * E.g.:
+ * out_filename = "RetroArch-{year}{month}{day}-{Hour}{Minute}{Second}.{@ext}"
+ **/
+void fill_str_dated_filename(char *out_filename,
+      const char *in_str, const char *ext, size_t size)
+{
+   char format[256] = {0};
+   time_t cur_time = time(NULL);
+
+   strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", localtime(&cur_time));
+   strlcpy(out_filename, in_str, size);
+   strlcat(out_filename, format, size);
    strlcat(out_filename, ext, size);
 }
 
