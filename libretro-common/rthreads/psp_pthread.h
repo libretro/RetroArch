@@ -34,13 +34,20 @@
 #include <stdio.h>
 #include <retro_inline.h>
 
-#define STACKSIZE (64 * 1024)
+#define STACKSIZE (8 * 1024)
 
 typedef SceUID pthread_t;
 typedef SceUID pthread_mutex_t;
 typedef void* pthread_mutexattr_t;
 typedef int pthread_attr_t;
-typedef SceUID pthread_cond_t;
+
+typedef struct
+{
+	SceUID mutex;
+	SceUID sema;
+	int waiting;
+} pthread_cond_t;
+
 typedef SceUID pthread_condattr_t;
 
 /* Use pointer values to create unique names for threads/mutexes */
@@ -67,8 +74,13 @@ static INLINE int pthread_create(pthread_t *thread,
 {
    sprintf(name_buffer, "0x%08X", (uint32_t) thread);
 
+#ifdef VITA
+   *thread = sceKernelCreateThread(name_buffer, psp_thread_wrap,
+         0x10000100, 0x10000, 0, 0, NULL);
+#else
    *thread = sceKernelCreateThread(name_buffer,
          psp_thread_wrap, 0x20, STACKSIZE, 0, NULL);
+#endif
 
    sthread_args_struct sthread_args;
    sthread_args.arg = arg;
@@ -83,7 +95,10 @@ static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
    sprintf(name_buffer, "0x%08X", (uint32_t) mutex);
 
 #ifdef VITA
-   return *mutex = sceKernelCreateMutex(name_buffer, 0, 0, 0);
+   *mutex = sceKernelCreateMutex(name_buffer, 0, 0, 0);
+	 if(*mutex<0)
+	 		return *mutex;
+	 return 0;
 #else
    return *mutex = sceKernelCreateSema(name_buffer, 0, 1, 1, NULL);
 #endif
@@ -101,7 +116,10 @@ static INLINE int pthread_mutex_destroy(pthread_mutex_t *mutex)
 static INLINE int pthread_mutex_lock(pthread_mutex_t *mutex)
 {
 #ifdef VITA
-   return sceKernelLockMutex(*mutex, 1, 0);
+	 int ret = sceKernelLockMutex(*mutex, 1, 0);
+	 //sceClibPrintf("pthread_mutex_lock: %x\n",ret);
+	 return ret;
+
 #else
    /* FIXME: stub */
    return 1;
@@ -111,7 +129,9 @@ static INLINE int pthread_mutex_lock(pthread_mutex_t *mutex)
 static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
 #ifdef VITA
-   return sceKernelUnlockMutex(*mutex, 1);
+	int ret = sceKernelUnlockMutex(*mutex, 1);
+	//sceClibPrintf("pthread_mutex_unlock: %x\n",ret);
+	return ret;
 #else
    /* FIXME: stub */
    return 1;
@@ -121,13 +141,20 @@ static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 
 static INLINE int pthread_join(pthread_t thread, void **retval)
 {
-   int exit_status;
-   SceUInt timeout = (SceUInt)-1;
 
+#ifdef VITA
+	 int res = sceKernelWaitThreadEnd(thread, 0, 0);
+	 if (res < 0) {
+			return res;
+	 }
+	 return sceKernelDeleteThread(thread);
+#else
+	 SceUInt timeout = (SceUInt)-1;
    sceKernelWaitThreadEnd(thread, &timeout);
    exit_status = sceKernelGetThreadExitStatus(thread);
    sceKernelDeleteThread(thread);
    return exit_status;
+#endif
 }
 
 static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
@@ -143,51 +170,137 @@ static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
 static INLINE int pthread_cond_wait(pthread_cond_t *cond,
       pthread_mutex_t *mutex)
 {
+#ifdef VITA
+		int ret = pthread_mutex_lock(&cond->mutex);
+		if (ret < 0) {
+			return ret;
+		}
+		++cond->waiting;
+		pthread_mutex_unlock(mutex);
+		pthread_mutex_unlock(&cond->mutex);
+
+		ret = sceKernelWaitSema(cond->sema, 1, 0);
+		if (ret < 0) {
+			sceClibPrintf("Premature wakeup: %08X", ret);
+		}
+		pthread_mutex_lock(mutex);
+		return ret;
+#else
+   /* FIXME: stub */
    sceKernelDelayThread(10000);
    return 1;
+#endif
 }
 
 static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
       pthread_mutex_t *mutex, const struct timespec *abstime)
 {
-   //FIXME: stub
+#ifdef VITA
+		int ret = pthread_mutex_lock(&cond->mutex);
+		if (ret < 0) {
+			return ret;
+		}
+		++cond->waiting;
+		pthread_mutex_unlock(mutex);
+		pthread_mutex_unlock(&cond->mutex);
+		
+		SceUInt timeout = 0;
+		
+		timeout  = abstime->tv_sec;
+	 	timeout += abstime->tv_nsec / 1.0e6;
+		
+		ret = sceKernelWaitSema(cond->sema, 1, &timeout);
+		if (ret < 0) {
+			sceClibPrintf("Premature wakeup: %08X", ret);
+		}
+		pthread_mutex_lock(mutex);
+		return ret;
+   
+#else
+   /* FIXME: stub */
    return 1;
+#endif
 }
 
 static INLINE int pthread_cond_init(pthread_cond_t *cond,
       const pthread_condattr_t *attr)
 {
-   //FIXME: stub
+#ifdef VITA
+  
+	pthread_mutex_init(&cond->mutex,NULL);
+	sceClibPrintf("pthread_cond_init: mutex %x\n",cond->mutex);
+  if(cond->mutex<0){
+    return cond->mutex;
+	}
+  sprintf(name_buffer, "0x%08X", (uint32_t) cond);
+  //cond->sema = sceKernelCreateCond(name_buffer, 0, cond->mutex, 0);
+	cond->sema = sceKernelCreateSema(name_buffer, 0, 0, 1, 0);
+	sceClibPrintf("pthread_cond_init: sema %x\n",cond->sema);
+	if(cond->sema<0){
+		pthread_mutex_destroy(&cond->mutex);
+  	return cond->sema;
+	}
+	
+	cond->waiting = 0;
+
+	
+	return 0;
+	
+	
+#else
+   /* FIXME: stub */
    return 1;
+#endif
 }
 
 static INLINE int pthread_cond_signal(pthread_cond_t *cond)
 {
-   //FIXME: stub
+#ifdef VITA
+	pthread_mutex_lock(&cond->mutex);
+	if (cond->waiting) {
+		--cond->waiting;
+		int ret = sceKernelSignalSema(cond->sema, 1);
+		sceClibPrintf("pthread_cond_signal: %x\n",ret);
+	}
+	pthread_mutex_unlock(&cond->mutex);
+	return 0;
+#else
+   /* FIXME: stub */
    return 1;
+#endif
 }
 
 static INLINE int pthread_cond_broadcast(pthread_cond_t *cond)
 {
-   //FIXME: stub
+   /* FIXME: stub */
    return 1;
 }
 
 static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
 {
-   //FIXME: stub
-   return 1;
+#ifdef VITA
+   int ret = sceKernelDeleteSema(cond->sema);
+   if(ret < 0)
+    return ret;
+
+   return sceKernelDeleteMutex(cond->mutex);
+#else
+  /* FIXME: stub */
+  return 1;
+#endif
 }
 
 
 static INLINE int pthread_detach(pthread_t thread)
 {
-   return 1;
+   return 0;
 }
 
 static INLINE void pthread_exit(void *retval)
 {
-   (void)retval;
+#ifdef VITA
+   sceKernelExitDeleteThread(sceKernelGetThreadId());
+#endif
 }
 
 static INLINE pthread_t pthread_self(void)
@@ -196,5 +309,9 @@ static INLINE pthread_t pthread_self(void)
    return sceKernelGetThreadId();
 }
 
+static INLINE int pthread_equal(pthread_t t1, pthread_t t2)
+{
+	 return t1 == t2;
+}
 
 #endif //_PSP_PTHREAD_WRAP__

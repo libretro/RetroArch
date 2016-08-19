@@ -212,7 +212,7 @@ else ifeq ($(platform), vita)
   WANT_ZLIB						:= 1
   INCLUDE += -I$(VITASDK)/arm-vita-eabi/include/freetype2 -Ideps/libvita2d/include
   INCLUDE += -Ideps/zlib
-  PLATCFLAGS :=  -O3 -mfloat-abi=hard -ffast-math -fsingle-precision-constant
+  PLATCFLAGS := -mthumb -mfloat-abi=hard -ffast-math -fsingle-precision-constant -mword-relocations
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
@@ -239,7 +239,6 @@ else ifeq ($(platform), vita)
   HAVE_RJPEG					:= 1
   HAVE_RBMP					   := 1
   HAVE_RTGA					   := 1
-  HAVE_IMAGEVIEWER         := 1
   HAVE_ZLIB                := 1
   HAVE_7ZIP                := 1
   HAVE_VITA2D              := 1
@@ -247,6 +246,7 @@ else ifeq ($(platform), vita)
   HAVE_NETPLAY             := 1
   HAVE_OVERLAY             := 1
   RARCH_CONSOLE          = 1
+  HAVE_THREADS     := 1
 endif
 
 
