@@ -415,8 +415,7 @@ void fill_pathname_parent_dir(char *out_dir,
 void fill_dated_filename(char *out_filename,
       const char *ext, size_t size)
 {
-   time_t cur_time;
-   time(&cur_time);
+   time_t cur_time = time(NULL);
 
    strftime(out_filename, size,
          "RetroArch-%m%d-%H%M%S.", localtime(&cur_time));
@@ -440,11 +439,10 @@ void fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size)
 {
    char format[256] = {0};
-   time_t cur_time;
-   time(&cur_time);
+   time_t cur_time = time(NULL);
 
-   strncpy(out_filename, in_str, size);
    strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", localtime(&cur_time));
+   strlcpy(out_filename, in_str, size);
    strlcat(out_filename, format, size);
    strlcat(out_filename, ext, size);
 }
