@@ -439,13 +439,13 @@ void fill_dated_filename(char *out_filename,
 void fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size)
 {
-   char format[PATH_MAX_LENGTH] = {0};
+   char format[256] = {0};
    time_t cur_time;
    time(&cur_time);
 
-   snprintf(format, sizeof(format),
-         "%s-%%y%%m%%d-%%H%%M%%S.", in_str);
-   strftime(out_filename, size, format, localtime(&cur_time));
+   strncpy(out_filename, in_str, size);
+   strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", localtime(&cur_time));
+   strlcat(out_filename, format, size);
    strlcat(out_filename, ext, size);
 }
 
