@@ -78,14 +78,14 @@ static bool screenshot_dump(
 
    if (settings->auto_screenshot_filename)
    {
-      fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
-      fill_pathname_join(filename, folder, shotname, sizeof(filename));
+      fill_str_dated_filename(shotname, path_basename(global_name_base),
+            IMG_EXT, sizeof(shotname));
    }
    else
    {
       snprintf(shotname, sizeof(shotname),"%s.png", path_basename(global_name_base));
-      fill_pathname_join(filename, folder, shotname, sizeof(filename));
    }
+   fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
 #ifdef _XBOX1
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(true);
