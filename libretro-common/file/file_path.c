@@ -424,6 +424,32 @@ void fill_dated_filename(char *out_filename,
 }
 
 /**
+ * fill_str_dated_filename:
+ * @out_filename       : output filename
+ * @in_str             : input string
+ * @ext                : extension of output filename
+ * @size               : buffer size of output filename
+ *
+ * Creates a 'dated' filename prefixed by the string @in_str, and
+ * concatenates extension (@ext) to it.
+ *
+ * E.g.:
+ * out_filename = "RetroArch-{year}{month}{day}-{Hour}{Minute}{Second}.{@ext}"
+ **/
+void fill_str_dated_filename(char *out_filename,
+      const char *in_str, const char *ext, size_t size)
+{
+   char format[PATH_MAX_LENGTH] = {0};
+   time_t cur_time;
+   time(&cur_time);
+
+   snprintf(format, sizeof(format),
+         "%s-%%y%%m%%d-%%H%%M%%S.", in_str);
+   strftime(out_filename, size, format, localtime(&cur_time));
+   strlcat(out_filename, ext, size);
+}
+
+/**
  * path_basedir:
  * @path               : path
  *
