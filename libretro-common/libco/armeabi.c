@@ -23,6 +23,22 @@ static thread_local uint32_t co_active_buffer[64];
 static thread_local cothread_t co_active_handle;
 
 asm (
+#if defined(__thumb2__)
+      ".thumb\n"
+      ".align 2\n"
+      ".globl co_switch_arm\n"
+      ".globl _co_switch_arm\n"
+      "co_switch_arm:\n"
+      "_co_switch_arm:\n"
+      " mov r3, sp\n"
+      " stmia r1!, {r4, r5, r6, r7, r8, r9, r10, r11}\n"
+      " stmia r1!, {r3, lr}\n"
+      " ldmia r0!, {r4, r5, r6, r7, r8, r9, r10, r11}\n"
+      " ldmfd r0!, { r3 }\n"
+      " mov sp, r3\n"
+      " ldmfd r0!, { r3 }\n"
+      " mov pc, r3\n"
+#else
       ".arm\n"
       ".align 4\n"
       ".globl co_switch_arm\n"
@@ -31,6 +47,7 @@ asm (
       "_co_switch_arm:\n"      
       "  stmia r1!, {r4, r5, r6, r7, r8, r9, r10, r11, sp, lr}\n"
       "  ldmia r0!, {r4, r5, r6, r7, r8, r9, r10, r11, sp, pc}\n"
+#endif
     );
 
 /* ASM */
