@@ -57,6 +57,9 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
       case RETRO_LANGUAGE_POLISH:
          ret = menu_hash_get_help_pl_enum(msg, s, len);
          break;
+      case RETRO_LANGUAGE_JAPANESE:
+         ret = menu_hash_get_help_jp_enum(msg, s, len);
+         break;
       default:
          break;
    }
@@ -108,6 +111,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
 #ifdef HAVE_UTF8
          ret = msg_hash_to_str_ru(msg);
 #endif
+         break;
+      case RETRO_LANGUAGE_JAPANESE:
+         ret = msg_hash_to_str_jp(msg);
          break;
       default:
          break;
