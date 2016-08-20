@@ -769,14 +769,10 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       return;
    }
 
-   entry = (struct config_entry_list*)calloc(1, sizeof(*entry));
+   if (!val) return;
 
-   if (!entry || !val)
-   {
-      if (entry)
-         free(entry);
-      return;
-   }
+   entry = (struct config_entry_list*)calloc(1, sizeof(*entry));
+   if (!entry) return;
 
    entry->key   = strdup(key);
    entry->value = strdup(val);
