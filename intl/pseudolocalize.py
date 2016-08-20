@@ -18,7 +18,7 @@
 # You probably don't need this script. It's only needed to update menu_hash_uspseudo.c,
 # and that's not necessary either, because outdated translations fall back to English.
 
-# Usage: ./pseudolocalize.py < menu_hash_us.c > menu_hash_uspseudo.c
+# Usage: ./pseudolocalize.py < msg_hash_us.c > msg_hash_uspseudo.c
 
 replacements = {
   # These characters all exist in ISO-8859-1.
