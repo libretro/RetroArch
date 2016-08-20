@@ -23,6 +23,10 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_UTF8
+#include "msg_hash_uspseudo.c"
+#else
+
 int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    uint32_t driver_hash = 0;
@@ -4470,3 +4474,4 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    return "null";
 }
+#endif
