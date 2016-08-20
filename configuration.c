@@ -2205,8 +2205,8 @@ bool config_load_override(void)
    strlcpy(buf, config_get_active_core_path(), sizeof(buf));
 
    /* Toggle has_save_path to false so it resets */
-   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
-   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
    if (!config_load_file(global->path.config, false))
       return false;
@@ -2241,8 +2241,8 @@ bool config_unload_override(void)
    *global->path.append_config = '\0';
 
    /* Toggle has_save_path to false so it resets */
-   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
-   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
    if (config_load_file(global->path.config, false))
    {
