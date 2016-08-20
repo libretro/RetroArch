@@ -498,9 +498,9 @@ static int frontend_ps3_parse_drive_list(void *data)
    menu_entries_append_enum(list,
          "/app_home/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_hdd0/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_bdvd/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
-         "/dev_hdd1/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         "/dev_hdd0/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "/dev_bdvd/",   "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
