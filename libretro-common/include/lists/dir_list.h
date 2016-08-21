@@ -67,6 +67,9 @@ void dir_list_free(struct string_list *list);
  * dir_list_read:
  * @dir                : directory path.
  * @list               : the string list to add files to
+ * @ext_list           : the string list of extensions to include
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
  *
  * Add files within a directory to an existing string list
  *
