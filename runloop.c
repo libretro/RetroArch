@@ -1507,6 +1507,7 @@ int runloop_iterate(unsigned *sleep_ms)
             runloop_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
    {
       frame_limit_last_time = 0.0;
+      command_event(CMD_EVENT_QUIT, NULL);
       return -1;
    }
 
