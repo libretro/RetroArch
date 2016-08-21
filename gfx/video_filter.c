@@ -409,7 +409,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
          goto error;
 
-   plugs = dir_list_new(basedir, ext_name, false, false);
+   plugs = dir_list_new(basedir, ext_name, false, false, false);
 
    if (!plugs)
    {
