@@ -159,9 +159,8 @@ static int parse_dir_entry(const char *name, char *file_path,
  * NULL in case of error. Has to be freed manually.
  **/
 struct string_list *dir_list_new(const char *dir,
-      const char *ext, bool include_dirs, bool include_compressed)
+      const char *ext, bool include_dirs, bool include_compressed, bool recursive)
 {
-   struct RDIR *entry             = NULL;
    struct string_list *ext_list   = NULL;
    struct string_list *list       = NULL;
 
@@ -171,13 +170,40 @@ struct string_list *dir_list_new(const char *dir,
    if (ext)
       ext_list = string_split(ext, "|");
 
-   entry = retro_opendir(dir);
+   if(dir_list_read(dir, list, ext_list, include_dirs, include_compressed, recursive) == -1) {
+      string_list_free(list);
+      string_list_free(ext_list);
+      return NULL;
+   }
+
+   string_list_free(ext_list);
+   return list;
+}
+
+/**
+ * dir_list_read:
+ * @dir                : directory path.
+ * @list               : the string list to add files to
+ * @ext_list           : the string list of extensions to include
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
+ *
+ * Add files within a directory to an existing string list
+ *
+ * Returns: -1 on error, 0 on success.
+ **/
+int dir_list_read(const char *dir, struct string_list *list, struct string_list *ext_list, bool include_dirs, bool include_compressed, bool recursive)
+{
+   struct RDIR *entry = retro_opendir(dir);
 
    if (!entry)
-      goto error;
+      return -1;
 
    if (retro_dirent_error(entry))
-      goto error;
+   {
+      retro_closedir(entry);
+      return -1;
+   }
 
    while (retro_readdir(entry))
    {
@@ -190,11 +216,21 @@ struct string_list *dir_list_new(const char *dir,
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
       is_dir = retro_dirent_is_dir(entry, file_path);
 
+      if(is_dir && recursive) {
+         if(strncmp(name, ".", 1) == 0 || strncmp(name, "..", 2) == 0)
+            continue;
+
+         dir_list_read(file_path, list, ext_list, include_dirs, include_compressed, recursive);
+      }
+
       ret    = parse_dir_entry(name, file_path, is_dir,
             include_dirs, include_compressed, list, ext_list, file_ext);
 
       if (ret == -1)
-         goto error;
+      {
+         retro_closedir(entry);
+         return -1;
+      }
 
       if (ret == 1)
          continue;
@@ -202,13 +238,5 @@ struct string_list *dir_list_new(const char *dir,
 
    retro_closedir(entry);
 
-   string_list_free(ext_list);
-   return list;
-
-error:
-   retro_closedir(entry);
-
-   string_list_free(list);
-   string_list_free(ext_list);
-   return NULL;
+   return 0;
 }

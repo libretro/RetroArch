@@ -240,7 +240,7 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    path_basedir(dir);
 
    file_list = dir_list_new(dir, IMAGE_CORE_PREFIX(valid_extensions),
-         false,false);
+         false,false,false);
    dir_list_sort(file_list, false);
    free(dir);
 

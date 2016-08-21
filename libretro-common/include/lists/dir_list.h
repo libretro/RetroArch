@@ -42,7 +42,7 @@ RETRO_BEGIN_DECLS
  * NULL in case of error. Has to be freed manually.
  **/
 struct string_list *dir_list_new(const char *dir, const char *ext,
-      bool include_dirs, bool include_compressed);
+      bool include_dirs, bool include_compressed, bool recursive);
 
 /**
  * dir_list_sort:
@@ -62,6 +62,20 @@ void dir_list_sort(struct string_list *list, bool dir_first);
  *
  **/
 void dir_list_free(struct string_list *list);
+
+/**
+ * dir_list_read:
+ * @dir                : directory path.
+ * @list               : the string list to add files to
+ * @ext_list           : the string list of extensions to include
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
+ *
+ * Add files within a directory to an existing string list
+ *
+ * Returns: -1 on error, 0 on success.
+ **/
+int dir_list_read(const char *dir, struct string_list *list, struct string_list *ext_list, bool include_dirs, bool include_compressed, bool recursive);
 
 RETRO_END_DECLS
 

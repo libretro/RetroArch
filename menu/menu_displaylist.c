@@ -3172,7 +3172,7 @@ static int menu_displaylist_parse_playlists(
       return 0;
    }
 
-   str_list = dir_list_new(info->path, NULL, true, true);
+   str_list = dir_list_new(info->path, NULL, true, true, false);
 
    if (!str_list)
    {
@@ -3281,7 +3281,7 @@ static int menu_displaylist_parse_cores(
 
    str_list = dir_list_new(info->path,
          filter_ext ? info->exts : NULL,
-         true, true);
+         true, true, false);
 
    {
       char out_dir[PATH_MAX_LENGTH] = {0};
@@ -3487,7 +3487,7 @@ static int menu_displaylist_parse_generic(
    else
       str_list = dir_list_new(info->path,
             filter_ext ? info->exts : NULL,
-            true, true);
+            true, true, false);
 
 #ifdef HAVE_LIBRETRODB
    if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
