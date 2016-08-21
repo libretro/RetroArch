@@ -117,19 +117,23 @@ enum
 {
    XMB_SYSTEM_TAB_MAIN = 0,
    XMB_SYSTEM_TAB_SETTINGS,
+   XMB_SYSTEM_TAB_HISTORY,
+#ifdef HAVE_FFMPEG
+   XMB_SYSTEM_TAB_VIDEO,
+   XMB_SYSTEM_TAB_MUSIC,
+#endif
 #ifdef HAVE_IMAGEVIEWER
    XMB_SYSTEM_TAB_IMAGES,
 #endif
-#ifdef HAVE_FFMPEG
-   XMB_SYSTEM_TAB_MUSIC,
-   XMB_SYSTEM_TAB_VIDEO,
-#endif
-   XMB_SYSTEM_TAB_HISTORY,
    XMB_SYSTEM_TAB_ADD
 };
 
 #ifdef HAVE_LIBRETRODB
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_ADD
+#elif defined(HAVE_IMAGEVIEWER)
+#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_IMAGES
+#elif defined(HAVE_FFMPEG)
+#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_MUSIC
 #else
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_HISTORY
 #endif
@@ -2613,18 +2617,18 @@ static void *xmb_init(void **userdata)
    xmb->tabs[xmb->system_tab_end]     = XMB_SYSTEM_TAB_MAIN;
    if (settings->menu.xmb.show_settings)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
+   if (settings->menu.xmb.show_history)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
 #ifdef HAVE_IMAGEVIEWER
    if (settings->menu.xmb.show_images)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
 #endif
 #ifdef HAVE_FFMPEG
-   if (settings->menu.xmb.show_music)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
    if (settings->menu.xmb.show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
+   if (settings->menu.xmb.show_music)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_MUSIC;
 #endif
-   if (settings->menu.xmb.show_history)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
 #ifdef HAVE_LIBRETRODB
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
 #endif
