@@ -691,6 +691,8 @@ endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
+   CFLAGS += -I/usr/include/drm
+   LIBS += -ldrm
 endif
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
