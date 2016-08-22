@@ -378,7 +378,8 @@ static bool command_network_init(command_t *handle, uint16_t port)
    int fd;
    struct addrinfo *res  = NULL;
 
-   RARCH_LOG("Bringing up command interface on port %hu.\n",
+   RARCH_LOG("%s %hu.\n",
+         msg_hash_to_str(MSG_VALUE_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
          (unsigned short)port);
 
    fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
@@ -1130,7 +1131,9 @@ static void command_event_init_controllers(void)
       switch (device)
       {
          case RETRO_DEVICE_NONE:
-            RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
+            RARCH_LOG("%s %u.\n",
+                  msg_hash_to_str(MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT),
+                  i + 1);
             set_controller = true;
             break;
          case RETRO_DEVICE_JOYPAD:

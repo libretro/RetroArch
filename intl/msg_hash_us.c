@@ -1866,6 +1866,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT:
+         return "disconnecting_device_from_port";
+      case MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
+         return "bringing_up_command_interface_at_port";
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "video_max_swapchain_images";
       case MENU_ENUM_LABEL_CORE_SETTINGS:
@@ -2919,6 +2923,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT:
+         return "Disconnecting device from port";
+      case MSG_VALUE_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
+         return "Bringing up command interface on port";
       case MSG_LOADING_HISTORY_FILE:
          return "Loading history file";
       case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED:
