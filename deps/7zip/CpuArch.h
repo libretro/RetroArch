@@ -11,9 +11,6 @@ extern "C" {
 #endif
 
 /*
-MY_CPU_LE means that CPU is LITTLE ENDIAN.
-If MY_CPU_LE is not defined, we don't know about that property of platform (it can be LITTLE ENDIAN).
-
 MY_CPU_LE_UNALIGN means that CPU is LITTLE ENDIAN and CPU supports unaligned memory accesses.
 If MY_CPU_LE_UNALIGN is not defined, we don't know about these properties of platform.
 */
@@ -48,18 +45,6 @@ If MY_CPU_LE_UNALIGN is not defined, we don't know about these properties of pla
 
 #if defined(MY_CPU_X86_OR_AMD64)
 #define MY_CPU_LE_UNALIGN
-#endif
-
-#if defined(MY_CPU_X86_OR_AMD64) || defined(MY_CPU_ARM_LE)  || defined(MY_CPU_IA64_LE) || defined(__ARMEL__) || defined(__MIPSEL__) || defined(__LITTLE_ENDIAN__)
-#define MY_CPU_LE
-#endif
-
-#if defined(__BIG_ENDIAN__)
-#define MY_CPU_BE
-#endif
-
-#if defined(MY_CPU_LE) && defined(MY_CPU_BE)
-Stop_Compiling_Bad_Endian
 #endif
 
 #ifdef MY_CPU_LE_UNALIGN

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "CpuArch.h"
 
-#ifdef MY_CPU_LE
+#ifndef MSB_FIRST
 
 #define CRC_UPDATE_BYTE_2(crc, b) (table[((crc) ^ (b)) & 0xFF] ^ ((crc) >> 8))
 

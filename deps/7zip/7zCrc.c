@@ -7,10 +7,10 @@
 
 #define kCrcPoly 0xEDB88320
 
-#ifdef MY_CPU_LE
-#define CRC_NUM_TABLES 8
-#else
+#ifdef MSB_FIRST
 #define CRC_NUM_TABLES 1
+#else
+#define CRC_NUM_TABLES 8
 #endif
 
 typedef uint32_t (MY_FAST_CALL *CRC_FUNC)(uint32_t v, const void *data, size_t size, const uint32_t *table);
