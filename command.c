@@ -1298,7 +1298,9 @@ static void command_event_set_savestate_auto_index(void)
    dir_list_free(dir_list);
 
    settings->state_slot = max_idx;
-   RARCH_LOG("Found last state slot: #%d\n", settings->state_slot);
+   RARCH_LOG("%s: #%d\n",
+         msg_hash_to_str(MSG_VALUE_FOUND_LAST_STATE_SLOT),
+         settings->state_slot);
 }
 
 static bool event_init_content(void)
@@ -2068,8 +2070,8 @@ bool command_event(enum event_command cmd, void *data)
 
          if (!settings->audio.mute_enable && !audio_driver_start())
          {
-            RARCH_ERR("Failed to start audio driver. "
-                  "Will continue without audio.\n");
+            RARCH_ERR("%s\n",
+                  msg_hash_to_str(MSG_VALUE_FAILED_TO_START_AUDIO_DRIVER));
             audio_driver_unset_active();
          }
          break;

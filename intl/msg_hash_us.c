@@ -1866,6 +1866,14 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_SHUTTING_DOWN:
+         return "shutting_down";
+      case MSG_REBOOTING:
+         return "rebooting";
+      case MSG_FAILED_TO_START_AUDIO_DRIVER:
+         return "failed_to_start_audio_driver";
+      case MSG_FOUND_LAST_STATE_SLOT:
+         return "found_last_state_slot";
       case MSG_CONNECT_DEVICE_FROM_A_VALID_PORT:
          return "connect_device_from_a_valid_port";
       case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
@@ -2927,6 +2935,14 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_VALUE_SHUTTING_DOWN:
+         return "Shutting down";
+      case MSG_VALUE_REBOOTING:
+         return "Rebooting";
+      case MSG_VALUE_FAILED_TO_START_AUDIO_DRIVER:
+         return "Failed to start audio driver. Will continue without audio.";
+      case MSG_VALUE_FOUND_LAST_STATE_SLOT:
+         return "Found last state slot";
       case MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT:
          return "Connect device from a valid port.";
       case MSG_VALUE_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
