@@ -45,6 +45,10 @@ int system_property_get(const char *cmd, const char *args, char *value);
 
 #ifdef HAVE_OPENGLES
 static bool g_es3;
+
+#ifndef EGL_OPENGL_ES3_BIT_KHR
+#define EGL_OPENGL_ES3_BIT_KHR                  0x0040
+#endif
 #endif
 
 typedef struct
@@ -103,7 +107,7 @@ static void *android_gfx_ctx_init(void *video_driver)
       EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
       EGL_NONE
    };
-   const EGLint attribs[] = {
+   EGLint attribs[] = {
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
       EGL_BLUE_SIZE, 8,
@@ -118,6 +122,11 @@ static void *android_gfx_ctx_init(void *video_driver)
 
    if (!android_app || !and)
       return false;
+
+#ifdef HAVE_OPENGLES
+   if (g_es3)
+      attribs[1] = EGL_OPENGL_ES3_BIT_KHR;
+#endif
 
    switch (android_api)
    {
