@@ -1137,9 +1137,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
 #if (defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3))
             case RETRO_HW_CONTEXT_OPENGLES2:
-#ifdef HAVE_OPENGLES3
             case RETRO_HW_CONTEXT_OPENGLES3:
-#endif
                RARCH_LOG("Requesting OpenGLES%u context.\n",
                      cb->context_type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
                break;
