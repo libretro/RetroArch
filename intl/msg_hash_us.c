@@ -1866,7 +1866,11 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 
    switch (msg)
    {
-      case MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT:
+      case MSG_CONNECT_DEVICE_FROM_A_VALID_PORT:
+         return "connect_device_from_a_valid_port";
+      case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
+         return "disconnect_device_from_a_valid_port";
+      case MSG_DISCONNECTING_DEVICE_FROM_PORT:
          return "disconnecting_device_from_port";
       case MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
          return "bringing_up_command_interface_at_port";
@@ -2923,6 +2927,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT:
+         return "Connect device from a valid port.";
+      case MSG_VALUE_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
+         return "Disconnect device from a valid port.";
       case MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT:
          return "Disconnecting device from port";
       case MSG_VALUE_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:

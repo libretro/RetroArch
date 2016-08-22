@@ -767,7 +767,7 @@ static void retroarch_parse_input(int argc, char *argv[])
 
             if (port < 1 || port > MAX_USERS)
             {
-               RARCH_ERR("Connect device to a valid port.\n");
+               RARCH_ERR("%s\n", msg_hash_to_str(MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT));
                retroarch_print_help(argv[0]);
                retroarch_fail(1, "retroarch_parse_input()");
             }
@@ -813,7 +813,8 @@ static void retroarch_parse_input(int argc, char *argv[])
             port = strtol(optarg, NULL, 0);
             if (port < 1 || port > MAX_USERS)
             {
-               RARCH_ERR("Disconnect device from a valid port.\n");
+               RARCH_ERR("%s\n",
+                     msg_hash_to_str(MSG_VALUE_DISCONNECT_DEVICE_FROM_A_VALID_PORT));
                retroarch_print_help(argv[0]);
                retroarch_fail(1, "retroarch_parse_input()");
             }
