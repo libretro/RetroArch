@@ -1992,12 +1992,17 @@ static uint64_t frontend_linux_get_mem_used(void)
    return total - freemem - buffers - cached;
 }
 
+/*#include <valgrind/valgrind.h>*/
 static void frontend_linux_sighandler(int sig)
 {
+#ifdef VALGRIND_PRINTF_BACKTRACE
+VALGRIND_PRINTF_BACKTRACE("SIGINT");
+#endif
    (void)sig;
-   if (linux_sighandler_quit)
-      exit(1);
-   linux_sighandler_quit = 1;
+   linux_sighandler_quit++;
+   if (linux_sighandler_quit == 1) {}
+   if (linux_sighandler_quit == 2) exit(1);
+   if (linux_sighandler_quit >= 3) abort(); /* in case there's a second deadlock in a C++ destructor or something */
 }
 
 static void frontend_linux_install_signal_handlers(void)
