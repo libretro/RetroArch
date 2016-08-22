@@ -524,8 +524,6 @@ static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
    const char *shader          = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
 
-   RARCH_LOG("SWITCH \n");
-
    if (!dir_list || !dir_list->list)
       return;
 
@@ -545,7 +543,6 @@ static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
       return;
 
    shader   = dir_list->list->elems[dir_list->ptr].data;
-   RARCH_LOG("SWITCH %s,\n", shader);
 
    switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(shader))))
    {
