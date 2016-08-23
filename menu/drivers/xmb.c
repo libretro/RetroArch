@@ -27,6 +27,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
+#include <string/utf8_util.h>
 
 #include "menu_generic.h"
 
@@ -54,6 +55,12 @@
 
 #ifndef XMB_DELAY
 #define XMB_DELAY 10
+#endif
+
+#ifdef HAVE_UTF8
+#define string_len utf8_strlen
+#else
+#define string_len strlen
 #endif
 
 typedef struct
@@ -669,38 +676,6 @@ static void xmb_messagebox(void *data, const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
-static uint32_t xmb_strlen_byte(const char **string)
-{
-   return strlen(*string);
-}
-
-#ifdef HAVE_UTF8
-/* Does not validate the input, returns garbage if it's not UTF-8. */
-static uint32_t xmb_strlen(const char **string)
-{
-   uint8_t first = xmb_strlen_byte(string);
-   uint32_t ret;
-   
-   if (first<128)
-      return first;
-   
-   ret = 0;
-   ret = (ret<<6) | (xmb_strlen_byte(string)    & 0x3F);
-   if (first >= 0xE0)
-      ret = (ret<<6) | (xmb_strlen_byte(string) & 0x3F);
-   if (first >= 0xF0)
-      ret = (ret<<6) | (xmb_strlen_byte(string) & 0x3F);
-   
-   if (first >= 0xF0)
-      return ret | (first&31)<<18;
-   if (first >= 0xE0)
-      return ret | (first&15)<<12;
-   return ret | (first&7)<<6;
-}
-#else
-#define xmb_strlen xmb_strlen_byte
-#endif
-
 static void xmb_render_messagebox_internal(
       xmb_handle_t *xmb, const char *message)
 {
@@ -733,7 +708,7 @@ static void xmb_render_messagebox_internal(
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int len = xmb_strlen(&msg);
+      int len = string_len(msg);
       if (len > longest)
       {
          longest = len;

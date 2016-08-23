@@ -220,7 +220,8 @@ OBJ += frontend/frontend.o \
        record/drivers/record_null.o \
        libretro-common/features/features_cpu.o \
        performance_counters.o \
-       verbosity.o
+       verbosity.o \
+		   libretro-common/string/utf8_util.o
 
 ifeq ($(HAVE_LANGEXTRA), 1)
 DEFINES += -DHAVE_LANGEXTRA
@@ -530,7 +531,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/drivers/null.o
 endif
 
-ifneq ($(NO_UTF8), 1)
+ifeq ($(UTF8), 1)
    DEFINES += -DHAVE_UTF8
    OBJ += intl/msg_hash_ru.o
    DEFINES += -finput-charset=UTF-8

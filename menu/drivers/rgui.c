@@ -28,6 +28,7 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 #include <string/stdstring.h>
+#include <string/utf8_util.h>
 
 #include "menu_generic.h"
 
@@ -44,6 +45,14 @@
 #define RGUI_TERM_START_Y(height)       (height / 9)
 #define RGUI_TERM_WIDTH(width)          (((width - RGUI_TERM_START_X(width) - RGUI_TERM_START_X(width)) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT(width, height) (((height - RGUI_TERM_START_Y(height) - RGUI_TERM_START_X(width)) / (FONT_HEIGHT_STRIDE)) - 1)
+
+#ifdef HAVE_UTF8
+#define string_walk utf8_walk
+#define string_len utf8_strlen
+#else
+#define string_walk utf8_walkbyte
+#define string_len strlen
+#endif
 
 typedef struct
 {
@@ -163,39 +172,6 @@ static void rgui_color_rect(
          if (i < fb_width && j < fb_height)
             data[j * (pitch >> 1) + i] = color;
 }
-
-static uint8_t string_walkbyte(const char **string)
-{
-   return *((*string)++);
-}
-
-#ifdef HAVE_UTF8
-/* Does not validate the input, returns garbage if it's not UTF-8. */
-static uint32_t string_walk(const char **string)
-{
-   uint8_t first = string_walkbyte(string);
-   uint32_t ret;
-   
-   if (first<128)
-      return first;
-   
-   ret = 0;
-   ret = (ret<<6) | (string_walkbyte(string)    & 0x3F);
-   if (first >= 0xE0)
-      ret = (ret<<6) | (string_walkbyte(string) & 0x3F);
-   if (first >= 0xF0)
-      ret = (ret<<6) | (string_walkbyte(string) & 0x3F);
-   
-   if (first >= 0xF0)
-      return ret | (first&31)<<18;
-   if (first >= 0xE0)
-      return ret | (first&15)<<12;
-   return ret | (first&7)<<6;
-}
-
-#else
-#define string_walk string_walkbyte
-#endif
 
 static void blit_line(int x, int y,
       const char *message, uint16_t color)
@@ -346,7 +322,7 @@ static void rgui_render_messagebox(const char *message)
    {
       unsigned line_width;
       char     *msg   = list->elems[i].data;
-      unsigned msglen = strlen(msg);
+      unsigned msglen = string_len(msg);
 
       if (msglen > RGUI_TERM_WIDTH(fb_width))
       {
@@ -381,7 +357,7 @@ static void rgui_render_messagebox(const char *message)
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int offset_x    = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
+      int offset_x    = FONT_WIDTH_STRIDE * (glyphs_width - string_len(msg)) / 2;
       int offset_y    = FONT_HEIGHT_STRIDE * i;
 
       blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, color);
@@ -551,7 +527,7 @@ static void rgui_render(void *data)
 
    blit_line(
          RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
-            - strlen(title_buf)) * FONT_WIDTH_STRIDE / 2,
+            - string_len(title_buf)) * FONT_WIDTH_STRIDE / 2,
          RGUI_TERM_START_X(fb_width),
          title_buf, TITLE_COLOR(settings));
 
@@ -626,8 +602,8 @@ static void rgui_render(void *data)
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             entry_selected ? '>' : ' ',
-            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + strlen(entry_title_buf)),
-            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + strlen(entry_title_buf)),
+            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + string_len(entry_title_buf)),
+            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + string_len(entry_title_buf)),
             entry_title_buf,
             entry_spacing,
             type_str_buf);
