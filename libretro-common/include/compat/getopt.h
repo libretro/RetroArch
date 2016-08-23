@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (compat_getopt.h).
+ * The following license statement only applies to this file (getopt.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,

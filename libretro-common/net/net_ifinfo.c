@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (compat_fnmatch.c).
+ * The following license statement only applies to this file (net_ifinfo.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
