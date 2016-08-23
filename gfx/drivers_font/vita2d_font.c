@@ -10701,29 +10701,51 @@ static void vita2d_font_free_font(void *data)
    RARCH_LOG("vita2d_font_free()\n");
 }
 
+static int vita2d_font_get_message_width(void *data, const char *msg,
+      unsigned msg_len, float scale)
+{
+	 vita_font_t *vita = (vita_font_t *)data;
+	 return vita2d_font_text_width(vita->font, vita->size*scale, msg) * scale ;      
+}
+
 static void vita2d_font_render_msg(void *data, const char *msg,
       const void *userdata)
 {
    float x, y, scale;
    unsigned color;
+	 unsigned width, height, text_height;
    settings_t *settings = config_get_ptr();
    vita_font_t *vita = (vita_font_t *)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
    (void)data;
+	 
+	 video_driver_get_size(&width, &height);
 
    if (params)
    {
-      x     = params->x;
-      y     = params->y;
-      scale = params->scale;
+		  scale = params->scale;
+ 		  text_height = vita2d_font_text_height(vita->font, vita->size*scale, msg);
+      x     = params->x*width;
+      y     = (1-params->y)*height;//-(text_height/4);
       color = params->color;
+			if(params)
+			switch (params->text_align)
+	    {
+	       case TEXT_ALIGN_RIGHT:
+	          x -= vita2d_font_get_message_width(vita, msg, strlen(msg), scale);
+	          break;
+	       case TEXT_ALIGN_CENTER:
+	          x -= vita2d_font_get_message_width(vita, msg, strlen(msg), scale) / 2.0;
+	          break;
+	    }
    }
    else
    {
-      x     = settings->video.msg_pos_x;
-      y     = 0.90f;
-      scale = 0.8f;
+		  scale = 0.8f;
+		  text_height = vita2d_font_text_height(vita->font, vita->size*scale, msg);
+			x     = settings->video.msg_pos_x;
+      y     = text_height;
       color = YELLOW;
    }
    
@@ -10738,5 +10760,5 @@ font_renderer_t vita2d_vita_font = {
    NULL,                      /* get_glyph */
    NULL,                      /* bind_block */
    NULL,                      /* flush */
-   NULL,                      /* get_message_width */
+   vita2d_font_get_message_width,
 };

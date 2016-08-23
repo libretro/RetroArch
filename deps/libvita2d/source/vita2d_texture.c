@@ -178,6 +178,7 @@ static inline void set_texture_wvp_uniform()
 {
 	void *vertex_wvp_buffer;
 	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+	//matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0.0f, 0.0f, 1.0f);
 	sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
 }
 
@@ -647,4 +648,45 @@ void vita2d_draw_texture_tint_scale_rotate(const vita2d_texture *texture, float 
 	vita2d_draw_texture_tint_scale_rotate_hotspot(texture, x, y, x_scale, y_scale,
 		rad, vita2d_texture_get_width(texture)/2.0f,
 		vita2d_texture_get_height(texture)/2.0f, color);
+}
+
+void vita2d_texture_set_wvp(float x, float y, float width, float height)
+{
+	void *vertex_wvp_buffer;
+	matrix_init_orthographic(_vita2d_ortho_matrix, x, width, height, y, 0.0f, 1.0f);
+	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+	sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
+}
+
+void vita2d_texture_set_program(){
+	set_texture_program();
+}
+
+void vita2d_texture_set_tint_program(){
+	set_texture_tint_program();
+}
+
+void vita2d_texture_set_tint_color_uniform(unsigned int color){
+	set_texture_tint_color_uniform(color);
+}
+
+
+void vita2d_draw_texture_part_generic(const vita2d_texture *texture, SceGxmPrimitiveType type, vita2d_texture_vertex *vertices, unsigned int num_vertices)
+{
+	
+	uint16_t *indices = (uint16_t *)vita2d_pool_memalign(
+		num_vertices * sizeof(uint16_t), // 4 indices
+		sizeof(uint16_t));
+
+	for(int n = 0; n < num_vertices; n++){
+		indices[n] = n;
+	}
+
+
+
+	// Set the texture to the TEXUNIT0
+	sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
+
+	sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+	sceGxmDraw(_vita2d_context, type, SCE_GXM_INDEX_FORMAT_U16, indices, 4);
 }

@@ -245,7 +245,7 @@ else ifeq ($(platform), vita)
   HAVE_NETWORKING          := 1
   HAVE_NETPLAY             := 1
   HAVE_OVERLAY             := 1
-  #HAVE_XMB						:= 1
+  HAVE_XMB						:= 1
   RARCH_CONSOLE          = 1
   HAVE_THREADS     := 1
 endif

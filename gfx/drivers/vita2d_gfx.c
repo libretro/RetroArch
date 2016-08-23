@@ -20,70 +20,25 @@
 #include <string/stdstring.h>
 
 #include "../../defines/psp_defines.h"
+#include "../common/vita2d_common.h"
 #include "../../general.h"
 #include "../../driver.h"
+#include "../video_coord_array.h"
 
-typedef struct vita_menu_frame
-{
-   bool active;
-   int width;
-   int height;
-   vita2d_texture *texture;
-} vita_menu_t;
-
-#ifdef HAVE_OVERLAY
-struct vita_overlay_data
-{
-   vita2d_texture *tex;
-   float x;
-   float y; 
-   float w; 
-   float h;
-   float tex_x;
-   float tex_y; 
-   float tex_w; 
-   float tex_h;
-   float alpha_mod;
-   float width;
-   float height;
-};
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
 #endif
 
-typedef struct vita_video
-{
-   vita2d_texture *texture;
-   SceGxmTextureFormat format;
-   int width;
-   int height;
-   SceGxmTextureFilter tex_filter;
-
-   bool fullscreen;
-   bool vsync;
-   bool rgb32;
-
-   video_viewport_t vp;
-
-   unsigned rotation;
-   bool vblank_not_reached;
-   bool keep_aspect;
-   bool should_resize;
-
-   vita_menu_t menu;
-   
-#ifdef HAVE_OVERLAY
-   struct vita_overlay_data *overlay;
-   unsigned overlays;
-   bool overlay_enable;
-   bool overlay_full_screen;
-#endif
-   
-} vita_video_t;
-
+static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate);
+      
 static void *vita2d_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    vita_video_t *vita   = (vita_video_t *)calloc(1, sizeof(vita_video_t));
    settings_t *settings = config_get_ptr();
+   unsigned temp_width                = PSP_FB_WIDTH;
+   unsigned temp_height               = PSP_FB_HEIGHT;
 
    if (!vita)
       return NULL;
@@ -123,6 +78,10 @@ static void *vita2d_gfx_init(const video_info_t *video,
 
    vita->tex_filter   = video->smooth 
       ? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
+
+   video_driver_set_size(&temp_width, &temp_height);
+   vita2d_gfx_set_viewport(vita, temp_width, temp_height, false, true);
+
 
    if (input && input_data)
    {
@@ -260,33 +219,41 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       vita2d_render_overlay(vita);
 #endif
 
-   if (vita->menu.active && vita->menu.texture)
+   if (vita->menu.active)
    {
-      if (vita->fullscreen)
-         vita2d_draw_texture_scale(vita->menu.texture,
-               0, 0,
-               PSP_FB_WIDTH  / (float)vita->menu.width,
-               PSP_FB_HEIGHT / (float)vita->menu.height);
-      else
-      {
-         if (vita->menu.width > vita->menu.height)
-         {
-            float scale = PSP_FB_HEIGHT / (float)vita->menu.height;
-            float w = vita->menu.width * scale;
-            vita2d_draw_texture_scale(vita->menu.texture,
-                  PSP_FB_WIDTH / 2.0f - w/2.0f, 0.0f,
-                  scale, scale);
-         }
-         else
-         {
-            float scale = PSP_FB_WIDTH / (float)vita->menu.width;
-            float h = vita->menu.height * scale;
-            vita2d_draw_texture_scale(vita->menu.texture,
-                  0.0f, PSP_FB_HEIGHT / 2.0f - h/2.0f,
-                  scale, scale);
-         }
-      }
+    
+     if(vita->menu.texture){
+       if (vita->fullscreen)
+          vita2d_draw_texture_scale(vita->menu.texture,
+                0, 0,
+                PSP_FB_WIDTH  / (float)vita->menu.width,
+                PSP_FB_HEIGHT / (float)vita->menu.height);
+       else
+       {
+          if (vita->menu.width > vita->menu.height)
+          {
+             float scale = PSP_FB_HEIGHT / (float)vita->menu.height;
+             float w = vita->menu.width * scale;
+             vita2d_draw_texture_scale(vita->menu.texture,
+                   PSP_FB_WIDTH / 2.0f - w/2.0f, 0.0f,
+                   scale, scale);
+          }
+          else
+          {
+             float scale = PSP_FB_WIDTH / (float)vita->menu.width;
+             float h = vita->menu.height * scale;
+             vita2d_draw_texture_scale(vita->menu.texture,
+                   0.0f, PSP_FB_HEIGHT / 2.0f - h/2.0f,
+                   scale, scale);
+          }
+       }
+     }
+     
+     menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+
+      
    }
+   
    
    if(!string_is_empty(msg))
      font_driver_render_msg(NULL, msg, NULL);
@@ -364,6 +331,25 @@ static bool vita2d_gfx_set_shader(void *data,
    (void)path;
 
    return false;
+}
+
+static void vita2d_set_projection(vita_video_t *vita,
+      struct video_ortho *ortho, bool allow_rotate)
+{
+   math_matrix_4x4 rot;
+
+   /* Calculate projection. */
+   matrix_4x4_ortho(&vita->mvp_no_rot, ortho->left, ortho->right,
+         ortho->bottom, ortho->top, ortho->znear, ortho->zfar);
+
+   if (!allow_rotate)
+   {
+      vita->mvp = vita->mvp_no_rot;
+      return;
+   }
+
+   matrix_4x4_rotate_z(&rot, M_PI * vita->rotation / 180.0f);
+   matrix_4x4_multiply(&vita->mvp, &rot, &vita->mvp_no_rot);
 }
 
 static void vita2d_gfx_update_viewport(vita_video_t* vita)
@@ -455,6 +441,110 @@ static void vita2d_gfx_update_viewport(vita_video_t* vita)
 
    vita->should_resize = false;
 
+}
+
+static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate)
+{
+   gfx_ctx_aspect_t aspect_data;
+   unsigned width, height;
+   int x                  = 0;
+   int y                  = 0;
+   float device_aspect    = (float)viewport_width / viewport_height;
+   struct video_ortho ortho = {0, 1, 1, 0, -1, 1};
+   settings_t *settings   = config_get_ptr();
+   vita_video_t *vita               = (vita_video_t*)data;
+
+   video_driver_get_size(&width, &height);
+
+   aspect_data.aspect     = &device_aspect;
+   aspect_data.width      = viewport_width;
+   aspect_data.height     = viewport_height;
+
+   video_context_driver_translate_aspect(&aspect_data);
+
+   if (settings->video.scale_integer && !force_full)
+   {
+      video_viewport_get_scaled_integer(&vita->vp,
+            viewport_width, viewport_height,
+            video_driver_get_aspect_ratio(), vita->keep_aspect);
+      viewport_width  = vita->vp.width;
+      viewport_height = vita->vp.height;
+   }
+   else if (vita->keep_aspect && !force_full)
+   {
+      float desired_aspect = video_driver_get_aspect_ratio();
+
+#if defined(HAVE_MENU)
+      if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      {
+         const struct video_viewport *custom = video_viewport_get_custom();
+
+         /* Vukan has top-left origin viewport. */
+         x               = custom->x;
+         y               = custom->y;
+         viewport_width  = custom->width;
+         viewport_height = custom->height;
+      }
+      else
+#endif
+      {
+         float delta;
+
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+         {
+            /* If the aspect ratios of screen and desired aspect 
+             * ratio are sufficiently equal (floating point stuff), 
+             * assume they are actually equal.
+             */
+         }
+         else if (device_aspect > desired_aspect)
+         {
+            delta          = (desired_aspect / device_aspect - 1.0f) 
+               / 2.0f + 0.5f;
+            x              = (int)roundf(viewport_width * (0.5f - delta));
+            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
+         }
+         else
+         {
+            delta           = (device_aspect / desired_aspect - 1.0f) 
+               / 2.0f + 0.5f;
+            y               = (int)roundf(viewport_height * (0.5f - delta));
+            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
+         }
+      }
+
+      vita->vp.x      = x;
+      vita->vp.y      = y;
+      vita->vp.width  = viewport_width;
+      vita->vp.height = viewport_height;
+   }
+   else
+   {
+      vita->vp.x      = 0;
+      vita->vp.y      = 0;
+      vita->vp.width  = viewport_width;
+      vita->vp.height = viewport_height;
+   }
+
+   vita2d_set_projection(vita, &ortho, allow_rotate);
+
+   /* Set last backbuffer viewport. */
+   if (!force_full)
+   {
+      vita->vp.width  = viewport_width;
+      vita->vp.height = viewport_height;
+   }
+
+   /*vita->vp.x          = (float)vita->vp.x;
+   vita->vp.y          = (float)vita->vp.y;
+   vita->vp.width      = (float)vita->vp.width;
+   vita->vp.height     = (float)vita->vp.height;
+   vita->vp.minDepth   = 0.0f;
+   vita->vp.maxDepth   = 1.0f;*/
+
+
+   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
 }
 
 static void vita2d_gfx_set_rotation(void *data,
@@ -603,9 +693,57 @@ static void vita_set_texture_enable(void *data, bool state, bool full_screen)
    vita->menu.active = state;
 }
 
+static uintptr_t vita_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   unsigned int stride, pitch, j, k;
+   struct texture_image *image = (struct texture_image*)data;
+   struct vita2d_texture *texture = vita2d_create_empty_texture_format(image->width, 
+     image->height,SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB);
+   if (!texture)
+      return 0;
+   RARCH_LOG("%d %d \n",image->height,image->width);
+
+   if(filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || 
+     filter_type == TEXTURE_FILTER_LINEAR)
+   vita2d_texture_set_filters(texture,SCE_GXM_TEXTURE_FILTER_LINEAR,SCE_GXM_TEXTURE_FILTER_LINEAR);
+
+   stride = vita2d_texture_get_stride(texture);
+   stride                     /= 4;
+   uint32_t             *tex32 = vita2d_texture_get_datap(texture);
+   const uint32_t     *frame32 = image->pixels;
+   pitch = image->width;
+   for (j = 0; j < image->height; j++)
+      for (k = 0; k < image->width; k++)
+         tex32[k + j*stride] = frame32[k + j*pitch];
+
+   return (uintptr_t)texture;
+}
+
+static void vita_unload_texture(void *data, uintptr_t handle)
+{
+   struct vita2d_texture *texture       = (struct vita2d_texture*)handle;
+   if (!texture)
+      return;
+
+   /* TODO: We really want to defer this deletion instead,
+    * but this will do for now. */
+   vita2d_wait_rendering_done();
+   vita2d_free_texture(texture);
+
+   //free(texture);
+}
+
+static void vita_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
+{
+   (void)data;
+   font_driver_render_msg(font, msg, params);
+}
+
 static const video_poke_interface_t vita_poke_interface = {
-   NULL,
-   NULL,
+   vita_load_texture,
+   vita_unload_texture,
    NULL,
    vita_set_filtering,
    NULL, /* get_video_output_size */
@@ -618,10 +756,18 @@ static const video_poke_interface_t vita_poke_interface = {
 #ifdef HAVE_MENU
    vita_set_texture_frame,
    vita_set_texture_enable,
-#endif
-   NULL,
-   NULL,
-   NULL
+   #else
+      NULL,
+      NULL,
+   #endif
+   #ifdef HAVE_MENU
+      vita_set_osd_msg,
+   #endif
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
  };
 
 static void vita2d_gfx_get_poke_interface(void *data,
@@ -779,7 +925,7 @@ video_driver_t video_vita2d = {
    vita2d_gfx_set_shader,
    vita2d_gfx_free,
    "vita2d",
-   NULL, /* set_viewport */
+   vita2d_gfx_set_viewport,
    vita2d_gfx_set_rotation,
    vita2d_gfx_viewport_info,
    vita2d_gfx_read_viewport,

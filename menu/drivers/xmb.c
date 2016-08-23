@@ -515,8 +515,13 @@ static void xmb_draw_icon(
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
+#if defined(VITA)
+   draw.width           = icon_size*scale_factor;
+   draw.height          = icon_size*scale_factor;
+#else
    draw.width           = icon_size;
    draw.height          = icon_size;
+#endif
    draw.coords          = &coords;
    draw.matrix_data     = mymat;
    draw.texture         = texture;
@@ -533,14 +538,24 @@ static void xmb_draw_icon(
       coords.color      = shadow;
       draw.x            = x + shadow_offset;
       draw.y            = height - y - shadow_offset;
-
+#if defined(VITA)
+      if(scale_factor<1){
+        draw.x            = draw.x + (icon_size-draw.width)/2;
+        draw.y            = draw.y + (icon_size-draw.width)/2;
+      }
+#endif
       menu_display_draw(&draw);
    }
 
    coords.color         = (const float*)color;
    draw.x               = x;
    draw.y               = height - y;
-
+#if defined(VITA)
+   if(scale_factor<1){
+      draw.x            = draw.x + (icon_size-draw.width)/2;
+      draw.y            = draw.y + (icon_size-draw.width)/2;
+   }
+#endif
    menu_display_draw(&draw);
 }
 
@@ -1999,6 +2014,8 @@ static void xmb_draw_bg(
    menu_display_ctx_draw_t draw;
    settings_t *settings = config_get_ptr();
 
+   RARCH_LOG("DRAW BG %d %d \n",width,height);
+   
    bool running = menu_display_libretro_running();
 
    draw.x                    = 0;

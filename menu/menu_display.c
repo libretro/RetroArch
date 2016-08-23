@@ -52,6 +52,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_VULKAN
    &menu_display_ctx_vulkan,
 #endif
+#ifdef HAVE_VITA2D
+   &menu_display_ctx_vita2d,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -87,6 +90,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
          if (string_is_equal(video_driver, "d3d"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_VITA2D:
+         if (string_is_equal(video_driver, "vita2d"))
             return true;
          break;
    }
@@ -548,6 +555,7 @@ void menu_display_draw_gradient(menu_display_ctx_draw_t *draw)
 
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
 {
+#if !defined(VITA)
    math_matrix_4x4 matrix_rotated, matrix_scaled;
    math_matrix_4x4 *b = NULL;
 
@@ -565,6 +573,7 @@ void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
    matrix_4x4_scale(&matrix_scaled,
          draw->scale_x, draw->scale_y, draw->scale_z);
    matrix_4x4_multiply(draw->matrix, &matrix_scaled, draw->matrix);
+#endif
 }
 
 bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw)
