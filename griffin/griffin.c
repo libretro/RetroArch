@@ -918,6 +918,10 @@ MENU
 #include "../menu/drivers_display/menu_display_vulkan.c"
 #endif
 
+#ifdef HAVE_VITA2D
+#include "../menu/drivers_display/menu_display_vita2d.c"
+#endif
+
 #endif
 
 
@@ -925,8 +929,7 @@ MENU
 #include "../menu/drivers/rgui.c"
 #endif
 
-#ifdef HAVE_OPENGL
-
+#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D)
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
 #endif

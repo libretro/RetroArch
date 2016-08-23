@@ -267,3 +267,36 @@ void matrix_init_perspective(float *m, float fov, float aspect, float near, floa
 
 	matrix_init_frustum(m, -half_width, half_width, -half_height, half_height, near, far);
 }
+
+uint32_t utf8_character(const char** unicode)
+{
+	char byte = **unicode;
+	++*unicode;
+	if (!(byte & 0x80)) {
+		return byte;
+	}
+	uint32_t unichar;
+	const static int tops[4] = { 0xC0, 0xE0, 0xF0, 0xF8 };
+	size_t numBytes;
+	for (numBytes = 0; numBytes < 3; ++numBytes) {
+		if ((byte & tops[numBytes + 1]) == tops[numBytes]) {
+			break;
+		}
+	}
+	unichar = byte & ~tops[numBytes];
+	if (numBytes == 3) {
+		return 0;
+	}
+	++numBytes;
+	size_t i;
+	for (i = 0; i < numBytes; ++i) {
+		unichar <<= 6;
+		byte = **unicode;
+		++*unicode;
+		if ((byte & 0xC0) != 0x80) {
+			return 0;
+		}
+		unichar |= byte & 0x3F;
+	}
+	return unichar;
+}

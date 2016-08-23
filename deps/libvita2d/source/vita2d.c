@@ -584,7 +584,7 @@ int vita2d_init_advanced(unsigned int temp_pool_size)
 	// Allocate memory for the memory pool
 	pool_size = temp_pool_size;
 	pool_addr = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW,
 		pool_size,
 		sizeof(void *),
 		SCE_GXM_MEMORY_ATTRIB_READ,
@@ -602,6 +602,11 @@ int vita2d_init_advanced(unsigned int temp_pool_size)
 
 	vita2d_initialized = 1;
 	return 1;
+}
+
+void vita2d_wait_rendering_done()
+{
+	sceGxmFinish(_vita2d_context);
 }
 
 int vita2d_fini()
@@ -674,8 +679,8 @@ int vita2d_fini()
 	// terminate libgxm
 	sceGxmTerminate();
 
-	if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
-		sceSysmoduleUnloadModule(SCE_SYSMODULE_PGF);
+	/* if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
+		sceSysmoduleUnloadModule(SCE_SYSMODULE_PGF); */
 
 	vita2d_initialized = 0;
 

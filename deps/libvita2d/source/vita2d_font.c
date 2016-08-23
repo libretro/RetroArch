@@ -11,16 +11,16 @@
 #include "utils.h"
 #include "shared.h"
 
-#define ATLAS_DEFAULT_W 256
-#define ATLAS_DEFAULT_H 256
+#define ATLAS_DEFAULT_W 512
+#define ATLAS_DEFAULT_H 512
 
 typedef enum {
-	VITA2D_LOAD_FROM_FILE,
-	VITA2D_LOAD_FROM_MEM
-} vita2d_font_load_from;
+	VITA2D_LOAD_FONT_FROM_FILE,
+	VITA2D_LOAD_FONT_FROM_MEM
+} vita2d_load_font_from;
 
 typedef struct vita2d_font {
-	vita2d_font_load_from load_from;
+	vita2d_load_font_from load_from;
 	union {
 		char *filename;
 		struct {
@@ -32,22 +32,23 @@ typedef struct vita2d_font {
 	FTC_Manager ftcmanager;
 	FTC_CMapCache cmapcache;
 	FTC_ImageCache imagecache;
-	texture_atlas *tex_atlas;
+	texture_atlas *atlas;
 } vita2d_font;
 
-static FT_Error ftc_face_requester(FTC_FaceID face_id, FT_Library library, FT_Pointer request_data, FT_Face *face)
+static FT_Error ftc_face_requester(FTC_FaceID face_id, FT_Library library,
+				   FT_Pointer request_data, FT_Face *face)
 {
 	vita2d_font *font = (vita2d_font *)face_id;
 
 	FT_Error error = FT_Err_Cannot_Open_Resource;
 
-	if (font->load_from == VITA2D_LOAD_FROM_FILE) {
+	if (font->load_from == VITA2D_LOAD_FONT_FROM_FILE) {
 		error = FT_New_Face(
 				font->ftlibrary,
 				font->filename,
 				0,
 				face);
-	} else if (font->load_from == VITA2D_LOAD_FROM_MEM) {
+	} else if (font->load_from == VITA2D_LOAD_FONT_FROM_MEM) {
 		error = FT_New_Memory_Face(
 				font->ftlibrary,
 				font->font_buffer,
@@ -82,21 +83,19 @@ vita2d_font *vita2d_load_font_file(const char *filename)
 		&font->ftcmanager);
 
 	if (error != FT_Err_Ok) {
-		free(font);
 		FT_Done_FreeType(font->ftlibrary);
+		free(font);
 		return NULL;
 	}
 
-	size_t len = strlen(filename);
-	font->filename = malloc(len + 1);
-	strcpy(font->filename, filename);
+	font->filename = strdup(filename);
 
 	FTC_CMapCache_New(font->ftcmanager, &font->cmapcache);
 	FTC_ImageCache_New(font->ftcmanager, &font->imagecache);
 
-	font->load_from = VITA2D_LOAD_FROM_FILE;
+	font->load_from = VITA2D_LOAD_FONT_FROM_FILE;
 
-	font->tex_atlas = texture_atlas_create(ATLAS_DEFAULT_W, ATLAS_DEFAULT_H,
+	font->atlas = texture_atlas_create(ATLAS_DEFAULT_W, ATLAS_DEFAULT_H,
 		SCE_GXM_TEXTURE_FORMAT_U8_R111);
 
 	return font;
@@ -126,8 +125,8 @@ vita2d_font *vita2d_load_font_mem(const void *buffer, unsigned int size)
 		&font->ftcmanager);
 
 	if (error != FT_Err_Ok) {
-		free(font);
 		FT_Done_FreeType(font->ftlibrary);
+		free(font);
 		return NULL;
 	}
 
@@ -137,9 +136,9 @@ vita2d_font *vita2d_load_font_mem(const void *buffer, unsigned int size)
 	FTC_CMapCache_New(font->ftcmanager, &font->cmapcache);
 	FTC_ImageCache_New(font->ftcmanager, &font->imagecache);
 
-	font->load_from = VITA2D_LOAD_FROM_MEM;
+	font->load_from = VITA2D_LOAD_FONT_FROM_MEM;
 
-	font->tex_atlas = texture_atlas_create(ATLAS_DEFAULT_W, ATLAS_DEFAULT_H,
+	font->atlas = texture_atlas_create(ATLAS_DEFAULT_W, ATLAS_DEFAULT_H,
 		SCE_GXM_TEXTURE_FORMAT_U8_R111);
 
 	return font;
@@ -151,60 +150,91 @@ void vita2d_free_font(vita2d_font *font)
 		FTC_FaceID face_id = (FTC_FaceID)font;
 		FTC_Manager_RemoveFaceID(font->ftcmanager, face_id);
 		FTC_Manager_Done(font->ftcmanager);
-		if (font->load_from == VITA2D_LOAD_FROM_FILE) {
+		if (font->load_from == VITA2D_LOAD_FONT_FROM_FILE) {
 			free(font->filename);
 		}
-		texture_atlas_free(font->tex_atlas);
+		texture_atlas_free(font->atlas);
 		free(font);
 	}
 }
 
-static int atlas_add_glyph(texture_atlas *atlas, unsigned int glyph_index, const FT_BitmapGlyph bitmap_glyph, int glyph_size)
+static int atlas_add_glyph(texture_atlas *atlas, unsigned int glyph_index,
+			   const FT_BitmapGlyph bitmap_glyph, int glyph_size)
 {
+	int ret;
+	int i, j;
+	bp2d_position position;
+	void *texture_data;
+	unsigned int tex_width;
 	const FT_Bitmap *bitmap = &bitmap_glyph->bitmap;
-
-	unsigned char *buffer = malloc(bitmap->width * bitmap->rows);
 	unsigned int w = bitmap->width;
 	unsigned int h = bitmap->rows;
+	unsigned char buffer[w * h];
 
-	int j, k;
-	for (j = 0; j < h; j++) {
-		for (k = 0; k < w; k++) {
+	bp2d_size size = {
+		bitmap->width,
+		bitmap->rows
+	};
+
+	texture_atlas_entry_data data = {
+		bitmap_glyph->left,
+		bitmap_glyph->top,
+		bitmap_glyph->root.advance.x,
+		bitmap_glyph->root.advance.y,
+		glyph_size
+	};
+
+	ret = texture_atlas_insert(atlas, glyph_index, &size, &data,
+				  &position);
+	if (!ret)
+		return 0;
+
+	for (i = 0; i < h; i++) {
+		for (j = 0; j < w; j++) {
 			if (bitmap->pixel_mode == FT_PIXEL_MODE_MONO) {
-				buffer[j*w + k] =
-					(bitmap->buffer[j*bitmap->pitch + k/8] & (1 << (7 - k%8)))
+				buffer[i*w + j] =
+					(bitmap->buffer[i*bitmap->pitch + j/8] & (1 << (7 - j%8)))
 					? 0xFF : 0;
-			} else {
-				buffer[j*w + k] = bitmap->buffer[j*bitmap->pitch + k];
+			} else if (bitmap->pixel_mode == FT_PIXEL_MODE_GRAY) {
+				buffer[i*w + j] = bitmap->buffer[i*bitmap->pitch + j];
 			}
 		}
 	}
 
-	int ret = texture_atlas_insert_draw(atlas, glyph_index, buffer,
-		bitmap->width, bitmap->rows,
-		bitmap_glyph->left, bitmap_glyph->top,
-		bitmap_glyph->root.advance.x, bitmap_glyph->root.advance.y,
-		glyph_size);
+	texture_data = vita2d_texture_get_datap(atlas->texture);
+	tex_width = vita2d_texture_get_width(atlas->texture);
 
-	free(buffer);
+	for (i = 0; i < size.h; i++) {
+		memcpy(texture_data + (position.x + (position.y + i) * tex_width),
+		       buffer + i * size.w, size.w);
+	}
 
-	return ret;
+	return 1;
 }
 
-int vita2d_font_draw_text(vita2d_font *font, int x, int y, unsigned int color, unsigned int size, const char *text)
+static int generic_font_draw_text(vita2d_font *font, int draw,
+				   int *height, int x, int y,
+				   unsigned int color,
+				   unsigned int size,
+				   const char *text)
 {
-	FTC_FaceID face_id = (FTC_FaceID)font;
+	const FT_ULong flags = FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL;
 	FT_Face face;
-	FTC_Manager_LookupFace(font->ftcmanager, face_id, &face);
-
 	FT_Int charmap_index;
-	charmap_index = FT_Get_Charmap_Index(face->charmap);
-
 	FT_Glyph glyph;
-	FT_Bool use_kerning = FT_HAS_KERNING(face);
-	FT_UInt glyph_index, previous = 0;
+	FT_UInt glyph_index;
+	FT_Bool use_kerning;
+	FTC_FaceID face_id = (FTC_FaceID)font;
+	FT_UInt previous = 0;
+	vita2d_texture *tex = font->atlas->texture;
+
+	unsigned int character;
+	int start_x = x;
+	int max_x = 0;
 	int pen_x = x;
-	int pen_y = y + size;
+	int pen_y = y;
+	bp2d_rectangle rect;
+	texture_atlas_entry_data data;
 
 	FTC_ScalerRec scaler;
 	scaler.face_id = face_id;
@@ -212,138 +242,101 @@ int vita2d_font_draw_text(vita2d_font *font, int x, int y, unsigned int color, u
 	scaler.height = size;
 	scaler.pixel = 1;
 
-	FT_ULong flags = FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL;
+	FTC_Manager_LookupFace(font->ftcmanager, face_id, &face);
+	use_kerning = FT_HAS_KERNING(face);
+	charmap_index = FT_Get_Charmap_Index(face->charmap);
 
-	int max = 0;
+	while (text[0]) {
+		character = utf8_character(&text);
 
-	while (*text) {
-
-		if (*text == '\n') {
-			if ((pen_x - x) > max)
-				max = pen_x-x;
-			pen_x = x;
+		if (character == '\n') {
+			if (pen_x > max_x)
+				max_x = pen_x;
+			pen_x = start_x;
 			pen_y += size;
-			text++;
 			continue;
 		}
 
-		glyph_index = FTC_CMapCache_Lookup(font->cmapcache, (FTC_FaceID)font, charmap_index, *text);
+		glyph_index = FTC_CMapCache_Lookup(font->cmapcache,
+						   (FTC_FaceID)font,
+						   charmap_index,
+						   character);
 
 		if (use_kerning && previous && glyph_index) {
 			FT_Vector delta;
-			FT_Get_Kerning(face, previous, glyph_index, FT_KERNING_DEFAULT, &delta);
+			FT_Get_Kerning(face, previous, glyph_index,
+				       FT_KERNING_DEFAULT, &delta);
 			pen_x += delta.x >> 6;
 		}
 
-		if (!texture_atlas_exists(font->tex_atlas, glyph_index)) {
-			FTC_ImageCache_LookupScaler(font->imagecache, &scaler, flags, glyph_index, &glyph, NULL);
+		if (!texture_atlas_get(font->atlas, glyph_index, &rect, &data)) {
+			FTC_ImageCache_LookupScaler(font->imagecache,
+						    &scaler,
+						    flags,
+						    glyph_index,
+						    &glyph,
+						    NULL);
 
-			if (!atlas_add_glyph(font->tex_atlas, glyph_index, (FT_BitmapGlyph)glyph, size)) {
+			if (!atlas_add_glyph(font->atlas, glyph_index,
+					     (FT_BitmapGlyph)glyph, size)) {
 				continue;
 			}
+
+			if (!texture_atlas_get(font->atlas, glyph_index, &rect, &data))
+				continue;
 		}
 
-		bp2d_rectangle rect;
-		int bitmap_left, bitmap_top;
-		int advance_x, advance_y;
-		int glyph_size;
+		const float draw_scale = size / (float)data.glyph_size;
 
-		if (!texture_atlas_get(font->tex_atlas, glyph_index,
-			&rect, &bitmap_left, &bitmap_top,
-			&advance_x, &advance_y, &glyph_size))
-				continue;
+		if (draw) {
+			vita2d_draw_texture_tint_part_scale(tex,
+				pen_x + data.bitmap_left * draw_scale,
+				pen_y - data.bitmap_top * draw_scale,
+				rect.x, rect.y, rect.w, rect.h,
+				draw_scale,
+				draw_scale,
+				color);
+		}
 
-		const float draw_scale = size/(float)glyph_size;
-
-		vita2d_draw_texture_tint_part_scale(font->tex_atlas->tex,
-			pen_x + bitmap_left * draw_scale,
-			pen_y - bitmap_top * draw_scale,
-			rect.x, rect.y, rect.w, rect.h,
-			draw_scale,
-			draw_scale,
-			color);
-
-		pen_x += (advance_x >> 16) * draw_scale;
-		pen_y += (advance_y >> 16) * draw_scale;
-
-		previous = glyph_index;
-		text++;
+		pen_x += (data.advance_x >> 16) * draw_scale;
 	}
-	if ((pen_x - x) > max)
-		max = pen_x-x;
 
-	return max;
+	if (pen_x > max_x)
+		max_x = pen_x;
+
+	if (height)
+		*height = pen_y + size - y;
+
+	return max_x - x;
 }
 
-void vita2d_font_draw_textf(vita2d_font *font, int x, int y, unsigned int color, unsigned int size, const char *text, ...)
+int vita2d_font_draw_text(vita2d_font *font, int x, int y, unsigned int color,
+			   unsigned int size, const char *text)
+{
+	return generic_font_draw_text(font, 1, NULL, x, y, color, size, text);
+}
+
+int vita2d_font_draw_textf(vita2d_font *font, int x, int y, unsigned int color,
+			   unsigned int size, const char *text, ...)
 {
 	char buf[1024];
 	va_list argptr;
+
 	va_start(argptr, text);
 	vsnprintf(buf, sizeof(buf), text, argptr);
 	va_end(argptr);
-	vita2d_font_draw_text(font, x, y, color, size, buf);
+
+	return vita2d_font_draw_text(font, x, y, color, size, buf);
 }
 
-void vita2d_font_text_dimensions(vita2d_font *font, unsigned int size, const char *text, int *width, int *height)
+void vita2d_font_text_dimensions(vita2d_font *font, unsigned int size,
+				 const char *text, int *width, int *height)
 {
-	FTC_FaceID face_id = (FTC_FaceID)font;
-	FT_Face face;
-	FTC_Manager_LookupFace(font->ftcmanager, face_id, &face);
+	int w;
+	w = generic_font_draw_text(font, 0, height, 0, 0, 0, size, text);
 
-	FT_Int charmap_index;
-	charmap_index = FT_Get_Charmap_Index(face->charmap);
-
-	FT_Glyph glyph;
-	FT_Bool use_kerning = FT_HAS_KERNING(face);
-	FT_UInt glyph_index, previous = 0;
-
-	int pen_x = 0;
-	int pen_y = size >> 1;
-
-	FTC_ScalerRec scaler;
-	scaler.face_id = face_id;
-	scaler.width = size;
-	scaler.height = size;
-	scaler.pixel = 1;
-
-	FT_ULong flags = FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL;
-
-	int max = 0;
-
-	while (*text) {
-		if (*text == '\n') {
-			if (pen_x > max)
-				max = pen_x;
-			pen_x = 0;
-			pen_y += size;
-			text++;
-			continue;
-		}
-		glyph_index = FTC_CMapCache_Lookup(font->cmapcache, (FTC_FaceID)font, charmap_index, *text);
-
-		if (use_kerning && previous && glyph_index) {
-			FT_Vector delta;
-			FT_Get_Kerning(face, previous, glyph_index, FT_KERNING_DEFAULT, &delta);
-			pen_x += delta.x >> 6;
-		}
-
-		FTC_ImageCache_LookupScaler(font->imagecache, &scaler, flags, glyph_index, &glyph, NULL);
-
-		const FT_BitmapGlyph bitmap_glyph = (FT_BitmapGlyph)glyph;
-
-		pen_x += bitmap_glyph->root.advance.x >> 16;
-		//pen_y += bitmap_glyph->root.advance.y >> 16;
-
-		previous = glyph_index;
-		text++;
-	}
-	if(pen_x > max)
-		max = pen_x;
 	if (width)
-		*width = max;
-	if (height)
-		*height = size + pen_y;
+		*width = w;
 }
 
 int vita2d_font_text_width(vita2d_font *font, unsigned int size, const char *text)

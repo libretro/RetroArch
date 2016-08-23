@@ -42,6 +42,7 @@ typedef struct vita2d_pgf vita2d_pgf;
 
 int vita2d_init();
 int vita2d_init_advanced(unsigned int temp_pool_size);
+void vita2d_wait_rendering_done();
 int vita2d_fini();
 
 void vita2d_clear_screen();
@@ -113,7 +114,7 @@ vita2d_font *vita2d_load_font_file(const char *filename);
 vita2d_font *vita2d_load_font_mem(const void *buffer, unsigned int size);
 void vita2d_free_font(vita2d_font *font);
 int vita2d_font_draw_text(vita2d_font *font, int x, int y, unsigned int color, unsigned int size, const char *text);
-void vita2d_font_draw_textf(vita2d_font *font, int x, int y, unsigned int color, unsigned int size, const char *text, ...);
+int vita2d_font_draw_textf(vita2d_font *font, int x, int y, unsigned int color, unsigned int size, const char *text, ...);
 void vita2d_font_text_dimensions(vita2d_font *font, unsigned int size, const char *text, int *width, int *height);
 int vita2d_font_text_width(vita2d_font *font, unsigned int size, const char *text);
 int vita2d_font_text_height(vita2d_font *font, unsigned int size, const char *text);
@@ -126,6 +127,14 @@ int vita2d_pgf_draw_textf(vita2d_pgf *font, int x, int y, unsigned int color, fl
 void vita2d_pgf_text_dimensions(vita2d_pgf *font, float scale, const char *text, int *width, int *height);
 int vita2d_pgf_text_width(vita2d_pgf *font, float scale, const char *text);
 int vita2d_pgf_text_height(vita2d_pgf *font, float scale, const char *text);
+
+
+/** ADVANCED **/
+void vita2d_texture_set_wvp(float x, float y, float width, float height);
+void vita2d_texture_set_program();
+void vita2d_texture_set_tint_program();
+void vita2d_texture_set_tint_color_uniform(unsigned int color);
+void vita2d_draw_texture_part_generic(const vita2d_texture *texture, SceGxmPrimitiveType type, vita2d_texture_vertex *vertices, unsigned int num_vertices);
 
 #ifdef __cplusplus
 }

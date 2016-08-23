@@ -8,6 +8,10 @@
 /* Misc utils */
 #define ALIGN(x, a)	(((x) + ((a) - 1)) & ~((a) - 1))
 #define	UNUSED(a)	(void)(a)
+#define SCREEN_DPI	220
+
+/* Font utils */
+uint32_t utf8_character(const char **unicode);
 
 /* GPU utils */
 void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alignment, unsigned int attribs, SceUID *uid);
@@ -42,5 +46,6 @@ void matrix_init_orthographic(float *m, float left, float right, float bottom, f
 void matrix_init_frustum(float *m, float left, float right, float bottom, float top, float near, float far);
 void matrix_init_perspective(float *m, float fov, float aspect, float near, float far);
 
+/* Text utils */
 
 #endif
