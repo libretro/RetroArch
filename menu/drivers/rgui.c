@@ -28,7 +28,7 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 #include <string/stdstring.h>
-#include <string/utf8_util.h>
+#include <encodings/utf.h>
 
 #include "menu_generic.h"
 
@@ -45,14 +45,6 @@
 #define RGUI_TERM_START_Y(height)       (height / 9)
 #define RGUI_TERM_WIDTH(width)          (((width - RGUI_TERM_START_X(width) - RGUI_TERM_START_X(width)) / (FONT_WIDTH_STRIDE)))
 #define RGUI_TERM_HEIGHT(width, height) (((height - RGUI_TERM_START_Y(height) - RGUI_TERM_START_X(width)) / (FONT_HEIGHT_STRIDE)) - 1)
-
-#ifdef HAVE_UTF8
-#define string_walk utf8_walk
-#define string_len utf8_strlen
-#else
-#define string_walk utf8_walkbyte
-#define string_len strlen
-#endif
 
 typedef struct
 {
@@ -185,7 +177,7 @@ static void blit_line(int x, int y,
    while (!string_is_empty(message))
    {
       const uint8_t *font_fb = menu_display_get_font_framebuffer();
-      uint32_t symbol        = string_walk(&message);
+      uint32_t symbol        = utf8_walk(&message);
       
       for (j = 0; j < FONT_HEIGHT; j++)
       {
@@ -322,7 +314,7 @@ static void rgui_render_messagebox(const char *message)
    {
       unsigned line_width;
       char     *msg   = list->elems[i].data;
-      unsigned msglen = string_len(msg);
+      unsigned msglen = utf8len(msg);
 
       if (msglen > RGUI_TERM_WIDTH(fb_width))
       {
@@ -357,7 +349,7 @@ static void rgui_render_messagebox(const char *message)
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int offset_x    = FONT_WIDTH_STRIDE * (glyphs_width - string_len(msg)) / 2;
+      int offset_x    = FONT_WIDTH_STRIDE * (glyphs_width - utf8len(msg)) / 2;
       int offset_y    = FONT_HEIGHT_STRIDE * i;
 
       blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, color);
@@ -527,7 +519,7 @@ static void rgui_render(void *data)
 
    blit_line(
          RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
-            - string_len(title_buf)) * FONT_WIDTH_STRIDE / 2,
+            - utf8len(title_buf)) * FONT_WIDTH_STRIDE / 2,
          RGUI_TERM_START_X(fb_width),
          title_buf, TITLE_COLOR(settings));
 
@@ -602,8 +594,8 @@ static void rgui_render(void *data)
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             entry_selected ? '>' : ' ',
-            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + string_len(entry_title_buf)),
-            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + string_len(entry_title_buf)),
+            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + strlen(entry_title_buf)),
+            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + strlen(entry_title_buf)),
             entry_title_buf,
             entry_spacing,
             type_str_buf);

@@ -27,7 +27,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
-#include <string/utf8_util.h>
+#include <encodings/utf.h>
 
 #include "menu_generic.h"
 
@@ -55,12 +55,6 @@
 
 #ifndef XMB_DELAY
 #define XMB_DELAY 10
-#endif
-
-#ifdef HAVE_UTF8
-#define string_len utf8_strlen
-#else
-#define string_len strlen
 #endif
 
 typedef struct
@@ -708,7 +702,7 @@ static void xmb_render_messagebox_internal(
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int len = string_len(msg);
+      int len = utf8len(msg);
       if (len > longest)
       {
          longest = len;

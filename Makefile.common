@@ -220,8 +220,7 @@ OBJ += frontend/frontend.o \
        record/drivers/record_null.o \
        libretro-common/features/features_cpu.o \
        performance_counters.o \
-       verbosity.o \
-		   libretro-common/string/utf8_util.o
+       verbosity.o
 
 ifeq ($(HAVE_LANGEXTRA), 1)
 DEFINES += -DHAVE_LANGEXTRA
