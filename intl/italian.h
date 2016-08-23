@@ -17,21 +17,12 @@
 #ifndef __INTL_ITALIAN_H
 #define __INTL_ITALIAN_H
 
-/* IMPORTANT:
- * For non-english characters to work without proper unicode support,
- * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
- * If you save this file as UTF-8, you'll break non-english characters
- * (e.g. German "Umlauts" and Portugese diacritics).
- */
-/* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
-extern const char force_iso_8859_1[sizeof("àèéìòù")==6+1 ? 1 : -1];
-
 #define RETRO_LBL_JOYPAD_B "Tasto B RetroPad"
 #define RETRO_LBL_JOYPAD_Y "Tasto Y RetroPad"
 #define RETRO_LBL_JOYPAD_SELECT "Tasto Select RetroPad"
 #define RETRO_LBL_JOYPAD_START "Tasto Start RetroPad"
-#define RETRO_LBL_JOYPAD_UP "Croce direzionale Sù RetroPad"
-#define RETRO_LBL_JOYPAD_DOWN "Croce direzionale Giù RetroPad"
+#define RETRO_LBL_JOYPAD_UP "Croce direzionale SÃ¹ RetroPad"
+#define RETRO_LBL_JOYPAD_DOWN "Croce direzionale GiÃ¹ RetroPad"
 #define RETRO_LBL_JOYPAD_LEFT "Croce direzionale Sinistra RetroPad"
 #define RETRO_LBL_JOYPAD_RIGHT "Croce direzionale Destra RetroPad"
 #define RETRO_LBL_JOYPAD_A "Tasto A RetroPad"
@@ -86,6 +77,6 @@ extern const char force_iso_8859_1[sizeof("àèéìòù")==6+1 ? 1 : -1];
 #define RETRO_LBL_DISK_NEXT "Cambia Disco Successivo"
 #define RETRO_LBL_DISK_PREV "Cambia Disco Precedente"
 #define RETRO_LBL_GRAB_MOUSE_TOGGLE "Attiva presa mouse"
-#define RETRO_LBL_MENU_TOGGLE "Menù a comparsa"
+#define RETRO_LBL_MENU_TOGGLE "MenÃ¹ a comparsa"
 
 #endif

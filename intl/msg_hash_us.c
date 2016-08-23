@@ -23,8 +23,8 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
-#ifdef HAVE_UTF8
-#include "msg_hash_uspseudo.c"
+#if 0
+//#include "msg_hash_uspseudo.c"
 #else
 
 int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)

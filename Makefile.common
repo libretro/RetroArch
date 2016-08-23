@@ -530,7 +530,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/drivers/null.o
 endif
 
-ifeq ($(UTF8), 1)
+ifneq ($(NO_UTF8), 1)
    DEFINES += -DHAVE_UTF8
    OBJ += intl/msg_hash_ru.o
    DEFINES += -finput-charset=UTF-8

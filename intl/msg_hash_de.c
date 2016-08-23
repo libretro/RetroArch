@@ -26,21 +26,10 @@
 #pragma clang diagnostic ignored "-Winvalid-source-encoding"
 #endif
 
- /* IMPORTANT:
-  * For non-english characters to work without proper unicode support,
-  * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
-  * If you save this file as UTF-8, you'll break non-english characters
-  * (e.g. German "Umlauts" and Portugese diacritics).
- */
-/* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
-extern const char force_iso_8859_1[sizeof("äÄöÖßüÜ")==7+1 ? 1 : -1];
-
 int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    uint32_t      driver_hash = 0;
    settings_t      *settings = config_get_ptr();
-
-   (void)sizeof(force_iso_8859_1);
 
    switch (msg)
    {
@@ -50,12 +39,12 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Suche nach einer Libretro-Core- \n"
                "Implementierung. In welchem Verzeichnis der \n"
-               "Browser startet, hängt vom deinem Core-Verzeichnis \n"
+               "Browser startet, hÃ¤ngt vom deinem Core-Verzeichnis \n"
                "ab. Falls du es nicht eingestellt hast, wird er \n"
                "im Root-Verzeichnis starten. \n"
                " \n"
                "Ist das Core-Verzeichnis ein Ordner, wird das \n"
-               "Menü diesen als Startverzeichnis nutzen. Ist \n"
+               "MenÃ¼ diesen als Startverzeichnis nutzen. Ist \n"
                "das Core-Verzeichnis ein Pfad zu einer Datei, \n"
                "wird es in dem Verzeichnis starten, in dem \n"
                "sich die Datei befindet.");
@@ -75,23 +64,23 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   snprintf(t, sizeof(t),
                         "udev-Eingabetreiber. \n"
                         " \n"
-                        "Dieser Treiber kann ohne X ausgeführt werden. \n"
+                        "Dieser Treiber kann ohne X ausgefÃ¼hrt werden. \n"
                         " \n"
                         "Er verwende die neue evdev-Joypad-API \n"
-                        "für die Joystick-Unterstützung und unterstützt \n"
+                        "fÃ¼r die Joystick-UnterstÃ¼tzung und unterstÃ¼tzt \n"
                         "auch Hotplugging und Force-Feedback (wenn das \n"
-                        "Gerät dies unterstützt). \n"
+                        "GerÃ¤t dies unterstÃ¼tzt). \n"
                         " \n"
                         );
                   snprintf(u, sizeof(u),
-                        "Der Treiber liest evdev-Ereigniss für Tastatur- \n"
-                        "Unterstützung und kann auch mit  Tastatur-Callbacks, \n"
-                        "Mäusen und Touchpads umgehen. \n"
+                        "Der Treiber liest evdev-Ereigniss fÃ¼r Tastatur- \n"
+                        "UnterstÃ¼tzung und kann auch mit  Tastatur-Callbacks, \n"
+                        "MÃ¤usen und Touchpads umgehen. \n"
                         " \n"
-                        "Standardmäßig sind die /dev/input-Dateien in den \n"
-                        "meisten Linux-Distribution nur für den Root- \n"
+                        "StandardmÃ¤ÃŸig sind die /dev/input-Dateien in den \n"
+                        "meisten Linux-Distribution nur fÃ¼r den Root- \n"
                         "Benutzer lesbar (mode 600). Du kannst eine udev- \n"
-                        "Regel erstellen, die auch den Zugriff für andere \n"
+                        "Regel erstellen, die auch den Zugriff fÃ¼r andere \n"
                         "Benutzer erlaubt.");
                   strlcat(s, t, len);
                   strlcat(s, u, len);
@@ -104,7 +93,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                      "Dieser Treiber erforder eine aktive TTY-Schnittstelle. \n"
                      "Tastatur-Ereignisse werden direkt von der TTY gelesen, \n"
                      "was es einfacher, aber weniger flexibel als udev macht. \n"
-                     "Mäuse, etc, werden nicht unterstützt. \n"
+                     "MÃ¤use, etc, werden nicht unterstÃ¼tzt. \n"
                      " \n"
                      "Dieser Treiber verwendet die alte Joystick-API \n"
                      "(/dev/input/js*).");
@@ -113,7 +102,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                snprintf(s, len,
                      "Eingabetreiber.\n"
                      " \n"
-                     "Abhängig vom Grafiktreiber kann ein anderer Eingabe- \n"
+                     "AbhÃ¤ngig vom Grafiktreiber kann ein anderer Eingabe- \n"
                      "treiber erzwungen werden.");
                break;
          }
@@ -123,11 +112,11 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Lade Content. \n"
                "Suche nach Content. \n"
                " \n"
-               "Um Content zu laden benötigst du den passenden \n"
+               "Um Content zu laden benÃ¶tigst du den passenden \n"
                "Libretro-Core und die Content-Datei. \n"
                " \n"
-               "Um einzustellen, welcher Ordner standardmäßig \n"
-               "geöffnet wird, um nach Content zu suchen, solltest \n"
+               "Um einzustellen, welcher Ordner standardmÃ¤ÃŸig \n"
+               "geÃ¶ffnet wird, um nach Content zu suchen, solltest \n"
                "du das Content-Verzeichnis setzen. Wenn es nicht \n"
                "gesetzt ist, wird es im Root-Verzeichen starten. \n"
                " \n"
@@ -141,13 +130,13 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Lade Content aus dem Verlauf. \n"
                " \n"
                "Wenn Content geladen wird, wird der Content \n"
-               "sowie der dazugehörige Core im Verlauf gespeichert. \n"
+               "sowie der dazugehÃ¶rige Core im Verlauf gespeichert. \n"
                " \n"
                "Der Verlauf wird im selben Verzeichnis wie die \n"
                "RetroArch-Konfigurationsdatei gespeicher. Wenn \n"
                "beim Start keine Konfigurationsdatei geladen wurde, \n"
                "wird keine Verlauf geladen oder gespeichert und nicht \n"
-               "im Hauptmenü angezeigt."
+               "im HauptmenÃ¼ angezeigt."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
@@ -164,7 +153,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "verwenden. \n"
                   " \n"
                   "Die Leistung, sowohl bei software-gerenderten, \n"
-                  "als auch bei Libretro-GL-Cores, hängt von dem \n"
+                  "als auch bei Libretro-GL-Cores, hÃ¤ngt von dem \n"
                   "GL-Treiber deiner Grafikkarte ab.");
          }
          else if (string_is_equal(settings->video.driver, "sdl2"))
@@ -175,7 +164,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Dies ist ein SDL2-Grafiktreiber \n"
                   "mit Software-Rendering."
                   " \n"
-                  "Die Leistung hängt von der SDL- \n"
+                  "Die Leistung hÃ¤ngt von der SDL- \n"
                   "Implementierung deiner Plattform ab.");
          }
          else if (string_is_equal(settings->video.driver, "sdl1"))
@@ -188,7 +177,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "Die Leistung ist suboptimal und du \n"
                   "solltest ihn nur als letzte \n"
-                  "Möglichkeit verwenden.");
+                  "MÃ¶glichkeit verwenden.");
          }
          else if (string_is_equal(settings->video.driver, "d3d"))
          {
@@ -196,7 +185,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Direct3D-Grafiktreiber. \n"
                   " \n"
                   "Die Leistung bei software-gerenderten \n"
-                  "Cores hängt von dem D3D-Treiber deiner \n"
+                  "Cores hÃ¤ngt von dem D3D-Treiber deiner \n"
                   "Grafikkarte ab.");
          }
          else if (string_is_equal(settings->video.driver, "exynos"))
@@ -206,7 +195,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "Dies ist ein Low-Level-Exynos-Grafiktreiber. \n"
                   "Er verwendet den G2D-Block in Samsung-Exynos-SoCs. \n"
-                  "für Blitting-Operationen. \n"
+                  "fÃ¼r Blitting-Operationen. \n"
                   " \n"
                   "Die Leistung bei software-gerendeten Cores sollte \n"
                   "optimal sein.");
@@ -264,18 +253,18 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "HLSL"
 #endif
                "-Voreinstellung. \n"
-               "Das Menüshader-Menü wird entsprechend \n"
+               "Das MenÃ¼shader-MenÃ¼ wird entsprechend \n"
                "aktualisiert."
                " \n"
                "Wenn der CGP komplexe Methoden verwendet, \n"
                "(also andere als Quellskalierung mit dem \n"
-               "selben Faktor für X/Y) kann der im Menü \n"
+               "selben Faktor fÃ¼r X/Y) kann der im MenÃ¼ \n"
                "angezeigte Skalierungsfaktor inkorrekt sein."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
          snprintf(s, len,
-               "Für diesen Durchgang skalieren. \n"
+               "FÃ¼r diesen Durchgang skalieren. \n"
                " \n"
                "Der Skalierungsfaktor wird multipliziert, \n"
                "d.h. 2x im ersten Durchgang und 2x im \n"
@@ -285,24 +274,24 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Wenn es im letzten Durchgang einen \n"
                "Skalierungsfaktor gibt, wird das Ergebnis \n"
                "mit dem als 'Standardfilter' eingestellten \n"
-               "Filter auf die Bildschirmgröße gestreckt. \n"
+               "Filter auf die BildschirmgrÃ¶ÃŸe gestreckt. \n"
                " \n"
                "Wenn 'Mir egal' eingestellt ist, wird \n"
                "entweder einfache Skalierung or Vollbild- \n"
-               "Streckung verwendet - abhängig davon, ob \n"
+               "Streckung verwendet - abhÃ¤ngig davon, ob \n"
                "es der letzte Durchgang ist oder nicht."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
          snprintf(s, len,
-               "Shader-Durchgänge. \n"
+               "Shader-DurchgÃ¤nge. \n"
                " \n"
                "RetroArch erlaubt es dir, verschiedene Shader \n"
-               "in verschiedenen Durchgängen miteinander zu \n"
+               "in verschiedenen DurchgÃ¤ngen miteinander zu \n"
                "kombinieren. \n"
                " \n"
                "Diese Option legt die Anzahl der Shader- \n"
-               "Durchgänge fest. Wenn du die Anzahl auf 0 setzt, \n"
+               "DurchgÃ¤nge fest. Wenn du die Anzahl auf 0 setzt, \n"
                "verwendest du einen 'leeren' Shader."
                " \n"
                "Die 'Standardfilter'-Option beeinflusst den \n"
@@ -312,15 +301,15 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Shader-Parameter. \n"
                " \n"
-               "Verändert den momentanen Shader. Wird nicht in \n"
+               "VerÃ¤ndert den momentanen Shader. Wird nicht in \n"
                "der CGP/GLSLP-Voreinstellungs-Datei gespeichert.");
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          snprintf(s, len,
                "Shader-Voreinstellung-Parameter. \n"
                " \n"
-               "Verändert die Shader-Voreinstellung, die aktuell \n"
-               "im Menü aktiv ist."
+               "VerÃ¤ndert die Shader-Voreinstellung, die aktuell \n"
+               "im MenÃ¼ aktiv ist."
                );
          break;
       /*
@@ -336,9 +325,9 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_REWIND:
          snprintf(s, len,
-               "Halte die Taste zum Zurückspulen gedrückt.\n"
+               "Halte die Taste zum ZurÃ¼ckspulen gedrÃ¼ckt.\n"
                " \n"
-               "Die Zurückspulfunktion muss eingeschaltet \n"
+               "Die ZurÃ¼ckspulfunktion muss eingeschaltet \n"
                "sein.");
          break;
       case MENU_ENUM_LABEL_EXIT_EMULATOR:
@@ -355,7 +344,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LOAD_STATE:
          snprintf(s, len,
-               "Lädt einen Savestate.");
+               "LÃ¤dt einen Savestate.");
          break;
       case MENU_ENUM_LABEL_SAVE_STATE:
          snprintf(s, len,
@@ -367,7 +356,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
-               "Erhöht den Cheat-Index.\n");
+               "ErhÃ¶ht den Cheat-Index.\n");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_MINUS:
          snprintf(s, len,
@@ -379,11 +368,11 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SHADER_NEXT:
          snprintf(s, len,
-               "Wendet nächsten Shader im Verzeichnis an.");
+               "Wendet nÃ¤chsten Shader im Verzeichnis an.");
          break;
       case MENU_ENUM_LABEL_RESET:
          snprintf(s, len,
-               "Setzt den Content zurück.\n");
+               "Setzt den Content zurÃ¼ck.\n");
          break;
       case MENU_ENUM_LABEL_PAUSE_TOGGLE:
          snprintf(s, len,
@@ -395,12 +384,12 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
          snprintf(s, len,
-               "Halte den Knopf gedrückt, um vorzuspulen. Beim Loslassen \n"
+               "Halte den Knopf gedrÃ¼ckt, um vorzuspulen. Beim Loslassen \n"
                "wird das Vorspulen beendet.");
          break;
       case MENU_ENUM_LABEL_SLOWMOTION:
          snprintf(s, len,
-               "Halte den Knopf gedrückt, um die Zeitlupe einzuschalten.");
+               "Halte den Knopf gedrÃ¼ckt, um die Zeitlupe einzuschalten.");
          break;
       case MENU_ENUM_LABEL_FRAME_ADVANCE:
          snprintf(s, len,
@@ -419,9 +408,9 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_R_Y_PLUS:
       case MENU_ENUM_LABEL_R_Y_MINUS:
          snprintf(s, len,
-               "Achse für Analog-Stick (DualShock-artig).\n"
+               "Achse fÃ¼r Analog-Stick (DualShock-artig).\n"
                " \n"
-               "Zugewiesen wie gewöhnlich, wenn jedoch eine echte \n"
+               "Zugewiesen wie gewÃ¶hnlich, wenn jedoch eine echte \n"
                "Analogachse zugewiesen wird, kann sie auch wirklich \n"
                "analog gelesen werden.\n"
                " \n"
@@ -458,17 +447,17 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
          return "Lade Archiv";
       case MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE:
-         return "Öffne Archiv";
+         return "Ã–ffne Archiv";
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Nachfragen";
       case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
-         return "Privatsphäre-Einstellungen";
+         return "PrivatsphÃ¤re-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU: /* Don't change. Breaks everything. (Would be: "Horizontales Menu") */
          return "Horizontal Menu";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Keine Einstellungen gefunden.";
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
-         return "Keine Leistungszähler.";
+         return "Keine LeistungszÃ¤hler.";
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
          return "Treiber-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
@@ -482,7 +471,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS:
          return "Spielstand-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS:
-         return "Zurückspul-Einstellungen";
+         return "ZurÃ¼ckspul-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_SHADER:
          return "Shader";
       case MENU_ENUM_LABEL_VALUE_CHEAT:
@@ -506,7 +495,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH:
          return "Schriftart der OSD-Nachrichten";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE:
-         return "Schriftgröße der OSD-Nachrichten";
+         return "SchriftgrÃ¶ÃŸe der OSD-Nachrichten";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
          return "X-Position der OSD-Nachrichten";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
@@ -524,17 +513,17 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LINEAR:
          return "Linear";
       case MENU_ENUM_LABEL_VALUE_NEAREST:
-         return "Nächster";
+         return "NÃ¤chster";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:
          return "<Voreinstellung>";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE:
          return "<Keins>";
       case MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE:
-         return "Nicht verfügbar";
+         return "Nicht verfÃ¼gbar";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY: /* UPDATE/FIXME */
          return "Eingabebelegungs-Verzeichnis";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Eingabegerät-Autoconfig-Verzeichnis";
+         return "EingabegerÃ¤t-Autoconfig-Verzeichnis";
       case MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
          return "Aufnahme-Konfigurationsverzeichnis";
       case MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
@@ -568,7 +557,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Assets-Verzeichnis";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Dynamische-Bildschirmhintergründe-Verzeichnis";
+         return "Dynamische-BildschirmhintergrÃ¼nde-Verzeichnis";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Browser-Directory";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -602,35 +591,35 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Aktiviere Netplay-Zuschauermodus";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
-         return "IP-Addresse für Netplay";
+         return "IP-Addresse fÃ¼r Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
-         return "TCP/UDP-Port für Netplay";
+         return "TCP/UDP-Port fÃ¼r Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
          return "Aktiviere Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
-         return "Verzögere Netplay-Frames";
+         return "VerzÃ¶gere Netplay-Frames";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_MODE:
          return "Aktiviere Netplay-Client";
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
          return "Zeige Startbildschirm";
       case MENU_ENUM_LABEL_VALUE_TITLE_COLOR:
-         return "Menü-Titel-Farbe";
+         return "MenÃ¼-Titel-Farbe";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
-         return "Hover-Farbe für Menü-Einträge";
+         return "Hover-Farbe fÃ¼r MenÃ¼-EintrÃ¤ge";
       case MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE:
          return "Zeige Uhrzeit / Datum";
       case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
          return "Threaded Data Runloop";
       case MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR:
-         return "Normale Farbe für Menü-Einträge";
+         return "Normale Farbe fÃ¼r MenÃ¼-EintrÃ¤ge";
       case MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
          return "Zeige erweitere Einstellungen";
       case MENU_ENUM_LABEL_VALUE_COLLAPSE_SUBGROUPS_ENABLE:
          return "Untergruppen einklappen";
       case MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE:
-         return "Maus-Unterstützung";
+         return "Maus-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
-         return "Touch-Unterstützung";
+         return "Touch-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_CORE_ENABLE:
          return "Zeige Core-Namen";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
@@ -646,31 +635,31 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "UI-Companion beim Hochfahren starten";
       case MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE:
-         return "Menüleiste";
+         return "MenÃ¼leiste";
       case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
-         return "Verknüpfte Aktion bei Archivdateien";
+         return "VerknÃ¼pfte Aktion bei Archivdateien";
       case MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE:
          return "Netzwerk-Befehle";
       case MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT:
-         return "Port für Netzwerk-Befehle";
+         return "Port fÃ¼r Netzwerk-Befehle";
       case MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE:
          return "Aktiviere Verlaufsliste";
       case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
-         return "Länge der Verlaufsliste";
+         return "LÃ¤nge der Verlaufsliste";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
-         return "Geschätzte Monitor-Bildrate";
+         return "GeschÃ¤tzte Monitor-Bildrate";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Dummy bei Core-Abschaltung";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "Cores nicht automatisch starten";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
-         return "Begrenze maximale Ausführungsgeschwindigkeit";
+         return "Begrenze maximale AusfÃ¼hrungsgeschwindigkeit";
       case MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO:
-         return "Maximale Ausführungsgeschwindigkeitd";
+         return "Maximale AusfÃ¼hrungsgeschwindigkeitd";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Lade Remap-Dateien automatisch";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
-         return "Zeitlupen-Verhältnis";
+         return "Zeitlupen-VerhÃ¤ltnis";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Core-Spezifische Konfiguration";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
@@ -696,13 +685,13 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
          return "Aktiviere GPU-Bildschirmfotos";
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
-         return "Bildränder (Overscan) zuschneiden (Neustart erforderlich)";
+         return "BildrÃ¤nder (Overscan) zuschneiden (Neustart erforderlich)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
-         return "Bildseitenverhältnis-Index";
+         return "BildseitenverhÃ¤ltnis-Index";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
-         return "Automatisches Bildseitenverhältnis";
+         return "Automatisches BildseitenverhÃ¤ltnis";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT:
-         return "Erzwinge Bildseitenverhältnis";
+         return "Erzwinge BildseitenverhÃ¤ltnis";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE:
          return "Bildwiederholrate";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
@@ -734,7 +723,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
          return "Core-Logging-Stufe";
       case MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY:
-         return "Log-Ausführlichkeit";
+         return "Log-AusfÃ¼hrlichkeit";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
          return "Automatisches Laden von Save States";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
@@ -744,7 +733,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
          return "Autospeicherungsintervall";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
-         return "Blockiere SRAM-Überschreibung";
+         return "Blockiere SRAM-Ãœberschreibung";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
          return "HW-Shared-Context aktivieren";
       case MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH:
@@ -758,7 +747,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW:
          return "Erlaube Standort-Lokalisierung";
       case MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO:
-         return "Pausiere, wenn das Menü aktiv ist";
+         return "Pausiere, wenn das MenÃ¼ aktiv ist";
       case MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
          return "Zeige Tastatur-Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
@@ -766,7 +755,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Monitor-Index";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY:
-         return "Bildverzögerung";
+         return "BildverzÃ¶gerung";
       case MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE:
          return "Auslastungsgrad";
       case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD:
@@ -784,17 +773,17 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
          return "Maximaler Audioversatz";
       case MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES:
-         return "Cheat-Durchgänge";
+         return "Cheat-DurchgÃ¤nge";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
          return "Speichere Core-Remap-Datei";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME:
          return "Speichere Spiel-Remap-Datei";
       case MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES:
-         return "Änderungen übernehmen";
+         return "Ã„nderungen Ã¼bernehmen";
       case MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES:
-         return "Änderungen übernehmen";
+         return "Ã„nderungen Ã¼bernehmen";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
-         return "Zurückspulen (Rewind) aktivieren";
+         return "ZurÃ¼ckspulen (Rewind) aktivieren";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Lade Content (Sammlung)";  /* FIXME */
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
@@ -808,29 +797,29 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
          return "Stumm";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
-         return "Lautstärke (dB)";
+         return "LautstÃ¤rke (dB)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
          return "Synchronisiere Audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
          return "Audio Rate Control Delta";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
-         return "Shader-Durchgänge";  /* FIXME */
+         return "Shader-DurchgÃ¤nge";  /* FIXME */
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
          return "Lade Konfigurationsdatei"; /* FIXME/UPDATE */
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
-         return "Genauigkeit des Zurückspulens (Rewind)";
+         return "Genauigkeit des ZurÃ¼ckspulens (Rewind)";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Lade Remap-Datei";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
-         return "Benutzerdefiniertes Verhältnis";
+         return "Benutzerdefiniertes VerhÃ¤ltnis";
       case MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY:
          return "<Diesen Ordner verwenden>";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Starte Content";
       case MENU_ENUM_LABEL_VALUE_DISK_OPTIONS: /* UPDATE/FIXME */
-         return "Datenträger-Optionen";
+         return "DatentrÃ¤ger-Optionen";
       case MENU_ENUM_LABEL_VALUE_CORE_OPTIONS:
          return "Optionen";
       case MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS:
@@ -840,27 +829,27 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
          return "Speichere Cheat-Datei unter...";
       case MENU_ENUM_LABEL_VALUE_CORE_COUNTERS:
-         return "Core-Zähler";
+         return "Core-ZÃ¤hler";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Bildschirmfoto";
       case MENU_ENUM_LABEL_VALUE_RESUME:
          return "Fortsetzen";
       case MENU_ENUM_LABEL_VALUE_DISK_INDEX:
-         return "Datenträger-Nummer";
+         return "DatentrÃ¤ger-Nummer";
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
-         return "Frontendzähler";
+         return "FrontendzÃ¤hler";
       case MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND:
-         return "Füge Datenträgerabbild hinzu";
+         return "FÃ¼ge DatentrÃ¤gerabbild hinzu";
       case MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS:
-         return "Datenträgerstatus";
+         return "DatentrÃ¤gerstatus";
       case MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE:
-         return "Keine Wiedergabelisten-Eintrage verfügbar.";
+         return "Keine Wiedergabelisten-Eintrage verfÃ¼gbar.";
       case MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE:
-         return "Keine Core-Informationen verfügbar.";
+         return "Keine Core-Informationen verfÃ¼gbar.";
       case MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:
-         return "Keine Core-Optionen verfügbar.";
+         return "Keine Core-Optionen verfÃ¼gbar.";
       case MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE:
-         return "Kein Core verfügbar.";
+         return "Kein Core verfÃ¼gbar.";
       case MENU_ENUM_LABEL_VALUE_NO_CORE:
          return "Kein Core";
       case MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER:
@@ -868,7 +857,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursormanager";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
-         return "Hauptmenü"; 
+         return "HauptmenÃ¼"; 
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Einstellungen";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:
@@ -900,13 +889,13 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND:
          return "Ordner nicht gefunden.";
       case MENU_ENUM_LABEL_VALUE_NO_ITEMS:
-         return "Keine Einträge.";
+         return "Keine EintrÃ¤ge.";
       case MENU_ENUM_LABEL_VALUE_CORE_LIST:
          return "Lade Core";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
          return "Lade Content"; /* FIXME */
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
-         return "Schließe";
+         return "SchlieÃŸe";
       case MENU_ENUM_LABEL_VALUE_MANAGEMENT:
          return "Datenbank-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_SAVE_STATE:
@@ -926,7 +915,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RECORD_DRIVER:
          return "Aufnahme-Treiber";
       case MENU_ENUM_LABEL_VALUE_MENU_DRIVER:
-         return "Menü-Treiber";
+         return "MenÃ¼-Treiber";
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
          return "Kamera-Treiber";
       case MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER:
@@ -946,7 +935,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Overlay-Transparenz";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:
-         return "Menühintergrund";
+         return "MenÃ¼hintergrund";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamischer Hintergrund";
       case MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* UPDATE/FIXME */
@@ -956,7 +945,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
          return "Momentane Shaderparameter"; /* FIXME/UPDATE */
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
-         return "Menü Shaderparameter (Menü)";
+         return "MenÃ¼ Shaderparameter (MenÃ¼)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
          return "Speiche Shader-Voreinstellung unter...";
       case MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS:
@@ -1006,7 +995,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:
          return "Lizenz(en)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS:
-         return "Unterstütze Erweiterungen";
+         return "UnterstÃ¼tze Erweiterungen";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
          return "Firmware";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
@@ -1030,115 +1019,115 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE:
          return "Keine Quelle";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING:
-         return "Lädt";
+         return "LÃ¤dt";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED:
          return "Geladen";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING:
-         return "Entlädt";
+         return "EntlÃ¤dt";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER:
          return "Video-Context-Treiber";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH:
          return "Bildschirmbreite (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT:
-         return "Bildschirmhöhe (mm)";
+         return "BildschirmhÃ¶he (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI:
          return "Bildschirm-DPI";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT:
-         return "LibretroDB-Unterstützung";
+         return "LibretroDB-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT:
-         return "Overlay-Unterstützung";
+         return "Overlay-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT:
-         return "Befehlsinterface-Unterstützung";
+         return "Befehlsinterface-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT:
-         return "Netzwerk-Befehlsinterface-Unterstützung";
+         return "Netzwerk-Befehlsinterface-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT:
-         return "Cocoa-Unterstützung";
+         return "Cocoa-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT:
-         return "PNG-Unterstützung (RPNG)";
+         return "PNG-UnterstÃ¼tzung (RPNG)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT:
-         return "SDL1.2-Unterstützung";
+         return "SDL1.2-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:
-         return "SDL2-Unterstützung";
+         return "SDL2-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT:
-         return "OpenGL-Unterstützung";
+         return "OpenGL-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT:
-         return "OpenGL-ES-Unterstützung";
+         return "OpenGL-ES-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT:
-         return "Threading-Unterstützung";
+         return "Threading-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT:
-         return "KMS/EGL-Unterstützung";
+         return "KMS/EGL-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT:
-         return "Udev-Unterstützung";
+         return "Udev-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT:
-         return "OpenVG-Unterstützung";
+         return "OpenVG-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT:
-         return "EGL-Unterstützung";
+         return "EGL-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT:
-         return "X11-Unterstützung";
+         return "X11-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT:
-         return "Wayland-Unterstützung";
+         return "Wayland-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT:
-         return "XVideo-Unterstützung";
+         return "XVideo-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT:
-         return "ALSA-Unterstützung";
+         return "ALSA-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT:
-         return "OSS-Unterstützung";
+         return "OSS-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT:
-         return "OpenAL-Unterstützung";
+         return "OpenAL-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT:
-         return "OpenSL-Unterstützung";
+         return "OpenSL-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT:
-         return "RSound-Unterstützung";
+         return "RSound-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT:
-         return "RoarAudio-Unterstützung";
+         return "RoarAudio-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT:
-         return "JACK-Unterstützung";
+         return "JACK-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT:
-         return "PulseAudio-Unterstützung";
+         return "PulseAudio-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
-         return "DirectSound-Unterstützung";
+         return "DirectSound-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT:
-         return "XAudio2-Unterstützung";
+         return "XAudio2-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT:
-         return "Zlib-Unterstützung";
+         return "Zlib-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
-         return "7zip-Unterstützung";
+         return "7zip-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
-         return "Dynamic-Library-Unterstützung";
+         return "Dynamic-Library-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT:
-         return "Cg-Unterstützung";
+         return "Cg-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
-         return "GLSL-Unterstützung";
+         return "GLSL-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT:
-         return "HLSL-Unterstützung";
+         return "HLSL-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:
-         return "Libxml2-XML-Parsing-Unterstützung";
+         return "Libxml2-XML-Parsing-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT:
-         return "SDL-Image-Unterstützung";
+         return "SDL-Image-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
-         return "Unterstützung für OpenGL/Direct3D Render-to-Texture (Multi-Pass Shader)";
+         return "UnterstÃ¼tzung fÃ¼r OpenGL/Direct3D Render-to-Texture (Multi-Pass Shader)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
-         return "FFmpeg-Unterstützung";
+         return "FFmpeg-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT:
-         return "CoreText-Unterstützung";
+         return "CoreText-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT:
-         return "FreeType-Unterstützung";
+         return "FreeType-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT:
-         return "Netplay-Unterstützung (Peer-to-Peer)";
+         return "Netplay-UnterstÃ¼tzung (Peer-to-Peer)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT:
-         return "Python-Unterstützung (Script-Unterstützung in Shadern)";
+         return "Python-UnterstÃ¼tzung (Script-UnterstÃ¼tzung in Shadern)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT:
-         return "Video4Linux2-Unterstützung";
+         return "Video4Linux2-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT:
-         return "Libusb-Unterstützung";
+         return "Libusb-UnterstÃ¼tzung";
       case MENU_ENUM_LABEL_VALUE_YES:
          return "Ja";
       case MENU_ENUM_LABEL_VALUE_NO:
          return "Nein";
       case MENU_ENUM_LABEL_VALUE_BACK:
-         return "ZURÜCK";
+         return "ZURÃœCK";
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
-         return "Bildschirmauflösung";
+         return "BildschirmauflÃ¶sung";
       case MENU_ENUM_LABEL_VALUE_DISABLED:
          return "Deaktiviert";
       case MENU_ENUM_LABEL_VALUE_PORT:
@@ -1158,9 +1147,9 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE:
          return "Franchise";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH:
-         return "Veröffentlichungsmonat";
+         return "VerÃ¶ffentlichungsmonat";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR:
-         return "Veröffentlichungsjahr";
+         return "VerÃ¶ffentlichungsjahr";
       case MENU_ENUM_LABEL_VALUE_TRUE:
          return "True";
       case MENU_ENUM_LABEL_VALUE_FALSE:
@@ -1184,13 +1173,13 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
          return "Overlay-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
-         return "Menü-Einstellungen";
+         return "MenÃ¼-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
          return "Media-Player-Einstellungen"; /* UPDATE/FIXME */
       case MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS:
-         return "Benutzeroberflächen-Einstellungen";
+         return "BenutzeroberflÃ¤chen-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Menü-Dateibrowser-Einstellungen";
+         return "MenÃ¼-Dateibrowser-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS:
          return "Core-Updater-Einstellungen"; /* UPDATE/FIXME */
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
@@ -1204,7 +1193,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
          return "Aufnahme-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
-         return "Keine Informationen verfügbar.";
+         return "Keine Informationen verfÃ¼gbar.";
       case MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS:
          return "Spieler %u Tastenbelegung";
       case MENU_ENUM_LABEL_VALUE_LANG_ENGLISH:
@@ -1212,7 +1201,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LANG_JAPANESE:
          return "Japanisch";
       case MENU_ENUM_LABEL_VALUE_LANG_FRENCH:
-         return "Französisch";
+         return "FranzÃ¶sisch";
       case MENU_ENUM_LABEL_VALUE_LANG_SPANISH:
          return "Spanisch";
       case MENU_ENUM_LABEL_VALUE_LANG_GERMAN:
@@ -1220,7 +1209,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LANG_ITALIAN:
          return "Italienisch";
       case MENU_ENUM_LABEL_VALUE_LANG_DUTCH:
-         return "Niederländisch";
+         return "NiederlÃ¤ndisch";
       case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE:
          return "Portugiesisch";
       case MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN:
