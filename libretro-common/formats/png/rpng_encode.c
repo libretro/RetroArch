@@ -31,7 +31,7 @@
 
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
-   sceClibPrintf("[RPNG]: Error in line %d.\n", __LINE__); \
+   fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
    ret = false; \
    goto end; \
 } while(0)
