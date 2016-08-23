@@ -365,10 +365,14 @@ end:
    free(avg_filtered);
    free(paeth_filtered);
 
-#if !defined(VITA)
    if (stream_backend)
-      stream_backend->stream_free(stream);
-#endif
+   {
+      if (stream)
+      {
+         if (stream_backend->stream_free)
+            stream_backend->stream_free(stream);
+      }
+   }
    return ret;
 }
 
