@@ -402,7 +402,9 @@ all: $(EXT_TARGET)
 	$(ELF2DOL) $< $@
 
 %.velf: %.elf
+ifneq ($(DEBUG), 1)
 	arm-vita-eabi-strip -g $<
+endif
 	vita-elf-create $< $@
 	vita-make-fself $@ eboot.bin
 

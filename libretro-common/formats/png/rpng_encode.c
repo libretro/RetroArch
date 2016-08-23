@@ -31,7 +31,7 @@
 
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
-   fprintf(stderr, "[RPNG]: Error in line %d.\n", __LINE__); \
+   sceClibPrintf("[RPNG]: Error in line %d.\n", __LINE__); \
    ret = false; \
    goto end; \
 } while(0)
@@ -365,8 +365,10 @@ end:
    free(avg_filtered);
    free(paeth_filtered);
 
+#if !defined(VITA)
    if (stream_backend)
       stream_backend->stream_free(stream);
+#endif
    return ret;
 }
 

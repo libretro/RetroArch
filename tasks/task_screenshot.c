@@ -231,7 +231,11 @@ static bool take_screenshot_choice(const char *global_name_base)
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
       video_driver_cached_frame_render();
+#if defined(VITA)
+      return take_screenshot_raw(global_name_base);
+#else
       return take_screenshot_viewport(global_name_base);
+#endif
    }
 
    if (!video_driver_cached_frame_has_valid_framebuffer())

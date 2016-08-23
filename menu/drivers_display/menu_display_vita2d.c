@@ -41,13 +41,13 @@ static const float vita2d_tex_coords[] = {
 
 static const float *menu_display_vita2d_get_default_vertices(void)
 {
-   RARCH_LOG("DEFAULT VERTICES\n");
+   //RARCH_LOG("DEFAULT VERTICES\n");
    return &vita2d_vertexes[0];
 }
 
 static const float *menu_display_vita2d_get_default_tex_coords(void)
 {
-   RARCH_LOG("DEFAULT TEX\n");
+   //RARCH_LOG("DEFAULT TEX\n");
    return &vita2d_tex_coords[0];
 }
 
