@@ -223,6 +223,11 @@ for f in `ls -v *_${platform}.${EXT}`; do
          fi
          if [ -d ../media/assets/xmb ]; then
             cp -r ../media/assets/xmb ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
+            # Strip source SVG files 
+            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/flatui/src
+            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/monochrome/src
+            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/retroactive/src
+            rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/retroactive_marked/src
          fi
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
