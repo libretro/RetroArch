@@ -3013,7 +3013,6 @@ bool config_save_file(const char *path)
       { "audio_rate_control_delta", settings->audio.rate_control_delta},
       { "audio_max_timing_skew",    settings->audio.max_timing_skew},
       { "audio_volume",             settings->audio.volume},
-      { "video_font_size",          settings->video.font_size},
 #ifdef HAVE_OVERLAY
       { "input_overlay_opacity",    settings->input.overlay_opacity},
       { "input_overlay_scale",      settings->input.overlay_scale},
