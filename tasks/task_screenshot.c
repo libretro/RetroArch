@@ -146,6 +146,7 @@ static bool screenshot_dump(
    return ret;
 }
 
+#if !defined(VITA)
 static bool take_screenshot_viewport(const char *global_name_base)
 {
    char screenshot_path[PATH_MAX_LENGTH] = {0};
@@ -188,6 +189,7 @@ done:
       free(buffer);
    return retval;
 }
+#endif
 
 static bool take_screenshot_raw(const char *global_name_base)
 {

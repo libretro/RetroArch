@@ -10729,16 +10729,19 @@ static void vita2d_font_render_msg(void *data, const char *msg,
       x     = params->x*width;
       y     = (1-params->y)*height;//-(text_height/4);
       color = params->color;
-			if(params)
-			switch (params->text_align)
-	    {
-	       case TEXT_ALIGN_RIGHT:
-	          x -= vita2d_font_get_message_width(vita, msg, strlen(msg), scale);
-	          break;
-	       case TEXT_ALIGN_CENTER:
-	          x -= vita2d_font_get_message_width(vita, msg, strlen(msg), scale) / 2.0;
-	          break;
-	    }
+      if(params)
+         switch (params->text_align)
+         {
+            case TEXT_ALIGN_LEFT:
+               /* TODO/FIXME - not implemented? */
+               break;
+            case TEXT_ALIGN_RIGHT:
+               x -= vita2d_font_get_message_width(vita, msg, strlen(msg), scale);
+               break;
+            case TEXT_ALIGN_CENTER:
+               x -= vita2d_font_get_message_width(vita, msg, strlen(msg), scale) / 2.0;
+               break;
+         }
    }
    else
    {

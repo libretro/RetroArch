@@ -41,13 +41,11 @@ static const float vita2d_tex_coords[] = {
 
 static const float *menu_display_vita2d_get_default_vertices(void)
 {
-   //RARCH_LOG("DEFAULT VERTICES\n");
    return &vita2d_vertexes[0];
 }
 
 static const float *menu_display_vita2d_get_default_tex_coords(void)
 {
-   //RARCH_LOG("DEFAULT TEX\n");
    return &vita2d_tex_coords[0];
 }
 
@@ -61,6 +59,7 @@ static void *menu_display_vita2d_get_default_mvp(void)
    return &vita2d->mvp_no_rot;
 }
 
+#if 0
 static SceGxmPrimitiveType menu_display_prim_to_vita2d_enum(
       enum menu_display_prim_type type)
 {
@@ -77,6 +76,7 @@ static SceGxmPrimitiveType menu_display_prim_to_vita2d_enum(
 
    return 0;
 }
+#endif
 
 static void menu_display_vita2d_blend_begin(void)
 {
@@ -96,21 +96,24 @@ static void menu_display_vita2d_viewport(void *data)
    if (!vita2d || !draw)
       return;
     
-   //vita2d_texture_set_wvp(draw->x, draw->y, draw->width, draw->height);
+#if 0
+   vita2d_texture_set_wvp(draw->x, draw->y, draw->width, draw->height);
+#endif
 }
 
 
 static void menu_display_vita2d_draw(void *data)
 {
+#if 0
     unsigned i;
-    struct vita2d_texture *texture    = NULL;
-    const float *vertex           = NULL;
-    const float *tex_coord        = NULL;
-    const float *color            = NULL;
+#endif
     unsigned int tex_width, tex_height;
-
-   vita_video_t             *vita2d          = (vita_video_t*)video_driver_get_ptr(false);
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+    struct vita2d_texture *texture   = NULL;
+    const float *vertex              = NULL;
+    const float *tex_coord           = NULL;
+    const float *color               = NULL;
+    vita_video_t             *vita2d = (vita_video_t*)video_driver_get_ptr(false);
+    menu_display_ctx_draw_t *draw    = (menu_display_ctx_draw_t*)data;
    
    if (!vita2d || !draw)
       return;
@@ -127,32 +130,36 @@ static void menu_display_vita2d_draw(void *data)
     if (!draw->coords->lut_tex_coord)
        draw->coords->lut_tex_coord = menu_display_vita2d_get_default_tex_coords();
     if (!texture)
-       return;//texture         = &vk->display.blank_texture;*/
+       return;
+#if 0
+    texture         = &vk->display.blank_texture;*/
+#endif
 
     tex_width = vita2d_texture_get_width(texture);
     tex_height = vita2d_texture_get_height(texture);
          
+#if 0
+    vita2d_texture_set_program();
+    menu_display_vita2d_viewport(draw);
 
-   /*vita2d_texture_set_program();
-   menu_display_vita2d_viewport(draw);
+    RARCH_LOG("DRAW BG %d %d \n",draw->width,draw->height);
 
-   RARCH_LOG("DRAW BG %d %d \n",draw->width,draw->height);
+    vita2d_texture_vertex *pv = (vita2d_texture_vertex *)vita2d_pool_memalign(
+          draw->coords->vertices * sizeof(vita2d_texture_vertex), // 4 vertices
+          sizeof(vita2d_texture_vertex));
 
-   vita2d_texture_vertex *pv = (vita2d_texture_vertex *)vita2d_pool_memalign(
- 		draw->coords->vertices * sizeof(vita2d_texture_vertex), // 4 vertices
- 		sizeof(vita2d_texture_vertex));
-
-   for (i = 0; i < draw->coords->vertices; i++)
-   {
-      pv[i].x       = *vertex++;
-      pv[i].y       = *vertex++; // Y-flip. Vulkan is top-left clip space 
-      pv[i].z       = +0.5f;
-      pv[i].u       = *tex_coord++;
-      pv[i].v       = *tex_coord++;
-      snprintf(msg, sizeof(msg), "%.2f %.2f %.2f %.2f %.2f\n",pv[i].x,pv[i].y,pv[i].z,pv[i].u,pv[i].v);
-      RARCH_LOG(msg);
-      RARCH_LOG("%x %x %x %x %x\n",pv[i].x,pv[i].y,pv[i].z,pv[i].u,pv[i].v);
-   }*/
+    for (i = 0; i < draw->coords->vertices; i++)
+    {
+       pv[i].x       = *vertex++;
+       pv[i].y       = *vertex++; // Y-flip. Vulkan is top-left clip space 
+       pv[i].z       = +0.5f;
+       pv[i].u       = *tex_coord++;
+       pv[i].v       = *tex_coord++;
+       snprintf(msg, sizeof(msg), "%.2f %.2f %.2f %.2f %.2f\n",pv[i].x,pv[i].y,pv[i].z,pv[i].u,pv[i].v);
+       RARCH_LOG(msg);
+       RARCH_LOG("%x %x %x %x %x\n",pv[i].x,pv[i].y,pv[i].z,pv[i].u,pv[i].v);
+    }
+#endif
 
    switch (draw->pipeline.id)
    {
@@ -164,17 +171,23 @@ static void menu_display_vita2d_draw(void *data)
         int colorB = (int)((*color++)*255.f);
         int colorA = (int)((*color++)*255.f);
 
-        //vita2d_texture_set_tint_color_uniform(RGBA8((int)((*color++)*255.f), (int)((*color++)*255.f), (int)((*color++)*255.f), (int)((*color++)*255.f)));
-        //vita2d_texture_set_tint_color_uniform(RGBA8(0xFF, 0xFF, 0xFF, 0xAA));
-        //vita2d_draw_texture_part_generic(texture, menu_display_prim_to_vita2d_enum(
-                 //draw->prim_type), pv, draw->coords->vertices);
+#if 0
+        vita2d_texture_set_tint_color_uniform(RGBA8((int)((*color++)*255.f), (int)((*color++)*255.f), (int)((*color++)*255.f), (int)((*color++)*255.f)));
+        vita2d_texture_set_tint_color_uniform(RGBA8(0xFF, 0xFF, 0xFF, 0xAA));
+        vita2d_draw_texture_part_generic(texture, menu_display_prim_to_vita2d_enum(
+                 draw->prim_type), pv, draw->coords->vertices);
+#endif
                 
         vita2d_draw_texture_tint_scale(texture, draw->x, 
                       PSP_FB_HEIGHT-draw->y-draw->height, 
                       (float)draw->width/(float)tex_width, 
                       (float)draw->height/(float)tex_height,
                       RGBA8(colorR,colorG,colorB,colorA));
-        //if(texture)vita2d_draw_texture(NULL,0,0);
+
+#if 0
+        if(texture)
+           vita2d_draw_texture(NULL,0,0);
+#endif
         break;
      }
   }
