@@ -326,7 +326,7 @@ enum
 #define MENU_DEFAULT_DRIVER MENU_XUI
 #elif defined(IOS) || defined(ANDROID) || defined(__QNX__)
 #define MENU_DEFAULT_DRIVER MENU_MATERIALUI
-#elif defined(__MACH__) && defined(HAVE_XMB) || defined(__CELLOS_LV2__)
+#elif defined(HAVE_XMB)
 #define MENU_DEFAULT_DRIVER MENU_XMB
 #else
 #define MENU_DEFAULT_DRIVER MENU_RGUI
