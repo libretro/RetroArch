@@ -98,7 +98,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
          "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
-         "media", sizeof(g_defaults.dir.assets));
+         "assets", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
          "cores", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
