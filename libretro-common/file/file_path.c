@@ -37,6 +37,7 @@
 #include <retro_assert.h>
 #include <retro_stat.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 /**
  * path_mkdir:
@@ -137,7 +138,23 @@ char *path_remove_extension(char *path)
  **/
 bool path_contains_compressed_file(const char *path)
 {
-   return (strchr(path, '#') != NULL);
+   bool compressed = false;
+
+#ifdef HAVE_COMPRESSION
+
+#ifdef HAVE_ZLIB
+   if (strcasestr(path, ".zip#"))
+      compressed = true;
+#endif
+
+#ifdef HAVE_7ZIP
+   if (strcasestr(path, ".7z#"))
+      compressed = true;
+#endif
+
+#endif
+
+   return compressed;
 }
 
 /**
@@ -154,12 +171,12 @@ bool path_is_compressed_file(const char* path)
    const char* file_ext   = path_get_extension(path);
 
 #ifdef HAVE_ZLIB
-   if (!strcmp(file_ext, "zip"))
+   if (string_is_equal_noncase(file_ext, "zip"))
       return true;
 #endif
 
 #ifdef HAVE_7ZIP
-   if (!strcmp(file_ext, "7z"))
+   if (string_is_equal_noncase(file_ext, "7z"))
       return true;
 #endif
 
@@ -504,11 +521,20 @@ const char *path_basename(const char *path)
 #ifdef HAVE_COMPRESSION
    const char *last_hash = NULL;
 
-   /* We cut either at the last hash or the last slash; whichever comes last */
-   last_hash = strchr(path,'#');
+   /* We cut either at the first compression-related hash or the last slash; whichever comes last */
+#ifdef HAVE_ZLIB
+   last_hash = strcasestr(path, ".zip#");
 
    if (last_hash > last)
-      return last_hash + 1;
+      return last_hash + 5;
+#endif
+
+#ifdef HAVE_7ZIP
+   last_hash = strcasestr(path, ".7z#");
+
+   if (last_hash > last)
+      return last_hash + 4;
+#endif
 #endif
 
    if (last)

@@ -312,6 +312,98 @@ static int content_7zip_file_read(
    return outsize;
 }
 
+inline int try_insert_compressed_file_to_list(const char *path, const char *ext, unsigned ext_len, char *tmp, struct string_list *list, unsigned index, unsigned *first) {
+   char *ext_with_hash = NULL;
+
+   if(index - (*first) >= ext_len)
+   {
+      ext_with_hash = (char*)malloc(ext_len + 2);
+      memcpy(ext_with_hash, ext, ext_len);
+      ext_with_hash[ext_len] = '#';
+
+      if(strncasecmp(path + (index - ext_len), ext_with_hash, ext_len + 1) == 0)
+      {
+         (*first) = index + 1;
+         strncpy(tmp, path, index);
+
+         union string_list_elem_attr attr;
+         memset(&attr, 0, sizeof(attr));
+
+         if (!string_list_append(list, tmp, attr))
+         {
+            free(ext_with_hash);
+            return 0;
+         }
+
+         memset(tmp, 0, PATH_MAX_LENGTH);
+      }
+
+     free(ext_with_hash);
+   }
+
+   return 1;
+}
+
+/**
+ * filename_split:
+ * @str              : filename to turn into a string list
+ * @delim            : delimiter character to use for splitting the string.
+ *
+ * Creates a new string list based on filename @path, delimited by @delim.
+ *
+ * Returns: new string list if successful, otherwise NULL.
+ */
+struct string_list *filename_split(const char *path, const char *delim)
+{
+   struct string_list *list = string_list_new();
+   unsigned len = strlen(path);
+   unsigned index = 0;
+   unsigned first = 0;
+   char tmp[PATH_MAX_LENGTH] = {0};
+
+   if (!list)
+      goto error;
+
+#ifdef HAVE_COMPRESSION
+   while(path[index] != 0) {
+      if (path[index] != '#')
+      {
+        ++index;
+        continue;
+      }
+
+#ifdef HAVE_ZLIB
+      if (!try_insert_compressed_file_to_list(path, ".zip", 4, tmp, list, index, &first))
+         goto error;
+#endif
+
+#ifdef HAVE_7ZIP
+      if (!try_insert_compressed_file_to_list(path, ".7z", 3, tmp, list, index, &first))
+         goto error;
+#endif
+
+      ++index;
+   }
+#endif
+
+   if (path + first)
+   {
+      strncpy(tmp, path + first, MIN(len - first, PATH_MAX_LENGTH - 1));
+
+      union string_list_elem_attr attr;
+      memset(&attr, 0, sizeof(attr));
+
+      if (!string_list_append(list, tmp, attr))
+         goto error;
+   }
+
+   return list;
+
+error:
+   string_list_free(list);
+   return NULL;
+}
+
 static struct string_list *compressed_7zip_file_list_new(
       const char *path, const char* ext)
 {
@@ -621,7 +713,7 @@ static int content_file_compressed_read(
 {
    int ret                            = 0;
    const char* file_ext               = NULL;
-   struct string_list *str_list       = string_split(path, "#");
+   struct string_list *str_list       = filename_split(path, "#");
 
    /* Safety check.
     * If optional_filename and optional_filename 
