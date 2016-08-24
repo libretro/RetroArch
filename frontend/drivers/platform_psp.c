@@ -97,8 +97,13 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
    fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
          "downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+#ifdef VITA
+   fill_pathname_join(g_defaults.dir.assets, "app0:/",
          "assets", sizeof(g_defaults.dir.assets));
+#else
+   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+         "media", sizeof(g_defaults.dir.assets));
+#endif
    fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
          "cores", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
