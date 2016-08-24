@@ -217,6 +217,13 @@ for f in `ls -v *_${platform}.${EXT}`; do
       cp ../pkg/${platform}/assets/livearea/contents/startup.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/startup.png
       cp ../pkg/${platform}/assets/livearea/contents/website.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/website.png
       cp ../pkg/${platform}/assets/livearea/contents/template.xml ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/template.xml
+      mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
+         if [ -d ../media/assets/glui ]; then
+            cp -r ../media/assets/glui ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
+         fi
+         if [ -d ../media/assets/xmb ]; then
+            cp -r ../media/assets/xmb ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
+         fi
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
       mv -f ../retroarch_3ds.3ds ../pkg/3ds/rom/${name}_libretro.3ds
