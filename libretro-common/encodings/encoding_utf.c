@@ -209,7 +209,7 @@ size_t utf8len(const char *string)
 #endif
 }
 
-uint8_t utf8_walkbyte(const char **string)
+inline uint8_t utf8_walkbyte(const char **string)
 {
    return *((*string)++);
 }
@@ -217,6 +217,7 @@ uint8_t utf8_walkbyte(const char **string)
 /* Does not validate the input, returns garbage if it's not UTF-8. */
 uint32_t utf8_walk(const char **string)
 {
+#ifdef HAVE_UTF8
    uint8_t first = utf8_walkbyte(string);
    uint32_t ret;
    
@@ -235,4 +236,7 @@ uint32_t utf8_walk(const char **string)
    if (first >= 0xE0)
       return ret | (first&15)<<12;
    return ret | (first&7)<<6;
+#else
+   return utf8_walkbyte(string);
+#endif
 }
