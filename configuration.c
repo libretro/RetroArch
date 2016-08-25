@@ -1283,7 +1283,8 @@ static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *
  * Loads a config file and reads all the values into memory.
  *
  */
-static bool config_load_file(const char *path, bool set_defaults)
+static bool config_load_file(const char *path, bool set_defaults, 
+   settings_t *settings)
 {
    unsigned i;
    bool tmp_bool                         = false;
@@ -1293,7 +1294,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    char tmp_append_path[PATH_MAX_LENGTH] = {0}; /* Don't destroy append_config_path. */
    unsigned msg_color                    = 0;
    config_file_t *conf                   = NULL;
-   settings_t *settings                  = config_get_ptr();
+   if (!settings)
+      settings = config_get_ptr();
    global_t   *global                    = global_get_ptr();
 
    struct config_bool_setting_ptr bool_settings[] = {
@@ -2208,7 +2210,7 @@ bool config_load_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
-   if (!config_load_file(global->path.config, false))
+   if (!config_load_file(global->path.config, false, config_get_ptr()))
       return false;
 
    /* Restore the libretro_path we're using
@@ -2244,7 +2246,7 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
-   if (config_load_file(global->path.config, false))
+   if (config_load_file(global->path.config, false, config_get_ptr()))
    {
       RARCH_LOG("Overrides: configuration overrides unloaded, original configuration restored.\n");
 
@@ -2498,7 +2500,7 @@ static void parse_config_file(void)
 {
    global_t *global = global_get_ptr();
    bool         ret = config_load_file((*global->path.config)
-         ? global->path.config : NULL, false);
+         ? global->path.config : NULL, false, config_get_ptr());
 
    if (!string_is_empty(global->path.config))
    {
