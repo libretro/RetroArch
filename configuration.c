@@ -3334,11 +3334,248 @@ bool config_save_file_diff()
    /* Load the original config file in memory */
    config_load_file(global->path.config, false, orig);
 
-   /* Test to compare with a well known setting */
-   /*RARCH_LOG ("Rewind: %d %d\n", settings->rewind_enable, orig->rewind_enable);
-   RARCH_LOG ("DBG: %d %d\n", settings->debug_panel_enable, orig->cheevos.enable);
-   RARCH_LOG ("FPS: %d %d\n", settings->fps_show, orig->fps_show);
-   RARCH_LOG ("FPS: %s %s\n", settings->username, orig->username);*/
+   struct config_bool_setting bool_settings[] = {
+      { "ui_companion_start_on_boot",   settings->ui.companion_start_on_boot},
+      { "ui_companion_enable",          settings->ui.companion_enable},
+      { "video_gpu_record",             settings->video.gpu_record},
+      { "input_remap_binds_enable",     settings->input.remap_binds_enable},
+      { "back_as_menu_toggle_enable",   settings->input.back_as_menu_toggle_enable},
+      { "netplay_client_swap_input",    settings->input.netplay_client_swap_input},
+      { "input_descriptor_label_show",  settings->input.input_descriptor_label_show},
+      { "input_descriptor_hide_unbound",settings->input.input_descriptor_hide_unbound},
+      { "load_dummy_on_core_shutdown",  settings->load_dummy_on_core_shutdown},
+      { "builtin_mediaplayer_enable",   settings->multimedia.builtin_mediaplayer_enable},
+      { "builtin_imageviewer_enable",   settings->multimedia.builtin_imageviewer_enable},
+      { "fps_show",                     settings->fps_show},
+      { "ui_menubar_enable",            settings->ui.menubar_enable},
+      { "suspend_screensaver_enable",   settings->ui.suspend_screensaver_enable},
+      { "rewind_enable",                settings->rewind_enable},
+      { "audio_sync",                   settings->audio.sync},
+      { "video_shader_enable",          settings->video.shader_enable},
+      { "video_aspect_ratio_auto",      settings->video.aspect_ratio_auto},
+      { "video_windowed_fullscreen",    settings->video.windowed_fullscreen},
+      { "video_crop_overscan",          settings->video.crop_overscan},
+      { "video_scale_integer",          settings->video.scale_integer},
+      { "video_smooth",                 settings->video.smooth},
+      { "video_threaded",               settings->video.threaded},
+      { "video_shared_context",         settings->video.shared_context},
+      { "custom_bgm_enable",            global->console.sound.system_bgm_enable},
+      { "auto_screenshot_filename",     settings->auto_screenshot_filename},
+      { "video_force_srgb_disable",     settings->video.force_srgb_disable},
+      { "video_fullscreen",             settings->video.fullscreen},
+      { "bundle_assets_extract_enable", settings->bundle_assets_extract_enable},
+      { "video_vsync",                  settings->video.vsync},
+      { "video_hard_sync",              settings->video.hard_sync},
+      { "video_black_frame_insertion",  settings->video.black_frame_insertion},
+      { "video_disable_composition",    settings->video.disable_composition},
+      { "pause_nonactive",              settings->pause_nonactive},
+      { "video_gpu_screenshot",         settings->video.gpu_screenshot},
+      { "keyboard_gamepad_enable",      settings->input.keyboard_gamepad_enable},
+      { "core_set_supports_no_game_enable", settings->set_supports_no_game_enable},
+      { "audio_enable",                 settings->audio.enable},
+      { "audio_mute_enable",            settings->audio.mute_enable},
+      { "location_allow",               settings->location.allow},
+      { "video_font_enable",            settings->video.font_enable},
+      { "core_updater_auto_extract_archive", settings->network.buildbot_auto_extract_archive},
+      { "camera_allow",                 settings->camera.allow},
+#if TARGET_OS_IPHONE
+      { "small_keyboard_enable",        settings->input.small_keyboard_enable},
+#endif
+#ifdef GEKKO
+      { "video_vfilter",                settings->video.vfilter},
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_THREADS
+      { "threaded_data_runloop_enable", settings->threaded_data_runloop_enable},
+#endif
+      { "menu_throttle_framerate",      settings->menu.throttle_framerate},
+      { "menu_linear_filter",           settings->menu.linear_filter},
+      { "dpi_override_enable",          settings->menu.dpi.override_enable},
+      { "menu_pause_libretro",          settings->menu.pause_libretro},
+      { "menu_mouse_enable",            settings->menu.mouse.enable},
+      { "menu_pointer_enable",          settings->menu.pointer.enable},
+      { "menu_timedate_enable",         settings->menu.timedate_enable},
+      { "menu_core_enable",             settings->menu.core_enable},
+      { "menu_dynamic_wallpaper_enable",settings->menu.dynamic_wallpaper_enable},
+      { "xmb_shadows_enable",           settings->menu.xmb.shadows_enable},
+      { "xmb_show_settings",            settings->menu.xmb.show_settings},
+#ifdef HAVE_IMAGEVIEWER
+      { "xmb_show_images",              settings->menu.xmb.show_images},
+#endif
+#ifdef HAVE_FFMPEG
+      { "xmb_show_music",               settings->menu.xmb.show_music},
+      { "xmb_show_video",               settings->menu.xmb.show_video},
+#endif
+      { "xmb_show_history",             settings->menu.xmb.show_history},
+      { "rgui_show_start_screen",       settings->menu_show_start_screen},
+      { "menu_navigation_wraparound_enable", settings->menu.navigation.wraparound.enable},
+      { "menu_navigation_browser_filter_supported_extensions_enable", 
+         settings->menu.navigation.browser.filter.supported_extensions_enable},
+      { "menu_show_advanced_settings",  settings->menu.show_advanced_settings},
+#endif
+#ifdef HAVE_CHEEVOS
+      { "cheevos_enable",               settings->cheevos.enable},
+      { "cheevos_test_unofficial",      settings->cheevos.test_unofficial},
+      { "cheevos_hardcore_mode_enable", settings->cheevos.hardcore_mode_enable},
+#endif
+#ifdef HAVE_OVERLAY
+      { "input_overlay_enable",         settings->input.overlay_enable},
+      { "input_overlay_enable_autopreferred", settings->input.overlay_enable_autopreferred},
+      { "input_overlay_hide_in_menu",   settings->input.overlay_hide_in_menu},
+      { "input_osk_overlay_enable",     settings->osk.enable},
+#endif
+#ifdef HAVE_COMMAND
+      { "network_cmd_enable",           settings->network_cmd_enable},
+      { "stdin_cmd_enable",             settings->stdin_cmd_enable},
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+      { "network_remote_enable",        settings->network_remote_enable},
+#endif
+#ifdef HAVE_NETPLAY
+      { "netplay_spectator_mode_enable",global->netplay.is_spectate},
+      { "netplay_mode",                 global->netplay.is_client},
+#endif
+      { "block_sram_overwrite",         settings->block_sram_overwrite},
+      { "savestate_auto_index",         settings->savestate_auto_index},
+      { "savestate_auto_save",          settings->savestate_auto_save},
+      { "savestate_auto_load",          settings->savestate_auto_load},
+      { "history_list_enable",          settings->history_list_enable},
+      { "game_specific_options",        settings->game_specific_options},
+      { "auto_overrides_enable",        settings->auto_overrides_enable},
+      { "auto_remaps_enable",           settings->auto_remaps_enable},
+      { "auto_shaders_enable",          settings->auto_shaders_enable},
+      { "sort_savefiles_enable",        settings->sort_savefiles_enable},
+      { "sort_savestates_enable",       settings->sort_savestates_enable},
+      { "config_save_on_exit",          settings->config_save_on_exit},
+      { "input_autodetect_enable",      settings->input.autodetect_enable},
+      { "audio_rate_control",           settings->audio.rate_control}
+   };
+
+   struct config_bool_setting bool_overrides[] = {
+      { "ui_companion_start_on_boot",   orig->ui.companion_start_on_boot},
+      { "ui_companion_enable",          orig->ui.companion_enable},
+      { "video_gpu_record",             orig->video.gpu_record},
+      { "input_remap_binds_enable",     orig->input.remap_binds_enable},
+      { "back_as_menu_toggle_enable",   orig->input.back_as_menu_toggle_enable},
+      { "netplay_client_swap_input",    orig->input.netplay_client_swap_input},
+      { "input_descriptor_label_show",  orig->input.input_descriptor_label_show},
+      { "input_descriptor_hide_unbound",orig->input.input_descriptor_hide_unbound},
+      { "load_dummy_on_core_shutdown",  orig->load_dummy_on_core_shutdown},
+      { "builtin_mediaplayer_enable",   orig->multimedia.builtin_mediaplayer_enable},
+      { "builtin_imageviewer_enable",   orig->multimedia.builtin_imageviewer_enable},
+      { "fps_show",                     orig->fps_show},
+      { "ui_menubar_enable",            orig->ui.menubar_enable},
+      { "suspend_screensaver_enable",   orig->ui.suspend_screensaver_enable},
+      { "rewind_enable",                orig->rewind_enable},
+      { "audio_sync",                   orig->audio.sync},
+      { "video_shader_enable",          orig->video.shader_enable},
+      { "video_aspect_ratio_auto",      orig->video.aspect_ratio_auto},
+      { "video_windowed_fullscreen",    orig->video.windowed_fullscreen},
+      { "video_crop_overscan",          orig->video.crop_overscan},
+      { "video_scale_integer",          orig->video.scale_integer},
+      { "video_smooth",                 orig->video.smooth},
+      { "video_threaded",               orig->video.threaded},
+      { "video_shared_context",         orig->video.shared_context},
+      { "custom_bgm_enable",            global->console.sound.system_bgm_enable},
+      { "auto_screenshot_filename",     orig->auto_screenshot_filename},
+      { "video_force_srgb_disable",     orig->video.force_srgb_disable},
+      { "video_fullscreen",             orig->video.fullscreen},
+      { "bundle_assets_extract_enable", orig->bundle_assets_extract_enable},
+      { "video_vsync",                  orig->video.vsync},
+      { "video_hard_sync",              orig->video.hard_sync},
+      { "video_black_frame_insertion",  orig->video.black_frame_insertion},
+      { "video_disable_composition",    orig->video.disable_composition},
+      { "pause_nonactive",              orig->pause_nonactive},
+      { "video_gpu_screenshot",         orig->video.gpu_screenshot},
+      { "keyboard_gamepad_enable",      orig->input.keyboard_gamepad_enable},
+      { "core_set_supports_no_game_enable", orig->set_supports_no_game_enable},
+      { "audio_enable",                 orig->audio.enable},
+      { "audio_mute_enable",            orig->audio.mute_enable},
+      { "location_allow",               orig->location.allow},
+      { "video_font_enable",            orig->video.font_enable},
+      { "core_updater_auto_extract_archive", orig->network.buildbot_auto_extract_archive},
+      { "camera_allow",                 orig->camera.allow},
+#if TARGET_OS_IPHONE
+      { "small_keyboard_enable",        orig->input.small_keyboard_enable},
+#endif
+#ifdef GEKKO
+      { "video_vfilter",                orig->video.vfilter},
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_THREADS
+      { "threaded_data_runloop_enable", orig->threaded_data_runloop_enable},
+#endif
+      { "menu_throttle_framerate",      orig->menu.throttle_framerate},
+      { "menu_linear_filter",           orig->menu.linear_filter},
+      { "dpi_override_enable",          orig->menu.dpi.override_enable},
+      { "menu_pause_libretro",          orig->menu.pause_libretro},
+      { "menu_mouse_enable",            orig->menu.mouse.enable},
+      { "menu_pointer_enable",          orig->menu.pointer.enable},
+      { "menu_timedate_enable",         orig->menu.timedate_enable},
+      { "menu_core_enable",             orig->menu.core_enable},
+      { "menu_dynamic_wallpaper_enable",orig->menu.dynamic_wallpaper_enable},
+      { "xmb_shadows_enable",           orig->menu.xmb.shadows_enable},
+      { "xmb_show_settings",            orig->menu.xmb.show_settings},
+#ifdef HAVE_IMAGEVIEWER
+      { "xmb_show_images",              orig->menu.xmb.show_images},
+#endif
+#ifdef HAVE_FFMPEG
+      { "xmb_show_music",               orig->menu.xmb.show_music},
+      { "xmb_show_video",               orig->menu.xmb.show_video},
+#endif
+      { "xmb_show_history",             orig->menu.xmb.show_history},
+      { "rgui_show_start_screen",       orig->menu_show_start_screen},
+      { "menu_navigation_wraparound_enable", orig->menu.navigation.wraparound.enable},
+      { "menu_navigation_browser_filter_supported_extensions_enable", 
+         orig->menu.navigation.browser.filter.supported_extensions_enable},
+      { "menu_show_advanced_settings",  orig->menu.show_advanced_settings},
+#endif
+#ifdef HAVE_CHEEVOS
+      { "cheevos_enable",               orig->cheevos.enable},
+      { "cheevos_test_unofficial",      orig->cheevos.test_unofficial},
+      { "cheevos_hardcore_mode_enable", orig->cheevos.hardcore_mode_enable},
+#endif
+#ifdef HAVE_OVERLAY
+      { "input_overlay_enable",         orig->input.overlay_enable},
+      { "input_overlay_enable_autopreferred", orig->input.overlay_enable_autopreferred},
+      { "input_overlay_hide_in_menu",   orig->input.overlay_hide_in_menu},
+      { "input_osk_overlay_enable",     orig->osk.enable},
+#endif
+#ifdef HAVE_COMMAND
+      { "network_cmd_enable",           orig->network_cmd_enable},
+      { "stdin_cmd_enable",             orig->stdin_cmd_enable},
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+      { "network_remote_enable",        orig->network_remote_enable},
+#endif
+#ifdef HAVE_NETPLAY
+      { "netplay_spectator_mode_enable",global->netplay.is_spectate},
+      { "netplay_mode",                 global->netplay.is_client},
+#endif
+      { "block_sram_overwrite",         orig->block_sram_overwrite},
+      { "savestate_auto_index",         orig->savestate_auto_index},
+      { "savestate_auto_save",          orig->savestate_auto_save},
+      { "savestate_auto_load",          orig->savestate_auto_load},
+      { "history_list_enable",          orig->history_list_enable},
+      { "game_specific_options",        orig->game_specific_options},
+      { "auto_overrides_enable",        orig->auto_overrides_enable},
+      { "auto_remaps_enable",           orig->auto_remaps_enable},
+      { "auto_shaders_enable",          orig->auto_shaders_enable},
+      { "sort_savefiles_enable",        orig->sort_savefiles_enable},
+      { "sort_savestates_enable",       orig->sort_savestates_enable},
+      { "config_save_on_exit",          orig->config_save_on_exit},
+      { "input_autodetect_enable",      orig->input.autodetect_enable},
+      { "audio_rate_control",           orig->audio.rate_control}
+   };
+
+   for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
+   {
+      if (bool_settings[i].value != bool_overrides[i].value)
+         RARCH_LOG("Oerrides:\n Original value: %s=%d\n Override value: %s=%d\n", 
+         bool_settings[i].ident, bool_settings[i].value, 
+         bool_overrides[i].ident, bool_overrides[i].value);
+   }
+
    return false;
 }
 
