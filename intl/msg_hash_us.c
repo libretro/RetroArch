@@ -2064,6 +2064,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "input_small_keyboard_enable";
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
          return "save_current_config";
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE:
+         return "save_current_config_override";
       case MENU_ENUM_LABEL_STATE_SLOT:
          return "state_slot";
       case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
@@ -3439,6 +3441,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Keyboard Gamepad Mapping Type";
       case MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
          return "Small Keyboard Enable";
+      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE:
+         return "Save Core Overrides";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
          return "Save Current Config";
       case MENU_ENUM_LABEL_VALUE_STATE_SLOT:
