@@ -131,6 +131,40 @@ bool string_list_append(struct string_list *list, const char *elem,
 }
 
 /**
+ * string_list_append_n:
+ * @list             : pointer to string list
+ * @elem             : element to add to the string list
+ * @attr             : attributes of new element.
+ * @length           : read at most this many bytes from elem
+ *
+ * Appends a new element to the string list.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool string_list_append_n(struct string_list *list, const char *elem,
+      union string_list_elem_attr attr, unsigned length)
+{
+   char *data_dup = NULL;
+
+   if (list->size >= list->cap &&
+         !string_list_capacity(list, list->cap * 2))
+      return false;
+
+   data_dup = (char*)malloc(length + 1);
+
+   strlcpy(data_dup, elem, length + 1);
+
+   if (!data_dup)
+      return false;
+
+   list->elems[list->size].data = data_dup;
+   list->elems[list->size].attr = attr;
+
+   list->size++;
+   return true;
+}
+
+/**
  * string_list_set:
  * @list             : pointer to string list
  * @idx              : index of element in string list

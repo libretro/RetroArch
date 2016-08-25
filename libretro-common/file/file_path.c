@@ -86,6 +86,44 @@ end:
 }
 
 /**
+ * path_get_archive_delim:
+ * @path               : path
+ *
+ * Find delimiter of an archive file. Only the first '#'
+ * after a compression extension is considered.
+ *
+ * Returns: pointer to the delimiter in the path if it contains
+ * a compressed file, otherwise NULL.
+ */
+char *path_get_archive_delim(const char *path)
+{
+   const char *last = find_last_slash(path);
+
+#ifdef HAVE_COMPRESSION
+   char *delim = NULL;
+
+#ifdef HAVE_ZLIB
+   if (last)
+      delim = strcasestr(last, ".zip#");
+
+   if (delim)
+      return delim + 4;
+#endif
+
+#ifdef HAVE_7ZIP
+   if (last)
+      delim = strcasestr(last, ".7z#");
+
+   if (delim)
+      return delim + 3;
+#endif
+
+#endif
+
+   return NULL;
+}
+
+/**
  * path_get_extension:
  * @path               : path
  *
@@ -128,8 +166,9 @@ char *path_remove_extension(char *path)
  *
  * Checks if path contains a compressed file.
  *
- * Currently we only check for hash symbol (#) inside the pathname.
- * If path is ever expanded to a general URI, we should check for that here.
+ * Currently we only check for a hash symbol (#) inside the pathname
+ * that is preceded by an archive extension. If path is ever expanded
+ * to a general URI, we should check for that here.
  *
  * Example:  Somewhere in the path there might be a compressed file
  * E.g.: /path/to/file.7z#mygame.img
@@ -138,23 +177,7 @@ char *path_remove_extension(char *path)
  **/
 bool path_contains_compressed_file(const char *path)
 {
-   bool compressed = false;
-
-#ifdef HAVE_COMPRESSION
-
-#ifdef HAVE_ZLIB
-   if (strcasestr(path, ".zip#"))
-      compressed = true;
-#endif
-
-#ifdef HAVE_7ZIP
-   if (strcasestr(path, ".7z#"))
-      compressed = true;
-#endif
-
-#endif
-
-   return compressed;
+   return path_get_archive_delim(path) != NULL;
 }
 
 /**
@@ -167,20 +190,21 @@ bool path_contains_compressed_file(const char *path)
  **/
 bool path_is_compressed_file(const char* path)
 {
-#if defined(HAVE_COMPRESSION) && (defined(HAVE_ZLIB) || defined(HAVE_7ZIP))
-   const char* file_ext   = path_get_extension(path);
+#ifdef HAVE_COMPRESSION
+   const char *ext = path_get_extension(path);
 
 #ifdef HAVE_ZLIB
-   if (string_is_equal_noncase(file_ext, "zip"))
+   if (strcasestr(ext, "zip"))
       return true;
 #endif
 
 #ifdef HAVE_7ZIP
-   if (string_is_equal_noncase(file_ext, "7z"))
+   if (strcasestr(ext, "zip"))
       return true;
 #endif
 
 #endif
+
    return false;
 }
 
@@ -334,30 +358,10 @@ void fill_pathname_dir(char *in_dir, const char *in_basename,
  **/
 void fill_pathname_base(char *out, const char *in_path, size_t size)
 {
-   const char *ptr_bak = NULL;
-   const char     *ptr = find_last_slash(in_path);
+   const char     *ptr = path_basename(in_path);
 
-   (void)ptr_bak;
-
-   if (ptr)
-      ptr++;
-   else
+   if (!ptr)
       ptr = in_path;
-
-#ifdef HAVE_COMPRESSION
-   /* In case of compression, we also have to consider paths like
-    *   /path/to/archive.7z#mygame.img
-    *   and
-    *   /path/to/archive.7z#folder/mygame.img
-    *   basename would be mygame.img in both cases
-    */
-   ptr_bak = ptr;
-   ptr     = strchr(ptr_bak,'#');
-   if (ptr)
-      ptr++;
-   else
-      ptr = ptr_bak;
-#endif
 
    retro_assert(strlcpy(out, ptr, size) < size);
 }
@@ -479,7 +483,7 @@ void path_basedir(char *path)
 
 #ifdef HAVE_COMPRESSION
    /* We want to find the directory with the zipfile in basedir. */
-   last = strchr(path,'#');
+   last = path_get_archive_delim(path);
    if (last)
       *last = '\0';
 #endif
@@ -517,28 +521,19 @@ void path_parent_dir(char *path)
  **/
 const char *path_basename(const char *path)
 {
-   const char *last = find_last_slash(path);
-#ifdef HAVE_COMPRESSION
-   const char *last_hash = NULL;
-
    /* We cut either at the first compression-related hash or the last slash; whichever comes last */
-#ifdef HAVE_ZLIB
-   last_hash = strcasestr(path, ".zip#");
+   const char *last = find_last_slash(path);
 
-   if (last_hash > last)
-      return last_hash + 5;
-#endif
+#ifdef HAVE_COMPRESSION
+   const char *delim = path_get_archive_delim(path);
 
-#ifdef HAVE_7ZIP
-   last_hash = strcasestr(path, ".7z#");
-
-   if (last_hash > last)
-      return last_hash + 4;
-#endif
+   if (delim)
+      return last + 1;
 #endif
 
    if (last)
       return last + 1;
+
    return path;
 }
 
@@ -736,7 +731,7 @@ void fill_short_pathname_representation(char* out_rep,
             sizeof(path_short));
 
 #ifdef HAVE_COMPRESSION
-   last_hash = (char*)strchr(path_short,'#');
+   last_hash = find_last_slash(path_short);
    if(last_hash != NULL)
    {
       /* We handle paths like:
