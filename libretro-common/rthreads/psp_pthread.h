@@ -26,6 +26,7 @@
 
 #ifdef VITA
 #include <psp2/kernel/threadmgr.h>
+#include <sys/time.h>
 #else
 #include <pspkernel.h>
 #include <pspthreadman.h>
