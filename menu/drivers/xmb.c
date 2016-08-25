@@ -2130,6 +2130,7 @@ static void xmb_frame(void *data)
    menu_display_ctx_rotate_draw_t rotate_draw;
    char msg[PATH_MAX_LENGTH]               = {0};
    char title_msg[256]                     = {0};
+   char title_truncated[256]               = {0};
    bool display_kb                         = false;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
@@ -2140,8 +2141,9 @@ static void xmb_frame(void *data)
    if (!xmb)
       return;
 
-   msg[0]       = '\0';
-   title_msg[0] = '\0';
+   msg[0]             = '\0';
+   title_msg[0]       = '\0';
+   title_truncated[0] = '\0';
 
    video_driver_get_size(&width, &height);
 
@@ -2169,9 +2171,16 @@ static void xmb_frame(void *data)
          coord_black,
          coord_white);
 
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
+
+   strlcpy(title_truncated, xmb->title_name, sizeof(title_truncated));
+   if (selection > 1)
+      title_truncated[25] = '\0';
+
    /* Title text */
    xmb_draw_text(xmb,
-         xmb->title_name, xmb->margins.title.left,
+         title_truncated, xmb->margins.title.left,
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
          width, height);
 
@@ -2319,9 +2328,6 @@ static void xmb_frame(void *data)
          &item_color[0],
          width,
          height);
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
 
    selection_buf = menu_entries_get_selection_buf_ptr(0);
    menu_stack    = menu_entries_get_menu_stack_ptr(0);
