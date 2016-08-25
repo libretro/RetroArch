@@ -392,6 +392,8 @@ ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g -DDEBUG
 else ifeq ($(platform), psp1)
    CFLAGS += -O2
+else ifeq ($(platform), vita)
+   CFLAGS += -O1
 else
    CFLAGS += -O3
 endif
