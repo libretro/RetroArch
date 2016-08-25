@@ -522,7 +522,7 @@ const char *path_basename(const char *path)
  *
  * Checks if @path is an absolute path or a relative path.
  *
- * Returns: true (1) if path is absolute, false (1) if path is relative.
+ * Returns: true if path is absolute, false if path is relative.
  **/
 bool path_is_absolute(const char *path)
 {
