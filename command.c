@@ -1569,43 +1569,52 @@ static bool command_event_save_core_config(void)
  **/
 void command_event_save_current_config(bool overrides)
 {
-   if (overrides)
-      return;
-
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (settings->config_save_on_exit && !string_is_empty(global->path.config))
+   if (!overrides)
+   {
+
+      if (settings->config_save_on_exit && !string_is_empty(global->path.config))
+      {
+         bool ret                = false;
+         char msg[128]           = {0};
+         const char *config_path = config_get_active_path();
+
+         /* Save last core-specific config to the default config location,
+          * needed on consoles for core switching and reusing last good
+          * config for new cores.
+          */
+
+         /* Flush out the core specific config. */
+         if (config_path)
+            ret = config_save_file(config_path);
+
+         if (ret)
+         {
+            snprintf(msg, sizeof(msg), "%s \"%s\".",
+                  msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+                  global->path.config);
+            RARCH_LOG("%s\n", msg);
+         }
+         else
+         {
+            snprintf(msg, sizeof(msg), "%s \"%s\".",
+                  msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
+                  global->path.config);
+            RARCH_ERR("%s\n", msg);
+         }
+
+         runloop_msg_queue_push(msg, 1, 180, true);
+      }
+   }
+   else
    {
       bool ret                = false;
       char msg[128]           = {0};
-      const char *config_path = config_get_active_path();
 
-      /* Save last core-specific config to the default config location,
-       * needed on consoles for core switching and reusing last good
-       * config for new cores.
-       */
-
-      /* Flush out the core specific config. */
-      if (config_path)
-         ret = config_save_file(config_path);
-
-      if (ret)
-      {
-         snprintf(msg, sizeof(msg), "%s \"%s\".",
-               msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-               global->path.config);
-         RARCH_LOG("%s\n", msg);
-      }
-      else
-      {
-         snprintf(msg, sizeof(msg), "%s \"%s\".",
-               msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
-               global->path.config);
-         RARCH_ERR("%s\n", msg);
-      }
-
-      runloop_msg_queue_push(msg, 1, 180, true);
+      ret = config_save_file_diff();
+      return;
    }
 }
 

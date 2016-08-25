@@ -1294,9 +1294,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    char tmp_append_path[PATH_MAX_LENGTH] = {0}; /* Don't destroy append_config_path. */
    unsigned msg_color                    = 0;
    config_file_t *conf                   = NULL;
+   global_t   *global                    = global_get_ptr();
+
    if (!settings)
       settings = config_get_ptr();
-   global_t   *global                    = global_get_ptr();
 
    struct config_bool_setting_ptr bool_settings[] = {
       { "video_windowed_fullscreen",   &settings->video.windowed_fullscreen},
@@ -2221,7 +2222,7 @@ bool config_load_override(void)
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
-
+   global->path.append_config[0] = '\0';
    return true;
 }
 
@@ -3312,6 +3313,33 @@ bool config_save_file(const char *path)
    ret = config_file_write(conf, path);
    config_file_free(conf);
    return ret;
+}
+
+/**
+ * config_save_file:
+ * @path            : Path that shall be written to.
+ *
+ * Writes a config file to disk.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+bool config_save_file_diff()
+{
+   unsigned i           = 0;
+   bool ret             = false;
+   settings_t *settings = config_get_ptr();
+   settings_t *orig     = (settings_t*)calloc(1, sizeof(settings_t));
+   global_t   *global   = global_get_ptr();
+
+   /* Load the original config file in memory */
+   config_load_file(global->path.config, false, orig);
+
+   /* Test to compare with a well known setting */
+   /*RARCH_LOG ("Rewind: %d %d\n", settings->rewind_enable, orig->rewind_enable);
+   RARCH_LOG ("DBG: %d %d\n", settings->debug_panel_enable, orig->cheevos.enable);
+   RARCH_LOG ("FPS: %d %d\n", settings->fps_show, orig->fps_show);
+   RARCH_LOG ("FPS: %s %s\n", settings->username, orig->username);*/
+   return false;
 }
 
 /* Replaces currently loaded configuration file with
