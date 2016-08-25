@@ -2014,7 +2014,9 @@ static void xmb_draw_bg(
    menu_display_ctx_draw_t draw;
    settings_t *settings = config_get_ptr();
 
+#if 0
    RARCH_LOG("DRAW BG %d %d \n",width,height);
+#endif
    
    bool running = menu_display_libretro_running();
 
