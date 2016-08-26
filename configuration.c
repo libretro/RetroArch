@@ -3039,39 +3039,10 @@ int populate_settings_float(settings_t *settings, struct config_float_setting *o
    return ARRAY_SIZE(tmp);
 }
 
-/**
- * config_save_file:
- * @path            : Path that shall be written to.
- *
- * Writes a config file to disk.
- *
- * Returns: true (1) on success, otherwise returns false (0).
- **/
-bool config_save_file(const char *path)
+int populate_settings_string(settings_t *settings, struct config_string_setting *out)
 {
-   float msg_color;
-   unsigned i           = 0;
-   bool ret             = false;
-   config_file_t *conf  = config_file_new(path);
-   settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   struct config_bool_setting *bool_settings = 
-      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting));
-   int bool_settings_size = 0;
-
-   struct config_int_setting *int_settings = 
-      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
-   int int_settings_size = 0;
-
-   struct config_float_setting *float_settings = 
-      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
-   int float_settings_size = 0;
-
-   bool_settings_size  = populate_settings_bool  (settings, bool_settings);
-   int_settings_size   = populate_settings_int   (settings, int_settings);
-   float_settings_size = populate_settings_float (settings, float_settings);
-
-   struct config_string_setting string_settings[] = {
+   struct config_string_setting tmp[] = {
       { "bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir},
       { "video_filter",             settings->path.softfilter_plugin},
       { "audio_dsp_plugin",         settings->path.audio_dsp_plugin},
@@ -3105,6 +3076,49 @@ bool config_save_file(const char *path)
       { "bundle_assets_src_path",   settings->path.bundle_assets_src},
       { "bundle_assets_dst_path",   settings->path.bundle_assets_dst}
    };
+
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
+
+/**
+ * config_save_file:
+ * @path            : Path that shall be written to.
+ *
+ * Writes a config file to disk.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+bool config_save_file(const char *path)
+{
+   float msg_color;
+   unsigned i           = 0;
+   bool ret             = false;
+   config_file_t *conf  = config_file_new(path);
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+   struct config_bool_setting *bool_settings = 
+      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting));
+   int bool_settings_size = 0;
+
+   struct config_int_setting *int_settings = 
+      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
+   int int_settings_size = 0;
+
+   struct config_float_setting *float_settings = 
+      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+   int float_settings_size = 0;
+
+   struct config_string_setting *string_settings = 
+      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+   int string_settings_size = 0;
+
+   bool_settings_size   = populate_settings_bool  (settings, bool_settings);
+   int_settings_size    = populate_settings_int   (settings, int_settings);
+   float_settings_size  = populate_settings_float (settings, float_settings);
+   string_settings_size = populate_settings_string(settings, string_settings);
+
    struct config_path_setting path_settings[] = {
       { "recording_output_directory", false,
          global->record.output_dir},
@@ -3236,7 +3250,7 @@ bool config_save_file(const char *path)
     *
     */
 
-   for (i = 0; i < ARRAY_SIZE(string_settings); i++)
+   for (i = 0; i < string_settings_size; i++)
    {
       config_set_string(conf, string_settings[i].ident,
             string_settings[i].value);
@@ -3386,9 +3400,16 @@ bool config_save_file_diff()
    struct config_float_setting *float_overrides = 
       (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
 
-   int bool_settings_size = 0;
-   int int_settings_size = 0;
-   int float_settings_size = 0;
+   struct config_string_setting *string_settings = 
+      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+   struct config_string_setting *string_overrides = 
+      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+
+
+   int bool_settings_size   = 0;
+   int int_settings_size    = 0;
+   int float_settings_size  = 0;
+   int string_settings_size = 0;
 
    /* Load the original config file in memory */
    config_load_file(global->path.config, false, settings);
@@ -3398,9 +3419,12 @@ bool config_save_file_diff()
 
    int_settings_size  = populate_settings_int(settings, int_settings);
    populate_settings_int (overrides, int_overrides);
-   
-   float_settings_size = populate_settings_float (settings, float_settings);
+
+   float_settings_size = populate_settings_float(settings, float_settings);
    populate_settings_float (overrides, float_overrides);
+
+   string_settings_size = populate_settings_string(settings, string_settings);
+   populate_settings_string (overrides, string_overrides);
 
    RARCH_LOG("Overrides:\n");
    for (i = 0; i < bool_settings_size; i++)
@@ -3431,6 +3455,16 @@ bool config_save_file_diff()
             float_settings[i].ident, float_settings[i].value);
          RARCH_LOG("   override: %s=%f\n", 
             float_overrides[i].ident, float_overrides[i].value);
+      }
+   }
+   for (i = 0; i < string_settings_size; i++)
+   {
+      if (strcmp(string_settings[i].value, string_overrides[i].value))
+      {
+         RARCH_LOG("   original: %s=%s\n", 
+            string_settings[i].ident, string_settings[i].value);
+         RARCH_LOG("   override: %s=%s\n", 
+            string_overrides[i].ident, string_overrides[i].value);
       }
    }
 
