@@ -3403,7 +3403,7 @@ bool config_save_file_diff(int override_type)
    char game_path[PATH_MAX_LENGTH]        = {0};
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
-   config_file_t *new_conf                = NULL;
+   config_file_t *conf                = NULL;
 
    global_t   *global   = global_get_ptr();
    settings_t *overrides = config_get_ptr();
@@ -3471,13 +3471,13 @@ bool config_save_file_diff(int override_type)
    {
       RARCH_LOG ("[overrides] path %s\n", core_path);
       /* Create a new config file from core_path */
-      new_conf = config_file_new(core_path);
+      conf = config_file_new(core_path);
    }
    else if(override_type == OVERRIDE_GAME)
    {
       RARCH_LOG ("[overrides] path %s\n", game_path);
       /* Create a new config file from core_path */
-      new_conf = config_file_new(game_path);
+      conf = config_file_new(game_path);
    }
    else
       return false;
@@ -3500,7 +3500,7 @@ bool config_save_file_diff(int override_type)
    path_settings_size = populate_settings_path(settings, path_settings);
    populate_settings_path (overrides, path_overrides);
 
-   RARCH_LOG("[overrides]: looking for changed settings\n");
+   RARCH_LOG("[overrides] looking for changed settings\n");
    for (i = 0; i < bool_settings_size; i++)
    {
       if (bool_settings[i].value != bool_overrides[i].value)
@@ -3509,6 +3509,8 @@ bool config_save_file_diff(int override_type)
             bool_settings[i].ident, bool_settings[i].value);
          RARCH_LOG("   override: %s=%d\n", 
             bool_overrides[i].ident, bool_overrides[i].value);
+         config_set_bool(conf, bool_overrides[i].ident,
+            bool_overrides[i].value);
       }
    }
    for (i = 0; i < int_settings_size; i++)
@@ -3519,6 +3521,8 @@ bool config_save_file_diff(int override_type)
             int_settings[i].ident, int_settings[i].value);
          RARCH_LOG("   override: %s=%d\n", 
             int_overrides[i].ident, int_overrides[i].value);
+         config_set_int(conf, int_overrides[i].ident,
+               int_overrides[i].value);
       }
    }
    for (i = 0; i < float_settings_size; i++)
@@ -3529,6 +3533,8 @@ bool config_save_file_diff(int override_type)
             float_settings[i].ident, float_settings[i].value);
          RARCH_LOG("   override: %s=%f\n", 
             float_overrides[i].ident, float_overrides[i].value);
+         config_set_float(conf, float_overrides[i].ident,
+            float_overrides[i].value);
       }
    }
    for (i = 0; i < string_settings_size; i++)
@@ -3539,6 +3545,8 @@ bool config_save_file_diff(int override_type)
             string_settings[i].ident, string_settings[i].value);
          RARCH_LOG("   override: %s=%s\n", 
             string_overrides[i].ident, string_overrides[i].value);
+         config_set_string(conf, string_overrides[i].ident,
+            string_overrides[i].value);
       }
    }
    for (i = 0; i < path_settings_size; i++)
@@ -3549,8 +3557,28 @@ bool config_save_file_diff(int override_type)
             path_settings[i].ident, path_settings[i].value);
          RARCH_LOG("   override: %s=%s\n", 
             path_overrides[i].ident, path_overrides[i].value);
+         config_set_path(conf, path_overrides[i].ident,
+               path_overrides[i].value);
       }
    }
+
+   if (override_type == OVERRIDE_CORE)
+   {
+      RARCH_LOG ("[overrides] path %s\n", core_path);
+      /* Create a new config file from core_path */
+      ret = config_file_write(conf, core_path);
+      config_file_free(conf);
+   }
+   else if(override_type == OVERRIDE_GAME)
+   {
+      RARCH_LOG ("[overrides] path %s\n", game_path);
+      /* Create a new config file from core_path */
+      ret = config_file_write(conf, game_path);
+      config_file_free(conf);
+   }
+   else
+      return false;
+
 
    free(bool_settings);
    free(bool_overrides);
@@ -3563,7 +3591,8 @@ bool config_save_file_diff(int override_type)
    free(path_settings);
    free(path_overrides);
    free(settings);
-   return false;
+
+   return ret;
 }
 
 /* Replaces currently loaded configuration file with
