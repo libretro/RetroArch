@@ -17,6 +17,7 @@
 #include "../common/gl_common.h"
 #include "../font_driver.h"
 #include "../video_shader_driver.h"
+#include <encodings/utf.h>
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
@@ -216,7 +217,7 @@ static int gl_get_message_width(void *data, const char *msg,
       for (i = 0; i < msg_len; i++)
       {
          const struct font_glyph *glyph = 
-            font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+            font->font_driver->get_glyph(font->font_data, msg[i]);
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -262,7 +263,7 @@ static void gl_raster_font_render_line(
    unsigned i, msg_len;
    struct video_coords coords;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
+   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
    gl_t *gl       = font ? font->gl : NULL;
@@ -298,7 +299,7 @@ static void gl_raster_font_render_line(
       {
          int off_x, off_y, tex_x, tex_y, width, height;
          const struct font_glyph *glyph =
-            font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+            font->font_driver->get_glyph(font->font_data, utf8_walk(&msg));
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -360,7 +361,7 @@ static void gl_raster_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      gl_raster_font_render_line(font, msg, strlen(msg),
+      gl_raster_font_render_line(font, msg, utf8len(msg),
             scale, color, pos_x, pos_y, text_align);
       return;
    }
@@ -384,7 +385,7 @@ static void gl_raster_font_render_message(
       }
       else
       {
-         unsigned msg_len = strlen(msg);
+         unsigned msg_len = utf8len(msg);
          gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x,
                pos_y - (float)lines*line_height, text_align);
          break;

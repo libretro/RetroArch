@@ -26,44 +26,33 @@
 #pragma clang diagnostic ignored "-Winvalid-source-encoding"
 #endif
 
- /* IMPORTANT:
-  * For non-english characters to work without proper unicode support,
-  * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
-  * If you save this file as UTF-8, you'll break non-english characters
-  * (e.g. German "Umlauts" and Portugese diacritics).
- */
-/* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
-extern const char force_iso_8859_1[sizeof("‰ƒˆ÷ﬂ¸‹")==7+1 ? 1 : -1];
-
 int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    uint32_t driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
-   (void)sizeof(force_iso_8859_1);
-
    switch (msg)
    {
       case MENU_ENUM_LABEL_CORE_LIST:
          snprintf(s, len,
-               "Cargar n˙cleo. \n"
+               "Cargar n√∫cleo. \n"
                " \n"
-               "Busca una implementaciÛn de n˙cleo \n"
-               "para libretro. El navegador empezar· \n"
-               "desde la ruta de tu carpeta de n˙cleos.\n"
-               "Si est· en blanco, empezar· desde \n"
-               "la raÌz.\n"
+               "Busca una implementaci√≥n de n√∫cleo \n"
+               "para libretro. El navegador empezar√° \n"
+               "desde la ruta de tu carpeta de n√∫cleos.\n"
+               "Si est√° en blanco, empezar√° desde \n"
+               "la ra√≠z.\n"
                " \n"
-               "Si la carpeta de n˙cleos es una carpeta,\n"
-               "el men˙ la utilizar· como carpeta \n"
-               "base. Si la carpeta de n˙cleos es una \n"
-               "ruta completa, empezar· en la carpeta \n"
+               "Si la carpeta de n√∫cleos es una carpeta,\n"
+               "el men√∫ la utilizar√° como carpeta \n"
+               "base. Si la carpeta de n√∫cleos es una \n"
+               "ruta completa, empezar√° en la carpeta \n"
                "donde se encuentre el archivo.");
          break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
          snprintf(s, len,
                "Puedes usar estos controles en tu mando\n"
-               "o teclado para controlar el men˙: \n"
+               "o teclado para controlar el men√∫: \n"
                " \n"
                );
          break;
@@ -71,7 +60,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Bienvenido a RetroArch\n"
                "\n"
-               "Para m·s informaciÛn ve al men˙ \n"
+               "Para m√°s informaci√≥n ve al men√∫ \n"
 			   "de Ayuda.\n"
                );
          break;
@@ -82,23 +71,23 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             char t[501];
 
             strlcpy(t,
-                  "RetroArch utiliza un formato ˙nico para \n"
-                  "sincronizar vÌdeo y sonido que necesita \n"
+                  "RetroArch utiliza un formato √∫nico para \n"
+                  "sincronizar v√≠deo y sonido que necesita \n"
                   "calibrarse con la frecuencia de \n"
-                  "actualizaciÛn de tu monitor para obtener \n"
+                  "actualizaci√≥n de tu monitor para obtener \n"
                   "el mejor rendimiento. \n"
                   " \n"
                   "Si notas cortes de sonido o en la imagen,\n"
                   "lo normal es que necesites calibrar estos\n"
-                  "ajustes. AquÌ van algunas opciones:\n"
+                  "ajustes. Aqu√≠ van algunas opciones:\n"
                   " \n", sizeof(t));
             snprintf(u, sizeof(u),
                   "a) Ve a '%s' -> '%s' y activa\n"
-                  "'VÌdeo por hilos'. En este modo la tasa\n"
-                  "de refresco es irrelevante, habr· m·s fps,\n"
-                  "'VÌdeo multin˙cleo'. En este modo la \n"
-                  "frecuencia es irrelevante, habr· m·s fps,\n"
-                  "pero la imagen podrÌa ser menos fluida.\n"
+                  "'V√≠deo por hilos'. En este modo la tasa\n"
+                  "de refresco es irrelevante, habr√° m√°s fps,\n"
+                  "'V√≠deo multin√∫cleo'. En este modo la \n"
+                  "frecuencia es irrelevante, habr√° m√°s fps,\n"
+                  "pero la imagen podr√≠a ser menos fluida.\n"
                   "b) Ve a '%s' -> '%s' y busca\n"
                   "'%s'. Deja que se ejecute durante\n"
                   "2048 fotogramas y selecciona Aceptar.",
@@ -118,18 +107,18 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "y selecciona '%s' o \n"
                "'%s'.\n"
                " \n"
-               "Esto comparar· los archivos con las entradas en \n"
+               "Esto comparar√° los archivos con las entradas en \n"
                "la base de datos. Si hay una coincidencia, \n"
-               "aÒadir· una entrada en una colecciÛn.\n"
+               "a√±adir√° una entrada en una colecci√≥n.\n"
                " \n"
-               "Entonces podr·s acceder f·cilmente al contenido\n"
+               "Entonces podr√°s acceder f√°cilmente al contenido\n"
                "si vas a '%s' ->\n"
                "'%s'\n"
                "en vez de tener que pasar por el navegador \n"
                "de archivos constantemente.\n"
                " \n"
-               "NOTA: El contenido de algunos n˙cleos podrÌa\n"
-               "no ser localizable. Entre los ejemplos est·n\n"
+               "NOTA: El contenido de algunos n√∫cleos podr√≠a\n"
+               "no ser localizable. Entre los ejemplos est√°n\n"
                "PlayStation, MAME, FBA, y puede que otros."
                ,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST),
@@ -159,22 +148,22 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                         " \n"
                         "Este controlador puede funcionar sin X. \n"
                         " \n"
-                        "Utiliza la API m·s reciente para joypads \n"
+                        "Utiliza la API m√°s reciente para joypads \n"
                         "evdec para dar compatibilidad con joysticks. \n"
-                        "Permite conexiÛn en caliente y force \n"
+                        "Permite conexi√≥n en caliente y force \n"
                         "feedback (si lo admite el dispositivo). \n",
                         sizeof(t));
                   strlcpy(u,
                         " \n"
                         "El controlador lee los eventos evdev para \n"
-                        "dar compatibilidad con teclados. TambiÈn \n"
+                        "dar compatibilidad con teclados. Tambi√©n \n"
                         "es compatible con retrollamadas de teclado, \n"
-                        "ratones y pantallas t·ctiles. \n"
+                        "ratones y pantallas t√°ctiles. \n"
                         " \n"
-                        "La mayorÌa de las distros tienen los nodos \n"
+                        "La mayor√≠a de las distros tienen los nodos \n"
                         "/dev/input en modo root-only (modo 600). \n"
                         "Puedes configurar una regla udev que los haga \n"
-                        "accesibles fuera de la raÌz.", sizeof(u)
+                        "accesibles fuera de la ra√≠z.", sizeof(u)
                         );
 
                   strlcat(s, t, len);
@@ -187,7 +176,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                      " \n"
                      "Este controlador necesita de un TTY activo. \n"
                      "Los eventos de teclado se leen directamente \n"
-                     "desde el TTY, lo que es m·s simple pero no tan \n"
+                     "desde el TTY, lo que es m√°s simple pero no tan \n"
                      "flexible como udev. \n"
                      "No es compatible con ratones, etc. \n"
                      " \n"
@@ -198,7 +187,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                snprintf(s, len,
                      "Controlador de entrada.\n"
                      " \n"
-                     "El controlador de vÌdeo podrÌa forzar \n"
+                     "El controlador de v√≠deo podr√≠a forzar \n"
                      "el uso de un controlador de entrada \n"
                      "distinto.");
                break;
@@ -210,17 +199,17 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Buscar contenido. \n"
                " \n"
                "Para cargar contenidos necesitas \n"
-               "un 'n˙cleo' y un archivo de contenido.\n"
+               "un 'n√∫cleo' y un archivo de contenido.\n"
                " \n"
-               "Para controlar el lugar donde el men˙ \n"
+               "Para controlar el lugar donde el men√∫ \n"
                "empieza a buscar contenidos, cambia \n"
-               "la opciÛn 'Carpeta del navegador de \n"
-               "archivos'. En caso de que no estÈ \n"
-               "configurada, empezar· desde la raÌz.\n"
+               "la opci√≥n 'Carpeta del navegador de \n"
+               "archivos'. En caso de que no est√© \n"
+               "configurada, empezar√° desde la ra√≠z.\n"
                " \n"
-               "El navegador filtrar· las extensiones \n"
-               "del ˙ltimo n˙cleo seleccionado en \n"
-               "'Cargar n˙cleo' y lo utilizar· al \n"
+               "El navegador filtrar√° las extensiones \n"
+               "del √∫ltimo n√∫cleo seleccionado en \n"
+               "'Cargar n√∫cleo' y lo utilizar√° al \n"
                "cargar un contenido."
                );
          break;
@@ -229,90 +218,90 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Cargar contenido del historial. \n"
                " \n"
                "Cuando se cargan contenidos, estos y \n"
-               "las combinaciones de n˙cleos de libretro \n"
+               "las combinaciones de n√∫cleos de libretro \n"
                "se guardan en el historial. \n"
                " \n"
                "El historial se guarda en un archivo en la \n"
                "misma carpeta que el archivo de configura- \n"
-               "ciÛn de RetroArch. Si no se ha cargado un \n"
-               "archivo de configuraciÛn al iniciar, no se \n"
-               "guardar· ni cargar· el historial, y la \n"
-               "opciÛn no existir· en el men˙ principal."
+               "ci√≥n de RetroArch. Si no se ha cargado un \n"
+               "archivo de configuraci√≥n al iniciar, no se \n"
+               "guardar√° ni cargar√° el historial, y la \n"
+               "opci√≥n no existir√° en el men√∫ principal."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
          snprintf(s, len,
-               "Controlador de vÌdeo actual.");
+               "Controlador de v√≠deo actual.");
 
          if (string_is_equal(settings->video.driver, "gl"))
          {
             snprintf(s, len,
-                  "Controlador de vÌdeo OpenGL. \n"
+                  "Controlador de v√≠deo OpenGL. \n"
                   " \n"
-                  "Este controlador permite que los n˙cleos \n"
-                  "libretro GL se utilicen, adem·s de las \n"
+                  "Este controlador permite que los n√∫cleos \n"
+                  "libretro GL se utilicen, adem√°s de las \n"
                   "implementaciones renderizadas por\n"
-                  "software del n˙cleo.\n"
+                  "software del n√∫cleo.\n"
                   " \n"
                   "El rendimiento de las implementaciones \n"
                   "por software y libretro GL dependen \n"
                   "del controlador GL que tenga tu \n"
-                  "tarjeta gr·fica.");
+                  "tarjeta gr√°fica.");
          }
          else if (string_is_equal(settings->video.driver, "sdl2"))
          {
             snprintf(s, len,
-                  "Controlador de vÌdeo SDL 2.\n"
+                  "Controlador de v√≠deo SDL 2.\n"
                   " \n"
-                  "Este es un controlador de vÌdeo por \n"
+                  "Este es un controlador de v√≠deo por \n"
                   "software SDL 2.\n"
                   " \n"
                   "El rendimiento para las implementaciones \n"
                   "libretro por software depende de la \n"
-                  "implementaciÛn SDL de tu plataforma.");
+                  "implementaci√≥n SDL de tu plataforma.");
          }
          else if (string_is_equal(settings->video.driver, "sdl1"))
          {
             snprintf(s, len,
-                  "Controlador de vÌdeo SDL.\n"
+                  "Controlador de v√≠deo SDL.\n"
                   " \n"
-                  "Este es un controlador de vÌdeo por \n"
+                  "Este es un controlador de v√≠deo por \n"
                   "software SDL 1.2.\n"
                   " \n"
                   "Su rendimiento es considerado inferior \n"
-                  "a lo Ûptimo. UtilÌzalo ˙nicamente como \n"
-                  "˙ltimo recurso.");
+                  "a lo √≥ptimo. Util√≠zalo √∫nicamente como \n"
+                  "√∫ltimo recurso.");
          }
          else if (string_is_equal(settings->video.driver, "d3d"))
          {
             snprintf(s, len,
-                  "Controlador de vÌdeo Direct3D. \n"
+                  "Controlador de v√≠deo Direct3D. \n"
                   " \n"
-                  "El rendimiento de los n˙cleos que \n"
-                  "rendericen por software depender· \n"
+                  "El rendimiento de los n√∫cleos que \n"
+                  "rendericen por software depender√° \n"
                   "del controlador D3D de tu tarjeta \n"
-                  "gr·fica.");
+                  "gr√°fica.");
          }
          else if (string_is_equal(settings->video.driver, "exynos"))
          {
             snprintf(s, len,
-                  "Controlador de vÌdeo Exynos-G2D. \n"
+                  "Controlador de v√≠deo Exynos-G2D. \n"
                   " \n"
-                  "Este es un controlador de vÌdeo Exynos \n"
+                  "Este es un controlador de v√≠deo Exynos \n"
                   "de bajo nivel. Utiliza el bloque G2D \n"
                   "del SoC Exynos de Samsung para las \n"
                   "operaciones de blit. \n"
                   " \n"
-                  "El rendimiento de los n˙cleos \n"
-                  "renderizados por software deberÌa \n"
-                  "ser Ûptimo.");
+                  "El rendimiento de los n√∫cleos \n"
+                  "renderizados por software deber√≠a \n"
+                  "ser √≥ptimo.");
          }
          else if (string_is_equal(settings->video.driver, "drm"))
          {
             snprintf(s, len,
-                  "Controlador de vÌdeo de DRM simple. \n"
+                  "Controlador de v√≠deo de DRM simple. \n"
                   " \n"
-                  "Este es un controlador de vÌdeo que \n"
+                  "Este es un controlador de v√≠deo que \n"
                   "usa libdrm para escalado por hardware \n"
                   "mediante los overlays de la GPU. \n"
                   " \n"
@@ -321,9 +310,9 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal(settings->video.driver, "sunxi"))
          {
             snprintf(s, len,
-                  "Controlador de vÌdeo Sunxi-G2D. \n"
+                  "Controlador de v√≠deo Sunxi-G2D. \n"
                   " \n"
-                  "Este es un controlador de vÌdeo Sunxi \n"
+                  "Este es un controlador de v√≠deo Sunxi \n"
                   "de bajo nivel. Utiliza el bloque G2D \n"
                   "de todos los SoC Allwinner.");
          }
@@ -343,11 +332,11 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          {
             case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_SINC:
                snprintf(s, len,
-                     "ImplementaciÛn SINC en ventana.");
+                     "Implementaci√≥n SINC en ventana.");
                break;
             case MENU_LABEL_AUDIO_RESAMPLER_DRIVER_CC:
                snprintf(s, len,
-                     "ImplementaciÛn de cosenos complejos.");
+                     "Implementaci√≥n de cosenos complejos.");
                break;
          }
          break;
@@ -372,13 +361,13 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "HLSL"
 #endif
                ". \n"
-               "El men˙ de shaders se actualizar·. \n"
+               "El men√∫ de shaders se actualizar√°. \n"
                " \n"
-               "Si el CGP utiliza mÈtodos de escalado \n"
+               "Si el CGP utiliza m√©todos de escalado \n"
                "complejos (por ejemplo, escalado de \n"
-               "origen, el mismo factor para X/Y), podrÌa \n"
+               "origen, el mismo factor para X/Y), podr√≠a \n"
                "no mostrar un factor de escalado correcto \n"
-               "en el men˙."
+               "en el men√∫."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
@@ -387,18 +376,18 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "El factor de escala es acumulativo, \n"
                "por ejemplo: 2x para el primer pase y \n"
-               "2x para el segundo dar· una escala \n"
+               "2x para el segundo dar√° una escala \n"
                "total de 4x. \n"
                " \n"
-               "Si el ˙ltimo pase tiene un factor de \n"
-               "escala, el resultado se estirar· por \n"
+               "Si el √∫ltimo pase tiene un factor de \n"
+               "escala, el resultado se estirar√° por \n"
                "toda la pantalla con el filtro espe- \n"
                "cificado en 'Filtro predeterminado'. \n"
                " \n"
                "Si has seleccionado 'No importa', se \n"
-               "utilizar· o bien la escala 1x o se \n"
-               "estirar· a pantalla completa en funciÛn \n"
-               "de si es el ˙ltimo pase o no."
+               "utilizar√° o bien la escala 1x o se \n"
+               "estirar√° a pantalla completa en funci√≥n \n"
+               "de si es el √∫ltimo pase o no."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
@@ -409,27 +398,27 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "con pasadas arbitrarias, filtros persona- \n"
                "lizados de hardware y factores de escala. \n"
                " \n"
-               "Esta opciÛn especifica la cantidad de pasadas \n"
+               "Esta opci√≥n especifica la cantidad de pasadas \n"
                "de shaders a utilizar. Si seleccionas 0 y \n"
                "luego 'Aplicar cambios en shaders', \n"
-               "utilizar·s un shader 'en blanco'. \n"
+               "utilizar√°s un shader 'en blanco'. \n"
                " \n"
-               "La opciÛn filtro predeterminado afectar· \n"
+               "La opci√≥n filtro predeterminado afectar√° \n"
                "al filtro de estiramiento.");
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          snprintf(s, len,
-               "Par·metros de shaders. \n"
+               "Par√°metros de shaders. \n"
                " \n"
                "Modifica directamente el shader actual. \n"
-               "No se guardar· en el preajuste CGP/GLSLP.");
+               "No se guardar√° en el preajuste CGP/GLSLP.");
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
          snprintf(s, len,
-               "Par·metros del preajuste de shaders. \n"
+               "Par√°metros del preajuste de shaders. \n"
                " \n"
                "Modifica el preajuste de shaders que \n"
-               "se encuentra actualmente en el men˙."
+               "se encuentra actualmente en el men√∫."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
@@ -442,29 +431,29 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Modifica la carpeta de shaders para \n"
                "indicar la ruta en la que el navegador \n"
-               "comenzar· a buscar shaders."
+               "comenzar√° a buscar shaders."
                );
          break;
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
-               "Guarda la configuraciÛn al salir.\n"
-               "Es ˙til para el men˙, ya que los \n"
+               "Guarda la configuraci√≥n al salir.\n"
+               "Es √∫til para el men√∫, ya que los \n"
                "ajustes pueden ser modificados. \n"
-               "Sobrescribir· la configuraciÛn. \n"
+               "Sobrescribir√° la configuraci√≥n. \n"
                " \n"
-               "No se preservar·n los #include \n"
+               "No se preservar√°n los #include \n"
                "y los comentarios. \n"
                " \n"
-               "El archivo de configuraciÛn se \n"
-               "considera inmutable por diseÒo \n"
+               "El archivo de configuraci√≥n se \n"
+               "considera inmutable por dise√±o \n"
                "ya que es probable que el usuario \n"
-               "lo controle, y no deberÌa ser \n"
+               "lo controle, y no deber√≠a ser \n"
                "sobrescrito sin que el usuario \n"
                "no se entere."
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
                "\nSin embargo, no suele ser el caso \n"
                "en consolas, donde no es posible \n"
-               "examinar el archivo de configuraciÛn \n"
+               "examinar el archivo de configuraci√≥n \n"
                "de forma manual."
 #endif
                );
@@ -474,43 +463,43 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Filtro de hardware para esta pasada. \n"
                " \n"
                "Si se ha seleccionado 'No importa', \n"
-               "se utilizar· el filtro predeterminado."
+               "se utilizar√° el filtro predeterminado."
                );
          break;
       case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
          snprintf(s, len,
-               "Guarda autom·ticamente la SRAM \n"
-               "no vol·til en intervalos regulares.\n"
+               "Guarda autom√°ticamente la SRAM \n"
+               "no vol√°til en intervalos regulares.\n"
                " \n"
-               "Esta opciÛn est· desactivada por \n"
+               "Esta opci√≥n est√° desactivada por \n"
                "defecto a menos que se haya configurado \n"
                "lo contrario. El intervalo se mide \n"
                "en segundos. \n"
                " \n"
-               "Si utlizas 0, desactivar·s el \n"
-               "guardado autom·tico.");
+               "Si utlizas 0, desactivar√°s el \n"
+               "guardado autom√°tico.");
          break;
       case MENU_ENUM_LABEL_INPUT_BIND_DEVICE_TYPE:
          snprintf(s, len,
                "Tipo de dispositivo de entrada. \n"
                " \n"
                "Selecciona el tipo de dispositivo a \n"
-               "utilizar. Es relevante para el n˙cleo \n"
+               "utilizar. Es relevante para el n√∫cleo \n"
                "de libretro."
                );
          break;
       case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
          snprintf(s, len,
                "Ajusta el nivel de registro de los \n"
-               "n˙cleos de libretro (GET_LOG_INTERFACE). \n"
+               "n√∫cleos de libretro (GET_LOG_INTERFACE). \n"
                " \n"
                " Si un nivel de registro indicado por \n"
-               " un n˙cleo de libretro est· por debajo \n"
+               " un n√∫cleo de libretro est√° por debajo \n"
                " del nivel indicado en libretro_log, \n"
-               " ser· ignorado.\n"
+               " ser√° ignorado.\n"
                " \n"
                " Los registros DEBUG siempre son ignorados \n"
-               " a menos que estÈ activado el modo \n"
+               " a menos que est√© activado el modo \n"
                " de verbosidad (--verbose).\n"
                " \n"
                " DEBUG = 0\n"
@@ -522,31 +511,31 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_STATE_SLOT_INCREASE:
       case MENU_ENUM_LABEL_STATE_SLOT_DECREASE:
          snprintf(s, len,
-               "Ranuras de guardados r·pidos.\n"
+               "Ranuras de guardados r√°pidos.\n"
                " \n"
                " Si se selecciona la ranura 0, el nombre \n"
-               " del guardado r·pido es *.state \n"
-               " (o lo que estÈ definido en la lÌnea \n"
+               " del guardado r√°pido es *.state \n"
+               " (o lo que est√© definido en la l√≠nea \n"
                "de comandos).\n"
-               "Si la ranura es != 0, la ruta ser· (path)(d), \n"
-               "siendo (d) el n˙mero de ranura.");
+               "Si la ranura es != 0, la ruta ser√° (path)(d), \n"
+               "siendo (d) el n√∫mero de ranura.");
          break;
       case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
          snprintf(s, len,
                "Aplicar cambios en shaders. \n"
                " \n"
-               "DespuÈs de cambiar los ajustes de shaders, \n"
-               "utiliza esta opciÛn para aplicar los \n"
+               "Despu√©s de cambiar los ajustes de shaders, \n"
+               "utiliza esta opci√≥n para aplicar los \n"
                "cambios. \n"
                " \n"
                "Los cambios en los shaders es una \n"
-               "operaciÛn que ocupa bastante memoria, \n"
-               "asÌ que han de hacerse de forma \n"
-               "explÌcita. \n"
+               "operaci√≥n que ocupa bastante memoria, \n"
+               "as√≠ que han de hacerse de forma \n"
+               "expl√≠cita. \n"
                " \n"
-               "Al aplicar shaders, se guarda su configuraciÛn \n"
+               "Al aplicar shaders, se guarda su configuraci√≥n \n"
                "a un archivo temporal (menu.cgp ormenu.glslp) \n"
-               "y se cargan. El archivo persistir· al \n"
+               "y se cargan. El archivo persistir√° al \n"
                "abandonar RetroArch. El archivo se guarda en \n"
                "la carpeta Shader."
                );
@@ -557,40 +546,40 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Selecciona el mando a utilizar por \n"
                "el usuario N. \n"
-               "El nombre del mando est· disponible."
+               "El nombre del mando est√° disponible."
                );
          break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
-               "Muestra u oculta el men˙.");
+               "Muestra u oculta el men√∫.");
          break;
       case MENU_ENUM_LABEL_GRAB_MOUSE_TOGGLE:
          snprintf(s, len,
-               "Permite o no capturar el ratÛn.\n"
+               "Permite o no capturar el rat√≥n.\n"
                " \n"
-               "Al capturar el ratÛn, RetroArch lo oculta \n"
-               "y mantiene el puntero del ratÛn dentro de \n"
+               "Al capturar el rat√≥n, RetroArch lo oculta \n"
+               "y mantiene el puntero del rat√≥n dentro de \n"
                "la ventana para que la entrada relativa \n"
-               "del ratÛn funcione mejor.");
+               "del rat√≥n funcione mejor.");
          break;
       case MENU_ENUM_LABEL_DISK_NEXT:
          snprintf(s, len,
-               "Rota entre las im·genes de disco. \n"
-               "Utiliza esta opciÛn despuÈs de \n"
+               "Rota entre las im√°genes de disco. \n"
+               "Utiliza esta opci√≥n despu√©s de \n"
                "expulsar un disco. \n"
                " \n"
-               " Termina la operaciÛn volviendo \n"
-               " a conmutar el botÛn de expulsiÛn.");
+               " Termina la operaci√≥n volviendo \n"
+               " a conmutar el bot√≥n de expulsi√≥n.");
          break;
       case MENU_ENUM_LABEL_VIDEO_FILTER:
 #ifdef HAVE_FILTERS_BUILTIN
          snprintf(s, len,
-               "Filtro de vÌdeo basado en la CPU.");
+               "Filtro de v√≠deo basado en la CPU.");
 #else
          snprintf(s, len,
-               "Filtro de vÌdeo basado en la CPU.\n"
+               "Filtro de v√≠deo basado en la CPU.\n"
                " \n"
-               "Ruta a una librerÌa din·mica.");
+               "Ruta a una librer√≠a din√°mica.");
 #endif
          break;
       case MENU_ENUM_LABEL_AUDIO_DEVICE:
@@ -598,7 +587,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Anula el dispositivo de sonido \n"
                "predeterminado que utiliza el \n"
                "controlador de sonido.\n"
-               "Esta opciÛn depende del contro- \n"
+               "Esta opci√≥n depende del contro- \n"
                "lador. Por ejemplo:\n"
 #ifdef HAVE_ALSA
                " \n"
@@ -617,14 +606,14 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
 #ifdef HAVE_RSOUND
                " \n"
-               "RSound necesita una direcciÛn IP \n"
+               "RSound necesita una direcci√≥n IP \n"
                "de un servidor RSound."
 #endif
                );
          break;
       case MENU_ENUM_LABEL_DISK_EJECT_TOGGLE:
          snprintf(s, len,
-               "Alterna el botÛn de expulsiÛn \n"
+               "Alterna el bot√≥n de expulsi√≥n \n"
                "de discos.\n"
                " \n"
                "Se utiliza para contenidos \n"
@@ -632,33 +621,33 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_ENABLE_HOTKEY:
          snprintf(s, len,
-               "Activa otras teclas r·pidas.\n"
+               "Activa otras teclas r√°pidas.\n"
                " \n"
-               "Si esta tecla r·pida est· asignada a un \n"
-               "teclado, un botÛn o un eje de un joystick, \n"
-               "el resto de teclas r·pidas se desactivar·n \n"
+               "Si esta tecla r√°pida est√° asignada a un \n"
+               "teclado, un bot√≥n o un eje de un joystick, \n"
+               "el resto de teclas r√°pidas se desactivar√°n \n"
                "a menos que esta tecla se mantenga pulsada \n"
                "al mismo tiempo. \n"
                " \n"
                "Esto sirve para implementaciones centradas \n"
                "en RETRO_KEYBOARD, que ocupan una gran \n"
-               "porciÛn del teclado y no es una buena idea \n"
-               "que las teclas r·pidas interfieran con \n"
+               "porci√≥n del teclado y no es una buena idea \n"
+               "que las teclas r√°pidas interfieran con \n"
                "el funcionamiento normal.");
          break;
       case MENU_ENUM_LABEL_REWIND_ENABLE:
          snprintf(s, len,
                "Activa el rebobinado.\n"
                " \n"
-               "Esto consume rendimiento, asÌ que \n"
-               "est· desactivado por defecto.");
+               "Esto consume rendimiento, as√≠ que \n"
+               "est√° desactivado por defecto.");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
          snprintf(s, len,
-               "Carpeta de n˙cleos. \n"
+               "Carpeta de n√∫cleos. \n"
                " \n"
-               "Una carpeta donde se buscar·n las \n"
-               "implementaciones de n˙cleos libretro.");
+               "Una carpeta donde se buscar√°n las \n"
+               "implementaciones de n√∫cleos libretro.");
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          {
@@ -667,61 +656,61 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
             char t[501];
 
             strlcpy(t,
-                  "Frecuencia de actualizaciÛn autom·tica.\n"
+                  "Frecuencia de actualizaci√≥n autom√°tica.\n"
                   " \n"
-                  "La frecuencia de actualizaciÛn precisa del \n"
+                  "La frecuencia de actualizaci√≥n precisa del \n"
                   "monitor (en Hz). Se utiliza para calcular \n"
                   "la frecuencia de entrada de sonido con esta \n"
-                  "fÛrmula: \n"
+                  "f√≥rmula: \n"
                   " \n"
                   "audio_input_rate = veloc. de entrada de juego \n"
-                  "* frecuencia de actualizaciÛn de pantalla / \n"
-                  "frecuencia de actualizaciÛn de juego \n"
+                  "* frecuencia de actualizaci√≥n de pantalla / \n"
+                  "frecuencia de actualizaci√≥n de juego \n"
                   " \n", sizeof(t));
             strlcpy(u,
-                  "Si la implementaciÛn no indica un valor, se \n"
-                  "asumir· de forma predeterminada el sistema \n"
+                  "Si la implementaci√≥n no indica un valor, se \n"
+                  "asumir√° de forma predeterminada el sistema \n"
                   "NTSC por compatibilidad.\n"
                   " \n"
-                  "Este valor deberÌa ser lo m·s similar a 60Hz \n"
+                  "Este valor deber√≠a ser lo m√°s similar a 60Hz \n"
                   "para evitar cambios en el tono. Si tu \n"
                   "monitor no funciona a 60Hz o similar, \n"
-                  "desactiva la sincronÌa vertical y deja \n"
-                  "esta opciÛn en su valor predeterminado.", sizeof(u));
+                  "desactiva la sincron√≠a vertical y deja \n"
+                  "esta opci√≥n en su valor predeterminado.", sizeof(u));
             strlcat(s, t, len);
             strlcat(s, u, len);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_ROTATION:
          snprintf(s, len,
-               "Fuerza una rotaciÛn concreta \n"
+               "Fuerza una rotaci√≥n concreta \n"
                "de la pantalla.\n"
                " \n"
-               "La rotaciÛn se aÒade a las rotaciones \n"
-               "que indique el n˙cleo libretro (ver \n"
-               "Permitir rotaciÛn de vÌdeo).");
+               "La rotaci√≥n se a√±ade a las rotaciones \n"
+               "que indique el n√∫cleo libretro (ver \n"
+               "Permitir rotaci√≥n de v√≠deo).");
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE:
          snprintf(s, len,
-               "ResoluciÛn en pantalla completa.\n"
+               "Resoluci√≥n en pantalla completa.\n"
                " \n"
-               "Si se indica 0, se utilizar· la \n"
-               "resoluciÛn del entorno.\n");
+               "Si se indica 0, se utilizar√° la \n"
+               "resoluci√≥n del entorno.\n");
          break;
       case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
          snprintf(s, len,
-               "ProporciÛn de aceleraciÛn."
+               "Proporci√≥n de aceleraci√≥n."
                " \n"
-               "Indica la velocidad m·xima a la que \n"
-               "se ejecutar· el contenido mientras \n"
+               "Indica la velocidad m√°xima a la que \n"
+               "se ejecutar√° el contenido mientras \n"
                "es acelerado.\n"
                " \n"
                " (Por ejemplo, 5.0 para un contenido \n"
-               "a 60 FPS => M·ximo de 300 FPS).\n"
+               "a 60 FPS => M√°ximo de 300 FPS).\n"
                " \n"
-               "RetroArch pasar· a segundo plano \n"
+               "RetroArch pasar√° a segundo plano \n"
                "para asegurarse de que no se supere \n"
-               "la velocidad m·xima. Este lÌmite \n"
+               "la velocidad m√°xima. Este l√≠mite \n"
                "no es completamente preciso.");
          break;
       case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
@@ -732,7 +721,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "preferencia por un monitor en concreto, \n"
                "y de 1 en adelante (siendo 1 el primer \n"
                "monitor) sugiere a RetroArch que \n"
-               "utilice ese monitor especÌfico.");
+               "utilice ese monitor espec√≠fico.");
          break;
       case MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN:
          snprintf(s, len,
@@ -740,22 +729,22 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "con overscan.\n"
                " \n"
                "El comportamiento exacto de esta \n"
-               "opciÛn depende de la implementaciÛn \n"
-               "del n˙cleo.");
+               "opci√≥n depende de la implementaci√≥n \n"
+               "del n√∫cleo.");
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          snprintf(s, len,
-               "Solo escala el vÌdeo con n˙meros \n"
+               "Solo escala el v√≠deo con n√∫meros \n"
                "enteros.\n"
                " \n"
-               "El tamaÒo base depende de la geometrÌa \n"
+               "El tama√±o base depende de la geometr√≠a \n"
                "que indique el sistema y de la \n"
-               "proporciÛn de aspecto.\n"
+               "proporci√≥n de aspecto.\n"
                " \n"
-               "Si no se ha configurado la opciÛn \n"
-               "Forzar proporciÛn, los valores X/Y \n"
-               "se escalar·n de forma independiente \n"
-               "seg˙n n˙meros enteros.");
+               "Si no se ha configurado la opci√≥n \n"
+               "Forzar proporci√≥n, los valores X/Y \n"
+               "se escalar√°n de forma independiente \n"
+               "seg√∫n n√∫meros enteros.");
          break;
       case MENU_ENUM_LABEL_AUDIO_VOLUME:
          snprintf(s, len,
@@ -770,13 +759,13 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Control de la frecuencia de sonido.\n"
                " \n"
-               "Si seleccionas 0, desactivar·s el control \n"
+               "Si seleccionas 0, desactivar√°s el control \n"
                "de la frecuencia. Cualquier otro valor \n"
-               "cambiar· el delta de control de la \n"
+               "cambiar√° el delta de control de la \n"
                "frecuencia de sonido.\n"
                " \n"
-               "Define cu·nta frecuencia de entrada puede \n"
-               "ajustarse de forma din·mica.\n"
+               "Define cu√°nta frecuencia de entrada puede \n"
+               "ajustarse de forma din√°mica.\n"
                " \n"
                " La frecuencia de entrada se define como: \n"
                " frecuencia de entrada * (1.0 +/- \n"
@@ -784,23 +773,23 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
          snprintf(s, len,
-               "VariaciÛn m·xima en la sincronÌa de \n"
+               "Variaci√≥n m√°xima en la sincron√≠a de \n"
                "sonido.\n"
                " \n"
-               "Define la variaciÛn m·xima de la \n"
-               "frecuencia de entrada. PodrÌas aumentar \n"
-               "el valor para cambiar la sincronÌa, por \n"
-               "ejemplo, si ejecutas n˙cleos PAL en \n"
+               "Define la variaci√≥n m√°xima de la \n"
+               "frecuencia de entrada. Podr√≠as aumentar \n"
+               "el valor para cambiar la sincron√≠a, por \n"
+               "ejemplo, si ejecutas n√∫cleos PAL en \n"
                "monitores NTSC, a cambio de tener un \n"
                "tono de sonido impreciso.\n"
                " \n"
                " La frecuencia de entrada se define como: \n"
                " frecuencia de entrada * (1.0 +/- \n"
-               "(variaciÛn m·xima de sincronÌa))");
+               "(variaci√≥n m√°xima de sincron√≠a))");
          break;
       case MENU_ENUM_LABEL_OVERLAY_NEXT:
          snprintf(s, len,
-               "Cambia a la siguiente superposiciÛn.\n"
+               "Cambia a la siguiente superposici√≥n.\n"
                " \n"
                "Se expande alrededor.");
          break;
@@ -819,7 +808,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION:
          snprintf(s, len,
-               "Desactiva por la fuerza la composiciÛn.\n"
+               "Desactiva por la fuerza la composici√≥n.\n"
                "Actualmente solo funciona en \n"
                "Windows Vista/7.");
          break;
@@ -833,38 +822,38 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Carpeta de sistemas. \n"
                " \n"
                "Asigna la carpeta 'system'.\n"
-               "Los n˙cleos pueden buscar dentro \n"
+               "Los n√∫cleos pueden buscar dentro \n"
                "de ella para cargar BIOS, \n"
-               "configuraciones especÌficas para \n"
+               "configuraciones espec√≠ficas para \n"
                "un sistema, etc.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
          snprintf(s, len,
-               "Guarda autom·ticamente un guardado r·pido \n"
-               "al terminar la ejecuciÛn de RetroArch.\n"
+               "Guarda autom√°ticamente un guardado r√°pido \n"
+               "al terminar la ejecuci√≥n de RetroArch.\n"
                " \n"
-               "RetroArch cargar· autom·ticamente cualquier \n"
-               "guardado r·pido que se encuentre en esa ruta \n"
-               "al arrancar si la opciÛn 'Cargar guardado \n"
-               "r·pido autom·ticamente' est· activada.");
+               "RetroArch cargar√° autom√°ticamente cualquier \n"
+               "guardado r√°pido que se encuentre en esa ruta \n"
+               "al arrancar si la opci√≥n 'Cargar guardado \n"
+               "r√°pido autom√°ticamente' est√° activada.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          snprintf(s, len,
-               "Utilizar un controlador de vÌdeo \n"
+               "Utilizar un controlador de v√≠deo \n"
                "por hilos.\n"
                " \n"
-               "Esta opciÛn podrÌa mejorar el rendimiento \n"
+               "Esta opci√≥n podr√≠a mejorar el rendimiento \n"
                "a costa de ganar retraso y perder fluidez \n"
-               "de vÌdeo.");
+               "de v√≠deo.");
          break;
       case MENU_ENUM_LABEL_VIDEO_VSYNC:
          snprintf(s, len,
-               "SincronÌa vertical para vÌdeo.\n");
+               "Sincron√≠a vertical para v√≠deo.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_HARD_SYNC:
          snprintf(s, len,
                "Intenta sincronizar la CPU y la GPU \n"
-               "de una forma m·s estricta.\n"
+               "de una forma m√°s estricta.\n"
                " \n"
                "Puede reducir el retraso a costa \n"
                "de perder rendimiento.");
@@ -873,7 +862,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Nivel de detalle del rebobinado.\n"
                " \n"
-               "Cuando se rebobina un n˙mero determinado \n"
+               "Cuando se rebobina un n√∫mero determinado \n"
                "de fotogramas, puedes rebobinar varios \n"
                "fotogramas a la vez, aumentando la \n"
                "velocidad de rebobinado.");
@@ -885,23 +874,23 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
          snprintf(s, len,
                "Ajusta la cantidad de retraso en \n"
-               "milisegundos despuÈs de la sincronÌa \n"
-               "vertical antes de ejecutar el n˙cleo.\n"
+               "milisegundos despu√©s de la sincron√≠a \n"
+               "vertical antes de ejecutar el n√∫cleo.\n"
                "\n"
                "Puede reducir el retraso a costa de \n"
                "aumentar la probabilidad de perder \n"
                "fluidez.\n"
                " \n"
-               "El valor m·ximo es 15.");
+               "El valor m√°ximo es 15.");
          break;
       case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
          snprintf(s, len,
                "Ajusta la cantidad de fotogramas \n"
                "que puede adelantar la CPU a la GPU \n"
-               "al utilizar 'SincronÌa estricta \n"
+               "al utilizar 'Sincron√≠a estricta \n"
                "de CPU'.\n"
                " \n"
-               "El valor m·ximo es 3.\n"
+               "El valor m√°ximo es 3.\n"
                " \n"
                " 0: Sincroniza inmediatamente a GPU.\n"
                " 1: Sincroniza con el fotograma anterior.\n"
@@ -912,30 +901,30 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Introduce un fotograma negro \n"
                "entre fotogramas.\n"
                " \n"
-               "Es ˙til para los monitores que \n"
+               "Es √∫til para los monitores que \n"
                "funcionan a 120 Hz y quieren jugar \n"
                "a material a 60 Hz eliminando el \n"
                "ghosting.\n"
                " \n"
-               "La frecuencia de actualizaciÛn de vÌdeo \n"
-               "a˙n debe configurarse como si utilizaras \n"
+               "La frecuencia de actualizaci√≥n de v√≠deo \n"
+               "a√∫n debe configurarse como si utilizaras \n"
                "un monitor de 60 Hz (divide la frecuencia \n"
-               "de actualizaciÛn entre 2).");
+               "de actualizaci√≥n entre 2).");
          break;
       case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
          snprintf(s, len,
-               "Muestra la pantalla de inicio en el men˙.\n"
-               "Se desactiva autom·ticamente cuando se \n"
+               "Muestra la pantalla de inicio en el men√∫.\n"
+               "Se desactiva autom√°ticamente cuando se \n"
                "ha visto por primera vez.\n"
                " \n"
-               "Esta opciÛn solo se actualiza dentro \n"
-               "de la configuraciÛn si 'Guardar \n"
-               "configuraciÛn al salir' est· activado.\n");
+               "Esta opci√≥n solo se actualiza dentro \n"
+               "de la configuraci√≥n si 'Guardar \n"
+               "configuraci√≥n al salir' est√° activado.\n");
          break;
       case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
          snprintf(s, len,
-               "Carga un archivo de configuraciÛn \n"
-               "concreto en funciÛn del n˙cleo \n"
+               "Carga un archivo de configuraci√≥n \n"
+               "concreto en funci√≥n del n√∫cleo \n"
                "que se vaya a utilizar.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
@@ -946,9 +935,9 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
          snprintf(s, len,
                "Impide que la SRAM sea sobrescrita \n"
-               "mientras se carga un guardado r·pido.\n"
+               "mientras se carga un guardado r√°pido.\n"
                " \n"
-               "PodrÌa provocar defectos en los \n"
+               "Podr√≠a provocar defectos en los \n"
                "juegos.");
          break;
       case MENU_ENUM_LABEL_PAUSE_NONACTIVE:
@@ -966,19 +955,19 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Carpeta de capturas de pantalla. \n"
                " \n"
-               "En esta carpeta se guardar·n \n"
+               "En esta carpeta se guardar√°n \n"
                "las capturas de pantalla."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
          snprintf(s, len,
                "Intervalo de cambio de la \n"
-               "sincronÌa vertical.\n"
+               "sincron√≠a vertical.\n"
                " \n"
                "Utiliza un intervalo personalizado para \n"
-               "la sincronÌa vertical. Utiliza este \n"
-               "par·metro para reducir a la mitad \n"
-               "la frecuencia de actualizaciÛn \n"
+               "la sincron√≠a vertical. Utiliza este \n"
+               "par√°metro para reducir a la mitad \n"
+               "la frecuencia de actualizaci√≥n \n"
                "del monitor.");
          break;
       case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
@@ -988,58 +977,58 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Almacena todas las partidas guardadas \n"
                "(*.srm) en esta carpeta. Incluye los \n"
                "archivos relacionados, como .bsv, .rt, \n"
-               ".psrm, etcÈtera.\n"
+               ".psrm, etc√©tera.\n"
                " \n"
-               "Esta carpeta ser· ignorada si se \n"
-               "utilizan explÌcitamente las opciones por \n"
-               "lÌnea de comandos.");
+               "Esta carpeta ser√° ignorada si se \n"
+               "utilizan expl√≠citamente las opciones por \n"
+               "l√≠nea de comandos.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len,
-               "Carpeta de guardados r·pidos. \n"
+               "Carpeta de guardados r√°pidos. \n"
                " \n"
-               "Almacena todos los guardados r·pidos \n"
+               "Almacena todos los guardados r√°pidos \n"
                "(*.state) en esta carpeta.\n"
                " \n"
-               "Esta carpeta ser· ignorada si se \n"
-               "utilizan explÌcitamente las opciones por \n"
-               "lÌnea de comandos.");
+               "Esta carpeta ser√° ignorada si se \n"
+               "utilizan expl√≠citamente las opciones por \n"
+               "l√≠nea de comandos.");
          break;
       case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
          snprintf(s, len,
                "Carpeta de recursos. \n"
                " \n"
-               "Esta ubicaciÛn es donde las interfaces \n"
-               "de men˙s buscan de forma predeterminada \n"
+               "Esta ubicaci√≥n es donde las interfaces \n"
+               "de men√∫s buscan de forma predeterminada \n"
                "los recursos a cargar, etc.");
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          snprintf(s, len,
-               "Carpeta de fondos din·micos de pantalla. \n"
+               "Carpeta de fondos din√°micos de pantalla. \n"
                " \n"
-               "AquÌ se almacenan los fondos de pantalla \n"
-               "que el men˙ cargar· de forma din·mica \n"
-               "seg˙n el contexto.");
+               "Aqu√≠ se almacenan los fondos de pantalla \n"
+               "que el men√∫ cargar√° de forma din√°mica \n"
+               "seg√∫n el contexto.");
          break;
       case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
          snprintf(s, len,
                "Cantidad de velocidad reducida."
                " \n"
                "Al reducir la velocidad, el contenido \n"
-               "se ralentizar· seg˙n este factor.");
+               "se ralentizar√° seg√∫n este factor.");
          break;
       case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
          snprintf(s, len,
                "Define el margen de los ejes.\n"
                " \n"
-               "Indica la distancia mÌnima que debe \n"
+               "Indica la distancia m√≠nima que debe \n"
                "recorrer un eje para que provoque \n"
-               "una pulsaciÛn del botÛn.\n"
+               "una pulsaci√≥n del bot√≥n.\n"
                "Los valores posibles son [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
          snprintf(s, len, 
-               "PerÌodo de turbo.\n"
+               "Per√≠odo de turbo.\n"
                " \n"
                "Describe la velocidad con la que se \n"
                "pulsan los botones en el modo turbo."
@@ -1047,36 +1036,36 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
-               "Activa la autoconfiguraciÛn de \n"
+               "Activa la autoconfiguraci√≥n de \n"
                "entrada. \n"
                " \n"
-               "Intentar· configurar de forma \n"
-               "autom·tica los mandos que se \n"
+               "Intentar√° configurar de forma \n"
+               "autom√°tica los mandos que se \n"
                "conecten en cualquier momento, \n"
                "como el sistema Plug-and-play.");
          break;
       case MENU_ENUM_LABEL_CAMERA_ALLOW:
          snprintf(s, len,
-               "Permite o no el acceso a la c·mara \n"
-               "por parte de los n˙cleos.");
+               "Permite o no el acceso a la c√°mara \n"
+               "por parte de los n√∫cleos.");
          break;
       case MENU_ENUM_LABEL_LOCATION_ALLOW:
          snprintf(s, len,
                "Permite o no los servicios de \n"
-               "localizaciÛn por parte de los n˙cleos.");
+               "localizaci√≥n por parte de los n√∫cleos.");
          break;
       case MENU_ENUM_LABEL_TURBO:
          snprintf(s, len,
                "Permite usar el turbo.\n"
                " \n"
-               "Si mantienes pulsado el botÛn de turbo \n"
-               "mientras pulsas otro botÛn, este ˙ltimo \n"
-               "entrar· en un modo turbo en el que el \n"
-               "estado del botÛn se modula mediante una \n"
-               "seÒal periÛdica. \n"
+               "Si mantienes pulsado el bot√≥n de turbo \n"
+               "mientras pulsas otro bot√≥n, este √∫ltimo \n"
+               "entrar√° en un modo turbo en el que el \n"
+               "estado del bot√≥n se modula mediante una \n"
+               "se√±al peri√≥dica. \n"
                " \n"
-               "La modulaciÛn se detiene cuando se deja \n"
-               "de pulsar el botÛn original (no el botÛn \n"
+               "La modulaci√≥n se detiene cuando se deja \n"
+               "de pulsar el bot√≥n original (no el bot√≥n \n"
                "de turbo).");
          break;
       case MENU_ENUM_LABEL_OSK_ENABLE:
@@ -1090,10 +1079,10 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_REWIND:
          snprintf(s, len,
-               "MantÈn pulsado este botÛn para rebobinar.\n"
+               "Mant√©n pulsado este bot√≥n para rebobinar.\n"
                " \n"
-               "Para que este botÛn funcione, debes tener \n"
-               "activada la opciÛn de rebobinar.");
+               "Para que este bot√≥n funcione, debes tener \n"
+               "activada la opci√≥n de rebobinar.");
          break;
       case MENU_ENUM_LABEL_EXIT_EMULATOR:
          snprintf(s, len,
@@ -1102,7 +1091,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
 #if !defined(RARCH_MOBILE) && !defined(RARCH_CONSOLE)
                "\nSi cierras el programa con \n"
                "cualquier forma brusca (SIGKILL, \n"
-               "etc.) no se guardar· la RAM, etc. \n"
+               "etc.) no se guardar√° la RAM, etc. \n"
                "En sistemas Unix, SIGINT/SIGTERM \n"
                "permite un cierre limpio."
 #endif
@@ -1110,11 +1099,11 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LOAD_STATE:
          snprintf(s, len,
-               "Carga el guardado r·pido.");
+               "Carga el guardado r√°pido.");
          break;
       case MENU_ENUM_LABEL_SAVE_STATE:
          snprintf(s, len,
-               "Guarda r·pidamente la partida.");
+               "Guarda r√°pidamente la partida.");
          break;
       case MENU_ENUM_LABEL_NETPLAY_FLIP_PLAYERS:
          snprintf(s, len,
@@ -1122,11 +1111,11 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_PLUS:
          snprintf(s, len,
-               "Aumenta el Ìndice de trucos.\n");
+               "Aumenta el √≠ndice de trucos.\n");
          break;
       case MENU_ENUM_LABEL_CHEAT_INDEX_MINUS:
          snprintf(s, len,
-               "Disminuye el Ìndice de trucos.\n");
+               "Disminuye el √≠ndice de trucos.\n");
          break;
       case MENU_ENUM_LABEL_SHADER_PREV:
          snprintf(s, len,
@@ -1146,27 +1135,27 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CHEAT_TOGGLE:
          snprintf(s, len,
-               "Alterna el Ìndice de trucos.\n");
+               "Alterna el √≠ndice de trucos.\n");
          break;
       case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
          snprintf(s, len,
-               "MantÈn pulsado este botÛn para avanzar \n"
-               "r·pidamente. SuÈltalo para desactivar \n"
-               "esta funciÛn.");
+               "Mant√©n pulsado este bot√≥n para avanzar \n"
+               "r√°pidamente. Su√©ltalo para desactivar \n"
+               "esta funci√≥n.");
          break;
       case MENU_ENUM_LABEL_SLOWMOTION:
          snprintf(s, len,
-               "MantÈn pulsado este botÛn para \n"
-               "ir a c·mara lenta.");
+               "Mant√©n pulsado este bot√≥n para \n"
+               "ir a c√°mara lenta.");
          break;
       case MENU_ENUM_LABEL_FRAME_ADVANCE:
          snprintf(s, len,
                "Avanza un fotograma mientras \n"
-               "el contenido estÈ en pausa.");
+               "el contenido est√© en pausa.");
          break;
       case MENU_ENUM_LABEL_MOVIE_RECORD_TOGGLE:
          snprintf(s, len,
-               "Activa o desactiva la grabaciÛn.");
+               "Activa o desactiva la grabaci√≥n.");
          break;
       case MENU_ENUM_LABEL_L_X_PLUS:
       case MENU_ENUM_LABEL_L_X_MINUS:
@@ -1177,12 +1166,12 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_R_Y_PLUS:
       case MENU_ENUM_LABEL_R_Y_MINUS:
          snprintf(s, len,
-               "El eje de un joystick analÛgico \n"
+               "El eje de un joystick anal√≥gico \n"
                "(estilo DualShock).\n"
                " \n"
                "Se asigna como siempre, sin embargo, si se \n"
-               "asigna un eje analÛgico real, puede leerse \n"
-               "de forma analÛgica.\n"
+               "asigna un eje anal√≥gico real, puede leerse \n"
+               "de forma anal√≥gica.\n"
                " \n"
                "El eje X positivo es hacia la derecha. \n"
                "El eje Y positivo es hacia abajo.");
@@ -1192,25 +1181,25 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "RetroArch, por si solo, no hace nada. \n"
                " \n"
                "Para que haga algo necesitas cargar \n"
-               "un programa en Èl. \n"
+               "un programa en √©l. \n"
                "\n"
-               "Llamamos a estos programas 'n˙cleos \n"
-               "libretro', o 'n˙cleos' para abreviar. \n"
+               "Llamamos a estos programas 'n√∫cleos \n"
+               "libretro', o 'n√∫cleos' para abreviar. \n"
                " \n"
-               "Para cargar un n˙cleo, selecciona uno \n"
-               "en 'Cargar n˙cleo'. \n"
+               "Para cargar un n√∫cleo, selecciona uno \n"
+               "en 'Cargar n√∫cleo'. \n"
                " \n"
 #ifdef HAVE_NETWORKING
-               "Puedes conseguir n˙cleos de varias formas: \n"
-               "* Desc·rgalos en:\n"
+               "Puedes conseguir n√∫cleos de varias formas: \n"
+               "* Desc√°rgalos en:\n"
                "'%s' -> '%s'.\n"
-               "* CÛpialos manualmente a:\n"
+               "* C√≥pialos manualmente a:\n"
                "'%s'.",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
 #else
-               "Puedes conseguir n˙cleos si los\n"
+               "Puedes conseguir n√∫cleos si los\n"
                "trasladas a mano en la carpeta\n"
                "'%s'.",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
@@ -1219,16 +1208,16 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC:
          snprintf(s, len,
-               "Puedes cambiar la superposiciÛn del \n"
+               "Puedes cambiar la superposici√≥n del \n"
                "mando virtual si vas a '%s' \n"
                "-> '%s'."
                " \n"
-               "Desde ahÌ puedes cambiar la superposiciÛn, \n"
-               "el tamaÒo y opacidad de sus botones, etc.\n"
+               "Desde ah√≠ puedes cambiar la superposici√≥n, \n"
+               "el tama√±o y opacidad de sus botones, etc.\n"
                " \n"
                "NOTA: Las superposiciones de mandos \n"
-               "virtuales est·n ocultas de forma \n"
-               "predeterminada si est·s dentro del men˙. \n"
+               "virtuales est√°n ocultas de forma \n"
+               "predeterminada si est√°s dentro del men√∫. \n"
                "Si quieres cambiar este comportamiento, \n"
                "cambia '%s' a Desactivado/false.",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
@@ -1253,31 +1242,31 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_PROGRAM:
          return "RetroArch";
       case MSG_MOVIE_RECORD_STOPPED:
-         return "Deteniendo grabaciÛn de vÌdeo.";
+         return "Deteniendo grabaci√≥n de v√≠deo.";
       case MSG_MOVIE_PLAYBACK_ENDED:
-         return "ReproducciÛn detenida.";
+         return "Reproducci√≥n detenida.";
       case MSG_AUTOSAVE_FAILED:
          return "No se ha podido iniciar el autoguardado.";
       case MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED:
-         return "Se ha iniciado una reproducciÛn. No se puede ejecutar el juego en red.";
+         return "Se ha iniciado una reproducci√≥n. No se puede ejecutar el juego en red.";
       case MSG_NETPLAY_FAILED:
          return "Error al iniciar el juego en red.";
       case MSG_LIBRETRO_ABI_BREAK:
-         return "se ha compilado con una versiÛn distinta a esta implementaciÛn de libretro.";
+         return "se ha compilado con una versi√≥n distinta a esta implementaci√≥n de libretro.";
       case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
-         return "Esta implementaciÛn no admite guardados r·pidos. No se puede utilizar el rebobinado.";
+         return "Esta implementaci√≥n no admite guardados r√°pidos. No se puede utilizar el rebobinado.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
-         return "La implementaciÛn utiliza sonido multin˙cleo. No se puede utilizar el rebobinado.";
+         return "La implementaci√≥n utiliza sonido multin√∫cleo. No se puede utilizar el rebobinado.";
       case MSG_REWIND_INIT_FAILED:
-         return "Error al iniciar el b˙fer de rebobinado. Rebobinado desactivado.";
+         return "Error al iniciar el b√∫fer de rebobinado. Rebobinado desactivado.";
       case MSG_REWIND_INIT:
-         return "Iniciando b˙fer de rebobinado, tamaÒo:";
+         return "Iniciando b√∫fer de rebobinado, tama√±o:";
       case MSG_CUSTOM_TIMING_GIVEN:
          return "Se ha indicado un ritmo personalizado";
       case MSG_VIEWPORT_SIZE_CALCULATION_FAILED:
-         return "°Error al calcular el tamaÒo de ventana! Se utilizar·n datos en bruto. Probablemente esto no acabe bien...";
+         return "¬°Error al calcular el tama√±o de ventana! Se utilizar√°n datos en bruto. Probablemente esto no acabe bien...";
       case MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING:
-         return "El n˙cleo Libretro se renderiza por hardware. Es necesario utilizar la grabaciÛn post-shaders.";
+         return "El n√∫cleo Libretro se renderiza por hardware. Es necesario utilizar la grabaci√≥n post-shaders.";
       case MSG_RECORDING_TO:
          return "Grabando a";
       case MSG_DETECTED_VIEWPORT_OF:
@@ -1289,9 +1278,9 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_FAILED_TO_START_RECORDING:
          return "Error al comenzar a grabar.";
       case MSG_RECORDING_TERMINATED_DUE_TO_RESIZE:
-         return "GrabaciÛn terminada por cambio de tamaÒo.";
+         return "Grabaci√≥n terminada por cambio de tama√±o.";
       case MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED:
-         return "Se est· utilizando el n˙cleo dummy de libretro. Anulando grabaciÛn.";
+         return "Se est√° utilizando el n√∫cleo dummy de libretro. Anulando grabaci√≥n.";
       case MSG_UNKNOWN:
          return "Desconocido";
       case MSG_LOADING_CONTENT_FILE:
@@ -1303,7 +1292,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_SENDING_COMMAND:
          return "Enviando comando";
       case MSG_GOT_INVALID_DISK_INDEX:
-         return "Se ha obtenido un Ìndice de disco no v·lido.";
+         return "Se ha obtenido un √≠ndice de disco no v√°lido.";
       case MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY:
          return "Error al extraer el disco de la bandeja.";
       case MSG_REMOVED_DISK_FROM_TRAY:
@@ -1317,23 +1306,23 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_SAVING_RAM_TYPE:
          return "Guardando tipo de RAM";
       case MSG_SAVING_STATE:
-         return "Guardando r·pidamente";
+         return "Guardando r√°pidamente";
       case MSG_LOADING_STATE:
-         return "Cargando r·pidamente";
+         return "Cargando r√°pidamente";
       case MSG_FAILED_TO_LOAD_MOVIE_FILE:
-         return "Error al cargar el archivo de pelÌcula";
+         return "Error al cargar el archivo de pel√≠cula";
       case MSG_FAILED_TO_LOAD_CONTENT:
          return "Error al cargar el contenido";
       case MSG_COULD_NOT_READ_CONTENT_FILE:
          return "No se ha podido leer el archivo de contenido";
       case MSG_GRAB_MOUSE_STATE:
-         return "Capturar estado de ratÛn";
+         return "Capturar estado de rat√≥n";
       case MSG_PAUSED:
          return "En pausa.";
       case MSG_UNPAUSED:
          return "Sin pausa.";
       case MSG_FAILED_TO_LOAD_OVERLAY:
-         return "Error al cargar sobreimposiciÛn.";
+         return "Error al cargar sobreimposici√≥n.";
       case MSG_FAILED_TO_UNMUTE_AUDIO:
          return "Error al recuperar el sonido.";
       case MSG_AUDIO_MUTED:
@@ -1343,41 +1332,41 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_RESET:
          return "Reiniciar";
       case MSG_FAILED_TO_LOAD_STATE:
-         return "Error al cargar r·pidamente desde";
+         return "Error al cargar r√°pidamente desde";
       case MSG_FAILED_TO_SAVE_STATE_TO:
-         return "Error al guardar r·pidamente a";
+         return "Error al guardar r√°pidamente a";
       case MSG_FAILED_TO_SAVE_SRAM:
          return "Error al guardar la SRAM";
       case MSG_STATE_SIZE:
-         return "TamaÒo de guardado r·pido";
+         return "Tama√±o de guardado r√°pido";
       case MSG_FOUND_SHADER:
          return "Shader encontrado";
       case MSG_SRAM_WILL_NOT_BE_SAVED:
-         return "No se guardar· la SRAM.";
+         return "No se guardar√° la SRAM.";
       case MSG_BLOCKING_SRAM_OVERWRITE:
          return "Bloqueando sobrescritura de SRAM";
       case MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES:
-         return "El n˙cleo no es compatible con los guardados r·pidos.";
+         return "El n√∫cleo no es compatible con los guardados r√°pidos.";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "Guardando r·pidamente a la ranura";
+         return "Guardando r√°pidamente a la ranura";
       case MSG_SAVED_SUCCESSFULLY_TO:
          return "Partida guardada en";
       case MSG_BYTES:
          return "bytes";
       case MSG_CONFIG_DIRECTORY_NOT_SET:
-         return "No se ha asignado la carpeta de configuraciÛn. No se puede guardar la nueva configuraciÛn.";
+         return "No se ha asignado la carpeta de configuraci√≥n. No se puede guardar la nueva configuraci√≥n.";
       case MSG_SKIPPING_SRAM_LOAD:
          return "Omitiendo carga de SRAM.";
       case MSG_APPENDED_DISK:
          return "Disco incorporado";
       case MSG_STARTING_MOVIE_PLAYBACK:
-         return "Iniciando reproducciÛn.";
+         return "Iniciando reproducci√≥n.";
       case MSG_FAILED_TO_REMOVE_TEMPORARY_FILE:
          return "Error al borrar el archivo temporal";
       case MSG_REMOVING_TEMPORARY_CONTENT_FILE:
          return "Borrando archivo temporal de contenido";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "Carga r·pida desde la ranura";
+         return "Carga r√°pida desde la ranura";
       case MSG_COULD_NOT_PROCESS_ZIP_FILE:
          return "No se ha podido procesar el archivo ZIP.";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
@@ -1389,7 +1378,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_REDIRECTING_SAVEFILE_TO:
          return "Redirigiendo partida guardada a";
       case MSG_REDIRECTING_SAVESTATE_TO:
-         return "Redirigiendo guardado r·pido a";
+         return "Redirigiendo guardado r√°pido a";
       case MSG_SHADER:
          return "Shader";
       case MSG_APPLYING_SHADER:
@@ -1397,21 +1386,21 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_FAILED_TO_APPLY_SHADER:
          return "Error al aplicar shader.";
       case MSG_STARTING_MOVIE_RECORD_TO:
-         return "Iniciando grabaciÛn en";
+         return "Iniciando grabaci√≥n en";
       case MSG_FAILED_TO_START_MOVIE_RECORD:
-         return "Error al iniciar la grabaciÛn.";
+         return "Error al iniciar la grabaci√≥n.";
       case MSG_STATE_SLOT:
-         return "Ranura de guardado r·pido";
+         return "Ranura de guardado r√°pido";
       case MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT:
-         return "Reiniciando grabaciÛn debido al reinicio de un controlador.";
+         return "Reiniciando grabaci√≥n debido al reinicio de un controlador.";
       case MSG_SLOW_MOTION:
-         return "C·mara lenta.";
+         return "C√°mara lenta.";
       case MSG_SLOW_MOTION_REWIND:
-         return "Rebobinar c·mara lenta.";
+         return "Rebobinar c√°mara lenta.";
       case MSG_REWINDING:
          return "Rebobinando.";
       case MSG_REWIND_REACHED_END:
-         return "Se ha llegado al final del b˙fer de rebobinado.";
+         return "Se ha llegado al final del b√∫fer de rebobinado.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
          return "Modo Extremo Activado: guardar estado y reboninar se han desactivado.";
       case MSG_TASK_FAILED:
@@ -1421,21 +1410,21 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_EXTRACTING:
         return "Extrayendo";
       case MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER:
-         return "Filtro lineal del men˙";
+         return "Filtro lineal del men√∫";
       case MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE:
-         return "Acelerar velocidad del men˙";
+         return "Acelerar velocidad del men√∫";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
-         return "Probar versiÛn no oficial";
+         return "Probar versi√≥n no oficial";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retrologros";
       case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Activar asignar mando al teclado";
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
-         return "Tipo de asignaciÛn de mando para teclado";
+         return "Tipo de asignaci√≥n de mando para teclado";
       case MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
          return "Activar miniteclado";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
-         return "Guardar configuraciÛn actual";
+         return "Guardar configuraci√≥n actual";
       case MENU_ENUM_LABEL_VALUE_STATE_SLOT:
          return "Ranura de guardado";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
@@ -1445,7 +1434,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
          return "Usuario";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
-         return "ContraseÒa";
+         return "Contrase√±a";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
          return "Retrologros";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST:
@@ -1453,25 +1442,25 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
          return "Enlace a lista de cuentas";
       case MENU_ENUM_LABEL_VALUE_DEBUG_PANEL_ENABLE:
-         return "Activar panel de depuraciÛn";
+         return "Activar panel de depuraci√≥n";
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Buscar contenido";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
-         return "DescripciÛn";
+         return "Descripci√≥n";
       case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-         return "Solucionar problemas de vÌdeo/sonido";
+         return "Solucionar problemas de v√≠deo/sonido";
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
          return "Cambiar el mando virtual superpuesto";
       case MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
-         return "øQuÈ es un n˙cleo?";
+         return "¬øQu√© es un n√∫cleo?";
       case MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT:
          return "Cargando contenidos";
       case MENU_ENUM_LABEL_VALUE_HELP_LIST:
          return "Ayuda";
       case MENU_ENUM_LABEL_VALUE_HELP_CONTROLS:
-         return "Controles b·sicos del men˙";
+         return "Controles b√°sicos del men√∫";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS:
-         return "Controles b·sicos del men˙";
+         return "Controles b√°sicos del men√∫";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
          return "Desplazar hacia arriba";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN:
@@ -1483,9 +1472,9 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
          return "Valores predeterminados";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
-         return "InformaciÛn";
+         return "Informaci√≥n";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
-         return "Alternar men˙";
+         return "Alternar men√∫";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT:
          return "Abandonar";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
@@ -1493,19 +1482,19 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE:
          return "Abrir archivo como una carpeta";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
-         return "Cargar archivo con un n˙cleo";
+         return "Cargar archivo con un n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
-         return "Permitir alternar Back como men˙";
+         return "Permitir alternar Back como men√∫";
       case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
-         return "Combo para alternar mando con men˙";
+         return "Combo para alternar mando con men√∫";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
-         return "Ocultar superposiciÛn en el men˙";
+         return "Ocultar superposici√≥n en el men√∫";
       case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
          return "Polaco";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
-         return "Cargar superposiciÛn preferida autom·ticamente";
+         return "Cargar superposici√≥n preferida autom√°ticamente";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
-         return "Actualizar archivos de informaciÛn de n˙cleos";
+         return "Actualizar archivos de informaci√≥n de n√∫cleos";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
          return "Descargar contenido";
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
@@ -1515,13 +1504,13 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY:
          return "Escanear carpeta";
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
-         return "AÒadir contenido";
+         return "A√±adir contenido";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
-         return "InformaciÛn";
+         return "Informaci√≥n";
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER:
          return "Usar reproductor de medios integrado";
       case MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS:
-         return "Men˙ r·pido";
+         return "Men√∫ r√°pido";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32:
          return "CRC32";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5:
@@ -1533,30 +1522,30 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
          return "Privacidad";
 #if 0
-      case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU: /* Don't change. Breaks everything. (Would be: "Men˙ horizontal") */
+      case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU: /* Don't change. Breaks everything. (Would be: "Men√∫ horizontal") */
          return "Horizontal Menu";
          /* Don't change these yet. Breaks everything. */
       case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
-         return "PestaÒa de ajustes";
+         return "Pesta√±a de ajustes";
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
-         return "PestaÒa de historial";
+         return "Pesta√±a de historial";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
-         return "AÒadir pestaÒa";
+         return "A√±adir pesta√±a";
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
-         return "PestaÒa de listas de reproducciÛn";
+         return "Pesta√±a de listas de reproducci√≥n";
 #endif
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
-         return "No se ha encontrado una configuraciÛn.";
+         return "No se ha encontrado una configuraci√≥n.";
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
          return "No hay contadores de rendimiento.";
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
          return "Controlador";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
-         return "ConfiguraciÛn";
+         return "Configuraci√≥n";
       case MENU_ENUM_LABEL_VALUE_CORE_SETTINGS:
-         return "N˙cleo";
+         return "N√∫cleo";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS:
-         return "VÌdeo";
+         return "V√≠deo";
       case MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS:
          return "Registros";
       case MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS:
@@ -1570,7 +1559,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_USER:
          return "Usuario";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
-         return "Activar m˙sica del sistema";
+         return "Activar m√∫sica del sistema";
       case MENU_ENUM_LABEL_VALUE_RETROPAD:
          return "RetroPad";
       case MENU_ENUM_LABEL_VALUE_RETROKEYBOARD:
@@ -1578,21 +1567,21 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Bloquear fotogramas";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Modo de asignaciÛn";
+         return "Modo de asignaci√≥n";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Mostrar etiquetas de descripciÛn de la entrada";
+         return "Mostrar etiquetas de descripci√≥n de la entrada";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
-         return "Ocultar descripciones sin asignar de la entrada del n˙cleo";
+         return "Ocultar descripciones sin asignar de la entrada del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE:
          return "Mostrar mensajes en pantalla";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH:
          return "Fuente de mensajes en pantalla";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE:
-         return "TamaÒo de mensajes en pantalla";
+         return "Tama√±o de mensajes en pantalla";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
-         return "PosiciÛn X de mensajes en pantalla";
+         return "Posici√≥n X de mensajes en pantalla";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
-         return "PosiciÛn Y de mensajes en pantalla";
+         return "Posici√≥n Y de mensajes en pantalla";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:
          return "Activar filtros por software";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
@@ -1606,7 +1595,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LINEAR:
          return "Lineal";
       case MENU_ENUM_LABEL_VALUE_NEAREST:
-         return "M·s cercano";
+         return "M√°s cercano";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT:
          return "(Predeterminada)";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE:
@@ -1614,53 +1603,53 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE:
          return "No disponible";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Carpeta de reasignaciÛn de entrada";
+         return "Carpeta de reasignaci√≥n de entrada";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Carpeta de autoconfiguraciÛn de dispositivo de entrada";
+         return "Carpeta de autoconfiguraci√≥n de dispositivo de entrada";
       case MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
-         return "Carpeta de configuraciÛn de grabaciÛn";
+         return "Carpeta de configuraci√≥n de grabaci√≥n";
       case MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
-         return "Carpeta de salida de grabaciÛn";
+         return "Carpeta de salida de grabaci√≥n";
       case MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY:
          return "Carpeta de capturas de pantalla";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
-         return "Carpeta de listas de reproducciÛn";
+         return "Carpeta de listas de reproducci√≥n";
       case MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY:
          return "Carpeta de partidas guardadas";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY:
-         return "Carpeta de guardados r·pidos";
+         return "Carpeta de guardados r√°pidos";
       case MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE:
          return "Comandos stdin";
       case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE:
          return "Mando en red";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER:
-         return "Controlador de vÌdeo";
+         return "Controlador de v√≠deo";
       case MENU_ENUM_LABEL_VALUE_RECORD_ENABLE:
-         return "Activar grabaciÛn";
+         return "Activar grabaci√≥n";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD:
-         return "Activar grabaciÛn de GPU";
+         return "Activar grabaci√≥n de GPU";
       case MENU_ENUM_LABEL_VALUE_RECORD_PATH:
          return "Carpeta de salida";
       case MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
          return "Usar carpeta de salida";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
-         return "ConfiguraciÛn de grabaciÛn";
+         return "Configuraci√≥n de grabaci√≥n";
       case MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
-         return "Activar grabaciÛn con filtros";
+         return "Activar grabaci√≥n con filtros";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
          return "Carpeta de descargas";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
          return "Carpeta de recursos";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Carpeta de fondos de pantalla din·micos";
+         return "Carpeta de fondos de pantalla din√°micos";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Carpeta del navegador de archivos";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
-         return "Carpeta de configuraciÛn";
+         return "Carpeta de configuraci√≥n";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH:
-         return "Carpeta de informaciÛn del n˙cleo";
+         return "Carpeta de informaci√≥n del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH:
-         return "Carpeta de n˙cleos";
+         return "Carpeta de n√∫cleos";
       case MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY:
          return "Carpeta de cursores";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
@@ -1670,13 +1659,13 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Carpeta de archivos de trucos";
       case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:
-         return "Carpeta de cachÈ";
+         return "Carpeta de cach√©";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Carpeta de filtros de sonido";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR:
-         return "Carpeta de shaders de vÌdeo";
+         return "Carpeta de shaders de v√≠deo";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
-         return "Carpeta de filtros de vÌdeo";
+         return "Carpeta de filtros de v√≠deo";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY:
          return "Carpeta de superposiciones";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
@@ -1686,7 +1675,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Permitir espectadores en red";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
-         return "DirecciÛn IP";
+         return "Direcci√≥n IP";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "Puerto TCP/UDP para juego en red";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
@@ -1698,25 +1687,25 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
          return "Mostrar pantalla de inicio";
       case MENU_ENUM_LABEL_VALUE_TITLE_COLOR:
-         return "Color de tÌtulos del men˙";
+         return "Color de t√≠tulos del men√∫";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
-         return "Color de entrada resaltada del men˙";
+         return "Color de entrada resaltada del men√∫";
       case MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE:
          return "Mostrar fecha y hora";
       case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
          return "Buclar datos hilados";
       case MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR:
-         return "Color de entrada normal del men˙";
+         return "Color de entrada normal del men√∫";
       case MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
          return "Mostrar ajustes avanzados";
       case MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE:
          return "Soporte para teclado";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
-         return "Soporte t·ctil";
+         return "Soporte t√°ctil";
       case MENU_ENUM_LABEL_VALUE_CORE_ENABLE:
-         return "Mostrar nombre del n˙cleo";
+         return "Mostrar nombre del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
-         return "Activar anulaciÛn de PPP";
+         return "Activar anulaci√≥n de PPP";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
          return "Anular PPP";
       case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
@@ -1728,7 +1717,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "Suspender salvapantallas";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
-         return "Desactivar composiciÛn de escritorio";
+         return "Desactivar composici√≥n de escritorio";
       case MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE:
          return "Detenerse en segundo plano";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
@@ -1736,9 +1725,9 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE:
          return "Activar IU ayudante";
       case MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE:
-         return "Barra de men˙s";
+         return "Barra de men√∫s";
       case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
-         return "AcciÛn para asociar tipos de archivo";
+         return "Acci√≥n para asociar tipos de archivo";
       case MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE:
          return "Comandos de red";
       case MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT:
@@ -1746,63 +1735,63 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE:
          return "Activar historial";
       case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
-         return "TamaÒo del historial";
+         return "Tama√±o del historial";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
          return "Frecuencia estimada del monitor";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
-         return "Anular al cerrar n˙cleo";
+         return "Anular al cerrar n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
-         return "No ejecutar autom·ticamente";
+         return "No ejecutar autom√°ticamente";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
-         return "Limitar velocidad m·xima de ejecuciÛn";
+         return "Limitar velocidad m√°xima de ejecuci√≥n";
       case MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO:
-         return "Velocidad m·xima de ejecuciÛn";
+         return "Velocidad m√°xima de ejecuci√≥n";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
-         return "Cargar autom. archivos de reasignaciÛn";
+         return "Cargar autom. archivos de reasignaci√≥n";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
          return "Cantidad de velocidad reducida";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
-         return "ConfiguraciÛn por n˙cleo";
+         return "Configuraci√≥n por n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
-         return "Usar opciones de n˙cleo para cada juego si existen";
+         return "Usar opciones de n√∫cleo para cada juego si existen";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
          return "Crear archivo de opciones del juego";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
          return "Archivo de opciones del juego";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "Cargar autom. archivos de anulaciÛn";
+         return "Cargar autom. archivos de anulaci√≥n";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Guardar configuraciÛn al salir";
+         return "Guardar configuraci√≥n al salir";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "Filtrado bilineal por hardware";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA:
-         return "Gamma de vÌdeo";
+         return "Gamma de v√≠deo";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE:
-         return "Permitir rotaciÛn";
+         return "Permitir rotaci√≥n";
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC:
-         return "SincronÌa estricta de GPU";
+         return "Sincron√≠a estricta de GPU";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
          return "Intervalo de alternado de VSync";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC:
-         return "VSync/SincronÌa vertical";
+         return "VSync/Sincron√≠a vertical";
       case MENU_ENUM_LABEL_VALUE_VIDEO_THREADED:
-         return "VÌdeo por hilos";
+         return "V√≠deo por hilos";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION:
-         return "RotaciÛn";
+         return "Rotaci√≥n";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
          return "Permitir capturas de pantalla de GPU";
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
          return "Recortar Overscan (Reinicio)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
-         return "Õndice de proporciÛn de aspecto";
+         return "√çndice de proporci√≥n de aspecto";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
-         return "ProporciÛn de aspecto autom·tica";
+         return "Proporci√≥n de aspecto autom√°tica";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT:
-         return "Forzar proporciÛn de aspecto";
+         return "Forzar proporci√≥n de aspecto";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE:
-         return "Frecuencia de actualizaciÛn";
+         return "Frecuencia de actualizaci√≥n";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
-         return "Forzar anulaciÛn del FBO sRGB";
+         return "Forzar anulaci√≥n del FBO sRGB";
       case MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN:
          return "Pantalla completa en ventana";
       case MENU_ENUM_LABEL_VALUE_PAL60_ENABLE:
@@ -1818,7 +1807,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
          return "Ordenar partidas guardadas por carpetas";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
-         return "Ordenar guardados r·pidos por carpetas";
+         return "Ordenar guardados r√°pidos por carpetas";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN:
          return "Pantalla completa";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SCALE:
@@ -1828,19 +1817,19 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE:
          return "Contadores de rendimiento";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
-         return "Nivel de registro del n˙cleo";
+         return "Nivel de registro del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY:
          return "Verbosidad del registro";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
-         return "Cargar guardado r·pido autom·ticamente";
+         return "Cargar guardado r√°pido autom√°ticamente";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
-         return "Indizar autom·ticamente guardados r·pidos";
+         return "Indizar autom√°ticamente guardados r√°pidos";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
-         return "Guardado r·pido autom·tico";
+         return "Guardado r√°pido autom√°tico";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
          return "Intervalo de autoguardados de SaveRAM";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
-         return "No sobrescribir SaveRAM al cargar un guardado r·pido";
+         return "No sobrescribir SaveRAM al cargar un guardado r√°pido";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
          return "Activar contexto compartido por HW";
       case MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH:
@@ -1850,41 +1839,41 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_USER_LANGUAGE:
          return "Idioma";
       case MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW:
-         return "Permitir c·mara";
+         return "Permitir c√°mara";
       case MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW:
-         return "Permitir ubicaciÛn";
+         return "Permitir ubicaci√≥n";
       case MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO:
-         return "Pausar al activar el men˙";
+         return "Pausar al activar el men√∫";
       case MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
          return "Mostrar teclado superpuesto";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
-         return "Mostrar superposiciÛn";
+         return "Mostrar superposici√≥n";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX:
-         return "Õndice del monitor";
+         return "√çndice del monitor";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY:
          return "Retraso de fotogramas";
       case MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE:
          return "Ciclo de trabajo";
       case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD:
-         return "PerÌodo de turbo";
+         return "Per√≠odo de turbo";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Margen de ejes de entrada";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
          return "Permitir reasignar controles";
       case MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS:
-         return "N˙mero m·ximo de usuarios";
+         return "N√∫mero m√°ximo de usuarios";
       case MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
-         return "Activar autoconfiguraciÛn";
+         return "Activar autoconfiguraci√≥n";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "Frecuencia de sonido (KHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
-         return "VariaciÛn m·xima de sincronÌa de sonido";
+         return "Variaci√≥n m√°xima de sincron√≠a de sonido";
       case MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES:
          return "Pasadas de trucos";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
-         return "Guardar archivo de reasignaciÛn del n˙cleo";
+         return "Guardar archivo de reasignaci√≥n del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME:
-         return "Guardar archivo de reasignaciÛn del juego";
+         return "Guardar archivo de reasignaci√≥n del juego";
       case MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES:
          return "Aplicar cambios en trucos";
       case MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES:
@@ -1892,11 +1881,11 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Activar rebobinado";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Seleccionar de una colecciÛn";
+         return "Seleccionar de una colecci√≥n";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Seleccionar archivo y detectar n˙cleo";
+         return "Seleccionar archivo y detectar n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return "Seleccionar archivo descargado y detectar n˙cleo";
+         return "Seleccionar archivo descargado y detectar n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Cargar archivos recientes";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
@@ -1908,7 +1897,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Volumen de sonido (dB)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Activar sincronÌa de sonido";
+         return "Activar sincron√≠a de sonido";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
          return "Delta de control de frecuencia de sonido";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
@@ -1916,35 +1905,35 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
-         return "Cargar configuraciÛn";
+         return "Cargar configuraci√≥n";
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
          return "Nivel de detalle del rebobinado";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
-         return "Cargar archivo de reasignaciÛn";
+         return "Cargar archivo de reasignaci√≥n";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
-         return "ProporciÛn personalizada";
+         return "Proporci√≥n personalizada";
       case MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY:
          return "(Usar esta carpeta)";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Ejecutar contenido";
       case MENU_ENUM_LABEL_VALUE_DISK_OPTIONS: /* UPDATE/FIXME */
-         return "Opciones del disco del n˙cleo";
+         return "Opciones del disco del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_CORE_OPTIONS:
          return "Opciones";
       case MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS: /* UPDATE/FIXME */
-         return "Opciones de trucos del n˙cleo";
+         return "Opciones de trucos del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD:
          return "Cargar archivo de trucos";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
          return "Guardar archivo de trucos como...";
       case MENU_ENUM_LABEL_VALUE_CORE_COUNTERS:
-         return "Contadores del n˙cleo";
+         return "Contadores del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Capturar pantalla";
       case MENU_ENUM_LABEL_VALUE_RESUME:
          return "Reanudar";
       case MENU_ENUM_LABEL_VALUE_DISK_INDEX:
-         return "Õndice del disco";
+         return "√çndice del disco";
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Contadores del frontend";
       case MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND:
@@ -1952,21 +1941,21 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS:
          return "Estado de la bandeja del disco";
       case MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE:
-         return "No hay listas de reproducciÛn.";
+         return "No hay listas de reproducci√≥n.";
       case MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE:
-         return "No hay informaciÛn del n˙cleo.";
+         return "No hay informaci√≥n del n√∫cleo.";
       case MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:
-         return "No hay opciones del n˙cleo.";
+         return "No hay opciones del n√∫cleo.";
       case MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE:
-         return "No hay n˙cleos.";
+         return "No hay n√∫cleos.";
       case MENU_ENUM_LABEL_VALUE_NO_CORE:
-         return "Sin n˙cleo";
+         return "Sin n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER:
          return "Gestor de bases de datos";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Gestor de cursores";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
-         return "Men˙ principal"; 
+         return "Men√∫ principal"; 
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Ajustes";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:
@@ -1978,37 +1967,37 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HELP:
          return "Ayuda";
       case MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG:
-         return "Guardar configuraciÛn nueva";
+         return "Guardar configuraci√≥n nueva";
       case MENU_ENUM_LABEL_VALUE_RESTART_CONTENT:
          return "Reiniciar";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST:
-         return "Actualizador de n˙cleos";
+         return "Actualizador de n√∫cleos";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
-         return "URL de n˙cleos de Buildbot";
+         return "URL de n√∫cleos de Buildbot";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "URL de recursos de Buildbot";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
-         return "Seguir navegaciÛn";
+         return "Seguir navegaci√≥n";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "Filtrar por extensiones compatibles";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
-         return "Extraer autom·ticamente el archivo descargado";
+         return "Extraer autom√°ticamente el archivo descargado";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
-         return "InformaciÛn del sistema";
+         return "Informaci√≥n del sistema";
       case MENU_ENUM_LABEL_VALUE_DEBUG_INFORMATION:
-         return "InformaciÛn de depuraciÛn";
+         return "Informaci√≥n de depuraci√≥n";
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST:
          return "Lista de logros";
       case MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER:
-         return "Actualizador en lÌnea";
+         return "Actualizador en l√≠nea";
       case MENU_ENUM_LABEL_VALUE_CORE_INFORMATION:
-         return "InformaciÛn del n˙cleo";
+         return "Informaci√≥n del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND:
          return "No se ha encontrado la carpeta.";
       case MENU_ENUM_LABEL_VALUE_NO_ITEMS:
          return "No hay elementos.";
       case MENU_ENUM_LABEL_VALUE_CORE_LIST:
-         return "Cargar n˙cleo";
+         return "Cargar n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
          return "Seleccionar archivo";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
@@ -2016,9 +2005,9 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MANAGEMENT:
          return "Ajustes de bases de datos";
       case MENU_ENUM_LABEL_VALUE_SAVE_STATE:
-         return "Guardado r·pido";
+         return "Guardado r√°pido";
       case MENU_ENUM_LABEL_VALUE_LOAD_STATE:
-         return "Carga r·pida";
+         return "Carga r√°pida";
       case MENU_ENUM_LABEL_VALUE_RESUME_CONTENT:
          return "Reanudar";
       case MENU_ENUM_LABEL_VALUE_INPUT_DRIVER:
@@ -2030,19 +2019,19 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
          return "Controlador de muestreo de sonido";
       case MENU_ENUM_LABEL_VALUE_RECORD_DRIVER:
-         return "Controlador de grabaciÛn";
+         return "Controlador de grabaci√≥n";
       case MENU_ENUM_LABEL_VALUE_MENU_DRIVER:
-         return "Controlador de men˙";
+         return "Controlador de men√∫";
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
-         return "Controlador de c·mara";
+         return "Controlador de c√°mara";
       case MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER:
-         return "Controlador de ubicaciÛn";
+         return "Controlador de ubicaci√≥n";
       case MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
          return "No se ha podido leer el archivo comprimido.";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE:
-         return "Escala de superposiciÛn";
+         return "Escala de superposici√≥n";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
-         return "Preajuste de superposiciÛn";
+         return "Preajuste de superposici√≥n";
       case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
          return "Retraso de sonido (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
@@ -2050,34 +2039,34 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
          return "Preajuste de teclado superpuesto";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
-         return "Opacidad de la superposiciÛn";
+         return "Opacidad de la superposici√≥n";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:
-         return "Fondo del men˙";
+         return "Fondo del men√∫";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
-         return "Fondo de pantalla din·mico";
+         return "Fondo de pantalla din√°mico";
       case MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
-         return "Opciones de entrada del n˙cleo";
+         return "Opciones de entrada del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS:
          return "Opciones de shaders";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
-         return "Previsualizar par·metros de shaders";
+         return "Previsualizar par√°metros de shaders";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
-         return "Par·metros de shaders del men˙";
+         return "Par√°metros de shaders del men√∫";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
          return "Guardar preajuste de shaders como...";
       case MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS:
-         return "No hay par·metros de shaders.";
+         return "No hay par√°metros de shaders.";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET:
          return "Cargar preajuste de shaders";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
-         return "Filtro de vÌdeo";
+         return "Filtro de v√≠deo";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Plugin DSP de sonido";
       case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
          return "Iniciando descarga: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "segundos";
-      case MENU_ENUM_LABEL_VALUE_OFF: /* Not changed. Would be "SÕ" */
+      case MENU_ENUM_LABEL_VALUE_OFF: /* Not changed. Would be "S√ç" */
          return "OFF";
       case MENU_ENUM_LABEL_VALUE_ON: /* Not changed. Would be "NO" */
          return "ON";
@@ -2088,9 +2077,9 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS:
          return "Actualizar trucos";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
-         return "Actualizar perfiles de autoconfiguraciÛn";
+         return "Actualizar perfiles de autoconfiguraci√≥n";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "Actualizar perfiles de autoconfiguraciÛn (HID)";
+         return "Actualizar perfiles de autoconfiguraci√≥n (HID)";
       case MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES:
          return "Actualizar bases de datos";
       case MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS:
@@ -2100,15 +2089,15 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS:
          return "Actualizar shaders GLSL";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
-         return "Nombre del n˙cleo";
+         return "Nombre del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL:
-         return "Etiqueta del n˙cleo";
+         return "Etiqueta del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME:
          return "Nombre del sistema";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER:
          return "Fabricante del sistema";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES:
-         return "CategorÌas";
+         return "Categor√≠as";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS:
          return "Autores";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS:
@@ -2120,13 +2109,13 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
          return "Firmware";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Notas del n˙cleo";
+         return "Notas del n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
-         return "Fecha de compilaciÛn";
+         return "Fecha de compilaci√≥n";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
-         return "VersiÛn de Git";
+         return "Versi√≥n de Git";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES:
-         return "CaracterÌsticas de CPU";
+         return "Caracter√≠sticas de CPU";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER:
          return "Identificador del frontend";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME:
@@ -2136,7 +2125,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL:
          return "Nivel de RetroRating";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE:
-         return "Fuente de alimentaciÛn";
+         return "Fuente de alimentaci√≥n";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE:
          return "No hay una fuente";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING:
@@ -2146,13 +2135,13 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING:
          return "Descargando";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER:
-         return "Controlador de contexto de vÌdeo";
+         return "Controlador de contexto de v√≠deo";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH:
-         return "Mostrar ancho mÈtrico (mm)";
+         return "Mostrar ancho m√©trico (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT:
-         return "Mostrar alto mÈtrico (mm)";
+         return "Mostrar alto m√©trico (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI:
-         return "Mostrar PPP mÈtricos";
+         return "Mostrar PPP m√©tricos";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT:
          return "Soporte de LibretroDB";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT:
@@ -2218,7 +2207,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
          return "Soporte de 7zip";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
-         return "Soporte de librerÌas din·micas";
+         return "Soporte de librer√≠as din√°micas";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT:
          return "Soporte de Cg";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
@@ -2228,11 +2217,11 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:
          return "Soporte de parseo XML libxml2";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT:
-         return "Soporte de im·genes SDL";
+         return "Soporte de im√°genes SDL";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
          return "Soporte de render-to-texture OpenGL/Direct3D (shaders multipasos)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT:
-         return "Carga din·mica en tiempo real de librerÌa libretro";
+         return "Carga din√°mica en tiempo real de librer√≠a libretro";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
          return "Soporte de FFmpeg";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT:
@@ -2248,13 +2237,13 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT:
          return "Soporte de Libusb";
       case MENU_ENUM_LABEL_VALUE_YES:
-         return "SÌ";
+         return "S√≠";
       case MENU_ENUM_LABEL_VALUE_NO:
          return "No";
       case MENU_ENUM_LABEL_VALUE_BACK:
          return "BACK";
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
-         return "ResoluciÛn de pantalla";
+         return "Resoluci√≥n de pantalla";
       case MENU_ENUM_LABEL_VALUE_DISABLED:
          return "Desactivado";
       case MENU_ENUM_LABEL_VALUE_PORT:
@@ -2266,9 +2255,9 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER:
          return "Distribuidora";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION:
-         return "DescripciÛn";
+         return "Descripci√≥n";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE:
-         return "GÈnero";
+         return "G√©nero";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME:
          return "Nombre";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN:
@@ -2278,7 +2267,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH:
          return "Mes de lanzamiento";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR:
-         return "AÒo de lanzamiento";
+         return "A√±o de lanzamiento";
       case MENU_ENUM_LABEL_VALUE_TRUE:
          return "Activado";
       case MENU_ENUM_LABEL_VALUE_FALSE:
@@ -2300,47 +2289,47 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
          return "Textos en pantalla (OSD)";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
-         return "SuperposiciÛn";
+         return "Superposici√≥n";
       case MENU_ENUM_LABEL_VALUE_MENU_SETTINGS:
-         return "Men˙";
+         return "Men√∫";
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
          return "Multimedia";
       case MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS:
          return "Interfaz de usuario";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
-         return "Navegador de archivos del men˙";
+         return "Navegador de archivos del men√∫";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS:
          return "Actualizador";
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
          return "Red";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Lista de reproducciÛn";
+         return "Lista de reproducci√≥n";
       case MENU_ENUM_LABEL_VALUE_USER_SETTINGS:
          return "Usuario";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS:
          return "Carpeta";
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
-         return "GrabaciÛn";
+         return "Grabaci√≥n";
       case MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
-         return "No hay informaciÛn disponible.";
+         return "No hay informaci√≥n disponible.";
       case MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS:
          return "Asignaciones de entrada del usuario %u";
       case MENU_ENUM_LABEL_VALUE_LANG_ENGLISH:
-         return "InglÈs";
+         return "Ingl√©s";
       case MENU_ENUM_LABEL_VALUE_LANG_JAPANESE:
-         return "JaponÈs";
+         return "Japon√©s";
       case MENU_ENUM_LABEL_VALUE_LANG_FRENCH:
-         return "FrancÈs";
+         return "Franc√©s";
       case MENU_ENUM_LABEL_VALUE_LANG_SPANISH:
-         return "EspaÒol";
+         return "Espa√±ol";
       case MENU_ENUM_LABEL_VALUE_LANG_GERMAN:
-         return "Alem·n";
+         return "Alem√°n";
       case MENU_ENUM_LABEL_VALUE_LANG_ITALIAN:
          return "Italiano";
       case MENU_ENUM_LABEL_VALUE_LANG_DUTCH:
-         return "HolandÈs";
+         return "Holand√©s";
       case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE:
-         return "PortuguÈs";
+         return "Portugu√©s";
       case MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN:
          return "Ruso";
       case MENU_ENUM_LABEL_VALUE_LANG_KOREAN:
@@ -2352,21 +2341,21 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO:
          return "Esperanto";
       case MENU_ENUM_LABEL_VALUE_LEFT_ANALOG:
-         return "AnalÛgico izquierdo";
+         return "Anal√≥gico izquierdo";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
-         return "AnalÛgico derecho";
+         return "Anal√≥gico derecho";
       case MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS:
-         return "Asignaciones de teclas r·pidas";
+         return "Asignaciones de teclas r√°pidas";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
          return "Aumento de fotogramas";
       case MENU_ENUM_LABEL_VALUE_SEARCH:
          return "Buscar:";
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
-         return "Usar visualizador de im·genes integrado";
+         return "Usar visualizador de im√°genes integrado";
       case MENU_ENUM_LABEL_VALUE_ENABLE:
          return "Activar";
       case MENU_ENUM_LABEL_VALUE_START_CORE:
-         return "Iniciar n˙cleo";
+         return "Iniciar n√∫cleo";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
          return "Tipo de retardo";
       default:

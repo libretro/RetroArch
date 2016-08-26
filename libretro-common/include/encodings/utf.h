@@ -40,4 +40,6 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars);
 
 const char *utf8skip(const char *str, size_t chars);
 
+uint32_t utf8_walk(const char **string);
+
 #endif

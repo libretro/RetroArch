@@ -27,6 +27,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
+#include <encodings/utf.h>
 
 #include "menu_generic.h"
 
@@ -701,7 +702,7 @@ static void xmb_render_messagebox_internal(
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int len = strlen(msg);
+      int len = utf8len(msg);
       if (len > longest)
       {
          longest = len;

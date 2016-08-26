@@ -27,6 +27,7 @@
 #include <gfx/math/matrix_4x4.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
+#include <encodings/utf.h>
 
 #include "menu_generic.h"
 
@@ -400,7 +401,7 @@ static void mui_render_messagebox(mui_handle_t *mui,
    for (i = 0; i < list->size; i++)
    {
       const char *msg = list->elems[i].data;
-      int len = strlen(msg);
+      int len = utf8len(msg);
       if (len > longest)
       {
          longest = len;
@@ -523,7 +524,7 @@ static void mui_render_label_value(mui_handle_t *mui,
    menu_animation_ctx_ticker_t ticker;
    char label_str[PATH_MAX_LENGTH] = {0};
    char value_str[PATH_MAX_LENGTH] = {0};
-   int value_len                   = strlen(value);
+   int value_len                   = utf8len(value);
    int ticker_limit                = 0;
    uintptr_t texture_switch        = 0;
    bool do_draw_text               = false;
@@ -1176,7 +1177,7 @@ static void mui_frame(void *data)
       
       snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)",
             title_buf, title_msg);
-      value_len = strlen(title_buf);
+      value_len = utf8len(title_buf);
       ticker_limit = (usable_width / mui->glyph_width) - (value_len + 2);
 
       ticker.s        = title_buf_msg_tmp;

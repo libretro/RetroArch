@@ -17,15 +17,6 @@
 #ifndef __INTL_FRENCH_H
 #define __INTL_FRENCH_H
 
-/* IMPORTANT:
- * For non-english characters to work without proper unicode support,
- * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
- * If you save this file as UTF-8, you'll break non-english characters
- * (e.g. German "Umlauts" and Portugese diacritics).
- */
-/* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
-extern const char force_iso_8859_1[sizeof("àèéìòù")==6+1 ? 1 : -1];
-
 #define RETRO_LBL_JOYPAD_B "Bouton RetroPad B"
 #define RETRO_LBL_JOYPAD_Y "Bouton RetroPad Y"
 #define RETRO_LBL_JOYPAD_SELECT "Bouton RetroPad Select"
@@ -42,7 +33,7 @@ extern const char force_iso_8859_1[sizeof("àèéìòù")==6+1 ? 1 : -1];
 #define RETRO_LBL_JOYPAD_R2 "Bouton RetroPad R2"
 #define RETRO_LBL_JOYPAD_L3 "Bouton RetroPad L3"
 #define RETRO_LBL_JOYPAD_R3 "Bouton RetroPad R3"
-#define RETRO_LBL_TURBO_ENABLE "Turbo Activé"
+#define RETRO_LBL_TURBO_ENABLE "Turbo ActivÃ©"
 #define RETRO_LBL_ANALOG_LEFT_X "Analogue Gauche X"
 #define RETRO_LBL_ANALOG_LEFT_Y "Analogue Gauche Y"
 #define RETRO_LBL_ANALOG_RIGHT_X "Analogue Droite X"
@@ -59,21 +50,21 @@ extern const char force_iso_8859_1[sizeof("àèéìòù")==6+1 ? 1 : -1];
 #define RETRO_LBL_FAST_FORWARD_HOLD_KEY "Avance Rapide Appui Maintenu"
 #define RETRO_LBL_LOAD_STATE_KEY "Charger une savestate"
 #define RETRO_LBL_SAVE_STATE_KEY "Sauvegarder une savestate"
-#define RETRO_LBL_FULLSCREEN_TOGGLE_KEY "Mode plein écran"
+#define RETRO_LBL_FULLSCREEN_TOGGLE_KEY "Mode plein Ã©cran"
 #define RETRO_LBL_QUIT_KEY "Quitter"
-#define RETRO_LBL_STATE_SLOT_PLUS "État Slot Suivant"
-#define RETRO_LBL_STATE_SLOT_MINUS "État Slot Antérieur"
+#define RETRO_LBL_STATE_SLOT_PLUS "Ã‰tat Slot Suivant"
+#define RETRO_LBL_STATE_SLOT_MINUS "Ã‰tat Slot AntÃ©rieur"
 #define RETRO_LBL_REWIND "Rembobinage"
-#define RETRO_LBL_MOVIE_RECORD_TOGGLE "Commutateur enregistrement vidéo"
+#define RETRO_LBL_MOVIE_RECORD_TOGGLE "Commutateur enregistrement vidÃ©o"
 #define RETRO_LBL_PAUSE_TOGGLE "Pause"
-#define RETRO_LBL_FRAMEADVANCE "Défiler image"
+#define RETRO_LBL_FRAMEADVANCE "DÃ©filer image"
 #define RETRO_LBL_RESET "Reset"
 #define RETRO_LBL_SHADER_NEXT "Prochain Shader"
-#define RETRO_LBL_SHADER_PREV "Précédent Shader"
+#define RETRO_LBL_SHADER_PREV "PrÃ©cÃ©dent Shader"
 #define RETRO_LBL_CHEAT_INDEX_PLUS "Index Cheat Suivant"
-#define RETRO_LBL_CHEAT_INDEX_MINUS "Index Cheat Antérieur"
+#define RETRO_LBL_CHEAT_INDEX_MINUS "Index Cheat AntÃ©rieur"
 #define RETRO_LBL_CHEAT_TOGGLE "Commutateur Mode Triche"
-#define RETRO_LBL_SCREENSHOT "Capture d'écran"
+#define RETRO_LBL_SCREENSHOT "Capture d'Ã©cran"
 #define RETRO_LBL_MUTE "Couper le son"
 #define RETRO_LBL_OSK "Active le clavier visuel"
 #define RETRO_LBL_NETPLAY_FLIP "Inversement des joueurs Netplay"
@@ -82,9 +73,9 @@ extern const char force_iso_8859_1[sizeof("àèéìòù")==6+1 ? 1 : -1];
 #define RETRO_LBL_VOLUME_UP "Augmenter le volume"
 #define RETRO_LBL_VOLUME_DOWN "Diminuer le volume"
 #define RETRO_LBL_OVERLAY_NEXT "Prochain Overlay"
-#define RETRO_LBL_DISK_EJECT_TOGGLE "Commutateur éjecter le disque"
+#define RETRO_LBL_DISK_EJECT_TOGGLE "Commutateur Ã©jecter le disque"
 #define RETRO_LBL_DISK_NEXT "Prochain Changement Disque"
-#define RETRO_LBL_DISK_PREV "Précédent Changement Disque"
+#define RETRO_LBL_DISK_PREV "PrÃ©cÃ©dent Changement Disque"
 #define RETRO_LBL_GRAB_MOUSE_TOGGLE "Commutateur capturer la souris"
 #define RETRO_LBL_MENU_TOGGLE "Commutateur Menu"
 
