@@ -3199,6 +3199,17 @@ bool config_save_file(const char *path)
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
+
+   if (!conf)
+      conf = config_file_new(NULL);
+
+   if (!conf || runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   {
+      if (conf)
+         config_file_free(conf);
+      return false;
+   }
+
    struct config_bool_setting *bool_settings = 
       (struct config_bool_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting));
    int bool_settings_size = 0;
@@ -3224,18 +3235,6 @@ bool config_save_file(const char *path)
    float_settings_size  = populate_settings_float (settings, float_settings);
    string_settings_size = populate_settings_string(settings, string_settings);
    path_settings_size   = populate_settings_path  (settings, path_settings);
-
-
-
-   if (!conf)
-      conf = config_file_new(NULL);
-
-   if (!conf || runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
-   {
-      if (conf)
-         config_file_free(conf);
-      return false;
-   }
 
    /*
     * Path settings 
@@ -3382,6 +3381,7 @@ bool config_save_file(const char *path)
    free(float_settings);
    free(string_settings);
    free(path_settings);
+
    return ret;
 }
 
@@ -3408,8 +3408,20 @@ bool config_save_overrides(int override_type)
 
    global_t   *global   = global_get_ptr();
    settings_t *overrides = config_get_ptr();
-   settings_t *settings  = (settings_t*)calloc(1, sizeof(settings_t));
+
    rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   if (system)
+      core_name = system->info.library_name;
+   if (global)
+      game_name = path_basename(global->name.base);
+
+   if (string_is_empty(core_name) || string_is_empty(game_name))
+      return false;
+
+   settings_t *settings  = (settings_t*)calloc(1, sizeof(settings_t));
 
    struct config_bool_setting *bool_settings = 
       (struct config_bool_setting*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting));
@@ -3441,16 +3453,6 @@ bool config_save_overrides(int override_type)
    int float_settings_size  = 0;
    int string_settings_size = 0;
    int path_settings_size   = 0;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (system)
-      core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
-
-   if (string_is_empty(core_name) || string_is_empty(game_name))
-      return false;
 
    fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
@@ -3568,7 +3570,7 @@ bool config_save_overrides(int override_type)
       config_file_free(conf);
    }
    else
-      return false;
+      ret = false;
 
    free(bool_settings);
    free(bool_overrides);
