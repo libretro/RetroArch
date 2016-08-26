@@ -658,14 +658,14 @@ bool config_save_autoconf_profile(const char *path, unsigned user);
 bool config_save_file(const char *path);
 
 /**
- * config_save_file_diff:
+ * config_save_overrides:
  * @path            : Path that shall be written to.
  *
  * Writes a config file override to disk.
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_file_diff(int override_type);
+bool config_save_overrides(int override_type);
 
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state

@@ -3386,24 +3386,25 @@ bool config_save_file(const char *path)
 }
 
 /**
- * config_save_file:
+ * config_save_overrides:
  * @path            : Path that shall be written to.
  *
- * Writes a config file to disk.
+ * Writes a config file override to disk.
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_file_diff(int override_type)
+bool config_save_overrides(int override_type)
 {
    unsigned i           = 0;
    bool ret             = false;
-   char buf[PATH_MAX_LENGTH]              = {0};
-   char config_directory[PATH_MAX_LENGTH] = {0};
-   char core_path[PATH_MAX_LENGTH]        = {0};
-   char game_path[PATH_MAX_LENGTH]        = {0};
-   const char *core_name                  = NULL;
-   const char *game_name                  = NULL;
-   config_file_t *conf                = NULL;
+   char buf[PATH_MAX_LENGTH]                = {0};
+   char config_directory[PATH_MAX_LENGTH]   = {0};
+   char override_directory[PATH_MAX_LENGTH] = {0};
+   char core_path[PATH_MAX_LENGTH]          = {0};
+   char game_path[PATH_MAX_LENGTH]          = {0};
+   const char *core_name                    = NULL;
+   const char *game_name                    = NULL;
+   config_file_t *conf                      = NULL;
 
    global_t   *global   = global_get_ptr();
    settings_t *overrides = config_get_ptr();
@@ -3454,6 +3455,12 @@ bool config_save_file_diff(int override_type)
    fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
+   fill_pathname_join(override_directory, config_directory, core_name, 
+      sizeof(override_directory));
+
+   if(!path_file_exists(override_directory))
+       path_mkdir(override_directory);
+
    /* Concatenate strings into full paths for core_path, game_path */
    fill_pathname_join_special_ext(game_path,
          config_directory, core_name,
@@ -3467,36 +3474,20 @@ bool config_save_file_diff(int override_type)
          file_path_str(FILE_PATH_CONFIG_EXTENSION),
          sizeof(core_path));
 
-   if (override_type == OVERRIDE_CORE)
-   {
-      RARCH_LOG ("[overrides] path %s\n", core_path);
-      /* Create a new config file from core_path */
-      conf = config_file_new(core_path);
-   }
-   else if(override_type == OVERRIDE_GAME)
-   {
-      RARCH_LOG ("[overrides] path %s\n", game_path);
-      /* Create a new config file from core_path */
-      conf = config_file_new(game_path);
-   }
-   else
-      return false;
+   if (!conf)
+      conf = config_file_new(NULL);
 
    /* Load the original config file in memory */
    config_load_file(global->path.config, false, settings);
 
    bool_settings_size =  populate_settings_bool(settings, bool_settings);
    populate_settings_bool (overrides, bool_overrides);
-
    int_settings_size  = populate_settings_int(settings, int_settings);
    populate_settings_int (overrides, int_overrides);
-
    float_settings_size = populate_settings_float(settings, float_settings);
    populate_settings_float (overrides, float_overrides);
-
    string_settings_size = populate_settings_string(settings, string_settings);
    populate_settings_string (overrides, string_overrides);
-
    path_settings_size = populate_settings_path(settings, path_settings);
    populate_settings_path (overrides, path_overrides);
 
@@ -3578,7 +3569,6 @@ bool config_save_file_diff(int override_type)
    }
    else
       return false;
-
 
    free(bool_settings);
    free(bool_overrides);

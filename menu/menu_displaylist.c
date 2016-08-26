@@ -4374,7 +4374,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
                   PARSE_ACTION, false);
             menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE,
+                  MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+                  PARSE_ACTION, false);
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
                   PARSE_ACTION, false);
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_SAVE_NEW_CONFIG,

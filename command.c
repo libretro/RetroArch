@@ -1613,7 +1613,7 @@ void command_event_save_current_config(int override_type)
       bool ret                = false;
       char msg[128]           = {0};
 
-      ret = config_save_file_diff(override_type);
+      ret = config_save_overrides(override_type);
       return;
    }
 }
@@ -2318,8 +2318,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          command_event_save_current_config(OVERRIDE_NONE);
          break;
-      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE:
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
          command_event_save_current_config(OVERRIDE_CORE);
+         break;
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+         command_event_save_current_config(OVERRIDE_GAME);
          break;
       case CMD_EVENT_MENU_SAVE_CONFIG:
          if (!command_event_save_core_config())
