@@ -3364,8 +3364,10 @@ bool config_save_file(const char *path)
    ret = config_file_write(conf, path);
    config_file_free(conf);
 
-   free (bool_settings);
-   free (int_settings);
+   free(bool_settings);
+   free(int_settings);
+   free(float_settings);
+   free(string_settings);
    return ret;
 }
 
@@ -3472,6 +3474,10 @@ bool config_save_file_diff()
    free(bool_overrides);
    free(int_settings);
    free(int_overrides);
+   free(float_settings);
+   free(float_overrides);
+   free(string_settings);
+   free(string_overrides);
    return false;
 }
 
