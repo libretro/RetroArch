@@ -94,7 +94,7 @@ bool path_file_exists(const char *path);
  * Returns: pointer to the delimiter in the path if it contains
  * a compressed file, otherwise NULL.
  */
-char *path_get_archive_delim(const char *path);
+const char *path_get_archive_delim(const char *path);
 
 /**
  * path_get_extension:

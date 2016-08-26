@@ -113,15 +113,15 @@ bool string_list_append(struct string_list *list, const char *elem,
  * string_list_append_n:
  * @list             : pointer to string list
  * @elem             : element to add to the string list
- * @attr             : attributes of new element.
  * @length           : read at most this many bytes from elem
+ * @attr             : attributes of new element.
  *
  * Appends a new element to the string list.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool string_list_append_n(struct string_list *list, const char *elem,
-      union string_list_elem_attr attr, unsigned length);
+      unsigned length, union string_list_elem_attr attr);
 
 /**
  * string_list_free

@@ -95,11 +95,10 @@ end:
  * Returns: pointer to the delimiter in the path if it contains
  * a compressed file, otherwise NULL.
  */
-char *path_get_archive_delim(const char *path)
+const char *path_get_archive_delim(const char *path)
 {
-   const char *last = find_last_slash(path);
-
 #ifdef HAVE_COMPRESSION
+   const char *last = find_last_slash(path);
    char *delim = NULL;
 
 #ifdef HAVE_ZLIB
@@ -483,7 +482,7 @@ void path_basedir(char *path)
 
 #ifdef HAVE_COMPRESSION
    /* We want to find the directory with the zipfile in basedir. */
-   last = path_get_archive_delim(path);
+   last = path + (path_get_archive_delim(path) - path);
    if (last)
       *last = '\0';
 #endif
@@ -528,7 +527,7 @@ const char *path_basename(const char *path)
    const char *delim = path_get_archive_delim(path);
 
    if (delim)
-      return last + 1;
+      return delim + 1;
 #endif
 
    if (last)
@@ -724,15 +723,15 @@ void fill_short_pathname_representation(char* out_rep,
 {
    char path_short[PATH_MAX_LENGTH] = {0};
 #ifdef HAVE_COMPRESSION
-   char *last_hash                  = NULL;
+   char *last_slash                  = NULL;
 #endif
 
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
 
 #ifdef HAVE_COMPRESSION
-   last_hash = find_last_slash(path_short);
-   if(last_hash != NULL)
+   last_slash  = find_last_slash(path_short);
+   if(last_slash != NULL)
    {
       /* We handle paths like:
        * /path/to/file.7z#mygame.img
@@ -741,8 +740,8 @@ void fill_short_pathname_representation(char* out_rep,
        * We check whether something is actually
        * after the hash to avoid going over the buffer.
        */
-      retro_assert(strlen(last_hash) > 1);
-      strlcpy(out_rep, last_hash + 1, size);
+      retro_assert(strlen(last_slash) > 1);
+      strlcpy(out_rep, last_slash + 1, size);
    }
    else
 #endif

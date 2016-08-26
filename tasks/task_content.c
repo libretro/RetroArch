@@ -328,14 +328,12 @@ struct string_list *filename_split_archive(const char *path)
    memset(&attr, 0, sizeof(attr));
 
 #ifdef HAVE_COMPRESSION
-   char *delim = path_get_archive_delim(path);
+   const char *delim = path_get_archive_delim(path);
 
    if (delim)
    {
       // add archive path to list first
-      *delim = '\0';
-
-      if (!string_list_append_n(list, path, attr, delim - path))
+      if (!string_list_append_n(list, path, delim - path, attr))
          goto error;
 
       // now add the path within the archive
@@ -346,14 +344,11 @@ struct string_list *filename_split_archive(const char *path)
          if (!string_list_append(list, delim, attr))
             goto error;
       }
-   }else{
+   }
+   else
+#endif
       if (!string_list_append(list, path, attr))
          goto error;
-   }
-#else
-   if (!string_list_append(list, path, attr))
-      goto error;
-#endif
 
    return list;
 
