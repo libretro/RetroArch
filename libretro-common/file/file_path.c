@@ -99,7 +99,7 @@ const char *path_get_archive_delim(const char *path)
 {
 #ifdef HAVE_COMPRESSION
    const char *last = find_last_slash(path);
-   char *delim = NULL;
+   const char *delim = NULL;
 
 #ifdef HAVE_ZLIB
    if (last)
@@ -482,7 +482,7 @@ void path_basedir(char *path)
 
 #ifdef HAVE_COMPRESSION
    /* We want to find the directory with the zipfile in basedir. */
-   last = path + (path_get_archive_delim(path) - path);
+   last = (char*)path_get_archive_delim(path);
    if (last)
       *last = '\0';
 #endif
