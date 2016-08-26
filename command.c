@@ -1614,6 +1614,19 @@ void command_event_save_current_config(int override_type)
       char msg[128]           = {0};
 
       ret = config_save_overrides(override_type);
+
+      if (ret)
+      {
+         snprintf(msg, sizeof(msg), "Overrides saved successfully");
+         RARCH_LOG("[overrides] %s\n", msg);
+      }
+      else
+      {
+         snprintf(msg, sizeof(msg), "Error saving overrides");
+         RARCH_ERR("[overrides] %s\n", msg);
+      }
+
+      runloop_msg_queue_push(msg, 1, 180, true);
       return;
    }
 }
