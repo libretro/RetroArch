@@ -3081,45 +3081,10 @@ int populate_settings_string(settings_t *settings, struct config_string_setting 
    return ARRAY_SIZE(tmp);
 }
 
-
-/**
- * config_save_file:
- * @path            : Path that shall be written to.
- *
- * Writes a config file to disk.
- *
- * Returns: true (1) on success, otherwise returns false (0).
- **/
-bool config_save_file(const char *path)
+int populate_settings_path(settings_t *settings, struct config_path_setting *out)
 {
-   float msg_color;
-   unsigned i           = 0;
-   bool ret             = false;
-   config_file_t *conf  = config_file_new(path);
-   settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   struct config_bool_setting *bool_settings = 
-      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting));
-   int bool_settings_size = 0;
-
-   struct config_int_setting *int_settings = 
-      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
-   int int_settings_size = 0;
-
-   struct config_float_setting *float_settings = 
-      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
-   int float_settings_size = 0;
-
-   struct config_string_setting *string_settings = 
-      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
-   int string_settings_size = 0;
-
-   bool_settings_size   = populate_settings_bool  (settings, bool_settings);
-   int_settings_size    = populate_settings_int   (settings, int_settings);
-   float_settings_size  = populate_settings_float (settings, float_settings);
-   string_settings_size = populate_settings_string(settings, string_settings);
-
-   struct config_path_setting path_settings[] = {
+   struct config_path_setting tmp[] = {
       { "recording_output_directory", false,
          global->record.output_dir},
       { "recording_config_directory", false,
@@ -3214,6 +3179,54 @@ bool config_save_file(const char *path)
          settings->directory.screenshot}
    };
 
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
+/**
+ * config_save_file:
+ * @path            : Path that shall be written to.
+ *
+ * Writes a config file to disk.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+bool config_save_file(const char *path)
+{
+   float msg_color;
+   unsigned i           = 0;
+   bool ret             = false;
+   config_file_t *conf  = config_file_new(path);
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+   struct config_bool_setting *bool_settings = 
+      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting));
+   int bool_settings_size = 0;
+
+   struct config_int_setting *int_settings = 
+      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
+   int int_settings_size = 0;
+
+   struct config_float_setting *float_settings = 
+      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+   int float_settings_size = 0;
+
+   struct config_string_setting *string_settings = 
+      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+   int string_settings_size = 0;
+
+   struct config_path_setting *path_settings = 
+      (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
+   int path_settings_size = 0;
+
+   bool_settings_size   = populate_settings_bool  (settings, bool_settings);
+   int_settings_size    = populate_settings_int   (settings, int_settings);
+   float_settings_size  = populate_settings_float (settings, float_settings);
+   string_settings_size = populate_settings_string(settings, string_settings);
+   path_settings_size   = populate_settings_path  (settings, path_settings);
+
+
+
    if (!conf)
       conf = config_file_new(NULL);
 
@@ -3229,7 +3242,7 @@ bool config_save_file(const char *path)
     *
     */
 
-   for (i = 0; i < ARRAY_SIZE(path_settings); i++)
+   for (i = 0; i < path_settings_size; i++)
    {
       if (path_settings[i].defaults)
          config_set_path(conf, path_settings[i].ident,
@@ -3368,6 +3381,7 @@ bool config_save_file(const char *path)
    free(int_settings);
    free(float_settings);
    free(string_settings);
+   free(path_settings);
    return ret;
 }
 
@@ -3407,11 +3421,16 @@ bool config_save_file_diff()
    struct config_string_setting *string_overrides = 
       (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
 
+   struct config_path_setting *path_settings = 
+      (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
+   struct config_path_setting *path_overrides = 
+      (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
 
    int bool_settings_size   = 0;
    int int_settings_size    = 0;
    int float_settings_size  = 0;
    int string_settings_size = 0;
+   int path_settings_size   = 0;
 
    /* Load the original config file in memory */
    config_load_file(global->path.config, false, settings);
@@ -3427,6 +3446,9 @@ bool config_save_file_diff()
 
    string_settings_size = populate_settings_string(settings, string_settings);
    populate_settings_string (overrides, string_overrides);
+
+   path_settings_size = populate_settings_path(settings, path_settings);
+   populate_settings_path (overrides, path_overrides);
 
    RARCH_LOG("Overrides:\n");
    for (i = 0; i < bool_settings_size; i++)
@@ -3469,6 +3491,16 @@ bool config_save_file_diff()
             string_overrides[i].ident, string_overrides[i].value);
       }
    }
+   for (i = 0; i < path_settings_size; i++)
+   {
+      if (strcmp(path_settings[i].value, path_overrides[i].value))
+      {
+         RARCH_LOG("   original: %s=%s\n", 
+            path_settings[i].ident, path_settings[i].value);
+         RARCH_LOG("   override: %s=%s\n", 
+            path_overrides[i].ident, path_overrides[i].value);
+      }
+   }
 
    free(bool_settings);
    free(bool_overrides);
@@ -3478,6 +3510,8 @@ bool config_save_file_diff()
    free(float_overrides);
    free(string_settings);
    free(string_overrides);
+   free(path_settings);
+   free(path_overrides);
    return false;
 }
 
