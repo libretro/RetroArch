@@ -224,6 +224,8 @@ OBJ += frontend/frontend.o \
 
 ifeq ($(HAVE_LANGEXTRA), 1)
 DEFINES += -DHAVE_LANGEXTRA
+DEFINES += -finput-charset=UTF-8
+
 OBJ += intl/msg_hash_de.o \
        intl/msg_hash_eo.o \
        intl/msg_hash_es.o \
@@ -232,7 +234,8 @@ OBJ += intl/msg_hash_de.o \
        intl/msg_hash_jp.o \
        intl/msg_hash_nl.o \
        intl/msg_hash_pl.o \
-       intl/msg_hash_pt.o
+       intl/msg_hash_pt.o \
+       intl/msg_hash_ru.o
 
 endif
 
@@ -528,12 +531,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/drivers_display/menu_display_null.o \
           menu/drivers/menu_generic.o \
           menu/drivers/null.o
-endif
-
-ifneq ($(NO_UTF8), 1)
-   DEFINES += -DHAVE_UTF8
-   OBJ += intl/msg_hash_ru.o
-   DEFINES += -finput-charset=UTF-8
 endif
 
 ifeq ($(HAVE_STB_FONT), 1)

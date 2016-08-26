@@ -95,7 +95,7 @@ for line in sys.stdin:
     
     if 'const char *hash_to_str_us_label_enum' in line: localize = False
     if 'return "null"' in line: localize = True
-    if line=='#ifdef HAVE_UTF8': line="#if 0"
+    if line=='#ifdef HAVE_PSEUDOLOCALIZE': line="#if 0"
     
     if '#include' in line: pass
     elif not localize: pass

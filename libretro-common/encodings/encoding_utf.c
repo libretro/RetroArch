@@ -148,7 +148,6 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
  * Use only if 'chars' is considerably less than 'd_len'. */
 size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
 {
-#ifdef HAVE_UTF8
    char *d_org           = d;
    char *d_end           = d+d_len;
    const uint8_t *sb     = (const uint8_t*)s;
@@ -170,14 +169,10 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
    d[sb-sb_org] = '\0';
 
    return sb-sb_org;
-#else
-   return strlcpy(d, s, chars + 1);
-#endif
 }
 
 const char *utf8skip(const char *str, size_t chars)
 {
-#ifdef HAVE_UTF8
    const uint8_t *strb = (const uint8_t*)str;
    if (!chars)
       return str;
@@ -188,14 +183,10 @@ const char *utf8skip(const char *str, size_t chars)
       chars--;
    } while(chars);
    return (const char*)strb;
-#else
-   return str + chars;
-#endif
 }
 
 size_t utf8len(const char *string)
 {
-#ifdef HAVE_UTF8
    size_t ret = 0;
    while (*string)
    {
@@ -204,9 +195,6 @@ size_t utf8len(const char *string)
       string++;
    }
    return ret;
-#else
-   return strlen(string);
-#endif
 }
 
 inline uint8_t utf8_walkbyte(const char **string)
@@ -217,7 +205,6 @@ inline uint8_t utf8_walkbyte(const char **string)
 /* Does not validate the input, returns garbage if it's not UTF-8. */
 uint32_t utf8_walk(const char **string)
 {
-#ifdef HAVE_UTF8
    uint8_t first = utf8_walkbyte(string);
    uint32_t ret;
    
@@ -236,7 +223,4 @@ uint32_t utf8_walk(const char **string)
    if (first >= 0xE0)
       return ret | (first&15)<<12;
    return ret | (first&7)<<6;
-#else
-   return utf8_walkbyte(string);
-#endif
 }

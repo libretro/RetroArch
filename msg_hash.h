@@ -2054,9 +2054,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg);
 const char *msg_hash_to_str_fr(enum msg_hash_enums msg);
 int menu_hash_get_help_fr_enum(enum msg_hash_enums msg, char *s, size_t len);
 
-#ifdef HAVE_UTF8
 const char *msg_hash_to_str_ru(enum msg_hash_enums msg);
-#endif
 
 const char *msg_hash_to_str_de(enum msg_hash_enums msg);
 int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len);

@@ -798,9 +798,7 @@ RETROARCH
 #include "../intl/msg_hash_nl.c"
 #include "../intl/msg_hash_pt.c"
 #include "../intl/msg_hash_pl.c"
-#ifdef HAVE_UTF8
 #include "../intl/msg_hash_ru.c"
-#endif
 #endif
 
 #include "../intl/msg_hash_us.c"

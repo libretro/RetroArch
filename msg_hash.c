@@ -108,9 +108,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          ret = msg_hash_to_str_pl(msg);
          break;
       case RETRO_LANGUAGE_RUSSIAN:
-#ifdef HAVE_UTF8
          ret = msg_hash_to_str_ru(msg);
-#endif
          break;
       case RETRO_LANGUAGE_JAPANESE:
          ret = msg_hash_to_str_jp(msg);
