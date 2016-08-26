@@ -3008,6 +3008,37 @@ int populate_settings_int(settings_t *settings, struct config_int_setting *out)
    return ARRAY_SIZE(tmp);
 }
 
+int populate_settings_float(settings_t *settings, struct config_float_setting *out)
+{
+   global_t   *global   = global_get_ptr();
+   struct config_float_setting tmp[] = {
+      { "video_aspect_ratio", settings->video.aspect_ratio},
+      { "video_scale",        settings->video.scale},
+      { "video_refresh_rate", settings->video.refresh_rate},
+      { "audio_rate_control_delta", settings->audio.rate_control_delta},
+      { "audio_max_timing_skew",    settings->audio.max_timing_skew},
+      { "audio_volume",             settings->audio.volume},
+#ifdef HAVE_OVERLAY
+      { "input_overlay_opacity",    settings->input.overlay_opacity},
+      { "input_overlay_scale",      settings->input.overlay_scale},
+#endif
+#ifdef HAVE_MENU
+      { "menu_wallpaper_opacity",   settings->menu.wallpaper.opacity},
+      { "menu_footer_opacity",      settings->menu.footer.opacity},
+      { "menu_header_opacity",      settings->menu.header.opacity},
+#endif
+      { "video_message_pos_x",      settings->video.msg_pos_x},
+      { "video_message_pos_y",      settings->video.msg_pos_y},
+      { "video_font_size",          settings->video.font_size},
+      { "fastforward_ratio",        settings->fastforward_ratio},
+      { "slowmotion_ratio",         settings->slowmotion_ratio},
+      { "input_axis_threshold",     settings->input.axis_threshold},
+   };
+
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
 /**
  * config_save_file:
  * @path            : Path that shall be written to.
@@ -3032,32 +3063,13 @@ bool config_save_file(const char *path)
       (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
    int int_settings_size = 0;
 
-   bool_settings_size = populate_settings_bool (settings, bool_settings);
-   int_settings_size  = populate_settings_int  (settings, int_settings);
+   struct config_float_setting *float_settings = 
+      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+   int float_settings_size = 0;
 
-   struct config_float_setting float_settings[] = {
-      { "video_aspect_ratio", settings->video.aspect_ratio},
-      { "video_scale",        settings->video.scale},
-      { "video_refresh_rate", settings->video.refresh_rate},
-      { "audio_rate_control_delta", settings->audio.rate_control_delta},
-      { "audio_max_timing_skew",    settings->audio.max_timing_skew},
-      { "audio_volume",             settings->audio.volume},
-#ifdef HAVE_OVERLAY
-      { "input_overlay_opacity",    settings->input.overlay_opacity},
-      { "input_overlay_scale",      settings->input.overlay_scale},
-#endif
-#ifdef HAVE_MENU
-      { "menu_wallpaper_opacity",   settings->menu.wallpaper.opacity},
-      { "menu_footer_opacity",      settings->menu.footer.opacity},
-      { "menu_header_opacity",      settings->menu.header.opacity},
-#endif
-      { "video_message_pos_x",      settings->video.msg_pos_x},
-      { "video_message_pos_y",      settings->video.msg_pos_y},
-      { "video_font_size",          settings->video.font_size},
-      { "fastforward_ratio",        settings->fastforward_ratio},
-      { "slowmotion_ratio",         settings->slowmotion_ratio},
-      { "input_axis_threshold",     settings->input.axis_threshold},
-   };
+   bool_settings_size  = populate_settings_bool  (settings, bool_settings);
+   int_settings_size   = populate_settings_int   (settings, int_settings);
+   float_settings_size = populate_settings_float (settings, float_settings);
 
    struct config_string_setting string_settings[] = {
       { "bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir},
@@ -3235,7 +3247,7 @@ bool config_save_file(const char *path)
     *
     */
 
-   for (i = 0; i < ARRAY_SIZE(float_settings); i++)
+   for (i = 0; i < float_settings_size; i++)
    {
       config_set_float(conf, float_settings[i].ident,
             float_settings[i].value);
@@ -3369,8 +3381,14 @@ bool config_save_file_diff()
    struct config_int_setting *int_overrides = 
       (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
 
+   struct config_float_setting *float_settings = 
+      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+   struct config_float_setting *float_overrides = 
+      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+
    int bool_settings_size = 0;
    int int_settings_size = 0;
+   int float_settings_size = 0;
 
    /* Load the original config file in memory */
    config_load_file(global->path.config, false, settings);
@@ -3380,6 +3398,9 @@ bool config_save_file_diff()
 
    int_settings_size  = populate_settings_int(settings, int_settings);
    populate_settings_int (overrides, int_overrides);
+   
+   float_settings_size = populate_settings_float (settings, float_settings);
+   populate_settings_float (overrides, float_overrides);
 
    RARCH_LOG("Overrides:\n");
    for (i = 0; i < bool_settings_size; i++)
@@ -3400,6 +3421,16 @@ bool config_save_file_diff()
             int_settings[i].ident, int_settings[i].value);
          RARCH_LOG("   override: %s=%d\n", 
             int_overrides[i].ident, int_overrides[i].value);
+      }
+   }
+   for (i = 0; i < float_settings_size; i++)
+   {
+      if (float_settings[i].value != float_overrides[i].value)
+      {
+         RARCH_LOG("   original: %s=%f\n", 
+            float_settings[i].ident, float_settings[i].value);
+         RARCH_LOG("   override: %s=%f\n", 
+            float_overrides[i].ident, float_overrides[i].value);
       }
    }
 
