@@ -243,7 +243,7 @@ void input_remote_poll(input_remote_t *handle)
          FD_ZERO(&fds);
          FD_SET(handle->net_fd[user], &fds);
 
-         ret = recvfrom(handle->net_fd[user], &msg,
+         ret = recvfrom(handle->net_fd[user], (char*)&msg,
                sizeof(msg), 0, NULL, NULL);
 
          if (ret == sizeof(msg))

@@ -59,7 +59,7 @@ struct descriptor {
    uint16_t *value;
 };
 
-struct message {
+struct remote_message {
    int port;
    int device;
    int index;
@@ -203,7 +203,7 @@ void NETRETROPAD_CORE_PREFIX(retro_get_system_av_info)(
 static void retropad_update_input(void)
 {
    struct descriptor *desc;
-   struct message msg;
+   struct remote_message msg;
    uint16_t state;
    uint16_t old;
    int offset;
@@ -250,7 +250,7 @@ static void retropad_update_input(void)
                msg.index = index;
                msg.id = id;
                msg.state = state;
-               if (sendto(s, &msg, sizeof(msg), 0, (struct sockaddr *)&si_other, sizeof(si_other)) == -1)
+               if (sendto(s, (char*)&msg, sizeof(msg), 0, (struct sockaddr *)&si_other, sizeof(si_other)) == -1)
                   NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Error sending data!\n");
             }
    }
