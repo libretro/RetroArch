@@ -25,6 +25,10 @@
 #include "gfx/video_driver.h"
 #include "driver.h"
 
+#define OVERRIDE_NONE 0
+#define OVERRIDE_CORE 1
+#define OVERRIDE_GAME 2
+
 #ifndef MAX_USERS
 #define MAX_USERS 16
 #endif
@@ -661,7 +665,7 @@ bool config_save_file(const char *path);
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_file_diff();
+bool config_save_file_diff(int override_type);
 
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state

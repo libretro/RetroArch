@@ -1567,12 +1567,12 @@ static bool command_event_save_core_config(void)
  * Saves current configuration file to disk, and (optionally)
  * autosave state.
  **/
-void command_event_save_current_config(bool overrides)
+void command_event_save_current_config(int override_type)
 {
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (!overrides)
+   if (!override_type)
    {
 
       if (settings->config_save_on_exit && !string_is_empty(global->path.config))
@@ -1613,7 +1613,7 @@ void command_event_save_current_config(bool overrides)
       bool ret                = false;
       char msg[128]           = {0};
 
-      ret = config_save_file_diff();
+      ret = config_save_file_diff(override_type);
       return;
    }
 }
@@ -2316,10 +2316,10 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
-         command_event_save_current_config(false);
+         command_event_save_current_config(OVERRIDE_NONE);
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE:
-         command_event_save_current_config(true);
+         command_event_save_current_config(OVERRIDE_CORE);
          break;
       case CMD_EVENT_MENU_SAVE_CONFIG:
          if (!command_event_save_core_config())

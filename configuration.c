@@ -3393,13 +3393,22 @@ bool config_save_file(const char *path)
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_file_diff()
+bool config_save_file_diff(int override_type)
 {
    unsigned i           = 0;
    bool ret             = false;
+   char buf[PATH_MAX_LENGTH]              = {0};
+   char config_directory[PATH_MAX_LENGTH] = {0};
+   char core_path[PATH_MAX_LENGTH]        = {0};
+   char game_path[PATH_MAX_LENGTH]        = {0};
+   const char *core_name                  = NULL;
+   const char *game_name                  = NULL;
+   config_file_t *new_conf                = NULL;
+
    global_t   *global   = global_get_ptr();
    settings_t *overrides = config_get_ptr();
    settings_t *settings  = (settings_t*)calloc(1, sizeof(settings_t));
+   rarch_system_info_t *system = NULL;
 
    struct config_bool_setting *bool_settings = 
       (struct config_bool_setting*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting));
@@ -3431,6 +3440,47 @@ bool config_save_file_diff()
    int float_settings_size  = 0;
    int string_settings_size = 0;
    int path_settings_size   = 0;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   if (system)
+      core_name = system->info.library_name;
+   if (global)
+      game_name = path_basename(global->name.base);
+
+   if (string_is_empty(core_name) || string_is_empty(game_name))
+      return false;
+
+   fill_pathname_application_special(config_directory, sizeof(config_directory),
+         APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+
+   /* Concatenate strings into full paths for core_path, game_path */
+   fill_pathname_join_special_ext(game_path,
+         config_directory, core_name,
+         game_name,
+         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         sizeof(game_path));
+
+   fill_pathname_join_special_ext(core_path,
+         config_directory, core_name,
+         core_name,
+         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         sizeof(core_path));
+
+   if (override_type == OVERRIDE_CORE)
+   {
+      RARCH_LOG ("Overrides: path %s\n", core_path);
+      /* Create a new config file from core_path */
+      new_conf = config_file_new(core_path);
+   }
+   else if(override_type == OVERRIDE_GAME)
+   {
+      RARCH_LOG ("Overrides: path %s\n", game_path);
+      /* Create a new config file from core_path */
+      new_conf = config_file_new(game_path);
+   }
+   else
+      return false;
 
    /* Load the original config file in memory */
    config_load_file(global->path.config, false, settings);
@@ -3512,6 +3562,7 @@ bool config_save_file_diff()
    free(string_overrides);
    free(path_settings);
    free(path_overrides);
+   free(settings);
    return false;
 }
 
