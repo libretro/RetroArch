@@ -2161,13 +2161,13 @@ bool config_load_override(void)
    {
       config_file_free(new_conf);
 
-      RARCH_LOG("Overrides: core-specific overrides found at %s.\n", core_path);
+      RARCH_LOG("[overrides] core-specific overrides found at %s.\n", core_path);
       strlcpy(global->path.append_config, core_path, sizeof(global->path.append_config));
 
       should_append = true;
    }
    else
-      RARCH_LOG("Overrides: no core-specific overrides found at %s.\n", core_path);
+      RARCH_LOG("[overrides] no core-specific overrides found at %s.\n", core_path);
 
    /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
@@ -2177,7 +2177,7 @@ bool config_load_override(void)
    {
       config_file_free(new_conf);
 
-      RARCH_LOG("Overrides: game-specific overrides found at %s.\n", game_path);
+      RARCH_LOG("[overrides] game-specific overrides found at %s.\n", game_path);
       if (should_append)
       {
          strlcat(global->path.append_config, "|", sizeof(global->path.append_config));
@@ -2189,7 +2189,7 @@ bool config_load_override(void)
       should_append = true;
    }
    else
-      RARCH_LOG("Overrides: no game-specific overrides found at %s.\n", game_path);
+      RARCH_LOG("[overrides] no game-specific overrides found at %s.\n", game_path);
 
    if (!should_append)
       return false;
@@ -2198,7 +2198,7 @@ bool config_load_override(void)
 #ifdef HAVE_NETPLAY
    if (global->netplay.enable)
    {
-      RARCH_WARN("Overrides: can't use overrides in conjunction with netplay, disabling overrides.\n");
+      RARCH_WARN("[overrides] can't use overrides in conjunction with netplay, disabling overrides.\n");
       return false;
    }
 #endif
@@ -2249,7 +2249,7 @@ bool config_unload_override(void)
 
    if (config_load_file(global->path.config, false, config_get_ptr()))
    {
-      RARCH_LOG("Overrides: configuration overrides unloaded, original configuration restored.\n");
+      RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
 
       /* Reset save paths */
       retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
@@ -3469,13 +3469,13 @@ bool config_save_file_diff(int override_type)
 
    if (override_type == OVERRIDE_CORE)
    {
-      RARCH_LOG ("Overrides: path %s\n", core_path);
+      RARCH_LOG ("[overrides] path %s\n", core_path);
       /* Create a new config file from core_path */
       new_conf = config_file_new(core_path);
    }
    else if(override_type == OVERRIDE_GAME)
    {
-      RARCH_LOG ("Overrides: path %s\n", game_path);
+      RARCH_LOG ("[overrides] path %s\n", game_path);
       /* Create a new config file from core_path */
       new_conf = config_file_new(game_path);
    }
@@ -3500,7 +3500,7 @@ bool config_save_file_diff(int override_type)
    path_settings_size = populate_settings_path(settings, path_settings);
    populate_settings_path (overrides, path_overrides);
 
-   RARCH_LOG("Overrides:\n");
+   RARCH_LOG("[overrides]: looking for changed settings\n");
    for (i = 0; i < bool_settings_size; i++)
    {
       if (bool_settings[i].value != bool_overrides[i].value)
