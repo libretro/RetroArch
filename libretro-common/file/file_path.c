@@ -34,6 +34,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #endif
+#include <compat/strcasestr.h>
 #include <retro_assert.h>
 #include <retro_stat.h>
 #include <retro_miscellaneous.h>
