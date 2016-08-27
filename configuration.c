@@ -2931,7 +2931,9 @@ int populate_settings_bool(settings_t *settings, struct config_bool_setting *out
 
 int populate_settings_int(settings_t *settings, struct config_int_setting *out)
 {
+#ifdef HAVE_NETPLAY
    global_t   *global   = global_get_ptr();
+#endif
    struct config_int_setting tmp[] = {
       { "input_bind_timeout",           settings->input.bind_timeout},
       { "input_turbo_period",           settings->input.turbo_period},
@@ -3040,7 +3042,9 @@ int populate_settings_float(settings_t *settings, struct config_float_setting *o
 
 int populate_settings_string(settings_t *settings, struct config_string_setting *out)
 {
+#ifdef HAVE_NETPLAY
    global_t   *global   = global_get_ptr();
+#endif
    struct config_string_setting tmp[] = {
       { "bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir},
       { "video_filter",             settings->path.softfilter_plugin},
