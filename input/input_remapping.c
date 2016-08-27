@@ -87,12 +87,6 @@ bool input_remapping_load_file(void *data, const char *path)
       snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, input.analog_dpad_mode[i], buf);
 
-      snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
-      CONFIG_GET_INT_BASE(conf, settings, input.joypad_map[i], buf);
-
-      snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
-      CONFIG_GET_INT_BASE(conf, settings, input.analog_dpad_mode[i], buf);
-
       if (!global->has_set.libretro_device[i])
       {
          snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
