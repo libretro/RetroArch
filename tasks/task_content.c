@@ -312,6 +312,7 @@ static int content_7zip_file_read(
    return outsize;
 }
 
+#ifdef HAVE_COMPRESSION
 /**
  * filename_split_archive:
  * @str              : filename to turn into a string list
@@ -320,7 +321,7 @@ static int content_7zip_file_read(
  *
  * Returns: new string list if successful, otherwise NULL.
  */
-struct string_list *filename_split_archive(const char *path)
+static struct string_list *filename_split_archive(const char *path)
 {
    union string_list_elem_attr attr;
    struct string_list *list = string_list_new();
@@ -359,6 +360,7 @@ error:
    string_list_free(list);
    return NULL;
 }
+#endif
 
 static struct string_list *compressed_7zip_file_list_new(
       const char *path, const char* ext)
