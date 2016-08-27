@@ -52,7 +52,7 @@ static void event_loop(uint64_t data)
    sys_event_queue_t id;
    sys_ipc_key_t key;
    sys_event_t event;
-   ps3_audio_t *aud = (ps3_audio_t*)data;
+   ps3_audio_t *aud = (ps3_audio_t*)(uintptr_t)data;
 
    cellAudioCreateNotifyEventQueue(&id, &key);
    cellAudioSetNotifyEventQueue(key);
