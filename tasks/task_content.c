@@ -322,21 +322,24 @@ static int content_7zip_file_read(
  */
 struct string_list *filename_split_archive(const char *path)
 {
-   struct string_list *list = string_list_new();
    union string_list_elem_attr attr;
+   struct string_list *list = string_list_new();
+#ifdef HAVE_COMPRESSION
+   const char *delim        = NULL;
+#endif
 
    memset(&attr, 0, sizeof(attr));
 
 #ifdef HAVE_COMPRESSION
-   const char *delim = path_get_archive_delim(path);
+   delim = path_get_archive_delim(path);
 
    if (delim)
    {
-      // add archive path to list first
+      /* add archive path to list first */
       if (!string_list_append_n(list, path, delim - path, attr))
          goto error;
 
-      // now add the path within the archive
+      /* now add the path within the archive */
       delim++;
 
       if (*delim)

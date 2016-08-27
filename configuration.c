@@ -3195,6 +3195,14 @@ bool config_save_file(const char *path)
    float msg_color;
    unsigned i           = 0;
    bool ret             = false;
+   int bool_settings_size  = 0, int_settings_size    = 0,
+       float_settings_size = 0, string_settings_size = 0,
+       path_settings_size  = 0;
+   struct config_bool_setting *bool_settings     = NULL;
+   struct config_int_setting *int_settings       = NULL;
+   struct config_float_setting *float_settings   = NULL;
+   struct config_string_setting *string_settings = NULL;
+   struct config_path_setting *path_settings     = NULL;
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
@@ -3209,25 +3217,20 @@ bool config_save_file(const char *path)
       return false;
    }
 
-   struct config_bool_setting *bool_settings = 
+   bool_settings = 
       (struct config_bool_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting));
-   int bool_settings_size = 0;
 
-   struct config_int_setting *int_settings = 
+   int_settings = 
       (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
-   int int_settings_size = 0;
 
-   struct config_float_setting *float_settings = 
+   float_settings = 
       (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
-   int float_settings_size = 0;
 
-   struct config_string_setting *string_settings = 
+   string_settings = 
       (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
-   int string_settings_size = 0;
 
-   struct config_path_setting *path_settings = 
+   path_settings = 
       (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
-   int path_settings_size = 0;
 
    bool_settings_size   = populate_settings_bool  (settings, bool_settings);
    int_settings_size    = populate_settings_int   (settings, int_settings);
@@ -3394,20 +3397,32 @@ bool config_save_file(const char *path)
  **/
 bool config_save_overrides(int override_type)
 {
-   unsigned i           = 0;
-   bool ret             = false;
-   char config_directory[PATH_MAX_LENGTH]   = {0};
-   char override_directory[PATH_MAX_LENGTH] = {0};
-   char core_path[PATH_MAX_LENGTH]          = {0};
-   char game_path[PATH_MAX_LENGTH]          = {0};
-   const char *core_name                    = NULL;
-   const char *game_name                    = NULL;
-   config_file_t *conf                      = NULL;
-
-   global_t   *global   = global_get_ptr();
-   settings_t *overrides = config_get_ptr();
-
-   rarch_system_info_t *system = NULL;
+   unsigned i                                 = 0;
+   int bool_settings_size   = 0, int_settings_size    = 0,
+       float_settings_size  = 0, string_settings_size = 0,
+       path_settings_size   = 0;
+   bool ret                                    = false;
+   char config_directory[PATH_MAX_LENGTH]      = {0};
+   char override_directory[PATH_MAX_LENGTH]    = {0};
+   char core_path[PATH_MAX_LENGTH]             = {0};
+   char game_path[PATH_MAX_LENGTH]             = {0};
+   const char *core_name                       = NULL;
+   const char *game_name                       = NULL;
+   config_file_t *conf                         = NULL;
+   settings_t *settings                        = NULL;
+   global_t   *global                          = global_get_ptr();
+   settings_t *overrides                       = config_get_ptr();
+   rarch_system_info_t *system                 = NULL;
+   struct config_bool_setting *bool_settings   = NULL;
+   struct config_bool_setting *bool_overrides  = NULL;
+   struct config_int_setting *int_settings     = NULL;
+   struct config_int_setting *int_overrides    = NULL;
+   struct config_float_setting *float_settings = NULL;
+   struct config_float_setting *float_overrides = NULL;
+   struct config_string_setting *string_settings = NULL;
+   struct config_string_setting *string_overrides = NULL;
+   struct config_path_setting *path_settings      = NULL;
+   struct config_path_setting *path_overrides     = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -3419,38 +3434,33 @@ bool config_save_overrides(int override_type)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   settings_t *settings  = (settings_t*)calloc(1, sizeof(settings_t));
+   settings  = (settings_t*)calloc(1, sizeof(settings_t));
 
-   struct config_bool_setting *bool_settings = 
+   bool_settings = 
       (struct config_bool_setting*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting));
-   struct config_bool_setting *bool_overrides = 
+   bool_overrides = 
       (struct config_bool_setting*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting));
 
-   struct config_int_setting *int_settings = 
+   int_settings = 
       (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
-   struct config_int_setting *int_overrides = 
+   int_overrides = 
       (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
 
-   struct config_float_setting *float_settings = 
+   float_settings = 
       (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
-   struct config_float_setting *float_overrides = 
+   float_overrides = 
       (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
 
-   struct config_string_setting *string_settings = 
+   string_settings = 
       (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
-   struct config_string_setting *string_overrides = 
+   string_overrides = 
       (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
 
-   struct config_path_setting *path_settings = 
+   path_settings = 
       (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
-   struct config_path_setting *path_overrides = 
+   path_overrides = 
       (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
 
-   int bool_settings_size   = 0;
-   int int_settings_size    = 0;
-   int float_settings_size  = 0;
-   int string_settings_size = 0;
-   int path_settings_size   = 0;
 
    fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
