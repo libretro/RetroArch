@@ -59,7 +59,7 @@ struct descriptor {
    uint16_t *value;
 };
 
-struct remote_message {
+struct remote_joypad_message {
    int port;
    int device;
    int index;
@@ -203,7 +203,7 @@ void NETRETROPAD_CORE_PREFIX(retro_get_system_av_info)(
 static void retropad_update_input(void)
 {
    struct descriptor *desc;
-   struct remote_message msg;
+   struct remote_joypad_message msg;
    uint16_t state;
    uint16_t old;
    int offset;
