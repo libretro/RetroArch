@@ -123,6 +123,49 @@ static bool core_does_not_need_content                        = false;
 static uint32_t content_crc                                   = 0;
 
 #ifdef HAVE_COMPRESSION
+/**
+ * filename_split_archive:
+ * @str              : filename to turn into a string list
+ *
+ * Creates a new string list based on filename @path, delimited by a hash (#).
+ *
+ * Returns: new string list if successful, otherwise NULL.
+ */
+static struct string_list *filename_split_archive(const char *path)
+{
+   union string_list_elem_attr attr;
+   struct string_list *list = string_list_new();
+   const char *delim        = NULL;
+
+   memset(&attr, 0, sizeof(attr));
+
+   delim = path_get_archive_delim(path);
+
+   if (delim)
+   {
+      /* add archive path to list first */
+      if (!string_list_append_n(list, path, delim - path, attr))
+         goto error;
+
+      /* now add the path within the archive */
+      delim++;
+
+      if (*delim)
+      {
+         if (!string_list_append(list, delim, attr))
+            goto error;
+      }
+   }
+   else
+      if (!string_list_append(list, path, attr))
+         goto error;
+
+   return list;
+
+error:
+   string_list_free(list);
+   return NULL;
+}
 
 #ifdef HAVE_7ZIP
 static bool utf16_to_char(uint8_t **utf_data,
@@ -311,56 +354,6 @@ static int content_7zip_file_read(
 
    return outsize;
 }
-
-#ifdef HAVE_COMPRESSION
-/**
- * filename_split_archive:
- * @str              : filename to turn into a string list
- *
- * Creates a new string list based on filename @path, delimited by a hash (#).
- *
- * Returns: new string list if successful, otherwise NULL.
- */
-static struct string_list *filename_split_archive(const char *path)
-{
-   union string_list_elem_attr attr;
-   struct string_list *list = string_list_new();
-#ifdef HAVE_COMPRESSION
-   const char *delim        = NULL;
-#endif
-
-   memset(&attr, 0, sizeof(attr));
-
-#ifdef HAVE_COMPRESSION
-   delim = path_get_archive_delim(path);
-
-   if (delim)
-   {
-      /* add archive path to list first */
-      if (!string_list_append_n(list, path, delim - path, attr))
-         goto error;
-
-      /* now add the path within the archive */
-      delim++;
-
-      if (*delim)
-      {
-         if (!string_list_append(list, delim, attr))
-            goto error;
-      }
-   }
-   else
-#endif
-      if (!string_list_append(list, path, attr))
-         goto error;
-
-   return list;
-
-error:
-   string_list_free(list);
-   return NULL;
-}
-#endif
 
 static struct string_list *compressed_7zip_file_list_new(
       const char *path, const char* ext)

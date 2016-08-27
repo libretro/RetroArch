@@ -709,7 +709,7 @@ void gl_deinit_fbo(gl_t *gl)
       glDeleteTextures(1, &gl->fbo_feedback_texture);
 
    gl->fbo_feedback_enable = false;
-   gl->fbo_feedback_pass = -1;
+   gl->fbo_feedback_pass = -1; /* TODO: this member is unsigned, figure out what it should be */
    gl->fbo_feedback_texture = 0;
    gl->fbo_feedback = 0;
 }
