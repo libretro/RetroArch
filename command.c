@@ -1567,42 +1567,67 @@ static bool command_event_save_core_config(void)
  * Saves current configuration file to disk, and (optionally)
  * autosave state.
  **/
-void command_event_save_current_config(void)
+void command_event_save_current_config(int override_type)
 {
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (settings->config_save_on_exit && !string_is_empty(global->path.config))
+   if (!override_type)
+   {
+
+      if (settings->config_save_on_exit && !string_is_empty(global->path.config))
+      {
+         bool ret                = false;
+         char msg[128]           = {0};
+         const char *config_path = config_get_active_path();
+
+         /* Save last core-specific config to the default config location,
+          * needed on consoles for core switching and reusing last good
+          * config for new cores.
+          */
+
+         /* Flush out the core specific config. */
+         if (config_path)
+            ret = config_save_file(config_path);
+
+         if (ret)
+         {
+            snprintf(msg, sizeof(msg), "%s \"%s\".",
+                  msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
+                  global->path.config);
+            RARCH_LOG("%s\n", msg);
+         }
+         else
+         {
+            snprintf(msg, sizeof(msg), "%s \"%s\".",
+                  msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
+                  global->path.config);
+            RARCH_ERR("%s\n", msg);
+         }
+
+         runloop_msg_queue_push(msg, 1, 180, true);
+      }
+   }
+   else
    {
       bool ret                = false;
       char msg[128]           = {0};
-      const char *config_path = config_get_active_path();
 
-      /* Save last core-specific config to the default config location,
-       * needed on consoles for core switching and reusing last good
-       * config for new cores.
-       */
-
-      /* Flush out the core specific config. */
-      if (config_path)
-         ret = config_save_file(config_path);
+      ret = config_save_overrides(override_type);
 
       if (ret)
       {
-         snprintf(msg, sizeof(msg), "%s \"%s\".",
-               msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-               global->path.config);
-         RARCH_LOG("%s\n", msg);
+         snprintf(msg, sizeof(msg), "Overrides saved successfully");
+         RARCH_LOG("[overrides] %s\n", msg);
       }
       else
       {
-         snprintf(msg, sizeof(msg), "%s \"%s\".",
-               msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
-               global->path.config);
-         RARCH_ERR("%s\n", msg);
+         snprintf(msg, sizeof(msg), "Error saving overrides");
+         RARCH_ERR("[overrides] %s\n", msg);
       }
 
       runloop_msg_queue_push(msg, 1, 180, true);
+      return;
    }
 }
 
@@ -2304,7 +2329,13 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
-         command_event_save_current_config();
+         command_event_save_current_config(OVERRIDE_NONE);
+         break;
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+         command_event_save_current_config(OVERRIDE_CORE);
+         break;
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+         command_event_save_current_config(OVERRIDE_GAME);
          break;
       case CMD_EVENT_MENU_SAVE_CONFIG:
          if (!command_event_save_core_config())

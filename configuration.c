@@ -1283,7 +1283,8 @@ static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *
  * Loads a config file and reads all the values into memory.
  *
  */
-static bool config_load_file(const char *path, bool set_defaults)
+static bool config_load_file(const char *path, bool set_defaults, 
+   settings_t *settings)
 {
    unsigned i;
    bool tmp_bool                         = false;
@@ -1293,8 +1294,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    char tmp_append_path[PATH_MAX_LENGTH] = {0}; /* Don't destroy append_config_path. */
    unsigned msg_color                    = 0;
    config_file_t *conf                   = NULL;
-   settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
+
+   if (!settings)
+      settings = config_get_ptr();
 
    struct config_bool_setting_ptr bool_settings[] = {
       { "video_windowed_fullscreen",   &settings->video.windowed_fullscreen},
@@ -2158,13 +2161,13 @@ bool config_load_override(void)
    {
       config_file_free(new_conf);
 
-      RARCH_LOG("Overrides: core-specific overrides found at %s.\n", core_path);
+      RARCH_LOG("[overrides] core-specific overrides found at %s.\n", core_path);
       strlcpy(global->path.append_config, core_path, sizeof(global->path.append_config));
 
       should_append = true;
    }
    else
-      RARCH_LOG("Overrides: no core-specific overrides found at %s.\n", core_path);
+      RARCH_LOG("[overrides] no core-specific overrides found at %s.\n", core_path);
 
    /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
@@ -2174,7 +2177,7 @@ bool config_load_override(void)
    {
       config_file_free(new_conf);
 
-      RARCH_LOG("Overrides: game-specific overrides found at %s.\n", game_path);
+      RARCH_LOG("[overrides] game-specific overrides found at %s.\n", game_path);
       if (should_append)
       {
          strlcat(global->path.append_config, "|", sizeof(global->path.append_config));
@@ -2186,7 +2189,7 @@ bool config_load_override(void)
       should_append = true;
    }
    else
-      RARCH_LOG("Overrides: no game-specific overrides found at %s.\n", game_path);
+      RARCH_LOG("[overrides] no game-specific overrides found at %s.\n", game_path);
 
    if (!should_append)
       return false;
@@ -2195,7 +2198,7 @@ bool config_load_override(void)
 #ifdef HAVE_NETPLAY
    if (global->netplay.enable)
    {
-      RARCH_WARN("Overrides: can't use overrides in conjunction with netplay, disabling overrides.\n");
+      RARCH_WARN("[overrides] can't use overrides in conjunction with netplay, disabling overrides.\n");
       return false;
    }
 #endif
@@ -2208,7 +2211,7 @@ bool config_load_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
-   if (!config_load_file(global->path.config, false))
+   if (!config_load_file(global->path.config, false, config_get_ptr()))
       return false;
 
    /* Restore the libretro_path we're using
@@ -2219,7 +2222,7 @@ bool config_load_override(void)
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
-
+   global->path.append_config[0] = '\0';
    return true;
 }
 
@@ -2244,9 +2247,9 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
-   if (config_load_file(global->path.config, false))
+   if (config_load_file(global->path.config, false, config_get_ptr()))
    {
-      RARCH_LOG("Overrides: configuration overrides unloaded, original configuration restored.\n");
+      RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
 
       /* Reset save paths */
       retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
@@ -2498,7 +2501,7 @@ static void parse_config_file(void)
 {
    global_t *global = global_get_ptr();
    bool         ret = config_load_file((*global->path.config)
-         ? global->path.config : NULL, false);
+         ? global->path.config : NULL, false, config_get_ptr());
 
    if (!string_is_empty(global->path.config))
    {
@@ -2802,24 +2805,10 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    return ret;
 }
 
-
-/**
- * config_save_file:
- * @path            : Path that shall be written to.
- *
- * Writes a config file to disk.
- *
- * Returns: true (1) on success, otherwise returns false (0).
- **/
-bool config_save_file(const char *path)
+int populate_settings_bool(settings_t *settings, struct config_bool_setting *out)
 {
-   float msg_color;
-   unsigned i           = 0;
-   bool ret             = false;
-   config_file_t *conf  = config_file_new(path);
-   settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   struct config_bool_setting bool_settings[] = {
+   struct config_bool_setting tmp[] = {
       { "ui_companion_start_on_boot",   settings->ui.companion_start_on_boot},
       { "ui_companion_enable",          settings->ui.companion_enable},
       { "video_gpu_record",             settings->video.gpu_record},
@@ -2933,9 +2922,17 @@ bool config_save_file(const char *path)
       { "sort_savestates_enable",       settings->sort_savestates_enable},
       { "config_save_on_exit",          settings->config_save_on_exit},
       { "input_autodetect_enable",      settings->input.autodetect_enable},
-      { "audio_rate_control",           settings->audio.rate_control},
+      { "audio_rate_control",           settings->audio.rate_control}
    };
-   struct config_int_setting int_settings[] = {
+
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
+int populate_settings_int(settings_t *settings, struct config_int_setting *out)
+{
+   global_t   *global   = global_get_ptr();
+   struct config_int_setting tmp[] = {
       { "input_bind_timeout",           settings->input.bind_timeout},
       { "input_turbo_period",           settings->input.turbo_period},
       { "input_duty_cycle",             settings->input.turbo_duty_cycle},
@@ -3006,7 +3003,15 @@ bool config_save_file(const char *path)
       { "bundle_assets_extract_version_current", settings->bundle_assets_extract_version_current},
       { "bundle_assets_extract_last_version", settings->bundle_assets_extract_last_version}
    };
-   struct config_float_setting float_settings[] = {
+
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
+int populate_settings_float(settings_t *settings, struct config_float_setting *out)
+{
+   global_t   *global   = global_get_ptr();
+   struct config_float_setting tmp[] = {
       { "video_aspect_ratio", settings->video.aspect_ratio},
       { "video_scale",        settings->video.scale},
       { "video_refresh_rate", settings->video.refresh_rate},
@@ -3030,7 +3035,14 @@ bool config_save_file(const char *path)
       { "input_axis_threshold",     settings->input.axis_threshold},
    };
 
-   struct config_string_setting string_settings[] = {
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
+int populate_settings_string(settings_t *settings, struct config_string_setting *out)
+{
+   global_t   *global   = global_get_ptr();
+   struct config_string_setting tmp[] = {
       { "bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir},
       { "video_filter",             settings->path.softfilter_plugin},
       { "audio_dsp_plugin",         settings->path.audio_dsp_plugin},
@@ -3065,7 +3077,14 @@ bool config_save_file(const char *path)
       { "bundle_assets_dst_path",   settings->path.bundle_assets_dst}
    };
 
-   struct config_path_setting path_settings[] = {
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
+int populate_settings_path(settings_t *settings, struct config_path_setting *out)
+{
+   global_t   *global   = global_get_ptr();
+   struct config_path_setting tmp[] = {
       { "recording_output_directory", false,
          global->record.output_dir},
       { "recording_config_directory", false,
@@ -3160,6 +3179,27 @@ bool config_save_file(const char *path)
          settings->directory.screenshot}
    };
 
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
+/**
+ * config_save_file:
+ * @path            : Path that shall be written to.
+ *
+ * Writes a config file to disk.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+bool config_save_file(const char *path)
+{
+   float msg_color;
+   unsigned i           = 0;
+   bool ret             = false;
+   config_file_t *conf  = config_file_new(path);
+   settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
+
    if (!conf)
       conf = config_file_new(NULL);
 
@@ -3170,12 +3210,38 @@ bool config_save_file(const char *path)
       return false;
    }
 
+   struct config_bool_setting *bool_settings = 
+      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting));
+   int bool_settings_size = 0;
+
+   struct config_int_setting *int_settings = 
+      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
+   int int_settings_size = 0;
+
+   struct config_float_setting *float_settings = 
+      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+   int float_settings_size = 0;
+
+   struct config_string_setting *string_settings = 
+      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+   int string_settings_size = 0;
+
+   struct config_path_setting *path_settings = 
+      (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
+   int path_settings_size = 0;
+
+   bool_settings_size   = populate_settings_bool  (settings, bool_settings);
+   int_settings_size    = populate_settings_int   (settings, int_settings);
+   float_settings_size  = populate_settings_float (settings, float_settings);
+   string_settings_size = populate_settings_string(settings, string_settings);
+   path_settings_size   = populate_settings_path  (settings, path_settings);
+
    /*
     * Path settings 
     *
     */
 
-   for (i = 0; i < ARRAY_SIZE(path_settings); i++)
+   for (i = 0; i < path_settings_size; i++)
    {
       if (path_settings[i].defaults)
          config_set_path(conf, path_settings[i].ident,
@@ -3196,7 +3262,7 @@ bool config_save_file(const char *path)
     *
     */
 
-   for (i = 0; i < ARRAY_SIZE(string_settings); i++)
+   for (i = 0; i < string_settings_size; i++)
    {
       config_set_string(conf, string_settings[i].ident,
             string_settings[i].value);
@@ -3207,7 +3273,7 @@ bool config_save_file(const char *path)
     *
     */
 
-   for (i = 0; i < ARRAY_SIZE(float_settings); i++)
+   for (i = 0; i < float_settings_size; i++)
    {
       config_set_float(conf, float_settings[i].ident,
             float_settings[i].value);
@@ -3218,7 +3284,7 @@ bool config_save_file(const char *path)
     *
     */
 
-   for (i = 0; i < ARRAY_SIZE(int_settings); i++)
+   for (i = 0; i < int_settings_size; i++)
    {
       config_set_int(conf, int_settings[i].ident,
             int_settings[i].value);
@@ -3243,7 +3309,7 @@ bool config_save_file(const char *path)
     *
     */
 
-   for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
+   for (i = 0; i < bool_settings_size; i++)
    {
       config_set_bool(conf, bool_settings[i].ident,
             bool_settings[i].value);
@@ -3309,6 +3375,215 @@ bool config_save_file(const char *path)
 
    ret = config_file_write(conf, path);
    config_file_free(conf);
+
+   free(bool_settings);
+   free(int_settings);
+   free(float_settings);
+   free(string_settings);
+   free(path_settings);
+
+   return ret;
+}
+
+/**
+ * config_save_overrides:
+ * @path            : Path that shall be written to.
+ *
+ * Writes a config file override to disk.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+bool config_save_overrides(int override_type)
+{
+   unsigned i           = 0;
+   bool ret             = false;
+   char buf[PATH_MAX_LENGTH]                = {0};
+   char config_directory[PATH_MAX_LENGTH]   = {0};
+   char override_directory[PATH_MAX_LENGTH] = {0};
+   char core_path[PATH_MAX_LENGTH]          = {0};
+   char game_path[PATH_MAX_LENGTH]          = {0};
+   const char *core_name                    = NULL;
+   const char *game_name                    = NULL;
+   config_file_t *conf                      = NULL;
+
+   global_t   *global   = global_get_ptr();
+   settings_t *overrides = config_get_ptr();
+
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   if (system)
+      core_name = system->info.library_name;
+   if (global)
+      game_name = path_basename(global->name.base);
+
+   if (string_is_empty(core_name) || string_is_empty(game_name))
+      return false;
+
+   settings_t *settings  = (settings_t*)calloc(1, sizeof(settings_t));
+
+   struct config_bool_setting *bool_settings = 
+      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting));
+   struct config_bool_setting *bool_overrides = 
+      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting));
+
+   struct config_int_setting *int_settings = 
+      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
+   struct config_int_setting *int_overrides = 
+      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
+
+   struct config_float_setting *float_settings = 
+      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+   struct config_float_setting *float_overrides = 
+      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+
+   struct config_string_setting *string_settings = 
+      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+   struct config_string_setting *string_overrides = 
+      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+
+   struct config_path_setting *path_settings = 
+      (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
+   struct config_path_setting *path_overrides = 
+      (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
+
+   int bool_settings_size   = 0;
+   int int_settings_size    = 0;
+   int float_settings_size  = 0;
+   int string_settings_size = 0;
+   int path_settings_size   = 0;
+
+   fill_pathname_application_special(config_directory, sizeof(config_directory),
+         APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+
+   fill_pathname_join(override_directory, config_directory, core_name, 
+      sizeof(override_directory));
+
+   if(!path_file_exists(override_directory))
+       path_mkdir(override_directory);
+
+   /* Concatenate strings into full paths for core_path, game_path */
+   fill_pathname_join_special_ext(game_path,
+         config_directory, core_name,
+         game_name,
+         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         sizeof(game_path));
+
+   fill_pathname_join_special_ext(core_path,
+         config_directory, core_name,
+         core_name,
+         file_path_str(FILE_PATH_CONFIG_EXTENSION),
+         sizeof(core_path));
+
+   if (!conf)
+      conf = config_file_new(NULL);
+
+   /* Load the original config file in memory */
+   config_load_file(global->path.config, false, settings);
+
+   bool_settings_size =  populate_settings_bool(settings, bool_settings);
+   populate_settings_bool (overrides, bool_overrides);
+   int_settings_size  = populate_settings_int(settings, int_settings);
+   populate_settings_int (overrides, int_overrides);
+   float_settings_size = populate_settings_float(settings, float_settings);
+   populate_settings_float (overrides, float_overrides);
+   string_settings_size = populate_settings_string(settings, string_settings);
+   populate_settings_string (overrides, string_overrides);
+   path_settings_size = populate_settings_path(settings, path_settings);
+   populate_settings_path (overrides, path_overrides);
+
+   RARCH_LOG("[overrides] looking for changed settings\n");
+   for (i = 0; i < bool_settings_size; i++)
+   {
+      if (bool_settings[i].value != bool_overrides[i].value)
+      {
+         RARCH_LOG("   original: %s=%d\n", 
+            bool_settings[i].ident, bool_settings[i].value);
+         RARCH_LOG("   override: %s=%d\n", 
+            bool_overrides[i].ident, bool_overrides[i].value);
+         config_set_bool(conf, bool_overrides[i].ident,
+            bool_overrides[i].value);
+      }
+   }
+   for (i = 0; i < int_settings_size; i++)
+   {
+      if (int_settings[i].value != int_overrides[i].value)
+      {
+         RARCH_LOG("   original: %s=%d\n", 
+            int_settings[i].ident, int_settings[i].value);
+         RARCH_LOG("   override: %s=%d\n", 
+            int_overrides[i].ident, int_overrides[i].value);
+         config_set_int(conf, int_overrides[i].ident,
+               int_overrides[i].value);
+      }
+   }
+   for (i = 0; i < float_settings_size; i++)
+   {
+      if (float_settings[i].value != float_overrides[i].value)
+      {
+         RARCH_LOG("   original: %s=%f\n", 
+            float_settings[i].ident, float_settings[i].value);
+         RARCH_LOG("   override: %s=%f\n", 
+            float_overrides[i].ident, float_overrides[i].value);
+         config_set_float(conf, float_overrides[i].ident,
+            float_overrides[i].value);
+      }
+   }
+   for (i = 0; i < string_settings_size; i++)
+   {
+      if (strcmp(string_settings[i].value, string_overrides[i].value))
+      {
+         RARCH_LOG("   original: %s=%s\n", 
+            string_settings[i].ident, string_settings[i].value);
+         RARCH_LOG("   override: %s=%s\n", 
+            string_overrides[i].ident, string_overrides[i].value);
+         config_set_string(conf, string_overrides[i].ident,
+            string_overrides[i].value);
+      }
+   }
+   for (i = 0; i < path_settings_size; i++)
+   {
+      if (strcmp(path_settings[i].value, path_overrides[i].value))
+      {
+         RARCH_LOG("   original: %s=%s\n", 
+            path_settings[i].ident, path_settings[i].value);
+         RARCH_LOG("   override: %s=%s\n", 
+            path_overrides[i].ident, path_overrides[i].value);
+         config_set_path(conf, path_overrides[i].ident,
+               path_overrides[i].value);
+      }
+   }
+
+   if (override_type == OVERRIDE_CORE)
+   {
+      RARCH_LOG ("[overrides] path %s\n", core_path);
+      /* Create a new config file from core_path */
+      ret = config_file_write(conf, core_path);
+      config_file_free(conf);
+   }
+   else if(override_type == OVERRIDE_GAME)
+   {
+      RARCH_LOG ("[overrides] path %s\n", game_path);
+      /* Create a new config file from core_path */
+      ret = config_file_write(conf, game_path);
+      config_file_free(conf);
+   }
+   else
+      ret = false;
+
+   free(bool_settings);
+   free(bool_overrides);
+   free(int_settings);
+   free(int_overrides);
+   free(float_settings);
+   free(float_overrides);
+   free(string_settings);
+   free(string_overrides);
+   free(path_settings);
+   free(path_overrides);
+   free(settings);
+
    return ret;
 }
 
