@@ -13,6 +13,7 @@ HAVE_LIBUSB=auto           # Libusb HID support
 C89_LIBUSB=no
 HAVE_UDEV=auto             # Udev/Evdev gamepad support
 HAVE_LIBRETRO=             # Libretro library used
+HAVE_BIN_DIR=              # Binary install directory
 HAVE_MAN_DIR=              # Manpage install directory
 HAVE_GLES_LIBS=            # Link flags for custom GLES library
 HAVE_GLES_CFLAGS=          # C-flags for custom GLES library

@@ -130,6 +130,12 @@ fi
    add_define_make libretro "$LIBRETRO"
 }
 
+if [ "$BIN_DIR" ]; then
+   add_define_make BIN_DIR "$BIN_DIR"
+else
+   add_define_make BIN_DIR "${PREFIX}/bin"
+fi
+
 if [ "$MAN_DIR" ]; then
    add_define_make MAN_DIR "$MAN_DIR"
 else

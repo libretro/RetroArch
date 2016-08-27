@@ -167,13 +167,13 @@ $(OBJDIR)/%.o: %.rc $(HEADERS)
 
 install: $(TARGET)
 	rm -f $(OBJDIR)/git_version.o
-	mkdir -p $(DESTDIR)$(PREFIX)/bin 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(BIN_DIR)/ 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(MAN_DIR)/man6 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/pixmaps 2>/dev/null || /bin/true
-	install -m755 $(TARGET) $(DESTDIR)$(PREFIX)/bin 
-	install -m755 tools/cg2glsl.py $(DESTDIR)$(PREFIX)/bin/retroarch-cg2glsl
+	install -m755 $(TARGET) $(DESTDIR)$(BIN_DIR) 
+	install -m755 tools/cg2glsl.py $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	install -m644 retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	install -m644 retroarch.desktop $(DESTDIR)$(PREFIX)/share/applications
 	install -m644 docs/retroarch.6 $(DESTDIR)$(MAN_DIR)/man6
@@ -181,8 +181,8 @@ install: $(TARGET)
 	install -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch
-	rm -f $(DESTDIR)$(PREFIX)/bin/retroarch-cg2glsl
+	rm -f $(DESTDIR)$(BIN_DIR/retroarch
+	rm -f $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	rm -f $(DESTDIR)$(PREFIX)/share/applications/retroarch.desktop
 	rm -f $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
