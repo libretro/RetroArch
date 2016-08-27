@@ -181,7 +181,7 @@ install: $(TARGET)
 	install -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
 
 uninstall:
-	rm -f $(DESTDIR)$(BIN_DIR/retroarch
+	rm -f $(DESTDIR)$(BIN_DIR)/retroarch
 	rm -f $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
 	rm -f $(DESTDIR)$(PREFIX)/share/applications/retroarch.desktop
