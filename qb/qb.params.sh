@@ -2,7 +2,7 @@ print_help_option() # $1 = option $@ = description
 {
 	_opt="$1"
 	shift 1
-	printf "  %-24s  %s\n" "$_opt" "$@"
+	printf "  %-25s  %s\n" "$_opt" "$@"
 }
 
 print_help()
