@@ -3010,7 +3010,6 @@ int populate_settings_int(settings_t *settings, struct config_int_setting *out)
 
 int populate_settings_float(settings_t *settings, struct config_float_setting *out)
 {
-   global_t   *global   = global_get_ptr();
    struct config_float_setting tmp[] = {
       { "video_aspect_ratio", settings->video.aspect_ratio},
       { "video_scale",        settings->video.scale},
@@ -3397,7 +3396,6 @@ bool config_save_overrides(int override_type)
 {
    unsigned i           = 0;
    bool ret             = false;
-   char buf[PATH_MAX_LENGTH]                = {0};
    char config_directory[PATH_MAX_LENGTH]   = {0};
    char override_directory[PATH_MAX_LENGTH] = {0};
    char core_path[PATH_MAX_LENGTH]          = {0};

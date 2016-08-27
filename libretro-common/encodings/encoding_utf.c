@@ -148,8 +148,6 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
  * Use only if 'chars' is considerably less than 'd_len'. */
 size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
 {
-   char *d_org           = d;
-   char *d_end           = d+d_len;
    const uint8_t *sb     = (const uint8_t*)s;
    const uint8_t *sb_org = sb;
 
