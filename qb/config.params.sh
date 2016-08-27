@@ -71,6 +71,7 @@ HAVE_SSE=no                # x86 SSE optimizations (SSE, SSE2)
 HAVE_FLOATHARD=no          # Force hard float ABI (for ARM)
 HAVE_FLOATSOFTFP=no        # Force soft float ABI (for ARM)
 HAVE_7ZIP=yes              # Compile in 7z support
+HAVE_UPDATE_ASSETS=yes     # Disable downloading assets with online updater
 HAVE_PRESERVE_DYLIB=no     # Enable dlclose() for Valgrind support
 HAVE_PARPORT=auto          # Parallel port joypad support
 HAVE_IMAGEVIEWER=yes       # Built-in image viewer support.

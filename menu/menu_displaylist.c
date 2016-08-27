@@ -2962,11 +2962,13 @@ static int menu_displaylist_parse_options(
          MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
          MENU_SETTING_ACTION, 0, 0);
 
+#ifdef HAVE_UPDATE_ASSETS
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS),
          msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_ASSETS),
          MENU_ENUM_LABEL_UPDATE_ASSETS,
          MENU_SETTING_ACTION, 0, 0);
+#endif
 
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES),
