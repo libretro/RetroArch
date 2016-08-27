@@ -195,7 +195,7 @@ size_t utf8len(const char *string)
    return ret;
 }
 
-inline uint8_t utf8_walkbyte(const char **string)
+static INLINE uint8_t utf8_walkbyte(const char **string)
 {
    return *((*string)++);
 }
