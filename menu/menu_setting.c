@@ -4713,6 +4713,22 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->show_hidden_files,
+               msg_hash_to_str(MENU_ENUM_LABEL_SHOW_HIDDEN_FILES),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES),
+               show_hidden_files,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SHOW_HIDDEN_FILES);
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->game_specific_options,
                msg_hash_to_str(MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS),
