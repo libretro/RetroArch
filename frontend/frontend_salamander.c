@@ -41,7 +41,7 @@ static void find_first_libretro_core(char *first_file,
 {
    size_t i;
    bool ret = false;
-   struct string_list *list = dir_list_new(dir, ext, false, false, false);
+   struct string_list *list = dir_list_new(dir, ext, false, true, false, false);
 
    if (!list)
    {
