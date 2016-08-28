@@ -1457,7 +1457,7 @@ void video_driver_set_viewport_square_pixel(void)
 
    snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
          sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
-         "%u:%u (1:1 PAR)", aspect_x, aspect_y);
+         "1:1 PAR (%u:%u DAR))", aspect_x, aspect_y);
 
    aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
 }
