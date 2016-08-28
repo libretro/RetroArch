@@ -35,6 +35,7 @@ RETRO_BEGIN_DECLS
  * @ext                : allowed extensions of file directory entries to include.
  * @include_dirs       : include directories as part of the finished directory listing?
  * @include_compressed : include compressed files, even when not part of ext.
+ * @recursive          : list directory contents recursively
  *
  * Create a directory listing.
  *
@@ -70,6 +71,7 @@ void dir_list_free(struct string_list *list);
  * @ext_list           : the string list of extensions to include
  * @include_dirs       : include directories as part of the finished directory listing?
  * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
+ * @recursive          : list directory contents recursively
  *
  * Add files within a directory to an existing string list
  *
