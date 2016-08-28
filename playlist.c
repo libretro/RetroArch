@@ -52,6 +52,10 @@ struct content_playlist
    char *conf_path;
 };
 
+typedef int (playlist_sort_fun_t)(
+      const struct playlist_entry *a,
+      const struct playlist_entry *b);
+
 /**
  * playlist_get_index:
  * @playlist            : Playlist handle.
@@ -139,7 +143,7 @@ bool playlist_entry_exists(playlist_t *playlist,
  *
  * Frees playlist entry.
  **/
-static void playlist_free_entry(playlist_entry_t *entry)
+static void playlist_free_entry(struct playlist_entry *entry)
 {
    if (!entry)
       return;
@@ -177,7 +181,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
       const char *crc32,
       const char *db_name)
 {
-   playlist_entry_t *entry = NULL;
+   struct playlist_entry *entry = NULL;
    if (!playlist)
       return;
    if (idx > playlist->size)
@@ -185,27 +189,38 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    entry            = &playlist->entries[idx];
 
-   if (path && (path != entry->path)) {
+   if (path && (path != entry->path))
+   {
       free(entry->path);
       entry->path = strdup(path);
    }
-   if (label && (label != entry->label)) {
+
+   if (label && (label != entry->label))
+   {
       free(entry->label);
       entry->label = strdup(label);
    }
-   if (core_path && (core_path != entry->core_path)) {
+
+   if (core_path && (core_path != entry->core_path))
+   {
       free(entry->core_path);
       entry->core_path = strdup(core_path);
    }
-   if (core_name && (core_name != entry->core_name)) {
+
+   if (core_name && (core_name != entry->core_name))
+   {
       free(entry->core_name);
       entry->core_name = strdup(core_name);
    }
-   if (db_name && (db_name != entry->db_name)) {
+
+   if (db_name && (db_name != entry->db_name))
+   {
       free(entry->db_name);
       entry->db_name = strdup(db_name);
    }
-   if (crc32 && (crc32 != entry->crc32)) {
+
+   if (crc32 && (crc32 != entry->crc32))
+   {
       free(entry->crc32);
       entry->crc32 = strdup(crc32);
    }
@@ -256,7 +271,7 @@ bool playlist_push(playlist_t *playlist,
 
    for (i = 0; i < playlist->size; i++)
    {
-      playlist_entry_t tmp;
+      struct playlist_entry tmp;
       bool equal_path = (!path && !playlist->entries[i].path) ||
          (path && playlist->entries[i].path &&
           string_is_equal(path,playlist->entries[i].path));
@@ -277,7 +292,7 @@ bool playlist_push(playlist_t *playlist,
       /* Seen it before, bump to top. */
       tmp = playlist->entries[i];
       memmove(playlist->entries + 1, playlist->entries,
-            i * sizeof(playlist_entry_t));
+            i * sizeof(struct playlist_entry));
       playlist->entries[0] = tmp;
 
       return true;
@@ -290,7 +305,7 @@ bool playlist_push(playlist_t *playlist,
    }
 
    memmove(playlist->entries + 1, playlist->entries,
-         (playlist->cap - 1) * sizeof(playlist_entry_t));
+         (playlist->cap - 1) * sizeof(struct playlist_entry));
 
    playlist->entries[0].path      = NULL;
    playlist->entries[0].label     = NULL;
@@ -405,20 +420,13 @@ size_t playlist_size(playlist_t *playlist)
    return playlist->size;
 }
 
-const char *playlist_entry_get_label(
-      const playlist_entry_t *entry)
-{
-   if (!entry)
-      return NULL;
-   return entry->label;
-}
 
 static bool playlist_read_file(
       playlist_t *playlist, const char *path)
 {
    unsigned i;
    char buf[PLAYLIST_ENTRIES][1024] = {{0}};
-   playlist_entry_t *entry  = NULL;
+   struct playlist_entry *entry     = NULL;
    char *last                       = NULL;
    RFILE *file                      = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
 
@@ -481,7 +489,7 @@ playlist_t *playlist_init(const char *path, size_t size)
    if (!playlist)
       return NULL;
 
-   playlist->entries = (playlist_entry_t*)calloc(size,
+   playlist->entries = (struct playlist_entry*)calloc(size,
          sizeof(*playlist->entries));
    if (!playlist->entries)
       goto error;
@@ -498,10 +506,29 @@ error:
    return NULL;
 }
 
-void playlist_qsort(playlist_t *playlist,
-      playlist_sort_fun_t *fn)
+static const char *playlist_entry_get_label(
+      const struct playlist_entry *entry)
+{
+   if (!entry)
+      return NULL;
+   return entry->label;
+}
+
+static int playlist_qsort_func(const struct playlist_entry *a,
+      const struct playlist_entry *b)
+{
+   const char *a_label = playlist_entry_get_label(a);
+   const char *b_label = playlist_entry_get_label(b);
+
+   if (!a_label || !b_label)
+      return 0;
+
+   return strcasecmp(a_label, b_label);
+}
+
+void playlist_qsort(playlist_t *playlist)
 {
    qsort(playlist->entries, playlist->size,
-         sizeof(playlist_entry_t),
-         (int (*)(const void *, const void *))fn);
+         sizeof(struct playlist_entry),
+         (int (*)(const void *, const void *))playlist_qsort_func);
 }

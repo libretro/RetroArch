@@ -25,12 +25,7 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct playlist_entry playlist_entry_t;
 typedef struct content_playlist       playlist_t;
-
-typedef int (playlist_sort_fun_t)(
-      const playlist_entry_t *a,
-      const playlist_entry_t *b);
 
 /**
  * playlist_init:
@@ -67,9 +62,6 @@ void playlist_clear(playlist_t *playlist);
  * Returns: size of playlist.
  **/
 size_t playlist_size(playlist_t *playlist);
-
-const char *playlist_entry_get_label(
-      const playlist_entry_t *entry);
 
 /**
  * playlist_get_index:
@@ -122,8 +114,7 @@ bool playlist_entry_exists(playlist_t *playlist,
 
 void playlist_write_file(playlist_t *playlist);
 
-void playlist_qsort(playlist_t *playlist,
-      playlist_sort_fun_t *fn);
+void playlist_qsort(playlist_t *playlist);
 
 RETRO_END_DECLS
 

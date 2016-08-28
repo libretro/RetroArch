@@ -2569,18 +2569,6 @@ static int menu_displaylist_parse_settings_enum(void *data,
          );
 }
 
-static int menu_displaylist_sort_playlist(const playlist_entry_t *a,
-      const playlist_entry_t *b)
-{
-   const char *a_label = playlist_entry_get_label(a);
-   const char *b_label = playlist_entry_get_label(b);
-
-   if (!a_label || !b_label)
-      return 0;
-
-   return strcasecmp(a_label, b_label);
-}
-
 static int menu_displaylist_parse_horizontal_list(
       menu_displaylist_info_t *info)
 {
@@ -2632,7 +2620,7 @@ static int menu_displaylist_parse_horizontal_list(
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   playlist_qsort(playlist, menu_displaylist_sort_playlist);
+   playlist_qsort(playlist);
 
    if (string_is_equal(lpl_basename, "content_history"))
       is_historylist = true;
@@ -5487,7 +5475,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-            playlist_qsort(playlist, menu_displaylist_sort_playlist);
+            playlist_qsort(playlist);
 
             ret = menu_displaylist_parse_playlist(info,
                   playlist, path_playlist, false);
