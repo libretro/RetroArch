@@ -103,11 +103,12 @@ void playlist_delete_index(playlist_t *playlist,
    if (!playlist)
       return;
 
-   const char *label = NULL;
+   memmove(playlist->entries + idx, playlist->entries + idx + 1,
+         (playlist->size - idx) * sizeof(struct playlist_entry));
 
-   playlist_get_index(playlist, idx, NULL, &label, NULL, NULL, NULL, NULL);
+   playlist->size = playlist->size - 1;
 
-   printf("%s %zu\n", label, idx);
+   playlist_write_file(playlist);
 }
 
 void playlist_get_index_by_path(playlist_t *playlist,
