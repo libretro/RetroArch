@@ -583,7 +583,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui,
          core_info_get_current_core(&core_info);
 
          zui->load_dlist = dir_list_new(zui->load_cwd,
-               core_info->supported_extensions, true, true, false);
+               core_info->supported_extensions, true, true, false, true);
          dir_list_sort(zui->load_dlist, true);
          zui->load_dlist_first  = 0;
       }
