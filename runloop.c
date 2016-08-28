@@ -102,7 +102,7 @@ typedef struct event_cmd_state
    retro_input_t state[3];
 } event_cmd_state_t;
 
-static rarch_dir_list_t runloop_shader_dir;
+static struct rarch_dir_list runloop_shader_dir;
 static char runloop_fullpath[PATH_MAX_LENGTH];
 static char runloop_default_shader_preset[PATH_MAX_LENGTH];
 static rarch_system_info_t runloop_system;
@@ -469,7 +469,7 @@ static void runloop_check_stateslots(settings_t *settings,
    RARCH_LOG("%s\n", msg);
 }
 
-static void shader_dir_free(rarch_dir_list_t *dir_list)
+static void shader_dir_free(struct rarch_dir_list *dir_list)
 {
    if (!dir_list)
       return;
@@ -479,7 +479,7 @@ static void shader_dir_free(rarch_dir_list_t *dir_list)
    dir_list->ptr  = 0;
 }
 
-static bool shader_dir_init(rarch_dir_list_t *dir_list)
+static bool shader_dir_init(struct rarch_dir_list *dir_list)
 {
    unsigned i;
    settings_t *settings  = config_get_ptr();
@@ -516,7 +516,8 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
  *
  * Will also immediately apply the shader.
  **/
-static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
+static void runloop_check_shader_dir(
+      struct rarch_dir_list *dir_list,
       bool pressed_next, bool pressed_prev)
 {
 
@@ -653,7 +654,7 @@ static bool runloop_check_idle_state(event_cmd_state_t *cmd)
 }
 
 static bool runloop_check_state(event_cmd_state_t *cmd,
-      rarch_dir_list_t *shader_dir)
+      struct rarch_dir_list *shader_dir)
 {
    bool tmp                  = false;
    settings_t *settings      = config_get_ptr();

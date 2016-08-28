@@ -135,8 +135,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_HTTPSERVER_DESTROY
 };
 
-typedef struct rarch_dir_list rarch_dir_list_t;
-
 typedef struct rarch_dir
 {
    /* Used on reentrancy to use a savestate dir. */
