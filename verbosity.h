@@ -42,10 +42,6 @@ void retro_main_log_file_init(const char *path);
 
 #if defined(HAVE_LOGGER)
 
-#define BUFSIZE	(64 * 1024)
-#define TCPDUMP_STACKSIZE	(16 * 1024)
-#define TCPDUMP_PRIO	(2048)
-
 void logger_init (void);
 void logger_shutdown (void);
 void logger_send (const char *__format,...);
