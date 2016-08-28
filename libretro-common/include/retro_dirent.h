@@ -29,7 +29,24 @@
 
 RETRO_BEGIN_DECLS
 
-struct RDIR;
+struct RDIR
+{
+#if defined(_WIN32)
+   WIN32_FIND_DATA entry;
+   HANDLE directory;
+   bool next;
+#elif defined(VITA) || defined(PSP)
+   SceUID directory;
+   SceIoDirent entry;
+#elif defined(__CELLOS_LV2__)
+   CellFsErrno error;
+   int directory;
+   CellFsDirent entry;
+#else
+   DIR *directory;
+   const struct dirent *entry;
+#endif
+};
 
 struct RDIR *retro_opendir(const char *name);
 

@@ -22,6 +22,10 @@
 
 #include <stdlib.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <lists/dir_list.h>
 #include <lists/string_list.h>
 #include <file/file_path.h>
@@ -211,9 +215,9 @@ int dir_list_read(const char *dir, struct string_list *list, struct string_list 
 
 #ifdef _WIN32
    if (include_hidden)
-      entry.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
+      entry->entry.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
    else
-      entry.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
+      entry->entry.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
 #endif
 
    while (retro_readdir(entry))
