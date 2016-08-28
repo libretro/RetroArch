@@ -65,7 +65,7 @@ size_t playlist_size(playlist_t *playlist);
 
 /**
  * playlist_get_index:
- * @playlist        	   : Playlist handle.
+ * @playlist               : Playlist handle.
  * @idx                 : Index of playlist entry.
  * @path                : Path of playlist entry.
  * @core_path           : Core path of playlist entry.
@@ -79,6 +79,16 @@ void playlist_get_index(playlist_t *playlist,
       const char **core_path, const char **core_name,
       const char **db_name,
       const char **crc32);
+
+/**
+ * playlist_delete_index:
+ * @playlist               : Playlist handle.
+ * @idx                 : Index of playlist entry.
+ * 
+ * Deletes the entry at index: 
+ **/
+void playlist_delete_index(playlist_t *playlist,
+      size_t idx);
 
 /**
  * playlist_push:
