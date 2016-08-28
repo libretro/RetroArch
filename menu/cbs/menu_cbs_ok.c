@@ -2546,6 +2546,12 @@ static int action_ok_delete_entry(const char *path,
 
    playlist_delete_index(playlist, rpl_entry_selection_ptr);
 
+   size_t new_selection_ptr;
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
+   menu_entries_pop_stack(&new_selection_ptr, 0, 1);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
+
    return 0;
 }
 
