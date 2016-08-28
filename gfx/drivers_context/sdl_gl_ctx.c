@@ -15,6 +15,7 @@
  */
 
 #include "SDL.h"
+#include <X11/Xlib.h>
 
 #include "../../driver.h"
 #include "../../runloop.h"
