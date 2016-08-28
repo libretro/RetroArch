@@ -152,6 +152,7 @@ static int parse_dir_entry(const char *name, char *file_path,
  * @ext                : allowed extensions of file directory entries to include.
  * @include_dirs       : include directories as part of the finished directory listing?
  * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
+ * @recursive          : list directory contents recursively
  *
  * Create a directory listing.
  *
@@ -187,6 +188,7 @@ struct string_list *dir_list_new(const char *dir,
  * @ext_list           : the string list of extensions to include
  * @include_dirs       : include directories as part of the finished directory listing?
  * @include_compressed : Only include files which match ext. Do not try to match compressed files, etc.
+ * @recursive          : list directory contents recursively
  *
  * Add files within a directory to an existing string list
  *
