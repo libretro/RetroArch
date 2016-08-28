@@ -135,15 +135,16 @@ static bool sdl_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major,
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
 #endif
+
    sdl_api = api;
    g_major = major;
    g_minor = minor;
 
-#ifdef HAVE_SDL2
-   return true;
-#else
-   return api == GFX_CTX_OPENGL_API;
+#ifndef HAVE_SDL2
+   if (api != GFX_CTX_OPENGL_API)
+      return false;
 #endif
+   return true;
 }
 
 static void sdl_ctx_swap_interval(void *data, unsigned interval)
