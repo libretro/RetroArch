@@ -2796,6 +2796,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "restart_content";
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          return "take_screenshot";
+      case MENU_ENUM_LABEL_DELETE_ENTRY:
+         return "delete_entry";
       case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
          return "core_updater_list";
       case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
@@ -4023,6 +4025,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Core Counters";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Take Screenshot";
+      case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
+         return "Remove from Playlist";
       case MENU_ENUM_LABEL_VALUE_RESUME:
          return "Resume";
       case MENU_ENUM_LABEL_VALUE_DISK_INDEX:
