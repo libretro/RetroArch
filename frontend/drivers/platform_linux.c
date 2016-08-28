@@ -1711,11 +1711,17 @@ static void frontend_linux_get_env(int *argc,
    fill_pathname_join(g_defaults.dir.autoconfig, base_path,
          "autoconfig", sizeof(g_defaults.dir.autoconfig));
 
-   if (path_is_directory("/usr/local/share/applications/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/applications/retroarch",
+   if (path_is_directory("/usr/local/share/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/retroarch",
             "assets", sizeof(g_defaults.dir.assets));
-   else if (path_is_directory("/usr/share/applications/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/share/applications/retroarch",
+   else if (path_is_directory("/usr/share/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/share/retroarch",
+            "assets", sizeof(g_defaults.dir.assets));
+   else if (path_is_directory("/usr/local/share/games/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/games/retroarch",
+            "assets", sizeof(g_defaults.dir.assets));
+   else if (path_is_directory("/usr/share/games/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/share/games/retroarch",
             "assets", sizeof(g_defaults.dir.assets));
    else
       fill_pathname_join(g_defaults.dir.assets, base_path,
