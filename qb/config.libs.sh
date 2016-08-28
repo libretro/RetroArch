@@ -131,7 +131,6 @@ fi
 }
 
 if [ "$ASSETS_DIR" ]; then
-
    add_define_make ASSETS_DIR "$ASSETS_DIR"
 else
    add_define_make ASSETS_DIR "${PREFIX}/share"
