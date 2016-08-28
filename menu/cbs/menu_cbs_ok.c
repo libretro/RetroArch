@@ -2537,6 +2537,18 @@ static int action_ok_screenshot(const char *path,
    return generic_action_ok_command(CMD_EVENT_TAKE_SCREENSHOT);
 }
 
+static int action_ok_delete_entry(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   playlist_t *playlist = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   playlist_delete_index(playlist, rpl_entry_selection_ptr);
+
+   return 0;
+}
+
 static int action_ok_shader_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3311,6 +3323,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
             BIND_ACTION_OK(cbs, action_ok_screenshot);
+            break;
+         case MENU_ENUM_LABEL_DELETE_ENTRY:
+            BIND_ACTION_OK(cbs, action_ok_delete_entry);
             break;
          case MENU_ENUM_LABEL_QUIT_RETROARCH:
             BIND_ACTION_OK(cbs, action_ok_quit);

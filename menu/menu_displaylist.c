@@ -2772,10 +2772,17 @@ static int menu_displaylist_parse_horizontal_content_actions(
          && string_is_equal(menu->deferred_path, fullpath))
       menu_displaylist_parse_load_content_settings(info);
    else
+   {
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN),
             msg_hash_to_str(MENU_ENUM_LABEL_RUN),
             MENU_ENUM_LABEL_RUN, FILE_TYPE_PLAYLIST_ENTRY, 0, idx);
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_ENTRY),
+            msg_hash_to_str(MENU_ENUM_LABEL_DELETE_ENTRY),
+            MENU_ENUM_LABEL_DELETE_ENTRY,
+            MENU_SETTING_ACTION_DELETE_ENTRY, 0, 0);
+   }
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 

@@ -90,6 +90,27 @@ void playlist_get_index(playlist_t *playlist,
       *crc32     = playlist->entries[idx].crc32;
 }
 
+/**
+ * playlist_delete_index:
+ * @playlist            : Playlist handle.
+ * @idx                 : Index of playlist entry.
+ * 
+ * Delete the entry at the index: 
+ **/
+void playlist_delete_index(playlist_t *playlist,
+      size_t idx)
+{
+   if (!playlist)
+      return;
+
+   memmove(playlist->entries + idx, playlist->entries + idx + 1,
+         (playlist->size - idx) * sizeof(struct playlist_entry));
+
+   playlist->size = playlist->size - 1;
+
+   playlist_write_file(playlist);
+}
+
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
       char **path, char **label,

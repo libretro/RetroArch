@@ -1621,6 +1621,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          return xmb->textures.list[XMB_TEXTURE_SCREENSHOT];
+      case MENU_ENUM_LABEL_DELETE_ENTRY:
+         return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_ENUM_LABEL_RESTART_CONTENT:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_ENUM_LABEL_RESUME_CONTENT:
@@ -1695,6 +1697,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
       case MENU_SETTING_ACTION_SCREENSHOT:
          return xmb->textures.list[XMB_TEXTURE_SCREENSHOT];
+      case MENU_SETTING_ACTION_DELETE_ENTRY:
+         return xmb->textures.list[XMB_TEXTURE_CLOSE];
       case MENU_SETTING_ACTION_RESET:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
       case MENU_SETTING_ACTION:
