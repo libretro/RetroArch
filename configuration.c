@@ -965,6 +965,7 @@ static void config_set_defaults(void)
             g_defaults.path.config, sizeof(global->path.config));
 
    settings->config_save_on_exit = config_save_on_exit;
+   settings->show_hidden_files = show_hidden_files;
 
    /* Avoid reloading config on every content load */
    if (default_block_config_read)
@@ -1314,6 +1315,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       { "sort_savefiles_enable",       &settings->sort_savefiles_enable},
       { "sort_savestates_enable",      &settings->sort_savestates_enable},
       { "config_save_on_exit",         &settings->config_save_on_exit},
+      { "show_hidden_files",           &settings->show_hidden_files},
 #ifdef HAVE_MENU
       { "dpi_override_enable",         &settings->menu.dpi.override_enable},
 #endif
@@ -2921,6 +2923,7 @@ int populate_settings_bool(settings_t *settings, struct config_bool_setting *out
       { "sort_savefiles_enable",        settings->sort_savefiles_enable},
       { "sort_savestates_enable",       settings->sort_savestates_enable},
       { "config_save_on_exit",          settings->config_save_on_exit},
+      { "show_hidden_files",            settings->show_hidden_files},
       { "input_autodetect_enable",      settings->input.autodetect_enable},
       { "audio_rate_control",           settings->audio.rate_control}
    };

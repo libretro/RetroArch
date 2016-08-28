@@ -495,6 +495,7 @@ typedef struct settings
 #endif
 
    bool config_save_on_exit;
+   bool show_hidden_files;
 
 #ifdef HAVE_LAKKA
    bool ssh_enable;

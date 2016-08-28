@@ -3165,6 +3165,7 @@ static int menu_displaylist_parse_playlists(
    size_t i, list_size;
    struct string_list *str_list = NULL;
    unsigned items_found         = 0;
+   settings_t *settings         = config_get_ptr();
 
    if (!*info->path)
    {
@@ -3174,7 +3175,7 @@ static int menu_displaylist_parse_playlists(
       return 0;
    }
 
-   str_list = dir_list_new(info->path, NULL, true, true, false);
+   str_list = dir_list_new(info->path, NULL, true, settings->show_hidden_files, true, false);
 
    if (!str_list)
    {
@@ -3272,6 +3273,7 @@ static int menu_displaylist_parse_cores(
    bool filter_ext              = true;
    struct string_list *str_list = NULL;
    unsigned items_found         = 0;
+   settings_t *settings         = config_get_ptr();
 
    if (!*info->path)
    {
@@ -3283,7 +3285,7 @@ static int menu_displaylist_parse_cores(
 
    str_list = dir_list_new(info->path,
          filter_ext ? info->exts : NULL,
-         true, true, false);
+         true, settings->show_hidden_files, true, false);
 
    {
       char out_dir[PATH_MAX_LENGTH] = {0};
@@ -3489,7 +3491,7 @@ static int menu_displaylist_parse_generic(
    else
       str_list = dir_list_new(info->path,
             filter_ext ? info->exts : NULL,
-            true, true, false);
+            true, settings->show_hidden_files, true, false);
 
 #ifdef HAVE_LIBRETRODB
    if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
@@ -4473,6 +4475,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
