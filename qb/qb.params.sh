@@ -43,7 +43,7 @@ EOF
 					print_help_option "--enable-$VAR" "Enable $COMMENT"
 					print_help_option "--disable-$VAR" "Disable $COMMENT";;
 				*)
-					print_help_option "--with-$VAR" "$COMMENT";;
+					print_help_option "--with-$VAR" "Config $COMMENT";;
 			esac
 		esac
 	done < 'qb/config.params.sh'
