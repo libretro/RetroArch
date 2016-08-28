@@ -41,6 +41,7 @@
 #include <retro_inline.h>
 #include <compat/strl.h>
 #include <rhash.h>
+#include <retro_stat.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
@@ -1709,8 +1710,17 @@ static void frontend_linux_get_env(int *argc,
          "cores", sizeof(g_defaults.dir.core_info));
    fill_pathname_join(g_defaults.dir.autoconfig, base_path,
          "autoconfig", sizeof(g_defaults.dir.autoconfig));
-   fill_pathname_join(g_defaults.dir.assets, base_path,
-         "assets", sizeof(g_defaults.dir.assets));
+
+   if (path_is_directory("/usr/local/share/applications/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/applications/retroarch",
+            "assets", sizeof(g_defaults.dir.assets));
+   else if (path_is_directory("/usr/share/applications/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/share/applications/retroarch",
+            "assets", sizeof(g_defaults.dir.assets));
+   else
+      fill_pathname_join(g_defaults.dir.assets, base_path,
+            "assets", sizeof(g_defaults.dir.assets));
+
    fill_pathname_join(g_defaults.dir.menu_config, base_path,
          "config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
