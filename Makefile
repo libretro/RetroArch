@@ -181,17 +181,17 @@ install: $(TARGET)
 	install -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
 	@if test -d media/assets; then \
 		echo "Installing media assets..."; \
-		mkdir -p $(DESTDIR)$(PREFIX)/share/applications/retroarch; \
-		mkdir -p $(DESTDIR)$(PREFIX)/share/applications/retroarch/assets; \
-		mkdir -p $(DESTDIR)$(PREFIX)/share/applications/retroarch/assets/xmb; \
-		mkdir -p $(DESTDIR)$(PREFIX)/share/applications/retroarch/assets/glui; \
-		cp -r media/assets/xmb/  $(DESTDIR)$(PREFIX)/share/applications/retroarch/assets; \
-		cp -r media/assets/glui/ $(DESTDIR)$(PREFIX)/share/applications/retroarch/assets; \
+		mkdir -p $(DESTDIR)$(PREFIX)/share/retroarch; \
+		mkdir -p $(DESTDIR)$(PREFIX)/share/retroarch/assets; \
+		mkdir -p $(DESTDIR)$(PREFIX)/share/retroarch/assets/xmb; \
+		mkdir -p $(DESTDIR)$(PREFIX)/share/retroarch/assets/glui; \
+		cp -r media/assets/xmb/  $(DESTDIR)$(PREFIX)/share/retroarch/assets; \
+		cp -r media/assets/glui/ $(DESTDIR)$(PREFIX)/share/retroarch/assets; \
 		echo "Removing unneeded source image files.."; \
-		rm -rf $(DESTDIR)$(PREFIX)/share/applications/retroarch/assets/xmb/flatui/src; \
-		rm -rf $(DESTDIR)$(PREFIX)/share/applications/retroarch/assets/xmb/monochrome/src; \
-		rm -rf $(DESTDIR)$(PREFIX)/share/applications/retroarch/assets/xmb/retroactive/src; \
-		rm -rf $(DESTDIR)$(PREFIX)/share/applications/retroarch/assets/xmb/retroactive_marked/src; \
+		rm -rf $(DESTDIR)$(PREFIX)/share/retroarch/assets/xmb/flatui/src; \
+		rm -rf $(DESTDIR)$(PREFIX)/share/retroarch/assets/xmb/monochrome/src; \
+		rm -rf $(DESTDIR)$(PREFIX)/share/retroarch/assets/xmb/retroactive/src; \
+		rm -rf $(DESTDIR)$(PREFIX)/share/retroarch/assets/xmb/retroactive_marked/src; \
 		echo "Asset copying done."; \
 	fi
 
@@ -203,6 +203,7 @@ uninstall:
 	rm -f $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
 	rm -f $(DESTDIR)$(MAN_DIR)/man6/retroarch-cg2glsl.6
 	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.svg
+	rm -rf $(DESTDIR)$(PREFIX)/share/retroarch/assets
 
 clean:
 	rm -rf $(OBJDIR)
