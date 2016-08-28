@@ -15,7 +15,9 @@
  */
 
 #include "SDL.h"
+#ifdef HAVE_X11
 #include <X11/Xlib.h>
+#endif
 
 #include "../../driver.h"
 #include "../../runloop.h"
