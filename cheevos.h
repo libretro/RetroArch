@@ -30,6 +30,15 @@ typedef struct cheevos_ctx_desc
    size_t len;
 } cheevos_ctx_desc_t;
 
+typedef struct
+{
+   unsigned size;
+   unsigned type;
+   int      bank_id;
+   unsigned value;
+   unsigned previous;
+} cheevos_var_t;
+
 bool cheevos_load(const void *data);
 
 void cheevos_populate_menu(void *data);
@@ -48,17 +57,8 @@ bool cheevos_set_cheats(void);
 
 void cheevos_set_support_cheevos(bool state);
 
-
-typedef struct
-{
-   unsigned size;
-   unsigned type;
-   int      bank_id;
-   unsigned value;
-   unsigned previous;
-} cheevos_var_t;
-
 void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value);
+
 uint8_t *cheevos_get_memory(const cheevos_var_t *var);
 
 RETRO_END_DECLS
