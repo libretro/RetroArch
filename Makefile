@@ -167,7 +167,7 @@ $(OBJDIR)/%.o: %.rc $(HEADERS)
 
 install: $(TARGET)
 	rm -f $(OBJDIR)/git_version.o
-	mkdir -p $(DESTDIR)$(BIN_DIR)/ 2>/dev/null || /bin/true
+	mkdir -p $(DESTDIR)$(BIN_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(GLOBAL_CONFIG_DIR) 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(PREFIX)/share/applications 2>/dev/null || /bin/true
 	mkdir -p $(DESTDIR)$(MAN_DIR)/man6 2>/dev/null || /bin/true
@@ -181,9 +181,7 @@ install: $(TARGET)
 	install -m644 media/retroarch.svg $(DESTDIR)$(PREFIX)/share/pixmaps
 	@if test -d media/assets; then \
 		echo "Installing media assets..."; \
-		mkdir -p $(DESTDIR)$(ASSETS_DIR)/retroarch; \
-		mkdir -p $(DESTDIR)$(ASSETS_DIR)/share/retroarch/assets; \
-		mkdir -p $(DESTDIR)$(ASSETS_DIR)/share/retroarch/assets/xmb; \
+		mkdir -p $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb; \
 		mkdir -p $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/glui; \
 		cp -r media/assets/xmb/  $(DESTDIR)$(ASSETS_DIR)/retroarch/assets; \
 		cp -r media/assets/glui/ $(DESTDIR)$(ASSETS_DIR)/retroarch/assets; \
