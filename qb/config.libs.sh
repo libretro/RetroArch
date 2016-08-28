@@ -130,6 +130,13 @@ fi
    add_define_make libretro "$LIBRETRO"
 }
 
+if [ "$ASSETS_DIR" ]; then
+
+   add_define_make ASSETS_DIR "$ASSETS_DIR"
+else
+   add_define_make ASSETS_DIR "${PREFIX}/share"
+fi
+
 if [ "$BIN_DIR" ]; then
    add_define_make BIN_DIR "$BIN_DIR"
 else
