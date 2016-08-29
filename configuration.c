@@ -1420,8 +1420,6 @@ static int populate_settings_float(settings_t *settings, struct config_float_set
    unsigned count = 0;
    struct config_float_setting_ptr *tmp = NULL;
 
-   RARCH_LOG ("Populating float settings...\n");
-
    SETTING_FLOAT("video_aspect_ratio",       &settings->video.aspect_ratio);
    SETTING_FLOAT("video_scale",              &settings->video.scale);
    SETTING_FLOAT("video_refresh_rate",       &settings->video.refresh_rate);
@@ -2870,7 +2868,6 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 
 static int populate_settings_string(settings_t *settings, struct config_string_setting *out)
 {
-   RARCH_LOG ("Populating string settings...\n");
    unsigned count                    = 0;
    struct config_string_setting *tmp = NULL;
 #ifdef HAVE_NETPLAY
