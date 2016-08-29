@@ -3087,106 +3087,121 @@ int populate_settings_string(settings_t *settings, struct config_string_setting 
    return ARRAY_SIZE(tmp);
 }
 
+#define SETTING_PATH(key, defval, configval) \
+{ \
+   if (count == 0) \
+      tmp = (struct config_path_setting*)malloc(sizeof(struct config_path_setting) * (count + 1)); \
+   else \
+      tmp = (struct config_path_setting*)realloc(tmp, sizeof(struct config_path_setting) * (count + 1)); \
+   tmp[count].ident    = key; \
+   tmp[count].defaults = defval; \
+   tmp[count].value    = configval; \
+   count++; \
+} \
+
 int populate_settings_path(settings_t *settings, struct config_path_setting *out)
 {
-   global_t   *global   = global_get_ptr();
-   struct config_path_setting tmp[] = {
-      { "recording_output_directory", false,
-         global->record.output_dir},
-      { "recording_config_directory", false,
-         global->record.config_dir},
-      { "libretro_directory", false,
-         settings->directory.libretro},
-      { "core_options_path", false,
-         settings->path.core_options},
-      {  "libretro_info_path", false,
-         settings->path.libretro_info},
-      { "video_shader", false,
-         settings->path.shader},
-      { "content_database_path", false,
-         settings->path.content_database},
-      { "cheat_database_path", false,
-         settings->path.cheat_database},
+   unsigned count = 0;
+   struct config_path_setting *tmp = NULL;
+   global_t   *global              = global_get_ptr();
+
+   SETTING_PATH("recording_output_directory", false,
+         global->record.output_dir);
+   SETTING_PATH("recording_config_directory", false,
+         global->record.config_dir);
+   SETTING_PATH("libretro_directory", false,
+         settings->directory.libretro);
+   SETTING_PATH("core_options_path", false,
+         settings->path.core_options);
+   SETTING_PATH("libretro_info_path", false,
+         settings->path.libretro_info);
+   SETTING_PATH("video_shader", false,
+         settings->path.shader);
+   SETTING_PATH("content_database_path", false,
+         settings->path.content_database);
+   SETTING_PATH("cheat_database_path", false,
+         settings->path.cheat_database);
 #ifdef HAVE_MENU
-      { "menu_wallpaper", false,
-         settings->path.menu_wallpaper},
+   SETTING_PATH("menu_wallpaper", false,
+         settings->path.menu_wallpaper);
 #endif
-      { "content_history_path", false,
-         settings->path.content_history},
-      { "content_music_history_path", false,
-         settings->path.content_music_history},
-      { "content_video_history_path", false,
-         settings->path.content_video_history},
-      { "content_image_history_path", false,
-         settings->path.content_image_history},
+   SETTING_PATH("content_history_path", false,
+         settings->path.content_history);
+   SETTING_PATH("content_music_history_path", false,
+         settings->path.content_music_history);
+   SETTING_PATH("content_video_history_path", false,
+         settings->path.content_video_history);
+   SETTING_PATH("content_image_history_path", false,
+         settings->path.content_image_history);
 #ifdef HAVE_OVERLAY
-      { "input_overlay", false,
-         settings->path.overlay},
-      { "input_osk_overlay", false,
-         settings->path.osk_overlay},
+   SETTING_PATH("input_overlay", false,
+         settings->path.overlay);
+   SETTING_PATH("input_osk_overlay", false,
+         settings->path.osk_overlay);
 #endif
-      { "video_font_path", false,
-         settings->path.font},
-      { "cursor_directory", false,
-         settings->directory.cursor},
-      { "content_history_dir", false,
-         settings->directory.content_history},
-      { "screenshot_directory", true,
-         settings->directory.screenshot},
-      { "system_directory", true,
-         settings->directory.system},
-      { "cache_directory", false,
-         settings->directory.cache},
-      { "input_remapping_directory", false,
-         settings->directory.input_remapping},
-      { "resampler_directory", false,
-         settings->directory.resampler},
-      { "video_shader_dir", true,
-         settings->directory.video_shader},
-      { "video_filter_dir", true,
-         settings->directory.video_filter},
-      { "core_assets_directory", true,
-         settings->directory.core_assets},
-      { "assets_directory", true,
-         settings->directory.assets},
-      { "dynamic_wallpapers_directory", true,
-         settings->directory.dynamic_wallpapers},
-      { "thumbnails_directory", true,
-         settings->directory.thumbnails},
-      { "playlist_directory", true,
-         settings->directory.playlist},
-      { "joypad_autoconfig_dir", false,
-         settings->directory.autoconfig},
-      { "audio_filter_dir", true,
-         settings->directory.audio_filter},
-      { "savefile_directory", true,
-         global->dir.savefile},
-      { "savestate_directory", true,
-         global->dir.savestate},
+   SETTING_PATH("video_font_path", false,
+         settings->path.font);
+   SETTING_PATH("cursor_directory", false,
+         settings->directory.cursor);
+   SETTING_PATH("content_history_dir", false,
+         settings->directory.content_history);
+   SETTING_PATH("screenshot_directory", true,
+         settings->directory.screenshot);
+   SETTING_PATH("system_directory", true,
+         settings->directory.system);
+   SETTING_PATH("cache_directory", false,
+         settings->directory.cache);
+   SETTING_PATH("input_remapping_directory", false,
+         settings->directory.input_remapping);
+   SETTING_PATH("resampler_directory", false,
+         settings->directory.resampler);
+   SETTING_PATH("video_shader_dir", true,
+         settings->directory.video_shader);
+   SETTING_PATH("video_filter_dir", true,
+         settings->directory.video_filter);
+   SETTING_PATH("core_assets_directory", true,
+         settings->directory.core_assets);
+   SETTING_PATH("assets_directory", true,
+         settings->directory.assets);
+   SETTING_PATH("dynamic_wallpapers_directory", true,
+         settings->directory.dynamic_wallpapers);
+   SETTING_PATH("thumbnails_directory", true,
+         settings->directory.thumbnails);
+   SETTING_PATH("playlist_directory", true,
+         settings->directory.playlist);
+   SETTING_PATH("joypad_autoconfig_dir", false,
+         settings->directory.autoconfig);
+   SETTING_PATH("audio_filter_dir", true,
+         settings->directory.audio_filter);
+   SETTING_PATH("savefile_directory", true,
+         global->dir.savefile);
+   SETTING_PATH("savestate_directory", true,
+         global->dir.savestate);
 #ifdef HAVE_MENU
-      {  "rgui_browser_directory", true,
-         settings->directory.menu_content},
-      { "rgui_config_directory", true,
-         settings->directory.menu_config},
+   SETTING_PATH("rgui_browser_directory", true,
+         settings->directory.menu_content);
+   SETTING_PATH("rgui_config_directory", true,
+         settings->directory.menu_config);
 #endif
 #ifdef HAVE_OVERLAY
-      {  "overlay_directory", true,
-         settings->directory.overlay},
+   SETTING_PATH("overlay_directory", true,
+         settings->directory.overlay);
 #endif
 #ifdef HAVE_OVERLAY
-      { "osk_overlay_directory", true,
-         global->dir.osk_overlay},
+   SETTING_PATH("osk_overlay_directory", true,
+         global->dir.osk_overlay);
 #endif
 #ifndef HAVE_DYNAMIC
-      {  "libretro_path", false,
-         config_get_active_core_path()},
+   SETTING_PATH("libretro_path", false,
+         config_get_active_core_path());
 #endif
-      { "screenshot_directory", true,
-         settings->directory.screenshot}
-   };
+   SETTING_PATH(
+         "screenshot_directory", true,
+         settings->directory.screenshot);
 
-   memcpy(out, tmp, sizeof(tmp));
-   return ARRAY_SIZE(tmp);
+   memcpy(out, tmp, sizeof(*tmp));
+   free(tmp);
+   return ARRAY_SIZE(out);
 }
 
 /**
