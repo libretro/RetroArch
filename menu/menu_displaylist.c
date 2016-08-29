@@ -2181,7 +2181,7 @@ static int menu_displaylist_parse_settings_internal(void *data,
    enum setting_type precond;
    size_t             count  = 0;
    settings_t *settings      = config_get_ptr();
-   uint64_t flags            = menu_setting_get_flags(setting);
+   uint64_t flags            = setting_get_flags(setting);
 
    if (!setting)
       return -1;
@@ -2237,7 +2237,7 @@ static int menu_displaylist_parse_settings_internal(void *data,
       const char *short_description = 
          menu_setting_get_short_description(setting);
       const char *name              = menu_setting_get_name(setting);
-      enum setting_type type        = menu_setting_get_type(setting);
+      enum setting_type type        = setting_get_type(setting);
 
       switch (parse_type)
       {
@@ -2322,7 +2322,7 @@ loop:
          case PARSE_GROUP:
          case PARSE_ONLY_GROUP:
          case PARSE_SUB_GROUP:
-            if (menu_setting_get_type(setting) == precond)
+            if (setting_get_type(setting) == precond)
                time_to_exit = true;
             break;
          case PARSE_ONLY_BIND:
@@ -2366,7 +2366,7 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
    enum setting_type precond;
    size_t             count  = 0;
    settings_t *settings      = config_get_ptr();
-   uint64_t flags            = menu_setting_get_flags(setting);
+   uint64_t flags            = setting_get_flags(setting);
 
    if (!setting)
       return -1;
@@ -2422,7 +2422,7 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
       const char *short_description = 
          menu_setting_get_short_description(setting);
       const char *name              = menu_setting_get_name(setting);
-      enum setting_type type        = menu_setting_get_type(setting);
+      enum setting_type type        = setting_get_type(setting);
 
       switch (parse_type)
       {
@@ -2507,7 +2507,7 @@ loop:
          case PARSE_GROUP:
          case PARSE_ONLY_GROUP:
          case PARSE_SUB_GROUP:
-            if (menu_setting_get_type(setting) == precond)
+            if (setting_get_type(setting) == precond)
                time_to_exit = true;
             break;
          case PARSE_ONLY_BIND:

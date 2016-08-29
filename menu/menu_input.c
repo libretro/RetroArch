@@ -173,7 +173,7 @@ void menu_input_st_uint_cb(void *userdata, const char *str)
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
 
       setting = menu_setting_find(label);
-      menu_setting_set_with_string_representation(setting, str);
+      setting_set_with_string_representation(setting, str);
    }
 
    menu_input_key_end_line();
@@ -255,7 +255,7 @@ static int menu_input_key_bind_set_mode_common(
    if (!setting)
       return -1;
 
-   index_offset = menu_setting_get_index_offset(setting);
+   index_offset = setting_get_index_offset(setting);
    menu_stack   = menu_entries_get_menu_stack_ptr(0);
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
@@ -270,7 +270,7 @@ static int menu_input_key_bind_set_mode_common(
          if (!keybind)
             return -1;
 
-         bind_type                = menu_setting_get_bind_type(setting);
+         bind_type                = setting_get_bind_type(setting);
 
          menu_input->binds.begin  = bind_type;
          menu_input->binds.last   = bind_type;
@@ -416,7 +416,7 @@ static bool menu_input_key_bind_set_mode(
    if (menu_input_key_bind_set_mode_common(state, setting) == -1)
       return false;
 
-   index_offset = menu_setting_get_index_offset(setting);
+   index_offset = setting_get_index_offset(setting);
    bind_port    = settings->input.joypad_map[index_offset];
 
    menu_input_key_bind_poll_bind_get_rested_axes(

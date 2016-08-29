@@ -44,7 +44,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
    if (!cbs)
       return -1;
     
-   switch (menu_setting_get_type(cbs->setting))
+   switch (setting_get_type(cbs->setting))
    {
       case ST_BOOL:
       case ST_INT:
@@ -194,7 +194,7 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
 
    if (cbs->setting)
    {
-      uint64_t flags = menu_setting_get_flags(cbs->setting);
+      uint64_t flags = setting_get_flags(cbs->setting);
 
       if (flags & SD_FLAG_IS_DRIVER)
       {

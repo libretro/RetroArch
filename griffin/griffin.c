@@ -685,6 +685,7 @@ FILE
 #include "../libretro-common/lists/dir_list.c"
 #include "../libretro-common/lists/string_list.c"
 #include "../libretro-common/lists/file_list.c"
+#include "../setting_list.c"
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/streams/file_stream.c"
 #include "../libretro-common/streams/interface_stream.c"

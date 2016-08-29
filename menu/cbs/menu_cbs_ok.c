@@ -1343,7 +1343,7 @@ static int generic_action_ok(const char *path,
 
             if (setting)
             {
-               menu_setting_set_with_string_representation(
+               setting_set_with_string_representation(
                      setting, action_path);
                ret = menu_setting_generic(setting, false);
             }
@@ -1496,7 +1496,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
 
       if (setting)
       {
-         menu_setting_set_with_string_representation(setting, str);
+         setting_set_with_string_representation(setting, str);
          menu_setting_generic(setting, false);
       }
       else if (!string_is_empty(label))
@@ -1626,7 +1626,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
 
       if (setting)
       {
-         menu_setting_set_with_string_representation(setting, str);
+         setting_set_with_string_representation(setting, str);
          menu_setting_generic(setting, false);
       }
       else if (!string_is_empty(label))
@@ -1870,7 +1870,7 @@ static int action_ok_file_load(const char *path,
 
    setting = menu_setting_find(menu_label);
 
-   if (menu_setting_get_type(setting) == ST_PATH)
+   if (setting_get_type(setting) == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
 
    strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));

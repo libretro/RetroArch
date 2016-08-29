@@ -155,6 +155,7 @@ OBJ += frontend/frontend.o \
        libretro-common/lists/string_list.o \
        libretro-common/string/stdstring.o \
        libretro-common/memmap/memalign.o \
+		 setting_list.o \
        list_special.o \
        libretro-common/file/nbio/nbio_stdio.o \
        libretro-common/file/file_path.o \
