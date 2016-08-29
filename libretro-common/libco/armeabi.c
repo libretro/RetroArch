@@ -53,12 +53,6 @@ asm (
 /* ASM */
 void co_switch_arm(cothread_t handle, cothread_t current);
 
-static void crash(void)
-{
-   /* Called only if cothread_t entrypoint returns. */
-   assert(0);
-}
-
 cothread_t co_create(unsigned int size, void (*entrypoint)(void))
 {
    size = (size + 1023) & ~1023;
