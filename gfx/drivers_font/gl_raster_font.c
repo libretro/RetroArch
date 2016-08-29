@@ -216,8 +216,9 @@ static int gl_get_message_width(void *data, const char *msg,
    {
       for (i = 0; i < msg_len; i++)
       {
+         const char *msg_tmp = &msg[i];
          const struct font_glyph *glyph = 
-            font->font_driver->get_glyph(font->font_data, msg[i]);
+            font->font_driver->get_glyph(font->font_data, utf8_walk(&msg_tmp));
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -298,8 +299,10 @@ static void gl_raster_font_render_line(
       for (i = 0; i < msg_len; i++)
       {
          int off_x, off_y, tex_x, tex_y, width, height;
+         const char *msg_tmp = &msg[i];
+
          const struct font_glyph *glyph =
-            font->font_driver->get_glyph(font->font_data, msg[i]);
+            font->font_driver->get_glyph(font->font_data, utf8_walk(&msg_tmp));
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
