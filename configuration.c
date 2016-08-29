@@ -1419,7 +1419,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control);
 
    *out = 
-      (struct config_bool_setting_ptr*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting_ptr));
+      (struct config_bool_setting_ptr*) malloc(count *sizeof(struct config_bool_setting_ptr));
    memcpy(*out, tmp, sizeof(struct config_bool_setting_ptr) * count);
    free(tmp);
    return count;
@@ -1464,7 +1464,7 @@ static int populate_settings_float(settings_t *settings, struct config_float_set
    SETTING_FLOAT("input_axis_threshold",     &settings->input.axis_threshold);
 
    *out = 
-      (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
+      (struct config_float_setting_ptr*) malloc(count * sizeof(struct config_float_setting_ptr));
    memcpy(*out, tmp, sizeof(struct config_float_setting_ptr) * count);
    free(tmp);
    return count;
@@ -1559,7 +1559,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current);
    SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version);
 
-   *out = (struct config_int_setting_ptr*)malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting_ptr));
+   *out = (struct config_int_setting_ptr*)malloc(count * sizeof(struct config_int_setting_ptr));
    memcpy(*out, tmp, sizeof(struct config_int_setting_ptr) * count);
    free(tmp);
    return count;
@@ -2934,7 +2934,7 @@ static int populate_settings_string(settings_t *settings, struct config_string_s
    SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst);
 
    *out = 
-      (struct config_string_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting_ptr));
+      (struct config_string_setting_ptr*) malloc(count * sizeof(struct config_string_setting_ptr));
    memcpy(*out, tmp, sizeof(struct config_string_setting_ptr) * count);
    free(tmp);
    return count;
@@ -3053,7 +3053,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
          settings->directory.screenshot);
 
    *out = 
-      (struct config_path_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting_ptr));
+      (struct config_path_setting_ptr*) malloc(count * sizeof(struct config_path_setting_ptr));
    memcpy(*out, tmp, sizeof(struct config_path_setting_ptr) * count);
    free(tmp);
    return count;
