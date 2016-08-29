@@ -666,41 +666,41 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable, false, false /* TODO */);
    SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable, false, false /* TODO */);
    SETTING_BOOL("fps_show",                      &settings->fps_show, false, false /* TODO */);
-   SETTING_BOOL("ui_menubar_enable",             &settings->ui.menubar_enable, false, false /* TODO */);
-   SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable, false, false /* TODO */);
-   SETTING_BOOL("rewind_enable",                 &settings->rewind_enable, false, false /* TODO */);
-   SETTING_BOOL("audio_sync",                    &settings->audio.sync, false, false /* TODO */);
+   SETTING_BOOL("ui_menubar_enable",             &settings->ui.menubar_enable, true, true);
+   SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable, true, true);
+   SETTING_BOOL("rewind_enable",                 &settings->rewind_enable, true, rewind_enable);
+   SETTING_BOOL("audio_sync",                    &settings->audio.sync, true, audio_sync);
    SETTING_BOOL("video_shader_enable",           &settings->video.shader_enable, false, false /* TODO */);
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto, false, false /* TODO */);
    SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate, false, false /* TODO */);
    SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen, false, false /* TODO */);
    SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan, false, false /* TODO */);
-   SETTING_BOOL( "video_scale_integer",          &settings->video.scale_integer, false, false /* TODO */);
-   SETTING_BOOL("video_smooth",                  &settings->video.smooth, false, false /* TODO */);
-   SETTING_BOOL("video_force_aspect",            &settings->video.force_aspect, false, false /* TODO */);
-   SETTING_BOOL("video_threaded",                &settings->video.threaded, false, false /* TODO */);
-   SETTING_BOOL("video_shared_context",          &settings->video.shared_context, false, false /* TODO */);
+   SETTING_BOOL("video_scale_integer",           &settings->video.scale_integer, false, false /* TODO */);
+   SETTING_BOOL("video_smooth",                  &settings->video.smooth, true, video_smooth);
+   SETTING_BOOL("video_force_aspect",            &settings->video.force_aspect, true, force_aspect);
+   SETTING_BOOL("video_threaded",                &settings->video.threaded, true, video_threaded);
+   SETTING_BOOL("video_shared_context",          &settings->video.shared_context, true, video_shared_context);
    SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable, false, false /* TODO */);
    SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename, false, false /* TODO */);
-   SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable, false, false /* TODO */);
+   SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable, true, false);
    SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen, false, false /* TODO */);
-   SETTING_BOOL("bundle_assets_extract_enable",  &settings->bundle_assets_extract_enable, false, false /* TODO */);
-   SETTING_BOOL("video_vsync",                   &settings->video.vsync, false, false /* TODO */);
-   SETTING_BOOL("video_hard_sync",               &settings->video.hard_sync, false, false /* TODO */);
-   SETTING_BOOL("video_black_frame_insertion",   &settings->video.black_frame_insertion, false, false /* TODO */);
-   SETTING_BOOL("video_disable_composition",     &settings->video.disable_composition, false, false /* TODO */);
-   SETTING_BOOL("pause_nonactive",               &settings->pause_nonactive, false, false /* TODO */);
+   SETTING_BOOL("bundle_assets_extract_enable",  &settings->bundle_assets_extract_enable, true, bundle_assets_extract_enable);
+   SETTING_BOOL("video_vsync",                   &settings->video.vsync, true, vsync);
+   SETTING_BOOL("video_hard_sync",               &settings->video.hard_sync, true, hard_sync);
+   SETTING_BOOL("video_black_frame_insertion",   &settings->video.black_frame_insertion, true, black_frame_insertion);
+   SETTING_BOOL("video_disable_composition",     &settings->video.disable_composition, true, disable_composition);
+   SETTING_BOOL("pause_nonactive",               &settings->pause_nonactive, true, pause_nonactive);
    SETTING_BOOL("debug_panel_enable",            &settings->debug_panel_enable, false, false /* TODO */);
-   SETTING_BOOL("video_gpu_screenshot",          &settings->video.gpu_screenshot, false, false /* TODO */);
-   SETTING_BOOL("video_post_filter_record",      &settings->video.post_filter_record, false, false /* TODO */);
-   SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable, false, false /* TODO */);
+   SETTING_BOOL("video_gpu_screenshot",          &settings->video.gpu_screenshot, true, gpu_screenshot);
+   SETTING_BOOL("video_post_filter_record",      &settings->video.post_filter_record, true, post_filter_record);
+   SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable, true, true);
    SETTING_BOOL("core_set_supports_no_game_enable", &settings->set_supports_no_game_enable, false, false /* TODO */);
-   SETTING_BOOL("audio_enable",                  &settings->audio.enable, false, false /* TODO */);
-   SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable, false, false /* TODO */);
-   SETTING_BOOL("location_allow",                &settings->location.allow, false, false /* TODO */);
-   SETTING_BOOL("video_font_enable",             &settings->video.font_enable, false, false /* TODO */);
+   SETTING_BOOL("audio_enable",                  &settings->audio.enable, true, audio_enable);
+   SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable, true, false);
+   SETTING_BOOL("location_allow",                &settings->location.allow, true, false);
+   SETTING_BOOL("video_font_enable",             &settings->video.font_enable, true, font_enable);
    SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive, false, false /* TODO */);
-   SETTING_BOOL("camera_allow",                  &settings->camera.allow, false, false /* TODO */);
+   SETTING_BOOL("camera_allow",                  &settings->camera.allow, true, false);
 #if TARGET_OS_IPHONE
    SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable, false, false /* TODO */);
 #endif
@@ -998,7 +998,6 @@ static void config_set_defaults(void)
 #if TARGET_OS_IPHONE
    settings->input.small_keyboard_enable   = false;
 #endif
-   settings->input.keyboard_gamepad_enable          = true;
    settings->input.keyboard_gamepad_mapping_type    = 1;
    settings->input.poll_type_behavior               = 2;
 #ifdef HAVE_FFMPEG
@@ -1013,16 +1012,10 @@ static void config_set_defaults(void)
    settings->video.monitor_index         = monitor_index;
    settings->video.fullscreen_x          = fullscreen_x;
    settings->video.fullscreen_y          = fullscreen_y;
-   settings->video.disable_composition   = disable_composition;
-   settings->video.vsync                 = vsync;
    settings->video.max_swapchain_images  = max_swapchain_images;
-   settings->video.hard_sync             = hard_sync;
    settings->video.hard_sync_frames      = hard_sync_frames;
    settings->video.frame_delay           = frame_delay;
-   settings->video.black_frame_insertion = black_frame_insertion;
    settings->video.swap_interval         = swap_interval;
-   settings->video.threaded              = video_threaded;
-   settings->bundle_assets_extract_enable = bundle_assets_extract_enable;
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       settings->video.threaded           = g_defaults.settings.video_threaded_enable;
@@ -1030,14 +1023,10 @@ static void config_set_defaults(void)
 #ifdef HAVE_THREADS
    settings->threaded_data_runloop_enable = threaded_data_runloop_enable;
 #endif
-   settings->video.shared_context              = video_shared_context;
-   settings->video.force_srgb_disable          = false;
 #ifdef GEKKO
    settings->video.viwidth                     = video_viwidth;
    settings->video.vfilter                     = video_vfilter;
 #endif
-   settings->video.smooth                      = video_smooth;
-   settings->video.force_aspect                = force_aspect;
    settings->video.scale_integer               = scale_integer;
    settings->video.crop_overscan               = crop_overscan;
    settings->video.aspect_ratio                = aspect_ratio;
@@ -1046,7 +1035,6 @@ static void config_set_defaults(void)
    settings->video.shader_enable               = shader_enable;
    settings->video.allow_rotate                = allow_rotate;
 
-   settings->video.font_enable                 = font_enable;
    settings->video.font_size                   = font_size;
    settings->video.msg_pos_x                   = message_pos_offset_x;
    settings->video.msg_pos_y                   = message_pos_offset_y;
@@ -1061,14 +1049,10 @@ static void config_set_defaults(void)
          g_defaults.settings.video_refresh_rate != refresh_rate)
       settings->video.refresh_rate             = g_defaults.settings.video_refresh_rate;
 
-   settings->video.post_filter_record          = post_filter_record;
    settings->video.gpu_record                  = gpu_record;
-   settings->video.gpu_screenshot              = gpu_screenshot;
    settings->auto_screenshot_filename          = auto_screenshot_filename;
    settings->video.rotation                    = ORIENTATION_NORMAL;
 
-   settings->audio.enable                      = audio_enable;
-   settings->audio.mute_enable                 = false;
    settings->audio.out_rate                    = out_rate;
    settings->audio.block_frames                = 0;
    if (audio_device)
@@ -1079,7 +1063,6 @@ static void config_set_defaults(void)
       g_defaults.settings.out_latency          = out_latency;
 
    settings->audio.latency                     = g_defaults.settings.out_latency;
-   settings->audio.sync                        = audio_sync;
    settings->audio.rate_control                = rate_control;
    settings->audio.rate_control_delta          = rate_control_delta;
    settings->audio.max_timing_skew             = max_timing_skew;
@@ -1087,12 +1070,10 @@ static void config_set_defaults(void)
 
    audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 
-   settings->rewind_enable                     = rewind_enable;
    settings->rewind_buffer_size                = rewind_buffer_size;
    settings->rewind_granularity                = rewind_granularity;
    settings->slowmotion_ratio                  = slowmotion_ratio;
    settings->fastforward_ratio                 = fastforward_ratio;
-   settings->pause_nonactive                   = pause_nonactive;
    settings->autosave_interval                 = autosave_interval;
 
    settings->block_sram_overwrite              = block_sram_overwrite;
@@ -1137,12 +1118,6 @@ static void config_set_defaults(void)
    settings->menu.navigation.wraparound.enable                          = true;
    settings->menu.navigation.browser.filter.supported_extensions_enable = true;
 #endif
-
-   settings->ui.menubar_enable                      = true;
-   settings->ui.suspend_screensaver_enable          = true;
-
-   settings->location.allow                         = false;
-   settings->camera.allow                           = false;
 
 #ifdef HAVE_CHEEVOS
    settings->cheevos.enable                         = cheevos_enable;
