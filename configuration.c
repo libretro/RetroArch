@@ -58,14 +58,17 @@
    count++; \
 } \
 
-#define SETTING_BOOL(key, configval) \
+#define SETTING_BOOL(key, configval, default_enable, default_setting) \
 { \
    if (count == 0) \
       tmp = (struct config_bool_setting_ptr*)malloc(sizeof(struct config_bool_setting_ptr) * (count + 1)); \
    else \
       tmp = (struct config_bool_setting_ptr*)realloc(tmp, sizeof(struct config_bool_setting_ptr) * (count + 1)); \
-   tmp[count].ident    = key; \
-   tmp[count].ptr      = configval; \
+   tmp[count].ident      = key; \
+   tmp[count].ptr        = configval; \
+   tmp[count].def_enable = default_enable; \
+   if (default_enable) \
+      tmp[count].def     = default_setting; \
    count++; \
 } 
 
@@ -651,127 +654,127 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    global_t   *global                  = global_get_ptr();
    struct config_bool_setting_ptr *tmp = NULL;
 
-   SETTING_BOOL("ui_companion_start_on_boot",    &settings->ui.companion_start_on_boot);
-   SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable);
-   SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record);
-   SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable);
-   SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable);
-   SETTING_BOOL("netplay_client_swap_input",     &settings->input.netplay_client_swap_input);
-   SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show);
-   SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound);
-   SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown);
-   SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable);
-   SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable);
-   SETTING_BOOL("fps_show",                      &settings->fps_show);
-   SETTING_BOOL("ui_menubar_enable",             &settings->ui.menubar_enable);
-   SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable);
-   SETTING_BOOL("rewind_enable",                 &settings->rewind_enable);
-   SETTING_BOOL("audio_sync",                    &settings->audio.sync);
-   SETTING_BOOL("video_shader_enable",           &settings->video.shader_enable);
-   SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto);
-   SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate);
-   SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen);
-   SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan);
-   SETTING_BOOL( "video_scale_integer",          &settings->video.scale_integer);
-   SETTING_BOOL("video_smooth",                  &settings->video.smooth);
-   SETTING_BOOL("video_force_aspect",            &settings->video.force_aspect);
-   SETTING_BOOL("video_threaded",                &settings->video.threaded);
-   SETTING_BOOL("video_shared_context",          &settings->video.shared_context);
-   SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable);
-   SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename);
-   SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable);
-   SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen);
-   SETTING_BOOL("bundle_assets_extract_enable",  &settings->bundle_assets_extract_enable);
-   SETTING_BOOL("video_vsync",                   &settings->video.vsync);
-   SETTING_BOOL("video_hard_sync",               &settings->video.hard_sync);
-   SETTING_BOOL("video_black_frame_insertion",   &settings->video.black_frame_insertion);
-   SETTING_BOOL("video_disable_composition",     &settings->video.disable_composition);
-   SETTING_BOOL("pause_nonactive",               &settings->pause_nonactive);
-   SETTING_BOOL("debug_panel_enable",            &settings->debug_panel_enable);
-   SETTING_BOOL("video_gpu_screenshot",          &settings->video.gpu_screenshot);
-   SETTING_BOOL("video_post_filter_record",      &settings->video.post_filter_record);
-   SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable);
-   SETTING_BOOL("core_set_supports_no_game_enable", &settings->set_supports_no_game_enable);
-   SETTING_BOOL("audio_enable",                  &settings->audio.enable);
-   SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable);
-   SETTING_BOOL("location_allow",                &settings->location.allow);
-   SETTING_BOOL("video_font_enable",             &settings->video.font_enable);
-   SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive);
-   SETTING_BOOL("camera_allow",                  &settings->camera.allow);
+   SETTING_BOOL("ui_companion_start_on_boot",    &settings->ui.companion_start_on_boot, true, ui_companion_start_on_boot);
+   SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable, false, false /* TODO */);
+   SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record, false, false /* TODO */);
+   SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable, false, false /* TODO */);
+   SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable, false, false /* TODO */);
+   SETTING_BOOL("netplay_client_swap_input",     &settings->input.netplay_client_swap_input, false, false /* TODO */);
+   SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show, false, false /* TODO */);
+   SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound, false, false /* TODO */);
+   SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown, false, false /* TODO */);
+   SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable, false, false /* TODO */);
+   SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable, false, false /* TODO */);
+   SETTING_BOOL("fps_show",                      &settings->fps_show, false, false /* TODO */);
+   SETTING_BOOL("ui_menubar_enable",             &settings->ui.menubar_enable, false, false /* TODO */);
+   SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable, false, false /* TODO */);
+   SETTING_BOOL("rewind_enable",                 &settings->rewind_enable, false, false /* TODO */);
+   SETTING_BOOL("audio_sync",                    &settings->audio.sync, false, false /* TODO */);
+   SETTING_BOOL("video_shader_enable",           &settings->video.shader_enable, false, false /* TODO */);
+   SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto, false, false /* TODO */);
+   SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate, false, false /* TODO */);
+   SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen, false, false /* TODO */);
+   SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan, false, false /* TODO */);
+   SETTING_BOOL( "video_scale_integer",          &settings->video.scale_integer, false, false /* TODO */);
+   SETTING_BOOL("video_smooth",                  &settings->video.smooth, false, false /* TODO */);
+   SETTING_BOOL("video_force_aspect",            &settings->video.force_aspect, false, false /* TODO */);
+   SETTING_BOOL("video_threaded",                &settings->video.threaded, false, false /* TODO */);
+   SETTING_BOOL("video_shared_context",          &settings->video.shared_context, false, false /* TODO */);
+   SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable, false, false /* TODO */);
+   SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename, false, false /* TODO */);
+   SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable, false, false /* TODO */);
+   SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen, false, false /* TODO */);
+   SETTING_BOOL("bundle_assets_extract_enable",  &settings->bundle_assets_extract_enable, false, false /* TODO */);
+   SETTING_BOOL("video_vsync",                   &settings->video.vsync, false, false /* TODO */);
+   SETTING_BOOL("video_hard_sync",               &settings->video.hard_sync, false, false /* TODO */);
+   SETTING_BOOL("video_black_frame_insertion",   &settings->video.black_frame_insertion, false, false /* TODO */);
+   SETTING_BOOL("video_disable_composition",     &settings->video.disable_composition, false, false /* TODO */);
+   SETTING_BOOL("pause_nonactive",               &settings->pause_nonactive, false, false /* TODO */);
+   SETTING_BOOL("debug_panel_enable",            &settings->debug_panel_enable, false, false /* TODO */);
+   SETTING_BOOL("video_gpu_screenshot",          &settings->video.gpu_screenshot, false, false /* TODO */);
+   SETTING_BOOL("video_post_filter_record",      &settings->video.post_filter_record, false, false /* TODO */);
+   SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable, false, false /* TODO */);
+   SETTING_BOOL("core_set_supports_no_game_enable", &settings->set_supports_no_game_enable, false, false /* TODO */);
+   SETTING_BOOL("audio_enable",                  &settings->audio.enable, false, false /* TODO */);
+   SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable, false, false /* TODO */);
+   SETTING_BOOL("location_allow",                &settings->location.allow, false, false /* TODO */);
+   SETTING_BOOL("video_font_enable",             &settings->video.font_enable, false, false /* TODO */);
+   SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive, false, false /* TODO */);
+   SETTING_BOOL("camera_allow",                  &settings->camera.allow, false, false /* TODO */);
 #if TARGET_OS_IPHONE
-   SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable);
+   SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable, false, false /* TODO */);
 #endif
 #ifdef GEKKO
-   SETTING_BOOL("video_vfilter",                 &settings->video.vfilter);
+   SETTING_BOOL("video_vfilter",                 &settings->video.vfilter, false, false /* TODO */);
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
-   SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable);
+   SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable, false, false /* TODO */);
 #endif
-   SETTING_BOOL("menu_throttle_framerate",       &settings->menu.throttle_framerate);
-   SETTING_BOOL("menu_linear_filter",            &settings->menu.linear_filter);
-   SETTING_BOOL("dpi_override_enable",           &settings->menu.dpi.override_enable);
-   SETTING_BOOL("menu_pause_libretro",           &settings->menu.pause_libretro);
-   SETTING_BOOL("menu_mouse_enable",             &settings->menu.mouse.enable);
-   SETTING_BOOL("menu_pointer_enable",           &settings->menu.pointer.enable);
-   SETTING_BOOL("menu_timedate_enable",          &settings->menu.timedate_enable);
-   SETTING_BOOL("menu_core_enable",              &settings->menu.core_enable);
-   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable);
+   SETTING_BOOL("menu_throttle_framerate",       &settings->menu.throttle_framerate, false, false /* TODO */);
+   SETTING_BOOL("menu_linear_filter",            &settings->menu.linear_filter, false, false /* TODO */);
+   SETTING_BOOL("dpi_override_enable",           &settings->menu.dpi.override_enable, false, false /* TODO */);
+   SETTING_BOOL("menu_pause_libretro",           &settings->menu.pause_libretro, false, false /* TODO */);
+   SETTING_BOOL("menu_mouse_enable",             &settings->menu.mouse.enable, false, false /* TODO */);
+   SETTING_BOOL("menu_pointer_enable",           &settings->menu.pointer.enable, false, false /* TODO */);
+   SETTING_BOOL("menu_timedate_enable",          &settings->menu.timedate_enable, false, false /* TODO */);
+   SETTING_BOOL("menu_core_enable",              &settings->menu.core_enable, false, false /* TODO */);
+   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable, false, false /* TODO */);
 #ifdef HAVE_XMB
-   SETTING_BOOL("xmb_shadows_enable",            &settings->menu.xmb.shadows_enable);
-   SETTING_BOOL("xmb_show_settings",             &settings->menu.xmb.show_settings);
+   SETTING_BOOL("xmb_shadows_enable",            &settings->menu.xmb.shadows_enable, false, false /* TODO */);
+   SETTING_BOOL("xmb_show_settings",             &settings->menu.xmb.show_settings, false, false /* TODO */);
 #ifdef HAVE_IMAGEVIEWER
-   SETTING_BOOL("xmb_show_images",               &settings->menu.xmb.show_images);
+   SETTING_BOOL("xmb_show_images",               &settings->menu.xmb.show_images, false, false /* TODO */);
 #endif
 #ifdef HAVE_FFMPEG
-   SETTING_BOOL("xmb_show_music",                &settings->menu.xmb.show_music);
-   SETTING_BOOL("xmb_show_video",                &settings->menu.xmb.show_video);
+   SETTING_BOOL("xmb_show_music",                &settings->menu.xmb.show_music, false, false /* TODO */);
+   SETTING_BOOL("xmb_show_video",                &settings->menu.xmb.show_video, false, false /* TODO */);
 #endif
-   SETTING_BOOL("xmb_show_history",              &settings->menu.xmb.show_history);
+   SETTING_BOOL("xmb_show_history",              &settings->menu.xmb.show_history, false, false /* TODO */);
 #endif
-   SETTING_BOOL("rgui_show_start_screen",        &settings->menu_show_start_screen);
-   SETTING_BOOL("menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable);
+   SETTING_BOOL("rgui_show_start_screen",        &settings->menu_show_start_screen, false, false /* TODO */);
+   SETTING_BOOL("menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable, false, false /* TODO */);
    SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable", 
-         &settings->menu.navigation.browser.filter.supported_extensions_enable);
-   SETTING_BOOL("menu_show_advanced_settings",  &settings->menu.show_advanced_settings);
+         &settings->menu.navigation.browser.filter.supported_extensions_enable, false, false /* TODO */);
+   SETTING_BOOL("menu_show_advanced_settings",  &settings->menu.show_advanced_settings, false, false /* TODO */);
 #endif
 #ifdef HAVE_CHEEVOS
-   SETTING_BOOL("cheevos_enable",               &settings->cheevos.enable);
-   SETTING_BOOL("cheevos_test_unofficial",      &settings->cheevos.test_unofficial);
-   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable);
+   SETTING_BOOL("cheevos_enable",               &settings->cheevos.enable, false, false /* TODO */);
+   SETTING_BOOL("cheevos_test_unofficial",      &settings->cheevos.test_unofficial, false, false /* TODO */);
+   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable, false, false /* TODO */);
 #endif
 #ifdef HAVE_OVERLAY
-   SETTING_BOOL("input_overlay_enable",         &settings->input.overlay_enable);
-   SETTING_BOOL("input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred);
-   SETTING_BOOL("input_overlay_hide_in_menu",   &settings->input.overlay_hide_in_menu);
-   SETTING_BOOL("input_osk_overlay_enable",     &settings->osk.enable);
+   SETTING_BOOL("input_overlay_enable",         &settings->input.overlay_enable, false, false /* TODO */);
+   SETTING_BOOL("input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred, false, false /* TODO */);
+   SETTING_BOOL("input_overlay_hide_in_menu",   &settings->input.overlay_hide_in_menu, false, false /* TODO */);
+   SETTING_BOOL("input_osk_overlay_enable",     &settings->osk.enable, false, false /* TODO */);
 #endif
 #ifdef HAVE_COMMAND
-   SETTING_BOOL("network_cmd_enable",           &settings->network_cmd_enable);
-   SETTING_BOOL("stdin_cmd_enable",             &settings->stdin_cmd_enable);
+   SETTING_BOOL("network_cmd_enable",           &settings->network_cmd_enable, false, false /* TODO */);
+   SETTING_BOOL("stdin_cmd_enable",             &settings->stdin_cmd_enable, false, false /* TODO */);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
-   SETTING_BOOL("network_remote_enable",        &settings->network_remote_enable);
+   SETTING_BOOL("network_remote_enable",        &settings->network_remote_enable, false, false /* TODO */);
 #endif
 #ifdef HAVE_NETPLAY
-   SETTING_BOOL("netplay_spectator_mode_enable",&global->netplay.is_spectate);
-   SETTING_BOOL("netplay_mode",                 &global->netplay.is_client);
+   SETTING_BOOL("netplay_spectator_mode_enable",&global->netplay.is_spectate, false, false /* TODO */);
+   SETTING_BOOL("netplay_mode",                 &global->netplay.is_client, false, false /* TODO */);
 #endif
-   SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite);
-   SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index);
-   SETTING_BOOL("savestate_auto_save",          &settings->savestate_auto_save);
-   SETTING_BOOL("savestate_auto_load",          &settings->savestate_auto_load);
-   SETTING_BOOL("history_list_enable",          &settings->history_list_enable);
-   SETTING_BOOL("game_specific_options",        &settings->game_specific_options);
-   SETTING_BOOL("auto_overrides_enable",        &settings->auto_overrides_enable);
-   SETTING_BOOL("auto_remaps_enable",           &settings->auto_remaps_enable);
-   SETTING_BOOL("auto_shaders_enable",          &settings->auto_shaders_enable);
-   SETTING_BOOL("sort_savefiles_enable",        &settings->sort_savefiles_enable);
-   SETTING_BOOL("sort_savestates_enable",       &settings->sort_savestates_enable);
-   SETTING_BOOL("config_save_on_exit",          &settings->config_save_on_exit);
-   SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files);
-   SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable);
-   SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control);
+   SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite, false, false /* TODO */);
+   SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index, false, false /* TODO */);
+   SETTING_BOOL("savestate_auto_save",          &settings->savestate_auto_save, false, false /* TODO */);
+   SETTING_BOOL("savestate_auto_load",          &settings->savestate_auto_load, false, false /* TODO */);
+   SETTING_BOOL("history_list_enable",          &settings->history_list_enable, false, false /* TODO */);
+   SETTING_BOOL("game_specific_options",        &settings->game_specific_options, false, false /* TODO */);
+   SETTING_BOOL("auto_overrides_enable",        &settings->auto_overrides_enable, false, false /* TODO */);
+   SETTING_BOOL("auto_remaps_enable",           &settings->auto_remaps_enable, false, false /*TODO */);
+   SETTING_BOOL("auto_shaders_enable",          &settings->auto_shaders_enable, false, false /* TODO */);
+   SETTING_BOOL("sort_savefiles_enable",        &settings->sort_savefiles_enable, false, false /* TODO */);
+   SETTING_BOOL("sort_savestates_enable",       &settings->sort_savestates_enable, false, false /* TODO */);
+   SETTING_BOOL("config_save_on_exit",          &settings->config_save_on_exit, false, false /* TODO */);
+   SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files, false, false /* TODO */);
+   SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable, false, false /* TODO */);
+   SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, false, false /* TODO */);
 
    *out = 
       (struct config_bool_setting_ptr*) malloc(count *sizeof(struct config_bool_setting_ptr));
@@ -919,9 +922,17 @@ static void config_set_defaults(void)
    const char *def_camera          = config_get_default_camera();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
+   struct config_bool_setting_ptr *bool_settings   = NULL;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
+   unsigned bool_settings_size     = populate_settings_bool  (settings, &bool_settings);
+
+   for (i = 0; i < bool_settings_size; i++)
+   {
+      if (bool_settings[i].def_enable)
+         *bool_settings[i].ptr = bool_settings[i].def;
+   }
 
    if (def_camera)
       strlcpy(settings->camera.driver,
@@ -1128,7 +1139,6 @@ static void config_set_defaults(void)
    settings->menu.navigation.browser.filter.supported_extensions_enable = true;
 #endif
 
-   settings->ui.companion_start_on_boot             = ui_companion_start_on_boot;
    settings->ui.companion_enable                    = ui_companion_enable;
    settings->ui.menubar_enable                      = true;
    settings->ui.suspend_screensaver_enable          = true;
@@ -1443,6 +1453,9 @@ static void config_set_defaults(void)
 #ifdef HAVE_MENU
    first_initialized = false;
 #endif
+
+   if (bool_settings)
+      free(bool_settings);
 }
 
 /**
@@ -2345,6 +2358,12 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 
    config_file_free(conf);
+   if (bool_settings)
+      free(bool_settings);
+   if (int_settings)
+      free(int_settings);
+   if (float_settings)
+      free(float_settings);
    return true;
 }
 
@@ -3417,16 +3436,26 @@ bool config_save_overrides(int override_type)
    else
       ret = false;
 
-   free(bool_settings);
-   free(bool_overrides);
-   free(int_settings);
-   free(int_overrides);
-   free(float_settings);
-   free(float_overrides);
-   free(string_settings);
-   free(string_overrides);
-   free(path_settings);
-   free(path_overrides);
+   if (bool_settings)
+      free(bool_settings);
+   if (bool_overrides)
+      free(bool_overrides);
+   if (int_settings)
+      free(int_settings);
+   if (int_overrides)
+      free(int_overrides);
+   if (float_settings)
+      free(float_settings);
+   if (float_overrides)
+      free(float_overrides);
+   if (string_settings)
+      free(string_settings);
+   if (string_overrides)
+      free(string_overrides);
+   if (path_settings)
+      free(path_settings);
+   if (path_overrides)
+      free(path_overrides);
    free(settings);
 
    return ret;
