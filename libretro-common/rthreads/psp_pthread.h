@@ -142,15 +142,13 @@ static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 
 static INLINE int pthread_join(pthread_t thread, void **retval)
 {
-
 #ifdef VITA
-	 int res = sceKernelWaitThreadEnd(thread, 0, 0);
-	 if (res < 0) {
-			return res;
-	 }
-	 return sceKernelDeleteThread(thread);
+   int res = sceKernelWaitThreadEnd(thread, 0, 0);
+   if (res < 0)
+      return res;
+   return sceKernelDeleteThread(thread);
 #else
-	 SceUInt timeout = (SceUInt)-1;
+   SceUInt timeout = (SceUInt)-1;
    sceKernelWaitThreadEnd(thread, &timeout);
    exit_status = sceKernelGetThreadExitStatus(thread);
    sceKernelDeleteThread(thread);
@@ -172,20 +170,18 @@ static INLINE int pthread_cond_wait(pthread_cond_t *cond,
       pthread_mutex_t *mutex)
 {
 #ifdef VITA
-		int ret = pthread_mutex_lock(&cond->mutex);
-		if (ret < 0) {
-			return ret;
-		}
-		++cond->waiting;
-		pthread_mutex_unlock(mutex);
-		pthread_mutex_unlock(&cond->mutex);
+   int ret = pthread_mutex_lock(&cond->mutex);
+   if (ret < 0)
+      return ret;
+   ++cond->waiting;
+   pthread_mutex_unlock(mutex);
+   pthread_mutex_unlock(&cond->mutex);
 
-		ret = sceKernelWaitSema(cond->sema, 1, 0);
-		if (ret < 0) {
-			sceClibPrintf("Premature wakeup: %08X", ret);
-		}
-		pthread_mutex_lock(mutex);
-		return ret;
+   ret = sceKernelWaitSema(cond->sema, 1, 0);
+   if (ret < 0)
+      sceClibPrintf("Premature wakeup: %08X", ret);
+   pthread_mutex_lock(mutex);
+   return ret;
 #else
    /* FIXME: stub */
    sceKernelDelayThread(10000);
@@ -197,26 +193,24 @@ static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
       pthread_mutex_t *mutex, const struct timespec *abstime)
 {
 #ifdef VITA
-		int ret = pthread_mutex_lock(&cond->mutex);
-		if (ret < 0) {
-			return ret;
-		}
-		++cond->waiting;
-		pthread_mutex_unlock(mutex);
-		pthread_mutex_unlock(&cond->mutex);
-		
-		SceUInt timeout = 0;
-		
-		timeout  = abstime->tv_sec;
-	 	timeout += abstime->tv_nsec / 1.0e6;
-		
-		ret = sceKernelWaitSema(cond->sema, 1, &timeout);
-		if (ret < 0) {
-			sceClibPrintf("Premature wakeup: %08X", ret);
-		}
-		pthread_mutex_lock(mutex);
-		return ret;
-   
+   int ret = pthread_mutex_lock(&cond->mutex);
+   if (ret < 0)
+      return ret;
+   ++cond->waiting;
+   pthread_mutex_unlock(mutex);
+   pthread_mutex_unlock(&cond->mutex);
+
+   SceUInt timeout = 0;
+
+   timeout  = abstime->tv_sec;
+   timeout += abstime->tv_nsec / 1.0e6;
+
+   ret = sceKernelWaitSema(cond->sema, 1, &timeout);
+   if (ret < 0)
+      sceClibPrintf("Premature wakeup: %08X", ret);
+   pthread_mutex_lock(mutex);
+   return ret;
+
 #else
    /* FIXME: stub */
    return 1;
@@ -258,7 +252,8 @@ static INLINE int pthread_cond_signal(pthread_cond_t *cond)
 {
 #ifdef VITA
 	pthread_mutex_lock(&cond->mutex);
-	if (cond->waiting) {
+	if (cond->waiting)
+   {
 		--cond->waiting;
 		int ret = sceKernelSignalSema(cond->sema, 1);
 		sceClibPrintf("pthread_cond_signal: %x\n",ret);
