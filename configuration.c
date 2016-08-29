@@ -689,7 +689,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable, false, false /* TODO */);
    SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename, true, auto_screenshot_filename);
    SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable, true, false);
-   SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen, false, false /* TODO */);
+   SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen, true, fullscreen);
    SETTING_BOOL("bundle_assets_extract_enable",  &settings->bundle_assets_extract_enable, true, bundle_assets_extract_enable);
    SETTING_BOOL("video_vsync",                   &settings->video.vsync, true, vsync);
    SETTING_BOOL("video_hard_sync",               &settings->video.hard_sync, true, hard_sync);
@@ -1002,7 +1002,6 @@ static void config_set_defaults(void)
    settings->multimedia.builtin_mediaplayer_enable  = false;
 #endif
    settings->video.scale                 = scale;
-   settings->video.fullscreen            = rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL)  ? true : fullscreen;
    settings->video.windowed_fullscreen   = windowed_fullscreen;
    settings->video.monitor_index         = monitor_index;
    settings->video.fullscreen_x          = fullscreen_x;
@@ -1011,6 +1010,9 @@ static void config_set_defaults(void)
    settings->video.hard_sync_frames      = hard_sync_frames;
    settings->video.frame_delay           = frame_delay;
    settings->video.swap_interval         = swap_interval;
+
+   if (rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
+      settings->video.fullscreen            = true;
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       settings->video.threaded           = g_defaults.settings.video_threaded_enable;
