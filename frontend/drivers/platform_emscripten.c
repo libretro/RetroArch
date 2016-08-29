@@ -119,7 +119,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
          "screenshots", sizeof(g_defaults.dir.screenshot));
    fill_pathname_join(g_defaults.dir.thumbnails, base_path,
          "thumbnails", sizeof(g_defaults.dir.thumbnails));
-   fill_pathname_join(g_defaults.dir.thumbnails, "/",
+   fill_pathname_join(g_defaults.dir.menu_content, "/",
          "content", sizeof(g_defaults.dir.thumbnails));
    fill_pathname_join(g_defaults.dir.assets, "/",
          "assets", sizeof(g_defaults.dir.assets));
