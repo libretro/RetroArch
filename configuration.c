@@ -2929,8 +2929,6 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    struct config_path_setting *tmp = NULL;
    global_t   *global              = global_get_ptr();
 
-   RARCH_LOG ("Populating path settings...\n");
-
    SETTING_PATH("recording_output_directory", false,
          global->record.output_dir);
    SETTING_PATH("recording_config_directory", false,
