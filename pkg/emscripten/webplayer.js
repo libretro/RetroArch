@@ -120,6 +120,8 @@ function setupFolderStructure()
   FS.createPath('/', '/home/web_user', true, true);
   FS.createPath('/', '/home/web_user/.config', true, true);
   FS.createPath('/', '/home/web_user/.config/retroarch', true, true);
+  FS.createPath('/', '/assets', true, true);
+  FS.createPath('/', '/content', true, true);
 }
 
 function stat(path)
@@ -171,7 +173,7 @@ function uploadData(data,name)
   FS.createDataFile('/', name, dataView, true, false);
 
   var data = FS.readFile(name,{ encoding: 'binary' });
-  FS.writeFile('/home/web_user/content/' + name, data ,{ encoding: 'binary' });
+  FS.writeFile('/content/' + name, data ,{ encoding: 'binary' });
   FS.unlink(name);
 
 }

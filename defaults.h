@@ -52,6 +52,7 @@ struct defaults
 
    struct
    {
+      char menu_content[PATH_MAX_LENGTH];
       char core_assets[PATH_MAX_LENGTH];
       char menu_config[PATH_MAX_LENGTH];
       char autoconfig[PATH_MAX_LENGTH];

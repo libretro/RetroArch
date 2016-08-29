@@ -95,22 +95,6 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.autoconfig, base_path,
          "autoconfig", sizeof(g_defaults.dir.autoconfig));
 
-   if (path_is_directory("/usr/local/share/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/retroarch",
-            "assets", sizeof(g_defaults.dir.assets));
-   else if (path_is_directory("/usr/share/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/share/retroarch",
-            "assets", sizeof(g_defaults.dir.assets));
-   else if (path_is_directory("/usr/local/share/games/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/games/retroarch",
-            "assets", sizeof(g_defaults.dir.assets));
-   else if (path_is_directory("/usr/share/games/retroarch/assets"))
-      fill_pathname_join(g_defaults.dir.assets, "/usr/share/games/retroarch",
-            "assets", sizeof(g_defaults.dir.assets));
-   else
-      fill_pathname_join(g_defaults.dir.assets, base_path,
-            "assets", sizeof(g_defaults.dir.assets));
-
    fill_pathname_join(g_defaults.dir.menu_config, base_path,
          "config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
@@ -135,6 +119,10 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
          "screenshots", sizeof(g_defaults.dir.screenshot));
    fill_pathname_join(g_defaults.dir.thumbnails, base_path,
          "thumbnails", sizeof(g_defaults.dir.thumbnails));
+   fill_pathname_join(g_defaults.dir.thumbnails, "/",
+         "content", sizeof(g_defaults.dir.thumbnails));
+   fill_pathname_join(g_defaults.dir.assets, "/",
+         "assets", sizeof(g_defaults.dir.assets));
 
    snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "rgui");
 }
