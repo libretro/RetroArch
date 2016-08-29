@@ -120,11 +120,6 @@ function setupFolderStructure()
   FS.createPath('/', '/home/web_user', true, true);
   FS.createPath('/', '/home/web_user/.config', true, true);
   FS.createPath('/', '/home/web_user/.config/retroarch', true, true);
-  FS.createPath('/', '/home/web_user/content', true, true);
-  FS.createPath('/', '/home/web_user/saves', true, true);
-  FS.createPath('/', '/home/web_user/states', true, true);
-  FS.createPath('/', '/home/web_user/system', true, true);
-  FS.createPath('/', '/home/web_user/screenshots', true, true);
 }
 
 function stat(path)
@@ -153,30 +148,7 @@ function startRetroArch()
 
   setupFileSystem();
   setupFolderStructure();
-  cfgFile = '/home/web_user/.config/retroarch/retroarch.cfg'
 
-  if (!stat(cfgFile))
-  {
-     console.log ("WEBPLAYER: first run, setting defaults");
-     var config = 'input_player1_select = shift\n';
-     var latency = parseInt(document.getElementById('latency').value, 10);
-     if (isNaN(latency)) latency = 96;
-     config += 'audio_latency = ' + latency + '\n'
-     if (document.getElementById('vsync').checked)
-        config += 'video_vsync = true\n';
-     else
-     config += 'video_vsync = false\n';
-     config += 'system_directory = /home/web_user/system/\n';
-     config += 'savefile_directory = /home/web_user/saves/\n';
-     config += 'savestate_directory = /home/web_user/states/\n';
-     config += 'rgui_browser_directory = /home/web_user/content/\n';
-
-     FS.writeFile(cfgFile, config);
-  }
-  else 
-  {
-     console.log ("WEBPLAYER: loading config from " + cfgFile);
-  }
   Module['callMain'](Module['arguments']);
 }
 
@@ -202,18 +174,6 @@ function uploadData(data,name)
   FS.writeFile('/home/web_user/content/' + name, data ,{ encoding: 'binary' });
   FS.unlink(name);
 
-}
-
-function dropboxCopy()
-{
-  var data = FS.readFile('/home/web_user/.config/retroarch/retroarch.cfg',{ encoding: 'utf8' });
-  console.log(data);
-  var dbfs = new BrowserFS.FileSystem.Dropbox(client);
-  BrowserFS.initialize(dbfs);
-  var BFS = new BrowserFS.EmscriptenFS();
-
-  var fs = BrowserFS.BFSRequire('fs');
-  fs.writeFile('retroarch.cfg', data ,{ encoding: 'utf8' });
 }
 
 var Module = 

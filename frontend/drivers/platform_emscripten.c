@@ -84,7 +84,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
             "%s/retroarch", xdg);
    else if (home)
       snprintf(base_path, sizeof(base_path),
-            "%s/retroarch", home);
+            "%s/.config/retroarch", home);
    else
       snprintf(base_path, sizeof(base_path), "retroarch");
 
