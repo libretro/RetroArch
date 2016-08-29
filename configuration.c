@@ -2757,9 +2757,11 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 
    if(path_is_directory(buf))
    {
-      fill_pathname_join(buf, buf,
-            path, sizeof(buf));
-      fill_pathname_noext(autoconf_file, buf,
+      char buf_new[PATH_MAX_LENGTH] = {0};
+
+      fill_pathname_join(buf_new, buf,
+            path, sizeof(buf_new));
+      fill_pathname_noext(autoconf_file, buf_new,
             file_path_str(FILE_PATH_CONFIG_EXTENSION),
             sizeof(autoconf_file));
    }
