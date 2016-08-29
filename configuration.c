@@ -2921,20 +2921,20 @@ static int populate_settings_string(settings_t *settings, struct config_string_s
 #define SETTING_PATH(key, defval, configval) \
 { \
    if (count == 0) \
-      tmp = (struct config_path_setting*)malloc(sizeof(struct config_path_setting) * (count + 1)); \
+      tmp = (struct config_path_setting_ptr*)malloc(sizeof(struct config_path_setting_ptr) * (count + 1)); \
    else \
-      tmp = (struct config_path_setting*)realloc(tmp, sizeof(struct config_path_setting) * (count + 1)); \
+      tmp = (struct config_path_setting_ptr*)realloc(tmp, sizeof(struct config_path_setting_ptr) * (count + 1)); \
    tmp[count].ident    = key; \
    tmp[count].defaults = defval; \
    tmp[count].value    = configval; \
    count++; \
 } \
 
-static int populate_settings_path(settings_t *settings, struct config_path_setting *out)
+static int populate_settings_path(settings_t *settings, struct config_path_setting_ptr *out)
 {
    unsigned count = 0;
-   struct config_path_setting *tmp = NULL;
-   global_t   *global              = global_get_ptr();
+   struct config_path_setting_ptr *tmp = NULL;
+   global_t   *global                  = global_get_ptr();
 
    SETTING_PATH("recording_output_directory", false,
          global->record.output_dir);
@@ -3030,7 +3030,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
          "screenshot_directory", true,
          settings->directory.screenshot);
 
-   memcpy(out, tmp, sizeof(struct config_path_setting) * count);
+   memcpy(out, tmp, sizeof(struct config_path_setting_ptr) * count);
    free(tmp);
    return count;
 }
@@ -3055,7 +3055,7 @@ bool config_save_file(const char *path)
    struct config_int_setting_ptr *int_settings       = NULL;
    struct config_float_setting_ptr *float_settings   = NULL;
    struct config_string_setting *string_settings     = NULL;
-   struct config_path_setting *path_settings         = NULL;
+   struct config_path_setting_ptr *path_settings     = NULL;
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
@@ -3083,7 +3083,7 @@ bool config_save_file(const char *path)
       (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
 
    path_settings = 
-      (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
+      (struct config_path_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting_ptr));
 
    bool_settings_size   = populate_settings_bool  (settings, bool_settings);
    int_settings_size    = populate_settings_int   (settings, int_settings);
@@ -3275,8 +3275,8 @@ bool config_save_overrides(int override_type)
    struct config_float_setting_ptr *float_overrides = NULL;
    struct config_string_setting *string_settings    = NULL;
    struct config_string_setting *string_overrides   = NULL;
-   struct config_path_setting *path_settings        = NULL;
-   struct config_path_setting *path_overrides       = NULL;
+   struct config_path_setting_ptr *path_settings    = NULL;
+   struct config_path_setting_ptr *path_overrides   = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -3311,9 +3311,9 @@ bool config_save_overrides(int override_type)
       (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
 
    path_settings = 
-      (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
+      (struct config_path_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting_ptr));
    path_overrides = 
-      (struct config_path_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting));
+      (struct config_path_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting_ptr));
 
 
    fill_pathname_application_special(config_directory, sizeof(config_directory),

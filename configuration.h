@@ -61,7 +61,7 @@ struct config_string_setting
    const char *value;
 };
 
-struct config_path_setting
+struct config_path_setting_ptr
 { 
    const char *ident;
    bool defaults;
