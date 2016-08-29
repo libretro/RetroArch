@@ -1714,9 +1714,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings_t *settings)
 {
    unsigned i;
-   int bool_settings_size  = 0, int_settings_size    = 0,
-       float_settings_size = 0, string_settings_size = 0,
-       path_settings_size  = 0;
+   int string_settings_size = 0, path_settings_size  = 0;
    bool tmp_bool                                   = false;
    char *save                                      = NULL;
    const char *extra_path                          = NULL;
@@ -1728,13 +1726,9 @@ static bool config_load_file(const char *path, bool set_defaults,
    struct config_float_setting_ptr *float_settings = NULL;
    struct config_bool_setting_ptr *bool_settings   = NULL;
    global_t   *global                              = global_get_ptr();
-
-   if (!settings)
-      settings = config_get_ptr();
-
-   bool_settings_size   = populate_settings_bool  (settings, &bool_settings);
-   float_settings_size  = populate_settings_float (settings, &float_settings);
-   int_settings_size    = populate_settings_int   (settings, &int_settings);
+   int bool_settings_size                          = populate_settings_bool  (settings, &bool_settings);
+   int float_settings_size                         = populate_settings_float (settings, &float_settings);
+   int int_settings_size                           = populate_settings_int   (settings, &int_settings);
     
    (void)path_settings_size;
    (void)string_settings_size;
@@ -1906,7 +1900,6 @@ static bool config_load_file(const char *path, bool set_defaults,
 #endif
 
    /* Float settings */
-
    for (i = 0; i < float_settings_size; i++)
    {
       float tmp = 0.0f;
@@ -2108,7 +2101,6 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    settings->video.swap_interval = MAX(settings->video.swap_interval, 1);
    settings->video.swap_interval = MIN(settings->video.swap_interval, 4);
-
 
    audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 
@@ -3063,12 +3055,7 @@ bool config_save_file(const char *path)
    string_settings_size = populate_settings_string(settings, &string_settings);
    path_settings_size   = populate_settings_path  (settings, &path_settings);
 
-
-   /*
-    * Path settings 
-    *
-    */
-
+   /* Path settings */
    for (i = 0; i < path_settings_size; i++)
    {
       if (path_settings[i].defaults)
@@ -3085,33 +3072,21 @@ bool config_save_file(const char *path)
          !string_is_empty(settings->menu.xmb.font) ? settings->menu.xmb.font : "");
 #endif
 
-   /*
-    * String settings 
-    *
-    */
-
+   /* String settings  */
    for (i = 0; i < string_settings_size; i++)
    {
       config_set_string(conf, string_settings[i].ident,
             string_settings[i].value);
    }
 
-   /*
-    * Float settings 
-    *
-    */
-
+   /* Float settings  */
    for (i = 0; i < float_settings_size; i++)
    {
       config_set_float(conf, float_settings[i].ident,
             *float_settings[i].ptr);
    }
 
-   /*
-    * Integer settings 
-    *
-    */
-
+   /* Integer settings */
    for (i = 0; i < int_settings_size; i++)
    {
       config_set_int(conf, int_settings[i].ident,
@@ -3132,11 +3107,7 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
    }
 
-   /*
-    * Boolean settings 
-    *
-    */
-
+   /* Boolean settings */
    for (i = 0; i < bool_settings_size; i++)
    {
       config_set_bool(conf, bool_settings[i].ident,
@@ -3165,11 +3136,7 @@ bool config_save_file(const char *path)
                (((int)(settings->video.msg_color_g * 255.0f) & 0xff) <<  8) +
                (((int)(settings->video.msg_color_b * 255.0f) & 0xff));
 
-   /*
-    * Hexadecimal settings 
-    *
-    */
-
+   /* Hexadecimal settings */
    config_set_hex(conf, "video_message_color", msg_color);
 #ifdef HAVE_MENU
    config_set_hex(conf, "menu_entry_normal_color",
