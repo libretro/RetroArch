@@ -2865,20 +2865,20 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 #define SETTING_STRING(key, configval) \
 { \
    if (count == 0) \
-      tmp = (struct config_string_setting*)malloc(sizeof(struct config_string_setting) * (count + 1)); \
+      tmp = (struct config_string_setting_ptr*)malloc(sizeof(struct config_string_setting_ptr) * (count + 1)); \
    else \
-      tmp = (struct config_string_setting*)realloc(tmp, sizeof(struct config_string_setting) * (count + 1)); \
+      tmp = (struct config_string_setting_ptr*)realloc(tmp, sizeof(struct config_string_setting_ptr) * (count + 1)); \
    tmp[count].ident    = key; \
    tmp[count].value    = configval; \
    count++; \
 } \
 
-static int populate_settings_string(settings_t *settings, struct config_string_setting *out)
+static int populate_settings_string(settings_t *settings, struct config_string_setting_ptr *out)
 {
-   unsigned count                    = 0;
-   struct config_string_setting *tmp = NULL;
+   unsigned count                        = 0;
+   struct config_string_setting_ptr *tmp = NULL;
 #ifdef HAVE_NETPLAY
-   global_t   *global                = global_get_ptr();
+   global_t   *global                    = global_get_ptr();
 #endif
    SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir);
    SETTING_STRING("video_filter",             settings->path.softfilter_plugin);
@@ -2913,7 +2913,7 @@ static int populate_settings_string(settings_t *settings, struct config_string_s
    SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src);
    SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst);
 
-   memcpy(out, tmp, sizeof(struct config_string_setting) * count);
+   memcpy(out, tmp, sizeof(struct config_string_setting_ptr) * count);
    free(tmp);
    return count;
 }
@@ -3054,7 +3054,7 @@ bool config_save_file(const char *path)
    struct config_bool_setting_ptr *bool_settings     = NULL;
    struct config_int_setting_ptr *int_settings       = NULL;
    struct config_float_setting_ptr *float_settings   = NULL;
-   struct config_string_setting *string_settings     = NULL;
+   struct config_string_setting_ptr *string_settings = NULL;
    struct config_path_setting_ptr *path_settings     = NULL;
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
@@ -3080,7 +3080,7 @@ bool config_save_file(const char *path)
       (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
 
    string_settings = 
-      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+      (struct config_string_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting_ptr));
 
    path_settings = 
       (struct config_path_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting_ptr));
@@ -3273,8 +3273,8 @@ bool config_save_overrides(int override_type)
    struct config_int_setting_ptr *int_overrides     = NULL;
    struct config_float_setting_ptr *float_settings  = NULL;
    struct config_float_setting_ptr *float_overrides = NULL;
-   struct config_string_setting *string_settings    = NULL;
-   struct config_string_setting *string_overrides   = NULL;
+   struct config_string_setting_ptr *string_settings = NULL;
+   struct config_string_setting_ptr *string_overrides= NULL;
    struct config_path_setting_ptr *path_settings    = NULL;
    struct config_path_setting_ptr *path_overrides   = NULL;
 
@@ -3306,9 +3306,9 @@ bool config_save_overrides(int override_type)
       (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
 
    string_settings = 
-      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+      (struct config_string_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting_ptr));
    string_overrides = 
-      (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
+      (struct config_string_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting_ptr));
 
    path_settings = 
       (struct config_path_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_path_setting_ptr));
