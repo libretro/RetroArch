@@ -3059,7 +3059,7 @@ int populate_settings_float(settings_t *settings, struct config_float_setting *o
 
    memcpy(out, tmp, sizeof(*tmp));
    free(tmp);
-   return ARRAY_SIZE(out);
+   return count;
 }
 
 #define SETTING_STRING(key, configval) \
@@ -3116,7 +3116,7 @@ int populate_settings_string(settings_t *settings, struct config_string_setting 
 
    memcpy(out, tmp, sizeof(*tmp));
    free(tmp);
-   return ARRAY_SIZE(out);
+   return count;
 }
 
 #define SETTING_PATH(key, defval, configval) \
@@ -3233,7 +3233,7 @@ int populate_settings_path(settings_t *settings, struct config_path_setting *out
 
    memcpy(out, tmp, sizeof(*tmp));
    free(tmp);
-   return ARRAY_SIZE(out);
+   return count;
 }
 
 /**
