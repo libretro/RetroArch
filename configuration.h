@@ -188,7 +188,6 @@ typedef struct settings
          struct
          {
             bool enable;
-            bool setting_enable;
          } wraparound;
          struct
          {

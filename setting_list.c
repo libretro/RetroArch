@@ -162,7 +162,7 @@ static int setting_int_action_right_default(void *data, bool wraparound)
       {
          settings_t *settings = config_get_ptr();
 
-         if (settings && settings->menu.navigation.wraparound.setting_enable)
+         if (settings && settings->menu.navigation.wraparound.enable)
             *setting->value.target.integer = min;
          else
             *setting->value.target.integer = max;
@@ -260,7 +260,7 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
       {
          settings_t *settings = config_get_ptr();
 
-         if (settings && settings->menu.navigation.wraparound.setting_enable)
+         if (settings && settings->menu.navigation.wraparound.enable)
             *setting->value.target.unsigned_integer = min;
          else
             *setting->value.target.unsigned_integer = max;
@@ -340,7 +340,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
             {
                settings_t *settings = config_get_ptr();
 
-               if (settings && settings->menu.navigation.wraparound.setting_enable)
+               if (settings && settings->menu.navigation.wraparound.enable)
                   *setting->value.target.integer = min;
                else
                   *setting->value.target.integer = max;
@@ -358,7 +358,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
             {
                settings_t *settings = config_get_ptr();
 
-               if (settings && settings->menu.navigation.wraparound.setting_enable)
+               if (settings && settings->menu.navigation.wraparound.enable)
                   *setting->value.target.unsigned_integer = min;
                else
                   *setting->value.target.unsigned_integer = max;
@@ -376,7 +376,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
             {
                settings_t *settings = config_get_ptr();
 
-               if (settings && settings->menu.navigation.wraparound.setting_enable)
+               if (settings && settings->menu.navigation.wraparound.enable)
                   *setting->value.target.fraction = min;
                else
                   *setting->value.target.fraction = max;
@@ -450,7 +450,7 @@ static int setting_fraction_action_right_default(
       {
          settings_t *settings = config_get_ptr();
 
-         if (settings && settings->menu.navigation.wraparound.setting_enable)
+         if (settings && settings->menu.navigation.wraparound.enable)
             *setting->value.target.fraction = min;
          else
             *setting->value.target.fraction = max;

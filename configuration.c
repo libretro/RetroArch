@@ -1079,8 +1079,6 @@ static void config_set_defaults(void)
    settings->menu.title_color                  = menu_title_color;
 
    settings->menu.dpi.override_value           = menu_dpi_override_value;
-
-   settings->menu.navigation.wraparound.setting_enable                  = true;
 #endif
 
 #ifdef HAVE_CHEEVOS

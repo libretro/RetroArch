@@ -281,7 +281,7 @@ static int setting_string_action_right_driver(void *data,
    {
       settings_t *settings = config_get_ptr();
 
-      if (settings && settings->menu.navigation.wraparound.setting_enable)
+      if (settings && settings->menu.navigation.wraparound.enable)
       {
          drv.label = setting->name;
          drv.s     = setting->value.target.string;
