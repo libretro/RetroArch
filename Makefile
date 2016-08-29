@@ -201,7 +201,7 @@ uninstall:
 	rm -f $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
 	rm -f $(DESTDIR)$(MAN_DIR)/man6/retroarch-cg2glsl.6
 	rm -f $(DESTDIR)$(PREFIX)/share/pixmaps/retroarch.svg
-	rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets
+	rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch
 
 clean:
 	rm -rf $(OBJDIR)
