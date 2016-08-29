@@ -1,4 +1,4 @@
-TARGET = retroarch.js
+TARGET := retroarch.js
 
 OS = Emscripten
 OBJ :=

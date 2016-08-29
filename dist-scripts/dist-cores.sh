@@ -169,7 +169,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $MAKEFILE_GRIFFIN = "yes" ]; then
       make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
-      make -C ../ -f Makefile.emscripten LTO=$lto -j7 || exit 1
+       make -C ../ -f Makefile.emscripten LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
    elif [ $PLATFORM = "unix" ]; then
       make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ctr" ]; then
@@ -243,7 +243,9 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "wii" ] ; then
       mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
    elif [ $PLATFORM = "emscripten" ] ; then
-      mv -f ../retroarch.js ../emscripten/$name.js
+      mkdir -p ../pkg/emscripten/
+      mv -f ../${name}_libretro.js ../pkg/emscripten/${name}_libretro.js
+      mv -f ../${name}_libretro.js.mem ../pkg/emscripten/${name}_libretro.js.mem
    fi
 
    # Remove executable files
@@ -264,7 +266,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "wii" ] ; then
       rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
    elif [ $platform = "emscripten" ] ; then
-      rm -f ../retroarch.js
+      rm -f ../${name}_libretro.js
    fi
 
    # Do cleanup if this is a big stack core
