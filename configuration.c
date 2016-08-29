@@ -655,14 +655,14 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    struct config_bool_setting_ptr *tmp = NULL;
 
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->ui.companion_start_on_boot, true, ui_companion_start_on_boot);
-   SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable, false, false /* TODO */);
+   SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable, true, ui_companion_enable);
    SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record, false, false /* TODO */);
    SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable, false, false /* TODO */);
-   SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable, false, false /* TODO */);
-   SETTING_BOOL("netplay_client_swap_input",     &settings->input.netplay_client_swap_input, false, false /* TODO */);
-   SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show, false, false /* TODO */);
-   SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound, false, false /* TODO */);
-   SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown, false, false /* TODO */);
+   SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable, true, true);
+   SETTING_BOOL("netplay_client_swap_input",     &settings->input.netplay_client_swap_input, true, netplay_client_swap_input);
+   SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show, true, input_descriptor_label_show);
+   SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound);
+   SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown, true, load_dummy_on_core_shutdown);
    SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable, false, false /* TODO */);
    SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable, false, false /* TODO */);
    SETTING_BOOL("fps_show",                      &settings->fps_show, false, false /* TODO */);
@@ -994,7 +994,6 @@ static void config_set_defaults(void)
 #endif
 
    settings->history_list_enable         = def_history_list_enable;
-   settings->load_dummy_on_core_shutdown = load_dummy_on_core_shutdown;
 
 #if TARGET_OS_IPHONE
    settings->input.small_keyboard_enable   = false;
@@ -1139,7 +1138,6 @@ static void config_set_defaults(void)
    settings->menu.navigation.browser.filter.supported_extensions_enable = true;
 #endif
 
-   settings->ui.companion_enable                    = ui_companion_enable;
    settings->ui.menubar_enable                      = true;
    settings->ui.suspend_screensaver_enable          = true;
 
@@ -1154,10 +1152,7 @@ static void config_set_defaults(void)
    *settings->cheevos.password                      = '\0';
 #endif
 
-   settings->input.back_as_menu_toggle_enable       = true;
    settings->input.bind_timeout                     = input_bind_timeout;
-   settings->input.input_descriptor_label_show      = input_descriptor_label_show;
-   settings->input.input_descriptor_hide_unbound    = input_descriptor_hide_unbound;
    settings->input.remap_binds_enable               = true;
    settings->input.max_users                        = input_max_users;
    settings->input.menu_toggle_gamepad_combo        = menu_toggle_gamepad_combo;
@@ -1193,7 +1188,6 @@ static void config_set_defaults(void)
       }
 
    settings->input.axis_threshold                  = axis_threshold;
-   settings->input.netplay_client_swap_input       = netplay_client_swap_input;
    settings->input.turbo_period                    = turbo_period;
    settings->input.turbo_duty_cycle                = turbo_duty_cycle;
 
