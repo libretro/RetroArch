@@ -299,7 +299,7 @@ static void gl_raster_font_render_line(
       {
          int off_x, off_y, tex_x, tex_y, width, height;
          const struct font_glyph *glyph =
-            font->font_driver->get_glyph(font->font_data, utf8_walk(&msg));
+            font->font_driver->get_glyph(font->font_data, msg[i]);
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
