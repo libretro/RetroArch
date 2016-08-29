@@ -126,18 +126,22 @@ appendstr(char *dst, const char *src, size_t dstsize)
 static void
 enumerate_video_devices(char *buf, size_t buflen)
 {
+#ifdef HAVE_UDEV
+   int ndevs;
+   struct udev_device *dev;
+   struct udev_enumerate *enumerate;
+   struct udev_list_entry *devices, *dev_list_entry;
+   const char *path, *name;
+   struct udev *udev = NULL;
+#endif
+
    memset(buf, 0, buflen);
 
    appendstr(buf, "Video capture device; ", buflen);
 
 #ifdef HAVE_UDEV
    /* Get a list of devices matching the "video4linux" subsystem from udev */
-   int ndevs;
-   struct udev_device *dev;
-   struct udev_enumerate *enumerate;
-   struct udev_list_entry *devices, *dev_list_entry;
-   const char *path, *name;
-   struct udev *udev = udev_new();
+   udev = udev_new();
 
    if (!udev)
    {
@@ -230,6 +234,7 @@ enumerate_audio_devices(char *buf, size_t buflen)
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
+   struct retro_variable envvars[2] = { NULL };
    char video_devices[ENVVAR_BUFLEN];
    char audio_devices[ENVVAR_BUFLEN];
 
@@ -245,11 +250,10 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
    enumerate_video_devices(video_devices, sizeof(video_devices));
    enumerate_audio_devices(audio_devices, sizeof(audio_devices));
 
-   struct retro_variable envvars[] = {
-      { "videoproc_videodev", video_devices },
-      { "videoproc_audiodev", audio_devices },
-      { NULL, NULL }
-   };
+   envvars[0].key   = "videoproc_videodev";
+   envvars[0].value = video_devices;
+   envvars[1].key   = "videoproc_audiodev";
+   envvars[1].value = audio_devices;
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_SET_VARIABLES, envvars);
 }
