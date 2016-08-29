@@ -72,7 +72,7 @@
    count++; \
 } 
 
-#define SETTING_FLOAT(key, configval) \
+#define SETTING_FLOAT(key, configval, default_enable, default_setting) \
 { \
    if (count == 0) \
       tmp = (struct config_float_setting_ptr*)malloc(sizeof(struct config_float_setting_ptr) * (count + 1)); \
@@ -80,6 +80,9 @@
       tmp = (struct config_float_setting_ptr*)realloc(tmp, sizeof(struct config_float_setting_ptr) * (count + 1)); \
    tmp[count].ident    = key; \
    tmp[count].ptr      = configval; \
+   tmp[count].def_enable = default_enable; \
+   if (default_enable) \
+      tmp[count].def     = default_setting; \
    count++; \
 }
 
@@ -664,7 +667,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown, true, load_dummy_on_core_shutdown);
    SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable, false, false /* TODO */);
-   SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable, false, false /* TODO */);
+   SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable, true, true);
    SETTING_BOOL("fps_show",                      &settings->fps_show, true, false);
    SETTING_BOOL("ui_menubar_enable",             &settings->ui.menubar_enable, true, true);
    SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable, true, true);
@@ -788,27 +791,27 @@ static int populate_settings_float(settings_t *settings, struct config_float_set
    unsigned count = 0;
    struct config_float_setting_ptr *tmp = NULL;
 
-   SETTING_FLOAT("video_aspect_ratio",       &settings->video.aspect_ratio);
-   SETTING_FLOAT("video_scale",              &settings->video.scale);
-   SETTING_FLOAT("video_refresh_rate",       &settings->video.refresh_rate);
-   SETTING_FLOAT("audio_rate_control_delta", &settings->audio.rate_control_delta);
-   SETTING_FLOAT("audio_max_timing_skew",    &settings->audio.max_timing_skew);
-   SETTING_FLOAT("audio_volume",             &settings->audio.volume);
+   SETTING_FLOAT("video_aspect_ratio",       &settings->video.aspect_ratio, true, aspect_ratio);
+   SETTING_FLOAT("video_scale",              &settings->video.scale, false, 0.0f);
+   SETTING_FLOAT("video_refresh_rate",       &settings->video.refresh_rate, true, refresh_rate);
+   SETTING_FLOAT("audio_rate_control_delta", &settings->audio.rate_control_delta, true, rate_control_delta);
+   SETTING_FLOAT("audio_max_timing_skew",    &settings->audio.max_timing_skew, true, max_timing_skew);
+   SETTING_FLOAT("audio_volume",             &settings->audio.volume, true, audio_volume);
 #ifdef HAVE_OVERLAY
-   SETTING_FLOAT("input_overlay_opacity",    &settings->input.overlay_opacity);
-   SETTING_FLOAT("input_overlay_scale",      &settings->input.overlay_scale);
+   SETTING_FLOAT("input_overlay_opacity",    &settings->input.overlay_opacity, true, 0.7f);
+   SETTING_FLOAT("input_overlay_scale",      &settings->input.overlay_scale, true, 1.0f);
 #endif
 #ifdef HAVE_MENU
-   SETTING_FLOAT("menu_wallpaper_opacity",   &settings->menu.wallpaper.opacity);
-   SETTING_FLOAT("menu_footer_opacity",      &settings->menu.footer.opacity);
-   SETTING_FLOAT("menu_header_opacity",      &settings->menu.header.opacity);
+   SETTING_FLOAT("menu_wallpaper_opacity",   &settings->menu.wallpaper.opacity, true, menu_wallpaper_opacity);
+   SETTING_FLOAT("menu_footer_opacity",      &settings->menu.footer.opacity,    true, menu_footer_opacity);
+   SETTING_FLOAT("menu_header_opacity",      &settings->menu.header.opacity,    true, menu_header_opacity);
 #endif
-   SETTING_FLOAT("video_message_pos_x",      &settings->video.msg_pos_x);
-   SETTING_FLOAT("video_message_pos_y",      &settings->video.msg_pos_y);
-   SETTING_FLOAT("video_font_size",          &settings->video.font_size);
-   SETTING_FLOAT("fastforward_ratio",        &settings->fastforward_ratio);
-   SETTING_FLOAT("slowmotion_ratio",         &settings->slowmotion_ratio);
-   SETTING_FLOAT("input_axis_threshold",     &settings->input.axis_threshold);
+   SETTING_FLOAT("video_message_pos_x",      &settings->video.msg_pos_x,      true, message_pos_offset_x);
+   SETTING_FLOAT("video_message_pos_y",      &settings->video.msg_pos_y,      true, message_pos_offset_y);
+   SETTING_FLOAT("video_font_size",          &settings->video.font_size,      true, font_size);
+   SETTING_FLOAT("fastforward_ratio",        &settings->fastforward_ratio,    true, fastforward_ratio);
+   SETTING_FLOAT("slowmotion_ratio",         &settings->slowmotion_ratio,     true, slowmotion_ratio);
+   SETTING_FLOAT("input_axis_threshold",     &settings->input.axis_threshold, true, axis_threshold);
 
    *out = 
       (struct config_float_setting_ptr*) malloc(count * sizeof(struct config_float_setting_ptr));
@@ -923,15 +926,23 @@ static void config_set_defaults(void)
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
    struct config_bool_setting_ptr *bool_settings   = NULL;
+   struct config_float_setting_ptr *float_settings   = NULL;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
+   unsigned float_settings_size    = populate_settings_float  (settings, &float_settings);
    unsigned bool_settings_size     = populate_settings_bool  (settings, &bool_settings);
 
    for (i = 0; i < bool_settings_size; i++)
    {
       if (bool_settings[i].def_enable)
          *bool_settings[i].ptr = bool_settings[i].def;
+   }
+
+   for (i = 0; i < float_settings_size; i++)
+   {
+      if (float_settings[i].def_enable)
+         *float_settings[i].ptr = float_settings[i].def;
    }
 
    if (def_camera)
@@ -990,7 +1001,6 @@ static void config_set_defaults(void)
 #else
    settings->multimedia.builtin_mediaplayer_enable  = false;
 #endif
-   settings->multimedia.builtin_imageviewer_enable = true;
    settings->video.scale                 = scale;
    settings->video.fullscreen            = rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL)  ? true : fullscreen;
    settings->video.windowed_fullscreen   = windowed_fullscreen;
@@ -1008,21 +1018,14 @@ static void config_set_defaults(void)
 #ifdef GEKKO
    settings->video.viwidth                     = video_viwidth;
 #endif
-   settings->video.aspect_ratio                = aspect_ratio;
    settings->video.aspect_ratio_auto           = aspect_ratio_auto; /* Let implementation decide if automatic, or 1:1 PAR. */
    settings->video.aspect_ratio_idx            = aspect_ratio_idx;
    settings->video.shader_enable               = shader_enable;
    settings->video.allow_rotate                = allow_rotate;
 
-   settings->video.font_size                   = font_size;
-   settings->video.msg_pos_x                   = message_pos_offset_x;
-   settings->video.msg_pos_y                   = message_pos_offset_y;
-
    settings->video.msg_color_r                 = ((message_color >> 16) & 0xff) / 255.0f;
    settings->video.msg_color_g                 = ((message_color >>  8) & 0xff) / 255.0f;
    settings->video.msg_color_b                 = ((message_color >>  0) & 0xff) / 255.0f;
-
-   settings->video.refresh_rate                = refresh_rate;
 
    if (g_defaults.settings.video_refresh_rate > 0.0 &&
          g_defaults.settings.video_refresh_rate != refresh_rate)
@@ -1041,16 +1044,11 @@ static void config_set_defaults(void)
       g_defaults.settings.out_latency          = out_latency;
 
    settings->audio.latency                     = g_defaults.settings.out_latency;
-   settings->audio.rate_control_delta          = rate_control_delta;
-   settings->audio.max_timing_skew             = max_timing_skew;
-   settings->audio.volume                      = audio_volume;
 
    audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 
    settings->rewind_buffer_size                = rewind_buffer_size;
    settings->rewind_granularity                = rewind_granularity;
-   settings->slowmotion_ratio                  = slowmotion_ratio;
-   settings->fastforward_ratio                 = fastforward_ratio;
    settings->autosave_interval                 = autosave_interval;
 
    settings->network_cmd_port                  = network_cmd_port;
@@ -1067,9 +1065,6 @@ static void config_set_defaults(void)
 #ifdef HAVE_MENU
    if (first_initialized)
       settings->menu_show_start_screen         = default_menu_show_start_screen;
-   settings->menu.wallpaper.opacity            = menu_wallpaper_opacity;
-   settings->menu.footer.opacity               = menu_footer_opacity;
-   settings->menu.header.opacity               = menu_header_opacity;
    settings->menu.thumbnails                   = menu_thumbnails_default;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
    settings->menu.entry_hover_color            = menu_entry_hover_color;
@@ -1117,7 +1112,6 @@ static void config_set_defaults(void)
             retro_assert(j == settings->input.binds[i][j].id);
       }
 
-   settings->input.axis_threshold                  = axis_threshold;
    settings->input.turbo_period                    = turbo_period;
    settings->input.turbo_duty_cycle                = turbo_duty_cycle;
 
@@ -1127,8 +1121,6 @@ static void config_set_defaults(void)
          sizeof(settings->network.buildbot_assets_url));
    settings->network.buildbot_auto_extract_archive = true;
 
-   settings->input.overlay_opacity                 = 0.7f;
-   settings->input.overlay_scale                   = 1.0f;
    *settings->input.keyboard_layout                = '\0';
 
    for (i = 0; i < MAX_USERS; i++)
@@ -1361,6 +1353,8 @@ static void config_set_defaults(void)
 
    if (bool_settings)
       free(bool_settings);
+   if (float_settings)
+      free(float_settings);
 }
 
 /**
