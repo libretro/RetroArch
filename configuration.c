@@ -1279,6 +1279,131 @@ static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *
 }
 #endif
 
+static int populate_settings_bool(settings_t *settings, struct config_bool_setting_ptr *out)
+{
+   global_t   *global   = global_get_ptr();
+   struct config_bool_setting_ptr tmp[] = {
+      { "ui_companion_start_on_boot",   &settings->ui.companion_start_on_boot},
+      { "ui_companion_enable",          &settings->ui.companion_enable},
+      { "video_gpu_record",             &settings->video.gpu_record},
+      { "input_remap_binds_enable",     &settings->input.remap_binds_enable},
+      { "back_as_menu_toggle_enable",   &settings->input.back_as_menu_toggle_enable},
+      { "netplay_client_swap_input",    &settings->input.netplay_client_swap_input},
+      { "input_descriptor_label_show",  &settings->input.input_descriptor_label_show},
+      { "input_descriptor_hide_unbound",&settings->input.input_descriptor_hide_unbound},
+      { "load_dummy_on_core_shutdown",  &settings->load_dummy_on_core_shutdown},
+      { "builtin_mediaplayer_enable",   &settings->multimedia.builtin_mediaplayer_enable},
+      { "builtin_imageviewer_enable",   &settings->multimedia.builtin_imageviewer_enable},
+      { "fps_show",                     &settings->fps_show},
+      { "ui_menubar_enable",            &settings->ui.menubar_enable},
+      { "suspend_screensaver_enable",   &settings->ui.suspend_screensaver_enable},
+      { "rewind_enable",                &settings->rewind_enable},
+      { "audio_sync",                   &settings->audio.sync},
+      { "video_shader_enable",          &settings->video.shader_enable},
+      { "video_aspect_ratio_auto",      &settings->video.aspect_ratio_auto},
+      { "video_windowed_fullscreen",    &settings->video.windowed_fullscreen},
+      { "video_crop_overscan",          &settings->video.crop_overscan},
+      { "video_scale_integer",          &settings->video.scale_integer},
+      { "video_smooth",                 &settings->video.smooth},
+      { "video_threaded",               &settings->video.threaded},
+      { "video_shared_context",         &settings->video.shared_context},
+      { "custom_bgm_enable",            &global->console.sound.system_bgm_enable},
+      { "auto_screenshot_filename",     &settings->auto_screenshot_filename},
+      { "video_force_srgb_disable",     &settings->video.force_srgb_disable},
+      { "video_fullscreen",             &settings->video.fullscreen},
+      { "bundle_assets_extract_enable", &settings->bundle_assets_extract_enable},
+      { "video_vsync",                  &settings->video.vsync},
+      { "video_hard_sync",              &settings->video.hard_sync},
+      { "video_black_frame_insertion",  &settings->video.black_frame_insertion},
+      { "video_disable_composition",    &settings->video.disable_composition},
+      { "pause_nonactive",              &settings->pause_nonactive},
+      { "video_gpu_screenshot",         &settings->video.gpu_screenshot},
+      { "keyboard_gamepad_enable",      &settings->input.keyboard_gamepad_enable},
+      { "core_set_supports_no_game_enable", &settings->set_supports_no_game_enable},
+      { "audio_enable",                 &settings->audio.enable},
+      { "audio_mute_enable",            &settings->audio.mute_enable},
+      { "location_allow",               &settings->location.allow},
+      { "video_font_enable",            &settings->video.font_enable},
+      { "core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive},
+      { "camera_allow",                 &settings->camera.allow},
+#if TARGET_OS_IPHONE
+      { "small_keyboard_enable",        &settings->input.small_keyboard_enable},
+#endif
+#ifdef GEKKO
+      { "video_vfilter",                &settings->video.vfilter},
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_THREADS
+      { "threaded_data_runloop_enable", &settings->threaded_data_runloop_enable},
+#endif
+      { "menu_throttle_framerate",      &settings->menu.throttle_framerate},
+      { "menu_linear_filter",           &settings->menu.linear_filter},
+      { "dpi_override_enable",          &settings->menu.dpi.override_enable},
+      { "menu_pause_libretro",          &settings->menu.pause_libretro},
+      { "menu_mouse_enable",            &settings->menu.mouse.enable},
+      { "menu_pointer_enable",          &settings->menu.pointer.enable},
+      { "menu_timedate_enable",         &settings->menu.timedate_enable},
+      { "menu_core_enable",             &settings->menu.core_enable},
+      { "menu_dynamic_wallpaper_enable",&settings->menu.dynamic_wallpaper_enable},
+      { "xmb_shadows_enable",           &settings->menu.xmb.shadows_enable},
+      { "xmb_show_settings",            &settings->menu.xmb.show_settings},
+#ifdef HAVE_IMAGEVIEWER
+      { "xmb_show_images",              &settings->menu.xmb.show_images},
+#endif
+#ifdef HAVE_FFMPEG
+      { "xmb_show_music",               &settings->menu.xmb.show_music},
+      { "xmb_show_video",               &settings->menu.xmb.show_video},
+#endif
+      { "xmb_show_history",             &settings->menu.xmb.show_history},
+      { "rgui_show_start_screen",       &settings->menu_show_start_screen},
+      { "menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable},
+      { "menu_navigation_browser_filter_supported_extensions_enable", 
+         &settings->menu.navigation.browser.filter.supported_extensions_enable},
+      { "menu_show_advanced_settings",  &settings->menu.show_advanced_settings},
+#endif
+#ifdef HAVE_CHEEVOS
+      { "cheevos_enable",               &settings->cheevos.enable},
+      { "cheevos_test_unofficial",      &settings->cheevos.test_unofficial},
+      { "cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable},
+#endif
+#ifdef HAVE_OVERLAY
+      { "input_overlay_enable",         &settings->input.overlay_enable},
+      { "input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred},
+      { "input_overlay_hide_in_menu",   &settings->input.overlay_hide_in_menu},
+      { "input_osk_overlay_enable",     &settings->osk.enable},
+#endif
+#ifdef HAVE_COMMAND
+      { "network_cmd_enable",           &settings->network_cmd_enable},
+      { "stdin_cmd_enable",             &settings->stdin_cmd_enable},
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+      { "network_remote_enable",        &settings->network_remote_enable},
+#endif
+#ifdef HAVE_NETPLAY
+      { "netplay_spectator_mode_enable",&global->netplay.is_spectate},
+      { "netplay_mode",                 &global->netplay.is_client},
+#endif
+      { "block_sram_overwrite",         &settings->block_sram_overwrite},
+      { "savestate_auto_index",         &settings->savestate_auto_index},
+      { "savestate_auto_save",          &settings->savestate_auto_save},
+      { "savestate_auto_load",          &settings->savestate_auto_load},
+      { "history_list_enable",          &settings->history_list_enable},
+      { "game_specific_options",        &settings->game_specific_options},
+      { "auto_overrides_enable",        &settings->auto_overrides_enable},
+      { "auto_remaps_enable",           &settings->auto_remaps_enable},
+      { "auto_shaders_enable",          &settings->auto_shaders_enable},
+      { "sort_savefiles_enable",        &settings->sort_savefiles_enable},
+      { "sort_savestates_enable",       &settings->sort_savestates_enable},
+      { "config_save_on_exit",          &settings->config_save_on_exit},
+      { "show_hidden_files",            &settings->show_hidden_files},
+      { "input_autodetect_enable",      &settings->input.autodetect_enable},
+      { "audio_rate_control",           &settings->audio.rate_control}
+   };
+
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
 #define SETTING_FLOAT(key, configval) \
 { \
    if (count == 0) \
@@ -1430,128 +1555,11 @@ static bool config_load_file(const char *path, bool set_defaults,
    config_file_t *conf                             = NULL;
    struct config_int_setting_ptr   *int_settings   = NULL;
    struct config_float_setting_ptr *float_settings = NULL;
+   struct config_bool_setting_ptr *bool_settings   = NULL;
    global_t   *global                              = global_get_ptr();
 
    if (!settings)
       settings = config_get_ptr();
-
-   struct config_bool_setting_ptr bool_settings[] = {
-      { "video_windowed_fullscreen",   &settings->video.windowed_fullscreen},
-      { "video_disable_composition",   &settings->video.disable_composition},
-      { "video_vsync",                 &settings->video.vsync},
-      { "video_hard_sync",             &settings->video.hard_sync},
-      { "history_list_enable",         &settings->history_list_enable },
-      { "fps_show",                    &settings->fps_show},
-      { "video_black_frame_insertion", &settings->video.black_frame_insertion},
-      { "game_specific_options",       &settings->game_specific_options},
-      { "auto_overrides_enable",       &settings->auto_overrides_enable},
-      { "auto_remaps_enable",          &settings->auto_remaps_enable},
-      { "auto_shaders_enable",         &settings->auto_shaders_enable},
-      { "sort_savefiles_enable",       &settings->sort_savefiles_enable},
-      { "sort_savestates_enable",      &settings->sort_savestates_enable},
-      { "config_save_on_exit",         &settings->config_save_on_exit},
-      { "show_hidden_files",           &settings->show_hidden_files},
-#ifdef HAVE_MENU
-      { "dpi_override_enable",         &settings->menu.dpi.override_enable},
-#endif
-      { "ui_menubar_enable",           &settings->ui.menubar_enable},
-      { "suspend_screensaver_enable",  &settings->ui.suspend_screensaver_enable},
-      { "load_dummy_on_core_shutdown", &settings->load_dummy_on_core_shutdown},
-      { "builtin_mediaplayer_enable",  &settings->multimedia.builtin_mediaplayer_enable},
-      { "builtin_imageviewer_enable",  &settings->multimedia.builtin_imageviewer_enable},
-      { "input_autodetect_enable",     &settings->input.autodetect_enable},
-#ifdef HAVE_NETWORKGAMEPAD
-      { "network_remote_enable",       &settings->network_remote_enable},
-#endif
-#ifdef HAVE_MENU
-#ifdef HAVE_THREADS
-      { "threaded_data_runloop_enable",&settings->threaded_data_runloop_enable},
-#endif
-      { "rgui_show_start_screen",      &settings->menu_show_start_screen},
-      { "xmb_shadows_enable",          &settings->menu.xmb.shadows_enable},
-      { "xmb_show_settings",           &settings->menu.xmb.show_settings},
-#ifdef HAVE_IMAGEVIEWER
-      { "xmb_show_images",             &settings->menu.xmb.show_images},
-#endif
-#ifdef HAVE_FFMPEG
-      { "xmb_show_music",              &settings->menu.xmb.show_music},
-      { "xmb_show_video",              &settings->menu.xmb.show_video},
-#endif
-      { "xmb_show_history",            &settings->menu.xmb.show_history},
-      { "menu_throttle_framerate",     &settings->menu.throttle_framerate},
-      { "menu_linear_filter",          &settings->menu.linear_filter},
-      { "menu_pause_libretro",         &settings->menu.pause_libretro},
-      { "menu_mouse_enable",           &settings->menu.mouse.enable},
-      { "menu_pointer_enable",         &settings->menu.pointer.enable},
-      { "menu_timedate_enable",        &settings->menu.timedate_enable},
-      { "menu_core_enable",            &settings->menu.core_enable},
-      { "menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable},
-      { "menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable},
-      { "menu_navigation_browser_filter_supported_extensions_enable",
-         &settings->menu.navigation.browser.filter.supported_extensions_enable },
-      { "menu_show_advanced_settings", &settings->menu.show_advanced_settings },
-#endif
-#ifdef GEKKO
-      { "video_vfilter",               &settings->video.vfilter},
-#endif
-      { "video_shader_enable",         &settings->video.shader_enable},
-      { "video_allow_rotate",          &settings->video.allow_rotate},
-      { "video_smooth",                &settings->video.smooth},
-      { "video_force_aspect",          &settings->video.force_aspect},
-      { "video_scale_integer",         &settings->video.scale_integer},
-      { "video_crop_overscan",         &settings->video.crop_overscan},
-      { "video_aspect_ratio_auto",     &settings->video.aspect_ratio_auto},
-      { "camera_allow",                &settings->camera.allow},
-      { "audio_enable",                &settings->audio.enable},
-      { "audio_mute_enable",           &settings->audio.mute_enable},
-      { "audio_sync",                  &settings->audio.sync},
-      { "audio_rate_control",          &settings->audio.rate_control},
-      { "rewind_enable",               &settings->rewind_enable},
-      { "location_allow",              &settings->location.allow},
-      { "video_threaded",              &settings->video.threaded},
-      { "video_font_enable",           &settings->video.font_enable},
-      { "video_force_srgb_enable",     &settings->video.force_srgb_disable},
-      {  "core_set_supports_no_game_enable", &settings->set_supports_no_game_enable},
-      { "video_shared_context",        &settings->video.shared_context},
-#ifdef HAVE_CHEEVOS
-      { "cheevos_enable",              &settings->cheevos.enable},
-      { "cheevos_test_unofficial",     &settings->cheevos.test_unofficial},
-      { "cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable},
-#endif
-#if TARGET_OS_IPHONE
-      { "small_keyboard_enable",       &settings->input.small_keyboard_enable},
-#endif
-      { "input_overlay_enable",        &settings->input.overlay_enable},
-      { "input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred},
-      { "input_overlay_hide_in_menu",  &settings->input.overlay_hide_in_menu},
-      { "keyboard_gamepad_enable",     &settings->input.keyboard_gamepad_enable},
-      { "video_post_filter_record",    &settings->video.post_filter_record},
-      { "video_gpu_record",            &settings->video.gpu_record},
-      { "video_gpu_screenshot",        &settings->video.gpu_screenshot},
-      { "debug_panel_enable",          &settings->debug_panel_enable},
-      { "back_as_menu_toggle_enable",  &settings->input.back_as_menu_toggle_enable},
-      { "input_remap_binds_enable",    &settings->input.remap_binds_enable},
-      { "netplay_client_swap_input",   &settings->input.netplay_client_swap_input},
-      { "input_descriptor_label_show", &settings->input.input_descriptor_label_show},
-      { "input_descriptor_hide_unbound",&settings->input.input_descriptor_hide_unbound},
-      { "ui_companion_start_on_boot",   &settings->ui.companion_start_on_boot},
-      { "ui_companion_enable",          &settings->ui.companion_enable},
-      { "bundle_assets_extract_enable", &settings->bundle_assets_extract_enable},
-      { "pause_nonactive",              &settings->pause_nonactive},
-      { "block_sram_overwrite",         &settings->block_sram_overwrite},
-      { "savestate_auto_index",         &settings->savestate_auto_index},
-      { "savestate_auto_save",          &settings->savestate_auto_save},
-      { "savestate_auto_load",          &settings->savestate_auto_load},
-#ifdef HAVE_COMMAND
-      { "network_cmd_enable",           &settings->network_cmd_enable},
-      { "stdin_cmd_enable",             &settings->stdin_cmd_enable},
-#endif
-#ifdef HAVE_OVERLAY
-      { "input_osk_overlay_enable",     &settings->osk.enable},
-#endif
-      { "core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive},
-      { "auto_screenshot_filename",     &settings->auto_screenshot_filename}
-   };
 
    int_settings = 
       (struct config_int_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting_ptr));
@@ -1559,6 +1567,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    float_settings = 
       (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
 
+   bool_settings = 
+      (struct config_bool_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting_ptr));
+
+   bool_settings_size   = populate_settings_bool  (settings, bool_settings);
    float_settings_size  = populate_settings_float (settings, float_settings);
    int_settings_size    = populate_settings_int   (settings, int_settings);
 
@@ -1602,7 +1614,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    /* Boolean settings */
 
-   for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
+   for (i = 0; i < bool_settings_size; i++)
    {
       bool tmp = false;
       if (config_get_bool(conf, bool_settings[i].ident, &tmp))
@@ -2842,130 +2854,6 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    return ret;
 }
 
-static int populate_settings_bool(settings_t *settings, struct config_bool_setting *out)
-{
-   global_t   *global   = global_get_ptr();
-   struct config_bool_setting tmp[] = {
-      { "ui_companion_start_on_boot",   settings->ui.companion_start_on_boot},
-      { "ui_companion_enable",          settings->ui.companion_enable},
-      { "video_gpu_record",             settings->video.gpu_record},
-      { "input_remap_binds_enable",     settings->input.remap_binds_enable},
-      { "back_as_menu_toggle_enable",   settings->input.back_as_menu_toggle_enable},
-      { "netplay_client_swap_input",    settings->input.netplay_client_swap_input},
-      { "input_descriptor_label_show",  settings->input.input_descriptor_label_show},
-      { "input_descriptor_hide_unbound",settings->input.input_descriptor_hide_unbound},
-      { "load_dummy_on_core_shutdown",  settings->load_dummy_on_core_shutdown},
-      { "builtin_mediaplayer_enable",   settings->multimedia.builtin_mediaplayer_enable},
-      { "builtin_imageviewer_enable",   settings->multimedia.builtin_imageviewer_enable},
-      { "fps_show",                     settings->fps_show},
-      { "ui_menubar_enable",            settings->ui.menubar_enable},
-      { "suspend_screensaver_enable",   settings->ui.suspend_screensaver_enable},
-      { "rewind_enable",                settings->rewind_enable},
-      { "audio_sync",                   settings->audio.sync},
-      { "video_shader_enable",          settings->video.shader_enable},
-      { "video_aspect_ratio_auto",      settings->video.aspect_ratio_auto},
-      { "video_windowed_fullscreen",    settings->video.windowed_fullscreen},
-      { "video_crop_overscan",          settings->video.crop_overscan},
-      { "video_scale_integer",          settings->video.scale_integer},
-      { "video_smooth",                 settings->video.smooth},
-      { "video_threaded",               settings->video.threaded},
-      { "video_shared_context",         settings->video.shared_context},
-      { "custom_bgm_enable",            global->console.sound.system_bgm_enable},
-      { "auto_screenshot_filename",     settings->auto_screenshot_filename},
-      { "video_force_srgb_disable",     settings->video.force_srgb_disable},
-      { "video_fullscreen",             settings->video.fullscreen},
-      { "bundle_assets_extract_enable", settings->bundle_assets_extract_enable},
-      { "video_vsync",                  settings->video.vsync},
-      { "video_hard_sync",              settings->video.hard_sync},
-      { "video_black_frame_insertion",  settings->video.black_frame_insertion},
-      { "video_disable_composition",    settings->video.disable_composition},
-      { "pause_nonactive",              settings->pause_nonactive},
-      { "video_gpu_screenshot",         settings->video.gpu_screenshot},
-      { "keyboard_gamepad_enable",      settings->input.keyboard_gamepad_enable},
-      { "core_set_supports_no_game_enable", settings->set_supports_no_game_enable},
-      { "audio_enable",                 settings->audio.enable},
-      { "audio_mute_enable",            settings->audio.mute_enable},
-      { "location_allow",               settings->location.allow},
-      { "video_font_enable",            settings->video.font_enable},
-      { "core_updater_auto_extract_archive", settings->network.buildbot_auto_extract_archive},
-      { "camera_allow",                 settings->camera.allow},
-#if TARGET_OS_IPHONE
-      { "small_keyboard_enable",        settings->input.small_keyboard_enable},
-#endif
-#ifdef GEKKO
-      { "video_vfilter",                settings->video.vfilter},
-#endif
-#ifdef HAVE_MENU
-#ifdef HAVE_THREADS
-      { "threaded_data_runloop_enable", settings->threaded_data_runloop_enable},
-#endif
-      { "menu_throttle_framerate",      settings->menu.throttle_framerate},
-      { "menu_linear_filter",           settings->menu.linear_filter},
-      { "dpi_override_enable",          settings->menu.dpi.override_enable},
-      { "menu_pause_libretro",          settings->menu.pause_libretro},
-      { "menu_mouse_enable",            settings->menu.mouse.enable},
-      { "menu_pointer_enable",          settings->menu.pointer.enable},
-      { "menu_timedate_enable",         settings->menu.timedate_enable},
-      { "menu_core_enable",             settings->menu.core_enable},
-      { "menu_dynamic_wallpaper_enable",settings->menu.dynamic_wallpaper_enable},
-      { "xmb_shadows_enable",           settings->menu.xmb.shadows_enable},
-      { "xmb_show_settings",            settings->menu.xmb.show_settings},
-#ifdef HAVE_IMAGEVIEWER
-      { "xmb_show_images",              settings->menu.xmb.show_images},
-#endif
-#ifdef HAVE_FFMPEG
-      { "xmb_show_music",               settings->menu.xmb.show_music},
-      { "xmb_show_video",               settings->menu.xmb.show_video},
-#endif
-      { "xmb_show_history",             settings->menu.xmb.show_history},
-      { "rgui_show_start_screen",       settings->menu_show_start_screen},
-      { "menu_navigation_wraparound_enable", settings->menu.navigation.wraparound.enable},
-      { "menu_navigation_browser_filter_supported_extensions_enable", 
-         settings->menu.navigation.browser.filter.supported_extensions_enable},
-      { "menu_show_advanced_settings",  settings->menu.show_advanced_settings},
-#endif
-#ifdef HAVE_CHEEVOS
-      { "cheevos_enable",               settings->cheevos.enable},
-      { "cheevos_test_unofficial",      settings->cheevos.test_unofficial},
-      { "cheevos_hardcore_mode_enable", settings->cheevos.hardcore_mode_enable},
-#endif
-#ifdef HAVE_OVERLAY
-      { "input_overlay_enable",         settings->input.overlay_enable},
-      { "input_overlay_enable_autopreferred", settings->input.overlay_enable_autopreferred},
-      { "input_overlay_hide_in_menu",   settings->input.overlay_hide_in_menu},
-      { "input_osk_overlay_enable",     settings->osk.enable},
-#endif
-#ifdef HAVE_COMMAND
-      { "network_cmd_enable",           settings->network_cmd_enable},
-      { "stdin_cmd_enable",             settings->stdin_cmd_enable},
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-      { "network_remote_enable",        settings->network_remote_enable},
-#endif
-#ifdef HAVE_NETPLAY
-      { "netplay_spectator_mode_enable",global->netplay.is_spectate},
-      { "netplay_mode",                 global->netplay.is_client},
-#endif
-      { "block_sram_overwrite",         settings->block_sram_overwrite},
-      { "savestate_auto_index",         settings->savestate_auto_index},
-      { "savestate_auto_save",          settings->savestate_auto_save},
-      { "savestate_auto_load",          settings->savestate_auto_load},
-      { "history_list_enable",          settings->history_list_enable},
-      { "game_specific_options",        settings->game_specific_options},
-      { "auto_overrides_enable",        settings->auto_overrides_enable},
-      { "auto_remaps_enable",           settings->auto_remaps_enable},
-      { "auto_shaders_enable",          settings->auto_shaders_enable},
-      { "sort_savefiles_enable",        settings->sort_savefiles_enable},
-      { "sort_savestates_enable",       settings->sort_savestates_enable},
-      { "config_save_on_exit",          settings->config_save_on_exit},
-      { "show_hidden_files",            settings->show_hidden_files},
-      { "input_autodetect_enable",      settings->input.autodetect_enable},
-      { "audio_rate_control",           settings->audio.rate_control}
-   };
-
-   memcpy(out, tmp, sizeof(tmp));
-   return ARRAY_SIZE(tmp);
-}
 
 
 
@@ -3161,7 +3049,7 @@ bool config_save_file(const char *path)
    int bool_settings_size  = 0, int_settings_size    = 0,
        float_settings_size = 0, string_settings_size = 0,
        path_settings_size  = 0;
-   struct config_bool_setting *bool_settings         = NULL;
+   struct config_bool_setting_ptr *bool_settings     = NULL;
    struct config_int_setting_ptr *int_settings       = NULL;
    struct config_float_setting_ptr *float_settings   = NULL;
    struct config_string_setting *string_settings     = NULL;
@@ -3181,7 +3069,7 @@ bool config_save_file(const char *path)
    }
 
    bool_settings = 
-      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting));
+      (struct config_bool_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting_ptr));
 
    int_settings = 
       (struct config_int_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting_ptr));
@@ -3278,7 +3166,7 @@ bool config_save_file(const char *path)
    for (i = 0; i < bool_settings_size; i++)
    {
       config_set_bool(conf, bool_settings[i].ident,
-            bool_settings[i].value);
+            *bool_settings[i].ptr);
    }
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
@@ -3377,8 +3265,8 @@ bool config_save_overrides(int override_type)
    global_t   *global                          = global_get_ptr();
    settings_t *overrides                       = config_get_ptr();
    rarch_system_info_t *system                 = NULL;
-   struct config_bool_setting *bool_settings   = NULL;
-   struct config_bool_setting *bool_overrides  = NULL;
+   struct config_bool_setting_ptr *bool_settings    = NULL;
+   struct config_bool_setting_ptr *bool_overrides   = NULL;
    struct config_int_setting_ptr *int_settings      = NULL;
    struct config_int_setting_ptr *int_overrides     = NULL;
    struct config_float_setting_ptr *float_settings  = NULL;
@@ -3401,9 +3289,9 @@ bool config_save_overrides(int override_type)
    settings  = (settings_t*)calloc(1, sizeof(settings_t));
 
    bool_settings = 
-      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting));
+      (struct config_bool_setting_ptr*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting_ptr));
    bool_overrides = 
-      (struct config_bool_setting*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting));
+      (struct config_bool_setting_ptr*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting_ptr));
 
    int_settings = 
       (struct config_int_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting_ptr));
@@ -3465,17 +3353,18 @@ bool config_save_overrides(int override_type)
    path_settings_size = populate_settings_path(settings, path_settings);
    populate_settings_path (overrides, path_overrides);
 
-   RARCH_LOG("[overrides] looking for changed settings\n");
+   RARCH_LOG("[overrides] looking for changed settings... \n");
+
    for (i = 0; i < bool_settings_size; i++)
    {
-      if (bool_settings[i].value != bool_overrides[i].value)
+      if ((*bool_settings[i].ptr) != (*bool_overrides[i].ptr))
       {
          RARCH_LOG("   original: %s=%d\n", 
-            bool_settings[i].ident, bool_settings[i].value);
+            bool_settings[i].ident, (*bool_settings[i].ptr));
          RARCH_LOG("   override: %s=%d\n", 
-            bool_overrides[i].ident, bool_overrides[i].value);
+            bool_overrides[i].ident, (*bool_overrides[i].ptr));
          config_set_bool(conf, bool_overrides[i].ident,
-            bool_overrides[i].value);
+            (*bool_overrides[i].ptr));
       }
    }
    for (i = 0; i < int_settings_size; i++)
