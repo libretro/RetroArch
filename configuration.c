@@ -3013,34 +3013,47 @@ int populate_settings_int(settings_t *settings, struct config_int_setting *out)
    return ARRAY_SIZE(tmp);
 }
 
+#define SETTING_FLOAT(key, configval) \
+{ \
+   if (count == 0) \
+      tmp = (struct config_float_setting*)malloc(sizeof(struct config_float_setting) * (count + 1)); \
+   else \
+      tmp = (struct config_float_setting*)realloc(tmp, sizeof(struct config_float_setting) * (count + 1)); \
+   tmp[count].ident    = key; \
+   tmp[count].value    = configval; \
+   count++; \
+} \
+
 int populate_settings_float(settings_t *settings, struct config_float_setting *out)
 {
-   struct config_float_setting tmp[] = {
-      { "video_aspect_ratio", settings->video.aspect_ratio},
-      { "video_scale",        settings->video.scale},
-      { "video_refresh_rate", settings->video.refresh_rate},
-      { "audio_rate_control_delta", settings->audio.rate_control_delta},
-      { "audio_max_timing_skew",    settings->audio.max_timing_skew},
-      { "audio_volume",             settings->audio.volume},
+   unsigned count = 0;
+   struct config_float_setting *tmp = NULL;
+
+   SETTING_FLOAT("video_aspect_ratio",       settings->video.aspect_ratio);
+   SETTING_FLOAT("video_scale",              settings->video.scale);
+   SETTING_FLOAT("video_refresh_rate",       settings->video.refresh_rate);
+   SETTING_FLOAT("audio_rate_control_delta", settings->audio.rate_control_delta);
+   SETTING_FLOAT("audio_max_timing_skew",    settings->audio.max_timing_skew);
+   SETTING_FLOAT("audio_volume",             settings->audio.volume);
 #ifdef HAVE_OVERLAY
-      { "input_overlay_opacity",    settings->input.overlay_opacity},
-      { "input_overlay_scale",      settings->input.overlay_scale},
+   SETTING_FLOAT("input_overlay_opacity",    settings->input.overlay_opacity);
+   SETTING_FLOAT("input_overlay_scale",      settings->input.overlay_scale);
 #endif
 #ifdef HAVE_MENU
-      { "menu_wallpaper_opacity",   settings->menu.wallpaper.opacity},
-      { "menu_footer_opacity",      settings->menu.footer.opacity},
-      { "menu_header_opacity",      settings->menu.header.opacity},
+   SETTING_FLOAT("menu_wallpaper_opacity",   settings->menu.wallpaper.opacity);
+   SETTING_FLOAT("menu_footer_opacity",      settings->menu.footer.opacity);
+   SETTING_FLOAT("menu_header_opacity",      settings->menu.header.opacity);
 #endif
-      { "video_message_pos_x",      settings->video.msg_pos_x},
-      { "video_message_pos_y",      settings->video.msg_pos_y},
-      { "video_font_size",          settings->video.font_size},
-      { "fastforward_ratio",        settings->fastforward_ratio},
-      { "slowmotion_ratio",         settings->slowmotion_ratio},
-      { "input_axis_threshold",     settings->input.axis_threshold},
-   };
+   SETTING_FLOAT("video_message_pos_x",      settings->video.msg_pos_x);
+   SETTING_FLOAT("video_message_pos_y",      settings->video.msg_pos_y);
+   SETTING_FLOAT("video_font_size",          settings->video.font_size);
+   SETTING_FLOAT("fastforward_ratio",        settings->fastforward_ratio);
+   SETTING_FLOAT("slowmotion_ratio",         settings->slowmotion_ratio);
+   SETTING_FLOAT("input_axis_threshold",     settings->input.axis_threshold);
 
-   memcpy(out, tmp, sizeof(tmp));
-   return ARRAY_SIZE(tmp);
+   memcpy(out, tmp, sizeof(*tmp));
+   free(tmp);
+   return ARRAY_SIZE(out);
 }
 
 int populate_settings_string(settings_t *settings, struct config_string_setting *out)
