@@ -1324,6 +1324,87 @@ static int populate_settings_float(settings_t *settings, struct config_float_set
    return count;
 }
 
+static int populate_settings_int(settings_t *settings, struct config_int_setting_ptr *out)
+{
+#ifdef HAVE_NETPLAY
+   global_t   *global   = global_get_ptr();
+#endif
+   struct config_int_setting_ptr tmp[] = {
+      { "input_bind_timeout",           &settings->input.bind_timeout},
+      { "input_turbo_period",           &settings->input.turbo_period},
+      { "input_duty_cycle",             &settings->input.turbo_duty_cycle},
+      { "input_max_users",              &settings->input.max_users},
+      { "input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo},
+      { "audio_latency",                &settings->audio.latency},
+      { "audio_block_frames",           &settings->audio.block_frames},
+      { "rewind_granularity",           &settings->rewind_granularity},
+      { "autosave_interval",            &settings->autosave_interval},
+      { "libretro_log_level",           &settings->libretro_log_level},
+      { "keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type},
+      { "input_poll_type_behavior",     &settings->input.poll_type_behavior},
+#ifdef HAVE_MENU
+      { "menu_ok_btn",                  &settings->menu_ok_btn},
+      { "menu_cancel_btn",              &settings->menu_cancel_btn},
+      { "menu_search_btn",              &settings->menu_search_btn},
+      { "menu_info_btn",                &settings->menu_info_btn},
+      { "menu_default_btn",             &settings->menu_default_btn},
+      { "menu_scroll_down_btn",         &settings->menu_scroll_down_btn},
+#endif
+      { "video_monitor_index",          &settings->video.monitor_index},
+      { "video_fullscreen_x",           &settings->video.fullscreen_x},
+      { "video_fullscreen_y",           &settings->video.fullscreen_y},
+#ifdef HAVE_COMMAND
+      { "network_cmd_port",             &settings->network_cmd_port},
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+      { "network_remote_base_port",     &settings->network_remote_base_port},
+#endif
+      { "menu_scroll_up_btn",           &settings->menu_scroll_up_btn},
+#ifdef HAVE_GEKKO
+      { "video_viwidth",                &settings->video.viwidth},
+#endif
+#ifdef HAVE_MENU
+      { "dpi_override_value",           &settings->menu.dpi.override_value},
+      { "menu_thumbnails",              &settings->menu.thumbnails},
+      { "xmb_scale_factor",             &settings->menu.xmb.scale_factor},
+      { "xmb_alpha_factor",             &settings->menu.xmb.alpha_factor},
+#ifdef HAVE_XMB
+      { "xmb_theme",                    &settings->menu.xmb.theme},
+      { "xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme},
+#endif
+      { "materialui_menu_color_theme",  &settings->menu.materialui.menu_color_theme},
+#ifdef HAVE_SHADERPIPELINE
+      { "menu_shader_pipeline",         &settings->menu.xmb.shader_pipeline},
+#endif
+#endif
+      { "audio_out_rate",               &settings->audio.out_rate},
+      { "custom_viewport_width",        &settings->video_viewport_custom.width},
+      { "custom_viewport_height",       &settings->video_viewport_custom.height},
+      { "custom_viewport_x",            (unsigned*)&settings->video_viewport_custom.x},
+      { "custom_viewport_y",            (unsigned*)&settings->video_viewport_custom.y},
+      { "content_history_size",         &settings->content_history_size},
+      { "video_hard_sync_frames",       &settings->video.hard_sync_frames},
+      { "video_frame_delay",            &settings->video.frame_delay},
+      { "video_max_swapchain_images",   &settings->video.max_swapchain_images},
+      { "video_swap_interval",          &settings->video.swap_interval},
+      { "video_rotation",               &settings->video.rotation},
+      { "aspect_ratio_index",           &settings->video.aspect_ratio_idx},
+      { "state_slot",                   (unsigned*)&settings->state_slot},
+#ifdef HAVE_NETPLAY
+      { "netplay_ip_port",              &global->netplay.port},
+      { "netplay_delay_frames",         &global->netplay.sync_frames},
+#endif
+#ifdef HAVE_LANGEXTRA
+      { "user_language",                &settings->user_language},
+#endif
+      { "bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current},
+      { "bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version}
+   };
+
+   memcpy(out, tmp, sizeof(tmp));
+   return ARRAY_SIZE(tmp);
+}
+
 /**
  * config_load:
  * @path                : path to be read from.
@@ -1340,14 +1421,16 @@ static bool config_load_file(const char *path, bool set_defaults,
    int bool_settings_size  = 0, int_settings_size    = 0,
        float_settings_size = 0, string_settings_size = 0,
        path_settings_size  = 0;
-   bool tmp_bool                         = false;
-   char *save                            = NULL;
-   const char *extra_path                = NULL;
-   char tmp_str[PATH_MAX_LENGTH]         = {0};
-   char tmp_append_path[PATH_MAX_LENGTH] = {0}; /* Don't destroy append_config_path. */
-   unsigned msg_color                    = 0;
-   config_file_t *conf                   = NULL;
-   global_t   *global                    = global_get_ptr();
+   bool tmp_bool                                   = false;
+   char *save                                      = NULL;
+   const char *extra_path                          = NULL;
+   char tmp_str[PATH_MAX_LENGTH]                   = {0};
+   char tmp_append_path[PATH_MAX_LENGTH]           = {0}; /* Don't destroy append_config_path. */
+   unsigned msg_color                              = 0;
+   config_file_t *conf                             = NULL;
+   struct config_int_setting_ptr   *int_settings   = NULL;
+   struct config_float_setting_ptr *float_settings = NULL;
+   global_t   *global                              = global_get_ptr();
 
    if (!settings)
       settings = config_get_ptr();
@@ -1470,78 +1553,14 @@ static bool config_load_file(const char *path, bool set_defaults,
       { "auto_screenshot_filename",     &settings->auto_screenshot_filename}
    };
 
-   struct config_int_setting_ptr int_settings[] = {
-      { "video_fullscreen_x",  &settings->video.fullscreen_x},
-      { "video_fullscreen_y",  &settings->video.fullscreen_y},
-      { "video_monitor_index", &settings->video.monitor_index},
-      { "video_max_swapchain_images", &settings->video.max_swapchain_images},
-#ifdef HAVE_MENU
-      { "dpi_override_value", &settings->menu.dpi.override_value },
-      { "menu_thumbnails",    &settings->menu.thumbnails },
-#endif
-#ifdef GEKKO
-      { "video_viwidth",      &settings->video.viwidth},
-#endif
-      { "custom_viewport_width",  &settings->video_viewport_custom.width},
-      { "custom_viewport_height", &settings->video_viewport_custom.height},
-      { "aspect_ratio_index",     &settings->video.aspect_ratio_idx},
-      { "video_rotation",         &settings->video.rotation},
-      { "video_hard_sync_frames", &settings->video.hard_sync_frames },
-      { "video_frame_delay",      &settings->video.frame_delay },
-      { "video_swap_interval",    &settings->video.swap_interval},
-      { "input_poll_type_behavior", &settings->input.poll_type_behavior},
-      { "input_max_users",          &settings->input.max_users},
-      { "input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo},
-      { "libretro_log_level", &settings->libretro_log_level},
-      { "rewind_granularity", &settings->rewind_granularity},
-      { "autosave_interval", &settings->autosave_interval},
-      { "keyboard_gamepad_mapping_type", &settings->input.keyboard_gamepad_mapping_type},
-      { "bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current},
-      { "bundle_assets_extract_last_version", &settings->bundle_assets_extract_last_version},
-      { "content_history_size", &settings->content_history_size },
-      { "input_bind_timeout", &settings->input.bind_timeout},
-      { "input_turbo_period", &settings->input.turbo_period},
-      { "input_duty_cycle", &settings->input.turbo_duty_cycle},
-#ifdef HAVE_NETWORKGAMEPAD
-      { "network_remote_base_port", &settings->network_remote_base_port},
-#endif
-#ifdef HAVE_COMMAND
-      { "network_cmd_port", &settings->network_cmd_port},
-#endif
-#ifdef HAVE_LANGEXTRA
-      { "user_language", &settings->user_language},
-#endif
-#ifdef HAVE_MENU
-      { "xmb_scale_factor", &settings->menu.xmb.scale_factor},
-      { "xmb_alpha_factor", &settings->menu.xmb.alpha_factor},
-#ifdef HAVE_XMB
-      { "xmb_theme", &settings->menu.xmb.theme},
-      { "xmb_menu_color_theme", &settings->menu.xmb.menu_color_theme},
-#endif
-      { "materialui_menu_color_theme", &settings->menu.materialui.menu_color_theme},
-#ifdef HAVE_SHADERPIPELINE
-      { "menu_shader_pipeline", &settings->menu.xmb.shader_pipeline},
-#endif
-#endif
-      { "audio_out_rate", &settings->audio.out_rate},
-      { "audio_block_frames", &settings->audio.block_frames},
-#ifdef HAVE_MENU
-      { "menu_ok_btn",            &settings->menu_ok_btn},
-      { "menu_cancel_btn",        &settings->menu_cancel_btn},
-      { "menu_search_btn",        &settings->menu_search_btn},
-      { "menu_info_btn",          &settings->menu_info_btn},
-      { "menu_default_btn",       &settings->menu_default_btn},
-      { "menu_cancel_btn",        &settings->menu_cancel_btn},
-      { "menu_scroll_down_btn",   &settings->menu_scroll_down_btn},
-      { "menu_scroll_up_btn",     &settings->menu_scroll_up_btn},
-#endif
-      { "audio_latency", &settings->audio.latency}
-   };
+   int_settings = 
+      (struct config_int_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting_ptr));
 
-   struct config_float_setting_ptr *float_settings = 
+   float_settings = 
       (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
 
    float_settings_size  = populate_settings_float (settings, float_settings);
+   int_settings_size    = populate_settings_int   (settings, int_settings);
 
    if (path)
    {
@@ -1581,10 +1600,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 #endif
 
-   /*
-    * Boolean settings 
-    *
-    */
+   /* Boolean settings */
 
    for (i = 0; i < ARRAY_SIZE(bool_settings); i++)
    {
@@ -1657,12 +1673,9 @@ static bool config_load_file(const char *path, bool set_defaults,
       }
    }
 
-   /*
-    * Integer settings 
-    *
-    */
+   /* Integer settings */
 
-   for (i = 0; i < ARRAY_SIZE(int_settings); i++)
+   for (i = 0; i < int_settings_size; i++)
    {
       int tmp = 0;
       if (config_get_int(conf, int_settings[i].ident, &tmp))
@@ -1702,10 +1715,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
 
-   /*
-    * Hexadecimal settings 
-    *
-    */
+   /* Hexadecimal settings  */
 
    if (config_get_hex(conf, "video_message_color", &msg_color))
    {
@@ -1722,10 +1732,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          &settings->menu.title_color);
 #endif
 
-   /*
-    * Float settings 
-    *
-    */
+   /* Float settings */
 
    for (i = 0; i < float_settings_size; i++)
    {
@@ -1734,11 +1741,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          *float_settings[i].ptr = tmp;
    }
 
-   /*
-    * Array settings 
-    *
-    */
-
+   /* Array settings  */
    config_get_array(conf, "playlist_names", settings->playlist_names, sizeof(settings->playlist_names));
    config_get_array(conf, "playlist_cores", settings->playlist_cores, sizeof(settings->playlist_cores));
    config_get_array(conf, "audio_device", settings->audio.device, sizeof(settings->audio.device));
@@ -1781,11 +1784,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          settings->path.bundle_assets_dst_subdir,
          sizeof(settings->path.bundle_assets_dst_subdir));
 
-   /*
-    * Path settings 
-    *
-    */
-
+   /* Path settings  */
 #ifdef HAVE_MENU
    if (config_get_path(conf, "xmb_font", tmp_str, sizeof(tmp_str)))
       strlcpy(settings->menu.xmb.font, tmp_str, sizeof(settings->menu.xmb.font));
@@ -2968,86 +2967,6 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    return ARRAY_SIZE(tmp);
 }
 
-static int populate_settings_int(settings_t *settings, struct config_int_setting *out)
-{
-#ifdef HAVE_NETPLAY
-   global_t   *global   = global_get_ptr();
-#endif
-   struct config_int_setting tmp[] = {
-      { "input_bind_timeout",           settings->input.bind_timeout},
-      { "input_turbo_period",           settings->input.turbo_period},
-      { "input_duty_cycle",             settings->input.turbo_duty_cycle},
-      { "input_max_users",              settings->input.max_users},
-      { "input_menu_toggle_gamepad_combo", settings->input.menu_toggle_gamepad_combo},
-      { "audio_latency",                settings->audio.latency},
-      { "audio_block_frames",           settings->audio.block_frames},
-      { "rewind_granularity",           settings->rewind_granularity},
-      { "autosave_interval",            settings->autosave_interval},
-      { "libretro_log_level",           settings->libretro_log_level},
-      { "keyboard_gamepad_mapping_type",settings->input.keyboard_gamepad_mapping_type},
-      { "input_poll_type_behavior",     settings->input.poll_type_behavior},
-#ifdef HAVE_MENU
-      { "menu_ok_btn",                  settings->menu_ok_btn},
-      { "menu_cancel_btn",              settings->menu_cancel_btn},
-      { "menu_search_btn",              settings->menu_search_btn},
-      { "menu_info_btn",                settings->menu_info_btn},
-      { "menu_default_btn",             settings->menu_default_btn},
-      { "menu_scroll_down_btn",         settings->menu_scroll_down_btn},
-#endif
-      { "video_monitor_index",          settings->video.monitor_index},
-      { "video_fullscreen_x",           settings->video.fullscreen_x},
-      { "video_fullscreen_y",           settings->video.fullscreen_y},
-#ifdef HAVE_COMMAND
-      { "network_cmd_port",             settings->network_cmd_port},
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-      { "network_remote_base_port",     settings->network_remote_base_port},
-#endif
-      { "menu_scroll_up_btn",           settings->menu_scroll_up_btn},
-#ifdef HAVE_GEKKO
-      { "video_viwidth",                settings->video.viwidth},
-#endif
-#ifdef HAVE_MENU
-      { "dpi_override_value",           settings->menu.dpi.override_value},
-      { "menu_thumbnails",              settings->menu.thumbnails},
-      { "xmb_scale_factor",             settings->menu.xmb.scale_factor},
-      { "xmb_alpha_factor",             settings->menu.xmb.alpha_factor},
-#ifdef HAVE_XMB
-      { "xmb_theme",                    settings->menu.xmb.theme},
-      { "xmb_menu_color_theme",         settings->menu.xmb.menu_color_theme},
-#endif
-      { "materialui_menu_color_theme", settings->menu.materialui.menu_color_theme},
-#ifdef HAVE_SHADERPIPELINE
-      { "menu_shader_pipeline",        settings->menu.xmb.shader_pipeline},
-#endif
-#endif
-      { "audio_out_rate",               settings->audio.out_rate},
-      { "custom_viewport_width",        settings->video_viewport_custom.width},
-      { "custom_viewport_height",       settings->video_viewport_custom.height},
-      { "custom_viewport_x",            (unsigned)settings->video_viewport_custom.x},
-      { "custom_viewport_y",            (unsigned)settings->video_viewport_custom.y},
-      { "content_history_size",         settings->content_history_size},
-      { "video_hard_sync_frames",       settings->video.hard_sync_frames},
-      { "video_frame_delay",            settings->video.frame_delay},
-      { "video_max_swapchain_images",   settings->video.max_swapchain_images},
-      { "video_swap_interval",          settings->video.swap_interval},
-      { "video_rotation",               settings->video.rotation},
-      { "aspect_ratio_index",           settings->video.aspect_ratio_idx},
-      { "state_slot",                   (unsigned)settings->state_slot},
-#ifdef HAVE_NETPLAY
-      { "netplay_ip_port",              global->netplay.port},
-      { "netplay_delay_frames",         global->netplay.sync_frames},
-#endif
-#ifdef HAVE_LANGEXTRA
-      { "user_language",                settings->user_language},
-#endif
-      { "bundle_assets_extract_version_current", settings->bundle_assets_extract_version_current},
-      { "bundle_assets_extract_last_version", settings->bundle_assets_extract_last_version}
-   };
-
-   memcpy(out, tmp, sizeof(tmp));
-   return ARRAY_SIZE(tmp);
-}
 
 
 #define SETTING_STRING(key, configval) \
@@ -3243,7 +3162,7 @@ bool config_save_file(const char *path)
        float_settings_size = 0, string_settings_size = 0,
        path_settings_size  = 0;
    struct config_bool_setting *bool_settings         = NULL;
-   struct config_int_setting *int_settings           = NULL;
+   struct config_int_setting_ptr *int_settings       = NULL;
    struct config_float_setting_ptr *float_settings   = NULL;
    struct config_string_setting *string_settings     = NULL;
    struct config_path_setting *path_settings         = NULL;
@@ -3265,7 +3184,7 @@ bool config_save_file(const char *path)
       (struct config_bool_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_bool_setting));
 
    int_settings = 
-      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
+      (struct config_int_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting_ptr));
 
    float_settings = 
       (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
@@ -3334,7 +3253,7 @@ bool config_save_file(const char *path)
    for (i = 0; i < int_settings_size; i++)
    {
       config_set_int(conf, int_settings[i].ident,
-            int_settings[i].value);
+            *int_settings[i].ptr);
    }
 
    for (i = 0; i < MAX_USERS; i++)
@@ -3460,14 +3379,14 @@ bool config_save_overrides(int override_type)
    rarch_system_info_t *system                 = NULL;
    struct config_bool_setting *bool_settings   = NULL;
    struct config_bool_setting *bool_overrides  = NULL;
-   struct config_int_setting *int_settings     = NULL;
-   struct config_int_setting *int_overrides    = NULL;
+   struct config_int_setting_ptr *int_settings      = NULL;
+   struct config_int_setting_ptr *int_overrides     = NULL;
    struct config_float_setting_ptr *float_settings  = NULL;
    struct config_float_setting_ptr *float_overrides = NULL;
-   struct config_string_setting *string_settings = NULL;
-   struct config_string_setting *string_overrides = NULL;
-   struct config_path_setting *path_settings      = NULL;
-   struct config_path_setting *path_overrides     = NULL;
+   struct config_string_setting *string_settings    = NULL;
+   struct config_string_setting *string_overrides   = NULL;
+   struct config_path_setting *path_settings        = NULL;
+   struct config_path_setting *path_overrides       = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -3487,9 +3406,9 @@ bool config_save_overrides(int override_type)
       (struct config_bool_setting*) malloc(PATH_MAX_LENGTH *sizeof(struct config_bool_setting));
 
    int_settings = 
-      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
+      (struct config_int_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting_ptr));
    int_overrides = 
-      (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
+      (struct config_int_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting_ptr));
 
    float_settings = 
       (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
@@ -3561,14 +3480,14 @@ bool config_save_overrides(int override_type)
    }
    for (i = 0; i < int_settings_size; i++)
    {
-      if (int_settings[i].value != int_overrides[i].value)
+      if ((*int_settings[i].ptr) != (*int_overrides[i].ptr))
       {
          RARCH_LOG("   original: %s=%d\n", 
-            int_settings[i].ident, int_settings[i].value);
+            int_settings[i].ident, (*int_settings[i].ptr));
          RARCH_LOG("   override: %s=%d\n", 
-            int_overrides[i].ident, int_overrides[i].value);
+            int_overrides[i].ident, (*int_overrides[i].ptr));
          config_set_int(conf, int_overrides[i].ident,
-               int_overrides[i].value);
+               (*int_overrides[i].ptr));
       }
    }
    for (i = 0; i < float_settings_size; i++)
