@@ -1359,7 +1359,7 @@ static void cheevos_url_encode(const char *str, char *encoded, size_t len)
       {
          if (len >= 4)
          {
-            sprintf(encoded, "%%%02x", (uint8_t)*str);
+            snprintf(encoded, len, "%%%02x", (uint8_t)*str);
             encoded += 3;
             str++;
             len -= 3;
