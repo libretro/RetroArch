@@ -656,8 +656,8 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
 
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->ui.companion_start_on_boot, true, ui_companion_start_on_boot);
    SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable, true, ui_companion_enable);
-   SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record, false, false /* TODO */);
-   SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable, false, false /* TODO */);
+   SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record, true, gpu_record);
+   SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable, true, true);
    SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable, true, true);
    SETTING_BOOL("netplay_client_swap_input",     &settings->input.netplay_client_swap_input, true, netplay_client_swap_input);
    SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show, true, input_descriptor_label_show);
@@ -665,7 +665,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown, true, load_dummy_on_core_shutdown);
    SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable, false, false /* TODO */);
    SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable, false, false /* TODO */);
-   SETTING_BOOL("fps_show",                      &settings->fps_show, false, false /* TODO */);
+   SETTING_BOOL("fps_show",                      &settings->fps_show, true, false);
    SETTING_BOOL("ui_menubar_enable",             &settings->ui.menubar_enable, true, true);
    SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable, true, true);
    SETTING_BOOL("rewind_enable",                 &settings->rewind_enable, true, rewind_enable);
@@ -711,26 +711,26 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
 #ifdef HAVE_THREADS
    SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable, false, false /* TODO */);
 #endif
-   SETTING_BOOL("menu_throttle_framerate",       &settings->menu.throttle_framerate, false, false /* TODO */);
-   SETTING_BOOL("menu_linear_filter",            &settings->menu.linear_filter, false, false /* TODO */);
-   SETTING_BOOL("dpi_override_enable",           &settings->menu.dpi.override_enable, false, false /* TODO */);
-   SETTING_BOOL("menu_pause_libretro",           &settings->menu.pause_libretro, false, false /* TODO */);
-   SETTING_BOOL("menu_mouse_enable",             &settings->menu.mouse.enable, false, false /* TODO */);
-   SETTING_BOOL("menu_pointer_enable",           &settings->menu.pointer.enable, false, false /* TODO */);
-   SETTING_BOOL("menu_timedate_enable",          &settings->menu.timedate_enable, false, false /* TODO */);
-   SETTING_BOOL("menu_core_enable",              &settings->menu.core_enable, false, false /* TODO */);
-   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable, false, false /* TODO */);
+   SETTING_BOOL("menu_throttle_framerate",       &settings->menu.throttle_framerate, true, true);
+   SETTING_BOOL("menu_linear_filter",            &settings->menu.linear_filter, true, true);
+   SETTING_BOOL("dpi_override_enable",           &settings->menu.dpi.override_enable, true, menu_dpi_override_enable);
+   SETTING_BOOL("menu_pause_libretro",           &settings->menu.pause_libretro, true, true);
+   SETTING_BOOL("menu_mouse_enable",             &settings->menu.mouse.enable, true, def_mouse_enable);
+   SETTING_BOOL("menu_pointer_enable",           &settings->menu.pointer.enable, true, pointer_enable);
+   SETTING_BOOL("menu_timedate_enable",          &settings->menu.timedate_enable, true, true);
+   SETTING_BOOL("menu_core_enable",              &settings->menu.core_enable, true, true);
+   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable, true, false);
 #ifdef HAVE_XMB
-   SETTING_BOOL("xmb_shadows_enable",            &settings->menu.xmb.shadows_enable, false, false /* TODO */);
-   SETTING_BOOL("xmb_show_settings",             &settings->menu.xmb.show_settings, false, false /* TODO */);
+   SETTING_BOOL("xmb_shadows_enable",            &settings->menu.xmb.shadows_enable, true, xmb_shadows_enable);
+   SETTING_BOOL("xmb_show_settings",             &settings->menu.xmb.show_settings, true, xmb_show_settings);
 #ifdef HAVE_IMAGEVIEWER
-   SETTING_BOOL("xmb_show_images",               &settings->menu.xmb.show_images, false, false /* TODO */);
+   SETTING_BOOL("xmb_show_images",               &settings->menu.xmb.show_images, true, xmb_show_images);
 #endif
 #ifdef HAVE_FFMPEG
-   SETTING_BOOL("xmb_show_music",                &settings->menu.xmb.show_music, false, false /* TODO */);
-   SETTING_BOOL("xmb_show_video",                &settings->menu.xmb.show_video, false, false /* TODO */);
+   SETTING_BOOL("xmb_show_music",                &settings->menu.xmb.show_music, true, xmb_show_music);
+   SETTING_BOOL("xmb_show_video",                &settings->menu.xmb.show_video, true, xmb_show_video);
 #endif
-   SETTING_BOOL("xmb_show_history",              &settings->menu.xmb.show_history, false, false /* TODO */);
+   SETTING_BOOL("xmb_show_history",              &settings->menu.xmb.show_history, true, xmb_show_history);
 #endif
    SETTING_BOOL("rgui_show_start_screen",        &settings->menu_show_start_screen, false, false /* TODO */);
    SETTING_BOOL("menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable, true, true);
@@ -739,19 +739,19 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("menu_show_advanced_settings",  &settings->menu.show_advanced_settings, true, show_advanced_settings);
 #endif
 #ifdef HAVE_CHEEVOS
-   SETTING_BOOL("cheevos_enable",               &settings->cheevos.enable, false, false /* TODO */);
-   SETTING_BOOL("cheevos_test_unofficial",      &settings->cheevos.test_unofficial, false, false /* TODO */);
-   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable, false, false /* TODO */);
+   SETTING_BOOL("cheevos_enable",               &settings->cheevos.enable, true, cheevos_enable);
+   SETTING_BOOL("cheevos_test_unofficial",      &settings->cheevos.test_unofficial, true, false);
+   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable, true, false);
 #endif
 #ifdef HAVE_OVERLAY
-   SETTING_BOOL("input_overlay_enable",         &settings->input.overlay_enable, false, false /* TODO */);
-   SETTING_BOOL("input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred, false, false /* TODO */);
-   SETTING_BOOL("input_overlay_hide_in_menu",   &settings->input.overlay_hide_in_menu, false, false /* TODO */);
-   SETTING_BOOL("input_osk_overlay_enable",     &settings->osk.enable, false, false /* TODO */);
+   SETTING_BOOL("input_overlay_enable",         &settings->input.overlay_enable, true, config_overlay_enable_default());
+   SETTING_BOOL("input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred, true, true);
+   SETTING_BOOL("input_overlay_hide_in_menu",   &settings->input.overlay_hide_in_menu, true, overlay_hide_in_menu);
+   SETTING_BOOL("input_osk_overlay_enable",     &settings->osk.enable, true, true);
 #endif
 #ifdef HAVE_COMMAND
-   SETTING_BOOL("network_cmd_enable",           &settings->network_cmd_enable, false, false /* TODO */);
-   SETTING_BOOL("stdin_cmd_enable",             &settings->stdin_cmd_enable, false, false /* TODO */);
+   SETTING_BOOL("network_cmd_enable",           &settings->network_cmd_enable, true, network_cmd_enable);
+   SETTING_BOOL("stdin_cmd_enable",             &settings->stdin_cmd_enable, true, stdin_cmd_enable);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_BOOL("network_remote_enable",        &settings->network_remote_enable, false, false /* TODO */);
@@ -967,19 +967,9 @@ static void config_set_defaults(void)
    settings->menu.xmb.alpha_factor     = xmb_alpha_factor;
    settings->menu.xmb.theme            = xmb_icon_theme;
    settings->menu.xmb.menu_color_theme = menu_background_gradient;
-   settings->menu.xmb.shadows_enable   = xmb_shadows_enable;
 #ifdef HAVE_SHADERPIPELINE
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
 #endif
-   settings->menu.xmb.show_settings    = xmb_show_settings;
-#ifdef HAVE_IMAGEVIEWER
-   settings->menu.xmb.show_images      = xmb_show_images;
-#endif
-#ifdef HAVE_FFMPEG
-   settings->menu.xmb.show_music       = xmb_show_music;
-   settings->menu.xmb.show_video       = xmb_show_video;
-#endif
-   settings->menu.xmb.show_history     = xmb_show_history;
    settings->menu.xmb.font[0]          = '\0';
 #endif
 #ifdef HAVE_MATERIALUI
@@ -988,9 +978,6 @@ static void config_set_defaults(void)
    if (g_defaults.menu.materialui.menu_color_theme_enable)
       settings->menu.materialui.menu_color_theme = g_defaults.menu.materialui.menu_color_theme;
 #endif
-
-   settings->menu.throttle_framerate   = true;
-   settings->menu.linear_filter        = true;
 #endif
 
 #if TARGET_OS_IPHONE
@@ -1044,7 +1031,6 @@ static void config_set_defaults(void)
          g_defaults.settings.video_refresh_rate != refresh_rate)
       settings->video.refresh_rate             = g_defaults.settings.video_refresh_rate;
 
-   settings->video.gpu_record                  = gpu_record;
    settings->auto_screenshot_filename          = auto_screenshot_filename;
    settings->video.rotation                    = ORIENTATION_NORMAL;
 
@@ -1070,10 +1056,8 @@ static void config_set_defaults(void)
    settings->fastforward_ratio                 = fastforward_ratio;
    settings->autosave_interval                 = autosave_interval;
 
-   settings->network_cmd_enable                = network_cmd_enable;
    settings->network_cmd_port                  = network_cmd_port;
    settings->network_remote_base_port           = network_remote_base_port;
-   settings->stdin_cmd_enable                  = stdin_cmd_enable;
    settings->content_history_size              = default_content_history_size;
    settings->libretro_log_level                = libretro_log_level;
 
@@ -1086,12 +1070,6 @@ static void config_set_defaults(void)
 #ifdef HAVE_MENU
    if (first_initialized)
       settings->menu_show_start_screen         = default_menu_show_start_screen;
-   settings->menu.pause_libretro               = true;
-   settings->menu.mouse.enable                 = def_mouse_enable;
-   settings->menu.pointer.enable               = pointer_enable;
-   settings->menu.timedate_enable              = true;
-   settings->menu.core_enable                  = true;
-   settings->menu.dynamic_wallpaper_enable     = false;
    settings->menu.wallpaper.opacity            = menu_wallpaper_opacity;
    settings->menu.footer.opacity               = menu_footer_opacity;
    settings->menu.header.opacity               = menu_header_opacity;
@@ -1100,22 +1078,17 @@ static void config_set_defaults(void)
    settings->menu.entry_hover_color            = menu_entry_hover_color;
    settings->menu.title_color                  = menu_title_color;
 
-   settings->menu.dpi.override_enable          = menu_dpi_override_enable;
    settings->menu.dpi.override_value           = menu_dpi_override_value;
 
    settings->menu.navigation.wraparound.setting_enable                  = true;
 #endif
 
 #ifdef HAVE_CHEEVOS
-   settings->cheevos.enable                         = cheevos_enable;
-   settings->cheevos.test_unofficial                = false;
-   settings->cheevos.hardcore_mode_enable           = false;
    *settings->cheevos.username                      = '\0';
    *settings->cheevos.password                      = '\0';
 #endif
 
    settings->input.bind_timeout                     = input_bind_timeout;
-   settings->input.remap_binds_enable               = true;
    settings->input.max_users                        = input_max_users;
    settings->input.menu_toggle_gamepad_combo        = menu_toggle_gamepad_combo;
 
@@ -1159,15 +1132,9 @@ static void config_set_defaults(void)
          sizeof(settings->network.buildbot_assets_url));
    settings->network.buildbot_auto_extract_archive = true;
 
-   settings->input.overlay_enable                  = config_overlay_enable_default();
-
-   settings->input.overlay_enable_autopreferred    = true;
-   settings->input.overlay_hide_in_menu            = overlay_hide_in_menu;
    settings->input.overlay_opacity                 = 0.7f;
    settings->input.overlay_scale                   = 1.0f;
    *settings->input.keyboard_layout                = '\0';
-
-   settings->osk.enable                            = true;
 
    for (i = 0; i < MAX_USERS; i++)
    {
