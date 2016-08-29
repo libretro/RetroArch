@@ -135,7 +135,8 @@ unsigned setting_get_bind_type(rarch_setting_t *setting)
 
 static int setting_bind_action_ok(void *data, bool wraparound)
 {
-   (void)wraparound;
+   (void)wraparound; /* TODO/FIXME - handle this */
+
 #ifdef HAVE_MENU
    /* TODO - get rid of menu dependency */
    if (!menu_input_ctl(MENU_INPUT_CTL_BIND_SINGLE, data))
@@ -152,6 +153,8 @@ static int setting_int_action_right_default(void *data, bool wraparound)
 
    if (!setting)
       return -1;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    *setting->value.target.integer =
       *setting->value.target.integer + setting->step;
@@ -224,6 +227,8 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
+   (void)wraparound; /* TODO/FIXME - handle this */
+
    if (*setting->value.target.unsigned_integer != min)
       *setting->value.target.unsigned_integer =
          *setting->value.target.unsigned_integer - setting->step;
@@ -246,6 +251,8 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
 
    if (!setting)
       return -1;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    *setting->value.target.unsigned_integer =
       *setting->value.target.unsigned_integer + setting->step;
@@ -273,7 +280,7 @@ int setting_generic_action_ok_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   (void)wraparound;
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    if (setting->cmd_trigger.idx != CMD_EVENT_NONE)
       setting->cmd_trigger.triggered = true;
@@ -411,6 +418,8 @@ static int setting_fraction_action_left_default(
    if (!setting)
       return -1;
 
+   (void)wraparound; /* TODO/FIXME - handle this */
+
    *setting->value.target.fraction =
       *setting->value.target.fraction - setting->step;
 
@@ -432,6 +441,8 @@ static int setting_fraction_action_right_default(
 
    if (!setting)
       return -1;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    *setting->value.target.fraction = 
       *setting->value.target.fraction + setting->step;
@@ -615,7 +626,7 @@ static int setting_action_action_ok(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   (void)wraparound;
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    if (setting->cmd_trigger.idx != CMD_EVENT_NONE)
       command_event(setting->cmd_trigger.idx, NULL);
@@ -1037,6 +1048,8 @@ static int setting_int_action_left_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
+   (void)wraparound; /* TODO/FIXME - handle this */
+
    if (*setting->value.target.integer != min)
       *setting->value.target.integer =
          *setting->value.target.integer - setting->step;
@@ -1058,6 +1071,8 @@ static int setting_bool_action_ok_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
+   (void)wraparound; /* TODO/FIXME - handle this */
+
    setting_set_with_string_representation(setting,
          *setting->value.target.boolean ? "false" : "true");
 
@@ -1070,6 +1085,8 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
 
    if (!setting)
       return -1;
+
+   (void)wraparound; /* TODO/FIXME - handle this */
 
    setting_set_with_string_representation(setting,
          *setting->value.target.boolean ? "false" : "true");
