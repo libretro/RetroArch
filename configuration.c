@@ -674,7 +674,10 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("rewind_enable",                 &settings->rewind_enable, true, rewind_enable);
    SETTING_BOOL("audio_sync",                    &settings->audio.sync, true, audio_sync);
    SETTING_BOOL("video_shader_enable",           &settings->video.shader_enable, false, false /* TODO */);
-   SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto, false, false /* TODO */);
+
+   /* Let implementation decide if automatic, or 1:1 PAR. */
+   SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto, true, aspect_ratio_auto);
+
    SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate, false, false /* TODO */);
    SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen, false, false /* TODO */);
    SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan, true, crop_overscan);
@@ -1015,7 +1018,6 @@ static void config_set_defaults(void)
 #ifdef GEKKO
    settings->video.viwidth                     = video_viwidth;
 #endif
-   settings->video.aspect_ratio_auto           = aspect_ratio_auto; /* Let implementation decide if automatic, or 1:1 PAR. */
    settings->video.aspect_ratio_idx            = aspect_ratio_idx;
    settings->video.shader_enable               = shader_enable;
    settings->video.allow_rotate                = allow_rotate;
@@ -1206,7 +1208,7 @@ static void config_set_defaults(void)
 #endif
 
 #ifdef HAVE_LANGEXTRA
-   settings->user_language = 0;
+   settings->user_language = RETRO_LANGUAGE_ENGLISH;
 #endif
 
    global->console.sound.system_bgm_enable = false;
