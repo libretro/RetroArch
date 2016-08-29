@@ -694,7 +694,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("video_gpu_screenshot",          &settings->video.gpu_screenshot, true, gpu_screenshot);
    SETTING_BOOL("video_post_filter_record",      &settings->video.post_filter_record, true, post_filter_record);
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable, true, true);
-   SETTING_BOOL("core_set_supports_no_game_enable", &settings->set_supports_no_game_enable, false, false /* TODO */);
+   SETTING_BOOL("core_set_supports_no_game_enable", &settings->set_supports_no_game_enable, true, true);
    SETTING_BOOL("audio_enable",                  &settings->audio.enable, true, audio_enable);
    SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable, true, false);
    SETTING_BOOL("location_allow",                &settings->location.allow, true, false);
@@ -709,7 +709,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
-   SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable, false, false /* TODO */);
+   SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable, true, threaded_data_runloop_enable);
 #endif
    SETTING_BOOL("menu_throttle_framerate",       &settings->menu.throttle_framerate, true, true);
    SETTING_BOOL("menu_linear_filter",            &settings->menu.linear_filter, true, true);
@@ -1005,9 +1005,6 @@ static void config_set_defaults(void)
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       settings->video.threaded           = g_defaults.settings.video_threaded_enable;
 
-#ifdef HAVE_THREADS
-   settings->threaded_data_runloop_enable = threaded_data_runloop_enable;
-#endif
 #ifdef GEKKO
    settings->video.viwidth                     = video_viwidth;
 #endif
@@ -1141,8 +1138,6 @@ static void config_set_defaults(void)
       if (!global->has_set.libretro_device[i])
          settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
    }
-
-   settings->set_supports_no_game_enable        = true;
 
    video_driver_reset_custom_viewport();
 
