@@ -217,8 +217,13 @@ static int gl_get_message_width(void *data, const char *msg,
       for (i = 0; i < msg_len; i++)
       {
          const char *msg_tmp = &msg[i];
+         unsigned code = utf8_walk(&msg_tmp);
+         unsigned skip = msg_tmp - &msg[i];
+
+         if (skip > 1) i += skip - 1;
+
          const struct font_glyph *glyph = 
-            font->font_driver->get_glyph(font->font_data, utf8_walk(&msg_tmp));
+            font->font_driver->get_glyph(font->font_data, code);
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -300,9 +305,13 @@ static void gl_raster_font_render_line(
       {
          int off_x, off_y, tex_x, tex_y, width, height;
          const char *msg_tmp = &msg[i];
+         unsigned code = utf8_walk(&msg_tmp);
+         unsigned skip = msg_tmp - &msg[i];
+
+         if (skip > 1) i += skip - 1;
 
          const struct font_glyph *glyph =
-            font->font_driver->get_glyph(font->font_data, utf8_walk(&msg_tmp));
+            font->font_driver->get_glyph(font->font_data, code);
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -364,7 +373,7 @@ static void gl_raster_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      gl_raster_font_render_line(font, msg, utf8len(msg),
+      gl_raster_font_render_line(font, msg, strlen(msg),
             scale, color, pos_x, pos_y, text_align);
       return;
    }
@@ -388,7 +397,7 @@ static void gl_raster_font_render_message(
       }
       else
       {
-         unsigned msg_len = utf8len(msg);
+         unsigned msg_len = strlen(msg);
          gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x,
                pos_y - (float)lines*line_height, text_align);
          break;
