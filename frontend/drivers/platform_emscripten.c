@@ -63,6 +63,72 @@ void cmd_take_screenshot(void)
    command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
 }
 
+static void frontend_emscripten_get_env(int *argc, char *argv[],
+      void *args, void *params_data)
+{
+   (void)args;
+
+   char base_path[PATH_MAX] = {0};
+   const char *xdg          = getenv("XDG_CONFIG_HOME");
+   const char *home         = getenv("HOME");
+
+   if (xdg)
+      snprintf(base_path, sizeof(base_path),
+            "%s/retroarch", xdg);
+   else if (home)
+      snprintf(base_path, sizeof(base_path),
+            "%s/.config/retroarch", home);
+   else
+      snprintf(base_path, sizeof(base_path), "retroarch");
+
+   fill_pathname_join(g_defaults.dir.core, base_path,
+         "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, base_path,
+         "cores", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.autoconfig, base_path,
+         "autoconfig", sizeof(g_defaults.dir.autoconfig));
+
+   if (path_is_directory("/usr/local/share/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/retroarch",
+            "assets", sizeof(g_defaults.dir.assets));
+   else if (path_is_directory("/usr/share/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/share/retroarch",
+            "assets", sizeof(g_defaults.dir.assets));
+   else if (path_is_directory("/usr/local/share/games/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/local/share/games/retroarch",
+            "assets", sizeof(g_defaults.dir.assets));
+   else if (path_is_directory("/usr/share/games/retroarch/assets"))
+      fill_pathname_join(g_defaults.dir.assets, "/usr/share/games/retroarch",
+            "assets", sizeof(g_defaults.dir.assets));
+   else
+      fill_pathname_join(g_defaults.dir.assets, base_path,
+            "assets", sizeof(g_defaults.dir.assets));
+
+   fill_pathname_join(g_defaults.dir.menu_config, base_path,
+         "config", sizeof(g_defaults.dir.menu_config));
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
+         "remaps", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.playlist, base_path,
+         "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.dir.cursor, base_path,
+         "database/cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.database, base_path,
+         "database/rdb", sizeof(g_defaults.dir.database));
+   fill_pathname_join(g_defaults.dir.shader, base_path,
+         "shaders", sizeof(g_defaults.dir.shader));
+   fill_pathname_join(g_defaults.dir.cheats, base_path,
+         "cheats", sizeof(g_defaults.dir.cheats));
+   fill_pathname_join(g_defaults.dir.overlay, base_path,
+         "overlay", sizeof(g_defaults.dir.overlay));
+   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
+         "overlay", sizeof(g_defaults.dir.osk_overlay));
+   fill_pathname_join(g_defaults.dir.core_assets, base_path,
+         "downloads", sizeof(g_defaults.dir.core_assets));
+   fill_pathname_join(g_defaults.dir.screenshot, base_path,
+         "screenshots", sizeof(g_defaults.dir.screenshot));
+   fill_pathname_join(g_defaults.dir.thumbnails, base_path,
+         "thumbnails", sizeof(g_defaults.dir.thumbnails));
+}
 
 int main(int argc, char *argv[])
 {
@@ -77,7 +143,7 @@ int main(int argc, char *argv[])
 }
 
 frontend_ctx_driver_t frontend_ctx_emscripten = {
-   NULL,                         /* environment_get */
+   frontend_emscripten_get_env,  /* environment_get */
    NULL,                         /* init */
    NULL,                         /* deinit */
    NULL,                         /* exitspawn */

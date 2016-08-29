@@ -124,6 +124,7 @@ function setupFolderStructure()
   FS.createPath('/', '/home/web_user/saves', true, true);
   FS.createPath('/', '/home/web_user/states', true, true);
   FS.createPath('/', '/home/web_user/system', true, true);
+  FS.createPath('/', '/home/web_user/screenshots', true, true);
 }
 
 function stat(path)
