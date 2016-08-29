@@ -1579,6 +1579,9 @@ static bool config_load_file(const char *path, bool set_defaults,
    bool_settings_size   = populate_settings_bool  (settings, bool_settings);
    float_settings_size  = populate_settings_float (settings, float_settings);
    int_settings_size    = populate_settings_int   (settings, int_settings);
+    
+   (void)path_settings_size;
+   (void)string_settings_size;
 
    if (path)
    {
