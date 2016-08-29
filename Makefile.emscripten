@@ -1,5 +1,8 @@
 TARGET := retroarch.js
 
+EOPT = USE_ZLIB=1 USE_SDL=2 FULL_ES2=1 # Emscripten specific options
+EOPTS = $(addprefix -s $(EMPTY), $(EOPT)) # Add '-s ' to each option
+
 OS = Emscripten
 OBJ :=
 DEFINES := -DRARCH_INTERNAL -DHAVE_OVERLAY -DHAVE_MAIN
@@ -13,7 +16,7 @@ HAVE_RPNG   = 1
 HAVE_EMSCRIPTEN = 1
 HAVE_RGUI = 1
 HAVE_SDL = 0
-HAVE_SDL2 = 0
+HAVE_SDL2 = 1
 HAVE_ZLIB = 1
 HAVE_FBO = 1
 WANT_ZLIB = 1
@@ -32,7 +35,7 @@ endif
 
 #if you compile with SDL2 flag add this Emscripten flag "-s USE_SDL=2" to LDFLAGS:
 
-LIBS    :=
+LIBS    := -s USE_SDL=2 -s USE_ZLIB=1
 LDFLAGS := -L. --no-heap-copy -s USE_ZLIB=1 -s TOTAL_MEMORY=$(MEMORY) -s OUTLINING_LIMIT=50000 \
            -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
            --js-library emscripten/library_rwebaudio.js \
@@ -92,11 +95,11 @@ $(TARGET): $(OBJ)
 
 %.o: %.c
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CC) $(CFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
 
 %.o: %.cpp
 	@$(if $(Q), $(shell echo echo CXX $<),)
-	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -c -o $@ $<
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) $(EOPTS) -c -o $@ $<
 
 clean:
 	rm -f *.o
