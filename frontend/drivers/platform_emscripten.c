@@ -29,6 +29,12 @@
 #include "../frontend_driver.h"
 #include "../../command.h"
 
+#include <file/file_path.h>
+#ifndef IS_SALAMANDER
+#include <lists/file_list.h>
+#endif
+
+
 static void emscripten_mainloop(void)
 {
    unsigned sleep_ms = 0;
