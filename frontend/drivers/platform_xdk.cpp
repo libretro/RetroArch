@@ -1017,10 +1017,11 @@ HRESULT ObCreateSymbolicLink(PSTRING SymbolicLinkName, PSTRING DeviceName);
 static HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
 {
 	STRING DeviceName, LinkName;
-	CHAR szDestinationDrive[PATH_MAX_LENGTH];
-	sprintf_s(szDestinationDrive, PATH_MAX_LENGTH, "\\??\\%s", szDrive);
+	char szDestinationDrive[PATH_MAX_LENGTH];
+
+	snprintf(szDestinationDrive, sizeof(szDestinationDrive), PATH_MAX_LENGTH, "\\??\\%s", szDrive);
 	RtlInitAnsiString(&DeviceName, szDevice);
-	RtlInitAnsiString(&LinkName, szDestinationDrive);
+	RtlInitAnsiString(&LinkName, (CHAR)szDestinationDrive);
 	ObDeleteSymbolicLink(&LinkName);
 	return (HRESULT)ObCreateSymbolicLink(&LinkName, &DeviceName);
 }
@@ -1182,18 +1183,20 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    {
       BYTE* pLaunchData = new BYTE[dwLaunchDataSize];
       XGetLaunchData(pLaunchData, dwLaunchDataSize);
-	  AURORA_LAUNCHDATA_EXECUTABLE* aurora = (AURORA_LAUNCHDATA_EXECUTABLE*)pLaunchData;
-	  char* extracted_path = new char[dwLaunchDataSize];
-	  memset(extracted_path, 0, dwLaunchDataSize);
-	  if (aurora->ApplicationId == AURORA_LAUNCHDATA_APPID && aurora->FunctionId == AURORA_LAUNCHDATA_EXECUTABLE_FUNCID)
-	  {
-		  if (xbox_io_mount("aurora:", aurora->SystemPath) >= 0)
-			  sprintf_s(extracted_path, dwLaunchDataSize, "aurora:%s%s", aurora->RelativePath, aurora->Exectutable);
-	  }
-	  else
-		  sprintf_s(extracted_path, dwLaunchDataSize, "%s", pLaunchData);
+      AURORA_LAUNCHDATA_EXECUTABLE* aurora = (AURORA_LAUNCHDATA_EXECUTABLE*)pLaunchData;
+      char* extracted_path = new char[dwLaunchDataSize];
+      memset(extracted_path, 0, dwLaunchDataSize);
+      if (aurora->ApplicationId == AURORA_LAUNCHDATA_APPID && aurora->FunctionId == AURORA_LAUNCHDATA_EXECUTABLE_FUNCID)
+      {
+         if (xbox_io_mount("aurora:", aurora->SystemPath) >= 0)
+            snprintf(extracted_path, dwLaunchDataSize,
+                  "aurora:%s%s", aurora->RelativePath, aurora->Exectutable);
+      }
+      else
+         snprintf(extracted_path,
+               dwLaunchDataSize, "%s", pLaunchData);
 
-     /* Auto-start game */
+      /* Auto-start game */
       if (!string_is_empty(extracted_path))
          strlcpy(path, extracted_path, sizeof(path));
 
