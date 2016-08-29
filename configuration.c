@@ -3035,6 +3035,8 @@ int populate_settings_float(settings_t *settings, struct config_float_setting *o
    unsigned count = 0;
    struct config_float_setting *tmp = NULL;
 
+   RARCH_LOG ("Populating float settings...\n");
+
    SETTING_FLOAT("video_aspect_ratio",       settings->video.aspect_ratio);
    SETTING_FLOAT("video_scale",              settings->video.scale);
    SETTING_FLOAT("video_refresh_rate",       settings->video.refresh_rate);
@@ -3057,7 +3059,7 @@ int populate_settings_float(settings_t *settings, struct config_float_setting *o
    SETTING_FLOAT("slowmotion_ratio",         settings->slowmotion_ratio);
    SETTING_FLOAT("input_axis_threshold",     settings->input.axis_threshold);
 
-   memcpy(out, tmp, sizeof(*tmp));
+   memcpy(out, tmp, sizeof(struct config_float_setting) * count);
    free(tmp);
    return count;
 }
@@ -3075,7 +3077,7 @@ int populate_settings_float(settings_t *settings, struct config_float_setting *o
 
 int populate_settings_string(settings_t *settings, struct config_string_setting *out)
 {
-   RARCH_LOG ("Populating strings\n");
+   RARCH_LOG ("Populating string settings...\n");
    unsigned count                    = 0;
    struct config_string_setting *tmp = NULL;
 #ifdef HAVE_NETPLAY
@@ -3114,7 +3116,7 @@ int populate_settings_string(settings_t *settings, struct config_string_setting 
    SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src);
    SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst);
 
-   memcpy(out, tmp, sizeof(*tmp));
+   memcpy(out, tmp, sizeof(struct config_string_setting) * count);
    free(tmp);
    return count;
 }
@@ -3136,6 +3138,8 @@ int populate_settings_path(settings_t *settings, struct config_path_setting *out
    unsigned count = 0;
    struct config_path_setting *tmp = NULL;
    global_t   *global              = global_get_ptr();
+
+   RARCH_LOG ("Populating path settings...\n");
 
    SETTING_PATH("recording_output_directory", false,
          global->record.output_dir);
@@ -3231,7 +3235,7 @@ int populate_settings_path(settings_t *settings, struct config_path_setting *out
          "screenshot_directory", true,
          settings->directory.screenshot);
 
-   memcpy(out, tmp, sizeof(*tmp));
+   memcpy(out, tmp, sizeof(struct config_path_setting) * count);
    free(tmp);
    return count;
 }
@@ -3291,6 +3295,7 @@ bool config_save_file(const char *path)
    float_settings_size  = populate_settings_float (settings, float_settings);
    string_settings_size = populate_settings_string(settings, string_settings);
    path_settings_size   = populate_settings_path  (settings, path_settings);
+
 
    /*
     * Path settings 
