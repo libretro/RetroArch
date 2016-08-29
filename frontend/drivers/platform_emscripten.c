@@ -84,7 +84,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
             "%s/retroarch", xdg);
    else if (home)
       snprintf(base_path, sizeof(base_path),
-            "%s/.config/retroarch", home);
+            "%s/retroarch", home);
    else
       snprintf(base_path, sizeof(base_path), "retroarch");
 
@@ -135,6 +135,8 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
          "screenshots", sizeof(g_defaults.dir.screenshot));
    fill_pathname_join(g_defaults.dir.thumbnails, base_path,
          "thumbnails", sizeof(g_defaults.dir.thumbnails));
+
+   snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "rgui");
 }
 
 int main(int argc, char *argv[])
