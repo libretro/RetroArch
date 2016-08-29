@@ -687,7 +687,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("video_threaded",                &settings->video.threaded, true, video_threaded);
    SETTING_BOOL("video_shared_context",          &settings->video.shared_context, true, video_shared_context);
    SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable, false, false /* TODO */);
-   SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename, false, false /* TODO */);
+   SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename, true, auto_screenshot_filename);
    SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable, true, false);
    SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen, false, false /* TODO */);
    SETTING_BOOL("bundle_assets_extract_enable",  &settings->bundle_assets_extract_enable, true, bundle_assets_extract_enable);
@@ -705,7 +705,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable, true, false);
    SETTING_BOOL("location_allow",                &settings->location.allow, true, false);
    SETTING_BOOL("video_font_enable",             &settings->video.font_enable, true, font_enable);
-   SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive, false, false /* TODO */);
+   SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive, true, true);
    SETTING_BOOL("camera_allow",                  &settings->camera.allow, true, false);
 #if TARGET_OS_IPHONE
    SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable, true, false);
@@ -984,7 +984,7 @@ static void config_set_defaults(void)
 #ifdef HAVE_SHADERPIPELINE
    settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
 #endif
-   settings->menu.xmb.font[0]          = '\0';
+   *settings->menu.xmb.font            = '\0';
 #endif
 #ifdef HAVE_MATERIALUI
    settings->menu.materialui.menu_color_theme = MATERIALUI_THEME_BLUE;
@@ -1030,7 +1030,6 @@ static void config_set_defaults(void)
          g_defaults.settings.video_refresh_rate != refresh_rate)
       settings->video.refresh_rate             = g_defaults.settings.video_refresh_rate;
 
-   settings->auto_screenshot_filename          = auto_screenshot_filename;
    settings->video.rotation                    = ORIENTATION_NORMAL;
 
    settings->audio.out_rate                    = out_rate;
@@ -1118,7 +1117,6 @@ static void config_set_defaults(void)
          sizeof(settings->network.buildbot_url));
    strlcpy(settings->network.buildbot_assets_url, buildbot_assets_server_url,
          sizeof(settings->network.buildbot_assets_url));
-   settings->network.buildbot_auto_extract_archive = true;
 
    *settings->input.keyboard_layout                = '\0';
 
