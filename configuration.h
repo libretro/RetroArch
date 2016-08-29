@@ -67,12 +67,6 @@ struct config_float_setting_ptr
    float *ptr;
 };
 
-struct config_float_setting
-{ 
-   const char *ident;
-   float value;
-};
-
 struct config_string_setting
 { 
    const char *ident;

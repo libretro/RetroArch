@@ -1279,6 +1279,51 @@ static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *
 }
 #endif
 
+#define SETTING_FLOAT(key, configval) \
+{ \
+   if (count == 0) \
+      tmp = (struct config_float_setting_ptr*)malloc(sizeof(struct config_float_setting_ptr) * (count + 1)); \
+   else \
+      tmp = (struct config_float_setting_ptr*)realloc(tmp, sizeof(struct config_float_setting_ptr) * (count + 1)); \
+   tmp[count].ident    = key; \
+   tmp[count].ptr      = configval; \
+   count++; \
+} \
+
+static int populate_settings_float(settings_t *settings, struct config_float_setting_ptr *out)
+{
+   unsigned count = 0;
+   struct config_float_setting_ptr *tmp = NULL;
+
+   RARCH_LOG ("Populating float settings...\n");
+
+   SETTING_FLOAT("video_aspect_ratio",       &settings->video.aspect_ratio);
+   SETTING_FLOAT("video_scale",              &settings->video.scale);
+   SETTING_FLOAT("video_refresh_rate",       &settings->video.refresh_rate);
+   SETTING_FLOAT("audio_rate_control_delta", &settings->audio.rate_control_delta);
+   SETTING_FLOAT("audio_max_timing_skew",    &settings->audio.max_timing_skew);
+   SETTING_FLOAT("audio_volume",             &settings->audio.volume);
+#ifdef HAVE_OVERLAY
+   SETTING_FLOAT("input_overlay_opacity",    &settings->input.overlay_opacity);
+   SETTING_FLOAT("input_overlay_scale",      &settings->input.overlay_scale);
+#endif
+#ifdef HAVE_MENU
+   SETTING_FLOAT("menu_wallpaper_opacity",   &settings->menu.wallpaper.opacity);
+   SETTING_FLOAT("menu_footer_opacity",      &settings->menu.footer.opacity);
+   SETTING_FLOAT("menu_header_opacity",      &settings->menu.header.opacity);
+#endif
+   SETTING_FLOAT("video_message_pos_x",      &settings->video.msg_pos_x);
+   SETTING_FLOAT("video_message_pos_y",      &settings->video.msg_pos_y);
+   SETTING_FLOAT("video_font_size",          &settings->video.font_size);
+   SETTING_FLOAT("fastforward_ratio",        &settings->fastforward_ratio);
+   SETTING_FLOAT("slowmotion_ratio",         &settings->slowmotion_ratio);
+   SETTING_FLOAT("input_axis_threshold",     &settings->input.axis_threshold);
+
+   memcpy(out, tmp, sizeof(struct config_float_setting_ptr) * count);
+   free(tmp);
+   return count;
+}
+
 /**
  * config_load:
  * @path                : path to be read from.
@@ -1292,6 +1337,9 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings_t *settings)
 {
    unsigned i;
+   int bool_settings_size  = 0, int_settings_size    = 0,
+       float_settings_size = 0, string_settings_size = 0,
+       path_settings_size  = 0;
    bool tmp_bool                         = false;
    char *save                            = NULL;
    const char *extra_path                = NULL;
@@ -1490,28 +1538,10 @@ static bool config_load_file(const char *path, bool set_defaults,
       { "audio_latency", &settings->audio.latency}
    };
 
-   struct config_float_setting_ptr float_settings[] = {
-      { "input_overlay_opacity", &settings->input.overlay_opacity},
-      { "input_overlay_scale", &settings->input.overlay_scale},
-      { "slowmotion_ratio", &settings->slowmotion_ratio},
-      { "fastforward_ratio", &settings->fastforward_ratio},
-#ifdef HAVE_MENU
-      { "menu_wallpaper_opacity", &settings->menu.wallpaper.opacity},
-      { "menu_footer_opacity", &settings->menu.footer.opacity},
-      { "menu_header_opacity", &settings->menu.header.opacity},
-#endif
-      { "video_aspect_ratio", &settings->video.aspect_ratio},
-      { "video_refresh_rate", &settings->video.refresh_rate},
-      { "video_font_size", &settings->video.font_size},
-      { "video_message_pos_x", &settings->video.msg_pos_x},
-      { "video_message_pos_y", &settings->video.msg_pos_y},
-      { "input_axis_threshold", &settings->input.axis_threshold},
-      { "audio_rate_control_delta", &settings->audio.rate_control_delta},
-      { "audio_max_timing_skew", &settings->audio.max_timing_skew},
-      { "audio_volume", &settings->audio.volume},
-      { "video_scale", &settings->video.scale}
-   };
+   struct config_float_setting_ptr *float_settings = 
+      (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
 
+   float_settings_size  = populate_settings_float (settings, float_settings);
 
    if (path)
    {
@@ -1697,7 +1727,7 @@ static bool config_load_file(const char *path, bool set_defaults,
     *
     */
 
-   for (i = 0; i < ARRAY_SIZE(float_settings); i++)
+   for (i = 0; i < float_settings_size; i++)
    {
       float tmp = 0.0f;
       if (config_get_float(conf, float_settings[i].ident, &tmp))
@@ -3019,50 +3049,6 @@ int populate_settings_int(settings_t *settings, struct config_int_setting *out)
    return ARRAY_SIZE(tmp);
 }
 
-#define SETTING_FLOAT(key, configval) \
-{ \
-   if (count == 0) \
-      tmp = (struct config_float_setting*)malloc(sizeof(struct config_float_setting) * (count + 1)); \
-   else \
-      tmp = (struct config_float_setting*)realloc(tmp, sizeof(struct config_float_setting) * (count + 1)); \
-   tmp[count].ident    = key; \
-   tmp[count].value    = configval; \
-   count++; \
-} \
-
-int populate_settings_float(settings_t *settings, struct config_float_setting *out)
-{
-   unsigned count = 0;
-   struct config_float_setting *tmp = NULL;
-
-   RARCH_LOG ("Populating float settings...\n");
-
-   SETTING_FLOAT("video_aspect_ratio",       settings->video.aspect_ratio);
-   SETTING_FLOAT("video_scale",              settings->video.scale);
-   SETTING_FLOAT("video_refresh_rate",       settings->video.refresh_rate);
-   SETTING_FLOAT("audio_rate_control_delta", settings->audio.rate_control_delta);
-   SETTING_FLOAT("audio_max_timing_skew",    settings->audio.max_timing_skew);
-   SETTING_FLOAT("audio_volume",             settings->audio.volume);
-#ifdef HAVE_OVERLAY
-   SETTING_FLOAT("input_overlay_opacity",    settings->input.overlay_opacity);
-   SETTING_FLOAT("input_overlay_scale",      settings->input.overlay_scale);
-#endif
-#ifdef HAVE_MENU
-   SETTING_FLOAT("menu_wallpaper_opacity",   settings->menu.wallpaper.opacity);
-   SETTING_FLOAT("menu_footer_opacity",      settings->menu.footer.opacity);
-   SETTING_FLOAT("menu_header_opacity",      settings->menu.header.opacity);
-#endif
-   SETTING_FLOAT("video_message_pos_x",      settings->video.msg_pos_x);
-   SETTING_FLOAT("video_message_pos_y",      settings->video.msg_pos_y);
-   SETTING_FLOAT("video_font_size",          settings->video.font_size);
-   SETTING_FLOAT("fastforward_ratio",        settings->fastforward_ratio);
-   SETTING_FLOAT("slowmotion_ratio",         settings->slowmotion_ratio);
-   SETTING_FLOAT("input_axis_threshold",     settings->input.axis_threshold);
-
-   memcpy(out, tmp, sizeof(struct config_float_setting) * count);
-   free(tmp);
-   return count;
-}
 
 #define SETTING_STRING(key, configval) \
 { \
@@ -3256,11 +3242,11 @@ bool config_save_file(const char *path)
    int bool_settings_size  = 0, int_settings_size    = 0,
        float_settings_size = 0, string_settings_size = 0,
        path_settings_size  = 0;
-   struct config_bool_setting *bool_settings     = NULL;
-   struct config_int_setting *int_settings       = NULL;
-   struct config_float_setting *float_settings   = NULL;
-   struct config_string_setting *string_settings = NULL;
-   struct config_path_setting *path_settings     = NULL;
+   struct config_bool_setting *bool_settings         = NULL;
+   struct config_int_setting *int_settings           = NULL;
+   struct config_float_setting_ptr *float_settings   = NULL;
+   struct config_string_setting *string_settings     = NULL;
+   struct config_path_setting *path_settings         = NULL;
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
@@ -3282,7 +3268,7 @@ bool config_save_file(const char *path)
       (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
 
    float_settings = 
-      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+      (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
 
    string_settings = 
       (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
@@ -3337,7 +3323,7 @@ bool config_save_file(const char *path)
    for (i = 0; i < float_settings_size; i++)
    {
       config_set_float(conf, float_settings[i].ident,
-            float_settings[i].value);
+            *float_settings[i].ptr);
    }
 
    /*
@@ -3476,8 +3462,8 @@ bool config_save_overrides(int override_type)
    struct config_bool_setting *bool_overrides  = NULL;
    struct config_int_setting *int_settings     = NULL;
    struct config_int_setting *int_overrides    = NULL;
-   struct config_float_setting *float_settings = NULL;
-   struct config_float_setting *float_overrides = NULL;
+   struct config_float_setting_ptr *float_settings  = NULL;
+   struct config_float_setting_ptr *float_overrides = NULL;
    struct config_string_setting *string_settings = NULL;
    struct config_string_setting *string_overrides = NULL;
    struct config_path_setting *path_settings      = NULL;
@@ -3506,9 +3492,9 @@ bool config_save_overrides(int override_type)
       (struct config_int_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_int_setting));
 
    float_settings = 
-      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+      (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
    float_overrides = 
-      (struct config_float_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting));
+      (struct config_float_setting_ptr*) malloc(PATH_MAX_LENGTH * sizeof(struct config_float_setting_ptr));
 
    string_settings = 
       (struct config_string_setting*) malloc(PATH_MAX_LENGTH * sizeof(struct config_string_setting));
@@ -3587,14 +3573,14 @@ bool config_save_overrides(int override_type)
    }
    for (i = 0; i < float_settings_size; i++)
    {
-      if (float_settings[i].value != float_overrides[i].value)
+      if ((*float_settings[i].ptr) != (*float_overrides[i].ptr))
       {
          RARCH_LOG("   original: %s=%f\n", 
-            float_settings[i].ident, float_settings[i].value);
+            float_settings[i].ident, *float_settings[i].ptr);
          RARCH_LOG("   override: %s=%f\n", 
-            float_overrides[i].ident, float_overrides[i].value);
+            float_overrides[i].ident, *float_overrides[i].ptr);
          config_set_float(conf, float_overrides[i].ident,
-            float_overrides[i].value);
+            *float_overrides[i].ptr);
       }
    }
    for (i = 0; i < string_settings_size; i++)
