@@ -34,6 +34,7 @@
 #include <lists/file_list.h>
 #endif
 
+#include <retro_stat.h>
 
 static void emscripten_mainloop(void)
 {
