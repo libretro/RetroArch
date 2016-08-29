@@ -1301,10 +1301,12 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
       { "audio_sync",                   &settings->audio.sync},
       { "video_shader_enable",          &settings->video.shader_enable},
       { "video_aspect_ratio_auto",      &settings->video.aspect_ratio_auto},
+      { "video_allow_rotate",           &settings->video.allow_rotate},
       { "video_windowed_fullscreen",    &settings->video.windowed_fullscreen},
       { "video_crop_overscan",          &settings->video.crop_overscan},
       { "video_scale_integer",          &settings->video.scale_integer},
       { "video_smooth",                 &settings->video.smooth},
+      { "video_force_aspect",           &settings->video.force_aspect},
       { "video_threaded",               &settings->video.threaded},
       { "video_shared_context",         &settings->video.shared_context},
       { "custom_bgm_enable",            &global->console.sound.system_bgm_enable},
@@ -1317,7 +1319,9 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
       { "video_black_frame_insertion",  &settings->video.black_frame_insertion},
       { "video_disable_composition",    &settings->video.disable_composition},
       { "pause_nonactive",              &settings->pause_nonactive},
+      { "debug_panel_enable",           &settings->debug_panel_enable},
       { "video_gpu_screenshot",         &settings->video.gpu_screenshot},
+      { "video_post_filter_record",     &settings->video.post_filter_record },
       { "keyboard_gamepad_enable",      &settings->input.keyboard_gamepad_enable},
       { "core_set_supports_no_game_enable", &settings->set_supports_no_game_enable},
       { "audio_enable",                 &settings->audio.enable},
@@ -1345,8 +1349,10 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
       { "menu_timedate_enable",         &settings->menu.timedate_enable},
       { "menu_core_enable",             &settings->menu.core_enable},
       { "menu_dynamic_wallpaper_enable",&settings->menu.dynamic_wallpaper_enable},
+#ifdef HAVE_XMB
       { "xmb_shadows_enable",           &settings->menu.xmb.shadows_enable},
       { "xmb_show_settings",            &settings->menu.xmb.show_settings},
+
 #ifdef HAVE_IMAGEVIEWER
       { "xmb_show_images",              &settings->menu.xmb.show_images},
 #endif
@@ -1354,7 +1360,9 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
       { "xmb_show_music",               &settings->menu.xmb.show_music},
       { "xmb_show_video",               &settings->menu.xmb.show_video},
 #endif
+
       { "xmb_show_history",             &settings->menu.xmb.show_history},
+#endif
       { "rgui_show_start_screen",       &settings->menu_show_start_screen},
       { "menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable},
       { "menu_navigation_browser_filter_supported_extensions_enable", 
