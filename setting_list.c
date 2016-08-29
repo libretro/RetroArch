@@ -15,12 +15,9 @@
 
 #include <boolean.h>
 
-#include <lists/file_list.h>
 #include <file/file_path.h>
-#include <file/config_file.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
-#include <lists/string_list.h>
 
 #include "configuration.h"
 #include "config.def.h"
