@@ -27,6 +27,25 @@ RETRO_BEGIN_DECLS
 
 typedef struct content_playlist       playlist_t;
 
+struct playlist_entry
+{
+   char *path;
+   char *label;
+   char *core_path;
+   char *core_name;
+   char *db_name;
+   char *crc32;
+};
+
+struct content_playlist
+{
+   struct playlist_entry *entries;
+   size_t size;
+   size_t cap;
+
+   char *conf_path;
+};
+
 /**
  * playlist_init:
  * @path            	   : Path to playlist contents file.

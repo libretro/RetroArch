@@ -33,25 +33,6 @@
 #define PLAYLIST_ENTRIES 6
 #endif
 
-struct playlist_entry
-{
-   char *path;
-   char *label;
-   char *core_path;
-   char *core_name;
-   char *db_name;
-   char *crc32;
-};
-
-struct content_playlist
-{
-   struct playlist_entry *entries;
-   size_t size;
-   size_t cap;
-
-   char *conf_path;
-};
-
 typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
       const struct playlist_entry *b);
