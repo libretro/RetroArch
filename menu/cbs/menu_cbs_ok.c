@@ -2540,6 +2540,7 @@ static int action_ok_screenshot(const char *path,
 static int action_ok_delete_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t new_selection_ptr;
    playlist_t *playlist = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
@@ -2557,10 +2558,7 @@ static int action_ok_delete_entry(const char *path,
       playlist = g_defaults.image_history;
 #endif
 
-
    playlist_delete_index(playlist, rpl_entry_selection_ptr);
-
-   size_t new_selection_ptr;
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
