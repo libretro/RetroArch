@@ -1703,10 +1703,6 @@ static bool config_load_file(const char *path, bool set_defaults,
          *int_settings[i].ptr = tmp;
    }
 
-   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.x,  "custom_viewport_x");
-   CONFIG_GET_INT_BASE(conf, settings, video_viewport_custom.y,  "custom_viewport_y");
-   CONFIG_GET_INT_BASE(conf, settings, state_slot,  "state_slot");
-
 #ifdef HAVE_NETPLAY
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES))
       CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_delay_frames");
