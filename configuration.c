@@ -3056,48 +3056,60 @@ int populate_settings_float(settings_t *settings, struct config_float_setting *o
    return ARRAY_SIZE(out);
 }
 
+#define SETTING_STRING(key, configval) \
+{ \
+   if (count == 0) \
+      tmp = (struct config_string_setting*)malloc(sizeof(struct config_string_setting) * (count + 1)); \
+   else \
+      tmp = (struct config_string_setting*)realloc(tmp, sizeof(struct config_string_setting) * (count + 1)); \
+   tmp[count].ident    = key; \
+   tmp[count].value    = configval; \
+   count++; \
+} \
+
 int populate_settings_string(settings_t *settings, struct config_string_setting *out)
 {
+   unsigned count                    = 0;
+   struct config_string_setting *tmp = NULL;
 #ifdef HAVE_NETPLAY
-   global_t   *global   = global_get_ptr();
+   global_t   *global                = global_get_ptr();
 #endif
-   struct config_string_setting tmp[] = {
-      { "bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir},
-      { "video_filter",             settings->path.softfilter_plugin},
-      { "audio_dsp_plugin",         settings->path.audio_dsp_plugin},
-      { "playlist_names",           settings->playlist_names},
-      { "playlist_cores",           settings->playlist_cores},
-      { "video_driver",             settings->video.driver},
-      { "record_driver",            settings->record.driver},
-      { "camera_driver",            settings->camera.driver},
-      { "location_driver",          settings->location.driver},
+   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir);
+   SETTING_STRING("video_filter",             settings->path.softfilter_plugin);
+   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin);
+   SETTING_STRING("playlist_names",           settings->playlist_names);
+   SETTING_STRING("playlist_cores",           settings->playlist_cores);
+   SETTING_STRING("video_driver",             settings->video.driver);
+   SETTING_STRING("record_driver",            settings->record.driver);
+   SETTING_STRING("camera_driver",            settings->camera.driver);
+   SETTING_STRING("location_driver",          settings->location.driver);
 #ifdef HAVE_MENU
-      { "menu_driver",              settings->menu.driver},
+   SETTING_STRING("menu_driver",              settings->menu.driver);
 #endif
-      { "audio_device",             settings->audio.device},
-      { "core_updater_buildbot_url",settings->network.buildbot_url},
-      { "core_updater_buildbot_assets_url",settings->network.buildbot_assets_url},
-      { "camera_device",            settings->camera.device},
+   SETTING_STRING("audio_device",             settings->audio.device);
+   SETTING_STRING("core_updater_buildbot_url",settings->network.buildbot_url);
+   SETTING_STRING("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url);
+   SETTING_STRING("camera_device",            settings->camera.device);
 #ifdef HAVE_CHEEVOS
-      { "cheevos_username",         settings->cheevos.username},
-      { "cheevos_password",         settings->cheevos.password},
+   SETTING_STRING("cheevos_username",         settings->cheevos.username);
+   SETTING_STRING("cheevos_password",         settings->cheevos.password);
 #endif
-      { "video_context_driver",     settings->video.context_driver},
-      { "audio_driver",             settings->audio.driver},
-      { "audio_resampler",          settings->audio.resampler},
+   SETTING_STRING("video_context_driver",     settings->video.context_driver);
+   SETTING_STRING("audio_driver",             settings->audio.driver);
+   SETTING_STRING("audio_resampler",          settings->audio.resampler);
 #ifdef HAVE_NETPLAY
-      { "netplay_ip_address",       global->netplay.server},
+   SETTING_STRING("netplay_ip_address",       global->netplay.server);
 #endif
-      { "netplay_nickname",         settings->username},
-      { "input_driver",             settings->input.driver},
-      { "input_joypad_driver",      settings->input.joypad_driver},
-      { "input_keyboard_layout",    settings->input.keyboard_layout},
-      { "bundle_assets_src_path",   settings->path.bundle_assets_src},
-      { "bundle_assets_dst_path",   settings->path.bundle_assets_dst}
-   };
+   SETTING_STRING("netplay_nickname",         settings->username);
+   SETTING_STRING("input_driver",             settings->input.driver);
+   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver);
+   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout);
+   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src);
+   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst);
 
-   memcpy(out, tmp, sizeof(tmp));
-   return ARRAY_SIZE(tmp);
+   memcpy(out, tmp, sizeof(*tmp));
+   free(tmp);
+   return ARRAY_SIZE(out);
 }
 
 #define SETTING_PATH(key, defval, configval) \
