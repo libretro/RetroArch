@@ -48,6 +48,7 @@ function dropboxInit()
 {
   document.getElementById('btnStart').disabled = true;
   document.getElementById('btnAuth').disabled = true;
+  document.getElementById('btnLoad').disabled = false;
   client.authDriver(new Dropbox.AuthDriver.Redirect());
   client.authenticate({ rememberUser: true }, function(error, client)
   {
