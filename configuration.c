@@ -705,7 +705,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive, false, false /* TODO */);
    SETTING_BOOL("camera_allow",                  &settings->camera.allow, true, false);
 #if TARGET_OS_IPHONE
-   SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable, false, false /* TODO */);
+   SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable, true, false);
 #endif
 #ifdef GEKKO
    SETTING_BOOL("video_vfilter",                 &settings->video.vfilter, true, video_vfilter);
@@ -991,9 +991,6 @@ static void config_set_defaults(void)
 #endif
 #endif
 
-#if TARGET_OS_IPHONE
-   settings->input.small_keyboard_enable   = false;
-#endif
    settings->input.keyboard_gamepad_mapping_type    = 1;
    settings->input.poll_type_behavior               = 2;
 #ifdef HAVE_FFMPEG
