@@ -37,12 +37,6 @@ RETRO_BEGIN_DECLS
 
 /* All config related settings go here. */
 
-struct config_bool_setting
-{ 
-   const char *ident;
-   bool value;
-};
-
 struct config_bool_setting_ptr
 { 
    const char *ident;
@@ -53,12 +47,6 @@ struct config_int_setting_ptr
 { 
    const char *ident;
    unsigned *ptr;
-};
-
-struct config_int_setting
-{ 
-   const char *ident;
-   unsigned value;
 };
 
 struct config_float_setting_ptr
