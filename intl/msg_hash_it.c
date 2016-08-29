@@ -126,24 +126,32 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
          switch (driver_hash)
          {
             case MENU_LABEL_INPUT_DRIVER_UDEV:
-               snprintf(s, len,
-                     "udev Input driver. \n"
-                     " \n"
-                     "Questo driver può caricare senza X. \n"
-                     " \n"
-                     "Usa la recente evdev joypad API \n"
-                     "per il supporto del joystick. Supporta \n"
-                     "hotplugging e force feedback (se \n"
-                     "supportato dal dispositivo). \n"
-                     " \n"
-                     "Il driver legge gli eventi evdev per il supporto \n"
-                     "della tastiera. Supporta anche la callback della tastiera, \n"
-                     "mouse e touchpads. \n"
-                     " \n"
-                     "Come predefinito nella maggior parte delle distribuzioni, i nodi /dev/input \n"
-                     "sono only-root (modalità 600). Puoi settare una regola udev \n"
-                     "che fa queste accessibili ai non-root."
-                     );
+               {
+                  /* Work around C89 limitations */
+                  char u[501];
+                  char t[501];
+
+                  strlcpy(t,
+                        "udev Input driver. \n"
+                        " \n"
+                        "Questo driver può caricare senza X. \n"
+                        " \n"
+                        "Usa la recente evdev joypad API \n"
+                        "per il supporto del joystick. Supporta \n"
+                        "hotplugging e force feedback (se \n"
+                        "supportato dal dispositivo). \n"
+                        " \n", sizeof(t));
+                  strlcpy(u,
+                        "Il driver legge gli eventi evdev per il supporto \n"
+                        "della tastiera. Supporta anche la callback della tastiera, \n"
+                        "mouse e touchpads. \n"
+                        " \n"
+                        "Come predefinito nella maggior parte delle distribuzioni, i nodi /dev/input \n"
+                        "sono only-root (modalità 600). Puoi settare una regola udev \n"
+                        "che fa queste accessibili ai non-root.", sizeof(u));
+                  strlcat(s, t, len);
+                  strlcat(s, u, len);
+               }
                break;
             case MENU_LABEL_INPUT_DRIVER_LINUXRAW:
                snprintf(s, len,
