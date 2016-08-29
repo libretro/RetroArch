@@ -21,6 +21,7 @@
 #include <errno.h>
 
 #include <rthreads/rthreads.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -360,7 +361,7 @@ static uint32_t get_plane_prop_id(uint32_t obj_id, const char *name)
       /* We look for the prop_id we need */
       for (j = 0; j < props->count_props; j++)
       {
-         if (!strcmp(props_info[j]->name, name))
+         if (string_is_equal(props_info[j]->name, name))
             return props_info[j]->prop_id;
       }
       RARCH_ERR ("DRM: plane %d fb property ID with name %s not found\n",
@@ -407,7 +408,7 @@ static uint64_t drm_plane_type(drmModePlane *plane)
    for (j = 0; j < props->count_props; j++)
    {
       /* found the type property */
-      if ( !strcmp(drmModeGetProperty(drm.fd, props->props[j])->name, "type"))
+      if (string_is_equal(drmModeGetProperty(drm.fd, props->props[j])->name, "type"))
          return (props->prop_values[j]);
    }
    return (0);

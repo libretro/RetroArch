@@ -25,6 +25,7 @@
 
 #include <retro_assert.h>
 #include <dynamic/dylib.h>
+#include <string/stdstring.h>
 
 #include "vulkan_common.h"
 #include "../../performance_counters.h"
@@ -1242,7 +1243,7 @@ static bool vulkan_find_extensions(const char **exts, unsigned num_exts,
       found = false;
       for (i = 0; i < property_count; i++)
       {
-         if (!strcmp(exts[ext], properties[i].extensionName))
+         if (string_is_equal(exts[ext], properties[i].extensionName))
          {
             found = true;
             break;

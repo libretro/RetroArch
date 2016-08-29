@@ -20,6 +20,7 @@
 #include <lists/dir_list.h>
 #include <dynamic/dylib.h>
 #include <features/features_cpu.h>
+#include <string/stdstring.h>
 
 #include "../frontend/frontend_driver.h"
 #include "../config_file_userdata.h"
@@ -107,7 +108,7 @@ softfilter_find_implementation(rarch_softfilter_t *filt, const char *ident)
 
    for (i = 0; i < filt->num_plugs; i++)
    {
-      if (!strcmp(filt->plugs[i].impl->short_ident, ident))
+      if (string_is_equal(filt->plugs[i].impl->short_ident, ident))
          return filt->plugs[i].impl;
    }
 

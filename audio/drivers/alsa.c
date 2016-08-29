@@ -16,8 +16,10 @@
 #include <stdlib.h>
 
 #include <lists/string_list.h>
+#include <string/stdstring.h>
 
 #include <alsa/asoundlib.h>
+
 
 #include "../audio_driver.h"
 #include "../../configuration.h"
@@ -356,7 +358,7 @@ static void *alsa_device_list_new(void *data)
       /* description of device IOID - input / output identifcation
        * ("Input" or "Output"), NULL means both) */
 
-      if (!io || !strcmp(io,"Output"))
+      if (!io || string_is_equal(io,"Output"))
          string_list_append(s, name, attr);
 
       if (name)

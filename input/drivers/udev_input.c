@@ -347,11 +347,11 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    if (string_is_equal(action, "add"))
    {
       device_handle_cb cb      = NULL;
-      if (!strcmp(devtype, "keyboard"))
+      if (string_is_equal(devtype, "keyboard"))
          cb = udev_handle_keyboard;
-      else if (!strcmp(devtype, "touchpad"))
+      else if (string_is_equal(devtype, "touchpad"))
          cb = udev_handle_touchpad;
-      else if (!strcmp(devtype, "mouse"))
+      else if (string_is_equal(devtype, "mouse"))
          cb = udev_handle_mouse;
 
       RARCH_LOG("[udev]: Hotplug add %s: %s.\n", devtype, devnode);

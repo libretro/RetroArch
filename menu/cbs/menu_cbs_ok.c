@@ -2545,16 +2545,16 @@ static int action_ok_delete_entry(const char *path,
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   if (!strcmp(playlist->conf_path, g_defaults.content_history->conf_path))
+   if (string_is_equal(playlist->conf_path, g_defaults.content_history->conf_path))
       playlist = g_defaults.content_history;
 #ifdef HAVE_FFMPEG
-   else if (!strcmp(playlist->conf_path, g_defaults.music_history->conf_path))
+   else if (string_is_equal(playlist->conf_path, g_defaults.music_history->conf_path))
       playlist = g_defaults.music_history;
-   else if (!strcmp(playlist->conf_path, g_defaults.video_history->conf_path))
+   else if (string_is_equal(playlist->conf_path, g_defaults.video_history->conf_path))
       playlist = g_defaults.video_history;
 #endif
 #ifdef HAVE_IMAGEVIEWER
-   else if (!strcmp(playlist->conf_path, g_defaults.image_history->conf_path))
+   else if (string_is_equal(playlist->conf_path, g_defaults.image_history->conf_path))
       playlist = g_defaults.image_history;
 #endif
 

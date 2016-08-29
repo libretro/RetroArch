@@ -24,6 +24,7 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <features/features_cpu.h>
+#include <string/stdstring.h>
 
 #include "audio_dsp_filter.h"
 #include "audio_filters/dspfilter.h"
@@ -64,7 +65,7 @@ static const struct dspfilter_implementation *find_implementation(
    unsigned i;
    for (i = 0; i < dsp->num_plugs; i++)
    {
-      if (!strcmp(dsp->plugs[i].impl->short_ident, ident))
+      if (string_is_equal(dsp->plugs[i].impl->short_ident, ident))
          return dsp->plugs[i].impl;
    }
 
