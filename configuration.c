@@ -2843,7 +2843,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    return ret;
 }
 
-int populate_settings_bool(settings_t *settings, struct config_bool_setting *out)
+static int populate_settings_bool(settings_t *settings, struct config_bool_setting *out)
 {
    global_t   *global   = global_get_ptr();
    struct config_bool_setting tmp[] = {
@@ -2968,7 +2968,7 @@ int populate_settings_bool(settings_t *settings, struct config_bool_setting *out
    return ARRAY_SIZE(tmp);
 }
 
-int populate_settings_int(settings_t *settings, struct config_int_setting *out)
+static int populate_settings_int(settings_t *settings, struct config_int_setting *out)
 {
 #ifdef HAVE_NETPLAY
    global_t   *global   = global_get_ptr();
@@ -3061,7 +3061,7 @@ int populate_settings_int(settings_t *settings, struct config_int_setting *out)
    count++; \
 } \
 
-int populate_settings_string(settings_t *settings, struct config_string_setting *out)
+static int populate_settings_string(settings_t *settings, struct config_string_setting *out)
 {
    RARCH_LOG ("Populating string settings...\n");
    unsigned count                    = 0;
@@ -3119,7 +3119,7 @@ int populate_settings_string(settings_t *settings, struct config_string_setting 
    count++; \
 } \
 
-int populate_settings_path(settings_t *settings, struct config_path_setting *out)
+static int populate_settings_path(settings_t *settings, struct config_path_setting *out)
 {
    unsigned count = 0;
    struct config_path_setting *tmp = NULL;
