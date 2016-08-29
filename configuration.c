@@ -3075,6 +3075,7 @@ int populate_settings_float(settings_t *settings, struct config_float_setting *o
 
 int populate_settings_string(settings_t *settings, struct config_string_setting *out)
 {
+   RARCH_LOG ("Populating strings\n");
    unsigned count                    = 0;
    struct config_string_setting *tmp = NULL;
 #ifdef HAVE_NETPLAY
