@@ -32,42 +32,7 @@
             <button class="btn btn-secondary" id="btnAuth" onclick="dropboxInit()">Sync DropBox</button>
             <button class="btn btn-secondary" id="btnLoad" disabled=true onclick="document.getElementById('rom').click()">Add Content</button>
             <input class="btn btn-secondary" style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" onchange="selectFiles(event.target.files)" multiple />
-         </div>
-      </div>
-      <div class="row">
-         <div class="col-sm-6">
-            <div class="form-group">
-               <div class="form-check">
-                  <label class="form-check-label">
-                     <input class="form-check-input" type="checkbox" id="resize"> Resize canvas
-                  </label>
-               </div>
-               <div class="form-check">
-                  <label class="form-check-label">
-                     <input class="form-check-input" type="checkbox" id="pointerLock" checked> Lock/hide mouse pointer
-                  </label>
-               </div>
-               <div class="form-check">
-                  <label class="form-check-label">
-                     <input class="form-check-input" type="checkbox" id="vsync"> Enable V-sync (can only be done before loading game)
-                  </label>
-               </div>
-               <div class="form-check">
-                  <label class="form-check-label">
-                     <input class="form-check-input" type="checkbox" id="sdl2"> Enable SDL2
-                  </label>
-               </div>
-            </div>
-         </div>
-         <div class="col-sm-6">
-            <div class="form-group">
-               <label for="latency" id="latency-label" placeholder="Audio Latency (ms)">Audio Latency (ms)</label>
-               <input class="form-control" type="number" value="96" id="latency">
-               <small class="form-text text-muted">Increase if you hear pops at fullspeed, can only be done before loading game</small>
-            </div>
-            <div class="form-group">
-               <input class="btn btn-info" type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)">
-            </div>
+            <input class="btn btn-info" type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)">
          </div>
       </div>
       <div class="row">
