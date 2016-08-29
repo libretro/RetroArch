@@ -686,7 +686,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("video_force_aspect",            &settings->video.force_aspect, true, force_aspect);
    SETTING_BOOL("video_threaded",                &settings->video.threaded, true, video_threaded);
    SETTING_BOOL("video_shared_context",          &settings->video.shared_context, true, video_shared_context);
-   SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable, false, false /* TODO */);
+   SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable, true, false);
    SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename, true, auto_screenshot_filename);
    SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable, true, false);
    SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen, true, fullscreen);
@@ -1210,8 +1210,6 @@ static void config_set_defaults(void)
 #ifdef HAVE_LANGEXTRA
    settings->user_language = RETRO_LANGUAGE_ENGLISH;
 #endif
-
-   global->console.sound.system_bgm_enable = false;
 
    video_driver_default_settings();
 
@@ -1767,12 +1765,6 @@ static bool config_load_file(const char *path, bool set_defaults,
       if (config_get_bool(conf, tmp, &tmp_bool))
          settings->network_remote_enable_user[i] = tmp_bool;
    }
-#endif
-#ifdef RARCH_CONSOLE
-   /* TODO - will be refactored later to make it more clean - it's more
-    * important that it works for consoles right now */
-   if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
-      global->console.sound.system_bgm_enable = tmp_bool;
 #endif
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY))
    {
