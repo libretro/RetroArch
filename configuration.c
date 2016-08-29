@@ -1555,7 +1555,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current);
    SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version);
 
-   memcpy(out, tmp, sizeof(struct config_float_setting_ptr) * count);
+   memcpy(out, tmp, sizeof(struct config_int_setting_ptr) * count);
    free(tmp);
    return count;
 }
