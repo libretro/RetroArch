@@ -2412,23 +2412,23 @@ bool config_load_remap(void)
 static bool check_shader_compatibility(enum file_path_enum enum_idx)
 {
    settings_t *settings = config_get_ptr();
-   if (!strcmp("vulkan", settings->video.driver))
+
+   if (string_is_equal("vulkan", settings->video.driver))
    {
       if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
          return false;
-      else
-         return true;
+      return true;
    }
-   if (!strcmp("gl", settings->video.driver) || 
-       !strcmp("d3d9", settings->video.driver))
+
+   if (string_is_equal("gl", settings->video.driver) || 
+       string_is_equal("d3d9", settings->video.driver))
    {
       if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
          return false;
-      else
-         return true;
+      return true;
    }
-   else
-      return false;
+
+   return false;
 }
 
 /**
@@ -3393,7 +3393,7 @@ bool config_save_overrides(int override_type)
    }
    for (i = 0; i < string_settings_size; i++)
    {
-      if (strcmp(string_settings[i].value, string_overrides[i].value))
+      if (!string_is_equal(string_settings[i].value, string_overrides[i].value))
       {
          RARCH_LOG("   original: %s=%s\n", 
             string_settings[i].ident, string_settings[i].value);
@@ -3405,7 +3405,7 @@ bool config_save_overrides(int override_type)
    }
    for (i = 0; i < path_settings_size; i++)
    {
-      if (strcmp(path_settings[i].value, path_overrides[i].value))
+      if (!string_is_equal(path_settings[i].value, path_overrides[i].value))
       {
          RARCH_LOG("   original: %s=%s\n", 
             path_settings[i].ident, path_settings[i].value);
