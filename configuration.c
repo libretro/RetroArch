@@ -46,6 +46,62 @@
 #include "config.h"
 #endif
 
+#define SETTING_PATH(key, defval, configval) \
+{ \
+   if (count == 0) \
+      tmp = (struct config_path_setting_ptr*)malloc(sizeof(struct config_path_setting_ptr) * (count + 1)); \
+   else \
+      tmp = (struct config_path_setting_ptr*)realloc(tmp, sizeof(struct config_path_setting_ptr) * (count + 1)); \
+   tmp[count].ident    = key; \
+   tmp[count].defaults = defval; \
+   tmp[count].value    = configval; \
+   count++; \
+} \
+
+#define SETTING_BOOL(key, configval) \
+{ \
+   if (count == 0) \
+      tmp = (struct config_bool_setting_ptr*)malloc(sizeof(struct config_bool_setting_ptr) * (count + 1)); \
+   else \
+      tmp = (struct config_bool_setting_ptr*)realloc(tmp, sizeof(struct config_bool_setting_ptr) * (count + 1)); \
+   tmp[count].ident    = key; \
+   tmp[count].ptr      = configval; \
+   count++; \
+} 
+
+#define SETTING_FLOAT(key, configval) \
+{ \
+   if (count == 0) \
+      tmp = (struct config_float_setting_ptr*)malloc(sizeof(struct config_float_setting_ptr) * (count + 1)); \
+   else \
+      tmp = (struct config_float_setting_ptr*)realloc(tmp, sizeof(struct config_float_setting_ptr) * (count + 1)); \
+   tmp[count].ident    = key; \
+   tmp[count].ptr      = configval; \
+   count++; \
+}
+
+#define SETTING_INT(key, configval) \
+{ \
+   if (count == 0) \
+      tmp = (struct config_int_setting_ptr*)malloc(sizeof(struct config_int_setting_ptr) * (count + 1)); \
+   else \
+      tmp = (struct config_int_setting_ptr*)realloc(tmp, sizeof(struct config_int_setting_ptr) * (count + 1)); \
+   tmp[count].ident    = key; \
+   tmp[count].ptr      = configval; \
+   count++; \
+}
+
+#define SETTING_STRING(key, configval) \
+{ \
+   if (count == 0) \
+      tmp = (struct config_string_setting_ptr*)malloc(sizeof(struct config_string_setting_ptr) * (count + 1)); \
+   else \
+      tmp = (struct config_string_setting_ptr*)realloc(tmp, sizeof(struct config_string_setting_ptr) * (count + 1)); \
+   tmp[count].ident    = key; \
+   tmp[count].value    = configval; \
+   count++; \
+} \
+
 struct defaults g_defaults;
 static settings_t *configuration_settings = NULL;
 
@@ -434,6 +490,413 @@ static unsigned config_menu_btn_cancel_default(void)
    return default_menu_btn_cancel;
 }
 #endif
+
+static int populate_settings_string(settings_t *settings, struct config_string_setting_ptr **out)
+{
+   unsigned count                        = 0;
+   struct config_string_setting_ptr *tmp = NULL;
+#ifdef HAVE_NETPLAY
+   global_t   *global                    = global_get_ptr();
+#endif
+   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir);
+   SETTING_STRING("video_filter",             settings->path.softfilter_plugin);
+   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin);
+   SETTING_STRING("playlist_names",           settings->playlist_names);
+   SETTING_STRING("playlist_cores",           settings->playlist_cores);
+   SETTING_STRING("video_driver",             settings->video.driver);
+   SETTING_STRING("record_driver",            settings->record.driver);
+   SETTING_STRING("camera_driver",            settings->camera.driver);
+   SETTING_STRING("location_driver",          settings->location.driver);
+#ifdef HAVE_MENU
+   SETTING_STRING("menu_driver",              settings->menu.driver);
+#endif
+   SETTING_STRING("audio_device",             settings->audio.device);
+   SETTING_STRING("core_updater_buildbot_url",settings->network.buildbot_url);
+   SETTING_STRING("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url);
+   SETTING_STRING("camera_device",            settings->camera.device);
+#ifdef HAVE_CHEEVOS
+   SETTING_STRING("cheevos_username",         settings->cheevos.username);
+   SETTING_STRING("cheevos_password",         settings->cheevos.password);
+#endif
+   SETTING_STRING("video_context_driver",     settings->video.context_driver);
+   SETTING_STRING("audio_driver",             settings->audio.driver);
+   SETTING_STRING("audio_resampler",          settings->audio.resampler);
+#ifdef HAVE_NETPLAY
+   SETTING_STRING("netplay_ip_address",       global->netplay.server);
+#endif
+   SETTING_STRING("netplay_nickname",         settings->username);
+   SETTING_STRING("input_driver",             settings->input.driver);
+   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver);
+   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout);
+   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src);
+   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst);
+
+   *out = 
+      (struct config_string_setting_ptr*) malloc(count * sizeof(struct config_string_setting_ptr));
+   memcpy(*out, tmp, sizeof(struct config_string_setting_ptr) * count);
+   free(tmp);
+   return count;
+}
+
+static int populate_settings_path(settings_t *settings, struct config_path_setting_ptr **out)
+{
+   unsigned count = 0;
+   struct config_path_setting_ptr *tmp = NULL;
+   global_t   *global                  = global_get_ptr();
+
+   SETTING_PATH("recording_output_directory", false,
+         global->record.output_dir);
+   SETTING_PATH("recording_config_directory", false,
+         global->record.config_dir);
+   SETTING_PATH("libretro_directory", false,
+         settings->directory.libretro);
+   SETTING_PATH("core_options_path", false,
+         settings->path.core_options);
+   SETTING_PATH("libretro_info_path", false,
+         settings->path.libretro_info);
+   SETTING_PATH("video_shader", false,
+         settings->path.shader);
+   SETTING_PATH("content_database_path", false,
+         settings->path.content_database);
+   SETTING_PATH("cheat_database_path", false,
+         settings->path.cheat_database);
+#ifdef HAVE_MENU
+   SETTING_PATH("menu_wallpaper", false,
+         settings->path.menu_wallpaper);
+#endif
+   SETTING_PATH("content_history_path", false,
+         settings->path.content_history);
+   SETTING_PATH("content_music_history_path", false,
+         settings->path.content_music_history);
+   SETTING_PATH("content_video_history_path", false,
+         settings->path.content_video_history);
+   SETTING_PATH("content_image_history_path", false,
+         settings->path.content_image_history);
+#ifdef HAVE_OVERLAY
+   SETTING_PATH("input_overlay", false,
+         settings->path.overlay);
+   SETTING_PATH("input_osk_overlay", false,
+         settings->path.osk_overlay);
+#endif
+   SETTING_PATH("video_font_path", false,
+         settings->path.font);
+   SETTING_PATH("cursor_directory", false,
+         settings->directory.cursor);
+   SETTING_PATH("content_history_dir", false,
+         settings->directory.content_history);
+   SETTING_PATH("screenshot_directory", true,
+         settings->directory.screenshot);
+   SETTING_PATH("system_directory", true,
+         settings->directory.system);
+   SETTING_PATH("cache_directory", false,
+         settings->directory.cache);
+   SETTING_PATH("input_remapping_directory", false,
+         settings->directory.input_remapping);
+   SETTING_PATH("resampler_directory", false,
+         settings->directory.resampler);
+   SETTING_PATH("video_shader_dir", true,
+         settings->directory.video_shader);
+   SETTING_PATH("video_filter_dir", true,
+         settings->directory.video_filter);
+   SETTING_PATH("core_assets_directory", true,
+         settings->directory.core_assets);
+   SETTING_PATH("assets_directory", true,
+         settings->directory.assets);
+   SETTING_PATH("dynamic_wallpapers_directory", true,
+         settings->directory.dynamic_wallpapers);
+   SETTING_PATH("thumbnails_directory", true,
+         settings->directory.thumbnails);
+   SETTING_PATH("playlist_directory", true,
+         settings->directory.playlist);
+   SETTING_PATH("joypad_autoconfig_dir", false,
+         settings->directory.autoconfig);
+   SETTING_PATH("audio_filter_dir", true,
+         settings->directory.audio_filter);
+   SETTING_PATH("savefile_directory", true,
+         global->dir.savefile);
+   SETTING_PATH("savestate_directory", true,
+         global->dir.savestate);
+#ifdef HAVE_MENU
+   SETTING_PATH("rgui_browser_directory", true,
+         settings->directory.menu_content);
+   SETTING_PATH("rgui_config_directory", true,
+         settings->directory.menu_config);
+#endif
+#ifdef HAVE_OVERLAY
+   SETTING_PATH("overlay_directory", true,
+         settings->directory.overlay);
+#endif
+#ifdef HAVE_OVERLAY
+   SETTING_PATH("osk_overlay_directory", true,
+         global->dir.osk_overlay);
+#endif
+#ifndef HAVE_DYNAMIC
+   SETTING_PATH("libretro_path", false,
+         config_get_active_core_path());
+#endif
+   SETTING_PATH(
+         "screenshot_directory", true,
+         settings->directory.screenshot);
+
+   *out = 
+      (struct config_path_setting_ptr*) malloc(count * sizeof(struct config_path_setting_ptr));
+   memcpy(*out, tmp, sizeof(struct config_path_setting_ptr) * count);
+   free(tmp);
+   return count;
+}
+
+static int populate_settings_bool(settings_t *settings, struct config_bool_setting_ptr **out)
+{
+   unsigned count                      = 0;
+   global_t   *global                  = global_get_ptr();
+   struct config_bool_setting_ptr *tmp = NULL;
+
+   SETTING_BOOL("ui_companion_start_on_boot",    &settings->ui.companion_start_on_boot);
+   SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable);
+   SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record);
+   SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable);
+   SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable);
+   SETTING_BOOL("netplay_client_swap_input",     &settings->input.netplay_client_swap_input);
+   SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show);
+   SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound);
+   SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown);
+   SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable);
+   SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable);
+   SETTING_BOOL("fps_show",                      &settings->fps_show);
+   SETTING_BOOL("ui_menubar_enable",             &settings->ui.menubar_enable);
+   SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable);
+   SETTING_BOOL("rewind_enable",                 &settings->rewind_enable);
+   SETTING_BOOL("audio_sync",                    &settings->audio.sync);
+   SETTING_BOOL("video_shader_enable",           &settings->video.shader_enable);
+   SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto);
+   SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate);
+   SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen);
+   SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan);
+   SETTING_BOOL( "video_scale_integer",          &settings->video.scale_integer);
+   SETTING_BOOL("video_smooth",                  &settings->video.smooth);
+   SETTING_BOOL("video_force_aspect",            &settings->video.force_aspect);
+   SETTING_BOOL("video_threaded",                &settings->video.threaded);
+   SETTING_BOOL("video_shared_context",          &settings->video.shared_context);
+   SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable);
+   SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename);
+   SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable);
+   SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen);
+   SETTING_BOOL("bundle_assets_extract_enable",  &settings->bundle_assets_extract_enable);
+   SETTING_BOOL("video_vsync",                   &settings->video.vsync);
+   SETTING_BOOL("video_hard_sync",               &settings->video.hard_sync);
+   SETTING_BOOL("video_black_frame_insertion",   &settings->video.black_frame_insertion);
+   SETTING_BOOL("video_disable_composition",     &settings->video.disable_composition);
+   SETTING_BOOL("pause_nonactive",               &settings->pause_nonactive);
+   SETTING_BOOL("debug_panel_enable",            &settings->debug_panel_enable);
+   SETTING_BOOL("video_gpu_screenshot",          &settings->video.gpu_screenshot);
+   SETTING_BOOL("video_post_filter_record",      &settings->video.post_filter_record);
+   SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable);
+   SETTING_BOOL("core_set_supports_no_game_enable", &settings->set_supports_no_game_enable);
+   SETTING_BOOL("audio_enable",                  &settings->audio.enable);
+   SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable);
+   SETTING_BOOL("location_allow",                &settings->location.allow);
+   SETTING_BOOL("video_font_enable",             &settings->video.font_enable);
+   SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive);
+   SETTING_BOOL("camera_allow",                  &settings->camera.allow);
+#if TARGET_OS_IPHONE
+   SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable);
+#endif
+#ifdef GEKKO
+   SETTING_BOOL("video_vfilter",                 &settings->video.vfilter);
+#endif
+#ifdef HAVE_MENU
+#ifdef HAVE_THREADS
+   SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable);
+#endif
+   SETTING_BOOL("menu_throttle_framerate",       &settings->menu.throttle_framerate);
+   SETTING_BOOL("menu_linear_filter",            &settings->menu.linear_filter);
+   SETTING_BOOL("dpi_override_enable",           &settings->menu.dpi.override_enable);
+   SETTING_BOOL("menu_pause_libretro",           &settings->menu.pause_libretro);
+   SETTING_BOOL("menu_mouse_enable",             &settings->menu.mouse.enable);
+   SETTING_BOOL("menu_pointer_enable",           &settings->menu.pointer.enable);
+   SETTING_BOOL("menu_timedate_enable",          &settings->menu.timedate_enable);
+   SETTING_BOOL("menu_core_enable",              &settings->menu.core_enable);
+   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable);
+#ifdef HAVE_XMB
+   SETTING_BOOL("xmb_shadows_enable",            &settings->menu.xmb.shadows_enable);
+   SETTING_BOOL("xmb_show_settings",             &settings->menu.xmb.show_settings);
+#ifdef HAVE_IMAGEVIEWER
+   SETTING_BOOL("xmb_show_images",               &settings->menu.xmb.show_images);
+#endif
+#ifdef HAVE_FFMPEG
+   SETTING_BOOL("xmb_show_music",                &settings->menu.xmb.show_music);
+   SETTING_BOOL("xmb_show_video",                &settings->menu.xmb.show_video);
+#endif
+   SETTING_BOOL("xmb_show_history",              &settings->menu.xmb.show_history);
+#endif
+   SETTING_BOOL("rgui_show_start_screen",        &settings->menu_show_start_screen);
+   SETTING_BOOL("menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable);
+   SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable", 
+         &settings->menu.navigation.browser.filter.supported_extensions_enable);
+   SETTING_BOOL("menu_show_advanced_settings",  &settings->menu.show_advanced_settings);
+#endif
+#ifdef HAVE_CHEEVOS
+   SETTING_BOOL("cheevos_enable",               &settings->cheevos.enable);
+   SETTING_BOOL("cheevos_test_unofficial",      &settings->cheevos.test_unofficial);
+   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable);
+#endif
+#ifdef HAVE_OVERLAY
+   SETTING_BOOL("input_overlay_enable",         &settings->input.overlay_enable);
+   SETTING_BOOL("input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred);
+   SETTING_BOOL("input_overlay_hide_in_menu",   &settings->input.overlay_hide_in_menu);
+   SETTING_BOOL("input_osk_overlay_enable",     &settings->osk.enable);
+#endif
+#ifdef HAVE_COMMAND
+   SETTING_BOOL("network_cmd_enable",           &settings->network_cmd_enable);
+   SETTING_BOOL("stdin_cmd_enable",             &settings->stdin_cmd_enable);
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+   SETTING_BOOL("network_remote_enable",        &settings->network_remote_enable);
+#endif
+#ifdef HAVE_NETPLAY
+   SETTING_BOOL("netplay_spectator_mode_enable",&global->netplay.is_spectate);
+   SETTING_BOOL("netplay_mode",                 &global->netplay.is_client);
+#endif
+   SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite);
+   SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index);
+   SETTING_BOOL("savestate_auto_save",          &settings->savestate_auto_save);
+   SETTING_BOOL("savestate_auto_load",          &settings->savestate_auto_load);
+   SETTING_BOOL("history_list_enable",          &settings->history_list_enable);
+   SETTING_BOOL("game_specific_options",        &settings->game_specific_options);
+   SETTING_BOOL("auto_overrides_enable",        &settings->auto_overrides_enable);
+   SETTING_BOOL("auto_remaps_enable",           &settings->auto_remaps_enable);
+   SETTING_BOOL("auto_shaders_enable",          &settings->auto_shaders_enable);
+   SETTING_BOOL("sort_savefiles_enable",        &settings->sort_savefiles_enable);
+   SETTING_BOOL("sort_savestates_enable",       &settings->sort_savestates_enable);
+   SETTING_BOOL("config_save_on_exit",          &settings->config_save_on_exit);
+   SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files);
+   SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable);
+   SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control);
+
+   *out = 
+      (struct config_bool_setting_ptr*) malloc(count *sizeof(struct config_bool_setting_ptr));
+   memcpy(*out, tmp, sizeof(struct config_bool_setting_ptr) * count);
+   free(tmp);
+   return count;
+}
+
+static int populate_settings_float(settings_t *settings, struct config_float_setting_ptr **out)
+{
+   unsigned count = 0;
+   struct config_float_setting_ptr *tmp = NULL;
+
+   SETTING_FLOAT("video_aspect_ratio",       &settings->video.aspect_ratio);
+   SETTING_FLOAT("video_scale",              &settings->video.scale);
+   SETTING_FLOAT("video_refresh_rate",       &settings->video.refresh_rate);
+   SETTING_FLOAT("audio_rate_control_delta", &settings->audio.rate_control_delta);
+   SETTING_FLOAT("audio_max_timing_skew",    &settings->audio.max_timing_skew);
+   SETTING_FLOAT("audio_volume",             &settings->audio.volume);
+#ifdef HAVE_OVERLAY
+   SETTING_FLOAT("input_overlay_opacity",    &settings->input.overlay_opacity);
+   SETTING_FLOAT("input_overlay_scale",      &settings->input.overlay_scale);
+#endif
+#ifdef HAVE_MENU
+   SETTING_FLOAT("menu_wallpaper_opacity",   &settings->menu.wallpaper.opacity);
+   SETTING_FLOAT("menu_footer_opacity",      &settings->menu.footer.opacity);
+   SETTING_FLOAT("menu_header_opacity",      &settings->menu.header.opacity);
+#endif
+   SETTING_FLOAT("video_message_pos_x",      &settings->video.msg_pos_x);
+   SETTING_FLOAT("video_message_pos_y",      &settings->video.msg_pos_y);
+   SETTING_FLOAT("video_font_size",          &settings->video.font_size);
+   SETTING_FLOAT("fastforward_ratio",        &settings->fastforward_ratio);
+   SETTING_FLOAT("slowmotion_ratio",         &settings->slowmotion_ratio);
+   SETTING_FLOAT("input_axis_threshold",     &settings->input.axis_threshold);
+
+   *out = 
+      (struct config_float_setting_ptr*) malloc(count * sizeof(struct config_float_setting_ptr));
+   memcpy(*out, tmp, sizeof(struct config_float_setting_ptr) * count);
+   free(tmp);
+   return count;
+}
+
+static int populate_settings_int(settings_t *settings, struct config_int_setting_ptr **out)
+{
+   unsigned count                     = 0;
+   struct config_int_setting_ptr *tmp = NULL;
+#ifdef HAVE_NETPLAY
+   global_t   *global                 = global_get_ptr();
+#endif
+
+   SETTING_INT("input_bind_timeout",           &settings->input.bind_timeout);
+   SETTING_INT("input_turbo_period",           &settings->input.turbo_period);
+   SETTING_INT("input_duty_cycle",             &settings->input.turbo_duty_cycle);
+   SETTING_INT("input_max_users",              &settings->input.max_users);
+   SETTING_INT("input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo);
+   SETTING_INT("audio_latency",                &settings->audio.latency);
+   SETTING_INT("audio_block_frames",           &settings->audio.block_frames);
+   SETTING_INT("rewind_granularity",           &settings->rewind_granularity);
+   SETTING_INT("autosave_interval",            &settings->autosave_interval);
+   SETTING_INT("libretro_log_level",           &settings->libretro_log_level);
+   SETTING_INT("keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type);
+   SETTING_INT("input_poll_type_behavior",     &settings->input.poll_type_behavior);
+#ifdef HAVE_MENU
+   SETTING_INT("menu_ok_btn",                  &settings->menu_ok_btn);
+   SETTING_INT("menu_cancel_btn",              &settings->menu_cancel_btn);
+   SETTING_INT("menu_search_btn",              &settings->menu_search_btn);
+   SETTING_INT("menu_info_btn",                &settings->menu_info_btn);
+   SETTING_INT("menu_default_btn",             &settings->menu_default_btn);
+   SETTING_INT("menu_scroll_down_btn",         &settings->menu_scroll_down_btn);
+#endif
+   SETTING_INT("video_monitor_index",          &settings->video.monitor_index);
+   SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x);
+   SETTING_INT("video_fullscreen_y",           &settings->video.fullscreen_y);
+#ifdef HAVE_COMMAND
+   SETTING_INT("network_cmd_port",             &settings->network_cmd_port);
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+   SETTING_INT("network_remote_base_port",     &settings->network_remote_base_port);
+#endif
+   SETTING_INT("menu_scroll_up_btn",           &settings->menu_scroll_up_btn);
+#ifdef HAVE_GEKKO
+   SETTING_INT("video_viwidth",                &settings->video.viwidth);
+#endif
+#ifdef HAVE_MENU
+   SETTING_INT("dpi_override_value",           &settings->menu.dpi.override_value);
+   SETTING_INT("menu_thumbnails",              &settings->menu.thumbnails);
+   SETTING_INT("xmb_scale_factor",             &settings->menu.xmb.scale_factor);
+   SETTING_INT("xmb_alpha_factor",             &settings->menu.xmb.alpha_factor);
+#ifdef HAVE_XMB
+   SETTING_INT("xmb_theme",                    &settings->menu.xmb.theme);
+   SETTING_INT("xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme);
+#endif
+   SETTING_INT("materialui_menu_color_theme",  &settings->menu.materialui.menu_color_theme);
+#ifdef HAVE_SHADERPIPELINE
+   SETTING_INT("menu_shader_pipeline",         &settings->menu.xmb.shader_pipeline);
+#endif
+#endif
+   SETTING_INT("audio_out_rate",               &settings->audio.out_rate);
+   SETTING_INT("custom_viewport_width",        &settings->video_viewport_custom.width);
+   SETTING_INT("custom_viewport_height",       &settings->video_viewport_custom.height);
+   SETTING_INT("custom_viewport_x",            (unsigned*)&settings->video_viewport_custom.x);
+   SETTING_INT("custom_viewport_y",            (unsigned*)&settings->video_viewport_custom.y);
+   SETTING_INT("content_history_size",         &settings->content_history_size);
+   SETTING_INT("video_hard_sync_frames",       &settings->video.hard_sync_frames);
+   SETTING_INT("video_frame_delay",            &settings->video.frame_delay);
+   SETTING_INT("video_max_swapchain_images",   &settings->video.max_swapchain_images);
+   SETTING_INT("video_swap_interval",          &settings->video.swap_interval);
+   SETTING_INT("video_rotation",               &settings->video.rotation);
+   SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx);
+   SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot);
+#ifdef HAVE_NETPLAY
+   SETTING_INT("netplay_ip_port",              &global->netplay.port);
+   SETTING_INT("netplay_delay_frames",         &global->netplay.sync_frames);
+#endif
+#ifdef HAVE_LANGEXTRA
+   SETTING_INT("user_language",                &settings->user_language);
+#endif
+   SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current);
+   SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version);
+
+   *out = (struct config_int_setting_ptr*)malloc(count * sizeof(struct config_int_setting_ptr));
+   memcpy(*out, tmp, sizeof(struct config_int_setting_ptr) * count);
+   free(tmp);
+   return count;
+}
 
 /**
  * config_set_defaults:
@@ -1279,291 +1742,6 @@ static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *
 }
 #endif
 
-#define SETTING_BOOL(key, configval) \
-{ \
-   if (count == 0) \
-      tmp = (struct config_bool_setting_ptr*)malloc(sizeof(struct config_bool_setting_ptr) * (count + 1)); \
-   else \
-      tmp = (struct config_bool_setting_ptr*)realloc(tmp, sizeof(struct config_bool_setting_ptr) * (count + 1)); \
-   tmp[count].ident    = key; \
-   tmp[count].ptr      = configval; \
-   count++; \
-} 
-
-static int populate_settings_bool(settings_t *settings, struct config_bool_setting_ptr **out)
-{
-   unsigned count                      = 0;
-   global_t   *global                  = global_get_ptr();
-   struct config_bool_setting_ptr *tmp = NULL;
-
-   SETTING_BOOL("ui_companion_start_on_boot",    &settings->ui.companion_start_on_boot);
-   SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable);
-   SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record);
-   SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable);
-   SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable);
-   SETTING_BOOL("netplay_client_swap_input",     &settings->input.netplay_client_swap_input);
-   SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show);
-   SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound);
-   SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown);
-   SETTING_BOOL("builtin_mediaplayer_enable",    &settings->multimedia.builtin_mediaplayer_enable);
-   SETTING_BOOL("builtin_imageviewer_enable",    &settings->multimedia.builtin_imageviewer_enable);
-   SETTING_BOOL("fps_show",                      &settings->fps_show);
-   SETTING_BOOL("ui_menubar_enable",             &settings->ui.menubar_enable);
-   SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable);
-   SETTING_BOOL("rewind_enable",                 &settings->rewind_enable);
-   SETTING_BOOL("audio_sync",                    &settings->audio.sync);
-   SETTING_BOOL("video_shader_enable",           &settings->video.shader_enable);
-   SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto);
-   SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate);
-   SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen);
-   SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan);
-   SETTING_BOOL( "video_scale_integer",          &settings->video.scale_integer);
-   SETTING_BOOL("video_smooth",                  &settings->video.smooth);
-   SETTING_BOOL("video_force_aspect",            &settings->video.force_aspect);
-   SETTING_BOOL("video_threaded",                &settings->video.threaded);
-   SETTING_BOOL("video_shared_context",          &settings->video.shared_context);
-   SETTING_BOOL("custom_bgm_enable",             &global->console.sound.system_bgm_enable);
-   SETTING_BOOL("auto_screenshot_filename",      &settings->auto_screenshot_filename);
-   SETTING_BOOL("video_force_srgb_disable",      &settings->video.force_srgb_disable);
-   SETTING_BOOL("video_fullscreen",              &settings->video.fullscreen);
-   SETTING_BOOL("bundle_assets_extract_enable",  &settings->bundle_assets_extract_enable);
-   SETTING_BOOL("video_vsync",                   &settings->video.vsync);
-   SETTING_BOOL("video_hard_sync",               &settings->video.hard_sync);
-   SETTING_BOOL("video_black_frame_insertion",   &settings->video.black_frame_insertion);
-   SETTING_BOOL("video_disable_composition",     &settings->video.disable_composition);
-   SETTING_BOOL("pause_nonactive",               &settings->pause_nonactive);
-   SETTING_BOOL("debug_panel_enable",            &settings->debug_panel_enable);
-   SETTING_BOOL("video_gpu_screenshot",          &settings->video.gpu_screenshot);
-   SETTING_BOOL("video_post_filter_record",      &settings->video.post_filter_record);
-   SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable);
-   SETTING_BOOL("core_set_supports_no_game_enable", &settings->set_supports_no_game_enable);
-   SETTING_BOOL("audio_enable",                  &settings->audio.enable);
-   SETTING_BOOL("audio_mute_enable",             &settings->audio.mute_enable);
-   SETTING_BOOL("location_allow",                &settings->location.allow);
-   SETTING_BOOL("video_font_enable",             &settings->video.font_enable);
-   SETTING_BOOL("core_updater_auto_extract_archive", &settings->network.buildbot_auto_extract_archive);
-   SETTING_BOOL("camera_allow",                  &settings->camera.allow);
-#if TARGET_OS_IPHONE
-   SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable);
-#endif
-#ifdef GEKKO
-   SETTING_BOOL("video_vfilter",                 &settings->video.vfilter);
-#endif
-#ifdef HAVE_MENU
-#ifdef HAVE_THREADS
-   SETTING_BOOL("threaded_data_runloop_enable",  &settings->threaded_data_runloop_enable);
-#endif
-   SETTING_BOOL("menu_throttle_framerate",       &settings->menu.throttle_framerate);
-   SETTING_BOOL("menu_linear_filter",            &settings->menu.linear_filter);
-   SETTING_BOOL("dpi_override_enable",           &settings->menu.dpi.override_enable);
-   SETTING_BOOL("menu_pause_libretro",           &settings->menu.pause_libretro);
-   SETTING_BOOL("menu_mouse_enable",             &settings->menu.mouse.enable);
-   SETTING_BOOL("menu_pointer_enable",           &settings->menu.pointer.enable);
-   SETTING_BOOL("menu_timedate_enable",          &settings->menu.timedate_enable);
-   SETTING_BOOL("menu_core_enable",              &settings->menu.core_enable);
-   SETTING_BOOL("menu_dynamic_wallpaper_enable", &settings->menu.dynamic_wallpaper_enable);
-#ifdef HAVE_XMB
-   SETTING_BOOL("xmb_shadows_enable",            &settings->menu.xmb.shadows_enable);
-   SETTING_BOOL("xmb_show_settings",             &settings->menu.xmb.show_settings);
-#ifdef HAVE_IMAGEVIEWER
-   SETTING_BOOL("xmb_show_images",               &settings->menu.xmb.show_images);
-#endif
-#ifdef HAVE_FFMPEG
-   SETTING_BOOL("xmb_show_music",                &settings->menu.xmb.show_music);
-   SETTING_BOOL("xmb_show_video",                &settings->menu.xmb.show_video);
-#endif
-   SETTING_BOOL("xmb_show_history",              &settings->menu.xmb.show_history);
-#endif
-   SETTING_BOOL("rgui_show_start_screen",        &settings->menu_show_start_screen);
-   SETTING_BOOL("menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable);
-   SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable", 
-         &settings->menu.navigation.browser.filter.supported_extensions_enable);
-   SETTING_BOOL("menu_show_advanced_settings",  &settings->menu.show_advanced_settings);
-#endif
-#ifdef HAVE_CHEEVOS
-   SETTING_BOOL("cheevos_enable",               &settings->cheevos.enable);
-   SETTING_BOOL("cheevos_test_unofficial",      &settings->cheevos.test_unofficial);
-   SETTING_BOOL("cheevos_hardcore_mode_enable", &settings->cheevos.hardcore_mode_enable);
-#endif
-#ifdef HAVE_OVERLAY
-   SETTING_BOOL("input_overlay_enable",         &settings->input.overlay_enable);
-   SETTING_BOOL("input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred);
-   SETTING_BOOL("input_overlay_hide_in_menu",   &settings->input.overlay_hide_in_menu);
-   SETTING_BOOL("input_osk_overlay_enable",     &settings->osk.enable);
-#endif
-#ifdef HAVE_COMMAND
-   SETTING_BOOL("network_cmd_enable",           &settings->network_cmd_enable);
-   SETTING_BOOL("stdin_cmd_enable",             &settings->stdin_cmd_enable);
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-   SETTING_BOOL("network_remote_enable",        &settings->network_remote_enable);
-#endif
-#ifdef HAVE_NETPLAY
-   SETTING_BOOL("netplay_spectator_mode_enable",&global->netplay.is_spectate);
-   SETTING_BOOL("netplay_mode",                 &global->netplay.is_client);
-#endif
-   SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite);
-   SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index);
-   SETTING_BOOL("savestate_auto_save",          &settings->savestate_auto_save);
-   SETTING_BOOL("savestate_auto_load",          &settings->savestate_auto_load);
-   SETTING_BOOL("history_list_enable",          &settings->history_list_enable);
-   SETTING_BOOL("game_specific_options",        &settings->game_specific_options);
-   SETTING_BOOL("auto_overrides_enable",        &settings->auto_overrides_enable);
-   SETTING_BOOL("auto_remaps_enable",           &settings->auto_remaps_enable);
-   SETTING_BOOL("auto_shaders_enable",          &settings->auto_shaders_enable);
-   SETTING_BOOL("sort_savefiles_enable",        &settings->sort_savefiles_enable);
-   SETTING_BOOL("sort_savestates_enable",       &settings->sort_savestates_enable);
-   SETTING_BOOL("config_save_on_exit",          &settings->config_save_on_exit);
-   SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files);
-   SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable);
-   SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control);
-
-   *out = 
-      (struct config_bool_setting_ptr*) malloc(count *sizeof(struct config_bool_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_bool_setting_ptr) * count);
-   free(tmp);
-   return count;
-}
-
-#define SETTING_FLOAT(key, configval) \
-{ \
-   if (count == 0) \
-      tmp = (struct config_float_setting_ptr*)malloc(sizeof(struct config_float_setting_ptr) * (count + 1)); \
-   else \
-      tmp = (struct config_float_setting_ptr*)realloc(tmp, sizeof(struct config_float_setting_ptr) * (count + 1)); \
-   tmp[count].ident    = key; \
-   tmp[count].ptr      = configval; \
-   count++; \
-}
-
-static int populate_settings_float(settings_t *settings, struct config_float_setting_ptr **out)
-{
-   unsigned count = 0;
-   struct config_float_setting_ptr *tmp = NULL;
-
-   SETTING_FLOAT("video_aspect_ratio",       &settings->video.aspect_ratio);
-   SETTING_FLOAT("video_scale",              &settings->video.scale);
-   SETTING_FLOAT("video_refresh_rate",       &settings->video.refresh_rate);
-   SETTING_FLOAT("audio_rate_control_delta", &settings->audio.rate_control_delta);
-   SETTING_FLOAT("audio_max_timing_skew",    &settings->audio.max_timing_skew);
-   SETTING_FLOAT("audio_volume",             &settings->audio.volume);
-#ifdef HAVE_OVERLAY
-   SETTING_FLOAT("input_overlay_opacity",    &settings->input.overlay_opacity);
-   SETTING_FLOAT("input_overlay_scale",      &settings->input.overlay_scale);
-#endif
-#ifdef HAVE_MENU
-   SETTING_FLOAT("menu_wallpaper_opacity",   &settings->menu.wallpaper.opacity);
-   SETTING_FLOAT("menu_footer_opacity",      &settings->menu.footer.opacity);
-   SETTING_FLOAT("menu_header_opacity",      &settings->menu.header.opacity);
-#endif
-   SETTING_FLOAT("video_message_pos_x",      &settings->video.msg_pos_x);
-   SETTING_FLOAT("video_message_pos_y",      &settings->video.msg_pos_y);
-   SETTING_FLOAT("video_font_size",          &settings->video.font_size);
-   SETTING_FLOAT("fastforward_ratio",        &settings->fastforward_ratio);
-   SETTING_FLOAT("slowmotion_ratio",         &settings->slowmotion_ratio);
-   SETTING_FLOAT("input_axis_threshold",     &settings->input.axis_threshold);
-
-   *out = 
-      (struct config_float_setting_ptr*) malloc(count * sizeof(struct config_float_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_float_setting_ptr) * count);
-   free(tmp);
-   return count;
-}
-
-#define SETTING_INT(key, configval) \
-{ \
-   if (count == 0) \
-      tmp = (struct config_int_setting_ptr*)malloc(sizeof(struct config_int_setting_ptr) * (count + 1)); \
-   else \
-      tmp = (struct config_int_setting_ptr*)realloc(tmp, sizeof(struct config_int_setting_ptr) * (count + 1)); \
-   tmp[count].ident    = key; \
-   tmp[count].ptr      = configval; \
-   count++; \
-}
-
-static int populate_settings_int(settings_t *settings, struct config_int_setting_ptr **out)
-{
-   unsigned count                     = 0;
-   struct config_int_setting_ptr *tmp = NULL;
-#ifdef HAVE_NETPLAY
-   global_t   *global                 = global_get_ptr();
-#endif
-
-   SETTING_INT("input_bind_timeout",           &settings->input.bind_timeout);
-   SETTING_INT("input_turbo_period",           &settings->input.turbo_period);
-   SETTING_INT("input_duty_cycle",             &settings->input.turbo_duty_cycle);
-   SETTING_INT("input_max_users",              &settings->input.max_users);
-   SETTING_INT("input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo);
-   SETTING_INT("audio_latency",                &settings->audio.latency);
-   SETTING_INT("audio_block_frames",           &settings->audio.block_frames);
-   SETTING_INT("rewind_granularity",           &settings->rewind_granularity);
-   SETTING_INT("autosave_interval",            &settings->autosave_interval);
-   SETTING_INT("libretro_log_level",           &settings->libretro_log_level);
-   SETTING_INT("keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type);
-   SETTING_INT("input_poll_type_behavior",     &settings->input.poll_type_behavior);
-#ifdef HAVE_MENU
-   SETTING_INT("menu_ok_btn",                  &settings->menu_ok_btn);
-   SETTING_INT("menu_cancel_btn",              &settings->menu_cancel_btn);
-   SETTING_INT("menu_search_btn",              &settings->menu_search_btn);
-   SETTING_INT("menu_info_btn",                &settings->menu_info_btn);
-   SETTING_INT("menu_default_btn",             &settings->menu_default_btn);
-   SETTING_INT("menu_scroll_down_btn",         &settings->menu_scroll_down_btn);
-#endif
-   SETTING_INT("video_monitor_index",          &settings->video.monitor_index);
-   SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x);
-   SETTING_INT("video_fullscreen_y",           &settings->video.fullscreen_y);
-#ifdef HAVE_COMMAND
-   SETTING_INT("network_cmd_port",             &settings->network_cmd_port);
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-   SETTING_INT("network_remote_base_port",     &settings->network_remote_base_port);
-#endif
-   SETTING_INT("menu_scroll_up_btn",           &settings->menu_scroll_up_btn);
-#ifdef HAVE_GEKKO
-   SETTING_INT("video_viwidth",                &settings->video.viwidth);
-#endif
-#ifdef HAVE_MENU
-   SETTING_INT("dpi_override_value",           &settings->menu.dpi.override_value);
-   SETTING_INT("menu_thumbnails",              &settings->menu.thumbnails);
-   SETTING_INT("xmb_scale_factor",             &settings->menu.xmb.scale_factor);
-   SETTING_INT("xmb_alpha_factor",             &settings->menu.xmb.alpha_factor);
-#ifdef HAVE_XMB
-   SETTING_INT("xmb_theme",                    &settings->menu.xmb.theme);
-   SETTING_INT("xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme);
-#endif
-   SETTING_INT("materialui_menu_color_theme",  &settings->menu.materialui.menu_color_theme);
-#ifdef HAVE_SHADERPIPELINE
-   SETTING_INT("menu_shader_pipeline",         &settings->menu.xmb.shader_pipeline);
-#endif
-#endif
-   SETTING_INT("audio_out_rate",               &settings->audio.out_rate);
-   SETTING_INT("custom_viewport_width",        &settings->video_viewport_custom.width);
-   SETTING_INT("custom_viewport_height",       &settings->video_viewport_custom.height);
-   SETTING_INT("custom_viewport_x",            (unsigned*)&settings->video_viewport_custom.x);
-   SETTING_INT("custom_viewport_y",            (unsigned*)&settings->video_viewport_custom.y);
-   SETTING_INT("content_history_size",         &settings->content_history_size);
-   SETTING_INT("video_hard_sync_frames",       &settings->video.hard_sync_frames);
-   SETTING_INT("video_frame_delay",            &settings->video.frame_delay);
-   SETTING_INT("video_max_swapchain_images",   &settings->video.max_swapchain_images);
-   SETTING_INT("video_swap_interval",          &settings->video.swap_interval);
-   SETTING_INT("video_rotation",               &settings->video.rotation);
-   SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx);
-   SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot);
-#ifdef HAVE_NETPLAY
-   SETTING_INT("netplay_ip_port",              &global->netplay.port);
-   SETTING_INT("netplay_delay_frames",         &global->netplay.sync_frames);
-#endif
-#ifdef HAVE_LANGEXTRA
-   SETTING_INT("user_language",                &settings->user_language);
-#endif
-   SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current);
-   SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version);
-
-   *out = (struct config_int_setting_ptr*)malloc(count * sizeof(struct config_int_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_int_setting_ptr) * count);
-   free(tmp);
-   return count;
-}
 
 /**
  * config_load:
@@ -2879,185 +3057,6 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
    return ret;
 }
 
-
-
-
-#define SETTING_STRING(key, configval) \
-{ \
-   if (count == 0) \
-      tmp = (struct config_string_setting_ptr*)malloc(sizeof(struct config_string_setting_ptr) * (count + 1)); \
-   else \
-      tmp = (struct config_string_setting_ptr*)realloc(tmp, sizeof(struct config_string_setting_ptr) * (count + 1)); \
-   tmp[count].ident    = key; \
-   tmp[count].value    = configval; \
-   count++; \
-} \
-
-static int populate_settings_string(settings_t *settings, struct config_string_setting_ptr **out)
-{
-   unsigned count                        = 0;
-   struct config_string_setting_ptr *tmp = NULL;
-#ifdef HAVE_NETPLAY
-   global_t   *global                    = global_get_ptr();
-#endif
-   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir);
-   SETTING_STRING("video_filter",             settings->path.softfilter_plugin);
-   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin);
-   SETTING_STRING("playlist_names",           settings->playlist_names);
-   SETTING_STRING("playlist_cores",           settings->playlist_cores);
-   SETTING_STRING("video_driver",             settings->video.driver);
-   SETTING_STRING("record_driver",            settings->record.driver);
-   SETTING_STRING("camera_driver",            settings->camera.driver);
-   SETTING_STRING("location_driver",          settings->location.driver);
-#ifdef HAVE_MENU
-   SETTING_STRING("menu_driver",              settings->menu.driver);
-#endif
-   SETTING_STRING("audio_device",             settings->audio.device);
-   SETTING_STRING("core_updater_buildbot_url",settings->network.buildbot_url);
-   SETTING_STRING("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url);
-   SETTING_STRING("camera_device",            settings->camera.device);
-#ifdef HAVE_CHEEVOS
-   SETTING_STRING("cheevos_username",         settings->cheevos.username);
-   SETTING_STRING("cheevos_password",         settings->cheevos.password);
-#endif
-   SETTING_STRING("video_context_driver",     settings->video.context_driver);
-   SETTING_STRING("audio_driver",             settings->audio.driver);
-   SETTING_STRING("audio_resampler",          settings->audio.resampler);
-#ifdef HAVE_NETPLAY
-   SETTING_STRING("netplay_ip_address",       global->netplay.server);
-#endif
-   SETTING_STRING("netplay_nickname",         settings->username);
-   SETTING_STRING("input_driver",             settings->input.driver);
-   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver);
-   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout);
-   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src);
-   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst);
-
-   *out = 
-      (struct config_string_setting_ptr*) malloc(count * sizeof(struct config_string_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_string_setting_ptr) * count);
-   free(tmp);
-   return count;
-}
-
-#define SETTING_PATH(key, defval, configval) \
-{ \
-   if (count == 0) \
-      tmp = (struct config_path_setting_ptr*)malloc(sizeof(struct config_path_setting_ptr) * (count + 1)); \
-   else \
-      tmp = (struct config_path_setting_ptr*)realloc(tmp, sizeof(struct config_path_setting_ptr) * (count + 1)); \
-   tmp[count].ident    = key; \
-   tmp[count].defaults = defval; \
-   tmp[count].value    = configval; \
-   count++; \
-} \
-
-static int populate_settings_path(settings_t *settings, struct config_path_setting_ptr **out)
-{
-   unsigned count = 0;
-   struct config_path_setting_ptr *tmp = NULL;
-   global_t   *global                  = global_get_ptr();
-
-   SETTING_PATH("recording_output_directory", false,
-         global->record.output_dir);
-   SETTING_PATH("recording_config_directory", false,
-         global->record.config_dir);
-   SETTING_PATH("libretro_directory", false,
-         settings->directory.libretro);
-   SETTING_PATH("core_options_path", false,
-         settings->path.core_options);
-   SETTING_PATH("libretro_info_path", false,
-         settings->path.libretro_info);
-   SETTING_PATH("video_shader", false,
-         settings->path.shader);
-   SETTING_PATH("content_database_path", false,
-         settings->path.content_database);
-   SETTING_PATH("cheat_database_path", false,
-         settings->path.cheat_database);
-#ifdef HAVE_MENU
-   SETTING_PATH("menu_wallpaper", false,
-         settings->path.menu_wallpaper);
-#endif
-   SETTING_PATH("content_history_path", false,
-         settings->path.content_history);
-   SETTING_PATH("content_music_history_path", false,
-         settings->path.content_music_history);
-   SETTING_PATH("content_video_history_path", false,
-         settings->path.content_video_history);
-   SETTING_PATH("content_image_history_path", false,
-         settings->path.content_image_history);
-#ifdef HAVE_OVERLAY
-   SETTING_PATH("input_overlay", false,
-         settings->path.overlay);
-   SETTING_PATH("input_osk_overlay", false,
-         settings->path.osk_overlay);
-#endif
-   SETTING_PATH("video_font_path", false,
-         settings->path.font);
-   SETTING_PATH("cursor_directory", false,
-         settings->directory.cursor);
-   SETTING_PATH("content_history_dir", false,
-         settings->directory.content_history);
-   SETTING_PATH("screenshot_directory", true,
-         settings->directory.screenshot);
-   SETTING_PATH("system_directory", true,
-         settings->directory.system);
-   SETTING_PATH("cache_directory", false,
-         settings->directory.cache);
-   SETTING_PATH("input_remapping_directory", false,
-         settings->directory.input_remapping);
-   SETTING_PATH("resampler_directory", false,
-         settings->directory.resampler);
-   SETTING_PATH("video_shader_dir", true,
-         settings->directory.video_shader);
-   SETTING_PATH("video_filter_dir", true,
-         settings->directory.video_filter);
-   SETTING_PATH("core_assets_directory", true,
-         settings->directory.core_assets);
-   SETTING_PATH("assets_directory", true,
-         settings->directory.assets);
-   SETTING_PATH("dynamic_wallpapers_directory", true,
-         settings->directory.dynamic_wallpapers);
-   SETTING_PATH("thumbnails_directory", true,
-         settings->directory.thumbnails);
-   SETTING_PATH("playlist_directory", true,
-         settings->directory.playlist);
-   SETTING_PATH("joypad_autoconfig_dir", false,
-         settings->directory.autoconfig);
-   SETTING_PATH("audio_filter_dir", true,
-         settings->directory.audio_filter);
-   SETTING_PATH("savefile_directory", true,
-         global->dir.savefile);
-   SETTING_PATH("savestate_directory", true,
-         global->dir.savestate);
-#ifdef HAVE_MENU
-   SETTING_PATH("rgui_browser_directory", true,
-         settings->directory.menu_content);
-   SETTING_PATH("rgui_config_directory", true,
-         settings->directory.menu_config);
-#endif
-#ifdef HAVE_OVERLAY
-   SETTING_PATH("overlay_directory", true,
-         settings->directory.overlay);
-#endif
-#ifdef HAVE_OVERLAY
-   SETTING_PATH("osk_overlay_directory", true,
-         global->dir.osk_overlay);
-#endif
-#ifndef HAVE_DYNAMIC
-   SETTING_PATH("libretro_path", false,
-         config_get_active_core_path());
-#endif
-   SETTING_PATH(
-         "screenshot_directory", true,
-         settings->directory.screenshot);
-
-   *out = 
-      (struct config_path_setting_ptr*) malloc(count * sizeof(struct config_path_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_path_setting_ptr) * count);
-   free(tmp);
-   return count;
-}
 
 /**
  * config_save_file:

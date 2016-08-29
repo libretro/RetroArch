@@ -41,6 +41,8 @@ struct config_bool_setting_ptr
 { 
    const char *ident;
    bool *ptr;
+   bool def_enable;
+   bool def;
 };
 
 struct config_int_setting_ptr
