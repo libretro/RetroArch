@@ -674,8 +674,8 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto, false, false /* TODO */);
    SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate, false, false /* TODO */);
    SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen, false, false /* TODO */);
-   SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan, false, false /* TODO */);
-   SETTING_BOOL("video_scale_integer",           &settings->video.scale_integer, false, false /* TODO */);
+   SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan, true, crop_overscan);
+   SETTING_BOOL("video_scale_integer",           &settings->video.scale_integer, true, scale_integer);
    SETTING_BOOL("video_smooth",                  &settings->video.smooth, true, video_smooth);
    SETTING_BOOL("video_force_aspect",            &settings->video.force_aspect, true, force_aspect);
    SETTING_BOOL("video_threaded",                &settings->video.threaded, true, video_threaded);
@@ -705,7 +705,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable, false, false /* TODO */);
 #endif
 #ifdef GEKKO
-   SETTING_BOOL("video_vfilter",                 &settings->video.vfilter, false, false /* TODO */);
+   SETTING_BOOL("video_vfilter",                 &settings->video.vfilter, true, video_vfilter);
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_THREADS
@@ -733,10 +733,10 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("xmb_show_history",              &settings->menu.xmb.show_history, false, false /* TODO */);
 #endif
    SETTING_BOOL("rgui_show_start_screen",        &settings->menu_show_start_screen, false, false /* TODO */);
-   SETTING_BOOL("menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable, false, false /* TODO */);
+   SETTING_BOOL("menu_navigation_wraparound_enable", &settings->menu.navigation.wraparound.enable, true, true);
    SETTING_BOOL("menu_navigation_browser_filter_supported_extensions_enable", 
-         &settings->menu.navigation.browser.filter.supported_extensions_enable, false, false /* TODO */);
-   SETTING_BOOL("menu_show_advanced_settings",  &settings->menu.show_advanced_settings, false, false /* TODO */);
+         &settings->menu.navigation.browser.filter.supported_extensions_enable, true, true);
+   SETTING_BOOL("menu_show_advanced_settings",  &settings->menu.show_advanced_settings, true, show_advanced_settings);
 #endif
 #ifdef HAVE_CHEEVOS
    SETTING_BOOL("cheevos_enable",               &settings->cheevos.enable, false, false /* TODO */);
@@ -760,21 +760,21 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("netplay_spectator_mode_enable",&global->netplay.is_spectate, false, false /* TODO */);
    SETTING_BOOL("netplay_mode",                 &global->netplay.is_client, false, false /* TODO */);
 #endif
-   SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite, false, false /* TODO */);
-   SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index, false, false /* TODO */);
-   SETTING_BOOL("savestate_auto_save",          &settings->savestate_auto_save, false, false /* TODO */);
-   SETTING_BOOL("savestate_auto_load",          &settings->savestate_auto_load, false, false /* TODO */);
-   SETTING_BOOL("history_list_enable",          &settings->history_list_enable, false, false /* TODO */);
-   SETTING_BOOL("game_specific_options",        &settings->game_specific_options, false, false /* TODO */);
-   SETTING_BOOL("auto_overrides_enable",        &settings->auto_overrides_enable, false, false /* TODO */);
-   SETTING_BOOL("auto_remaps_enable",           &settings->auto_remaps_enable, false, false /*TODO */);
-   SETTING_BOOL("auto_shaders_enable",          &settings->auto_shaders_enable, false, false /* TODO */);
-   SETTING_BOOL("sort_savefiles_enable",        &settings->sort_savefiles_enable, false, false /* TODO */);
-   SETTING_BOOL("sort_savestates_enable",       &settings->sort_savestates_enable, false, false /* TODO */);
-   SETTING_BOOL("config_save_on_exit",          &settings->config_save_on_exit, false, false /* TODO */);
-   SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files, false, false /* TODO */);
-   SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable, false, false /* TODO */);
-   SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, false, false /* TODO */);
+   SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite, true, block_sram_overwrite);
+   SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index, true, savestate_auto_index);
+   SETTING_BOOL("savestate_auto_save",          &settings->savestate_auto_save, true, savestate_auto_save);
+   SETTING_BOOL("savestate_auto_load",          &settings->savestate_auto_load, true, savestate_auto_load);
+   SETTING_BOOL("history_list_enable",          &settings->history_list_enable, true, def_history_list_enable);
+   SETTING_BOOL("game_specific_options",        &settings->game_specific_options, true, default_game_specific_options);
+   SETTING_BOOL("auto_overrides_enable",        &settings->auto_overrides_enable, true, default_auto_overrides_enable);
+   SETTING_BOOL("auto_remaps_enable",           &settings->auto_remaps_enable, true, default_auto_remaps_enable);
+   SETTING_BOOL("auto_shaders_enable",          &settings->auto_shaders_enable, true, default_auto_shaders_enable);
+   SETTING_BOOL("sort_savefiles_enable",        &settings->sort_savefiles_enable, true, default_sort_savefiles_enable);
+   SETTING_BOOL("sort_savestates_enable",       &settings->sort_savestates_enable, true, default_sort_savestates_enable);
+   SETTING_BOOL("config_save_on_exit",          &settings->config_save_on_exit, true, config_save_on_exit);
+   SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files, true, show_hidden_files);
+   SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable, true, input_autodetect_enable);
+   SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, true, rate_control);
 
    *out = 
       (struct config_bool_setting_ptr*) malloc(count *sizeof(struct config_bool_setting_ptr));
@@ -993,8 +993,6 @@ static void config_set_defaults(void)
    settings->menu.linear_filter        = true;
 #endif
 
-   settings->history_list_enable         = def_history_list_enable;
-
 #if TARGET_OS_IPHONE
    settings->input.small_keyboard_enable   = false;
 #endif
@@ -1025,10 +1023,7 @@ static void config_set_defaults(void)
 #endif
 #ifdef GEKKO
    settings->video.viwidth                     = video_viwidth;
-   settings->video.vfilter                     = video_vfilter;
 #endif
-   settings->video.scale_integer               = scale_integer;
-   settings->video.crop_overscan               = crop_overscan;
    settings->video.aspect_ratio                = aspect_ratio;
    settings->video.aspect_ratio_auto           = aspect_ratio_auto; /* Let implementation decide if automatic, or 1:1 PAR. */
    settings->video.aspect_ratio_idx            = aspect_ratio_idx;
@@ -1063,7 +1058,6 @@ static void config_set_defaults(void)
       g_defaults.settings.out_latency          = out_latency;
 
    settings->audio.latency                     = g_defaults.settings.out_latency;
-   settings->audio.rate_control                = rate_control;
    settings->audio.rate_control_delta          = rate_control_delta;
    settings->audio.max_timing_skew             = max_timing_skew;
    settings->audio.volume                      = audio_volume;
@@ -1076,10 +1070,6 @@ static void config_set_defaults(void)
    settings->fastforward_ratio                 = fastforward_ratio;
    settings->autosave_interval                 = autosave_interval;
 
-   settings->block_sram_overwrite              = block_sram_overwrite;
-   settings->savestate_auto_index              = savestate_auto_index;
-   settings->savestate_auto_save               = savestate_auto_save;
-   settings->savestate_auto_load               = savestate_auto_load;
    settings->network_cmd_enable                = network_cmd_enable;
    settings->network_cmd_port                  = network_cmd_port;
    settings->network_remote_base_port           = network_remote_base_port;
@@ -1106,7 +1096,6 @@ static void config_set_defaults(void)
    settings->menu.footer.opacity               = menu_footer_opacity;
    settings->menu.header.opacity               = menu_header_opacity;
    settings->menu.thumbnails                   = menu_thumbnails_default;
-   settings->menu.show_advanced_settings       = show_advanced_settings;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
    settings->menu.entry_hover_color            = menu_entry_hover_color;
    settings->menu.title_color                  = menu_title_color;
@@ -1115,8 +1104,6 @@ static void config_set_defaults(void)
    settings->menu.dpi.override_value           = menu_dpi_override_value;
 
    settings->menu.navigation.wraparound.setting_enable                  = true;
-   settings->menu.navigation.wraparound.enable                          = true;
-   settings->menu.navigation.browser.filter.supported_extensions_enable = true;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -1178,7 +1165,6 @@ static void config_set_defaults(void)
    settings->input.overlay_hide_in_menu            = overlay_hide_in_menu;
    settings->input.overlay_opacity                 = 0.7f;
    settings->input.overlay_scale                   = 1.0f;
-   settings->input.autodetect_enable               = input_autodetect_enable;
    *settings->input.keyboard_layout                = '\0';
 
    settings->osk.enable                            = true;
@@ -1259,13 +1245,6 @@ static void config_set_defaults(void)
    *settings->playlist_cores = '\0';
    *settings->directory.content_history = '\0';
    *settings->path.audio_dsp_plugin = '\0';
-   settings->game_specific_options = default_game_specific_options;
-   settings->auto_overrides_enable = default_auto_overrides_enable;
-   settings->auto_remaps_enable = default_auto_remaps_enable;
-   settings->auto_shaders_enable = default_auto_shaders_enable;
-
-   settings->sort_savefiles_enable = default_sort_savefiles_enable;
-   settings->sort_savestates_enable = default_sort_savestates_enable;
 
 #ifdef HAVE_MENU
    settings->menu_ok_btn          = config_menu_btn_ok_default();
@@ -1409,9 +1388,6 @@ static void config_set_defaults(void)
    if (!string_is_empty(g_defaults.path.config))
       fill_pathname_expand_special(global->path.config,
             g_defaults.path.config, sizeof(global->path.config));
-
-   settings->config_save_on_exit = config_save_on_exit;
-   settings->show_hidden_files = show_hidden_files;
 
    /* Avoid reloading config on every content load */
    if (default_block_config_read)
