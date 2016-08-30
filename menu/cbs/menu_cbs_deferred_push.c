@@ -69,11 +69,6 @@ static int deferred_push_network_information(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_NETWORK_INFO);
 }
 
-static int deferred_push_debug_information(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_DEBUG_INFO);
-}
-
 static int deferred_push_achievement_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_ACHIEVEMENT_LIST);
@@ -953,9 +948,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_NETWORK_INFORMATION:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_network_information);
                break;
-            case MENU_ENUM_LABEL_DEBUG_INFORMATION:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_debug_information);
-               break;
             case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);
                break;
@@ -1206,9 +1198,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_NETWORK_INFORMATION:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_network_information);
-               break;
-            case MENU_LABEL_DEBUG_INFORMATION:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_debug_information);
                break;
             case MENU_LABEL_ACHIEVEMENT_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_achievement_list);

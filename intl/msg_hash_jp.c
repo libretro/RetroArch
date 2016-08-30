@@ -2784,8 +2784,6 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "menu_navigation_browser_filter_supported_extensions_enable";
       case MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "core_updater_auto_extract_archive";
-      case MENU_ENUM_LABEL_DEBUG_INFORMATION:
-         return "debug_information";
       case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          return "achievement_list";
       case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
@@ -4029,8 +4027,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "System Information";
       case MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION:
          return "Network Information";
-      case MENU_ENUM_LABEL_VALUE_DEBUG_INFORMATION:
-         return "Debug Information";
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST:
          return "Achievement List";
       case MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER:

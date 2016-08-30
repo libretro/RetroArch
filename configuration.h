@@ -454,7 +454,6 @@ typedef struct settings
    bool network_remote_enable;
    bool network_remote_enable_user[MAX_USERS];
    unsigned network_remote_base_port;
-   bool debug_panel_enable;
 
 #if defined(HAVE_MENU)
    bool menu_show_start_screen;

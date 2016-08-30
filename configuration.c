@@ -682,7 +682,6 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("video_black_frame_insertion",   &settings->video.black_frame_insertion, true, black_frame_insertion);
    SETTING_BOOL("video_disable_composition",     &settings->video.disable_composition, true, disable_composition);
    SETTING_BOOL("pause_nonactive",               &settings->pause_nonactive, true, pause_nonactive);
-   SETTING_BOOL("debug_panel_enable",            &settings->debug_panel_enable, false, false /* TODO */);
    SETTING_BOOL("video_gpu_screenshot",          &settings->video.gpu_screenshot, true, gpu_screenshot);
    SETTING_BOOL("video_post_filter_record",      &settings->video.post_filter_record, true, post_filter_record);
    SETTING_BOOL("keyboard_gamepad_enable",       &settings->input.keyboard_gamepad_enable, true, true);

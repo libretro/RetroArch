@@ -3006,22 +3006,6 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL);
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->debug_panel_enable,
-                  msg_hash_to_str(MENU_ENUM_LABEL_DEBUG_PANEL_ENABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEBUG_PANEL_ENABLE),
-                  false,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_ADVANCED);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DEBUG_PANEL_ENABLE);
-
             END_SUB_GROUP(list, list_info, parent_group);
 
             START_SUB_GROUP(list, list_info, "Performance Counters", &group_info, &subgroup_info,

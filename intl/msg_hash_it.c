@@ -1687,8 +1687,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Estrai automaticamente gli archivi scaricati";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informazione di sistema";
-	  case MENU_ENUM_LABEL_VALUE_DEBUG_INFORMATION:
-         return "Informazioni di debug";
 	  case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST:
          return "Lista Obiettivi";
       case MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER:

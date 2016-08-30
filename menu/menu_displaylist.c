@@ -404,121 +404,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    return 0;
 }
 
-static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
-{
-   bool ret                            = false;
-   char tmp[PATH_MAX_LENGTH]           = {0};
-   settings_t *settings                = config_get_ptr();
-   global_t *global                    = global_get_ptr();
-
-   menu_entries_append_enum(info->list, "Directory Tests:", "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   /* Assume libretro directory exists and check if stat works */
-   ret = path_is_directory(settings->directory.libretro);
-   snprintf(tmp, sizeof(tmp), "- stat directory... %s",
-         ret ? "passed" : "failed");
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   /* Try to create a "test" subdirectory on top of libretro directory */
-   fill_pathname_join(tmp,
-         settings->directory.libretro,
-         ".retroarch",
-         sizeof(tmp));
-   ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "- create a directory... %s",
-         ret ? "passed" : "failed");
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   menu_entries_append_enum(info->list, "", "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   /* Check if save directory exists */
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY),
-         "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   ret = path_is_directory(global->dir.savefile);
-   snprintf(tmp, sizeof(tmp), "- directory name: %s",
-         global->dir.savefile);
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "- directory exists: %s",
-         ret ? "true" : "false");
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   /* Check if save directory is writable */
-   fill_pathname_join(tmp, global->dir.savefile, ".retroarch",
-         sizeof(tmp));
-   ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "- directory writable: %s",
-         ret ? "true" : "false");
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   menu_entries_append_enum(info->list, "", "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   /* Check if state directory exists */
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY),
-         "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   ret = path_is_directory(global->dir.savestate);
-   snprintf(tmp, sizeof(tmp), "- directory name: %s", global->dir.savestate);
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "- directory exists: %s",
-         ret ? "true" : "false");
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   /* Check if save directory is writable */
-   fill_pathname_join(tmp, global->dir.savestate, ".retroarch", sizeof(tmp));
-   ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "- directory writable: %s",
-         ret ? "true" : "false");
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   menu_entries_append_enum(info->list, "", "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   /* Check if system directory exists */
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY),
-         "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY,
-         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   ret = path_is_directory(settings->directory.system);
-   snprintf(tmp, sizeof(tmp), "- directory name: %s",
-         settings->directory.system);
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "- directory exists: %s",
-         ret ? "true" : "false");
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   /* Check if save directory is writable */
-   fill_pathname_join(tmp, settings->directory.system, ".retroarch",
-         sizeof(tmp));
-   ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "- directory writable: %s",
-         ret ? "true" : "false");
-   menu_entries_append_enum(info->list, tmp, "",
-         MENU_ENUM_LABEL_DEBUG_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-   return 0;
-}
-
 #ifdef HAVE_NETPLAY
 #ifndef HAVE_SOCKET_LEGACY
 #include <net/net_ifinfo.h>
@@ -2861,13 +2746,6 @@ static int menu_displaylist_parse_information_list(
             MENU_SETTING_ACTION, 0, 0);
    }
 
-   if(settings->debug_panel_enable)
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEBUG_INFORMATION),
-            msg_hash_to_str(MENU_ENUM_LABEL_DEBUG_INFORMATION),
-            MENU_ENUM_LABEL_DEBUG_INFORMATION,
-            MENU_SETTING_ACTION, 0, 0);
-
    return 0;
 }
 
@@ -4088,7 +3966,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_OPTIONS_DISK:
       case DISPLAYLIST_NETWORK_INFO:
       case DISPLAYLIST_SYSTEM_INFO:
-      case DISPLAYLIST_DEBUG_INFO:
       case DISPLAYLIST_ACHIEVEMENT_LIST:
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
@@ -4511,9 +4388,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,
                PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_DEBUG_PANEL_ENABLE,
-               PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_PERFCNT_ENABLE,
                PARSE_ONLY_BOOL, false);
@@ -5586,12 +5460,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          info->need_refresh = true;
          break;
-      case DISPLAYLIST_DEBUG_INFO:
-         menu_displaylist_parse_debug_info(info);
-         info->need_push    = true;
-         info->need_refresh = true;
-         break;
-
 #ifdef HAVE_CHEEVOS
       case DISPLAYLIST_ACHIEVEMENT_LIST:
          cheevos_populate_menu(info);

@@ -1242,7 +1242,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_playlist_settings_list);
             break;
          case MENU_ENUM_LABEL_MANAGEMENT:
-         case MENU_ENUM_LABEL_DEBUG_INFORMATION:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
@@ -1521,7 +1520,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_playlist_settings_list);
             break;
          case MENU_LABEL_MANAGEMENT:
-         case MENU_LABEL_DEBUG_INFORMATION:
          case MENU_LABEL_ACHIEVEMENT_LIST:
          case MENU_LABEL_VIDEO_SHADER_PARAMETERS:
          case MENU_LABEL_VIDEO_SHADER_PRESET_PARAMETERS:
