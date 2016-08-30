@@ -309,7 +309,7 @@ if [ "$HAVE_THREADS" != 'no' ]; then
       HAVE_FFMPEG='yes'
       if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_SWRESAMPLE" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
          HAVE_FFMPEG='no'
-         echo "Notice: FFmpeg recording disabled due to missing or unsuitable packages."
+         echo "Notice: FFmpeg built-in support disabled due to missing or unsuitable packages."
       fi
    fi
 else
