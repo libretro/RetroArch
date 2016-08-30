@@ -1386,7 +1386,8 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif !defined(RARCH_CONSOLE)
-   bool has_application_data = fill_pathname_application_data(application_data,
+   bool has_application_data = 
+      fill_pathname_application_data(application_data,
             sizeof(application_data));
 
    if (has_application_data)
@@ -1416,7 +1417,8 @@ static config_file_t *open_default_config_file(void)
 
       fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
 
-      fill_pathname_join(conf_path, conf_path, file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
+      fill_pathname_join(conf_path, conf_path,
+            file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(conf_path));
 
       if (path_mkdir(basedir))
       {
