@@ -157,8 +157,6 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
 
 static int httpserver_handle_get_mmap(struct mg_connection* conn, void* cbdata)
 {
-  static const char* hexdigits = "0123456789ABCDEF";
-
   const struct mg_request_info* req = mg_get_request_info(conn);
   const char* comma = "";
   rarch_system_info_t* system;
