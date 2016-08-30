@@ -774,8 +774,10 @@ static bool codec_is_image(enum AVCodecID id)
          return true;
 
       default:
-         return false;
+         break;
    }
+
+   return false;
 }
 
 static bool codec_id_is_ttf(enum AVCodecID id)
@@ -1125,9 +1127,9 @@ static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
             unsigned dst_alpha = 256 - src_alpha;
 
             uint32_t dst_color = dst[x];
-            unsigned dst_r = (dst_color >> 16) & 0xff;
-            unsigned dst_g = (dst_color >>  8) & 0xff;
-            unsigned dst_b = (dst_color >>  0) & 0xff;
+            unsigned dst_r     = (dst_color >> 16) & 0xff;
+            unsigned dst_g     = (dst_color >>  8) & 0xff;
+            unsigned dst_b     = (dst_color >>  0) & 0xff;
 
             dst_r = (r * src_alpha + dst_r * dst_alpha) >> 8;
             dst_g = (g * src_alpha + dst_g * dst_alpha) >> 8;
@@ -1192,18 +1194,18 @@ static void decode_thread(void *data)
    while (!decode_thread_dead)
    {
       bool seek;
+      AVPacket pkt;
+      int subtitle_stream;
       double seek_time_thread;
       int audio_stream, audio_stream_ptr;
-      int subtitle_stream;
-      AVPacket pkt;
-      AVCodecContext *actx_active;
-      AVCodecContext *sctx_active;
+      AVCodecContext *actx_active = NULL;
+      AVCodecContext *sctx_active = NULL;
 #ifdef HAVE_SSA
-      ASS_Track *ass_track_active;
+      ASS_Track *ass_track_active = NULL;
 #endif
 
       slock_lock(fifo_lock);
-      seek = do_seek;
+      seek             = do_seek;
       seek_time_thread = seek_time;
       slock_unlock(fifo_lock);
 
@@ -1250,7 +1252,7 @@ static void decode_thread(void *data)
 #ifdef HAVE_SSA
             if (ass_render)
             {
-               int change = 0;
+               int change     = 0;
                ASS_Image *img = ass_render_frame(ass_render, ass_track_active,
                      1000 * video_time, &change);
 
