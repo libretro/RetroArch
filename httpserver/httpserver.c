@@ -212,8 +212,10 @@ static int httpserver_handle_get_mmap(struct mg_connection* conn, void* cbdata)
   mg_printf(conn,
     "{"
     "\"length\":" STRING_REP_UINT64 ","
+    "\"compression\":\"deflate\","
     "\"compressedLength\":" STRING_REP_ULONG ","
-    "\"bytesZ85\":\"%s\""
+    "\"encoding\":\"Z85\","
+    "\"data\":\"%s\""
     "}",
     mmap->len,
     (size_t)buflen,
