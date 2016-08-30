@@ -675,12 +675,12 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("suspend_screensaver_enable",    &settings->ui.suspend_screensaver_enable, true, true);
    SETTING_BOOL("rewind_enable",                 &settings->rewind_enable, true, rewind_enable);
    SETTING_BOOL("audio_sync",                    &settings->audio.sync, true, audio_sync);
-   SETTING_BOOL("video_shader_enable",           &settings->video.shader_enable, false, false /* TODO */);
+   SETTING_BOOL("video_shader_enable",           &settings->video.shader_enable, true, shader_enable);
 
    /* Let implementation decide if automatic, or 1:1 PAR. */
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto, true, aspect_ratio_auto);
 
-   SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate, false, false /* TODO */);
+   SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate, true, allow_rotate);
    SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen, true, windowed_fullscreen);
    SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan, true, crop_overscan);
    SETTING_BOOL("video_scale_integer",           &settings->video.scale_integer, true, scale_integer);
@@ -857,51 +857,51 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x,  true, fullscreen_x);
    SETTING_INT("video_fullscreen_y",           &settings->video.fullscreen_y,  true, fullscreen_y);
 #ifdef HAVE_COMMAND
-   SETTING_INT("network_cmd_port",             &settings->network_cmd_port,    false, 0 /* TODO */);
+   SETTING_INT("network_cmd_port",             &settings->network_cmd_port,    true, network_cmd_port);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
-   SETTING_INT("network_remote_base_port",     &settings->network_remote_base_port, false, 0 /* TODO */);
+   SETTING_INT("network_remote_base_port",     &settings->network_remote_base_port, true, network_remote_base_port);
 #endif
-   SETTING_INT("menu_scroll_up_btn",           &settings->menu_scroll_up_btn, false, 0 /* TODO */);
+   SETTING_INT("menu_scroll_up_btn",           &settings->menu_scroll_up_btn, true, default_menu_btn_scroll_up);
 #ifdef HAVE_GEKKO
-   SETTING_INT("video_viwidth",                &settings->video.viwidth, false, 0 /* TODO */);
+   SETTING_INT("video_viwidth",                &settings->video.viwidth, true, video_viwidth);
 #endif
 #ifdef HAVE_MENU
-   SETTING_INT("dpi_override_value",           &settings->menu.dpi.override_value, false, 0 /* TODO */);
-   SETTING_INT("menu_thumbnails",              &settings->menu.thumbnails, false, 0 /* TODO */);
-   SETTING_INT("xmb_scale_factor",             &settings->menu.xmb.scale_factor, false, 0 /* TODO */);
-   SETTING_INT("xmb_alpha_factor",             &settings->menu.xmb.alpha_factor, false, 0 /* TODO */);
+   SETTING_INT("dpi_override_value",           &settings->menu.dpi.override_value, true, menu_dpi_override_value);
+   SETTING_INT("menu_thumbnails",              &settings->menu.thumbnails, true, menu_thumbnails_default);
 #ifdef HAVE_XMB
-   SETTING_INT("xmb_theme",                    &settings->menu.xmb.theme, false, 0 /* TODO */);
-   SETTING_INT("xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme, false, 0 /* TODO */);
+   SETTING_INT("xmb_alpha_factor",             &settings->menu.xmb.alpha_factor, true, xmb_alpha_factor);
+   SETTING_INT("xmb_scale_factor",             &settings->menu.xmb.scale_factor, true, xmb_scale_factor);
+   SETTING_INT("xmb_theme",                    &settings->menu.xmb.theme, true, xmb_icon_theme);
+   SETTING_INT("xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme, true, menu_background_gradient);
 #endif
-   SETTING_INT("materialui_menu_color_theme",  &settings->menu.materialui.menu_color_theme, false, 0 /* TODO */);
+   SETTING_INT("materialui_menu_color_theme",  &settings->menu.materialui.menu_color_theme, true, MATERIALUI_THEME_BLUE);
 #ifdef HAVE_SHADERPIPELINE
-   SETTING_INT("menu_shader_pipeline",         &settings->menu.xmb.shader_pipeline, false, 0 /* TODO */);
+   SETTING_INT("menu_shader_pipeline",         &settings->menu.xmb.shader_pipeline, true, menu_shader_pipeline);
 #endif
 #endif
-   SETTING_INT("audio_out_rate",               &settings->audio.out_rate, false, 0 /* TODO */);
+   SETTING_INT("audio_out_rate",               &settings->audio.out_rate, true, out_rate);
    SETTING_INT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */);
    SETTING_INT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */);
    SETTING_INT("custom_viewport_x",            (unsigned*)&settings->video_viewport_custom.x, false, 0 /* TODO */);
    SETTING_INT("custom_viewport_y",            (unsigned*)&settings->video_viewport_custom.y, false, 0 /* TODO */);
-   SETTING_INT("content_history_size",         &settings->content_history_size, false, 0 /* TODO */);
-   SETTING_INT("video_hard_sync_frames",       &settings->video.hard_sync_frames, false, 0 /* TODO */);
-   SETTING_INT("video_frame_delay",            &settings->video.frame_delay, false, 0 /* TODO */);
+   SETTING_INT("content_history_size",         &settings->content_history_size,   true, default_content_history_size);
+   SETTING_INT("video_hard_sync_frames",       &settings->video.hard_sync_frames, true, hard_sync_frames);
+   SETTING_INT("video_frame_delay",            &settings->video.frame_delay,      true, frame_delay);
    SETTING_INT("video_max_swapchain_images",   &settings->video.max_swapchain_images, true, max_swapchain_images);
-   SETTING_INT("video_swap_interval",          &settings->video.swap_interval, false, 0 /* TODO */);
-   SETTING_INT("video_rotation",               &settings->video.rotation, false, 0 /* TODO */);
-   SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx, false, 0 /* TODO */);
+   SETTING_INT("video_swap_interval",          &settings->video.swap_interval, true, swap_interval);
+   SETTING_INT("video_rotation",               &settings->video.rotation, true, ORIENTATION_NORMAL);
+   SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx, true, aspect_ratio_idx);
    SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot, false, 0 /* TODO */);
 #ifdef HAVE_NETPLAY
    SETTING_INT("netplay_ip_port",              &global->netplay.port, false, 0 /* TODO */);
    SETTING_INT("netplay_delay_frames",         &global->netplay.sync_frames, false, 0 /* TODO */);
 #endif
 #ifdef HAVE_LANGEXTRA
-   SETTING_INT("user_language",                &settings->user_language, false, 0 /* TODO */);
+   SETTING_INT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH);
 #endif
-   SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current, false, 0 /* TODO */);
-   SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version, false, 0 /* TODO */);
+   SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current, true, 0);
+   SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version, true, 0);
 
    *out = (struct config_int_setting_ptr*)malloc(count * sizeof(struct config_int_setting_ptr));
    memcpy(*out, tmp, sizeof(struct config_int_setting_ptr) * count);
@@ -987,18 +987,10 @@ static void config_set_defaults(void)
       strlcpy(settings->menu.driver,
             def_menu,  sizeof(settings->menu.driver));
 #ifdef HAVE_XMB
-   settings->menu.xmb.scale_factor     = xmb_scale_factor;
-   settings->menu.xmb.alpha_factor     = xmb_alpha_factor;
-   settings->menu.xmb.theme            = xmb_icon_theme;
-   settings->menu.xmb.menu_color_theme = menu_background_gradient;
-#ifdef HAVE_SHADERPIPELINE
-   settings->menu.xmb.shader_pipeline  = menu_shader_pipeline;
-#endif
    *settings->menu.xmb.font            = '\0';
 #endif
-#ifdef HAVE_MATERIALUI
-   settings->menu.materialui.menu_color_theme = MATERIALUI_THEME_BLUE;
 
+#ifdef HAVE_MATERIALUI
    if (g_defaults.menu.materialui.menu_color_theme_enable)
       settings->menu.materialui.menu_color_theme = g_defaults.menu.materialui.menu_color_theme;
 #endif
@@ -1010,22 +1002,12 @@ static void config_set_defaults(void)
    settings->multimedia.builtin_mediaplayer_enable  = false;
 #endif
    settings->video.scale                 = scale;
-   settings->video.hard_sync_frames      = hard_sync_frames;
-   settings->video.frame_delay           = frame_delay;
-   settings->video.swap_interval         = swap_interval;
 
    if (rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       settings->video.fullscreen            = true;
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
       settings->video.threaded           = g_defaults.settings.video_threaded_enable;
-
-#ifdef GEKKO
-   settings->video.viwidth                     = video_viwidth;
-#endif
-   settings->video.aspect_ratio_idx            = aspect_ratio_idx;
-   settings->video.shader_enable               = shader_enable;
-   settings->video.allow_rotate                = allow_rotate;
 
    settings->video.msg_color_r                 = ((message_color >> 16) & 0xff) / 255.0f;
    settings->video.msg_color_g                 = ((message_color >>  8) & 0xff) / 255.0f;
@@ -1035,9 +1017,6 @@ static void config_set_defaults(void)
          g_defaults.settings.video_refresh_rate != refresh_rate)
       settings->video.refresh_rate             = g_defaults.settings.video_refresh_rate;
 
-   settings->video.rotation                    = ORIENTATION_NORMAL;
-
-   settings->audio.out_rate                    = out_rate;
    if (audio_device)
       strlcpy(settings->audio.device,
             audio_device, sizeof(settings->audio.device));
@@ -1051,10 +1030,6 @@ static void config_set_defaults(void)
 
    settings->rewind_buffer_size                = rewind_buffer_size;
 
-   settings->network_cmd_port                  = network_cmd_port;
-   settings->network_remote_base_port           = network_remote_base_port;
-   settings->content_history_size              = default_content_history_size;
-
 #ifdef HAVE_LAKKA
    settings->ssh_enable = path_file_exists(LAKKA_SSH_PATH);
    settings->samba_enable = path_file_exists(LAKKA_SAMBA_PATH);
@@ -1064,12 +1039,9 @@ static void config_set_defaults(void)
 #ifdef HAVE_MENU
    if (first_initialized)
       settings->menu_show_start_screen         = default_menu_show_start_screen;
-   settings->menu.thumbnails                   = menu_thumbnails_default;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
    settings->menu.entry_hover_color            = menu_entry_hover_color;
    settings->menu.title_color                  = menu_title_color;
-
-   settings->menu.dpi.override_value           = menu_dpi_override_value;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -1182,8 +1154,6 @@ static void config_set_defaults(void)
    *settings->path.overlay           = '\0';
    *settings->path.softfilter_plugin = '\0';
 
-   settings->bundle_assets_extract_version_current = 0;
-   settings->bundle_assets_extract_last_version    = 0;
    *settings->playlist_names = '\0';
    *settings->playlist_cores = '\0';
    *settings->directory.content_history = '\0';
@@ -1193,11 +1163,6 @@ static void config_set_defaults(void)
    settings->menu_default_btn     = default_menu_btn_default;
    settings->menu_info_btn        = default_menu_btn_info;
    settings->menu_scroll_down_btn = default_menu_btn_scroll_down;
-   settings->menu_scroll_up_btn   = default_menu_btn_scroll_up;
-#endif
-
-#ifdef HAVE_LANGEXTRA
-   settings->user_language = RETRO_LANGUAGE_ENGLISH;
 #endif
 
    video_driver_default_settings();
