@@ -833,9 +833,9 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("menu_ok_btn",                  &settings->menu_ok_btn,     true, config_menu_btn_ok_default());
    SETTING_INT("menu_cancel_btn",              &settings->menu_cancel_btn, true, config_menu_btn_cancel_default());
    SETTING_INT("menu_search_btn",              &settings->menu_search_btn, true, default_menu_btn_search);
-   SETTING_INT("menu_info_btn",                &settings->menu_info_btn, false, 0 /* TODO */);
-   SETTING_INT("menu_default_btn",             &settings->menu_default_btn, false, 0 /* TODO */);
-   SETTING_INT("menu_scroll_down_btn",         &settings->menu_scroll_down_btn, false, 0 /* TODO */);
+   SETTING_INT("menu_info_btn",                &settings->menu_info_btn,   true, default_menu_btn_info);
+   SETTING_INT("menu_default_btn",             &settings->menu_default_btn, true, default_menu_btn_default);
+   SETTING_INT("menu_scroll_down_btn",         &settings->menu_scroll_down_btn, true, default_menu_btn_scroll_down);
 #endif
    SETTING_INT("video_monitor_index",          &settings->video.monitor_index, true, monitor_index);
    SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x,  true, fullscreen_x);
@@ -914,9 +914,9 @@ static void config_set_defaults(void)
    const char *def_camera          = config_get_default_camera();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
-   struct config_bool_setting_ptr   *bool_settings   = NULL;
-   struct config_float_setting_ptr *float_settings   = NULL;
-   struct config_int_setting_ptr     *int_settings   = NULL;
+   struct config_bool_setting_ptr   *bool_settings  = NULL;
+   struct config_float_setting_ptr  *float_settings = NULL;
+   struct config_int_setting_ptr    *int_settings   = NULL;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
@@ -1142,12 +1142,6 @@ static void config_set_defaults(void)
    *settings->playlist_cores = '\0';
    *settings->directory.content_history = '\0';
    *settings->path.audio_dsp_plugin = '\0';
-
-#ifdef HAVE_MENU
-   settings->menu_default_btn     = default_menu_btn_default;
-   settings->menu_info_btn        = default_menu_btn_info;
-   settings->menu_scroll_down_btn = default_menu_btn_scroll_down;
-#endif
 
    video_driver_default_settings();
 
@@ -1581,7 +1575,8 @@ static void config_file_dump_all(config_file_t *conf)
 #endif
 
 #ifdef HAVE_MENU
-static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *base)
+static void config_get_hex_base(config_file_t *conf,
+      const char *key, unsigned *base)
 {
    unsigned tmp = 0;
    if (!base)
@@ -1793,22 +1788,34 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    /* Array settings  */
-   config_get_array(conf, "playlist_names", settings->playlist_names, sizeof(settings->playlist_names));
-   config_get_array(conf, "playlist_cores", settings->playlist_cores, sizeof(settings->playlist_cores));
-   config_get_array(conf, "audio_device", settings->audio.device, sizeof(settings->audio.device));
-   config_get_array(conf, "audio_resampler", settings->audio.resampler, sizeof(settings->audio.resampler));
-   config_get_array(conf, "camera_device", settings->camera.device, sizeof(settings->camera.device));
+   config_get_array(conf, "playlist_names",
+         settings->playlist_names, sizeof(settings->playlist_names));
+   config_get_array(conf, "playlist_cores",
+         settings->playlist_cores, sizeof(settings->playlist_cores));
+   config_get_array(conf, "audio_device",
+         settings->audio.device, sizeof(settings->audio.device));
+   config_get_array(conf, "audio_resampler",
+         settings->audio.resampler, sizeof(settings->audio.resampler));
+   config_get_array(conf, "camera_device",
+         settings->camera.device, sizeof(settings->camera.device));
 #ifdef HAVE_CHEEVOS
-   config_get_array(conf, "cheevos_username", settings->cheevos.username, sizeof(settings->cheevos.username));
-   config_get_array(conf, "cheevos_password", settings->cheevos.password, sizeof(settings->cheevos.password));
+   config_get_array(conf, "cheevos_username",
+         settings->cheevos.username, sizeof(settings->cheevos.username));
+   config_get_array(conf, "cheevos_password",
+         settings->cheevos.password, sizeof(settings->cheevos.password));
 #endif
 
-   config_get_array(conf, "video_driver",    settings->video.driver, sizeof(settings->video.driver));
-   config_get_array(conf, "record_driver",   settings->record.driver, sizeof(settings->video.driver));
-   config_get_array(conf, "camera_driver",   settings->camera.driver, sizeof(settings->camera.driver));
-   config_get_array(conf, "location_driver", settings->location.driver, sizeof(settings->location.driver));
+   config_get_array(conf, "video_driver",
+         settings->video.driver, sizeof(settings->video.driver));
+   config_get_array(conf, "record_driver",
+         settings->record.driver, sizeof(settings->video.driver));
+   config_get_array(conf, "camera_driver",
+         settings->camera.driver, sizeof(settings->camera.driver));
+   config_get_array(conf, "location_driver",
+         settings->location.driver, sizeof(settings->location.driver));
 #ifdef HAVE_MENU
-   config_get_array(conf, "menu_driver",     settings->menu.driver, sizeof(settings->menu.driver));
+   config_get_array(conf, "menu_driver",
+         settings->menu.driver, sizeof(settings->menu.driver));
 #endif
    config_get_array(conf, "video_context_driver",
          settings->video.context_driver,
@@ -2199,8 +2206,11 @@ static bool config_load_file(const char *path, bool set_defaults,
  * This function only has an effect if a game-specific or core-specific
  * configuration file exists at respective locations.
  *
- * core-specific: $CONFIG_DIR/$CORE_NAME/$CORE_NAME.cfg fallback: $CURRENT_CFG_LOCATION/$CORE_NAME/$CORE_NAME.cfg
- * game-specific: $CONFIG_DIR/$CORE_NAME/$ROM_NAME.cfg fallback: $CURRENT_CFG_LOCATION/$CORE_NAME/$GAME_NAME.cfg
+ * core-specific: $CONFIG_DIR/$CORE_NAME/$CORE_NAME.cfg 
+ * fallback:      $CURRENT_CFG_LOCATION/$CORE_NAME/$CORE_NAME.cfg
+ *
+ * game-specific: $CONFIG_DIR/$CORE_NAME/$ROM_NAME.cfg 
+ * fallback:      $CURRENT_CFG_LOCATION/$CORE_NAME/$GAME_NAME.cfg
  *
  * Returns: false if there was an error or no action was performed.
  *
@@ -2958,24 +2968,18 @@ bool config_save_file(const char *path)
 
    /* String settings  */
    for (i = 0; i < string_settings_size; i++)
-   {
       config_set_string(conf, string_settings[i].ident,
             string_settings[i].value);
-   }
 
    /* Float settings  */
    for (i = 0; i < float_settings_size; i++)
-   {
       config_set_float(conf, float_settings[i].ident,
             *float_settings[i].ptr);
-   }
 
    /* Integer settings */
    for (i = 0; i < int_settings_size; i++)
-   {
       config_set_int(conf, int_settings[i].ident,
             *int_settings[i].ptr);
-   }
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -2993,10 +2997,8 @@ bool config_save_file(const char *path)
 
    /* Boolean settings */
    for (i = 0; i < bool_settings_size; i++)
-   {
       config_set_bool(conf, bool_settings[i].ident,
             *bool_settings[i].ptr);
-   }
 
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
