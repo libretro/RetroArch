@@ -46,6 +46,29 @@
 #include "config.h"
 #endif
 
+#define GENERAL_SETTING(key, configval, default_enable, default_setting, type) \
+{ \
+   if (count == 0) \
+      tmp = (type*)malloc(sizeof(type) * (count + 1)); \
+   else \
+      tmp = (type*)realloc(tmp, sizeof(type) * (count + 1)); \
+   tmp[count].ident      = key; \
+   tmp[count].ptr        = configval; \
+   tmp[count].def_enable = default_enable; \
+   if (default_enable) \
+      tmp[count].def     = default_setting; \
+   count++; \
+} 
+
+#define SETTING_BOOL(key, configval, default_enable, default_setting) \
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_bool_setting_ptr)
+
+#define SETTING_FLOAT(key, configval, default_enable, default_setting) \
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_float_setting_ptr)
+
+#define SETTING_INT(key, configval, default_enable, default_setting) \
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_int_setting_ptr)
+
 #define SETTING_PATH(key, defval, configval) \
 { \
    if (count == 0) \
@@ -57,47 +80,6 @@
    tmp[count].value    = configval; \
    count++; \
 } \
-
-#define SETTING_BOOL(key, configval, default_enable, default_setting) \
-{ \
-   if (count == 0) \
-      tmp = (struct config_bool_setting_ptr*)malloc(sizeof(struct config_bool_setting_ptr) * (count + 1)); \
-   else \
-      tmp = (struct config_bool_setting_ptr*)realloc(tmp, sizeof(struct config_bool_setting_ptr) * (count + 1)); \
-   tmp[count].ident      = key; \
-   tmp[count].ptr        = configval; \
-   tmp[count].def_enable = default_enable; \
-   if (default_enable) \
-      tmp[count].def     = default_setting; \
-   count++; \
-} 
-
-#define SETTING_FLOAT(key, configval, default_enable, default_setting) \
-{ \
-   if (count == 0) \
-      tmp = (struct config_float_setting_ptr*)malloc(sizeof(struct config_float_setting_ptr) * (count + 1)); \
-   else \
-      tmp = (struct config_float_setting_ptr*)realloc(tmp, sizeof(struct config_float_setting_ptr) * (count + 1)); \
-   tmp[count].ident    = key; \
-   tmp[count].ptr      = configval; \
-   tmp[count].def_enable = default_enable; \
-   if (default_enable) \
-      tmp[count].def     = default_setting; \
-   count++; \
-}
-
-#define SETTING_INT(key, configval, default_enable, default_setting) \
-{ \
-   if (count == 0) \
-      tmp = (struct config_int_setting_ptr*)malloc(sizeof(struct config_int_setting_ptr) * (count + 1)); \
-   else \
-      tmp = (struct config_int_setting_ptr*)realloc(tmp, sizeof(struct config_int_setting_ptr) * (count + 1)); \
-   tmp[count].ident    = key; \
-   tmp[count].ptr      = configval; \
-   if (default_enable) \
-      tmp[count].def   = default_setting; \
-   count++; \
-}
 
 #define SETTING_STRING(key, configval, default_enable, default_setting) \
 { \
