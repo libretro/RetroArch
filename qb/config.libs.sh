@@ -300,6 +300,7 @@ if [ "$HAVE_THREADS" != 'no' ]; then
    if [ "$HAVE_FFMPEG" != 'no' ]; then
       check_pkgconf AVCODEC libavcodec 54
       check_pkgconf AVFORMAT libavformat 54
+      check_pkgconf AVDEVICE libavdevice
       check_pkgconf SWRESAMPLE libswresample
       check_pkgconf AVUTIL libavutil 51
       check_pkgconf SWSCALE libswscale 2.1
