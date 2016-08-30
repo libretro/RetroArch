@@ -681,7 +681,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("video_aspect_ratio_auto",       &settings->video.aspect_ratio_auto, true, aspect_ratio_auto);
 
    SETTING_BOOL("video_allow_rotate",            &settings->video.allow_rotate, false, false /* TODO */);
-   SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen, false, false /* TODO */);
+   SETTING_BOOL("video_windowed_fullscreen",     &settings->video.windowed_fullscreen, true, windowed_fullscreen);
    SETTING_BOOL("video_crop_overscan",           &settings->video.crop_overscan, true, crop_overscan);
    SETTING_BOOL("video_scale_integer",           &settings->video.scale_integer, true, scale_integer);
    SETTING_BOOL("video_smooth",                  &settings->video.smooth, true, video_smooth);
@@ -833,29 +833,29 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    global_t   *global                 = global_get_ptr();
 #endif
 
-   SETTING_INT("input_bind_timeout",           &settings->input.bind_timeout, false, 0 /* TODO */);
-   SETTING_INT("input_turbo_period",           &settings->input.turbo_period, false, 0 /* TODO */);
-   SETTING_INT("input_duty_cycle",             &settings->input.turbo_duty_cycle, false, 0 /* TODO */);
-   SETTING_INT("input_max_users",              &settings->input.max_users, false, 0 /* TODO */);
-   SETTING_INT("input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo, false, 0 /* TODO */);
+   SETTING_INT("input_bind_timeout",           &settings->input.bind_timeout,     true, input_bind_timeout);
+   SETTING_INT("input_turbo_period",           &settings->input.turbo_period,     true, turbo_period);
+   SETTING_INT("input_duty_cycle",             &settings->input.turbo_duty_cycle, true, turbo_duty_cycle);
+   SETTING_INT("input_max_users",              &settings->input.max_users,        true, input_max_users);
+   SETTING_INT("input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo, true, menu_toggle_gamepad_combo);
    SETTING_INT("audio_latency",                &settings->audio.latency, false, 0 /* TODO */);
-   SETTING_INT("audio_block_frames",           &settings->audio.block_frames, false, 0 /* TODO */);
-   SETTING_INT("rewind_granularity",           &settings->rewind_granularity, false, 0 /* TODO */);
-   SETTING_INT("autosave_interval",            &settings->autosave_interval, false, 0 /* TODO */);
-   SETTING_INT("libretro_log_level",           &settings->libretro_log_level, false, 0 /* TODO */);
-   SETTING_INT("keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type, false, 0 /* TODO */);
-   SETTING_INT("input_poll_type_behavior",     &settings->input.poll_type_behavior, false, 0 /* TODO */);
+   SETTING_INT("audio_block_frames",           &settings->audio.block_frames, true, 0);
+   SETTING_INT("rewind_granularity",           &settings->rewind_granularity, true, rewind_granularity);
+   SETTING_INT("autosave_interval",            &settings->autosave_interval,  true, autosave_interval);
+   SETTING_INT("libretro_log_level",           &settings->libretro_log_level, true, libretro_log_level);
+   SETTING_INT("keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type, true, 1);
+   SETTING_INT("input_poll_type_behavior",     &settings->input.poll_type_behavior, true, 2);
 #ifdef HAVE_MENU
-   SETTING_INT("menu_ok_btn",                  &settings->menu_ok_btn, false, 0 /* TODO */);
-   SETTING_INT("menu_cancel_btn",              &settings->menu_cancel_btn, false, 0 /* TODO */);
-   SETTING_INT("menu_search_btn",              &settings->menu_search_btn, false, 0 /* TODO */);
+   SETTING_INT("menu_ok_btn",                  &settings->menu_ok_btn,     true, config_menu_btn_ok_default());
+   SETTING_INT("menu_cancel_btn",              &settings->menu_cancel_btn, true, config_menu_btn_cancel_default());
+   SETTING_INT("menu_search_btn",              &settings->menu_search_btn, true, default_menu_btn_search);
    SETTING_INT("menu_info_btn",                &settings->menu_info_btn, false, 0 /* TODO */);
    SETTING_INT("menu_default_btn",             &settings->menu_default_btn, false, 0 /* TODO */);
    SETTING_INT("menu_scroll_down_btn",         &settings->menu_scroll_down_btn, false, 0 /* TODO */);
 #endif
-   SETTING_INT("video_monitor_index",          &settings->video.monitor_index, false, 0 /* TODO */);
-   SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x,  false, 0 /* TODO */);
-   SETTING_INT("video_fullscreen_y",           &settings->video.fullscreen_y,  false, 0 /* TODO */);
+   SETTING_INT("video_monitor_index",          &settings->video.monitor_index, true, monitor_index);
+   SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x,  true, fullscreen_x);
+   SETTING_INT("video_fullscreen_y",           &settings->video.fullscreen_y,  true, fullscreen_y);
 #ifdef HAVE_COMMAND
    SETTING_INT("network_cmd_port",             &settings->network_cmd_port,    false, 0 /* TODO */);
 #endif
@@ -888,7 +888,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("content_history_size",         &settings->content_history_size, false, 0 /* TODO */);
    SETTING_INT("video_hard_sync_frames",       &settings->video.hard_sync_frames, false, 0 /* TODO */);
    SETTING_INT("video_frame_delay",            &settings->video.frame_delay, false, 0 /* TODO */);
-   SETTING_INT("video_max_swapchain_images",   &settings->video.max_swapchain_images, false, 0 /* TODO */);
+   SETTING_INT("video_max_swapchain_images",   &settings->video.max_swapchain_images, true, max_swapchain_images);
    SETTING_INT("video_swap_interval",          &settings->video.swap_interval, false, 0 /* TODO */);
    SETTING_INT("video_rotation",               &settings->video.rotation, false, 0 /* TODO */);
    SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx, false, 0 /* TODO */);
@@ -930,18 +930,26 @@ static void config_set_defaults(void)
    const char *def_camera          = config_get_default_camera();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
-   struct config_bool_setting_ptr *bool_settings   = NULL;
+   struct config_bool_setting_ptr   *bool_settings   = NULL;
    struct config_float_setting_ptr *float_settings   = NULL;
+   struct config_int_setting_ptr     *int_settings   = NULL;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
    unsigned float_settings_size    = populate_settings_float  (settings, &float_settings);
    unsigned bool_settings_size     = populate_settings_bool  (settings, &bool_settings);
+   int int_settings_size           = populate_settings_int   (settings, &int_settings);
 
    for (i = 0; i < bool_settings_size; i++)
    {
       if (bool_settings[i].def_enable)
          *bool_settings[i].ptr = bool_settings[i].def;
+   }
+
+   for (i = 0; i < int_settings_size; i++)
+   {
+      if (int_settings[i].def_enable)
+         *int_settings[i].ptr = int_settings[i].def;
    }
 
    for (i = 0; i < float_settings_size; i++)
@@ -996,19 +1004,12 @@ static void config_set_defaults(void)
 #endif
 #endif
 
-   settings->input.keyboard_gamepad_mapping_type    = 1;
-   settings->input.poll_type_behavior               = 2;
 #ifdef HAVE_FFMPEG
    settings->multimedia.builtin_mediaplayer_enable  = true;
 #else
    settings->multimedia.builtin_mediaplayer_enable  = false;
 #endif
    settings->video.scale                 = scale;
-   settings->video.windowed_fullscreen   = windowed_fullscreen;
-   settings->video.monitor_index         = monitor_index;
-   settings->video.fullscreen_x          = fullscreen_x;
-   settings->video.fullscreen_y          = fullscreen_y;
-   settings->video.max_swapchain_images  = max_swapchain_images;
    settings->video.hard_sync_frames      = hard_sync_frames;
    settings->video.frame_delay           = frame_delay;
    settings->video.swap_interval         = swap_interval;
@@ -1037,7 +1038,6 @@ static void config_set_defaults(void)
    settings->video.rotation                    = ORIENTATION_NORMAL;
 
    settings->audio.out_rate                    = out_rate;
-   settings->audio.block_frames                = 0;
    if (audio_device)
       strlcpy(settings->audio.device,
             audio_device, sizeof(settings->audio.device));
@@ -1050,13 +1050,10 @@ static void config_set_defaults(void)
    audio_driver_set_volume_gain(db_to_gain(settings->audio.volume));
 
    settings->rewind_buffer_size                = rewind_buffer_size;
-   settings->rewind_granularity                = rewind_granularity;
-   settings->autosave_interval                 = autosave_interval;
 
    settings->network_cmd_port                  = network_cmd_port;
    settings->network_remote_base_port           = network_remote_base_port;
    settings->content_history_size              = default_content_history_size;
-   settings->libretro_log_level                = libretro_log_level;
 
 #ifdef HAVE_LAKKA
    settings->ssh_enable = path_file_exists(LAKKA_SSH_PATH);
@@ -1079,10 +1076,6 @@ static void config_set_defaults(void)
    *settings->cheevos.username                      = '\0';
    *settings->cheevos.password                      = '\0';
 #endif
-
-   settings->input.bind_timeout                     = input_bind_timeout;
-   settings->input.max_users                        = input_max_users;
-   settings->input.menu_toggle_gamepad_combo        = menu_toggle_gamepad_combo;
 
    retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
    retro_assert(sizeof(settings->input.binds[1]) >= sizeof(retro_keybinds_rest));
@@ -1113,9 +1106,6 @@ static void config_set_defaults(void)
          if (settings->input.binds[i][j].valid)
             retro_assert(j == settings->input.binds[i][j].id);
       }
-
-   settings->input.turbo_period                    = turbo_period;
-   settings->input.turbo_duty_cycle                = turbo_duty_cycle;
 
    strlcpy(settings->network.buildbot_url, buildbot_server_url,
          sizeof(settings->network.buildbot_url));
@@ -1200,9 +1190,6 @@ static void config_set_defaults(void)
    *settings->path.audio_dsp_plugin = '\0';
 
 #ifdef HAVE_MENU
-   settings->menu_ok_btn          = config_menu_btn_ok_default();
-   settings->menu_cancel_btn      = config_menu_btn_cancel_default();
-   settings->menu_search_btn      = default_menu_btn_search;
    settings->menu_default_btn     = default_menu_btn_default;
    settings->menu_info_btn        = default_menu_btn_info;
    settings->menu_scroll_down_btn = default_menu_btn_scroll_down;
@@ -1354,6 +1341,8 @@ static void config_set_defaults(void)
       free(bool_settings);
    if (float_settings)
       free(float_settings);
+   if (int_settings)
+      free(int_settings);
 }
 
 /**
