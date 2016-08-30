@@ -58,7 +58,7 @@ struct config_float_setting_ptr
    const char *ident;
    float *ptr;
    bool def_enable;
-   bool def;
+   float def;
 };
 
 struct config_string_setting_ptr
