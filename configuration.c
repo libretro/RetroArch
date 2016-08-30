@@ -1301,7 +1301,7 @@ static config_file_t *open_default_config_file(void)
    char conf_path[PATH_MAX_LENGTH]        = {0};
    char app_path[PATH_MAX_LENGTH]         = {0};
    config_file_t *conf                    = NULL;
-   global_t *global                       = global_get_ptr();
+   global_t *global                       = NULL;
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
@@ -1463,6 +1463,8 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf)
       return NULL;
+
+   global = global_get_ptr();
 
    if (global)
       strlcpy(global->path.config, conf_path, sizeof(global->path.config));
