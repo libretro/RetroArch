@@ -197,6 +197,33 @@ static bool psp_joypad_query_pad(unsigned pad)
    return pad < PSP_MAX_PADS && pad_state[pad];
 }
 
+static bool psp_joypad_rumble(unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   struct SceCtrlActuator params = {
+      0,
+  		0
+   };
+    
+   switch (effect)
+   {
+      case RETRO_RUMBLE_WEAK:
+         if (strength > 1)
+            strength = 1;
+         params.unk = strength;
+         break;
+      case RETRO_RUMBLE_STRONG:
+         if (strength > 255)
+            strength = 255;
+         params.enable = strength;
+         break;
+   }
+   unsigned p  = (pad == 1) ? 2 : pad;
+   sceCtrlSetActuator(p, &params);
+
+   return true;
+}
+
 
 static void psp_joypad_destroy(void)
 {
@@ -210,7 +237,7 @@ input_device_driver_t psp_joypad = {
    psp_joypad_get_buttons,
    psp_joypad_axis,
    psp_joypad_poll,
-   NULL,
+   psp_joypad_rumble,
    psp_joypad_name,
 #ifdef VITA
    "vita",

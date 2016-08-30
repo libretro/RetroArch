@@ -140,11 +140,11 @@ static void psp_input_grab_mouse(void *data, bool state)
 static bool psp_input_set_rumble(void *data, unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   (void)data;
-   (void)port;
-   (void)effect;
-   (void)strength;
+   psp_input_t *psp = (psp_input_t*)data;
 
+   if (psp && psp->joypad)
+      return input_joypad_set_rumble(psp->joypad,
+         port, effect, strength);
    return false;
 }
 
