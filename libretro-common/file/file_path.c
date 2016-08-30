@@ -199,7 +199,7 @@ bool path_is_compressed_file(const char* path)
 #endif
 
 #ifdef HAVE_7ZIP
-   if (strcasestr(ext, "zip"))
+   if (strcasestr(ext, "7z"))
       return true;
 #endif
 
