@@ -216,14 +216,15 @@ static int gl_get_message_width(void *data, const char *msg,
    {
       for (i = 0; i < msg_len; i++)
       {
-         const char *msg_tmp = &msg[i];
-         unsigned code = utf8_walk(&msg_tmp);
-         unsigned skip = msg_tmp - &msg[i];
+         const struct font_glyph *glyph = NULL;
+         const char *msg_tmp            = &msg[i];
+         unsigned code                  = utf8_walk(&msg_tmp);
+         unsigned skip                  = msg_tmp - &msg[i];
 
-         if (skip > 1) i += skip - 1;
+         if (skip > 1)
+            i += skip - 1;
 
-         const struct font_glyph *glyph = 
-            font->font_driver->get_glyph(font->font_data, code);
+         glyph = font->font_driver->get_glyph(font->font_data, code);
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
@@ -304,14 +305,15 @@ static void gl_raster_font_render_line(
       for (i = 0; i < msg_len; i++)
       {
          int off_x, off_y, tex_x, tex_y, width, height;
-         const char *msg_tmp = &msg[i];
-         unsigned code = utf8_walk(&msg_tmp);
-         unsigned skip = msg_tmp - &msg[i];
+         const struct font_glyph *glyph = NULL;
+         const char *msg_tmp            = &msg[i];
+         unsigned code                  = utf8_walk(&msg_tmp);
+         unsigned skip                  = msg_tmp - &msg[i];
 
-         if (skip > 1) i += skip - 1;
+         if (skip > 1)
+            i += skip - 1;
 
-         const struct font_glyph *glyph =
-            font->font_driver->get_glyph(font->font_data, code);
+         glyph = font->font_driver->get_glyph(font->font_data, code);
 
          if (!glyph) /* Do something smarter here ... */
             glyph = font->font_driver->get_glyph(font->font_data, '?');
