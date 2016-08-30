@@ -1015,8 +1015,8 @@ static void config_set_defaults(void)
    settings->rewind_buffer_size                = rewind_buffer_size;
 
 #ifdef HAVE_LAKKA
-   settings->ssh_enable = path_file_exists(LAKKA_SSH_PATH);
-   settings->samba_enable = path_file_exists(LAKKA_SAMBA_PATH);
+   settings->ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
+   settings->samba_enable     = path_file_exists(LAKKA_SAMBA_PATH);
    settings->bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
