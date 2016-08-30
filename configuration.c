@@ -2943,13 +2943,12 @@ bool config_save_file(const char *path)
    /* Path settings */
    for (i = 0; i < path_settings_size; i++)
    {
-      if (path_settings[i].defaults)
-         config_set_path(conf, path_settings[i].ident,
-               string_is_empty(path_settings[i].value) ? "default" :
-               path_settings[i].value);
-      else
-         config_set_path(conf, path_settings[i].ident,
-               path_settings[i].value);
+      const char *value = path_settings[i].value;
+
+      if (path_settings[i].defaults && string_is_empty(path_settings[i].value))
+         value = "default";
+
+      config_set_path(conf, path_settings[i].ident, value);
    }
 
 #ifdef HAVE_MENU
@@ -2998,6 +2997,7 @@ bool config_save_file(const char *path)
       config_set_bool(conf, bool_settings[i].ident,
             *bool_settings[i].ptr);
    }
+
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -3006,6 +3006,7 @@ bool config_save_file(const char *path)
       config_set_bool(conf, tmp, settings->network_remote_enable_user[i]);
    }
 #endif
+
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF))
       config_set_bool(conf, "ups_pref", global->patch.ups_pref);
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF))
