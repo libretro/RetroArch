@@ -49,6 +49,8 @@ struct config_int_setting_ptr
 { 
    const char *ident;
    unsigned *ptr;
+   bool def_enable;
+   unsigned def;
 };
 
 struct config_float_setting_ptr

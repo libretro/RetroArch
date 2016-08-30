@@ -86,7 +86,7 @@
    count++; \
 }
 
-#define SETTING_INT(key, configval) \
+#define SETTING_INT(key, configval, default_enable, default_setting) \
 { \
    if (count == 0) \
       tmp = (struct config_int_setting_ptr*)malloc(sizeof(struct config_int_setting_ptr) * (count + 1)); \
@@ -94,6 +94,8 @@
       tmp = (struct config_int_setting_ptr*)realloc(tmp, sizeof(struct config_int_setting_ptr) * (count + 1)); \
    tmp[count].ident    = key; \
    tmp[count].ptr      = configval; \
+   if (default_enable) \
+      tmp[count].def   = default_setting; \
    count++; \
 }
 
@@ -831,75 +833,75 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    global_t   *global                 = global_get_ptr();
 #endif
 
-   SETTING_INT("input_bind_timeout",           &settings->input.bind_timeout);
-   SETTING_INT("input_turbo_period",           &settings->input.turbo_period);
-   SETTING_INT("input_duty_cycle",             &settings->input.turbo_duty_cycle);
-   SETTING_INT("input_max_users",              &settings->input.max_users);
-   SETTING_INT("input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo);
-   SETTING_INT("audio_latency",                &settings->audio.latency);
-   SETTING_INT("audio_block_frames",           &settings->audio.block_frames);
-   SETTING_INT("rewind_granularity",           &settings->rewind_granularity);
-   SETTING_INT("autosave_interval",            &settings->autosave_interval);
-   SETTING_INT("libretro_log_level",           &settings->libretro_log_level);
-   SETTING_INT("keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type);
-   SETTING_INT("input_poll_type_behavior",     &settings->input.poll_type_behavior);
+   SETTING_INT("input_bind_timeout",           &settings->input.bind_timeout, false, 0 /* TODO */);
+   SETTING_INT("input_turbo_period",           &settings->input.turbo_period, false, 0 /* TODO */);
+   SETTING_INT("input_duty_cycle",             &settings->input.turbo_duty_cycle, false, 0 /* TODO */);
+   SETTING_INT("input_max_users",              &settings->input.max_users, false, 0 /* TODO */);
+   SETTING_INT("input_menu_toggle_gamepad_combo", &settings->input.menu_toggle_gamepad_combo, false, 0 /* TODO */);
+   SETTING_INT("audio_latency",                &settings->audio.latency, false, 0 /* TODO */);
+   SETTING_INT("audio_block_frames",           &settings->audio.block_frames, false, 0 /* TODO */);
+   SETTING_INT("rewind_granularity",           &settings->rewind_granularity, false, 0 /* TODO */);
+   SETTING_INT("autosave_interval",            &settings->autosave_interval, false, 0 /* TODO */);
+   SETTING_INT("libretro_log_level",           &settings->libretro_log_level, false, 0 /* TODO */);
+   SETTING_INT("keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type, false, 0 /* TODO */);
+   SETTING_INT("input_poll_type_behavior",     &settings->input.poll_type_behavior, false, 0 /* TODO */);
 #ifdef HAVE_MENU
-   SETTING_INT("menu_ok_btn",                  &settings->menu_ok_btn);
-   SETTING_INT("menu_cancel_btn",              &settings->menu_cancel_btn);
-   SETTING_INT("menu_search_btn",              &settings->menu_search_btn);
-   SETTING_INT("menu_info_btn",                &settings->menu_info_btn);
-   SETTING_INT("menu_default_btn",             &settings->menu_default_btn);
-   SETTING_INT("menu_scroll_down_btn",         &settings->menu_scroll_down_btn);
+   SETTING_INT("menu_ok_btn",                  &settings->menu_ok_btn, false, 0 /* TODO */);
+   SETTING_INT("menu_cancel_btn",              &settings->menu_cancel_btn, false, 0 /* TODO */);
+   SETTING_INT("menu_search_btn",              &settings->menu_search_btn, false, 0 /* TODO */);
+   SETTING_INT("menu_info_btn",                &settings->menu_info_btn, false, 0 /* TODO */);
+   SETTING_INT("menu_default_btn",             &settings->menu_default_btn, false, 0 /* TODO */);
+   SETTING_INT("menu_scroll_down_btn",         &settings->menu_scroll_down_btn, false, 0 /* TODO */);
 #endif
-   SETTING_INT("video_monitor_index",          &settings->video.monitor_index);
-   SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x);
-   SETTING_INT("video_fullscreen_y",           &settings->video.fullscreen_y);
+   SETTING_INT("video_monitor_index",          &settings->video.monitor_index, false, 0 /* TODO */);
+   SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x,  false, 0 /* TODO */);
+   SETTING_INT("video_fullscreen_y",           &settings->video.fullscreen_y,  false, 0 /* TODO */);
 #ifdef HAVE_COMMAND
-   SETTING_INT("network_cmd_port",             &settings->network_cmd_port);
+   SETTING_INT("network_cmd_port",             &settings->network_cmd_port,    false, 0 /* TODO */);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
-   SETTING_INT("network_remote_base_port",     &settings->network_remote_base_port);
+   SETTING_INT("network_remote_base_port",     &settings->network_remote_base_port, false, 0 /* TODO */);
 #endif
-   SETTING_INT("menu_scroll_up_btn",           &settings->menu_scroll_up_btn);
+   SETTING_INT("menu_scroll_up_btn",           &settings->menu_scroll_up_btn, false, 0 /* TODO */);
 #ifdef HAVE_GEKKO
-   SETTING_INT("video_viwidth",                &settings->video.viwidth);
+   SETTING_INT("video_viwidth",                &settings->video.viwidth, false, 0 /* TODO */);
 #endif
 #ifdef HAVE_MENU
-   SETTING_INT("dpi_override_value",           &settings->menu.dpi.override_value);
-   SETTING_INT("menu_thumbnails",              &settings->menu.thumbnails);
-   SETTING_INT("xmb_scale_factor",             &settings->menu.xmb.scale_factor);
-   SETTING_INT("xmb_alpha_factor",             &settings->menu.xmb.alpha_factor);
+   SETTING_INT("dpi_override_value",           &settings->menu.dpi.override_value, false, 0 /* TODO */);
+   SETTING_INT("menu_thumbnails",              &settings->menu.thumbnails, false, 0 /* TODO */);
+   SETTING_INT("xmb_scale_factor",             &settings->menu.xmb.scale_factor, false, 0 /* TODO */);
+   SETTING_INT("xmb_alpha_factor",             &settings->menu.xmb.alpha_factor, false, 0 /* TODO */);
 #ifdef HAVE_XMB
-   SETTING_INT("xmb_theme",                    &settings->menu.xmb.theme);
-   SETTING_INT("xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme);
+   SETTING_INT("xmb_theme",                    &settings->menu.xmb.theme, false, 0 /* TODO */);
+   SETTING_INT("xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme, false, 0 /* TODO */);
 #endif
-   SETTING_INT("materialui_menu_color_theme",  &settings->menu.materialui.menu_color_theme);
+   SETTING_INT("materialui_menu_color_theme",  &settings->menu.materialui.menu_color_theme, false, 0 /* TODO */);
 #ifdef HAVE_SHADERPIPELINE
-   SETTING_INT("menu_shader_pipeline",         &settings->menu.xmb.shader_pipeline);
+   SETTING_INT("menu_shader_pipeline",         &settings->menu.xmb.shader_pipeline, false, 0 /* TODO */);
 #endif
 #endif
-   SETTING_INT("audio_out_rate",               &settings->audio.out_rate);
-   SETTING_INT("custom_viewport_width",        &settings->video_viewport_custom.width);
-   SETTING_INT("custom_viewport_height",       &settings->video_viewport_custom.height);
-   SETTING_INT("custom_viewport_x",            (unsigned*)&settings->video_viewport_custom.x);
-   SETTING_INT("custom_viewport_y",            (unsigned*)&settings->video_viewport_custom.y);
-   SETTING_INT("content_history_size",         &settings->content_history_size);
-   SETTING_INT("video_hard_sync_frames",       &settings->video.hard_sync_frames);
-   SETTING_INT("video_frame_delay",            &settings->video.frame_delay);
-   SETTING_INT("video_max_swapchain_images",   &settings->video.max_swapchain_images);
-   SETTING_INT("video_swap_interval",          &settings->video.swap_interval);
-   SETTING_INT("video_rotation",               &settings->video.rotation);
-   SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx);
-   SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot);
+   SETTING_INT("audio_out_rate",               &settings->audio.out_rate, false, 0 /* TODO */);
+   SETTING_INT("custom_viewport_width",        &settings->video_viewport_custom.width, false, 0 /* TODO */);
+   SETTING_INT("custom_viewport_height",       &settings->video_viewport_custom.height, false, 0 /* TODO */);
+   SETTING_INT("custom_viewport_x",            (unsigned*)&settings->video_viewport_custom.x, false, 0 /* TODO */);
+   SETTING_INT("custom_viewport_y",            (unsigned*)&settings->video_viewport_custom.y, false, 0 /* TODO */);
+   SETTING_INT("content_history_size",         &settings->content_history_size, false, 0 /* TODO */);
+   SETTING_INT("video_hard_sync_frames",       &settings->video.hard_sync_frames, false, 0 /* TODO */);
+   SETTING_INT("video_frame_delay",            &settings->video.frame_delay, false, 0 /* TODO */);
+   SETTING_INT("video_max_swapchain_images",   &settings->video.max_swapchain_images, false, 0 /* TODO */);
+   SETTING_INT("video_swap_interval",          &settings->video.swap_interval, false, 0 /* TODO */);
+   SETTING_INT("video_rotation",               &settings->video.rotation, false, 0 /* TODO */);
+   SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx, false, 0 /* TODO */);
+   SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot, false, 0 /* TODO */);
 #ifdef HAVE_NETPLAY
-   SETTING_INT("netplay_ip_port",              &global->netplay.port);
-   SETTING_INT("netplay_delay_frames",         &global->netplay.sync_frames);
+   SETTING_INT("netplay_ip_port",              &global->netplay.port, false, 0 /* TODO */);
+   SETTING_INT("netplay_delay_frames",         &global->netplay.sync_frames, false, 0 /* TODO */);
 #endif
 #ifdef HAVE_LANGEXTRA
-   SETTING_INT("user_language",                &settings->user_language);
+   SETTING_INT("user_language",                &settings->user_language, false, 0 /* TODO */);
 #endif
-   SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current);
-   SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version);
+   SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current, false, 0 /* TODO */);
+   SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version, false, 0 /* TODO */);
 
    *out = (struct config_int_setting_ptr*)malloc(count * sizeof(struct config_int_setting_ptr));
    memcpy(*out, tmp, sizeof(struct config_int_setting_ptr) * count);
