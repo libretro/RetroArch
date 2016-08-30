@@ -302,12 +302,13 @@ if [ "$HAVE_THREADS" != 'no' ]; then
       check_pkgconf AVFORMAT libavformat 54
       check_pkgconf AVDEVICE libavdevice
       check_pkgconf SWRESAMPLE libswresample
+      check_pkgconf AVRESAMPLE libavresample
       check_pkgconf AVUTIL libavutil 51
       check_pkgconf SWSCALE libswscale 2.1
       check_header AV_CHANNEL_LAYOUT libavutil/channel_layout.h
 
       HAVE_FFMPEG='yes'
-      if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_SWRESAMPLE" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
+      if [ "$HAVE_AVCODEC" = 'no' ] || [ "$HAVE_AVFORMAT" = 'no' ] || [ "$HAVE_AVUTIL" = 'no' ] || [ "$HAVE_SWSCALE" = 'no' ]; then
          HAVE_FFMPEG='no'
          echo "Notice: FFmpeg built-in support disabled due to missing or unsuitable packages."
       fi
