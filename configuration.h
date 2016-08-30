@@ -65,6 +65,8 @@ struct config_string_setting_ptr
 { 
    const char *ident;
    const char *value;
+   bool def_enable;
+   const char *def;
 };
 
 struct config_path_setting_ptr

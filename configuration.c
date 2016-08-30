@@ -99,7 +99,7 @@
    count++; \
 }
 
-#define SETTING_STRING(key, configval) \
+#define SETTING_STRING(key, configval, default_enable, default_setting) \
 { \
    if (count == 0) \
       tmp = (struct config_string_setting_ptr*)malloc(sizeof(struct config_string_setting_ptr) * (count + 1)); \
@@ -107,6 +107,8 @@
       tmp = (struct config_string_setting_ptr*)realloc(tmp, sizeof(struct config_string_setting_ptr) * (count + 1)); \
    tmp[count].ident    = key; \
    tmp[count].value    = configval; \
+   if (default_enable) \
+      tmp[count].def   = default_setting; \
    count++; \
 } \
 
@@ -506,38 +508,38 @@ static int populate_settings_string(settings_t *settings, struct config_string_s
 #ifdef HAVE_NETPLAY
    global_t   *global                    = global_get_ptr();
 #endif
-   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir);
-   SETTING_STRING("video_filter",             settings->path.softfilter_plugin);
-   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin);
-   SETTING_STRING("playlist_names",           settings->playlist_names);
-   SETTING_STRING("playlist_cores",           settings->playlist_cores);
-   SETTING_STRING("video_driver",             settings->video.driver);
-   SETTING_STRING("record_driver",            settings->record.driver);
-   SETTING_STRING("camera_driver",            settings->camera.driver);
-   SETTING_STRING("location_driver",          settings->location.driver);
+   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL);
+   SETTING_STRING("video_filter",             settings->path.softfilter_plugin, false, NULL);
+   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin, false, NULL);
+   SETTING_STRING("playlist_names",           settings->playlist_names, false, NULL);
+   SETTING_STRING("playlist_cores",           settings->playlist_cores, false, NULL);
+   SETTING_STRING("video_driver",             settings->video.driver, false, NULL);
+   SETTING_STRING("record_driver",            settings->record.driver, false, NULL);
+   SETTING_STRING("camera_driver",            settings->camera.driver, false, NULL);
+   SETTING_STRING("location_driver",          settings->location.driver, false, NULL);
 #ifdef HAVE_MENU
-   SETTING_STRING("menu_driver",              settings->menu.driver);
+   SETTING_STRING("menu_driver",              settings->menu.driver, false, NULL);
 #endif
-   SETTING_STRING("audio_device",             settings->audio.device);
-   SETTING_STRING("core_updater_buildbot_url",settings->network.buildbot_url);
-   SETTING_STRING("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url);
-   SETTING_STRING("camera_device",            settings->camera.device);
+   SETTING_STRING("audio_device",             settings->audio.device, false, NULL);
+   SETTING_STRING("core_updater_buildbot_url",settings->network.buildbot_url, false, NULL);
+   SETTING_STRING("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url, false, NULL);
+   SETTING_STRING("camera_device",            settings->camera.device, false, NULL);
 #ifdef HAVE_CHEEVOS
-   SETTING_STRING("cheevos_username",         settings->cheevos.username);
-   SETTING_STRING("cheevos_password",         settings->cheevos.password);
+   SETTING_STRING("cheevos_username",         settings->cheevos.username, false, NULL);
+   SETTING_STRING("cheevos_password",         settings->cheevos.password, false, NULL);
 #endif
-   SETTING_STRING("video_context_driver",     settings->video.context_driver);
-   SETTING_STRING("audio_driver",             settings->audio.driver);
-   SETTING_STRING("audio_resampler",          settings->audio.resampler);
+   SETTING_STRING("video_context_driver",     settings->video.context_driver, false, NULL);
+   SETTING_STRING("audio_driver",             settings->audio.driver, false, NULL);
+   SETTING_STRING("audio_resampler",          settings->audio.resampler, false, NULL);
 #ifdef HAVE_NETPLAY
-   SETTING_STRING("netplay_ip_address",       global->netplay.server);
+   SETTING_STRING("netplay_ip_address",       global->netplay.server, false, NULL);
 #endif
-   SETTING_STRING("netplay_nickname",         settings->username);
-   SETTING_STRING("input_driver",             settings->input.driver);
-   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver);
-   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout);
-   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src);
-   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst);
+   SETTING_STRING("netplay_nickname",         settings->username, false, NULL);
+   SETTING_STRING("input_driver",             settings->input.driver, false, NULL);
+   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver, false, NULL);
+   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout, false, NULL);
+   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src, false, NULL);
+   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL);
 
    *out = 
       (struct config_string_setting_ptr*) malloc(count * sizeof(struct config_string_setting_ptr));
@@ -2231,8 +2233,8 @@ bool config_load_override(void)
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
    bool should_append                     = false;
-   global_t *global                       = global_get_ptr();
    rarch_system_info_t *system            = NULL;
+   global_t *global                       = global_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
