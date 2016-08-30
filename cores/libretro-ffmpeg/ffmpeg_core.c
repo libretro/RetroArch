@@ -22,7 +22,10 @@ extern "C" {
 #include <libavutil/time.h>
 #include <libavutil/opt.h>
 #include <libavdevice/avdevice.h>
+#ifdef HAVE_SWRESAMPLE
 #include <libswresample/swresample.h>
+#endif
+
 #ifdef HAVE_SSA
 #include <ass/ass.h>
 #endif
@@ -622,7 +625,7 @@ void CORE_PREFIX(retro_run)(void)
          if (!decode_thread_dead)
          {
             fifo_read(video_decode_fifo, &pts, sizeof(int64_t));
-#if defined(HAVE_OPENGL)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
             if (use_gl)
             {
 #if defined(HAVE_OPENGLES)
@@ -662,7 +665,7 @@ void CORE_PREFIX(retro_run)(void)
          frames[1].pts = av_q2d(fctx->streams[video_stream]->time_base) * pts;
       }
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       if (use_gl)
       {
          float mix_factor = (min_pts - frames[0].pts) / (frames[1].pts - frames[0].pts);
@@ -787,8 +790,10 @@ static bool codec_id_is_ttf(enum AVCodecID id)
          return true;
 
       default:
-       return false;
+         break;
    }
+
+   return false;
 }
 
 #ifdef HAVE_SSA
@@ -1096,20 +1101,20 @@ static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
    for (; img; img = img->next)
    {
       int x, y;
-      uint32_t *dst;
       unsigned r, g, b, a;
+      uint32_t *dst         = NULL;
       const uint8_t *bitmap = NULL;
 
       if (img->w == 0 && img->h == 0)
          continue;
 
       bitmap = img->bitmap;
-      dst = frame + img->dst_x + img->dst_y * stride;
+      dst    = frame + img->dst_x + img->dst_y * stride;
 
-      r = (img->color >> 24) & 0xff;
-      g = (img->color >> 16) & 0xff;
-      b = (img->color >>  8) & 0xff;
-      a = 255 - (img->color & 0xff);
+      r      = (img->color >> 24) & 0xff;
+      g      = (img->color >> 16) & 0xff;
+      b      = (img->color >>  8) & 0xff;
+      a      = 255 - (img->color & 0xff);
 
       for (y = 0; y < img->h; y++,
             bitmap += img->stride, dst += stride)
@@ -1139,8 +1144,9 @@ static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
 static void decode_thread(void *data)
 {
    unsigned i;
-   AVFrame *aud_frame, *vid_frame;
    SwrContext *swr[audio_streams_num];
+   AVFrame *aud_frame      = NULL;
+   AVFrame *vid_frame      = NULL;
    void *conv_frame_buf    = NULL;
    size_t frame_size       = 0;
    int16_t *audio_buffer   = NULL;
@@ -1704,13 +1710,3 @@ void CORE_PREFIX(retro_cheat_set)(unsigned index, bool enabled, const char *code
    (void)enabled;
    (void)code;
 }
-
-#if defined(LIBRETRO_SWITCH)
-
-#ifdef ARCH_X86
-#include "../libswresample/resample.h"
-void swri_resample_dsp_init(ResampleContext *c)
-{}
-#endif
-
-#endif
