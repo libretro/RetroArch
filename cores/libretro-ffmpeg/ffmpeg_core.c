@@ -624,37 +624,39 @@ void CORE_PREFIX(retro_run)(void)
 
          if (!decode_thread_dead)
          {
+            uint32_t *data = video_frame_temp_buffer;
             fifo_read(video_decode_fifo, &pts, sizeof(int64_t));
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
             if (use_gl)
             {
-#if defined(HAVE_OPENGLES)
-               fifo_read(video_decode_fifo, video_frame_temp_buffer, media.width * media.height * sizeof(uint32_t));
-               glBindTexture(GL_TEXTURE_2D, frames[1].tex);
-               glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                     media.width, media.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, video_frame_temp_buffer);
-               glBindTexture(GL_TEXTURE_2D, 0);
-#else
-               uint32_t *data = NULL;
+#ifndef HAVE_OPENGLES
                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, frames[1].pbo);
-
                data = (uint32_t*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER,
                      0, media.width * media.height, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-               
+#endif
+
                fifo_read(video_decode_fifo, data, media.width * media.height * sizeof(uint32_t));
-               
+
+#ifndef HAVE_OPENGLES
                glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+#endif
                glBindTexture(GL_TEXTURE_2D, frames[1].tex);
+#if defined(HAVE_OPENGLES)
+               glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                     media.width, media.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+#else
                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                      media.width, media.height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+#endif
                glBindTexture(GL_TEXTURE_2D, 0);
+#ifndef HAVE_OPENGLES
                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 #endif
             }
             else
 #endif
             {
-               fifo_read(video_decode_fifo, video_frame_temp_buffer, media.width * media.height * sizeof(uint32_t));
+               fifo_read(video_decode_fifo, data, media.width * media.height * sizeof(uint32_t));
                dupe = false;
             }
          }
@@ -705,12 +707,14 @@ void CORE_PREFIX(retro_run)(void)
          glActiveTexture(GL_TEXTURE0);
          glBindTexture(GL_TEXTURE_2D, 0);
          
-         CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID, media.width, media.height, media.width * sizeof(uint32_t));
+         CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID,
+               media.width, media.height, media.width * sizeof(uint32_t));
       }
       else
 #endif
       {
-         CORE_PREFIX(video_cb)(dupe ? NULL : video_frame_temp_buffer, media.width, media.height, media.width * sizeof(uint32_t));
+         CORE_PREFIX(video_cb)(dupe ? NULL : video_frame_temp_buffer,
+               media.width, media.height, media.width * sizeof(uint32_t));
       }
    }
 #ifdef HAVE_GL_FFT
@@ -733,7 +737,8 @@ void CORE_PREFIX(retro_run)(void)
          frames -= to_read;
       }
       glfft_render(fft, hw_render.get_current_framebuffer(), fft_width, fft_height);
-      CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID, fft_width, fft_height, fft_width * sizeof(uint32_t));
+      CORE_PREFIX(video_cb)(RETRO_HW_FRAME_BUFFER_VALID,
+            fft_width, fft_height, fft_width * sizeof(uint32_t));
    }
 #endif
    else
@@ -851,7 +856,8 @@ static bool open_codecs(void)
             break;
 
          case AVMEDIA_TYPE_VIDEO:
-            if (!vctx && !codec_is_image(fctx->streams[i]->codec->codec_id))
+            if (     !vctx 
+                  && !codec_is_image(fctx->streams[i]->codec->codec_id))
             {
                if (!open_codec(&vctx, i))
                   return false;
@@ -861,7 +867,8 @@ static bool open_codecs(void)
 
          case AVMEDIA_TYPE_SUBTITLE:
 #ifdef HAVE_SSA
-            if (subtitle_streams_num < MAX_STREAMS && codec_id_is_ass(fctx->streams[i]->codec->codec_id))
+            if (     subtitle_streams_num < MAX_STREAMS 
+                  && codec_id_is_ass(fctx->streams[i]->codec->codec_id))
             {
                int size;
                AVCodecContext **s = &sctx[subtitle_streams_num];
@@ -906,6 +913,7 @@ static bool init_media_info(void)
       media.sample_rate = actx[0]->sample_rate;
 
    media.interpolate_fps = 60.0;
+
    if (vctx)
    {
       media.width  = vctx->width;
@@ -994,7 +1002,8 @@ static bool decode_video(AVPacket *pkt, AVFrame *frame,
    {
       set_colorspace(sws, media.width, media.height,
             av_frame_get_colorspace(frame), av_frame_get_color_range(frame));
-      sws_scale(sws, (const uint8_t * const*)frame->data, frame->linesize, 0, media.height,
+      sws_scale(sws, (const uint8_t * const*)frame->data,
+            frame->linesize, 0, media.height,
             conv->data, conv->linesize);
       return true;
    }
@@ -1013,8 +1022,8 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
    {
       int64_t pts;
       size_t required_buffer;
-
       int ret = avcodec_decode_audio4(ctx, frame, &got_ptr, &pkt_tmp);
+
       if (ret < 0)
          return buffer;
 
@@ -1623,7 +1632,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 #endif
       if (!CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       {
-         use_gl=false;
+         use_gl = false;
          LOG_ERR("Cannot initialize HW render.");
       }
 #endif
@@ -1634,9 +1643,9 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       audio_decode_fifo = fifo_new(buffer_seconds * media.sample_rate * sizeof(int16_t) * 2);
    }
 
-   fifo_cond = scond_new();
+   fifo_cond        = scond_new();
    fifo_decode_cond = scond_new();
-   fifo_lock = slock_new();
+   fifo_lock        = slock_new();
 
    slock_lock(fifo_lock);
    decode_thread_dead = false;
