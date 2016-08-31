@@ -625,4 +625,5 @@ const gfx_ctx_driver_t gfx_ctx_android = {
 #else
    NULL
 #endif
+   ,NULL
 };

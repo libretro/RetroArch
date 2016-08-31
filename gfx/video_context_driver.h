@@ -163,6 +163,10 @@ typedef struct gfx_ctx_driver
     * This is mostly relevant for graphics APIs such as Vulkan
     * which do not have global context state. */
    void *(*get_context_data)(void *data);
+
+   /* Optional. Makes driver context (only GLX right now)
+    * active for this thread. */
+   void (*make_current)(bool release);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_flags
@@ -279,6 +283,8 @@ bool video_context_driver_get_video_output_prev(void);
 bool video_context_driver_get_video_output_next(void);
 
 bool video_context_driver_bind_hw_render(bool *enable);
+
+void video_context_driver_make_current(bool restore);
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data);
 

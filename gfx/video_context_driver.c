@@ -328,6 +328,14 @@ bool video_context_driver_bind_hw_render(bool *enable)
    return true;
 }
 
+void video_context_driver_make_current(bool release)
+{
+   if (!current_video_context || !current_video_context->make_current)
+      return;
+
+   current_video_context->make_current(release);
+}
+
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
 {
    if (!data)
