@@ -689,7 +689,7 @@ endif
 
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
-   CFLAGS += -I/usr/include/drm
+   CFLAGS += -I/usr/include/libdrm
    LIBS += -ldrm
 endif
 
