@@ -25,9 +25,12 @@
 #include "gfx/video_driver.h"
 #include "driver.h"
 
-#define OVERRIDE_NONE 0
-#define OVERRIDE_CORE 1
-#define OVERRIDE_GAME 2
+enum override_type
+{
+   OVERRIDE_NONE = 0,
+   OVERRIDE_CORE,
+   OVERRIDE_GAME
+};
 
 #ifndef MAX_USERS
 #define MAX_USERS 16
