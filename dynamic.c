@@ -760,12 +760,10 @@ static size_t mmap_highest_bit(size_t n)
 
 static bool mmap_preprocess_descriptors(struct retro_memory_descriptor *first, unsigned count)
 {
-   struct retro_memory_descriptor *desc;
-   const struct retro_memory_descriptor *end;
-   size_t top_addr, disconnect_mask;
-   
-   end = first + count;
-   top_addr = 1;
+   size_t disconnect_mask;
+   struct retro_memory_descriptor *desc      = NULL;
+   const struct retro_memory_descriptor *end = first + count;
+   size_t top_addr = 1;
    
    for (desc = first; desc < end; desc++)
    {
