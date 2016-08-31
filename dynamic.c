@@ -893,6 +893,32 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
    return true;
 }
 
+static bool dynamic_verify_hw_context(enum retro_hw_context_type type,
+      unsigned minor, unsigned major)
+{
+   const char *video_ident = video_driver_get_ident();
+
+   switch (type)
+   {
+      case RETRO_HW_CONTEXT_VULKAN:
+         if (!string_is_equal(video_ident, "vulkan"))
+            return false;
+         break;
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         if (!string_is_equal(video_ident, "gl"))
+            return false;
+         break;
+      default:
+         break;
+   }
+
+   return true;
+}
+
 /**
  * rarch_environment_cb:
  * @cmd                          : Identifier of command.
@@ -1199,6 +1225,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_HW_RENDER.\n");
 
          if (!dynamic_request_hw_context(cb->context_type, cb->version_minor, cb->version_major))
+            return false;
+
+         if (!dynamic_verify_hw_context(cb->context_type, cb->version_minor, cb->version_major))
             return false;
 
          cb->get_current_framebuffer = video_driver_get_current_framebuffer;
