@@ -807,8 +807,7 @@ static void mg_snprintf(const struct mg_connection *conn,
 /*#define vsnprintf DO_NOT_USE_THIS_FUNCTION__USE_mg_vsnprintf*/
 #endif
 
-#define MD5_STATIC static
-#include "utils/md5.h"
+#include <rhash.h>
 
 /* Darwin prior to 7.0 and Win32 do not have socklen_t */
 #ifdef NO_SOCKLEN_T

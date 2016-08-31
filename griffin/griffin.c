@@ -119,9 +119,15 @@ ACHIEVEMENTS
 #endif
 
 #include "../libretro-common/formats/json/jsonsax.c"
-#include "../libretro-common/utils/md5.c"
 #include "../network/net_http_special.c"
 #include "../cheevos.c"
+#endif
+
+/*============================================================
+MD5
+============================================================ */
+#if (defined(HAVE_CHEEVOS) && defined(HAVE_THREADS)) || (defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB))
+#include "../libretro-common/utils/md5.c"
 #endif
 
 /*============================================================
