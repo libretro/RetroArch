@@ -812,6 +812,87 @@ static bool mmap_preprocess_descriptors(struct retro_memory_descriptor *first, u
    return true;
 }
 
+static bool dynamic_request_hw_context(enum retro_hw_context_type type,
+      unsigned minor, unsigned major)
+{
+   switch (type)
+   {
+      case RETRO_HW_CONTEXT_NONE:
+         RARCH_LOG("Requesting no HW context.\n");
+         break;
+
+      case RETRO_HW_CONTEXT_VULKAN:
+#ifdef HAVE_VULKAN
+         RARCH_LOG("Requesting Vulkan context.\n");
+         break;
+#else
+         RARCH_ERR("Requesting Vulkan context, but RetroArch is not compiled against Vulkan. Cannot use HW context.\n");
+         return false;
+#endif
+
+#if defined(HAVE_OPENGLES)
+
+#if (defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3))
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+         RARCH_LOG("Requesting OpenGLES%u context.\n",
+               type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
+         break;
+
+#if defined(HAVE_OPENGLES3)
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         RARCH_LOG("Requesting OpenGLES%u.%u context.\n",
+               major, minor);
+         break;
+#endif
+
+#endif
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         RARCH_ERR("Requesting OpenGL context, but RetroArch "
+               "is compiled against OpenGLES. Cannot use HW context.\n");
+         return false;
+
+#elif defined(HAVE_OPENGL)
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+         RARCH_ERR("Requesting OpenGLES%u context, but RetroArch "
+               "is compiled against OpenGL. Cannot use HW context.\n",
+               type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
+         return false;
+
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch "
+               "is compiled against OpenGL. Cannot use HW context.\n",
+               major, minor);
+         return false;
+
+      case RETRO_HW_CONTEXT_OPENGL:
+         RARCH_LOG("Requesting OpenGL context.\n");
+         break;
+
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+         {
+            gfx_ctx_flags_t flags;
+            flags.flags = 0;
+            BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+            video_context_driver_set_flags(&flags);
+
+            RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
+                  major, minor);
+         }
+         break;
+#endif
+
+      default:
+         RARCH_LOG("Requesting unknown context.\n");
+         return false;
+   }
+
+   return true;
+}
+
 /**
  * rarch_environment_cb:
  * @cmd                          : Identifier of command.
@@ -1110,88 +1191,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
       case RETRO_ENVIRONMENT_SET_HW_RENDER | RETRO_ENVIRONMENT_EXPERIMENTAL:
       {
-         struct retro_hw_render_callback *hwr = NULL;
          struct retro_hw_render_callback *cb =
             (struct retro_hw_render_callback*)data;
-
-         hwr = video_driver_get_hw_context();
+         struct retro_hw_render_callback *hwr = 
+            video_driver_get_hw_context();
 
          RARCH_LOG("Environ SET_HW_RENDER.\n");
 
-         switch (cb->context_type)
-         {
-            case RETRO_HW_CONTEXT_NONE:
-               RARCH_LOG("Requesting no HW context.\n");
-               break;
+         if (!dynamic_request_hw_context(cb->context_type, cb->version_minor, cb->version_major))
+            return false;
 
-            case RETRO_HW_CONTEXT_VULKAN:
-#ifdef HAVE_VULKAN
-               RARCH_LOG("Requesting Vulkan context.\n");
-               break;
-#else
-               RARCH_ERR("Requesting Vulkan context, but RetroArch is not compiled against Vulkan. Cannot use HW context.\n");
-               return false;
-#endif
-
-#if defined(HAVE_OPENGLES)
-
-#if (defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3))
-            case RETRO_HW_CONTEXT_OPENGLES2:
-            case RETRO_HW_CONTEXT_OPENGLES3:
-               RARCH_LOG("Requesting OpenGLES%u context.\n",
-                     cb->context_type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
-               break;
-
-#if defined(HAVE_OPENGLES3)
-            case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-               RARCH_LOG("Requesting OpenGLES%u.%u context.\n",
-                     cb->version_major, cb->version_minor);
-               break;
-#endif
-
-#endif
-            case RETRO_HW_CONTEXT_OPENGL:
-            case RETRO_HW_CONTEXT_OPENGL_CORE:
-               RARCH_ERR("Requesting OpenGL context, but RetroArch "
-                     "is compiled against OpenGLES. Cannot use HW context.\n");
-               return false;
-
-#elif defined(HAVE_OPENGL)
-            case RETRO_HW_CONTEXT_OPENGLES2:
-            case RETRO_HW_CONTEXT_OPENGLES3:
-               RARCH_ERR("Requesting OpenGLES%u context, but RetroArch "
-                     "is compiled against OpenGL. Cannot use HW context.\n",
-                     cb->context_type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
-               return false;
-
-            case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-               RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch "
-                     "is compiled against OpenGL. Cannot use HW context.\n",
-                     cb->version_major, cb->version_minor);
-               return false;
-
-            case RETRO_HW_CONTEXT_OPENGL:
-               RARCH_LOG("Requesting OpenGL context.\n");
-               break;
-
-            case RETRO_HW_CONTEXT_OPENGL_CORE:
-               {
-                  gfx_ctx_flags_t flags;
-                  flags.flags = 0;
-                  BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-
-                  video_context_driver_set_flags(&flags);
-
-                  RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
-                        cb->version_major, cb->version_minor);
-               }
-               break;
-#endif
-
-            default:
-               RARCH_LOG("Requesting unknown context.\n");
-               return false;
-         }
          cb->get_current_framebuffer = video_driver_get_current_framebuffer;
          cb->get_proc_address        = video_driver_get_proc_address;
 
