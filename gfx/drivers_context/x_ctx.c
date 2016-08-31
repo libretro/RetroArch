@@ -917,19 +917,28 @@ static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
       x->core_hw_context_enable = true;
 }
 
-void gfx_ctx_x_make_current(bool release)
+static void gfx_ctx_x_make_current(bool release)
 {
    if (!current_context_data)
       return;
 
-   if (release)
+   switch (x_api)
    {
-      glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
-   }
-   else
-   {
-      glXMakeContextCurrent(g_x11_dpy,
-               current_context_data->g_glx_win, current_context_data->g_glx_win, current_context_data->g_ctx);
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
+         if (release)
+            glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
+         else
+            glXMakeContextCurrent(g_x11_dpy,
+                  current_context_data->g_glx_win,
+                  current_context_data->g_glx_win, current_context_data->g_ctx);
+#endif
+         break;
+
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
 }
 
@@ -967,10 +976,6 @@ const gfx_ctx_driver_t gfx_ctx_x = {
 #else
    NULL,
 #endif
-#ifdef HAVE_OPENGL
    gfx_ctx_x_make_current
-#else
-   NULL
-#endif
 };
 
