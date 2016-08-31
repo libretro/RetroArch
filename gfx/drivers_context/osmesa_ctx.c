@@ -429,5 +429,7 @@ const gfx_ctx_driver_t gfx_ctx_osmesa =
    "osmesa",
    osmesa_ctx_get_flags,
    osmesa_ctx_set_flags,
-   NULL /* bind_hw_render */
+   NULL, /* bind_hw_render */
+   NULL,
+   NULL
 };

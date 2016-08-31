@@ -173,6 +173,8 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    "null",
    gfx_ctx_null_get_flags,
    gfx_ctx_null_set_flags,
-   gfx_ctx_null_bind_hw_render
+   gfx_ctx_null_bind_hw_render,
+   NULL,
+   NULL
 };
 

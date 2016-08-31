@@ -434,5 +434,7 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    "blackberry_qnx",
    gfx_ctx_qnx_get_flags,
    gfx_ctx_qnx_set_flags,
-   gfx_ctx_qnx_bind_hw_render
+   gfx_ctx_qnx_bind_hw_render,
+   NULL,
+   NULL
 };

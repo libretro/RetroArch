@@ -303,5 +303,7 @@ const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    "opendingux-fbdev",
    gfx_ctx_opendingux_get_flags,
    gfx_ctx_opendingux_set_flags,
-   gfx_ctx_opendingux_bind_hw_render
+   gfx_ctx_opendingux_bind_hw_render,
+   NULL,
+   NULL
 };

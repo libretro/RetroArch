@@ -258,6 +258,7 @@ const gfx_ctx_driver_t gfx_ctx_khr_display = {
    gfx_ctx_khr_display_set_flags,
    NULL, 
    gfx_ctx_khr_display_get_context_data,
+   NULL,
    NULL
 };
 

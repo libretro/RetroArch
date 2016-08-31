@@ -963,14 +963,14 @@ const gfx_ctx_driver_t gfx_ctx_x = {
 
    gfx_ctx_x_bind_hw_render,
 #ifdef HAVE_VULKAN
-   gfx_ctx_x_get_context_data
+   gfx_ctx_x_get_context_data,
 #else
-   NULL
+   NULL,
 #endif
 #ifdef HAVE_OPENGL
-   ,gfx_ctx_x_make_current
+   gfx_ctx_x_make_current
 #else
-   ,NULL
+   NULL
 #endif
 };
 

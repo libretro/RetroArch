@@ -379,5 +379,7 @@ const gfx_ctx_driver_t gfx_ctx_cgl = {
    "cgl",
    gfx_ctx_cgl_get_flags,
    gfx_ctx_cgl_set_flags,
-   gfx_ctx_cgl_bind_hw_render
+   gfx_ctx_cgl_bind_hw_render,
+   NULL,
+   NULL
 };

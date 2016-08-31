@@ -449,6 +449,8 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL,
    "ps3",
    gfx_ctx_ps3_get_flags,
-   gfx_ctx_ps3_set_flags
+   gfx_ctx_ps3_set_flags,
+   NULL,
+   NULL
 };
 

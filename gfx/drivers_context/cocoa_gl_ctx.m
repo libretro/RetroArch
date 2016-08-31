@@ -641,4 +641,6 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoagl_gfx_ctx_get_flags,
    cocoagl_gfx_ctx_set_flags,
    cocoagl_gfx_ctx_bind_hw_render,
+   NULL,
+   NULL
 };

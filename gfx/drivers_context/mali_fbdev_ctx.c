@@ -331,6 +331,8 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    "mali-fbdev",
    gfx_ctx_mali_fbdev_get_flags,
    gfx_ctx_mali_fbdev_set_flags,
-   gfx_ctx_mali_fbdev_bind_hw_render
+   gfx_ctx_mali_fbdev_bind_hw_render,
+   NULL,
+   NULL
 };
 

@@ -898,5 +898,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    "kms",
    gfx_ctx_drm_get_flags,
    gfx_ctx_drm_set_flags,
-   gfx_ctx_drm_bind_hw_render
+   gfx_ctx_drm_bind_hw_render,
+   NULL,
+   NULL
 };

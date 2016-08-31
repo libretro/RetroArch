@@ -668,5 +668,8 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    "videocore",
    gfx_ctx_vc_get_flags,
    gfx_ctx_vc_set_flags,
-   gfx_ctx_vc_bind_hw_render
+   gfx_ctx_vc_bind_hw_render,
+   NULL,
+   NULL
+
 };

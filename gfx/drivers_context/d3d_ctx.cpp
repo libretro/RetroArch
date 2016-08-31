@@ -343,5 +343,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_show_mouse,
    "d3d",
    gfx_ctx_d3d_get_flags,
-   gfx_ctx_d3d_set_flags
+   gfx_ctx_d3d_set_flags,
+   NULL,
+   NULL
 };

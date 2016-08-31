@@ -613,5 +613,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    "x-egl",
    gfx_ctx_xegl_get_flags,
    gfx_ctx_xegl_set_flags,
-   gfx_ctx_xegl_bind_hw_render
+   gfx_ctx_xegl_bind_hw_render,
+   NULL,
+   NULL
 };

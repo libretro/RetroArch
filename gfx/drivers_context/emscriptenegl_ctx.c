@@ -342,5 +342,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    "emscripten",
    gfx_ctx_emscripten_get_flags,
    gfx_ctx_emscripten_set_flags,
-   gfx_ctx_emscripten_bind_hw_render
+   gfx_ctx_emscripten_bind_hw_render,
+   NULL,
+   NULL
 };

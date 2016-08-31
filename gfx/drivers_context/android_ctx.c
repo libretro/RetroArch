@@ -621,9 +621,9 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_set_flags,
    android_gfx_ctx_bind_hw_render,
 #ifdef HAVE_VULKAN
-   android_gfx_ctx_get_context_data
+   android_gfx_ctx_get_context_data,
 #else
-   NULL
+   NULL,
 #endif
-   ,NULL
+   NULL
 };

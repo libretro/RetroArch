@@ -1173,9 +1173,9 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_set_flags,
    gfx_ctx_wl_bind_hw_render,
 #ifdef HAVE_VULKAN
-   gfx_ctx_wl_get_context_data
+   gfx_ctx_wl_get_context_data,
 #else
-   NULL
+   NULL,
 #endif
-   ,NULL
+   NULL
 };
