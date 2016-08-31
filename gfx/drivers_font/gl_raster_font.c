@@ -17,6 +17,7 @@
 #include "../common/gl_common.h"
 #include "../font_driver.h"
 #include "../video_shader_driver.h"
+#include "../video_context_driver.h"
 #include <encodings/utf.h>
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
@@ -142,6 +143,7 @@ static void *gl_raster_font_init_font(void *data,
 {
    const struct font_atlas *atlas = NULL;
    gl_raster_t   *font = (gl_raster_t*)calloc(1, sizeof(*font));
+   settings_t *settings = config_get_ptr();
 
    if (!font)
       return NULL;
@@ -155,6 +157,9 @@ static void *gl_raster_font_init_font(void *data,
       free(font);
       return NULL;
    }
+
+   if (settings->video.threaded)
+      video_context_driver_make_current(false);
 
    glGenTextures(1, &font->tex);
    glBindTexture(GL_TEXTURE_2D, font->tex);
@@ -185,11 +190,15 @@ error:
 static void gl_raster_font_free_font(void *data)
 {
    gl_raster_t *font = (gl_raster_t*)data;
+   settings_t *settings    = config_get_ptr();
    if (!font)
       return;
 
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
+
+   if (settings->video.threaded)
+      video_context_driver_make_current(false);
 
    glDeleteTextures(1, &font->tex);
    free(font);

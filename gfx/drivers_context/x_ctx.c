@@ -69,6 +69,8 @@ static enum gfx_ctx_api x_api;
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 #endif
 
+static gfx_ctx_x_data_t *current_context_data = NULL;
+
 static int x_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
@@ -340,6 +342,8 @@ static void *gfx_ctx_x_init(void *data)
 
    if (!x)
       return NULL;
+
+   current_context_data = x;
 
    XInitThreads();
 
@@ -913,6 +917,22 @@ static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
       x->core_hw_context_enable = true;
 }
 
+void gfx_ctx_x_make_current(bool release)
+{
+   if (!current_context_data)
+      return;
+
+   if (release)
+   {
+      glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
+   }
+   else
+   {
+      glXMakeContextCurrent(g_x11_dpy,
+               current_context_data->g_glx_win, current_context_data->g_glx_win, current_context_data->g_ctx);
+   }
+}
+
 const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_init,
    gfx_ctx_x_destroy,
@@ -946,6 +966,11 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_get_context_data
 #else
    NULL
+#endif
+#ifdef HAVE_OPENGL
+   ,gfx_ctx_x_make_current
+#else
+   ,NULL
 #endif
 };
 
