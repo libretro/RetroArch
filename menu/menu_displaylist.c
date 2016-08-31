@@ -2694,7 +2694,6 @@ static int menu_displaylist_parse_horizontal_content_actions(
 static int menu_displaylist_parse_information_list(
       menu_displaylist_info_t *info)
 {
-   settings_t *settings        = config_get_ptr();
 
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
