@@ -966,13 +966,13 @@ static void config_set_defaults(void)
 #else
    settings->multimedia.builtin_mediaplayer_enable  = false;
 #endif
-   settings->video.scale                 = scale;
+   settings->video.scale                       = scale;
 
    if (rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
-      settings->video.fullscreen            = true;
+      settings->video.fullscreen               = true;
 
    if (g_defaults.settings.video_threaded_enable != video_threaded)
-      settings->video.threaded           = g_defaults.settings.video_threaded_enable;
+      settings->video.threaded                 = g_defaults.settings.video_threaded_enable;
 
    settings->video.msg_color_r                 = ((message_color >> 16) & 0xff) / 255.0f;
    settings->video.msg_color_g                 = ((message_color >>  8) & 0xff) / 255.0f;
@@ -996,9 +996,9 @@ static void config_set_defaults(void)
    settings->rewind_buffer_size                = rewind_buffer_size;
 
 #ifdef HAVE_LAKKA
-   settings->ssh_enable       = path_file_exists(LAKKA_SSH_PATH);
-   settings->samba_enable     = path_file_exists(LAKKA_SAMBA_PATH);
-   settings->bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
+   settings->ssh_enable                        = path_file_exists(LAKKA_SSH_PATH);
+   settings->samba_enable                      = path_file_exists(LAKKA_SAMBA_PATH);
+   settings->bluetooth_enable                  = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
 #ifdef HAVE_MENU
@@ -1010,8 +1010,8 @@ static void config_set_defaults(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-   *settings->cheevos.username                      = '\0';
-   *settings->cheevos.password                      = '\0';
+   *settings->cheevos.username                 = '\0';
+   *settings->cheevos.password                 = '\0';
 #endif
 
    retro_assert(sizeof(settings->input.binds[0]) >= sizeof(retro_keybinds_1));
@@ -1038,11 +1038,13 @@ static void config_set_defaults(void)
 
    /* Verify that binds are in proper order. */
    for (i = 0; i < MAX_USERS; i++)
+   {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
          if (settings->input.binds[i][j].valid)
             retro_assert(j == settings->input.binds[i][j].id);
       }
+   }
 
    strlcpy(settings->network.buildbot_url, buildbot_server_url,
          sizeof(settings->network.buildbot_url));
