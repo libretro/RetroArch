@@ -154,14 +154,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
 #elif defined(GEKKO)
    time_ticks = gettime();
 #elif defined(PSP) || defined(VITA)
-   {
-#if defined(PSP)
-      u64 *ticks = (u64*)&time_ticks;
-#elif defined(VITA)
-      SceRtcTick *ticks = (SceRtcTick*)&time_ticks;
-#endif
-      sceRtcGetCurrentTick(ticks);
-   }
+   sceRtcGetCurrentTick((uint64_t*)&time_ticks);
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
 #elif defined(__mips__)
