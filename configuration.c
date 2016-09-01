@@ -1792,7 +1792,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       if (!path_settings[i].handle)
          continue;
       if (config_get_path(conf, path_settings[i].ident, tmp_str, sizeof(tmp_str)))
-         strlcpy(path_settings[i].ptr, tmp_str, sizeof(tmp_str));
+         strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
    if (config_get_path(conf, "cheat_settings_path", tmp_str, sizeof(tmp_str)))
