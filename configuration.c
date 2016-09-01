@@ -1780,9 +1780,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    /* Array settings  */
    for (i = 0; i < array_settings_size; i++)
    {
-      if (array_settings[i].handle)
-         config_get_array(conf, array_settings[i].ident,
-               array_settings[i].ptr, sizeof(array_settings[i].ptr));
+      if (!array_settings[i].handle)
+         continue;
+      config_get_array(conf, array_settings[i].ident,
+            array_settings[i].ptr, sizeof(array_settings[i].ptr));
    }
 
    /* Path settings  */
@@ -1790,8 +1791,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    {
       if (!path_settings[i].handle)
          continue;
-      RARCH_LOG("ident: %s\n", path_settings[i].ident);
-
       if (config_get_path(conf, path_settings[i].ident, tmp_str, sizeof(tmp_str)))
          strlcpy(path_settings[i].ptr, tmp_str, sizeof(tmp_str));
    }
