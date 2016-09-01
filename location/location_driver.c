@@ -16,6 +16,10 @@
 
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "location_driver.h"
 
 #include "../configuration.h"

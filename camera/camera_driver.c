@@ -16,6 +16,10 @@
 
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "camera_driver.h"
 
 #include "../configuration.h"

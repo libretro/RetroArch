@@ -16,21 +16,23 @@
 
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <file/file_path.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
 
 #include "record_driver.h"
 
 #include "../command.h"
-#include "../general.h"
+#include "../configuration.h"
 #include "../retroarch.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
 #include "../list_special.h"
-
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
 
 static bool recording_enable;
 
