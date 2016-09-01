@@ -67,9 +67,10 @@ struct config_float_setting_ptr
 struct config_string_setting_ptr
 { 
    const char *ident;
-   const char *value;
+   char *value;
    bool def_enable;
    const char *def;
+   bool handle;
 };
 
 struct config_path_setting_ptr

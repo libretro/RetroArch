@@ -81,7 +81,7 @@
    count++; \
 } \
 
-#define SETTING_STRING(key, configval, default_enable, default_setting) \
+#define SETTING_STRING(key, configval, default_enable, default_setting, handle_setting) \
 { \
    if (count == 0) \
       tmp = (struct config_string_setting_ptr*)malloc(sizeof(struct config_string_setting_ptr) * (count + 1)); \
@@ -91,6 +91,7 @@
    tmp[count].value    = configval; \
    if (default_enable) \
       tmp[count].def   = default_setting; \
+   tmp[count].handle   = handle_setting; \
    count++; \
 } \
 
@@ -490,38 +491,38 @@ static int populate_settings_string(settings_t *settings, struct config_string_s
 #ifdef HAVE_NETPLAY
    global_t   *global                    = global_get_ptr();
 #endif
-   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL);
-   SETTING_STRING("video_filter",             settings->path.softfilter_plugin, false, NULL);
-   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin, false, NULL);
-   SETTING_STRING("playlist_names",           settings->playlist_names, false, NULL);
-   SETTING_STRING("playlist_cores",           settings->playlist_cores, false, NULL);
-   SETTING_STRING("video_driver",             settings->video.driver, false, NULL);
-   SETTING_STRING("record_driver",            settings->record.driver, false, NULL);
-   SETTING_STRING("camera_driver",            settings->camera.driver, false, NULL);
-   SETTING_STRING("location_driver",          settings->location.driver, false, NULL);
+   SETTING_STRING("video_filter",             settings->path.softfilter_plugin, false, NULL, false);
+   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin, false, NULL, false);
+   SETTING_STRING("playlist_names",           settings->playlist_names, false, NULL, true);
+   SETTING_STRING("playlist_cores",           settings->playlist_cores, false, NULL, true);
+   SETTING_STRING("video_driver",             settings->video.driver, false, NULL, false);
+   SETTING_STRING("record_driver",            settings->record.driver, false, NULL, false);
+   SETTING_STRING("camera_driver",            settings->camera.driver, false, NULL, false);
+   SETTING_STRING("location_driver",          settings->location.driver, false, NULL, false);
 #ifdef HAVE_MENU
-   SETTING_STRING("menu_driver",              settings->menu.driver, false, NULL);
+   SETTING_STRING("menu_driver",              settings->menu.driver, false, NULL, false);
 #endif
-   SETTING_STRING("audio_device",             settings->audio.device, false, NULL);
-   SETTING_STRING("core_updater_buildbot_url",settings->network.buildbot_url, false, NULL);
-   SETTING_STRING("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url, false, NULL);
-   SETTING_STRING("camera_device",            settings->camera.device, false, NULL);
+   SETTING_STRING("audio_device",             settings->audio.device, false, NULL, false);
+   SETTING_STRING("core_updater_buildbot_url",settings->network.buildbot_url, false, NULL, false);
+   SETTING_STRING("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url, false, NULL, false);
+   SETTING_STRING("camera_device",            settings->camera.device, false, NULL, false);
 #ifdef HAVE_CHEEVOS
-   SETTING_STRING("cheevos_username",         settings->cheevos.username, false, NULL);
-   SETTING_STRING("cheevos_password",         settings->cheevos.password, false, NULL);
+   SETTING_STRING("cheevos_username",         settings->cheevos.username, false, NULL, false);
+   SETTING_STRING("cheevos_password",         settings->cheevos.password, false, NULL, false);
 #endif
-   SETTING_STRING("video_context_driver",     settings->video.context_driver, false, NULL);
-   SETTING_STRING("audio_driver",             settings->audio.driver, false, NULL);
-   SETTING_STRING("audio_resampler",          settings->audio.resampler, false, NULL);
+   SETTING_STRING("video_context_driver",     settings->video.context_driver, false, NULL, false);
+   SETTING_STRING("audio_driver",             settings->audio.driver, false, NULL, false);
+   SETTING_STRING("audio_resampler",          settings->audio.resampler, false, NULL, false);
 #ifdef HAVE_NETPLAY
-   SETTING_STRING("netplay_ip_address",       global->netplay.server, false, NULL);
+   SETTING_STRING("netplay_ip_address",       global->netplay.server, false, NULL, false);
 #endif
-   SETTING_STRING("netplay_nickname",         settings->username, false, NULL);
-   SETTING_STRING("input_driver",             settings->input.driver, false, NULL);
-   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver, false, NULL);
-   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout, false, NULL);
-   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src, false, NULL);
-   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL);
+   SETTING_STRING("netplay_nickname",         settings->username, false, NULL, false);
+   SETTING_STRING("input_driver",             settings->input.driver, false, NULL, false);
+   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver, false, NULL, false);
+   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout, false, NULL, false);
+   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src, false, NULL, false);
+   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL, false);
+   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, false);
 
    *out = 
       (struct config_string_setting_ptr*) malloc(count * sizeof(struct config_string_setting_ptr));
@@ -1603,7 +1604,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings_t *settings)
 {
    unsigned i;
-   int string_settings_size = 0, path_settings_size  = 0;
+   int path_settings_size                          = 0;
    bool tmp_bool                                   = false;
    char *save                                      = NULL;
    const char *extra_path                          = NULL;
@@ -1613,14 +1614,15 @@ static bool config_load_file(const char *path, bool set_defaults,
    config_file_t *conf                             = NULL;
    struct config_int_setting_ptr   *int_settings   = NULL;
    struct config_float_setting_ptr *float_settings = NULL;
-   struct config_bool_setting_ptr *bool_settings   = NULL;
+   struct config_bool_setting_ptr *bool_settings       = NULL;
+   struct config_string_setting_ptr *string_settings   = NULL;
    global_t   *global                              = global_get_ptr();
    int bool_settings_size                          = populate_settings_bool  (settings, &bool_settings);
    int float_settings_size                         = populate_settings_float (settings, &float_settings);
    int int_settings_size                           = populate_settings_int   (settings, &int_settings);
+   int string_settings_size                        = populate_settings_string(settings, &string_settings);
     
    (void)path_settings_size;
-   (void)string_settings_size;
 
    if (path)
    {
@@ -1791,10 +1793,13 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    /* Array settings  */
-   config_get_array(conf, "playlist_names",
-         settings->playlist_names, sizeof(settings->playlist_names));
-   config_get_array(conf, "playlist_cores",
-         settings->playlist_cores, sizeof(settings->playlist_cores));
+   for (i = 0; i < string_settings_size; i++)
+   {
+      if (string_settings[i].handle)
+         config_get_array(conf, string_settings[i].ident,
+               string_settings[i].value, sizeof(string_settings[i].value));
+   }
+
    config_get_array(conf, "audio_device",
          settings->audio.device, sizeof(settings->audio.device));
    config_get_array(conf, "audio_resampler",
@@ -2196,6 +2201,8 @@ static bool config_load_file(const char *path, bool set_defaults,
       free(int_settings);
    if (float_settings)
       free(float_settings);
+   if (string_settings)
+      free(string_settings);
    return true;
 }
 
