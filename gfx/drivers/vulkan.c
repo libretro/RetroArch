@@ -851,7 +851,7 @@ static void vulkan_free(void *data)
       vulkan_overlay_free(vk);
 
       if (vk->filter_chain)
-         vulkan_filter_chain_free(vk->filter_chain);
+         vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain);
 
       video_context_driver_free();
    }
@@ -1136,7 +1136,7 @@ static void vulkan_update_filter_chain(vk_t *vk)
       vk->context->num_swapchain_images,
    };
 
-   if (!vulkan_filter_chain_update_swapchain_info(vk->filter_chain, &info))
+   if (!vulkan_filter_chain_update_swapchain_info((vulkan_filter_chain_t*)vk->filter_chain, &info))
       RARCH_ERR("Failed to update filter chain info. This will probably lead to a crash ...\n");
 }
 
@@ -1239,7 +1239,7 @@ static bool vulkan_set_shader(void *data,
    }
 
    if (vk->filter_chain)
-      vulkan_filter_chain_free(vk->filter_chain);
+      vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain);
    vk->filter_chain = NULL;
 
    if (!path)
@@ -1655,8 +1655,8 @@ static bool vulkan_frame(void *data, const void *frame,
    performance_counter_stop(&copy_frame);
 
    /* Notify filter chain about the new sync index. */
-   vulkan_filter_chain_notify_sync_index(vk->filter_chain, frame_index);
-   vulkan_filter_chain_set_frame_count(vk->filter_chain, frame_count);
+   vulkan_filter_chain_notify_sync_index((vulkan_filter_chain_t*)vk->filter_chain, frame_index);
+   vulkan_filter_chain_set_frame_count((vulkan_filter_chain_t*)vk->filter_chain, frame_count);
 
    performance_counter_start(&build_cmd);
    /* Render offscreen filter chain passes. */
@@ -1706,13 +1706,14 @@ static bool vulkan_frame(void *data, const void *frame,
          input.height = tex->height;
       }
 
-      vulkan_filter_chain_set_input_texture(vk->filter_chain, &input);
+      vulkan_filter_chain_set_input_texture((vulkan_filter_chain_t*)vk->filter_chain, &input);
    }
 
    vulkan_set_viewport(vk, width, height, false, true);
 
    vulkan_filter_chain_build_offscreen_passes(
-         vk->filter_chain, vk->cmd, &vk->vk_vp);
+         (vulkan_filter_chain_t*)vk->filter_chain,
+         vk->cmd, &vk->vk_vp);
    /* Render to backbuffer. */
    clear_value.color.float32[0]     = 0.0f;
    clear_value.color.float32[1]     = 0.0f;
@@ -1735,7 +1736,8 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Begin render pass and set up viewport */
    vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
 
-   vulkan_filter_chain_build_viewport_pass(vk->filter_chain, vk->cmd,
+   vulkan_filter_chain_build_viewport_pass(
+         (vulkan_filter_chain_t*)vk->filter_chain, vk->cmd,
          &vk->vk_vp, vk->mvp.data);
 
 #if defined(HAVE_MENU)
@@ -1792,7 +1794,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* End the filter chain frame.
     * This must happen outside a render pass.
     */
-   vulkan_filter_chain_end_frame(vk->filter_chain, vk->cmd);
+   vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)vk->filter_chain, vk->cmd);
 
    if (vk->readback.pending || vk->readback.streamed)
    {
@@ -2012,7 +2014,7 @@ static struct video_shader *vulkan_get_current_shader(void *data)
    if (!vk || !vk->filter_chain)
       return NULL;
 
-   return vulkan_filter_chain_get_preset(vk->filter_chain);
+   return vulkan_filter_chain_get_preset((vulkan_filter_chain_t*)vk->filter_chain);
 }
 
 static bool vulkan_get_current_sw_framebuffer(void *data,
