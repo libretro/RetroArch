@@ -76,8 +76,9 @@ struct config_array_setting_ptr
 struct config_path_setting_ptr
 { 
    const char *ident;
-   bool defaults;
-   const char *ptr;
+   char *ptr;
+   bool def_enable;
+   char *def;
 };
 
 typedef struct settings
