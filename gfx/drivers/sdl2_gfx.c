@@ -17,14 +17,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <retro_inline.h>
 #include <gfx/scaler/scaler.h>
 
 #include "SDL.h"
 #include "SDL_syswm.h"
 #include "../../driver.h"
-#include "../../general.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../performance_counters.h"
 #include "../../verbosity.h"
 #include "../video_context_driver.h"
@@ -38,9 +42,6 @@
 #include "../../menu/menu_driver.h"
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 typedef struct sdl2_tex
 {

@@ -24,6 +24,10 @@
 #include <math.h>
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <compat/strl.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/math/matrix_4x4.h>
@@ -39,17 +43,13 @@
 #include "../../record/record_driver.h"
 #include "../../performance_counters.h"
 
-#include "../../general.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../common/gl_common.h"
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
 #endif
 
 #include "../font_driver.h"
