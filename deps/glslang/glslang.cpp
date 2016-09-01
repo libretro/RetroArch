@@ -22,7 +22,7 @@
 #include <cstring>
 #include <cstdlib>
 
-#include "../../general.h"
+#include "../../verbosity.h"
 
 using namespace glslang;
 using namespace std;
