@@ -200,6 +200,7 @@ static bool psp_joypad_query_pad(unsigned pad)
 static bool psp_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
+#ifdef VITA
    struct SceCtrlActuator params = {
       0,
   		0
@@ -222,6 +223,9 @@ static bool psp_joypad_rumble(unsigned pad,
    sceCtrlSetActuator(p, &params);
 
    return true;
+#else
+   return false;
+#endif
 }
 
 
