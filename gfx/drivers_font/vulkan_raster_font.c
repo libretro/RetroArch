@@ -14,7 +14,10 @@
  */
 
 #include "../common/vulkan_common.h"
+
 #include "../font_driver.h"
+
+#include "../../configuration.h"
 
 typedef struct
 {

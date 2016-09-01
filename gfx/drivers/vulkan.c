@@ -18,6 +18,9 @@
 #include <math.h>
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <compat/strl.h>
 #include <gfx/scaler/scaler.h>
@@ -33,12 +36,9 @@
 #include "../../record/record_driver.h"
 #include "../../performance_counters.h"
 
-#include "../../general.h"
 #include "../../retroarch.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "../../runloop.h"
+#include "../../verbosity.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"

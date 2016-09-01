@@ -28,6 +28,7 @@
 #include <string/stdstring.h>
 
 #include "vulkan_common.h"
+#include "../../configuration.h"
 #include "../../performance_counters.h"
 
 static dylib_t vulkan_library;

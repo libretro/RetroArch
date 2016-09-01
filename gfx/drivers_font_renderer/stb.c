@@ -18,9 +18,9 @@
 
 #include <file/file_path.h>
 #include <streams/file_stream.h>
+#include <retro_miscellaneous.h>
 
 #include "../font_driver.h"
-#include "../../general.h"
 #include "../../verbosity.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION

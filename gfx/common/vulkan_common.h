@@ -43,8 +43,8 @@
 #include <libretro_vulkan.h>
 
 #include "../../driver.h"
-#include "../../general.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../font_driver.h"
 #include "../video_context_driver.h"
 #include "../drivers_shader/shader_vulkan.h"

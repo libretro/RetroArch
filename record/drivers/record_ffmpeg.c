@@ -15,15 +15,16 @@
  */
 
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <assert.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
 #ifdef FFEMU_PERF
 #include <time.h>
@@ -62,10 +63,12 @@ extern "C" {
 #include <conversion/float_to_s16.h>
 #include <conversion/s16_to_float.h>
 
-#include "../../general.h"
-#include "../../verbosity.h"
-#include "../../audio/audio_resampler_driver.h"
 #include "../record_driver.h"
+
+#include "../../configuration.h"
+#include "../../gfx/video_driver.h"
+#include "../../audio/audio_resampler_driver.h"
+#include "../../verbosity.h"
 
 #include "../../gfx/video_frame.h"
 

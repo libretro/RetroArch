@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../general.h"
+#include "../../runloop.h"
 #include "../input_hid_driver.h"
 
 typedef struct null_hid
