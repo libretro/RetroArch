@@ -14,9 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 
 #include <compat/strl.h>
 
@@ -26,10 +31,6 @@
 #ifdef ANDROID
 #include <android/keycodes.h>
 #include "drivers_keyboard/keyboard_event_android.h"
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
 #endif
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
