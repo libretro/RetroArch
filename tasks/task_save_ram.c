@@ -37,6 +37,8 @@
 
 /* TODO/FIXME - turn this into actual task */
 
+typedef struct ram_type ram_type_t;
+
 struct ram_type
 {
    const char *path;

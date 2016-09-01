@@ -29,8 +29,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct ram_type ram_type_t;
-
 typedef struct content_ctx_info
 {
    int argc;                       /* Argument count. */
