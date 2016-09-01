@@ -14,9 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../input_driver.h"
 #include "../input_autodetect.h"
 #include "SDL.h"
-#include "../../general.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 typedef struct _sdl_joypad

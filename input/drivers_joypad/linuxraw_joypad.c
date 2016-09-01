@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdint.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <limits.h>
@@ -25,7 +26,9 @@
 
 #include "../common/epoll_common.h"
 #include "../input_autodetect.h"
-#include "../../general.h"
+#include "../input_driver.h"
+#include "../../configuration.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #define NUM_BUTTONS 32

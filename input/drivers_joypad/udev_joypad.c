@@ -32,7 +32,9 @@
 #include <string/stdstring.h>
 
 #include "../input_autodetect.h"
-#include "../../general.h"
+#include "../input_driver.h"
+#include "../../configuration.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 
 /* Udev/evdev Linux joypad driver.

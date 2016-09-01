@@ -24,7 +24,8 @@
 #include <fcntl.h>
 
 #include "../input_autodetect.h"
-#include "../../general.h"
+#include "../input_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* Linux parport driver does not support reading the control register
