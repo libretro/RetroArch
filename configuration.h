@@ -64,7 +64,7 @@ struct config_float_setting_ptr
    float def;
 };
 
-struct config_string_setting_ptr
+struct config_array_setting_ptr
 { 
    const char *ident;
    char *value;

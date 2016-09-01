@@ -81,12 +81,12 @@
    count++; \
 } \
 
-#define SETTING_STRING(key, configval, default_enable, default_setting, handle_setting) \
+#define SETTING_ARRAY(key, configval, default_enable, default_setting, handle_setting) \
 { \
    if (count == 0) \
-      tmp = (struct config_string_setting_ptr*)malloc(sizeof(struct config_string_setting_ptr) * (count + 1)); \
+      tmp = (struct config_array_setting_ptr*)malloc(sizeof(struct config_array_setting_ptr) * (count + 1)); \
    else \
-      tmp = (struct config_string_setting_ptr*)realloc(tmp, sizeof(struct config_string_setting_ptr) * (count + 1)); \
+      tmp = (struct config_array_setting_ptr*)realloc(tmp, sizeof(struct config_array_setting_ptr) * (count + 1)); \
    tmp[count].ident    = key; \
    tmp[count].value    = configval; \
    if (default_enable) \
@@ -484,51 +484,51 @@ static unsigned config_menu_btn_cancel_default(void)
 }
 #endif
 
-static int populate_settings_string(settings_t *settings, struct config_string_setting_ptr **out)
+static int populate_settings_array(settings_t *settings, struct config_array_setting_ptr **out)
 {
    unsigned count                        = 0;
-   struct config_string_setting_ptr *tmp = NULL;
+   struct config_array_setting_ptr *tmp = NULL;
 #ifdef HAVE_NETPLAY
    global_t   *global                    = global_get_ptr();
 #endif
    /* Arrays */
-   SETTING_STRING("playlist_names",           settings->playlist_names, false, NULL, true);
-   SETTING_STRING("playlist_cores",           settings->playlist_cores, false, NULL, true);
-   SETTING_STRING("video_driver",             settings->video.driver,   false, NULL, true);
-   SETTING_STRING("record_driver",            settings->record.driver,  false, NULL, true);
-   SETTING_STRING("camera_driver",            settings->camera.driver,  false, NULL, true);
-   SETTING_STRING("location_driver",          settings->location.driver,false, NULL, true);
+   SETTING_ARRAY("playlist_names",           settings->playlist_names, false, NULL, true);
+   SETTING_ARRAY("playlist_cores",           settings->playlist_cores, false, NULL, true);
+   SETTING_ARRAY("video_driver",             settings->video.driver,   false, NULL, true);
+   SETTING_ARRAY("record_driver",            settings->record.driver,  false, NULL, true);
+   SETTING_ARRAY("camera_driver",            settings->camera.driver,  false, NULL, true);
+   SETTING_ARRAY("location_driver",          settings->location.driver,false, NULL, true);
 #ifdef HAVE_MENU
-   SETTING_STRING("menu_driver",              settings->menu.driver,    false, NULL, true);
+   SETTING_ARRAY("menu_driver",              settings->menu.driver,    false, NULL, true);
 #endif
-   SETTING_STRING("audio_device",             settings->audio.device,   false, NULL, true);
-   SETTING_STRING("camera_device",            settings->camera.device,  false, NULL, true);
+   SETTING_ARRAY("audio_device",             settings->audio.device,   false, NULL, true);
+   SETTING_ARRAY("camera_device",            settings->camera.device,  false, NULL, true);
 #ifdef HAVE_CHEEVOS
-   SETTING_STRING("cheevos_username",         settings->cheevos.username, false, NULL, true);
-   SETTING_STRING("cheevos_password",         settings->cheevos.password, false, NULL, true);
+   SETTING_ARRAY("cheevos_username",         settings->cheevos.username, false, NULL, true);
+   SETTING_ARRAY("cheevos_password",         settings->cheevos.password, false, NULL, true);
 #endif
-   SETTING_STRING("video_context_driver",     settings->video.context_driver, false, NULL, true);
-   SETTING_STRING("audio_driver",             settings->audio.driver, false, NULL, true);
-   SETTING_STRING("audio_resampler",          settings->audio.resampler, false, NULL, true);
-   SETTING_STRING("netplay_nickname",         settings->username, false, NULL, false);
-   SETTING_STRING("input_driver",             settings->input.driver, false, NULL, true);
-   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver, false, NULL, true);
-   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout, false, NULL, true);
-   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src, false, NULL, true);
-   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL, true);
-   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, true);
+   SETTING_ARRAY("video_context_driver",     settings->video.context_driver, false, NULL, true);
+   SETTING_ARRAY("audio_driver",             settings->audio.driver, false, NULL, true);
+   SETTING_ARRAY("audio_resampler",          settings->audio.resampler, false, NULL, true);
+   SETTING_ARRAY("netplay_nickname",         settings->username, false, NULL, false);
+   SETTING_ARRAY("input_driver",             settings->input.driver, false, NULL, true);
+   SETTING_ARRAY("input_joypad_driver",      settings->input.joypad_driver, false, NULL, true);
+   SETTING_ARRAY("input_keyboard_layout",    settings->input.keyboard_layout, false, NULL, true);
+   SETTING_ARRAY("bundle_assets_src_path",   settings->path.bundle_assets_src, false, NULL, true);
+   SETTING_ARRAY("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL, true);
+   SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, true);
    /* Paths */
-   SETTING_STRING("video_filter",             settings->path.softfilter_plugin, false, NULL, false);
-   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin, false, NULL, false);
-   SETTING_STRING("core_updater_buildbot_url",settings->network.buildbot_url, false, NULL, false);
-   SETTING_STRING("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url, false, NULL, false);
+   SETTING_ARRAY("video_filter",             settings->path.softfilter_plugin, false, NULL, false);
+   SETTING_ARRAY("audio_dsp_plugin",         settings->path.audio_dsp_plugin, false, NULL, false);
+   SETTING_ARRAY("core_updater_buildbot_url",settings->network.buildbot_url, false, NULL, false);
+   SETTING_ARRAY("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url, false, NULL, false);
 #ifdef HAVE_NETPLAY
-   SETTING_STRING("netplay_ip_address",       global->netplay.server, false, NULL, false);
+   SETTING_ARRAY("netplay_ip_address",       global->netplay.server, false, NULL, false);
 #endif
 
    *out = 
-      (struct config_string_setting_ptr*) malloc(count * sizeof(struct config_string_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_string_setting_ptr) * count);
+      (struct config_array_setting_ptr*) malloc(count * sizeof(struct config_array_setting_ptr));
+   memcpy(*out, tmp, sizeof(struct config_array_setting_ptr) * count);
    free(tmp);
    return count;
 }
@@ -1616,13 +1616,13 @@ static bool config_load_file(const char *path, bool set_defaults,
    config_file_t *conf                             = NULL;
    struct config_int_setting_ptr   *int_settings   = NULL;
    struct config_float_setting_ptr *float_settings = NULL;
-   struct config_bool_setting_ptr *bool_settings       = NULL;
-   struct config_string_setting_ptr *string_settings   = NULL;
+   struct config_bool_setting_ptr *bool_settings   = NULL;
+   struct config_array_setting_ptr *array_settings = NULL;
    global_t   *global                              = global_get_ptr();
    int bool_settings_size                          = populate_settings_bool  (settings, &bool_settings);
    int float_settings_size                         = populate_settings_float (settings, &float_settings);
    int int_settings_size                           = populate_settings_int   (settings, &int_settings);
-   int string_settings_size                        = populate_settings_string(settings, &string_settings);
+   int array_settings_size                         = populate_settings_array (settings, &array_settings);
     
    (void)path_settings_size;
 
@@ -1795,11 +1795,11 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    /* Array settings  */
-   for (i = 0; i < string_settings_size; i++)
+   for (i = 0; i < array_settings_size; i++)
    {
-      if (string_settings[i].handle)
-         config_get_array(conf, string_settings[i].ident,
-               string_settings[i].value, sizeof(string_settings[i].value));
+      if (array_settings[i].handle)
+         config_get_array(conf, array_settings[i].ident,
+               array_settings[i].value, sizeof(array_settings[i].value));
    }
 
    /* Path settings  */
@@ -2153,8 +2153,8 @@ static bool config_load_file(const char *path, bool set_defaults,
       free(int_settings);
    if (float_settings)
       free(float_settings);
-   if (string_settings)
-      free(string_settings);
+   if (array_settings)
+      free(array_settings);
    return true;
 }
 
@@ -2885,12 +2885,12 @@ bool config_save_file(const char *path)
    unsigned i           = 0;
    bool ret             = false;
    int bool_settings_size  = 0, int_settings_size    = 0,
-       float_settings_size = 0, string_settings_size = 0,
+       float_settings_size = 0, array_settings_size  = 0,
        path_settings_size  = 0;
    struct config_bool_setting_ptr *bool_settings     = NULL;
    struct config_int_setting_ptr *int_settings       = NULL;
    struct config_float_setting_ptr *float_settings   = NULL;
-   struct config_string_setting_ptr *string_settings = NULL;
+   struct config_array_setting_ptr *array_settings   = NULL;
    struct config_path_setting_ptr *path_settings     = NULL;
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
@@ -2909,7 +2909,7 @@ bool config_save_file(const char *path)
    bool_settings_size   = populate_settings_bool  (settings, &bool_settings);
    int_settings_size    = populate_settings_int   (settings, &int_settings);
    float_settings_size  = populate_settings_float (settings, &float_settings);
-   string_settings_size = populate_settings_string(settings, &string_settings);
+   array_settings_size  = populate_settings_array (settings, &array_settings);
    path_settings_size   = populate_settings_path  (settings, &path_settings);
 
    /* Path settings */
@@ -2929,9 +2929,9 @@ bool config_save_file(const char *path)
 #endif
 
    /* String settings  */
-   for (i = 0; i < string_settings_size; i++)
-      config_set_string(conf, string_settings[i].ident,
-            string_settings[i].value);
+   for (i = 0; i < array_settings_size; i++)
+      config_set_string(conf, array_settings[i].ident,
+            array_settings[i].value);
 
    /* Float settings  */
    for (i = 0; i < float_settings_size; i++)
@@ -3021,11 +3021,16 @@ bool config_save_file(const char *path)
    ret = config_file_write(conf, path);
    config_file_free(conf);
 
-   free(bool_settings);
-   free(int_settings);
-   free(float_settings);
-   free(string_settings);
-   free(path_settings);
+   if (bool_settings)
+      free(bool_settings);
+   if (int_settings)
+      free(int_settings);
+   if (float_settings)
+      free(float_settings);
+   if (array_settings)
+      free(array_settings);
+   if (path_settings)
+      free(path_settings);
 
    return ret;
 }
@@ -3042,7 +3047,7 @@ bool config_save_overrides(int override_type)
 {
    unsigned i                                 = 0;
    int bool_settings_size   = 0, int_settings_size    = 0,
-       float_settings_size  = 0, string_settings_size = 0,
+       float_settings_size  = 0, array_settings_size = 0,
        path_settings_size   = 0;
    bool ret                                    = false;
    char config_directory[PATH_MAX_LENGTH]      = {0};
@@ -3062,8 +3067,8 @@ bool config_save_overrides(int override_type)
    struct config_int_setting_ptr *int_overrides     = NULL;
    struct config_float_setting_ptr *float_settings  = NULL;
    struct config_float_setting_ptr *float_overrides = NULL;
-   struct config_string_setting_ptr *string_settings = NULL;
-   struct config_string_setting_ptr *string_overrides= NULL;
+   struct config_array_setting_ptr *array_settings  = NULL;
+   struct config_array_setting_ptr *array_overrides = NULL;
    struct config_path_setting_ptr *path_settings    = NULL;
    struct config_path_setting_ptr *path_overrides   = NULL;
 
@@ -3113,8 +3118,8 @@ bool config_save_overrides(int override_type)
    populate_settings_int (overrides, &int_overrides);
    float_settings_size = populate_settings_float(settings, &float_settings);
    populate_settings_float (overrides, &float_overrides);
-   string_settings_size = populate_settings_string(settings, &string_settings);
-   populate_settings_string (overrides, &string_overrides);
+   array_settings_size = populate_settings_array(settings, &array_settings);
+   populate_settings_array (overrides, &array_overrides);
    path_settings_size = populate_settings_path(settings, &path_settings);
    populate_settings_path (overrides, &path_overrides);
 
@@ -3156,16 +3161,16 @@ bool config_save_overrides(int override_type)
             *float_overrides[i].ptr);
       }
    }
-   for (i = 0; i < string_settings_size; i++)
+   for (i = 0; i < array_settings_size; i++)
    {
-      if (!string_is_equal(string_settings[i].value, string_overrides[i].value))
+      if (!string_is_equal(array_settings[i].value, array_overrides[i].value))
       {
          RARCH_LOG("   original: %s=%s\n", 
-            string_settings[i].ident, string_settings[i].value);
+            array_settings[i].ident, array_settings[i].value);
          RARCH_LOG("   override: %s=%s\n", 
-            string_overrides[i].ident, string_overrides[i].value);
-         config_set_string(conf, string_overrides[i].ident,
-            string_overrides[i].value);
+            array_overrides[i].ident, array_overrides[i].value);
+         config_set_string(conf, array_overrides[i].ident,
+            array_overrides[i].value);
       }
    }
    for (i = 0; i < path_settings_size; i++)
@@ -3210,10 +3215,10 @@ bool config_save_overrides(int override_type)
       free(float_settings);
    if (float_overrides)
       free(float_overrides);
-   if (string_settings)
-      free(string_settings);
-   if (string_overrides)
-      free(string_overrides);
+   if (array_settings)
+      free(array_settings);
+   if (array_overrides)
+      free(array_overrides);
    if (path_settings)
       free(path_settings);
    if (path_overrides)
