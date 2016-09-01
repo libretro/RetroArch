@@ -18,7 +18,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <compat/strl.h>
+
 #include <retro_assert.h>
+#include <retro_miscellaneous.h>
 
 #ifdef ANDROID
 #include <android/keycodes.h>
@@ -52,7 +55,6 @@
 #endif
 
 #include "input_keymaps.h"
-#include "../general.h"
 
 #ifdef __APPLE__
 #include "drivers_keyboard/keyboard_event_apple.h"

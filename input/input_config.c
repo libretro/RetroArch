@@ -26,8 +26,8 @@
 #include "input_remapping.h"
 
 #include "../msg_hash.h"
+#include "../configuration.h"
 #include "../file_path_special.h"
-#include "../general.h"
 #include "../verbosity.h"
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

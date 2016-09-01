@@ -20,7 +20,7 @@
 
 #include "input_keyboard.h"
 
-#include "../general.h"
+#include "../runloop.h"
 
 struct input_keyboard_line
 {
