@@ -510,7 +510,6 @@ static int populate_settings_array(settings_t *settings, struct config_array_set
    SETTING_ARRAY("video_context_driver",     settings->video.context_driver, false, NULL, true);
    SETTING_ARRAY("audio_driver",             settings->audio.driver, false, NULL, true);
    SETTING_ARRAY("audio_resampler",          settings->audio.resampler, false, NULL, true);
-   SETTING_ARRAY("netplay_nickname",         settings->username, false, NULL, false);
    SETTING_ARRAY("input_driver",             settings->input.driver, false, NULL, true);
    SETTING_ARRAY("input_joypad_driver",      settings->input.joypad_driver, false, NULL, true);
    SETTING_ARRAY("input_keyboard_layout",    settings->input.keyboard_layout, false, NULL, true);
@@ -518,6 +517,7 @@ static int populate_settings_array(settings_t *settings, struct config_array_set
    SETTING_ARRAY("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL, true);
    SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, true);
    /* Paths */
+   SETTING_ARRAY("netplay_nickname",         settings->username, false, NULL, false);
    SETTING_ARRAY("video_filter",             settings->path.softfilter_plugin, false, NULL, false);
    SETTING_ARRAY("audio_dsp_plugin",         settings->path.audio_dsp_plugin, false, NULL, false);
    SETTING_ARRAY("core_updater_buildbot_url",settings->network.buildbot_url, false, NULL, false);
