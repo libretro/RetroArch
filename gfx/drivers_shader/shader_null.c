@@ -23,7 +23,6 @@
 #include <gfx/math/matrix_4x4.h>
 #include <string/stdstring.h>
 
-#include "../../general.h"
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
 

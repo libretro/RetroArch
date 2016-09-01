@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "../../driver.h"
+#include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 
 #include "../common/egl_common.h"

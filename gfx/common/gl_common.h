@@ -30,7 +30,6 @@
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
 
-#include "../../general.h"
 #include "../../verbosity.h"
 #include "../font_driver.h"
 #include "../video_coord_array.h"

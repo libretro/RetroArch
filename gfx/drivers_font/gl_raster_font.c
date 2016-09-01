@@ -14,11 +14,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
+#include <encodings/utf.h>
+
 #include "../common/gl_common.h"
 #include "../font_driver.h"
 #include "../video_shader_driver.h"
 #include "../video_context_driver.h"
-#include <encodings/utf.h>
+
+#include "../../configuration.h"
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
