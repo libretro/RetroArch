@@ -44,6 +44,8 @@ struct ram_type
 };
 
 #ifdef HAVE_THREADS
+typedef struct autosave autosave_t;
+
 /* Autosave support. */
 struct autosave_st
 {

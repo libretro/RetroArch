@@ -23,8 +23,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct autosave autosave_t;
-
 /**
  * autosave_lock:
  *
