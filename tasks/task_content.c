@@ -77,16 +77,13 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
-#include "../defaults.h"
 #include "../msg_hash.h"
 #include "../content.h"
-#include "../general.h"
 #include "../dynamic.h"
-#include "../movie.h"
 #include "../patch.h"
 #include "../system.h"
+#include "../runloop.h"
 #include "../retroarch.h"
-#include "../command.h"
 #include "../file_path_special.h"
 #include "../core.h"
 #include "../verbosity.h"
@@ -106,7 +103,6 @@
 #include "../cheevos.h"
 #endif
 
-#define MAX_ARGS 32
 
 typedef struct content_stream
 {
@@ -931,6 +927,8 @@ static void content_load_init_wrap(
       RARCH_LOG("arg #%d: %s\n", i, argv[i]);
 #endif
 }
+
+#define MAX_ARGS 32
 
 /**
  * content_load:

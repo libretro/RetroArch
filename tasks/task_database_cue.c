@@ -32,7 +32,6 @@
 
 #include "../list_special.h"
 #include "../msg_hash.h"
-#include "../general.h"
 #include "../verbosity.h"
 
 #define MAGIC_LEN       16
