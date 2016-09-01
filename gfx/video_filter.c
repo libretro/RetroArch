@@ -25,7 +25,6 @@
 #include "../frontend/frontend_driver.h"
 #include "../config_file_userdata.h"
 #include "../dynamic.h"
-#include "../general.h"
 #include "../performance_counters.h"
 #include "../verbosity.h"
 #include "video_filter.h"

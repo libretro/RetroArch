@@ -16,7 +16,8 @@
 
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
-#include "../general.h"
+
+#include "../configuration.h"
 #include "../verbosity.h"
 
 static const font_renderer_driver_t *font_backends[] = {

@@ -29,7 +29,6 @@
 #include "video_state_python.h"
 #include "../dynamic.h"
 #include "../core.h"
-#include "../general.h"
 #include "../verbosity.h"
 #include "../input/input_config.h"
 

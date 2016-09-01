@@ -18,8 +18,9 @@
 #include <stdlib.h>
 #include <compat/strl.h>
 #include <retro_inline.h>
-#include "../general.h"
+
 #include "../input/input_config.h"
+#include "../configuration.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_PYTHON

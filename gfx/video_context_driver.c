@@ -24,7 +24,7 @@
 #include "../config.h"
 #endif
 
-#include "../general.h"
+#include "../configuration.h"
 #include "../verbosity.h"
 
 static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
