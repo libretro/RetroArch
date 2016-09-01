@@ -46,6 +46,7 @@ struct config_bool_setting_ptr
    bool *ptr;
    bool def_enable;
    bool def;
+   bool handle;
 };
 
 struct config_int_setting_ptr
@@ -54,6 +55,7 @@ struct config_int_setting_ptr
    unsigned *ptr;
    bool def_enable;
    unsigned def;
+   bool handle;
 };
 
 struct config_float_setting_ptr
@@ -62,6 +64,7 @@ struct config_float_setting_ptr
    float *ptr;
    bool def_enable;
    float def;
+   bool handle;
 };
 
 struct config_array_setting_ptr
@@ -79,6 +82,7 @@ struct config_path_setting_ptr
    char *ptr;
    bool def_enable;
    char *def;
+   bool handle;
 };
 
 typedef struct settings
