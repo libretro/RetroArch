@@ -234,7 +234,7 @@ enumerate_audio_devices(char *buf, size_t buflen)
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
-   struct retro_variable envvars[2] = { NULL };
+   struct retro_variable envvars[3] = { NULL };
    char video_devices[ENVVAR_BUFLEN];
    char audio_devices[ENVVAR_BUFLEN];
 
