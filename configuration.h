@@ -38,53 +38,6 @@ enum override_type
 
 RETRO_BEGIN_DECLS
 
-/* All config related settings go here. */
-
-struct config_bool_setting_ptr
-{ 
-   const char *ident;
-   bool *ptr;
-   bool def_enable;
-   bool def;
-   bool handle;
-};
-
-struct config_int_setting_ptr
-{ 
-   const char *ident;
-   unsigned *ptr;
-   bool def_enable;
-   unsigned def;
-   bool handle;
-};
-
-struct config_float_setting_ptr
-{ 
-   const char *ident;
-   float *ptr;
-   bool def_enable;
-   float def;
-   bool handle;
-};
-
-struct config_array_setting_ptr
-{ 
-   const char *ident;
-   char *ptr;
-   bool def_enable;
-   const char *def;
-   bool handle;
-};
-
-struct config_path_setting_ptr
-{ 
-   const char *ident;
-   char *ptr;
-   bool def_enable;
-   char *def;
-   bool handle;
-};
-
 typedef struct settings
 {
    video_viewport_t video_viewport_custom;
