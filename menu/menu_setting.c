@@ -75,6 +75,7 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_CHEEVOS
 static void setting_get_string_representation_cheevos_password(void *data,
       char *s, size_t len)
 {
@@ -88,6 +89,7 @@ static void setting_get_string_representation_cheevos_password(void *data,
    else
       *setting->value.target.string = '\0';
 }
+#endif
 
 static void setting_get_string_representation_uint_video_monitor_index(void *data,
       char *s, size_t len)
