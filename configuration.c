@@ -609,7 +609,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #endif
 #ifndef HAVE_DYNAMIC
    SETTING_PATH("libretro_path", 
-         config_get_active_core_path(), false, NULL, false);
+         config_get_active_core_path_ptr(), false, NULL, false);
 #endif
    SETTING_PATH(
          "screenshot_directory", 
