@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef RARCH_VERSION_H__
-#define RARCH_VERSION_H__
+#ifndef RARCH_VERSION_GIT_H__
+#define RARCH_VERSION_GIT_H__
 
 #include <retro_common_api.h>
 

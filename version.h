@@ -14,8 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "git_version.h"
-#define STR_(x) #x
-#define STR(x) STR_(x)
-const char retroarch_git_version[] = STR(GIT_VERSION);
+#ifndef RARCH_VERSION_H__
+#define RARCH_VERSION_H__
 
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION "1.3.6"
+#endif
+
+#endif

@@ -17,14 +17,17 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
 
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "menu_navigation.h"
 
-#include "../general.h"
+#include "../configuration.h"
+#include "../runloop.h"
 #include "../system.h"
+#include "../version.h"
 
 struct menu_list
 {

@@ -46,7 +46,7 @@
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_shader_driver.h"
 #include "../config.features.h"
-#include "../git_version.h"
+#include "../version_git.h"
 #include "../input/input_config.h"
 #include "../list_special.h"
 #include "../performance_counters.h"

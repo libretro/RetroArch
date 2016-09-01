@@ -59,13 +59,13 @@
 #include "record/record_driver.h"
 #include "core.h"
 #include "configuration.h"
-#include "general.h"
 #include "runloop.h"
 #include "managers/cheat_manager.h"
 #include "system.h"
 #include "tasks/tasks_internal.h"
 
-#include "git_version.h"
+#include "version.h"
+#include "version_git.h"
 
 #include "retroarch.h"
 

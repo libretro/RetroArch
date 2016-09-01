@@ -14,21 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_GENERAL_H
-#define __RARCH_GENERAL_H
+#include "version_git.h"
+#define STR_(x) #x
+#define STR(x) STR_(x)
+const char retroarch_git_version[] = STR(GIT_VERSION);
 
-#include <stdint.h>
-
-#include <compat/strl.h>
-#include <compat/posix_string.h>
-
-#include "runloop.h"
-#include "verbosity.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "version.h"
-
-#endif

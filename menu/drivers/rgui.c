@@ -23,6 +23,7 @@
 
 #include <string/stdstring.h>
 #include <lists/string_list.h>
+#include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <encodings/utf.h>
 #include <file/file_path.h>
@@ -32,13 +33,13 @@
 
 #include "menu_generic.h"
 
-#include "../../general.h"
-
 #include "../menu_driver.h"
 #include "../menu_animation.h"
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 
+#include "../../configuration.h"
+#include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
 
 #define RGUI_TERM_START_X(width)        (width / 21)

@@ -782,7 +782,7 @@ GIT
 ============================================================ */
 
 #ifdef HAVE_GIT_VERSION
-#include "../git_version.c"
+#include "../version_git.c"
 #endif
 
 
