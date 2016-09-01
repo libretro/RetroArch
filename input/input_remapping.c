@@ -13,13 +13,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
 #include "input_remapping.h"
-
-#include "../general.h"
+#include "../runloop.h"
 
 /**
  * input_remapping_load_file:

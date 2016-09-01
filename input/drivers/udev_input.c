@@ -32,6 +32,10 @@
 #include <linux/input.h>
 #include <linux/kd.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
@@ -41,12 +45,8 @@
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
-#include "../../general.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
 
 typedef struct udev_input udev_input_t;
 
