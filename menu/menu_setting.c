@@ -75,6 +75,20 @@
 #include "config.h"
 #endif
 
+static void setting_get_string_representation_cheevos_password(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+
+   if (*setting->value.target.string)
+      snprintf(s, len, "%s",
+            "********");
+   else
+      *setting->value.target.string = '\0';
+}
+
 static void setting_get_string_representation_uint_video_monitor_index(void *data,
       char *s, size_t len)
 {
@@ -6203,6 +6217,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+         (*list)[list_info->index - 1].get_string_representation = 
+            &setting_get_string_representation_cheevos_password;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CHEEVOS_PASSWORD);
 #endif
