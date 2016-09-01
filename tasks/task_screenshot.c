@@ -45,12 +45,12 @@
 #endif
 
 #include "../defaults.h"
-#include "../general.h"
+#include "../configuration.h"
+#include "../runloop.h"
 #include "../msg_hash.h"
 
 #include "../gfx/video_driver.h"
 #include "../gfx/video_frame.h"
-
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

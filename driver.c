@@ -14,11 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 
 #include "command.h"
-#include "general.h"
 #include "msg_hash.h"
 #include "system.h"
 
@@ -27,7 +27,10 @@
 #include "camera/camera_driver.h"
 #include "record/record_driver.h"
 #include "location/location_driver.h"
+#include "configuration.h"
 #include "core.h"
+#include "runloop.h"
+#include "verbosity.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"

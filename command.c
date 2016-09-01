@@ -49,7 +49,6 @@
 #include "dynamic.h"
 #include "content.h"
 #include "movie.h"
-#include "general.h"
 #include "msg_hash.h"
 #include "retroarch.h"
 #include "managers/cheat_manager.h"

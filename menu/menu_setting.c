@@ -34,6 +34,8 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 
+#include <compat/strl.h>
+
 #include "../frontend/frontend_driver.h"
 
 #include "menu_setting.h"
@@ -43,13 +45,15 @@
 #include "menu_input.h"
 #include "menu_navigation.h"
 
+#include "../configuration.h"
 #include "../msg_hash.h"
 #include "../defaults.h"
 #include "../driver.h"
-#include "../general.h"
 #include "../system.h"
 #include "../core.h"
 #include "../dynamic.h"
+#include "../runloop.h"
+#include "../verbosity.h"
 #include "../camera/camera_driver.h"
 #include "../location/location_driver.h"
 #include "../record/record_driver.h"

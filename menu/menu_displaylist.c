@@ -15,6 +15,8 @@
 
 #include <stddef.h>
 
+#include <compat/strl.h>
+
 #include <lists/file_list.h>
 #include <lists/dir_list.h>
 #include <file/file_path.h>
@@ -36,8 +38,8 @@
 #include "../defaults.h"
 #include "../managers/cheat_manager.h"
 #include "../managers/core_option_manager.h"
-#include "../general.h"
 #include "../retroarch.h"
+#include "../runloop.h"
 #include "../system.h"
 #include "../core.h"
 #include "../frontend/frontend_driver.h"

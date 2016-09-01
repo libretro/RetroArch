@@ -26,12 +26,14 @@
 #include <lists/string_list.h>
 #include <libretro.h>
 
+#include "configuration.h"
 #include "dynamic.h"
 #include "core.h"
-#include "general.h"
 #include "msg_hash.h"
 #include "managers/state_manager.h"
+#include "runloop.h"
 #include "system.h"
+#include "verbosity.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
 
