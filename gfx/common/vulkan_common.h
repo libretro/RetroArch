@@ -51,8 +51,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct vulkan_filter_chain vulkan_filter_chain_t;
-
 enum vk_texture_type
 {
    /* We will use the texture as a sampled linear texture. */
@@ -392,7 +390,7 @@ typedef struct vk
       uint64_t dirty;
    } tracker;
 
-   vulkan_filter_chain_t *filter_chain;
+   void *filter_chain;
 } vk_t;
 
 uint32_t vulkan_find_memory_type(
