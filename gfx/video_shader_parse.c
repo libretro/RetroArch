@@ -25,7 +25,6 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 
-#include "../general.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "video_shader_parse.h"

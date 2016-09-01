@@ -50,8 +50,8 @@
 #include "cheevos.h"
 #endif
 #include "retroarch.h"
+#include "runloop.h"
 #include "configuration.h"
-#include "general.h"
 #include "msg_hash.h"
 #include "verbosity.h"
 

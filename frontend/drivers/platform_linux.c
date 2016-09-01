@@ -50,7 +50,6 @@
 #include "../frontend.h"
 #include "../frontend_driver.h"
 #include "../../defaults.h"
-#include "../../general.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "platform_linux.h"

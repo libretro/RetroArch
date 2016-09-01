@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 
@@ -27,11 +28,12 @@
 #include "../../input/input_config.h"
 
 #include "../../core_info.h"
+#include "../../configuration.h"
 #include "../../file_path_special.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
-#include "../../general.h"
 #include "../../performance_counters.h"
+#include "../../runloop.h"
 #include "../../system.h"
 #include "../../intl/intl.h"
 

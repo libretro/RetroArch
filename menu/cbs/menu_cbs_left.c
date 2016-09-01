@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
@@ -28,8 +29,8 @@
 #include "../../core_info.h"
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
-#include "../../general.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../system.h"
 
 #ifndef BIND_ACTION_LEFT

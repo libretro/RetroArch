@@ -14,7 +14,6 @@
  */
 
 #include "../../driver.h"
-#include "../../general.h"
 #include "../../runloop.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/vulkan_common.h"

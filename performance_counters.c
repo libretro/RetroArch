@@ -23,12 +23,12 @@
 #include <unistd.h>
 #endif
 
+#include <compat/strl.h>
 #include <features/features_cpu.h>
 
 #include "performance_counters.h"
 
-#include "general.h"
-#include "compat/strl.h"
+#include "runloop.h"
 #include "verbosity.h"
 
 #ifdef _WIN32

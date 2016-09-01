@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
@@ -25,11 +26,12 @@
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
 
+#include "../../configuration.h"
 #include "../../core_info.h"
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
-#include "../../general.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../system.h"
 #include "../../ui/ui_companion_driver.h"
 

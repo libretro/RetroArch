@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
 #include <retro_stat.h>
@@ -28,15 +29,17 @@
 #include "../menu_navigation.h"
 #include "../menu_content.h"
 
+#include "../../configuration.h"
 #include "../../core_info.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
 #include "../../managers/cheat_manager.h"
-#include "../../general.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../system.h"
+#include "../../verbosity.h"
 #include "../../lakka.h"
 
 typedef struct
