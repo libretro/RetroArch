@@ -218,6 +218,9 @@ static bool psp_joypad_rumble(unsigned pad,
             strength = 255;
          params.enable = strength;
          break;
+      case RETRO_RUMBLE_DUMMY:
+      default:
+         break;
    }
    unsigned p  = (pad == 1) ? 2 : pad;
    sceCtrlSetActuator(p, &params);
