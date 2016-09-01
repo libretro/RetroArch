@@ -21,6 +21,7 @@
 #include <dynamic/dylib.h>
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../frontend/frontend_driver.h"
 #include "../config_file_userdata.h"
