@@ -105,275 +105,96 @@ static void epx_generic_destroy(void *data)
    free(filt);
 }
 
-static void EPX_16(int width, int height,
-      int first, int last,
-      uint16_t *src, unsigned src_stride, uint16_t *dst,
-      unsigned dst_stride)
-{
-	int		w, prevline;
-	uint16_t	colorX, colorA, colorB, colorC, colorD;
-	uint16_t	*sP = NULL, *uP = NULL, *lP = NULL;
-	uint32_t	*dP1 = NULL, *dP2 = NULL;
-
-   if (!src || !dst)
-      return;
-
-   prevline = (first) ? 0 : src_stride;
-
-	height -= 2;
-
-	/*   D
-	 * A X C
-	 *   B
-    */
-
-	/* top edge */
-
-	sP  = (uint16_t *)(src - prevline);
-	lP  = (uint16_t *)(src + src_stride);
-	dP1 = (uint32_t *)(dst);
-	dP2 = (uint32_t *)(dst + dst_stride);
-
-	// left edge
-
-	colorX = *sP;
-	colorC = *++sP;
-	colorB = *lP++;
-
-	if ((colorX != colorC) && (colorB != colorX))
-	{
-	#ifdef MSB_FIRST
-		*dP1 = (colorX << 16) + colorX;
-		*dP2 = (colorX << 16) + ((colorB == colorC) ? colorB : colorX);
-	#else
-		*dP1 = colorX + (colorX << 16);
-		*dP2 = colorX + (((colorB == colorC) ? colorB : colorX) << 16);
-	#endif
-	}
-	else
-		*dP1 = *dP2 = (colorX << 16) + colorX;
-
-	dP1++;
-	dP2++;
-
-	//
-
-	for (w = width - 2; w; w--)
-	{
-		colorA = colorX;
-		colorX = colorC;
-		colorC = *++sP;
-		colorB = *lP++;
-
-		if ((colorA != colorC) && (colorB != colorX))
-		{
-		#ifdef MSB_FIRST
-			*dP1 = (colorX << 16) + colorX;
-			*dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + 
-            ((colorB == colorC) ? colorB : colorX);
-		#else
-			*dP1 = colorX + (colorX << 16);
-			*dP2 = ((colorA == colorB) ? colorA : colorX) + 
-            (((colorB == colorC) ? colorB : colorX) << 16);
-		#endif
-		}
-		else
-			*dP1 = *dP2 = (colorX << 16) + colorX;
-
-		dP1++;
-		dP2++;
-	}
-
-	/* right edge */
-
-	colorA = colorX;
-	colorX = colorC;
-	colorB = *lP;
-
-	if ((colorA != colorX) && (colorB != colorX))
-	{
-	#ifdef MSB_FIRST
-		*dP1 = (colorX << 16) + colorX;
-		*dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + colorX;
-	#else
-		*dP1 = colorX + (colorX << 16);
-		*dP2 = ((colorA == colorB) ? colorA : colorX) + (colorX << 16);
-	#endif
-	}
-	else
-		*dP1 = *dP2 = (colorX << 16) + colorX;
-
-	src += src_stride;
-	dst += dst_stride << 1;
-
-	for (; height; height--)
-	{
-		sP  = (uint16_t *) src;
-		uP  = (uint16_t *) (src - src_stride);
-		lP  = (uint16_t *) (src + src_stride);
-		dP1 = (uint32_t *) dst;
-		dP2 = (uint32_t *) (dst + dst_stride);
-
-		/* left edge */
-
-		colorX = *sP;
-		colorC = *++sP;
-		colorB = *lP++;
-		colorD = *uP++;
-
-		if ((colorX != colorC) && (colorB != colorD))
-		{
-		#ifdef MSB_FIRST
-			*dP1 = (colorX << 16) + ((colorC == colorD) ? colorC : colorX);
-			*dP2 = (colorX << 16) + ((colorB == colorC) ? colorB : colorX);
-		#else
-			*dP1 = colorX + (((colorC == colorD) ? colorC : colorX) << 16);
-			*dP2 = colorX + (((colorB == colorC) ? colorB : colorX) << 16);
-		#endif
-		}
-		else
-			*dP1 = *dP2 = (colorX << 16) + colorX;
-
-		dP1++;
-		dP2++;
-
-		for (w = width - 2; w; w--)
-		{
-			colorA = colorX;
-			colorX = colorC;
-			colorC = *++sP;
-			colorB = *lP++;
-			colorD = *uP++;
-
-			if ((colorA != colorC) && (colorB != colorD))
-			{
-			#ifdef MSB_FIRST
-				*dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + 
-               ((colorC == colorD) ? colorC : colorX);
-				*dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + 
-               ((colorB == colorC) ? colorB : colorX);
-			#else
-				*dP1 = ((colorD == colorA) ? colorD : colorX) + 
-               (((colorC == colorD) ? colorC : colorX) << 16);
-				*dP2 = ((colorA == colorB) ? colorA : colorX) + 
-               (((colorB == colorC) ? colorB : colorX) << 16);
-			#endif
-			}
-			else
-				*dP1 = *dP2 = (colorX << 16) + colorX;
-
-			dP1++;
-			dP2++;
-		}
-
-		/* right edge */
-
-		colorA = colorX;
-		colorX = colorC;
-		colorB = *lP;
-		colorD = *uP;
-
-		if ((colorA != colorX) && (colorB != colorD))
-		{
-		#ifdef MSB_FIRST
-			*dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + colorX;
-			*dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + colorX;
-		#else
-			*dP1 = ((colorD == colorA) ? colorD : colorX) + (colorX << 16);
-			*dP2 = ((colorA == colorB) ? colorA : colorX) + (colorX << 16);
-		#endif
-		}
-		else
-			*dP1 = *dP2 = (colorX << 16) + colorX;
-
-		src += src_stride;
-		dst += dst_stride << 1;
-	}
-
-	/* bottom edge */
-
-	sP  = (uint16_t *) src;
-	uP  = (uint16_t *) (src - src_stride);
-	dP1 = (uint32_t *) dst;
-	dP2 = (uint32_t *) (dst + dst_stride);
-
-	/* left edge */
-
-	colorX = *sP;
-	colorC = *++sP;
-	colorD = *uP++;
-
-	if ((colorX != colorC) && (colorX != colorD))
-	{
-	#ifdef MSB_FIRST
-		*dP1 = (colorX << 16) + ((colorC == colorD) ? colorC : colorX);
-		*dP2 = (colorX << 16) + colorX;
-	#else
-		*dP1 = colorX + (((colorC == colorD) ? colorC : colorX) << 16);
-		*dP2 = colorX + (colorX << 16);
-	#endif
-	}
-	else
-		*dP1 = *dP2 = (colorX << 16) + colorX;
-
-	dP1++;
-	dP2++;
-
-	for (w = width - 2; w; w--)
-	{
-		colorA = colorX;
-		colorX = colorC;
-		colorC = *++sP;
-		colorD = *uP++;
-
-		if ((colorA != colorC) && (colorX != colorD))
-		{
-		#ifdef MSB_FIRST
-			*dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + 
-            ((colorC == colorD) ? colorC : colorX);
-			*dP2 = (colorX << 16) + colorX;
-		#else
-			*dP1 = ((colorD == colorA) ? colorD : colorX) + 
-            (((colorC == colorD) ? colorC : colorX) << 16);
-			*dP2 = colorX + (colorX << 16);
-		#endif
-		}
-		else
-			*dP1 = *dP2 = (colorX << 16) + colorX;
-
-		dP1++;
-		dP2++;
-	}
-
-	/* right edge */
-
-	colorA = colorX;
-	colorX = colorC;
-	colorD = *uP;
-
-	if ((colorA != colorX) && (colorX != colorD))
-	{
-	#ifdef MSB_FIRST
-		*dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + colorX;
-		*dP2 = (colorX << 16) + colorX;
-	#else
-		*dP1 = ((colorD == colorA) ? colorD : colorX) + (colorX << 16);
-		*dP2 = colorX + (colorX << 16);
-	#endif
-	}
-	else
-		*dP1 = *dP2 = (colorX << 16) + colorX;
-}
-
-static void epx_generic_rgb565(unsigned width, unsigned height,
-      int first, int last, uint16_t *src, 
+static void epx_generic_rgb565 (unsigned width, unsigned height,
+      int first, int lsat, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   EPX_16(width, height,
-         first, last,
-         src, src_stride,
-         dst, dst_stride);
+   uint16_t colorX, colorA, colorB, colorC, colorD;
+   uint16_t *sP, *uP, *lP;
+   uint32_t*dP1, *dP2;
+   int w;
 
+   for (; height; height--)
+   {
+      sP  = (uint16_t *) src;
+      uP  = (uint16_t *) (src - src_stride);
+      lP  = (uint16_t *) (src + src_stride);
+      dP1 = (uint32_t *) dst;
+      dP2 = (uint32_t *) (dst + dst_stride);
+
+      // left edge
+
+      colorX = *sP;
+      colorC = *++sP;
+      colorB = *lP++;
+      colorD = *uP++;
+
+      if ((colorX != colorC) && (colorB != colorD))
+      {
+         #ifdef MSB_FIRST
+         *dP1 = (colorX << 16) + ((colorC == colorD) ? colorC : colorX);
+         *dP2 = (colorX << 16) + ((colorB == colorC) ? colorB : colorX);
+         #else
+         *dP1 = colorX + (((colorC == colorD) ? colorC : colorX) << 16);
+         *dP2 = colorX + (((colorB == colorC) ? colorB : colorX) << 16);
+         #endif
+      }
+      else
+         *dP1 = *dP2 = (colorX << 16) + colorX;
+
+      dP1++;
+      dP2++;
+
+      //
+
+      for (w = width - 2; w; w--)
+      {
+         colorA = colorX;
+         colorX = colorC;
+         colorC = *++sP;
+         colorB = *lP++;
+         colorD = *uP++;
+
+         if ((colorA != colorC) && (colorB != colorD))
+         {
+#ifdef MSB_FIRST
+           *dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + ((colorC == colorD) ? colorC : colorX);
+           *dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + ((colorB == colorC) ? colorB : colorX);
+#else
+           *dP1 = ((colorD == colorA) ? colorD : colorX) + (((colorC == colorD) ? colorC : colorX) << 16);
+           *dP2 = ((colorA == colorB) ? colorA : colorX) + (((colorB == colorC) ? colorB : colorX) << 16);
+#endif
+         }
+         else
+            *dP1 = *dP2 = (colorX << 16) + colorX;
+
+         dP1++;
+         dP2++;
+      }
+
+      // right edge
+
+      colorA = colorX;
+      colorX = colorC;
+      colorB = *lP;
+      colorD = *uP;
+
+      if ((colorA != colorX) && (colorB != colorD))
+      {
+#ifdef MSB_FIRST
+         *dP1 = (((colorD == colorA) ? colorD : colorX) << 16) + colorX;
+         *dP2 = (((colorA == colorB) ? colorA : colorX) << 16) + colorX;
+#else
+         *dP1 = ((colorD == colorA) ? colorD : colorX) + (colorX << 16);
+         *dP2 = ((colorA == colorB) ? colorA : colorX) + (colorX << 16);
+#endif
+      }
+      else
+         *dP1 = *dP2 = (colorX << 16) + colorX;
+
+      src += src_stride;
+      dst += dst_stride << 1;
+   }
 }
 
 static void epx_work_cb_rgb565(void *data, void *thread_data)
