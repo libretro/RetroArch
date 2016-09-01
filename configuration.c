@@ -1783,7 +1783,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       if (!array_settings[i].handle)
          continue;
       config_get_array(conf, array_settings[i].ident,
-            array_settings[i].ptr, sizeof(array_settings[i].ptr));
+            array_settings[i].ptr, PATH_MAX_LENGTH);
    }
 
    /* Path settings  */
