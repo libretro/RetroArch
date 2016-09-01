@@ -21,6 +21,7 @@
 #include <GL/glx.h>
 #endif
 
+#include "../../configuration.h"
 #include "../../driver.h"
 
 #include "../../frontend/frontend_driver.h"
