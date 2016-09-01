@@ -491,38 +491,40 @@ static int populate_settings_string(settings_t *settings, struct config_string_s
 #ifdef HAVE_NETPLAY
    global_t   *global                    = global_get_ptr();
 #endif
-   SETTING_STRING("video_filter",             settings->path.softfilter_plugin, false, NULL, false);
-   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin, false, NULL, false);
+   /* Arrays */
    SETTING_STRING("playlist_names",           settings->playlist_names, false, NULL, true);
    SETTING_STRING("playlist_cores",           settings->playlist_cores, false, NULL, true);
-   SETTING_STRING("video_driver",             settings->video.driver, false, NULL, false);
-   SETTING_STRING("record_driver",            settings->record.driver, false, NULL, false);
-   SETTING_STRING("camera_driver",            settings->camera.driver, false, NULL, false);
-   SETTING_STRING("location_driver",          settings->location.driver, false, NULL, false);
+   SETTING_STRING("video_driver",             settings->video.driver,   false, NULL, true);
+   SETTING_STRING("record_driver",            settings->record.driver,  false, NULL, true);
+   SETTING_STRING("camera_driver",            settings->camera.driver,  false, NULL, true);
+   SETTING_STRING("location_driver",          settings->location.driver,false, NULL, true);
 #ifdef HAVE_MENU
-   SETTING_STRING("menu_driver",              settings->menu.driver, false, NULL, false);
+   SETTING_STRING("menu_driver",              settings->menu.driver,    false, NULL, true);
 #endif
-   SETTING_STRING("audio_device",             settings->audio.device, false, NULL, false);
+   SETTING_STRING("audio_device",             settings->audio.device,   false, NULL, true);
+   SETTING_STRING("camera_device",            settings->camera.device,  false, NULL, true);
+#ifdef HAVE_CHEEVOS
+   SETTING_STRING("cheevos_username",         settings->cheevos.username, false, NULL, true);
+   SETTING_STRING("cheevos_password",         settings->cheevos.password, false, NULL, true);
+#endif
+   SETTING_STRING("video_context_driver",     settings->video.context_driver, false, NULL, true);
+   SETTING_STRING("audio_driver",             settings->audio.driver, false, NULL, true);
+   SETTING_STRING("audio_resampler",          settings->audio.resampler, false, NULL, true);
+   SETTING_STRING("netplay_nickname",         settings->username, false, NULL, false);
+   SETTING_STRING("input_driver",             settings->input.driver, false, NULL, true);
+   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver, false, NULL, true);
+   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout, false, NULL, true);
+   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src, false, NULL, true);
+   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL, true);
+   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, true);
+   /* Paths */
+   SETTING_STRING("video_filter",             settings->path.softfilter_plugin, false, NULL, false);
+   SETTING_STRING("audio_dsp_plugin",         settings->path.audio_dsp_plugin, false, NULL, false);
    SETTING_STRING("core_updater_buildbot_url",settings->network.buildbot_url, false, NULL, false);
    SETTING_STRING("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url, false, NULL, false);
-   SETTING_STRING("camera_device",            settings->camera.device, false, NULL, false);
-#ifdef HAVE_CHEEVOS
-   SETTING_STRING("cheevos_username",         settings->cheevos.username, false, NULL, false);
-   SETTING_STRING("cheevos_password",         settings->cheevos.password, false, NULL, false);
-#endif
-   SETTING_STRING("video_context_driver",     settings->video.context_driver, false, NULL, false);
-   SETTING_STRING("audio_driver",             settings->audio.driver, false, NULL, false);
-   SETTING_STRING("audio_resampler",          settings->audio.resampler, false, NULL, false);
 #ifdef HAVE_NETPLAY
    SETTING_STRING("netplay_ip_address",       global->netplay.server, false, NULL, false);
 #endif
-   SETTING_STRING("netplay_nickname",         settings->username, false, NULL, false);
-   SETTING_STRING("input_driver",             settings->input.driver, false, NULL, false);
-   SETTING_STRING("input_joypad_driver",      settings->input.joypad_driver, false, NULL, false);
-   SETTING_STRING("input_keyboard_layout",    settings->input.keyboard_layout, false, NULL, false);
-   SETTING_STRING("bundle_assets_src_path",   settings->path.bundle_assets_src, false, NULL, false);
-   SETTING_STRING("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL, false);
-   SETTING_STRING("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, false);
 
    *out = 
       (struct config_string_setting_ptr*) malloc(count * sizeof(struct config_string_setting_ptr));
@@ -1799,56 +1801,6 @@ static bool config_load_file(const char *path, bool set_defaults,
          config_get_array(conf, string_settings[i].ident,
                string_settings[i].value, sizeof(string_settings[i].value));
    }
-
-   config_get_array(conf, "audio_device",
-         settings->audio.device, sizeof(settings->audio.device));
-   config_get_array(conf, "audio_resampler",
-         settings->audio.resampler, sizeof(settings->audio.resampler));
-   config_get_array(conf, "camera_device",
-         settings->camera.device, sizeof(settings->camera.device));
-#ifdef HAVE_CHEEVOS
-   config_get_array(conf, "cheevos_username",
-         settings->cheevos.username, sizeof(settings->cheevos.username));
-   config_get_array(conf, "cheevos_password",
-         settings->cheevos.password, sizeof(settings->cheevos.password));
-#endif
-
-   config_get_array(conf, "video_driver",
-         settings->video.driver, sizeof(settings->video.driver));
-   config_get_array(conf, "record_driver",
-         settings->record.driver, sizeof(settings->video.driver));
-   config_get_array(conf, "camera_driver",
-         settings->camera.driver, sizeof(settings->camera.driver));
-   config_get_array(conf, "location_driver",
-         settings->location.driver, sizeof(settings->location.driver));
-#ifdef HAVE_MENU
-   config_get_array(conf, "menu_driver",
-         settings->menu.driver, sizeof(settings->menu.driver));
-#endif
-   config_get_array(conf, "video_context_driver",
-         settings->video.context_driver,
-         sizeof(settings->video.context_driver));
-   config_get_array(conf, "audio_driver",
-         settings->audio.driver,
-         sizeof(settings->audio.driver));
-   config_get_array(conf, "input_driver",
-         settings->input.driver,
-         sizeof(settings->input.driver));
-   config_get_array(conf, "input_joypad_driver",
-         settings->input.joypad_driver,
-         sizeof(settings->input.joypad_driver));
-   config_get_array(conf, "input_keyboard_layout",
-         settings->input.keyboard_layout,
-         sizeof(settings->input.keyboard_layout));
-   config_get_array(conf, "bundle_assets_src_path",
-         settings->path.bundle_assets_src,
-         sizeof(settings->path.bundle_assets_src));
-   config_get_array(conf, "bundle_assets_dst_path",
-         settings->path.bundle_assets_dst,
-         sizeof(settings->path.bundle_assets_dst));
-   config_get_array(conf, "bundle_assets_dst_path_subdir",
-         settings->path.bundle_assets_dst_subdir,
-         sizeof(settings->path.bundle_assets_dst_subdir));
 
    /* Path settings  */
 #ifdef HAVE_MENU
