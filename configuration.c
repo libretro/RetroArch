@@ -77,7 +77,7 @@
       tmp = (struct config_path_setting_ptr*)realloc(tmp, sizeof(struct config_path_setting_ptr) * (count + 1)); \
    tmp[count].ident    = key; \
    tmp[count].defaults = defval; \
-   tmp[count].value    = configval; \
+   tmp[count].ptr      = configval; \
    count++; \
 } \
 
@@ -88,7 +88,7 @@
    else \
       tmp = (struct config_array_setting_ptr*)realloc(tmp, sizeof(struct config_array_setting_ptr) * (count + 1)); \
    tmp[count].ident    = key; \
-   tmp[count].value    = configval; \
+   tmp[count].ptr      = configval; \
    if (default_enable) \
       tmp[count].def   = default_setting; \
    tmp[count].handle   = handle_setting; \
@@ -1797,7 +1797,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    {
       if (array_settings[i].handle)
          config_get_array(conf, array_settings[i].ident,
-               array_settings[i].value, sizeof(array_settings[i].value));
+               array_settings[i].ptr, sizeof(array_settings[i].ptr));
    }
 
    /* Path settings  */
@@ -2913,9 +2913,9 @@ bool config_save_file(const char *path)
    /* Path settings */
    for (i = 0; i < path_settings_size; i++)
    {
-      const char *value = path_settings[i].value;
+      const char *value = path_settings[i].ptr;
 
-      if (path_settings[i].defaults && string_is_empty(path_settings[i].value))
+      if (path_settings[i].defaults && string_is_empty(path_settings[i].ptr))
          value = "default";
 
       config_set_path(conf, path_settings[i].ident, value);
@@ -2929,7 +2929,7 @@ bool config_save_file(const char *path)
    /* String settings  */
    for (i = 0; i < array_settings_size; i++)
       config_set_string(conf, array_settings[i].ident,
-            array_settings[i].value);
+            array_settings[i].ptr);
 
    /* Float settings  */
    for (i = 0; i < float_settings_size; i++)
@@ -3161,26 +3161,26 @@ bool config_save_overrides(int override_type)
    }
    for (i = 0; i < array_settings_size; i++)
    {
-      if (!string_is_equal(array_settings[i].value, array_overrides[i].value))
+      if (!string_is_equal(array_settings[i].ptr, array_overrides[i].ptr))
       {
          RARCH_LOG("   original: %s=%s\n", 
-            array_settings[i].ident, array_settings[i].value);
+            array_settings[i].ident, array_settings[i].ptr);
          RARCH_LOG("   override: %s=%s\n", 
-            array_overrides[i].ident, array_overrides[i].value);
+            array_overrides[i].ident, array_overrides[i].ptr);
          config_set_string(conf, array_overrides[i].ident,
-            array_overrides[i].value);
+            array_overrides[i].ptr);
       }
    }
    for (i = 0; i < path_settings_size; i++)
    {
-      if (!string_is_equal(path_settings[i].value, path_overrides[i].value))
+      if (!string_is_equal(path_settings[i].ptr, path_overrides[i].ptr))
       {
          RARCH_LOG("   original: %s=%s\n", 
-            path_settings[i].ident, path_settings[i].value);
+            path_settings[i].ident, path_settings[i].ptr);
          RARCH_LOG("   override: %s=%s\n", 
-            path_overrides[i].ident, path_overrides[i].value);
+            path_overrides[i].ident, path_overrides[i].ptr);
          config_set_path(conf, path_overrides[i].ident,
-               path_overrides[i].value);
+               path_overrides[i].ptr);
       }
    }
 

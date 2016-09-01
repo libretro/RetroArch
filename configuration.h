@@ -67,7 +67,7 @@ struct config_float_setting_ptr
 struct config_array_setting_ptr
 { 
    const char *ident;
-   char *value;
+   char *ptr;
    bool def_enable;
    const char *def;
    bool handle;
@@ -77,7 +77,7 @@ struct config_path_setting_ptr
 { 
    const char *ident;
    bool defaults;
-   const char *value;
+   const char *ptr;
 };
 
 typedef struct settings
