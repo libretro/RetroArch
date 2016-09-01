@@ -488,9 +488,7 @@ static int populate_settings_array(settings_t *settings, struct config_array_set
 {
    unsigned count                        = 0;
    struct config_array_setting_ptr *tmp = NULL;
-#ifdef HAVE_NETPLAY
-   global_t   *global                    = global_get_ptr();
-#endif
+
    /* Arrays */
    SETTING_ARRAY("playlist_names",           settings->playlist_names, false, NULL, true);
    SETTING_ARRAY("playlist_cores",           settings->playlist_cores, false, NULL, true);
