@@ -28,8 +28,8 @@
 #include "../../gfx/video_driver.h"
 #include "../common/input_x11_common.h"
 
+#include "../../configuration.h"
 #include "../../driver.h"
-#include "../../general.h"
 #include "../../verbosity.h"
 
 typedef struct x11_input

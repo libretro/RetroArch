@@ -25,7 +25,7 @@
 
 #include "SDL.h"
 #include "../../gfx/video_context_driver.h"
-#include "../../general.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../input_autodetect.h"
 #include "../input_config.h"
