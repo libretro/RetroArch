@@ -516,15 +516,6 @@ static int populate_settings_array(settings_t *settings, struct config_array_set
    SETTING_ARRAY("bundle_assets_src_path",   settings->path.bundle_assets_src, false, NULL, true);
    SETTING_ARRAY("bundle_assets_dst_path",   settings->path.bundle_assets_dst, false, NULL, true);
    SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, true);
-   /* Paths */
-   SETTING_ARRAY("netplay_nickname",         settings->username, false, NULL, false);
-   SETTING_ARRAY("video_filter",             settings->path.softfilter_plugin, false, NULL, false);
-   SETTING_ARRAY("audio_dsp_plugin",         settings->path.audio_dsp_plugin, false, NULL, false);
-   SETTING_ARRAY("core_updater_buildbot_url",settings->network.buildbot_url, false, NULL, false);
-   SETTING_ARRAY("core_updater_buildbot_assets_url",settings->network.buildbot_assets_url, false, NULL, false);
-#ifdef HAVE_NETPLAY
-   SETTING_ARRAY("netplay_ip_address",       global->netplay.server, false, NULL, false);
-#endif
 
    *out = 
       (struct config_array_setting_ptr*) malloc(count * sizeof(struct config_array_setting_ptr));
@@ -539,6 +530,15 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    struct config_path_setting_ptr *tmp = NULL;
    global_t   *global                  = global_get_ptr();
 
+   /* Paths */
+   SETTING_PATH("netplay_nickname",           false, settings->username);
+   SETTING_PATH("video_filter",               false, settings->path.softfilter_plugin);
+   SETTING_PATH("audio_dsp_plugin",           false, settings->path.audio_dsp_plugin);
+   SETTING_PATH("core_updater_buildbot_url", false, settings->network.buildbot_url);
+   SETTING_PATH("core_updater_buildbot_assets_url", false, settings->network.buildbot_assets_url);
+#ifdef HAVE_NETPLAY
+   SETTING_PATH("netplay_ip_address",       false, global->netplay.server);
+#endif
    SETTING_PATH("recording_output_directory", false,
          global->record.output_dir);
    SETTING_PATH("recording_config_directory", false,
