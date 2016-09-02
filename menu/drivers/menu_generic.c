@@ -323,8 +323,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT_CONFIRM, NULL))
             {
                menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT_CONFIRM, NULL);
-               BIT64_SET(menu->state, MENU_STATE_POP_STACK);
             }
+
+            BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          }
 
          break;
@@ -433,7 +434,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-         if (action == MENU_ACTION_OK)
+         if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_DEFAULT:
