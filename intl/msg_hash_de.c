@@ -1226,9 +1226,61 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
          return "Linker Analogstick";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
          return "Rechter Analogstick";
+      case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
+         return "Von der Playlist löschen";
+      case MENU_ENUM_LABEL_VALUE_RUN:
+         return "Start";
+      case MENU_ENUM_LABEL_SETTINGS:
+         return "Einstellungen";
+      case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
+         return "Verlauf";
+      case MENU_ENUM_LABEL_VALUE_ADD_TAB:
+         return "Hinzufügen";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_TAB:
+         return "Videos";
+      case MENU_ENUM_LABEL_VALUE_IMAGES_TAB:
+         return "Bilder";
+      case MENU_ENUM_LABEL_VALUE_MUSIC_TAB:
+         return "Musik";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
+         return "Icon Schatten";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS:
+         return "Zeige Einstellungen";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES:
+         return "Zeige Bilder";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC:
+         return "Zeige Musik";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO:
+         return "Zeige Videos";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY:
+         return "Zeige Verlauf";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X:
+         return "Bildchirmauflösung X";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y:
+         return "Bildchirmauflösung Y";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH:
+         return "Bildchirmauflösung Breite";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
+         return "Bildchirmauflösung Höhe";
+      case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
+         return "<- Durchsuche ->";
+      case MENU_ENUM_LABEL_VALUE_SCAN_FILE:
+         return "Durchsuche Datei";
+      case MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY:
+         return "Durchsuche Verzeichnis";
+      case MENU_ENUM_LABEL_VALUE_REBOOT:
+         return "Neustart";
+      case MENU_ENUM_LABEL_SHUTDOWN:
+         return "Ausschalten";
+      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
+         return "Benutzername";
+      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
+         return "Passwort";
+      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST:
+         return "Konten";
       default:
          break;
    }
-
+ 
    return "null";
 }
