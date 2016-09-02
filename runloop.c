@@ -124,6 +124,7 @@ static bool runloop_core_shutdown_initiated      = false;
 static bool runloop_perfcnt_enable               = false;
 static bool runloop_overrides_active             = false;
 static bool runloop_game_options_active          = false;
+static bool runloop_quit                         = false;
 static core_option_manager_t *runloop_core_options = NULL;
 #ifdef HAVE_THREADS
 static slock_t *_runloop_msg_queue_lock           = NULL;
@@ -752,6 +753,36 @@ static bool runloop_is_frame_count_end(void)
    return runloop_max_frames && (*frame_count >= runloop_max_frames);
 }
 
+#ifdef HAVE_MENU
+static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
+{
+   menu_ctx_iterate_t iter;
+   settings_t *settings    = config_get_ptr();
+   bool focused            = runloop_is_focused() &&
+      !ui_companion_is_on_foreground();
+   bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
+
+   iter.action             = action;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+      rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+
+   if (focused || !is_idle)
+      menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+
+   if (sleep_ms && (!focused || is_idle))
+   {
+      *sleep_ms = 10;
+      return 1;
+   }
+
+   if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
+      return 0;
+
+   return -1;
+}
+#endif
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
 
@@ -1255,6 +1286,16 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          httpserver_destroy();
 #endif
          break;
+      case RUNLOOP_CTL_SHOW_MESSAGE:
+#ifdef HAVE_MENU
+        runloop_iterate_menu(MENU_ACTION_SHOW_MESSAGE, NULL);
+#endif
+        break;
+      case RUNLOOP_CTL_IS_QUIT:
+         return runloop_quit;
+      case RUNLOOP_CTL_SET_QUIT:
+         runloop_quit = true;
+         break;
       case RUNLOOP_CTL_NONE:
       default:
          break;
@@ -1262,7 +1303,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
    return true;
 }
-
 
 #ifdef HAVE_OVERLAY
 static void runloop_iterate_linefeed_overlay(settings_t *settings)
@@ -1349,36 +1389,6 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 
    return -1;
 }
-
-#ifdef HAVE_MENU
-static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
-{
-   menu_ctx_iterate_t iter;
-   settings_t *settings    = config_get_ptr();
-   bool focused            = runloop_is_focused() &&
-      !ui_companion_is_on_foreground();
-   bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
-
-   iter.action             = action;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-      rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-
-   if (focused || !is_idle)
-      menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
-
-   if (!focused || is_idle)
-   {
-      *sleep_ms = 10;
-      return 1;
-   }
-
-   if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
-      return 0;
-
-   return -1;
-}
-#endif
 
 /**
  * runloop_iterate:
@@ -1501,6 +1511,32 @@ int runloop_iterate(unsigned *sleep_ms)
    runloop_iterate_linefeed_overlay(settings);
 #endif
 
+#ifdef HAVE_MENU
+   if (runloop_iterate_time_to_exit(
+            runloop_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1 ||
+            runloop_ctl(RUNLOOP_CTL_IS_QUIT, NULL))
+   {
+      if (settings->confirm_on_exit)
+      {
+         if(!menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT_CONFIRM, NULL))
+         {
+            command_event(CMD_EVENT_QUIT, NULL);
+         }
+         else if (menu_driver_ctl(RARCH_MENU_CTL_IS_QUIT_CONFIRM, NULL))
+         {
+            frame_limit_last_time = 0.0;
+            command_event(CMD_EVENT_QUIT, NULL);
+            return -1;
+         }
+      }
+      else
+      {
+         frame_limit_last_time = 0.0;
+         command_event(CMD_EVENT_QUIT, NULL);
+         return -1;
+      }
+   }
+#else
    if (runloop_iterate_time_to_exit(
             runloop_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
    {
@@ -1508,6 +1544,7 @@ int runloop_iterate(unsigned *sleep_ms)
       command_event(CMD_EVENT_QUIT, NULL);
       return -1;
    }
+#endif
 
 
 #ifdef HAVE_MENU

@@ -77,6 +77,11 @@ static int action_iterate_help(menu_handle_t *menu,
             }
          }
          break;
+      case MENU_HELP_CONFIRM_ON_EXIT:
+         menu_hash_get_help_enum(
+               MENU_ENUM_LABEL_CONFIRM_ON_EXIT,
+               s, len);
+         break;
       case MENU_HELP_CONTROLS:
          {
             unsigned i;
@@ -303,7 +308,25 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (ret == 1 || action == MENU_ACTION_OK)
+         {
+            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT_CONFIRM, NULL))
+            {
+               menu_driver_ctl(RARCH_MENU_CTL_SET_QUIT_CONFIRM, NULL);
+               command_event(CMD_EVENT_QUIT, NULL);
+            }
+
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+         }
+
+         if (action == MENU_ACTION_CANCEL)
+         {
+            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT_CONFIRM, NULL))
+            {
+               menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT_CONFIRM, NULL);
+               BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+            }
+         }
+
          break;
       case ITERATE_TYPE_BIND:
          {
@@ -432,16 +455,16 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          /* Have to defer it so we let settings refresh. */
          if (menu->push_help_screen)
          {
-            menu_displaylist_info_t info = {0};
-
-            info.list = menu_stack;
-            strlcpy(info.label,
-                  msg_hash_to_str(MENU_ENUM_LABEL_HELP),
-                  sizeof(info.label));
-            info.enum_idx = MENU_ENUM_LABEL_HELP;
-
-            menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
+            menu_display_show_message();
          }
+
+         if (action == MENU_ACTION_SHOW_MESSAGE)
+         {
+            menu->help_screen_type = MENU_HELP_CONFIRM_ON_EXIT;
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT_CONFIRM, NULL);
+            menu_display_show_message();
+         }
+
          break;
    }
 

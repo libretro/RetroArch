@@ -834,3 +834,16 @@ void menu_display_reset_textures_list(const char *texture_path, const char *icon
          TEXTURE_FILTER_MIPMAP_LINEAR, item);
    image_texture_free(&ti);
 }
+
+void menu_display_show_message() {
+   file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
+   menu_displaylist_info_t info = {0};
+
+   info.list = menu_stack;
+   strlcpy(info.label,
+        msg_hash_to_str(MENU_ENUM_LABEL_HELP),
+        sizeof(info.label));
+   info.enum_idx = MENU_ENUM_LABEL_HELP;
+
+   menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
+}

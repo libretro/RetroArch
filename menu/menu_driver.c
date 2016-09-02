@@ -70,8 +70,10 @@ static bool menu_driver_prevent_populate        = false;
 static bool menu_driver_load_no_content         = false;
 static bool menu_driver_alive                   = false;
 static bool menu_driver_data_own                = false;
-static bool menu_driver_pending_quit            = false;
 static bool menu_driver_pending_shutdown        = false;
+static bool menu_driver_pending_quit            = false;
+static bool menu_driver_pending_quit_confirm    = false;
+static bool menu_driver_quit_confirm            = false;
 static playlist_t *menu_driver_playlist         = NULL;
 static struct video_shader *menu_driver_shader  = NULL;
 static menu_handle_t *menu_driver_data          = NULL;
@@ -337,6 +339,19 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN:
          menu_driver_pending_shutdown = false;
+         break;
+      case RARCH_MENU_CTL_IS_PENDING_QUIT_CONFIRM:
+         return menu_driver_pending_quit_confirm;
+      case RARCH_MENU_CTL_SET_PENDING_QUIT_CONFIRM:
+         menu_driver_pending_quit_confirm = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_PENDING_QUIT_CONFIRM:
+         menu_driver_pending_quit_confirm = false;
+         break;
+      case RARCH_MENU_CTL_IS_QUIT_CONFIRM:
+         return menu_driver_quit_confirm;
+      case RARCH_MENU_CTL_SET_QUIT_CONFIRM:
+         menu_driver_quit_confirm = true;
          break;
       case RARCH_MENU_CTL_DESTROY:
          menu_driver_pending_quick_menu = false;
