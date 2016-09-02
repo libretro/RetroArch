@@ -991,6 +991,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
                );
          break;
+      case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
+         snprintf(s, len, "Are you sure you want to quit?");
+         break;
       case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
          snprintf(s, len, "Show hidden files\n"
                "and folders.");
@@ -2522,6 +2525,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "auto_overrides_enable";
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          return "config_save_on_exit";
+      case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
+         return "confirm_on_exit";
       case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
          return "show_hidden_files";
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
@@ -3847,6 +3852,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Load Override Files Automatically";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Save Configuration On Exit";
+      case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
+         return "Ask For Confirmation On Exit";
       case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
          return "Show Hidden Files and Folders";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:

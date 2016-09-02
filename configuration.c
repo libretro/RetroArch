@@ -795,6 +795,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("sort_savefiles_enable",        &settings->sort_savefiles_enable, true, default_sort_savefiles_enable, false);
    SETTING_BOOL("sort_savestates_enable",       &settings->sort_savestates_enable, true, default_sort_savestates_enable, false);
    SETTING_BOOL("config_save_on_exit",          &settings->config_save_on_exit, true, config_save_on_exit, false);
+   SETTING_BOOL("confirm_on_exit",              &settings->confirm_on_exit, true, confirm_on_exit, false);
    SETTING_BOOL("show_hidden_files",            &settings->show_hidden_files, true, show_hidden_files, false);
    SETTING_BOOL("input_autodetect_enable",      &settings->input.autodetect_enable, true, input_autodetect_enable, false);
    SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, true, rate_control, false);
