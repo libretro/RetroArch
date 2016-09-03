@@ -155,6 +155,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
+
 #if defined(HAVE_VIVANTE_FBDEV)
 #include "../gfx/drivers_context/vivante_fbdev_ctx.c"
 #endif
@@ -273,6 +274,10 @@ VIDEO DRIVER
 #include "../gfx/drivers/gx_gfx_vi_encoder.c"
 #include "../memory/wii/mem2_manager.c"
 #endif
+#endif
+
+#ifdef HAVE_SDL2
+#include "../gfx/drivers/sdl2_gfx.c"
 #endif
 
 #ifdef HAVE_VG
@@ -596,6 +601,10 @@ AUDIO
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
+#endif
+
+#if defined(HAVE_SDL2)
+#include "../audio/drivers/sdl_audio.c"
 #endif
 
 #ifdef HAVE_DSOUND
