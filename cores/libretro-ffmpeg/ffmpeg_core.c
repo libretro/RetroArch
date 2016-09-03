@@ -38,7 +38,7 @@ extern "C" {
 #include "fft/fft.h"
 #endif
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include <glsym/glsym.h>
 #endif
 
@@ -148,7 +148,7 @@ static double seek_time;
 /* GL stuff */
 struct frame
 {
-#if defined(HAVE_OPENGL)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLuint tex;
 #if !defined(HAVE_OPENGLES)
    GLuint pbo;
@@ -159,7 +159,7 @@ struct frame
 
 static struct frame frames[2];
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 static bool temporal_interpolation;
 static bool use_gl;
 static struct retro_hw_render_callback hw_render;
@@ -270,7 +270,7 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    static const struct retro_variable vars[] = {
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; enabled|disabled" },
 #endif
 #ifdef HAVE_GL_FFT
@@ -325,7 +325,7 @@ void CORE_PREFIX(retro_reset)(void)
 static void check_variables(void)
 {
    struct retro_variable color_var  = {0};
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    struct retro_variable var        = {0};
 #endif
 #ifdef HAVE_GL_FFT
@@ -333,7 +333,7 @@ static void check_variables(void)
    struct retro_variable fft_ms_var = {0};
 #endif
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    var.key = "ffmpeg_temporal_interp";
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -1360,7 +1360,7 @@ static void decode_thread(void *data)
    slock_unlock(fifo_lock);
 }
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 static void context_destroy(void)
 {
 #ifdef HAVE_GL_FFT
@@ -1618,7 +1618,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       video_decode_fifo = fifo_new(media.width 
             * media.height * sizeof(uint32_t) * 32);
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       use_gl = true;
       hw_render.context_reset = context_reset;
       hw_render.context_destroy = context_destroy;
