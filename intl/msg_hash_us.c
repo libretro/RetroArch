@@ -1674,6 +1674,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "2 - Press L3 + R3 simultaneously. \n"
                "3 - Press Start + Select simultaneously.");
          break;
+      case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
+         snprintf(s, len, "Allow any RetroPad to control the menu.");
+         break;
       case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
                "Enable input auto-detection.\n"
@@ -2257,6 +2260,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "back_as_menu_toggle_enable";
       case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "input_menu_toggle_gamepad_combo";
+      case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
+         return "all_users_control_menu";
       case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
          return "overlay_hide_in_menu";
       case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
@@ -3522,6 +3527,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Back As Menu Toggle Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "Menu Toggle Gamepad Combo";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU:
+         return "All Users Control Menu";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
          return "Hide Overlay In Menu";
       case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
