@@ -801,7 +801,7 @@ ifeq ($(HAVE_SDL2), 1)
    OBJ += gfx/drivers/sdl2_gfx.o \
           input/drivers/sdl_input.o \
           input/drivers_joypad/sdl_joypad.o \
-			 input/autoconf/builtin_sdl2.o
+			 input/autoconf/builtin_sdl2.o \
           audio/drivers/sdl_audio.o
 
    ifeq ($(HAVE_GL_CONTEXT), 1)
