@@ -18890,7 +18890,7 @@ nk_combo_begin_text(struct nk_context *ctx, struct nk_panel *layout,
         text.padding = nk_vec2(0,0);
         label.x = header.x + style->combo.content_padding.x;
         label.y = header.y + style->combo.content_padding.y;
-        label.w = button.x - (style->combo.content_padding.x + style->combo.spacing.x) - label.x;;
+        label.w = button.x - (style->combo.content_padding.x + style->combo.spacing.x) - label.x;
         label.h = header.h - 2 * style->combo.content_padding.y;
         nk_widget_text(&win->buffer, label, selected, len, &text,
             NK_TEXT_LEFT, &ctx->style.font);

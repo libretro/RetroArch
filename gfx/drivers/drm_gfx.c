@@ -509,7 +509,7 @@ static void drm_plane_setup(struct drm_surface *surface)
     * crtc_x and crtc_y are the position of the plane
     * pw and ph are the input size: the size of the area we read from the fb. */
    uint32_t plane_flags = 0;
-   uint32_t plane_w = drm.current_mode->vdisplay * surface->aspect;;
+   uint32_t plane_w = drm.current_mode->vdisplay * surface->aspect;
    uint32_t plane_h = drm.current_mode->vdisplay;
    /* If we obtain a scaled image width that is bigger than the physical screen width,
     * then we keep the physical screen width as our maximun width. */

@@ -211,7 +211,7 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
       RARCH_LOG("[EGL]: Created shared context: %p.\n", (void*)egl->hw_ctx);
 
       if (egl->hw_ctx == EGL_NO_CONTEXT)
-         return false;;
+         return false;
    }
 
    return true;
