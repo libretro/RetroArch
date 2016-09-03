@@ -17,8 +17,10 @@
 #include "netplay_private.h"
 #include <net/net_socket.h>
 
+#include "../../movie.h"
 #include "../../msg_hash.h"
 #include "../../content.h"
+#include "../../version.h"
 
 bool netplay_get_nickname(netplay_t *netplay, int fd)
 {

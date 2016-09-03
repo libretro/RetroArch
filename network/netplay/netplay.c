@@ -28,6 +28,8 @@
 
 #include "netplay_private.h"
 
+#include "../../movie.h"
+
 enum
 {
    CMD_OPT_ALLOWED_IN_SPECTATE_MODE = 0x1,
