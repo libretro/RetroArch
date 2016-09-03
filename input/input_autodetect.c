@@ -101,18 +101,12 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
          && input_pid   != 0)
    {
       score += 3;
-#if 0
-      RARCH_LOG("Autodetect: VID/PID match score=%d\n", score);
-#endif
    }
 
    /* Check for name match */
    if (string_is_equal(ident, params->name))
    {
       score += 2;
-#if 0
-      RARCH_LOG("Autodetect: exact name match score=%d\n", score);
-#endif
    }
    else
    {
@@ -120,15 +114,8 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
             && !strncmp(params->name, ident, strlen(ident)))
       {
          score += 1;
-#if 0
-         RARCH_LOG("Autodetect: partial name match score=%d\n", score);
-#endif
       }
    }
-#if 0
-   RARCH_LOG("Autodetect: configuration file: %s score: %d\n",
-         conf->path, score);
-#endif
    return score;
 }
 
