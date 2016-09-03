@@ -1711,3 +1711,13 @@ void CORE_PREFIX(retro_cheat_set)(unsigned index, bool enabled, const char *code
    (void)enabled;
    (void)code;
 }
+
+#if defined(LIBRETRO_SWITCH)
+
+#ifdef ARCH_X86
+#include "../libswresample/resample.h"
+void swri_resample_dsp_init(ResampleContext *c)
+{}
+#endif
+
+#endif
