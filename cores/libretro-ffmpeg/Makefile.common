@@ -15,7 +15,7 @@ SWSCALE_DIR    	 := $(BASE_DIR)/libswscale
 SWRESAMPLE_DIR 	 := $(BASE_DIR)/libswresample
 
 
-INCFLAGS           := -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include
+INCFLAGS           := -I$(BASE_DIR) -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include
 
 LIBRETRO_SOURCE    += $(CORE_DIR)/ffmpeg_core.c \
 							 $(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
