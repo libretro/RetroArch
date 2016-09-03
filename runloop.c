@@ -488,7 +488,8 @@ static bool shader_dir_init(struct rarch_dir_list *dir_list)
    if (!*settings->directory.video_shader)
       return false;
 
-   dir_list->list = dir_list_new_special(settings->directory.video_shader, DIR_LIST_SHADERS, NULL);
+   dir_list->list = dir_list_new_special(
+         settings->directory.video_shader, DIR_LIST_SHADERS, NULL);
 
    if (!dir_list->list || dir_list->list->size == 0)
    {
@@ -546,7 +547,8 @@ static void runloop_check_shader_dir(
 
    shader   = dir_list->list->elems[dir_list->ptr].data;
 
-   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(shader))))
+   switch (msg_hash_to_file_type(msg_hash_calculate(
+               path_get_extension(shader))))
    {
       case FILE_TYPE_SHADER_GLSL:
       case FILE_TYPE_SHADER_PRESET_GLSLP:
@@ -1339,6 +1341,11 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
 static int runloop_iterate_time_to_exit_load_dummy(void)
 {
    content_ctx_info_t content_info = {0};
+   settings_t *settings            = NULL;
+
+   if (!settings->load_dummy_on_core_shutdown)
+      return -1;
+
    if (!task_push_content_load_default(
          NULL, NULL,
          &content_info,
@@ -1363,7 +1370,6 @@ static int runloop_iterate_time_to_exit_load_dummy(void)
  */
 static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 {
-   settings_t *settings          = NULL;
    bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
    time_to_exit                  = time_to_exit || quit_key_pressed;
    time_to_exit                  = time_to_exit || !video_driver_is_alive();
@@ -1381,13 +1387,7 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
       return -1;
 
    /* Quits out of RetroArch main loop. */
-
-   settings = config_get_ptr();
-
-   if (settings->load_dummy_on_core_shutdown)
-      return runloop_iterate_time_to_exit_load_dummy();
-
-   return -1;
+   return runloop_iterate_time_to_exit_load_dummy();
 }
 
 /**
