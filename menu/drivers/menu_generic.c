@@ -280,7 +280,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    uint32_t hash                  = 0;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    menu_handle_t *menu            = (menu_handle_t*)data;
-   file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
 
    menu_entries_get_last_stack(NULL, &label, &file_type, &enum_idx, NULL);
 
