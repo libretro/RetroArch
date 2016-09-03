@@ -1843,9 +1843,6 @@ static bool config_load_file(const char *path, bool set_defaults,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
-   if (config_get_path(conf, "cheat_settings_path", tmp_str, sizeof(tmp_str)))
-      strlcpy(settings->path.cheat_settings, tmp_str, sizeof(settings->path.cheat_settings));
-
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY))
    {
       if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
