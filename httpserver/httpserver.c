@@ -227,10 +227,10 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
     "\"frontendSupportsAchievements\":false,"
     "\"coreSupportsAchievements\":null,"
 #endif
-    "\"saveRam\":{\"ptr\":\"%p\",\"size\":" STRING_REP_UINT64 "},"
-    "\"rtcRam\":{\"ptr\":\"%p\",\"size\":" STRING_REP_UINT64 "},"
-    "\"systemRam\":{\"ptr\":\"%p\",\"size\":" STRING_REP_UINT64 "},"
-    "\"videoRam\":{\"ptr\":\"%p\",\"size\":" STRING_REP_UINT64 "},",
+    "\"saveRam\":{\"pointer\":\"%p\",\"size\":" STRING_REP_UINT64 "},"
+    "\"rtcRam\":{\"pointer\":\"%p\",\"size\":" STRING_REP_UINT64 "},"
+    "\"systemRam\":{\"pointer\":\"%p\",\"size\":" STRING_REP_UINT64 "},"
+    "\"videoRam\":{\"pointer\":\"%p\",\"size\":" STRING_REP_UINT64 "},",
     core_path,
     api.version,
     system->info.library_name,
@@ -326,7 +326,7 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
 
     for (q = 0; q < system->ports.data[p].num_types; q++, ctrl++)
     {
-      mg_printf(conn, "%s{\"index\":%u,\"id\":%u,\"desc\":\"%s\"}", comma, p, ctrl->id, ctrl->desc);
+      mg_printf(conn, "%s{\"index\":%u,\"id\":%u,\"description\":\"%s\"}", comma, p, ctrl->id, ctrl->desc);
       comma = ",";
     }
   }
