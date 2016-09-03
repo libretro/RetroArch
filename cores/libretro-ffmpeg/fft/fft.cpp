@@ -90,13 +90,13 @@ typedef struct GLFFT
    unsigned depth;
 } glfft_t;
 
-#include "gl_shaders/fft_heightmap.glsl.vert.h"
-#include "gl_shaders/fft_heightmap.glsl.frag.h"
-#include "gl_shaders/fft_vertex_program.glsl.vert.h"
-#include "gl_shaders/fft_fragment_program_resolve.glsl.frag.h"
-#include "gl_shaders/fft_fragment_program_real.glsl.frag.h"
-#include "gl_shaders/fft_fragment_program_complex.glsl.frag.h"
-#include "gl_shaders/fft_fragment_program_blur.glsl.frag.h"
+#include "../gl_shaders/fft_heightmap.glsl.vert.h"
+#include "../gl_shaders/fft_heightmap.glsl.frag.h"
+#include "../gl_shaders/fft_vertex_program.glsl.vert.h"
+#include "../gl_shaders/fft_fragment_program_resolve.glsl.frag.h"
+#include "../gl_shaders/fft_fragment_program_real.glsl.frag.h"
+#include "../gl_shaders/fft_fragment_program_complex.glsl.frag.h"
+#include "../gl_shaders/fft_fragment_program_blur.glsl.frag.h"
 
 static GLuint fft_compile_shader(glfft_t *fft, GLenum type, const char *source)
 {

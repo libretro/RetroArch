@@ -1372,29 +1372,19 @@ static void context_destroy(void)
 #endif
 }
 
-static void context_reset(void)
-{
-   static const char *vertex_source =
-      "attribute vec2 aVertex;\n"
-      "attribute vec2 aTexCoord;\n"
-      "varying vec2 vTex;\n"
-      "void main() { gl_Position = vec4(aVertex, 0.0, 1.0); vTex = aTexCoord; }\n";
+#include "gl_shaders/ffmpeg.glsl.vert.h"
 
-   static const char *fragment_source =
-      "#ifdef GL_ES\n"
-      "precision mediump float;\n"
-      "#endif\n"
-      "varying vec2 vTex;\n"
-      "uniform sampler2D sTex0;\n"
-      "uniform sampler2D sTex1;\n"
-      "uniform float uMix;\n"
-#if defined(HAVE_OPENGLES)
-      "void main() { gl_FragColor = vec4(pow(mix(pow(texture2D(sTex0, vTex).bgr, vec3(2.2)), pow(texture2D(sTex1, vTex).bgr, vec3(2.2)), uMix), vec3(1.0 / 2.2)), 1.0); }\n";
-      // Get format as GL_RGBA/GL_UNSIGNED_BYTE. Assume little endian, so we get ARGB -> BGRA byte order, and we have to swizzle to .BGR.
+/* OpenGL ES note about main() -  Get format as GL_RGBA/GL_UNSIGNED_BYTE. 
+ * Assume little endian, so we get ARGB -> BGRA byte order, and 
+ * we have to swizzle to .BGR. */
+#ifdef HAVE_OPENGLES
+#include "gl_shaders/ffmpeg_es.glsl.frag.h"
 #else
-      "void main() { gl_FragColor = vec4(pow(mix(pow(texture2D(sTex0, vTex).rgb, vec3(2.2)), pow(texture2D(sTex1, vTex).rgb, vec3(2.2)), uMix), vec3(1.0 / 2.2)), 1.0); }\n";
+#include "gl_shaders/ffmpeg.glsl.frag.h"
 #endif
 
+static void context_reset(void)
+{
    static const GLfloat vertex_data[] = {
       -1, -1, 0, 0,
        1, -1, 1, 0,
