@@ -262,7 +262,7 @@ const char* const input_builtin_autoconfs[] =
 #ifdef HAVE_SDL2
    DECL_AUTOCONF_DEVICE("SDL2 Controller", "sdl2", SDL2_DEFAULT_BINDS),
 #endif
-#if defined(VITA)
+#if defined(VITA) || defined(SN_TARGET_PSP2)
    DECL_AUTOCONF_DEVICE("Vita Controller", "vita", PSPINPUT_DEFAULT_BINDS),
 #elif defined(PSP)
    DECL_AUTOCONF_DEVICE("PSP Controller", "psp", PSPINPUT_DEFAULT_BINDS),
