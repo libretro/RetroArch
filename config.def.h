@@ -565,6 +565,7 @@ static bool show_advanced_settings    = true;
 static const uint32_t menu_entry_normal_color = 0xffffffff;
 static const uint32_t menu_entry_hover_color  = 0xff64ff64;
 static const uint32_t menu_title_color        = 0xff64ff64;
+
 #else
 static bool default_block_config_read = false;
 #endif
@@ -596,6 +597,8 @@ static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 #ifdef ANDROID
 static bool back_as_menu_toggle_enable = true;
 #endif
+
+static bool all_users_control_menu = false;
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;

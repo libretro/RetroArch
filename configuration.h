@@ -288,6 +288,7 @@ typedef struct settings
 
       unsigned menu_toggle_gamepad_combo;
       bool back_as_menu_toggle_enable;
+      bool all_users_control_menu;
 
 #if TARGET_OS_IPHONE
       bool small_keyboard_enable;

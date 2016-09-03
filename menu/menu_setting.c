@@ -4220,6 +4220,23 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->input.all_users_control_menu,
+                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU),
+                  all_users_control_menu,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU);
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->input.remap_binds_enable,
                   msg_hash_to_str(MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE),
