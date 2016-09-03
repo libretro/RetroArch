@@ -15,6 +15,9 @@
  */
 
 #include "netplay_private.h"
+
+#include "../../autosave.h"
+
 /**
  * pre_frame:   
  * @netplay              : pointer to netplay object

@@ -22,8 +22,6 @@
 #include <net/net_compat.h>
 #include <retro_endianness.h>
 
-#include "../../command.h"
-#include "../../dynamic.h"
 #include "../../msg_hash.h"
 #include "../../system.h"
 #include "../../runloop.h"
@@ -33,10 +31,10 @@
 #define HAVE_IPV6
 #endif
 
-#define UDP_FRAME_PACKETS 16
-#define UDP_WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
-#define MAX_SPECTATORS 16
-#define RARCH_DEFAULT_PORT 55435
+#define UDP_FRAME_PACKETS     16
+#define UDP_WORDS_PER_FRAME   4 /* Allows us to send 128 bits worth of state per frame. */
+#define MAX_SPECTATORS        16
+#define RARCH_DEFAULT_PORT    55435
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
@@ -135,19 +133,30 @@ struct netplay
 extern void *netplay_data;
 
 struct netplay_callbacks* netplay_get_cbs_net(void);
+
 struct netplay_callbacks* netplay_get_cbs_spectate(void);
+
 void   netplay_log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick);
 
 bool netplay_get_nickname(netplay_t *netplay, int fd);
+
 bool netplay_send_nickname(netplay_t *netplay, int fd);
+
 bool netplay_send_info(netplay_t *netplay);
+
 uint32_t *netplay_bsv_header_generate(size_t *size, uint32_t magic);
+
 bool netplay_bsv_parse_header(const uint32_t *header, uint32_t magic);
+
 uint32_t netplay_impl_magic(void);
+
 bool netplay_send_info(netplay_t *netplay);
+
 bool netplay_get_info(netplay_t *netplay);
+
 bool netplay_is_server(netplay_t* netplay);
+
 bool netplay_is_spectate(netplay_t* netplay);
 
 #endif
