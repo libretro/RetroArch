@@ -400,6 +400,10 @@ INPUT
 #include "../input/common/x11_input_common.c"
 #endif
 
+#ifdef HAVE_SDL2
+#include "../input/autoconf/builtin_sdl2.c"
+#endif
+
 #if defined(__CELLOS_LV2__)
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
