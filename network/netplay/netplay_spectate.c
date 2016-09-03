@@ -24,6 +24,8 @@
 
 #include "netplay_private.h"
 
+#include "../../runloop.h"
+
 /**
  * netplay_pre_frame_spectate:   
  * @netplay              : pointer to netplay object

@@ -20,6 +20,7 @@
 #include "../../movie.h"
 #include "../../msg_hash.h"
 #include "../../content.h"
+#include "../../runloop.h"
 #include "../../version.h"
 
 bool netplay_get_nickname(netplay_t *netplay, int fd)

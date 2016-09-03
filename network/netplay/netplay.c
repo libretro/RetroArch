@@ -30,6 +30,7 @@
 
 #include "../../command.h"
 #include "../../movie.h"
+#include "../../runloop.h"
 
 enum
 {
