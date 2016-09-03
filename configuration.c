@@ -2701,11 +2701,11 @@ void config_load(void)
     * set by core environment variables */
    core_unset_input_descriptors();
 
-   if (!rarch_ctl(RARCH_CTL_IS_BLOCK_CONFIG_READ, NULL))
-   {
-      config_set_defaults();
-      parse_config_file();
-   }
+   if (rarch_ctl(RARCH_CTL_IS_BLOCK_CONFIG_READ, NULL))
+      return;
+
+   config_set_defaults();
+   parse_config_file();
 }
 
 #if 0
