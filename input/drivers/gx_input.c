@@ -50,7 +50,7 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(gx->joypad, port, binds[port], id);;
+         return input_joypad_pressed(gx->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(gx->joypad, port, idx, id, binds[port]);
    }

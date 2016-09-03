@@ -355,7 +355,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   *quit = (bool)frontend_driver_get_signal_handler_state();;
+   *quit = (bool)frontend_driver_get_signal_handler_state();
 }
 
 static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)

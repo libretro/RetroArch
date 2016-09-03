@@ -174,8 +174,8 @@ static void *gl_raster_font_init_font(void *data,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
    atlas            = font->font_driver->get_atlas(font->font_data);
-   font->tex_width  = next_pow2(atlas->width);;
-   font->tex_height = next_pow2(atlas->height);;
+   font->tex_width  = next_pow2(atlas->width);
+   font->tex_height = next_pow2(atlas->height);
 
    if (!gl_raster_font_upload_atlas(font, atlas,
             font->tex_width, font->tex_height))
