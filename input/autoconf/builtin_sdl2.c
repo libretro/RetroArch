@@ -17,6 +17,8 @@
 #include "../input_autodetect.h"
 #include "builtin.h"
 
+/* TODO/FIXME - Missing L2/R2 */
+
 #define SDL2_DEFAULT_BINDS \
 DECL_BTN(a, 1) \
 DECL_BTN(b, 0) \
