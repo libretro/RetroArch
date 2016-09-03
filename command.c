@@ -1956,7 +1956,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_UNLOAD_CORE:
       case CMD_EVENT_QUIT:
 #ifdef HAVE_MENU
-      if (settings->confirm_on_exit)
+      if (settings && settings->confirm_on_exit)
       {
          if (menu_driver_ctl(RARCH_MENU_CTL_IS_QUIT_CONFIRM, NULL))
          {

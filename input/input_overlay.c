@@ -145,9 +145,12 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 {
    size_t i;
-
+    
+   /* TODO/FIXME - Bad hackery. Should get rid of this */
    if (!ol)
       ol = overlay_ptr;
+   if (!ol)
+      return;
 
    for (i = 0; i < ol->size; i++)
       input_overlay_scale(&ol->overlays[i], scale);
