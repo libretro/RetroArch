@@ -405,34 +405,27 @@ INPUT
 #include "../input/common/x11_input_common.c"
 #endif
 
-#ifdef HAVE_SDL2
-#include "../input/autoconf/builtin_sdl2.c"
+#ifdef HAVE_BUILTIN_AUTOCONFIG
+#include "../input/input_autodetect_builtin.c"
 #endif
 
 #if defined(__CELLOS_LV2__)
 #include "../input/drivers/ps3_input.c"
 #include "../input/drivers_joypad/ps3_joypad.c"
-#include "../input/autoconf/builtin_ps3.c"
 #elif defined(SN_TARGET_PSP2) || defined(PSP) || defined(VITA)
 #include "../input/drivers/psp_input.c"
 #include "../input/drivers_joypad/psp_joypad.c"
-#include "../input/autoconf/builtin_psp.c"
 #elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
 #include "../input/drivers/cocoa_input.c"
 #elif defined(_3DS)
 #include "../input/drivers/ctr_input.c"
 #include "../input/drivers_joypad/ctr_joypad.c"
-#include "../input/autoconf/builtin_ctr.c"
 #elif defined(GEKKO)
 #include "../input/drivers/gx_input.c"
 #include "../input/drivers_joypad/gx_joypad.c"
-#include "../input/autoconf/builtin_gx.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
 #include "../input/drivers_joypad/xdk_joypad.c"
-#include "../input/autoconf/builtin_xdk.c"
-#elif defined(_WIN32)
-#include "../input/autoconf/builtin_win.c"
 #elif defined(XENON)
 #include "../input/drivers/xenon360_input.c"
 #elif defined(ANDROID)
