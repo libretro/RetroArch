@@ -717,7 +717,7 @@ void CORE_PREFIX(retro_run)(void)
                media.width, media.height, media.width * sizeof(uint32_t));
       }
    }
-#ifdef HAVE_GL_FFT
+#if defined(HAVE_GL_FFT) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGLES))
    else if (fft)
    {
       unsigned       frames = to_read_frames;
