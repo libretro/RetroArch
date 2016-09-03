@@ -57,6 +57,8 @@ bool cheevos_set_cheats(void);
 
 void cheevos_set_support_cheevos(bool state);
 
+bool cheevos_get_support_cheevos(void);
+
 void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value);
 
 uint8_t *cheevos_get_memory(const cheevos_var_t *var);

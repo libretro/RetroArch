@@ -57,6 +57,11 @@ typedef struct retro_ctx_api_info
    unsigned version;
 } retro_ctx_api_info_t;
 
+typedef struct retro_ctx_region_info
+{
+  unsigned region;
+} retro_ctx_region_info_t;
+
 typedef struct retro_ctx_controller_info
 {
    unsigned port;
@@ -160,6 +165,8 @@ bool core_api_version(retro_ctx_api_info_t *api);
  */
 bool core_verify_api_version(void);
 
+bool core_get_region(retro_ctx_region_info_t *info);
+
 bool core_get_memory(retro_ctx_memory_info_t *info);
 
 /* Initialize system A/V information. */
@@ -183,6 +190,8 @@ bool core_uninit_libretro_callbacks(void);
 void core_uninit_symbols(void);
 
 void core_set_input_state(retro_ctx_input_state_info_t *info);
+
+bool core_is_game_loaded(void);
 
 RETRO_END_DECLS
 

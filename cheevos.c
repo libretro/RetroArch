@@ -2365,3 +2365,8 @@ void cheevos_set_support_cheevos(bool state)
 {
    cheevos_locals.core_supports = state;
 }
+
+bool cheevos_get_support_cheevos(void)
+{
+  return cheevos_locals.core_supports;
+}

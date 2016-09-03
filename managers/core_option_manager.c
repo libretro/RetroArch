@@ -28,24 +28,6 @@
 
 #include "core_option_manager.h"
 
-struct core_option
-{
-   char *desc;
-   char *key;
-   struct string_list *vals;
-   size_t index;
-};
-
-struct core_option_manager
-{
-   config_file_t *conf;
-   char conf_path[PATH_MAX_LENGTH];
-
-   struct core_option *opts;
-   size_t size;
-   bool updated;
-};
-
 static bool core_option_manager_parse_variable(
       core_option_manager_t *opt, size_t idx,
       const struct retro_variable *var)
