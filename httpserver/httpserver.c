@@ -207,7 +207,7 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
     "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n"
     "{"
     "\"corePath\":\"%s\","
-    "\"api\":%u,"
+    "\"apiVersion\":%u,"
     "\"systemInfo\":"
     "{"
     "\"libraryName\":\"%s\","
