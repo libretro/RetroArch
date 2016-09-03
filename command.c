@@ -1959,9 +1959,7 @@ bool command_event(enum event_command cmd, void *data)
       if (settings && settings->confirm_on_exit)
       {
          if (menu_driver_ctl(RARCH_MENU_CTL_IS_QUIT_CONFIRM, NULL))
-         {
             runloop_ctl(RUNLOOP_CTL_SET_QUIT, NULL);
-         }
          else if (!menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT_CONFIRM, NULL))
          {
             runloop_ctl(RUNLOOP_CTL_SHOW_MESSAGE, NULL);
