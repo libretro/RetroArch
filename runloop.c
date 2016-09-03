@@ -1341,7 +1341,7 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
 static int runloop_iterate_time_to_exit_load_dummy(void)
 {
    content_ctx_info_t content_info = {0};
-   settings_t *settings            = NULL;
+   settings_t *settings            = config_get_ptr();
 
    if (!settings->load_dummy_on_core_shutdown)
       return -1;
