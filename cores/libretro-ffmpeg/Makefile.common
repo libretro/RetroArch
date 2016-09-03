@@ -110,8 +110,8 @@ else
 endif
 
 ifeq ($(INTERNAL_LIBSPEEX),0)
-	LIBS += -lspeex
-	HAVE_LIBSPEEX = 1
+	#LIBS += -lspeex
+	#HAVE_LIBSPEEX = 1
 endif
 
 ifeq ($(INTERNAL_WEBP),0)
@@ -147,12 +147,13 @@ ifeq ($(INTERNAL_WAVPACK),0)
 endif
 
 ifeq ($(INTERNAL_XVIDCORE),0)
-   LIBS += -lxvidcore
+   #LIBS += -lxvidcore
+	#HAVE_XVID = 1
 endif
 
 ifeq ($(INTERNAL_LIBTHEORA),0)
-	LIBS += -ltheora -ltheoraenc -ltheoradec
-	HAVE_LIBTHEORA = 1
+	#LIBS += -ltheora -ltheoraenc -ltheoradec
+	#HAVE_LIBTHEORA = 1
 endif
 
 ifeq ($(INTERNAL_VPX),0)
@@ -770,6 +771,14 @@ else
 DEFINES += -DCONFIG_HAP_DECODER=0
 endif
 
+ifeq ($(HAVE_LIBGSM),1)
+DEFINES += -DCONFIG_LIBGSM_DECODER=1 \
+			  -DCONFIG_LIBGSM_MS_DECODER=1
+else
+DEFINES += -DCONFIG_LIBGSM_DECODER=0 \
+			  -DCONFIG_LIBGSM_MS_DECODER=0
+endif
+
 ifeq ($(HAVE_QSV),1)
 DEFINES += -DCONFIG_H264_QSV_DECODER=1 \
 			  -DCONFIG_HEVC_QSV_DECODER=1 \
@@ -806,6 +815,12 @@ DEFINES += -DCONFIG_GSM_DECODER=1 \
 else
 DEFINES += -DCONFIG_GSM_DECODER=0 \
 			  -DCONFIG_GSM_MS_DECODER=0
+endif
+
+ifeq ($(HAVE_XVMC),1)
+DEFINES += -DCONFIG_MPEG_XVMC_DECODER=1
+else
+DEFINES += -DCONFIG_MPEG_XVMC_DECODER=0
 endif
 
 DEFINES += \
@@ -915,7 +930,6 @@ DEFINES += \
 			 -DCONFIG_MJPEGB_DECODER=1 \
 			 -DCONFIG_MMVIDEO_DECODER=1 \
 			 -DCONFIG_MOTIONPIXELS_DECODER=1 \
-			 -DCONFIG_MPEG_XVMC_DECODER=1 \
 			 -DCONFIG_MPEG1VIDEO_DECODER=1 \
 			 -DCONFIG_MPEG2VIDEO_DECODER=1 \
 			 -DCONFIG_MPEG4_DECODER=1 \
@@ -1431,7 +1445,6 @@ DEFINES += -DHAVE_AVCODEC_H \
 			 -DCONFIG_RDFT=1 \
 			 -DCONFIG_RUNTIME_CPUDETECT=1 \
 			 -DCONFIG_GRAY=1 \
-			 -DCONFIG_XVMC=0 \
 			 -DCONFIG_DSPUTIL=1 \
 			 -DCONFIG_FRAME_THREAD_ENCODER=1 \
 			 -DCONFIG_ERROR_RESILIENCE=1 \
@@ -1440,6 +1453,12 @@ DEFINES += -DHAVE_AVCODEC_H \
 			 -DCONFIG_LIBSHINE=0 \
 			 -DCONFIG_GOLOMB=1 \
 			 -DCONFIG_ME_CMP=0
+
+ifeq ($(HAVE_XVMC),1)
+DEFINES += -DCONFIG_XVMC=1
+else
+DEFINES += -DCONFIG_XVMC=0
+endif
 
 
 AVCODEC_BLACKLIST := \
@@ -1529,6 +1548,7 @@ AVCODEC_BLACKLIST := \
 ifeq ($(HAVE_LIBGSM),1)
 else
 	AVCODEC_BLACKLIST += $(AVCODEC_DIR)/libgsm.c \
+								$(AVCODEC_DIR)/libgsmdec.c \
 								$(AVCODEC_DIR)/libgsmenc.c
 endif
 
@@ -1542,6 +1562,12 @@ else
 	AVCODEC_BLACKLIST += $(AVCODEC_DIR)/libvpxenc.c \
 								$(AVCODEC_DIR)/libvpxdec.c \
 								$(AVCODEC_DIR)/libvpx.c
+endif
+
+ifeq ($(HAVE_XVID),1)
+else
+	AVCODEC_BLACKLIST += $(AVCODEC_DIR)/libxvid.c \
+								$(AVCODEC_DIR)/libxvid_rc.c
 endif
 
 ifeq ($(HAVE_MMAL),1)
@@ -1743,6 +1769,7 @@ AVCODEC_BLACKLIST += \
 							$(AVCODEC_DIR)/vaapi_h264.c \
 							$(AVCODEC_DIR)/vaapi_mpeg.c \
 							$(AVCODEC_DIR)/vaapi_mpeg2.c \
+							$(AVCODEC_DIR)/vaapi_mpeg4.c \
 							$(AVCODEC_DIR)/vaapi_vc1.c \
 							$(AVCODEC_DIR)/vaapi.c
 endif
@@ -1759,18 +1786,22 @@ DEFINES += -DCONFIG_VC1_QSV_HWACCEL=0 \
 			  -DCONFIG_HEVC_QSV_HWACCEL=0
 endif
 
+ifeq ($(HAVE_XVMC),1)
+DEFINES += -DCONFIG_MPEG1_XVMC_HWACCEL=1 \
+			  -DCONFIG_MPEG2_XVMC_HWACCEL=1
+else
+DEFINES += -DCONFIG_MPEG1_XVMC_HWACCEL=9 \
+			  -DCONFIG_MPEG2_XVMC_HWACCEL=0
+endif
+
 ifeq ($(HAVE_CODEC_HW),1)
 DEFINES += \
 			  -DCONFIG_H264_VDA_HWACCEL=1 \
-			  -DCONFIG_MPEG1_XVMC_HWACCEL=1 \
-			  -DCONFIG_MPEG2_XBMC_HWACCEL=1 \
-			  -DCONFIG_MPEG2_XVMC_HWACCEL=1
+			  -DCONFIG_MPEG2_XBMC_HWACCEL=1
 else
 DEFINES += \
 			  -DCONFIG_H264_VDA_HWACCEL=0 \
-			  -DCONFIG_MPEG1_XVMC_HWACCEL=0 \
-			  -DCONFIG_MPEG2_XBMC_HWACCEL=0 \
-			  -DCONFIG_MPEG2_XVMC_HWACCEL=0
+			  -DCONFIG_MPEG2_XBMC_HWACCEL=0
 
 AVCODEC_BLACKLIST += $(AVCODEC_DIR)/dxa.c
 endif
@@ -1796,6 +1827,11 @@ endif
 ifeq ($(HAVE_LIBDCADEC),1)
 else
 AVCODEC_BLACKLIST +=    $(AVCODEC_DIR)/libdcadec.c
+endif
+
+ifeq ($(HAVE_XVMC),1)
+else
+AVCODEC_BLACKLIST +=    $(AVCODEC_DIR)/mpegvideo_xvmc.c
 endif
 
 AVCODEC_BLACKLIST +=    $(AVCODEC_DIR)/libwavpackenc.c

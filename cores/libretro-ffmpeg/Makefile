@@ -20,6 +20,7 @@ INTERNAL_WAVPACK       = 0
 INTERNAL_XVIDCORE      = 0
 INTERNAL_VPX           = 0
 
+WANT_LIBASS            = 0
 
 BAKE_IN_FFMPEG := 0
 
@@ -85,35 +86,15 @@ ifeq ($(OPENGL),1)
 endif
    HAVE_SSA := 1
 
-   LIBS = $(shell pkg-config libass --libs) -pthread
-   CFLAGS += $(shell pkg-config libass --cflags) -pthread
 	CFLAGS += -DHAVE_STRUCT_SOCKADDR_STORAGE -DHAVE_STRUCT_ADDRINFO -DHAVE_FMINF
 	HAVE_POLL_H = 1
 	HAVE_GETADDRINFO = 1
 	HAVE_NETWORK = 1
 	HAVE_SOCKLEN = 1
 	HAVE_PTHREADS = 1
-ifneq ($(INTERNAL_LIBAVCODEC),1)
-   LIBS += $(shell pkg-config libavcodec --libs)
-   CFLAGS += $(shell pkg-config libavcodec --cflags)
-endif
-ifneq ($(INTERNAL_LIBAVFORMAT),1)
-   LIBS += $(shell pkg-config libavformat --libs)
-   CFLAGS += $(shell pkg-config libavformat --cflags)
-endif
-ifneq ($(INTERNAL_LIBSWRESAMPLE),1)
-   LIBS += $(shell pkg-config libswresample --libs)
-   CFLAGS += $(shell pkg-config libswresample --cflags)
-endif
-ifneq ($(INTERNAL_LIBAVUTIL),1)
-   LIBS += $(shell pkg-config libavutil --libs)
-   CFLAGS += $(shell pkg-config libavutil --cflags)
-endif
-ifneq ($(INTERNAL_LIBSWSCALE),1)
-   LIBS += $(shell pkg-config libswscale --libs)
-   CFLAGS += $(shell pkg-config libswscale --cflags)
-endif
+
 else ifneq (,$(findstring osx,$(platform)))
+
 	ARCH_X86 = 1
    LIBRETRO_SWITCH = 1
    TARGET := $(TARGET_NAME)_libretro.dylib
@@ -126,7 +107,7 @@ ifeq ($(OPENGL),1)
    HAVE_GL_FFT := 1
    CFLAGS += -DHAVE_GL
 endif
-HAVE_PTHREADS = 1
+	HAVE_PTHREADS = 1
    OSXVER = `sw_vers -productVersion | cut -d. -f 2`
    OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
    fpic += -mmacosx-version-min=10.1
@@ -135,30 +116,11 @@ HAVE_PTHREADS = 1
 	HAVE_GETADDRINFO = 1
 	HAVE_NETWORK = 1
 	HAVE_SOCKLEN = 1
+	HAVE_PTHREADS = 1
 
-   LIBS = $(shell pkg-config libass --libs) -pthread
-   CFLAGS += $(shell pkg-config libass --cflags) -pthread
-ifneq ($(INTERNAL_LIBAVCODEC),1)
-   LIBS += $(shell pkg-config libavcodec --libs)
-   CFLAGS += $(shell pkg-config libavcodec --cflags)
-endif
-ifneq ($(INTERNAL_LIBAVFORMAT),1)
-   LIBS += $(shell pkg-config libavformat --libs)
-   CFLAGS += $(shell pkg-config libavformat --cflags)
-endif
-ifneq ($(INTERNAL_LIBSWRESAMPLE),1)
-   LIBS += $(shell pkg-config libswresample --libs)
-   CFLAGS += $(shell pkg-config libswresample --cflags)
-endif
-ifneq ($(INTERNAL_LIBAVUTIL),1)
-   LIBS += $(shell pkg-config libavutil --libs)
-   CFLAGS += $(shell pkg-config libavutil --cflags)
-endif
-ifneq ($(INTERNAL_LIBSWSCALE),1)
-   LIBS += $(shell pkg-config libswscale --libs)
-   CFLAGS += $(shell pkg-config libswscale --cflags)
-endif
+
 else ifneq (,$(findstring win,$(platform)))
+
 	ARCH_X86 = 1
    CC = gcc
 	CXX = g++
@@ -173,21 +135,6 @@ ifeq ($(OPENGL),1)
 	WIN32_PLATFORM := 1
 endif
    LIBS += -L.
-ifneq ($(INTERNAL_LIBAVCODEC),1)
-   LIBS += -lavcodec
-endif
-ifneq ($(INTERNAL_LIBAVFORMAT),1)
-   LIBS += -lavformat
-endif
-ifneq ($(INTERNAL_LIBSWRESAMPLE),1)
-   LIBS += -lswresample
-endif
-ifneq ($(INTERNAL_LIBAVUTIL),1)
-   LIBS += -lavutil
-endif
-ifneq ($(INTERNAL_LIBSWSCALE),1)
-	LIBS += -lswscale
-endif
 endif
 
 ifeq ($(LIBRETRO_SWITCH),1)
@@ -198,6 +145,7 @@ INTERNAL_LIBAVUTIL     = 1
 INTERNAL_LIBSWRESAMPLE = 1
 INTERNAL_LIBSWSCALE    = 1
 
+INTERNAL_LIBASS        = 0
 INTERNAL_LIBFLAC       = 1
 INTERNAL_LIBOGG        = 1
 INTERNAL_LIBLAME       = 1
@@ -206,24 +154,90 @@ INTERNAL_LIBVORBIS     = 1
 INTERNAL_ZLIB          = 1
 endif
 
+
+
 ifeq ($(INTERNAL_LIBAVCODEC),1)
 	BAKE_IN_FFMPEG += 1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libavcodec --libs)
+   CFLAGS += $(shell pkg-config libavcodec --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   LIBS += $(shell pkg-config libavcodec --libs)
+   CFLAGS += $(shell pkg-config libavcodec --cflags)
+else ifneq (,$(findstring win,$(platform)))
+   LIBS += -lavcodec
+endif
+endif
+
+ifeq ($(INTERNAL_LIBASS),1)
+else
+ifeq ($(WANT_LIBASS),1)
+
+ifneq (,$(findstring unix,$(platform)))
+ifneq (,$(findstring osx,$(platform)))
+   LIBS = $(shell pkg-config libass --libs) -lpthread
+   CFLAGS += $(shell pkg-config libass --cflags) -lpthread
+endif
+endif
+
+endif
 endif
 
 ifeq ($(INTERNAL_LIBAVFORMAT),1)
 	BAKE_IN_FFMPEG += 1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libavformat --libs)
+   CFLAGS += $(shell pkg-config libavformat --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   LIBS += $(shell pkg-config libavformat --libs)
+   CFLAGS += $(shell pkg-config libavformat --cflags)
+else ifneq (,$(findstring win,$(platform)))
+   LIBS += -lavformat
+endif
 endif
 
 ifeq ($(INTERNAL_LIBSWRESAMPLE),1)
 	BAKE_IN_FFMPEG += 1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libswresample --libs)
+   CFLAGS += $(shell pkg-config libswresample --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   LIBS += $(shell pkg-config libswresample --libs)
+   CFLAGS += $(shell pkg-config libswresample --cflags)
+else ifneq (,$(findstring win,$(platform)))
+   LIBS += -lswresample
+endif
 endif
 
-ifeq ($(INTERNAL_LIBWSCALE),1)
+ifeq ($(INTERNAL_LIBSWSCALE),1)
 	BAKE_IN_FFMPEG += 1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libswscale --libs)
+   CFLAGS += $(shell pkg-config libswscale --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   LIBS += $(shell pkg-config libswscale --libs)
+   CFLAGS += $(shell pkg-config libswscale --cflags)
+else ifneq (,$(findstring win,$(platform)))
+	LIBS += -lswscale
+endif
 endif
 
 ifeq ($(INTERNAL_LIBAVUTIL),1)
 	BAKE_IN_FFMPEG += 1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libavutil --libs)
+   CFLAGS += $(shell pkg-config libavutil --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   gIBS += $(shell pkg-config libavutil --libs)
+   CFLAGS += $(shell pkg-config libavutil --cflags)
+else ifneq (,$(findstring win,$(platform)))
+   LIBS += -lavutil
+endif
 endif
 
 CFLAGS += -D__LIBRETRO__
