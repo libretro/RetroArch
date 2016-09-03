@@ -560,13 +560,13 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #ifdef HAVE_XMB
    SETTING_PATH("xmb_font",                   settings->menu.xmb.font, false, NULL, true);
 #endif
-   SETTING_PATH("netplay_nickname",           settings->username, false, NULL, false);
+   SETTING_PATH("netplay_nickname",           settings->username, false, NULL, true);
    SETTING_PATH("video_filter",               settings->path.softfilter_plugin, false, NULL, true);
    SETTING_PATH("audio_dsp_plugin",           settings->path.audio_dsp_plugin, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_url", settings->network.buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->network.buildbot_assets_url, false, NULL, true);
 #ifdef HAVE_NETPLAY
-   SETTING_PATH("netplay_ip_address",       global->netplay.server, false, NULL, false);
+   SETTING_PATH("netplay_ip_address",       global->netplay.server, false, NULL, true);
 #endif
    SETTING_PATH("recording_output_directory",
          global->record.output_dir, false, NULL, true);
@@ -1650,6 +1650,8 @@ static bool config_load_file(const char *path, bool set_defaults,
    struct config_bool_setting_ptr *bool_settings   = NULL;
    struct config_array_setting_ptr *array_settings = NULL;
    struct config_path_setting_ptr *path_settings   = NULL;
+   char *override_username                         = NULL;
+   char *override_netplay_ip_address               = NULL;
    global_t   *global                              = global_get_ptr();
    int bool_settings_size                          = populate_settings_bool  (settings, &bool_settings);
    int float_settings_size                         = populate_settings_float (settings, &float_settings);
@@ -1693,6 +1695,16 @@ static bool config_load_file(const char *path, bool set_defaults,
       config_file_dump_all(conf);
       RARCH_LOG_OUTPUT("=== Config end ===\n");
    }
+#endif
+
+   /* Overrides */
+
+   if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
+      override_username = strdup(settings->username);
+
+#ifdef HAVE_NETPLAY
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS))
+      override_netplay_ip_address = strdup(global->netplay.server);
 #endif
 
    /* Boolean settings */
@@ -1854,24 +1866,25 @@ static bool config_load_file(const char *path, bool set_defaults,
       config_set_active_core_path(tmp_str);
 #endif
 
-   if (!rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
-   {
-      if (config_get_path(conf, "netplay_nickname",  tmp_str, sizeof(tmp_str)))
-            strlcpy(settings->username, tmp_str, sizeof(settings->username));
-   }
-#ifdef HAVE_NETPLAY
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS))
-   {
-      if (config_get_path(conf, "netplay_ip_address", tmp_str, sizeof(tmp_str)))
-            strlcpy(global->netplay.server, tmp_str, sizeof(global->netplay.server));
-   }
-#endif
-
 #ifdef RARCH_CONSOLE
    video_driver_load_settings(conf);
 #endif
 
    /* Post-settings load */
+
+   if (rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL) && override_username)
+   {
+      strlcpy(settings->username, override_username, sizeof(settings->username));
+      free(override_username);
+   }
+
+#ifdef HAVE_NETPLAY
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS))
+   {
+      strlcpy(global->netplay.server, override_netplay_ip_address, sizeof(global->netplay.server));
+      free(override_netplay_ip_address);
+   }
+#endif
 
    if (settings->video.hard_sync_frames > 3)
       settings->video.hard_sync_frames = 3;
