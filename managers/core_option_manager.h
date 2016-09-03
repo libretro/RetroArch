@@ -21,8 +21,27 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include "lists/string_list.h"
 
 RETRO_BEGIN_DECLS
+
+struct core_option
+{
+  char *desc;
+  char *key;
+  struct string_list *vals;
+  size_t index;
+};
+
+struct core_option_manager
+{
+  config_file_t *conf;
+  char conf_path[PATH_MAX_LENGTH];
+
+  struct core_option *opts;
+  size_t size;
+  bool updated;
+};
 
 typedef struct core_option_manager core_option_manager_t;
 

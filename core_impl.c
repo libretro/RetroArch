@@ -42,6 +42,7 @@
 #endif
 
 static struct retro_core_t core;
+static bool                core_game_loaded;
 static unsigned            core_poll_type;
 static bool                core_input_polled;
 static bool   core_has_set_input_descriptors = false;
@@ -249,8 +250,11 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
       return false;
 
    if (load_info->special)
-      return core.retro_load_game_special(load_info->special->id, load_info->info, load_info->content->size);
-   return core.retro_load_game(*load_info->content->elems[0].data ? load_info->info : NULL);
+      core_game_loaded = core.retro_load_game_special(load_info->special->id, load_info->info, load_info->content->size);
+   else
+      core_game_loaded = core.retro_load_game(*load_info->content->elems[0].data ? load_info->info : NULL);
+
+   return core_game_loaded;
 }
 
 bool core_get_system_info(struct retro_system_info *system)
@@ -345,6 +349,7 @@ bool core_unload_game(void)
    video_driver_deinit_hw_context();
    audio_driver_stop();
    core.retro_unload_game();
+   core_game_loaded = false;
    return true;
 }
 
@@ -400,6 +405,14 @@ bool core_verify_api_version(void)
    return true;
 }
 
+bool core_get_region(retro_ctx_region_info_t *info)
+{
+  if (!info)
+    return false;
+  info->region = core.retro_get_region();
+  return true;
+}
+
 bool core_has_set_input_descriptor(void)
 {
    return core_has_set_input_descriptors;
@@ -413,4 +426,9 @@ void core_set_input_descriptors(void)
 void core_unset_input_descriptors(void)
 {
    core_has_set_input_descriptors = false;
+}
+
+bool core_is_game_loaded(void)
+{
+  return core_game_loaded;
 }
