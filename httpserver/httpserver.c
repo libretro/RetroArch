@@ -228,10 +228,10 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
     "\"frontendSupportsAchievements\":false,"
     "\"coreSupportsAchievements\":null,"
 #endif
-    "\"saveRam\":{\"pointer\":\"" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
-    "\"rtcRam\":{\"pointer\":\"" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
-    "\"systemRam\":{\"pointer\":\"" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
-    "\"videoRam\":{\"pointer\":\"" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},",
+    "\"saveRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
+    "\"rtcRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
+    "\"systemRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
+    "\"videoRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},",
     core_path,
     api.version,
     system->info.library_name,
@@ -416,7 +416,7 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
       "%s{"
       "\"id\":%u,"
       "\"flags\":" STRING_REP_UINT64 ","
-      "\"ptr\":\"" PRIXPTR "\","
+      "\"ptr\":\"%" PRIXPTR "\","
       "\"offset\":" STRING_REP_UINT64 ","
       "\"start\":" STRING_REP_UINT64 ","
       "\"select\":" STRING_REP_UINT64 ","
