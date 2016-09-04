@@ -89,7 +89,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    strlcpy(g_defaults.dir.port, eboot_path, sizeof(g_defaults.dir.port));
 #else
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
-   fill_pathname_basedir(g_defaults.dir.port, "ms0:/retroarch/", sizeof(g_defaults.dir.port));
+   fill_pathname_basedir(g_defaults.dir.port, argv[0], sizeof(g_defaults.dir.port));
+   //fill_pathname_basedir(g_defaults.dir.port, "ms0:/retroarch/", sizeof(g_defaults.dir.port));
 #endif
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
