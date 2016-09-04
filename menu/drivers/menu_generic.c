@@ -409,7 +409,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-         if (action == MENU_ACTION_OK)
+         if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_DEFAULT:
