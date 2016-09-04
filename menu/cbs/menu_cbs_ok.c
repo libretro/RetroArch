@@ -242,7 +242,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_HELP:
          info_label             = label;
          dl_type                = DISPLAYLIST_HELP;
-         menu_popup_push_pending(true, type);
+         menu_popup_push_pending(menu, true, type);
          break;
       case ACTION_OK_DL_RPL_ENTRY:
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
