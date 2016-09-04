@@ -32,6 +32,10 @@ void menu_popup_push_pending(menu_handle_t *menu,
 int menu_popup_iterate_help(menu_handle_t *menu, 
       char *s, size_t len, const char *label);
 
+void menu_popup_unset_pending_push(menu_handle_t *menu);
+
+bool menu_popup_is_push_pending(menu_handle_t *menu);
+
 void menu_popup_push(menu_handle_t *menu);
 
 RETRO_END_DECLS

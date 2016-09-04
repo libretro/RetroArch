@@ -181,7 +181,7 @@ static bool menu_init(menu_handle_t *menu_data)
          && !string_is_empty(settings->path.bundle_assets_src) 
          && !string_is_empty(settings->path.bundle_assets_dst)
 #ifdef IOS
-         && menu_data->help_screen.push
+         && menu_popup_is_push_pending(menu_data)
 #else
          && (settings->bundle_assets_extract_version_current 
             != settings->bundle_assets_extract_last_version)

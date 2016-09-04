@@ -220,6 +220,18 @@ int menu_popup_iterate_help(menu_handle_t *menu,
    return 0;
 }
 
+bool menu_popup_is_push_pending(menu_handle_t *menu)
+{
+   return menu->help_screen.push;
+}
+
+void menu_popup_unset_pending_push(menu_handle_t *menu)
+{
+   if (!menu)
+      return;
+   menu->help_screen.push = false;
+}
+
 void menu_popup_push_pending(menu_handle_t *menu,
       bool push, enum menu_help_type type)
 {
@@ -233,7 +245,7 @@ void menu_popup_push(menu_handle_t *menu)
 {
    menu_displaylist_info_t info = {0};
 
-   if (!menu->help_screen.push)
+   if (!menu_popup_is_push_pending(menu))
       return;
 
    info.list = menu_entries_get_menu_stack_ptr(0);
