@@ -19,8 +19,6 @@
 
 #include <retro_common_api.h>
 
-#include "../gfx/video_shader_driver.h"
-
 RETRO_BEGIN_DECLS
 
 /**
@@ -28,7 +26,7 @@ RETRO_BEGIN_DECLS
  *
  * Initializes shader manager.
  **/
-void menu_shader_manager_init(menu_handle_t *menu);
+void menu_shader_manager_init(void);
 
 /**
  * menu_shader_manager_set_preset:
@@ -39,8 +37,7 @@ void menu_shader_manager_init(menu_handle_t *menu);
  * Sets shader preset.
  **/
 void menu_shader_manager_set_preset(
-      struct video_shader *shader,
-      unsigned type, const char *preset_path);
+      void *data, unsigned type, const char *preset_path);
 
 /**
  * menu_shader_manager_save_preset:
@@ -60,8 +57,7 @@ bool menu_shader_manager_save_preset(
  *
  * Returns: type of shader. 
  **/
-unsigned menu_shader_manager_get_type(
-      const struct video_shader *shader);
+unsigned menu_shader_manager_get_type(const void *data);
 
 /**
  * menu_shader_manager_apply_changes:

@@ -28,21 +28,25 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
+#include "../gfx/video_shader_driver.h"
+
+/* Menu shader */
+static char default_glslp[PATH_MAX_LENGTH];
+static char default_cgp[PATH_MAX_LENGTH];
+static char default_slangp[PATH_MAX_LENGTH];
+
 /**
  * menu_shader_manager_init:
  *
  * Initializes shader manager.
  **/
-void menu_shader_manager_init(menu_handle_t *menu)
+void menu_shader_manager_init(void)
 {
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
    config_file_t *conf         = NULL;
    settings_t *settings        = config_get_ptr();
    const char *config_path     = config_get_active_path();
-
-   if (!menu)
-      return;
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);
@@ -51,26 +55,26 @@ void menu_shader_manager_init(menu_handle_t *menu)
     * conflicts on menu.cgp/menu.glslp. */
    if (config_path)
    {
-      fill_pathname_base_ext(menu->default_glslp, config_path,
+      fill_pathname_base_ext(default_glslp, config_path,
             file_path_str(FILE_PATH_GLSLP_EXTENSION),
-            sizeof(menu->default_glslp));
+            sizeof(default_glslp));
 
-      fill_pathname_base_ext(menu->default_cgp, config_path,
+      fill_pathname_base_ext(default_cgp, config_path,
             file_path_str(FILE_PATH_CGP_EXTENSION),
-            sizeof(menu->default_cgp));
+            sizeof(default_cgp));
 
-      fill_pathname_base_ext(menu->default_slangp, config_path,
+      fill_pathname_base_ext(default_slangp, config_path,
             file_path_str(FILE_PATH_SLANGP_EXTENSION),
-            sizeof(menu->default_slangp));
+            sizeof(default_slangp));
    }
    else
    {
-      strlcpy(menu->default_glslp, "menu.glslp",
-            sizeof(menu->default_glslp));
-      strlcpy(menu->default_cgp, "menu.cgp",
-            sizeof(menu->default_cgp));
-      strlcpy(menu->default_slangp, "menu.slangp",
-            sizeof(menu->default_slangp));
+      strlcpy(default_glslp, "menu.glslp",
+            sizeof(default_glslp));
+      strlcpy(default_cgp, "menu.cgp",
+            sizeof(default_cgp));
+      strlcpy(default_slangp, "menu.slangp",
+            sizeof(default_slangp));
    }
 
    switch (msg_hash_to_file_type(msg_hash_calculate(
@@ -146,10 +150,11 @@ void menu_shader_manager_init(menu_handle_t *menu)
  *
  * Sets shader preset.
  **/
-void menu_shader_manager_set_preset(struct video_shader *shader,
+void menu_shader_manager_set_preset(void *data,
       unsigned type, const char *preset_path)
 {
 #ifdef HAVE_SHADER_MANAGER
+   struct video_shader *shader = (struct video_shader*)data;
    config_file_t *conf         = NULL;
    bool refresh                = false;
    settings_t *settings        = config_get_ptr();
@@ -269,16 +274,16 @@ bool menu_shader_manager_save_preset(
       switch (type)
       {
          case RARCH_SHADER_GLSL:
-            conf_path = menu->default_glslp;
+            conf_path = default_glslp;
             break;
 
          case RARCH_SHADER_SLANG:
-            conf_path = menu->default_slangp;
+            conf_path = default_slangp;
             break;
 
          default:
          case RARCH_SHADER_CG:
-            conf_path = menu->default_cgp;
+            conf_path = default_cgp;
             break;
       }
       strlcpy(buffer, conf_path, sizeof(buffer));
@@ -360,8 +365,9 @@ bool menu_shader_manager_save_preset(
  *
  * Returns: type of shader. 
  **/
-unsigned menu_shader_manager_get_type(const struct video_shader *shader)
+unsigned menu_shader_manager_get_type(const void *data)
 {
+   const struct video_shader *shader = (const struct video_shader*)data;
 #ifndef HAVE_SHADER_MANAGER
    return RARCH_SHADER_NONE;
 #else

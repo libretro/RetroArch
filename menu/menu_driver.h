@@ -249,11 +249,6 @@ typedef struct
       char msg[PATH_MAX_LENGTH];
    } menu_state;
 
-   /* Menu shader */
-   char default_glslp[PATH_MAX_LENGTH];
-   char default_cgp[PATH_MAX_LENGTH];
-   char default_slangp[PATH_MAX_LENGTH];
-
    char db_playlist_file[PATH_MAX_LENGTH];
 } menu_handle_t;
 

@@ -789,7 +789,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_ctx->context_destroy(menu_userdata);
          break;
       case RARCH_MENU_CTL_SHADER_MANAGER_INIT:
-         menu_shader_manager_init(menu_driver_data);
+         menu_shader_manager_init();
          break;
       case RARCH_MENU_CTL_LIST_SET_SELECTION:
          {
