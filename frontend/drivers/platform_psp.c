@@ -88,8 +88,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    strlcpy(eboot_path, "ux0:/data/retroarch/", sizeof(eboot_path));
    strlcpy(g_defaults.dir.port, eboot_path, sizeof(g_defaults.dir.port));
 #else
-   strlcpy(eboot_path, "ms0:/retroarch/", sizeof(eboot_path));
-   fill_pathname_basedir(g_defaults.dir.port, argv[0], sizeof(g_defaults.dir.port));
+   strlcpy(eboot_path, argv[0], sizeof(eboot_path));
+   fill_pathname_basedir(g_defaults.dir.port, "ms0:/retroarch/", sizeof(g_defaults.dir.port));
 #endif
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
 
@@ -125,12 +125,16 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.core,
          "database/rdb", sizeof(g_defaults.dir.database));
 #else
-   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.assets, eboot_path,
          "media", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.core, eboot_path,
          "cores", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
+   fill_pathname_join(g_defaults.dir.core_info, eboot_path,
          "info", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.cursor,   eboot_path,
+         "database/cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.database,   eboot_path,
+         "database/rdb", sizeof(g_defaults.dir.database));
    fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
          "userdata/savestates", sizeof(g_defaults.dir.savestate));
    fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
@@ -145,10 +149,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "userdata/config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "userdata/remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.core,
-         "database/cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.core,
-         "database/rdb", sizeof(g_defaults.dir.database));
+
 #endif
 
 #ifdef VITA
