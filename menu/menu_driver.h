@@ -237,7 +237,6 @@ typedef struct
    unsigned            help_screen_id;
    enum menu_help_type help_screen_type;
 
-   bool defer_core;
    char deferred_path[PATH_MAX_LENGTH];
 
    char scratch_buf[PATH_MAX_LENGTH];
