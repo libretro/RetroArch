@@ -100,7 +100,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
-         ret = menu_popup_iterate_help(menu,
+         ret = menu_popup_iterate_help(
                menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
@@ -232,7 +232,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
          /* Have to defer it so we let settings refresh. */
-         menu_popup_push(menu);
+         menu_popup_push();
          break;
    }
 

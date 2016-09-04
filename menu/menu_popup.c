@@ -26,8 +26,11 @@
 #include "../input/input_autodetect.h"
 #include "../input/input_config.h"
 
-int menu_popup_iterate_help(menu_handle_t *menu, 
-      char *s, size_t len, const char *label)
+static bool                menu_popup_pending_push = false;
+static unsigned            menu_popup_id           = 0;
+static enum menu_help_type menu_popup_type         = MENU_HELP_NONE;
+
+int menu_popup_iterate_help(char *s, size_t len, const char *label)
 {
 #ifdef HAVE_CHEEVOS
    cheevos_ctx_desc_t desc_info;
@@ -35,7 +38,7 @@ int menu_popup_iterate_help(menu_handle_t *menu,
    bool do_exit = false;
    settings_t *settings      = config_get_ptr();
 
-   switch (menu->help_screen.type)
+   switch (menu_popup_type)
    {
       case MENU_HELP_WELCOME:
          {
@@ -167,7 +170,7 @@ int menu_popup_iterate_help(menu_handle_t *menu,
          
 #ifdef HAVE_CHEEVOS
       case MENU_HELP_CHEEVOS_DESCRIPTION:
-         desc_info.idx = menu->help_screen.id;
+         desc_info.idx = menu_popup_id;
          desc_info.s   = s;
          desc_info.len = len;
          cheevos_get_description(&desc_info);
@@ -213,34 +216,29 @@ int menu_popup_iterate_help(menu_handle_t *menu,
 
    if (do_exit)
    {
-      menu->help_screen.type = MENU_HELP_NONE;
+      menu_popup_type = MENU_HELP_NONE;
       return 1;
    }
 
    return 0;
 }
 
-void menu_popup_push_pending(menu_handle_t *menu,
-      bool push, enum menu_help_type type)
+void menu_popup_push_pending(bool push, enum menu_help_type type)
 {
-   if (!menu)
-      return;
-   menu->help_screen.push = push;
-   menu->help_screen.type = type;
+   menu_popup_pending_push = push;
+   menu_popup_type = type;
 }
 
-bool menu_popup_is_push_pending(menu_handle_t *menu)
+bool menu_popup_is_push_pending(void)
 {
-   if (!menu)
-      return false;
-   return menu->help_screen.push;
+   return menu_popup_pending_push;
 }
 
-void menu_popup_push(menu_handle_t *menu)
+void menu_popup_push(void)
 {
    menu_displaylist_info_t info = {0};
 
-   if (!menu_popup_is_push_pending(menu))
+   if (!menu_popup_is_push_pending())
       return;
 
    info.list = menu_entries_get_menu_stack_ptr(0);
@@ -252,10 +250,9 @@ void menu_popup_push(menu_handle_t *menu)
    menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
 }
 
-void menu_popup_deinit(menu_handle_t *menu)
+void menu_popup_deinit(void)
 {
-   if (!menu)
-      return;
-   menu->help_screen.push = false;
-   menu->help_screen.type = MENU_HELP_NONE;
+   menu_popup_pending_push = false;
+   menu_popup_id           = 0;
+   menu_popup_type         = MENU_HELP_NONE;
 }

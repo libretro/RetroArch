@@ -172,7 +172,7 @@ static bool menu_init(menu_handle_t *menu_data)
 
    if (settings->menu_show_start_screen)
    {
-      menu_popup_push_pending(menu_data, true,
+      menu_popup_push_pending(true,
             MENU_HELP_WELCOME);
 
       settings->menu_show_start_screen   = false;
@@ -183,14 +183,14 @@ static bool menu_init(menu_handle_t *menu_data)
          && !string_is_empty(settings->path.bundle_assets_src) 
          && !string_is_empty(settings->path.bundle_assets_dst)
 #ifdef IOS
-         && menu_popup_is_push_pending(menu_data)
+         && menu_popup_is_push_pending()
 #else
          && (settings->bundle_assets_extract_version_current 
             != settings->bundle_assets_extract_last_version)
 #endif
       )
    {
-      menu_popup_push_pending(menu_data, true, MENU_HELP_EXTRACT);
+      menu_popup_push_pending(true, MENU_HELP_EXTRACT);
 #ifdef HAVE_ZLIB
       task_push_decompress(settings->path.bundle_assets_src, 
             settings->path.bundle_assets_dst,
@@ -568,7 +568,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             core_info_deinit_list();
             core_info_free_current_core();
 
-            menu_popup_deinit(menu_driver_data);
+            menu_popup_deinit();
             free(menu_driver_data);
          }
          menu_driver_data = NULL;
