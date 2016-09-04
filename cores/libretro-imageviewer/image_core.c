@@ -69,7 +69,48 @@ struct string_list *file_list;
 #ifdef STB_IMAGE_IMPLEMENTATION
 static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|psd|tga|gif|hdr|pic|ppm|pgm";
 #else
-static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|tga";
+
+#ifdef HAVE_RJPEG
+#define RJPEG_ARGS "jpg|jpeg"
+
+#ifdef HAVE_RPNG
+#define RJPEG_SEP "|"
+#endif
+
+#else
+#define RJPEG_ARGS
+#define RJPEG_SEP
+#endif
+
+#ifdef HAVE_RPNG
+#define RPNG_ARGS "png"
+
+#ifdef HAVE_RBMP
+#define RPNG_SEP "|"
+#endif
+#else
+#define RPNG_ARGS
+#define RPNG_SEP
+#endif
+
+#ifdef HAVE_RBMP
+#define RBMP_ARGS "bmp"
+
+#ifdef HAVE_RTGA
+#define RBMP_SEP "|"
+#endif
+#else
+#define RBMP_ARGS
+#define RBMP_SEP
+#endif
+
+#ifdef HAVE_RTGA
+#define RTGA_ARGS "tga"
+#else
+#define RTGA_ARGS
+#endif
+
+static const char* IMAGE_CORE_PREFIX(valid_extensions) = RJPEG_ARGS RJPEG_SEP RPNG_ARGS RPNG_SEP RBMP_ARGS RBMP_SEP RTGA_ARGS;
 #endif
 
 void IMAGE_CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
