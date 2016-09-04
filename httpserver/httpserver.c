@@ -5,6 +5,7 @@
 #include "gfx/video_driver.h"
 #include "managers/core_option_manager.h"
 #include "cheevos.h"
+#include "content.h"
 #include "string/stdstring.h"
 #include "compat/zlib.h"
 #include "civetweb.h"
@@ -221,6 +222,7 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
     "\"pixelFormat\":\"%s\","
     "\"rotation\":%u,"
     "\"performaceLevel\":%u,"
+    "\"supportsNoGame\":%s,"
 #ifdef HAVE_CHEEVOS
     "\"frontendSupportsAchievements\":true,"
     "\"coreSupportsAchievements\":%s,"
@@ -243,13 +245,14 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
     pixel_format,
     system->rotation,
     system->performance_level,
+    content_does_not_need_content() ? "true" : "false",
 #ifdef HAVE_CHEEVOS
     cheevos_get_support_cheevos() ? "true" : "false",
 #endif
-    sram.data, sram.size,
-    rtc.data, rtc.size,
-    sysram.data, sysram.size,
-    vram.data, vram.size
+    (uintptr_t)sram.data, sram.size,
+    (uintptr_t)rtc.data, rtc.size,
+    (uintptr_t)sysram.data, sysram.size,
+    (uintptr_t)vram.data, vram.size
   );
 
   mg_printf(conn, "\"subSystems\":[");
@@ -427,7 +430,7 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
       comma,
       id,
       mmap->flags,
-      mmap->ptr,
+      (uintptr_t)mmap->ptr,
       mmap->offset,
       mmap->start,
       mmap->select,
