@@ -543,6 +543,12 @@ uint64_t cpu_features_get(void)
    }
 
    len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.floatingpoint", NULL, &len, NULL, 0) == 0)
+   {
+      cpu |= RETRO_SIMD_CMOV;
+   }
+
+   len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse", NULL, &len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_SSE;
 
@@ -607,6 +613,9 @@ uint64_t cpu_features_get(void)
       return 0;
 
    x86_cpuid(1, flags);
+
+   if (flags[3] & (1 << 15))
+      cpu |= RETRO_SIMD_CMOV;
 
    if (flags[3] & (1 << 23))
       cpu |= RETRO_SIMD_MMX;
