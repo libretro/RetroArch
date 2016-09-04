@@ -12,6 +12,8 @@
 
 #include <string.h>
 #include <stdarg.h>
+
+#define __STDC_FORMAT_MACROS 
 #include <inttypes.h>
 
 #define BASIC_INFO "info"
