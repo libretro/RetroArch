@@ -28,7 +28,6 @@
 #include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_navigation.h"
-#include "menu_popup.h"
 #include "menu_cbs.h"
 
 #ifdef HAVE_LIBRETRODB
@@ -4178,7 +4177,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_HELP:
          menu_entries_append_enum(info->list, info->path,
                info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0);
-         menu_popup_push_pending(menu, false, MENU_HELP_NONE);
+         menu->help_screen.push = false;
          break;
       case DISPLAYLIST_SETTING_ENUM:
          {
