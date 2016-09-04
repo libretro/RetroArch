@@ -220,6 +220,15 @@ int menu_popup_iterate_help(menu_handle_t *menu,
    return 0;
 }
 
+void menu_popup_push_pending(menu_handle_t *menu,
+      bool push, enum menu_help_type type)
+{
+    if (!menu)
+      return;
+   menu->help_screen.push = push;
+   menu->help_screen.type = type;
+}
+
 void menu_popup_push(menu_handle_t *menu)
 {
    menu_displaylist_info_t info = {0};
