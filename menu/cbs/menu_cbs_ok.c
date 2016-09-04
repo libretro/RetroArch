@@ -240,7 +240,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_HELP:
          info_label = label;
-         menu->push_help_screen = true;
+         menu->help_screen.push = true;
          dl_type                = DISPLAYLIST_HELP;
          break;
       case ACTION_OK_DL_RPL_ENTRY:
@@ -1447,7 +1447,7 @@ static int  generic_action_ok_help(const char *path,
    menu_handle_t            *menu = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
-   menu->help_screen_type = id2;
+   menu->help_screen.type = id2;
 
    return generic_action_ok_displaylist_push(path, NULL, lbl, type, idx,
          entry_idx, ACTION_OK_DL_HELP);
@@ -1461,7 +1461,7 @@ static int action_ok_cheevos(const char *path,
 
    menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
 
-   menu->help_screen_id   = new_id;
+   menu->help_screen.id   = new_id;
    return generic_action_ok_help(path, label, type, idx, entry_idx,
          MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
          MENU_HELP_CHEEVOS_DESCRIPTION);

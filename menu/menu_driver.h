@@ -233,9 +233,12 @@ enum menu_settings_type
 
 typedef struct
 {
-   bool                push_help_screen;
-   unsigned            help_screen_id;
-   enum menu_help_type help_screen_type;
+   struct
+   {
+      bool                push;
+      unsigned            id;
+      enum menu_help_type type;
+   } help_screen;
 
    char deferred_path[PATH_MAX_LENGTH];
 

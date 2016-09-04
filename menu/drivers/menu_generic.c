@@ -44,7 +44,7 @@ static int action_iterate_help(menu_handle_t *menu,
    bool do_exit = false;
    settings_t *settings      = config_get_ptr();
 
-   switch (menu->help_screen_type)
+   switch (menu->help_screen.type)
    {
       case MENU_HELP_WELCOME:
          {
@@ -176,7 +176,7 @@ static int action_iterate_help(menu_handle_t *menu,
          
 #ifdef HAVE_CHEEVOS
       case MENU_HELP_CHEEVOS_DESCRIPTION:
-         desc_info.idx = menu->help_screen_id;
+         desc_info.idx = menu->help_screen.id;
          desc_info.s   = s;
          desc_info.len = len;
          cheevos_get_description(&desc_info);
@@ -222,7 +222,7 @@ static int action_iterate_help(menu_handle_t *menu,
 
    if (do_exit)
    {
-      menu->help_screen_type = MENU_HELP_NONE;
+      menu->help_screen.type = MENU_HELP_NONE;
       return 1;
    }
 
@@ -429,7 +429,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
          /* Have to defer it so we let settings refresh. */
-         if (menu->push_help_screen)
+         if (menu->help_screen.push)
          {
             menu_displaylist_info_t info = {0};
             file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);

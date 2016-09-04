@@ -171,8 +171,8 @@ static bool menu_init(menu_handle_t *menu_data)
 
    if (settings->menu_show_start_screen)
    {
-      menu_data->push_help_screen = true;
-      menu_data->help_screen_type = MENU_HELP_WELCOME;
+      menu_data->help_screen.push = true;
+      menu_data->help_screen.type = MENU_HELP_WELCOME;
       settings->menu_show_start_screen   = false;
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
@@ -181,15 +181,15 @@ static bool menu_init(menu_handle_t *menu_data)
          && !string_is_empty(settings->path.bundle_assets_src) 
          && !string_is_empty(settings->path.bundle_assets_dst)
 #ifdef IOS
-         && menu_data->push_help_screen
+         && menu_data->help_screen.push
 #else
          && (settings->bundle_assets_extract_version_current 
             != settings->bundle_assets_extract_last_version)
 #endif
       )
    {
-      menu_data->help_screen_type           = MENU_HELP_EXTRACT;
-      menu_data->push_help_screen           = true;
+      menu_data->help_screen.type           = MENU_HELP_EXTRACT;
+      menu_data->help_screen.push           = true;
 #ifdef HAVE_ZLIB
       task_push_decompress(settings->path.bundle_assets_src, 
             settings->path.bundle_assets_dst,
