@@ -732,7 +732,7 @@ void fill_short_pathname_representation(char* out_rep,
 
 #ifdef HAVE_COMPRESSION
    last_slash  = find_last_slash(path_short);
-   if(last_slash != NULL)
+   if (last_slash != NULL)
    {
       /* We handle paths like:
        * /path/to/file.7z#mygame.img

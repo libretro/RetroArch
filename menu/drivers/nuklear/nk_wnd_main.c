@@ -32,7 +32,7 @@
 static char* out;
 static char core[PATH_MAX_LENGTH] = {0};
 static char content[PATH_MAX_LENGTH] = {0};
-float ratio[] = {0.85f, 0.15f};
+float ratio[] = {0.85f, 0.15f, 0f}; /* TODO: what should this be? */
 
 void nk_wnd_main(nk_menu_handle_t *nk, const char* title)
 {
