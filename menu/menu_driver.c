@@ -24,6 +24,7 @@
 #include "menu_cbs.h"
 #include "menu_display.h"
 #include "menu_navigation.h"
+#include "menu_popup.h"
 #include "menu_shader.h"
 
 #include "../config.def.h"
@@ -171,8 +172,7 @@ static bool menu_init(menu_handle_t *menu_data)
 
    if (settings->menu_show_start_screen)
    {
-      menu_data->help_screen.push = true;
-      menu_data->help_screen.type = MENU_HELP_WELCOME;
+      menu_popup_push_pending(menu_data, true, MENU_HELP_WELCOME);
       settings->menu_show_start_screen   = false;
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
@@ -188,8 +188,7 @@ static bool menu_init(menu_handle_t *menu_data)
 #endif
       )
    {
-      menu_data->help_screen.type           = MENU_HELP_EXTRACT;
-      menu_data->help_screen.push           = true;
+      menu_popup_push_pending(menu_data, true, MENU_HELP_EXTRACT);
 #ifdef HAVE_ZLIB
       task_push_decompress(settings->path.bundle_assets_src, 
             settings->path.bundle_assets_dst,

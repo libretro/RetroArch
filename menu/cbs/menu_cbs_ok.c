@@ -27,6 +27,7 @@
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
+#include "../menu_popup.h"
 #include "../menu_content.h"
 
 #include "../../configuration.h"
@@ -240,8 +241,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_HELP:
          info_label             = label;
-         menu->help_screen.type = type;
-         menu->help_screen.push = true;
+         menu_popup_push_pending(menu, true, type);
          dl_type                = DISPLAYLIST_HELP;
          break;
       case ACTION_OK_DL_RPL_ENTRY:

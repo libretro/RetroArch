@@ -20,9 +20,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <boolean.h>
+
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
+
+void menu_popup_push_pending(menu_handle_t *menu,
+      bool push, enum menu_help_type type);
 
 int menu_popup_iterate_help(menu_handle_t *menu, 
       char *s, size_t len, const char *label);
