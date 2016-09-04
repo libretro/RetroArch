@@ -8,12 +8,9 @@
 #include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
+#include <retro_environment.h>
 
-#if 0
-#define HAVE_STB_IMAGE
-#endif
-
-#ifdef HAVE_STB_IMAGE
+#if defined(HAVE_STB_IMAGE) && (__STDC_VERSION__ >= 199901L)
 #define STB_IMAGE_IMPLEMENTATION
 
 #if 0
@@ -52,7 +49,7 @@ static retro_environment_t IMAGE_CORE_PREFIX(environ_cb);
 
 static bool      process_new_image;
 static uint32_t* image_buffer;
-#ifndef HAVE_STB_IMAGE
+#ifndef STB_IMAGE_IMPLEMENTATION
 static struct texture_image image_texture;
 #endif
 static int       image_width;
@@ -65,7 +62,7 @@ struct string_list *file_list;
 #define DUPE_TEST
 #endif
 
-#ifdef HAVE_STB_IMAGE
+#ifdef STB_IMAGE_IMPLEMENTATION
 static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|psd|tga|gif|hdr|pic|ppm|pgm";
 #else
 static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|tga";
@@ -113,7 +110,7 @@ void IMAGE_CORE_PREFIX(retro_init)(void)
 
 static void imageviewer_free_image(void)
 {
-#ifdef HAVE_STB_IMAGE
+#ifdef STB_IMAGE_IMPLEMENTATION
    if (image_buffer)
       free(image_buffer);
 #else
@@ -201,13 +198,13 @@ void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c)
 
 static bool imageviewer_load(const char *path, int image_index)
 {
-#ifdef HAVE_STB_IMAGE
+#ifdef STB_IMAGE_IMPLEMENTATION
    int comp;
 #endif
 
    imageviewer_free_image();
 
-#ifdef HAVE_STB_IMAGE
+#ifdef STB_IMAGE_IMPLEMENTATION
    image_buffer           = (uint32_t*)stbi_load(
          path,
          &image_width,
@@ -397,7 +394,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
       /* RGBA > XRGB8888 */
       struct retro_system_av_info info;
 
-#ifdef HAVE_STB_IMAGE
+#ifdef STB_IMAGE_IMPLEMENTATION
       int x, y;
       uint32_t *buf = &image_buffer[0];
 
