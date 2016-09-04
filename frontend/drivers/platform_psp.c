@@ -62,6 +62,7 @@ PSP_HEAP_SIZE_MAX();
 #endif
 
 char eboot_path[512];
+char user_path[512];
 
 static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 
@@ -89,20 +90,34 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    strlcpy(g_defaults.dir.port, eboot_path, sizeof(g_defaults.dir.port));
 #else
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
+   strlcpy(user_path, "ms0:/retroarch/", sizeof(eboot_path));
    fill_pathname_basedir(g_defaults.dir.port, argv[0], sizeof(g_defaults.dir.port));
-   //fill_pathname_basedir(g_defaults.dir.port, "ms0:/retroarch/", sizeof(g_defaults.dir.port));
 #endif
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
+#ifdef VITA
+   fill_pathname_join(g_defaults.dir.assets, "app0:/",
+         "assets", sizeof(g_defaults.dir.assets));
+#else
+   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+         "media", sizeof(g_defaults.dir.assets));
+#endif
 
+   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
+         "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
+         "info", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.core,
+         "database/cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.core,
+         "database/rdb", sizeof(g_defaults.dir.database));
    strlcpy(g_defaults.dir.content_history,
          g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+
 #ifdef VITA
    fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
          "downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.assets, "app0:/",
-         "assets", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
          "cores", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
@@ -121,42 +136,36 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.core,
-         "database/cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.core,
-         "database/rdb", sizeof(g_defaults.dir.database));
 #else
-   fill_pathname_join(g_defaults.dir.assets, eboot_path,
-         "media", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.core, eboot_path,
-         "cores", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.core_info, eboot_path,
-         "info", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.cursor,   eboot_path,
-         "database/cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.dir.database,   eboot_path,
-         "database/rdb", sizeof(g_defaults.dir.database));
-   fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
-         "userdata/savestates", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
-         "userdata/savefiles", sizeof(g_defaults.dir.sram));
-   fill_pathname_join(g_defaults.dir.system, g_defaults.dir.core,
-         "userdata/system", sizeof(g_defaults.dir.system));
-   fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.core,
-         "userdata/playlists", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.cheats, g_defaults.dir.port,
-         "userdata/cheats", sizeof(g_defaults.dir.cheats));
-   fill_pathname_join(g_defaults.dir.menu_config, g_defaults.dir.port,
-         "userdata/config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
-         "userdata/remaps", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.savestate, user_path,
+         "states", sizeof(g_defaults.dir.savestate));
+   fill_pathname_join(g_defaults.dir.sram, user_path,
+         "saves", sizeof(g_defaults.dir.sram));
+   fill_pathname_join(g_defaults.dir.system, user_path,
+         "system", sizeof(g_defaults.dir.system));
+   fill_pathname_join(g_defaults.dir.playlist, user_path,
+         "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.dir.cheats, user_path,
+         "cheats", sizeof(g_defaults.dir.cheats));
+   fill_pathname_join(g_defaults.dir.menu_config, user_path,
+         "config", sizeof(g_defaults.dir.menu_config));
+   fill_pathname_join(g_defaults.dir.remap, user_path,
+         "remaps", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.core_assets, user_path,
+         "downloads", sizeof(g_defaults.dir.core_assets));
+   fill_pathname_join(g_defaults.dir.cache, user_path,
+         "temp", sizeof(g_defaults.dir.cache));
+   fill_pathname_join(g_defaults.dir.screenshot, user_path,
+         "screenshots", sizeof(g_defaults.dir.screenshot));
 
 #endif
-
 #ifdef VITA
    fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
          "overlays", sizeof(g_defaults.dir.overlay));
 #endif
+
+
+
 
 #ifdef VITA
    params = (struct rarch_main_wrap*)params_data;
