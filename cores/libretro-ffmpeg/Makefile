@@ -22,12 +22,14 @@ INTERNAL_VPX           = 0
 
 WANT_LIBASS            = 0
 
+GLFLAGS   :=
+
 BAKE_IN_FFMPEG := 0
 
 #CPU Optimization flags
 HAVE_SSE2 = 0
 HAVE_MMX = 0
-HAVE_THREADS = 1
+HAVE_THREADS=1
 
 #Additional codec support for internal FFmpeg
 HAVE_WAVPACK   = 0
@@ -46,7 +48,7 @@ HAVE_LIBOPUS   = 0
 HAVE_ZLIB      = 0
 
 #Video support
-OPENGL = 1
+OPENGL 		  = 1
 HAVE_CODEC_HW = 0
 
 CORE_DIR := .
@@ -80,8 +82,7 @@ ifneq (,$(findstring unix,$(platform)))
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined -fPIC
 ifeq ($(OPENGL),1)
    GL_LIB := -lGL
-   CFLAGS += -DHAVE_OPENGL
-   HAVE_GL := 1
+	HAVE_OPENGL = 1
 	HAVE_GL_FFT := 1
 endif
    HAVE_SSA := 1
@@ -91,23 +92,22 @@ endif
 	HAVE_GETADDRINFO = 1
 	HAVE_NETWORK = 1
 	HAVE_SOCKLEN = 1
-	HAVE_PTHREADS = 1
+	HAVE_PTHREADS=1
 
 else ifneq (,$(findstring osx,$(platform)))
 
-	ARCH_X86 = 1
+   ARCH_X86 = 1
    LIBRETRO_SWITCH = 1
    TARGET := $(TARGET_NAME)_libretro.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
    CFLAGS += -I. -I.. -DHAVE_FMINF
+
 ifeq ($(OPENGL),1)
    GL_LIB := -framework OpenGL
-   CFLAGS += -DHAVE_OPENGL
-   HAVE_GL := 1
    HAVE_GL_FFT := 1
+	HAVE_OPENGL = 1
 endif
-	HAVE_PTHREADS = 1
    OSXVER = `sw_vers -productVersion | cut -d. -f 2`
    OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
    fpic += -mmacosx-version-min=10.1
@@ -116,8 +116,48 @@ endif
 	HAVE_GETADDRINFO = 1
 	HAVE_NETWORK = 1
 	HAVE_SOCKLEN = 1
-	HAVE_PTHREADS = 1
+	HAVE_PTHREADS=1
 
+else ifneq (,$(findstring ios,$(platform)))
+
+   ARCH_ARM = 1
+   LIBRETRO_SWITCH = 1
+   TARGET := $(TARGET_NAME)_libretro_ios.dylib
+   fpic := -fPIC
+   SHARED := -dynamiclib
+   CFLAGS += -I. -I.. -DHAVE_FMINF -DIOS
+ifeq ($(OPENGL),1)
+	HAVE_OPENGL = 1
+	GLES = 1
+   GL_LIB := -framework OpenGLES
+   HAVE_GL_FFT := 1
+   CFLAGS += -DHAVE_OPENGLES -DHAVE_OPENGLES3
+endif
+   HAVE_ARMV7=1
+   HAVE_PTHREADS=1
+   ARCH_X86 = 0
+   ARCH_X86_64 = 0
+
+ifeq ($(IOSSDK),)
+  IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+endif
+
+   CC = cc -arch armv7 -isysroot $(IOSSDK)
+   CXX  = c++ -arch armv7 -isysroot $(IOSSDK)
+   LD = armv7-apple-darwin11-ld
+
+ifeq ($(platform),ios9)
+   CC += -miphoneos-version-min=8.0
+   CFLAGS += -miphoneos-version-min=8.0
+else
+   CC += -miphoneos-version-min=5.0
+   CFLAGS += -miphoneos-version-min=5.0
+endif
+	CFLAGS += -DHAVE_STRUCT_SOCKADDR_STORAGE -DHAVE_STRUCT_ADDRINFO
+	HAVE_POLL_H = 1
+	HAVE_GETADDRINFO = 1
+	HAVE_NETWORK = 1
+	HAVE_SOCKLEN = 1
 
 else ifneq (,$(findstring win,$(platform)))
 
@@ -130,7 +170,6 @@ else ifneq (,$(findstring win,$(platform)))
 ifeq ($(OPENGL),1)
    GL_LIB := -lopengl32
    CFLAGS += -DHAVE_OPENGL
-   HAVE_GL := 1
 	HAVE_GL_FFT := 1
 	WIN32_PLATFORM := 1
 endif
@@ -157,7 +196,7 @@ endif
 
 
 ifeq ($(INTERNAL_LIBAVCODEC),1)
-	BAKE_IN_FFMPEG += 1
+	BAKE_IN_FFMPEG=1
 else
 ifneq (,$(findstring unix,$(platform)))
    LIBS += $(shell pkg-config libavcodec --libs)
@@ -176,8 +215,8 @@ ifeq ($(WANT_LIBASS),1)
 
 ifneq (,$(findstring unix,$(platform)))
 ifneq (,$(findstring osx,$(platform)))
-   LIBS = $(shell pkg-config libass --libs) -lpthread
-   CFLAGS += $(shell pkg-config libass --cflags) -lpthread
+   LIBS += $(shell pkg-config libass --libs)
+   CFLAGS += $(shell pkg-config libass --cflags)
 endif
 endif
 
@@ -185,7 +224,7 @@ endif
 endif
 
 ifeq ($(INTERNAL_LIBAVFORMAT),1)
-	BAKE_IN_FFMPEG += 1
+	BAKE_IN_FFMPEG=1
 else
 ifneq (,$(findstring unix,$(platform)))
    LIBS += $(shell pkg-config libavformat --libs)
@@ -199,7 +238,7 @@ endif
 endif
 
 ifeq ($(INTERNAL_LIBSWRESAMPLE),1)
-	BAKE_IN_FFMPEG += 1
+	BAKE_IN_FFMPEG=1
 else
 ifneq (,$(findstring unix,$(platform)))
    LIBS += $(shell pkg-config libswresample --libs)
@@ -213,7 +252,7 @@ endif
 endif
 
 ifeq ($(INTERNAL_LIBSWSCALE),1)
-	BAKE_IN_FFMPEG += 1
+	BAKE_IN_FFMPEG=1
 else
 ifneq (,$(findstring unix,$(platform)))
    LIBS += $(shell pkg-config libswscale --libs)
@@ -227,7 +266,7 @@ endif
 endif
 
 ifeq ($(INTERNAL_LIBAVUTIL),1)
-	BAKE_IN_FFMPEG += 1
+	BAKE_IN_FFMPEG=1
 else
 ifneq (,$(findstring unix,$(platform)))
    LIBS += $(shell pkg-config libavutil --libs)
@@ -244,7 +283,7 @@ CFLAGS += -D__LIBRETRO__
 
 include Makefile.common
 
-CFLAGS += $(DEFINES) $(INCFLAGS)
+CFLAGS   += $(DEFINES) $(INCFLAGS) $(GLFLAGS)
 CFLAGS += -Wall $(fpic)
 
 ifeq ($(DEBUG), 1)
