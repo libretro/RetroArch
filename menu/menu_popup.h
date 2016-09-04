@@ -24,19 +24,36 @@
 
 #include <retro_common_api.h>
 
+enum menu_help_type
+{
+   MENU_HELP_NONE       = 0,
+   MENU_HELP_WELCOME,
+   MENU_HELP_EXTRACT,
+   MENU_HELP_CONTROLS,
+   MENU_HELP_CHEEVOS_DESCRIPTION,
+   MENU_HELP_LOADING_CONTENT,
+   MENU_HELP_WHAT_IS_A_CORE,
+   MENU_HELP_CHANGE_VIRTUAL_GAMEPAD,
+   MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+   MENU_HELP_SCANNING_CONTENT,
+   MENU_HELP_LAST
+};
+
 RETRO_BEGIN_DECLS
 
-void menu_popup_push_pending(menu_handle_t *menu,
+void menu_popup_push_pending(
       bool push, enum menu_help_type type);
 
-int menu_popup_iterate_help(menu_handle_t *menu, 
+int menu_popup_iterate_help( 
       char *s, size_t len, const char *label);
 
-void menu_popup_unset_pending_push(menu_handle_t *menu);
+void menu_popup_unset_pending_push(void);
 
-bool menu_popup_is_push_pending(menu_handle_t *menu);
+bool menu_popup_is_push_pending(void);
 
-void menu_popup_push(menu_handle_t *menu);
+void menu_popup_push(void);
+
+void menu_popup_reset(void);
 
 RETRO_END_DECLS
 

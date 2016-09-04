@@ -241,7 +241,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_HELP:
          info_label             = label;
-         menu_popup_push_pending(menu, true, type);
+         menu_popup_push_pending(true, type);
          dl_type                = DISPLAYLIST_HELP;
          break;
       case ACTION_OK_DL_RPL_ENTRY:

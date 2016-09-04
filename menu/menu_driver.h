@@ -64,21 +64,6 @@ enum menu_environ_cb
    MENU_ENVIRON_LAST
 };
 
-enum menu_help_type
-{
-   MENU_HELP_NONE       = 0,
-   MENU_HELP_WELCOME,
-   MENU_HELP_EXTRACT,
-   MENU_HELP_CONTROLS,
-   MENU_HELP_CHEEVOS_DESCRIPTION,
-   MENU_HELP_LOADING_CONTENT,
-   MENU_HELP_WHAT_IS_A_CORE,
-   MENU_HELP_CHANGE_VIRTUAL_GAMEPAD,
-   MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-   MENU_HELP_SCANNING_CONTENT,
-   MENU_HELP_LAST
-};
-
 enum menu_state_changes
 {
    MENU_STATE_RENDER_FRAMEBUFFER = 0,
@@ -233,13 +218,6 @@ enum menu_settings_type
 
 typedef struct
 {
-   struct
-   {
-      bool                push;
-      unsigned            id;
-      enum menu_help_type type;
-   } help_screen;
-
    char deferred_path[PATH_MAX_LENGTH];
 
    char scratch_buf[PATH_MAX_LENGTH];
