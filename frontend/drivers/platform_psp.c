@@ -94,34 +94,18 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_basedir(g_defaults.dir.port, argv[0], sizeof(g_defaults.dir.port));
 #endif
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
+
 #ifdef VITA
+   /* bundle data*/
    fill_pathname_join(g_defaults.dir.assets, "app0:/",
          "assets", sizeof(g_defaults.dir.assets));
-#else
-   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
-         "media", sizeof(g_defaults.dir.assets));
-#endif
-
-   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
-         "cores", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
-         "info", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.core,
-         "database/cursors", sizeof(g_defaults.dir.cursor));
-   fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.core,
-         "database/rdb", sizeof(g_defaults.dir.database));
-   strlcpy(g_defaults.dir.content_history,
-         g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
-         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
-
-#ifdef VITA
    fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
          "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
          "cores", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
          "info", sizeof(g_defaults.dir.core_info));
+   /* user data*/
    fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.core,
          "savestates", sizeof(g_defaults.dir.savestate));
    fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.core,
@@ -136,7 +120,20 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
+
 #else
+   /* bundle data */
+   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
+         "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,
+         "info", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.port,
+         "database/cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.port,
+         "database/rdb", sizeof(g_defaults.dir.database));
+   /* user data */
+   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+         "media", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.savestate, user_path,
          "states", sizeof(g_defaults.dir.savestate));
    fill_pathname_join(g_defaults.dir.sram, user_path,
@@ -158,14 +155,27 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.screenshot, user_path,
          "screenshots", sizeof(g_defaults.dir.screenshot));
 
+   path_mkdir(user_path);
+   path_mkdir(g_defaults.dir.assets);
+   path_mkdir(g_defaults.dir.savestate);
+   path_mkdir(g_defaults.dir.sram);
+   path_mkdir(g_defaults.dir.system);
+   path_mkdir(g_defaults.dir.playlist);
+   path_mkdir(g_defaults.dir.cheats);
+   path_mkdir(g_defaults.dir.menu_config);
+   path_mkdir(g_defaults.dir.remap);
+   path_mkdir(g_defaults.dir.core_assets);
+   path_mkdir(g_defaults.dir.cache);
+   path_mkdir(g_defaults.dir.screenshot);
 #endif
+   strlcpy(g_defaults.dir.content_history,
+         g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 #ifdef VITA
    fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.core,
          "overlays", sizeof(g_defaults.dir.overlay));
 #endif
-
-
-
 
 #ifdef VITA
    params = (struct rarch_main_wrap*)params_data;
