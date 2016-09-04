@@ -90,7 +90,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    strlcpy(g_defaults.dir.port, eboot_path, sizeof(g_defaults.dir.port));
 #else
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
-   strlcpy(user_path, "ms0:/retroarch/", sizeof(eboot_path));
+   /* PSP mkdir doesn't like trailing slashes, make sure to not include one*/
+   strlcpy(user_path, "ms0:/retroarch", sizeof(eboot_path));
    fill_pathname_basedir(g_defaults.dir.port, argv[0], sizeof(g_defaults.dir.port));
 #endif
    RARCH_LOG("port dir: [%s]\n", g_defaults.dir.port);
@@ -120,7 +121,6 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
          "remaps", sizeof(g_defaults.dir.remap));
-
 #else
    /* bundle data */
    fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
