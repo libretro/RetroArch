@@ -10,7 +10,11 @@
 #include <compat/strl.h>
 #include <retro_environment.h>
 
-#if defined(HAVE_STB_IMAGE) && (__STDC_VERSION__ >= 199901L)
+#if defined(HAVE_RPNG) || defined(HAVE_RJPEG) || defined(HAVE_RTGA) || defined(HAVE_RBMP)
+#define PREFER_NON_STB_IMAGE
+#endif
+
+#if defined(HAVE_STB_IMAGE) && !defined(PREFER_NON_STB_IMAGE)
 #define STB_IMAGE_IMPLEMENTATION
 
 #if 0
