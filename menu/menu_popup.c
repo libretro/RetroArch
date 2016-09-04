@@ -220,11 +220,27 @@ int menu_popup_iterate_help(menu_handle_t *menu,
    return 0;
 }
 
+void menu_popup_push_pending(menu_handle_t *menu,
+      bool push, enum menu_help_type type)
+{
+   if (!menu)
+      return;
+   menu->help_screen.push = push;
+   menu->help_screen.type = type;
+}
+
+bool menu_popup_is_push_pending(menu_handle_t *menu)
+{
+   if (!menu)
+      return false;
+   return menu->help_screen.push;
+}
+
 void menu_popup_push(menu_handle_t *menu)
 {
    menu_displaylist_info_t info = {0};
 
-   if (!menu->help_screen.push)
+   if (!menu_popup_is_push_pending(menu))
       return;
 
    info.list = menu_entries_get_menu_stack_ptr(0);
@@ -234,4 +250,12 @@ void menu_popup_push(menu_handle_t *menu)
    info.enum_idx = MENU_ENUM_LABEL_HELP;
 
    menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
+}
+
+void menu_popup_deinit(menu_handle_t *menu)
+{
+   if (!menu)
+      return;
+   menu->help_screen.push = false;
+   menu->help_screen.type = MENU_HELP_NONE;
 }

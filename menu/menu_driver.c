@@ -24,6 +24,7 @@
 #include "menu_cbs.h"
 #include "menu_display.h"
 #include "menu_navigation.h"
+#include "menu_popup.h"
 #include "menu_shader.h"
 
 #include "../config.def.h"
@@ -171,8 +172,9 @@ static bool menu_init(menu_handle_t *menu_data)
 
    if (settings->menu_show_start_screen)
    {
-      menu_data->help_screen.push = true;
-      menu_data->help_screen.type = MENU_HELP_WELCOME;
+      menu_popup_push_pending(menu_data, true,
+            MENU_HELP_WELCOME);
+
       settings->menu_show_start_screen   = false;
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
@@ -181,15 +183,14 @@ static bool menu_init(menu_handle_t *menu_data)
          && !string_is_empty(settings->path.bundle_assets_src) 
          && !string_is_empty(settings->path.bundle_assets_dst)
 #ifdef IOS
-         && menu_data->help_screen.push
+         && menu_popup_is_push_pending(menu_data)
 #else
          && (settings->bundle_assets_extract_version_current 
             != settings->bundle_assets_extract_last_version)
 #endif
       )
    {
-      menu_data->help_screen.type           = MENU_HELP_EXTRACT;
-      menu_data->help_screen.push           = true;
+      menu_popup_push_pending(menu_data, true, MENU_HELP_EXTRACT);
 #ifdef HAVE_ZLIB
       task_push_decompress(settings->path.bundle_assets_src, 
             settings->path.bundle_assets_dst,
@@ -567,6 +568,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             core_info_deinit_list();
             core_info_free_current_core();
 
+            menu_popup_deinit(menu_driver_data);
             free(menu_driver_data);
          }
          menu_driver_data = NULL;
