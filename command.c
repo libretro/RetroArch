@@ -1955,18 +1955,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_UNLOAD_CORE:
       case CMD_EVENT_QUIT:
-#ifdef HAVE_MENU
-      if (settings && settings->confirm_on_exit)
-      {
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_QUIT_CONFIRM, NULL))
-            runloop_ctl(RUNLOOP_CTL_SET_QUIT, NULL);
-         else if (!menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT_CONFIRM, NULL))
-         {
-            runloop_ctl(RUNLOOP_CTL_SHOW_MESSAGE, NULL);
-            break;
-         }
-      }
-#endif
          command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
          command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
          command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
