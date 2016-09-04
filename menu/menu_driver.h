@@ -233,7 +233,7 @@ enum menu_settings_type
 
 typedef struct
 {
-   bool push_help_screen;
+   bool                push_help_screen;
    unsigned            help_screen_id;
    enum menu_help_type help_screen_type;
 
