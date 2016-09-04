@@ -891,6 +891,7 @@ MENU
 #include "../menu/menu_input.c"
 #include "../menu/menu_entry.c"
 #include "../menu/menu_entries.c"
+#include "../menu/menu_popup.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
