@@ -87,6 +87,14 @@
 #define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
 #endif
 
+#ifdef IOS
+/* There is no default frame buffer on iOS. */
+void cocoagl_bind_game_view_fbo(void);
+#define gl_bind_backbuffer() cocoagl_bind_game_view_fbo()
+#else
+#define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
+#endif
+
 /* Used for the last pass when rendering to the back buffer. */
 static const GLfloat vertexes_flipped[] = {
    0, 1,
@@ -457,13 +465,6 @@ static void gl_disable_client_arrays(void)
 }
 #endif
 
-#ifdef IOS
-/* There is no default frame buffer on iOS. */
-void cocoagl_bind_game_view_fbo(void);
-#define gl_bind_backbuffer() cocoagl_bind_game_view_fbo()
-#else
-#define gl_bind_backbuffer() glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0)
-#endif
 
 GLenum min_filter_to_mag(GLenum type)
 {

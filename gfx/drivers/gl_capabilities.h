@@ -15,13 +15,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GL_CAPABILITIES_H
-#define GL_CAPABILITIES_H
+#ifndef _GL_CAPABILITIES_H
+#define _GL_CAPABILITIES_H
 
 #include <boolean.h>
 #include <retro_common_api.h>
 
 #include <glsym/glsym.h>
+
+#if defined(HAVE_FBO) && defined(HAVE_PSGL)
+#define glGenFramebuffers glGenFramebuffersOES
+#define glBindFramebuffer glBindFramebufferOES
+#define glFramebufferTexture2D glFramebufferTexture2DOES
+#define glCheckFramebufferStatus glCheckFramebufferStatusOES
+#define glDeleteFramebuffers glDeleteFramebuffersOES
+#define glGenRenderbuffers glGenRenderbuffersOES
+#define glBindRenderbuffer glBindRenderbufferOES
+#define glFramebufferRenderbuffer glFramebufferRenderbufferOES
+#define glRenderbufferStorage glRenderbufferStorageOES
+#define glDeleteRenderbuffers glDeleteRenderbuffersOES
+#endif
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))
 #ifdef GL_PIXEL_PACK_BUFFER

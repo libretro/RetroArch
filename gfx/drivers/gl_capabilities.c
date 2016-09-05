@@ -26,19 +26,6 @@
 #include "../video_driver.h"
 #include "../../verbosity.h"
 
-#if defined(HAVE_FBO) && defined(HAVE_PSGL)
-#define glGenFramebuffers glGenFramebuffersOES
-#define glBindFramebuffer glBindFramebufferOES
-#define glFramebufferTexture2D glFramebufferTexture2DOES
-#define glCheckFramebufferStatus glCheckFramebufferStatusOES
-#define glDeleteFramebuffers glDeleteFramebuffersOES
-#define glGenRenderbuffers glGenRenderbuffersOES
-#define glBindRenderbuffer glBindRenderbufferOES
-#define glFramebufferRenderbuffer glFramebufferRenderbufferOES
-#define glRenderbufferStorage glRenderbufferStorageOES
-#define glDeleteRenderbuffers glDeleteRenderbuffersOES
-#endif
-
 static bool gl_core_context       = false;
 
 bool gl_query_core_context_in_use(void)
