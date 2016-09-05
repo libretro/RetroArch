@@ -29,8 +29,6 @@
 #include "config.h"
 #endif
 
-#include "input/input_defines.h"
-
 RETRO_BEGIN_DECLS
 
 #define DRIVERS_CMD_ALL \
@@ -57,6 +55,7 @@ enum driver_ctl_state
 {
    RARCH_DRIVER_CTL_NONE = 0,
    RARCH_DRIVER_CTL_DEINIT,
+
    /* Deinitializes drivers.
     * @data is a bitmask which determines 
     * which drivers get deinitialized. */
@@ -70,21 +69,25 @@ enum driver_ctl_state
    RARCH_DRIVER_CTL_INIT,
 
    RARCH_DRIVER_CTL_INIT_ALL,
+
    /* Attempts to find a default driver for 
     * all driver types.
     *
     * Should be run before RARCH_DRIVER_CTL_INIT.
     */
    RARCH_DRIVER_CTL_INIT_PRE,
+
    /* Sets monitor refresh rate to new value by calling
     * video_monitor_set_refresh_rate(). Subsequently
     * calls audio_monitor_set_refresh_rate(). */
    RARCH_DRIVER_CTL_SET_REFRESH_RATE,
+
    /* Sets audio and video drivers to nonblock state.
     *
     * If nonblock state is false, sets blocking state for both
     * audio and video drivers instead. */
    RARCH_DRIVER_CTL_SET_NONBLOCK_STATE,
+
    /* Update the system Audio/Video information. 
     * Will reinitialize audio/video drivers.
     * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO. */
