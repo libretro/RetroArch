@@ -43,6 +43,7 @@
 
 #include "../ui_companion_driver.h"
 #include "../../msg_hash.h"
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../../gfx/video_context_driver.h"

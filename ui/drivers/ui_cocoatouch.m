@@ -31,6 +31,7 @@
 #ifdef HAVE_AVFOUNDATION
 #import <AVFoundation/AVFoundation.h>
 #endif
+#include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../runloop.h"
 
