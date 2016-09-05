@@ -47,6 +47,7 @@
 
 #include "../frontend_driver.h"
 #include "../../file_path_special.h"
+#include "../../configuration.h"
 #include "../../defaults.h"
 #include "../../general.h"
 #include "../../verbosity.h"
