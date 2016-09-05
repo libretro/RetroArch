@@ -693,7 +693,9 @@ static void *gl_glsl_init(void *data, const char *path)
    unsigned i;
    struct shader_program_info shader_prog_info;
    bool shader_support        = false;
+#ifdef GLSL_DEBUG
    char *error_string         = NULL;
+#endif
    config_file_t *conf        = NULL;
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;

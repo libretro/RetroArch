@@ -209,6 +209,8 @@ static INLINE bool gl_check_error(char *error_string)
          error_string = strdup("Non specified GL error.");
          break;
    }
+    
+   (void)error_string;
 
    return false;
 }
