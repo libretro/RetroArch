@@ -215,7 +215,7 @@ void menu_input_st_cheat_cb(void *userdata, const char *str)
 
    if (str && *str)
    {
-      unsigned cheat_index = 
+      unsigned cheat_index =
          menu_input->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
       cheat_manager_set_code(cheat_index, str);
    }
@@ -317,9 +317,9 @@ static void menu_input_key_bind_poll_bind_get_rested_axes(
       struct menu_bind_state *state, unsigned port)
 {
    unsigned a;
-   const input_device_driver_t     *joypad = 
+   const input_device_driver_t     *joypad =
       input_driver_get_joypad_driver();
-   const input_device_driver_t *sec_joypad = 
+   const input_device_driver_t *sec_joypad =
       input_driver_get_sec_joypad_driver();
 
    if (!state || !joypad)
@@ -327,14 +327,14 @@ static void menu_input_key_bind_poll_bind_get_rested_axes(
 
    /* poll only the relevant port */
    for (a = 0; a < MENU_MAX_AXES; a++)
-      state->axis_state[port].rested_axes[a] = 
+      state->axis_state[port].rested_axes[a] =
          input_joypad_axis_raw(joypad, port, a);
-    
+
    if (sec_joypad)
    {
         /* poll only the relevant port */
         for (a = 0; a < MENU_MAX_AXES; a++)
-            state->axis_state[port].rested_axes[a] = 
+            state->axis_state[port].rested_axes[a] =
                input_joypad_axis_raw(sec_joypad, port, a);
    }
 }
@@ -348,20 +348,20 @@ static void menu_input_key_bind_poll_bind_state_internal(
    unsigned b, a, h;
     if (!joypad)
         return;
-    
+
     if (joypad->poll)
         joypad->poll();
-    
+
     /* poll only the relevant port */
     /* for (i = 0; i < settings->input.max_users; i++) */
     for (b = 0; b < MENU_MAX_BUTTONS; b++)
-        state->state[port].buttons[b] = 
+        state->state[port].buttons[b] =
            input_joypad_button_raw(joypad, port, b);
-    
+
     for (a = 0; a < MENU_MAX_AXES; a++)
-        state->state[port].axes[a] = 
+        state->state[port].axes[a] =
            input_joypad_axis_raw(joypad, port, a);
-    
+
     for (h = 0; h < MENU_MAX_HATS; h++)
     {
         if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
@@ -380,9 +380,9 @@ static void menu_input_key_bind_poll_bind_state(
       unsigned port,
       bool timed_out)
 {
-   const input_device_driver_t *joypad     = 
+   const input_device_driver_t *joypad     =
       input_driver_get_joypad_driver();
-   const input_device_driver_t *sec_joypad = 
+   const input_device_driver_t *sec_joypad =
       input_driver_get_sec_joypad_driver();
 
    if (!state)
@@ -391,10 +391,10 @@ static void menu_input_key_bind_poll_bind_state(
    memset(state->state, 0, sizeof(state->state));
    state->skip = timed_out || input_driver_state(NULL, 0,
          RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
-    
+
    menu_input_key_bind_poll_bind_state_internal(
          joypad, state, port, timed_out);
-    
+
    if (sec_joypad)
       menu_input_key_bind_poll_bind_state_internal(
             sec_joypad, state, port, timed_out);
@@ -472,13 +472,13 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       {
          /* Take care of case where axis rests on +/- 0x7fff
           * (e.g. 360 controller on Linux) */
-         state->target->joyaxis = n->axes[a] > 0 
+         state->target->joyaxis = n->axes[a] > 0
             ? AXIS_POS(a) : AXIS_NEG(a);
          state->target->joykey = NO_BTN;
 
          /* Lock the current axis */
-         new_state->axis_state[p].locked_axes[a] = 
-            n->axes[a] > 0 ? 
+         new_state->axis_state[p].locked_axes[a] =
+            n->axes[a] > 0 ?
             0x7fff : -0x7fff;
          return true;
       }
@@ -546,7 +546,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
    menu_input_t *menu_input     = menu_input_get_ptr();
    settings_t *settings         = config_get_ptr();
    int64_t current              = cpu_features_get_time_usec();
-   int timeout                  = 
+   int timeout                  =
       (menu_input->binds.timeout_end - current) / 1000000;
 
    if (timeout <= 0)
@@ -614,10 +614,10 @@ bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox
 {
    int16_t  mouse_x       = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t  mouse_y       = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-   bool     inside_hitbox = 
-      (mouse_x    >= hitbox->x1) 
-      && (mouse_x <= hitbox->x2) 
-      && (mouse_y >= hitbox->y1) 
+   bool     inside_hitbox =
+      (mouse_x    >= hitbox->x1)
+      && (mouse_x <= hitbox->x2)
+      && (mouse_y >= hitbox->y1)
       && (mouse_y <= hitbox->y2)
       ;
 
@@ -639,7 +639,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
    {
       case MENU_INPUT_CTL_BIND_SET_MIN_MAX:
          {
-            menu_input_ctx_bind_limits_t *lim = 
+            menu_input_ctx_bind_limits_t *lim =
                (menu_input_ctx_bind_limits_t*)data;
             if (!lim || !menu_input)
                return false;
@@ -776,7 +776,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
             menu_input->keyboard.type   = line->type;
             menu_input->keyboard.idx    = line->idx;
-            menu_input_keyboard_buffer  = 
+            menu_input_keyboard_buffer  =
                input_keyboard_start_line(menu, line->cb);
          }
          break;
@@ -794,13 +794,13 @@ static int menu_input_pointer(unsigned *action)
    menu_input_t *menu_input                     = menu_input_get_ptr();
    unsigned fb_width                            = menu_display_get_width();
    unsigned fb_height                           = menu_display_get_height();
-   int pointer_device                           = 
+   int pointer_device                           =
       menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
-   int pointer_x                                = 
+   int pointer_x                                =
       input_driver_state(binds, 0, pointer_device,
          0, RETRO_DEVICE_ID_POINTER_X);
-   int pointer_y                                = 
+   int pointer_y                                =
       input_driver_state(binds, 0, pointer_device,
          0, RETRO_DEVICE_ID_POINTER_Y);
 
@@ -885,7 +885,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
 
    if (
-         !settings->menu.mouse.enable 
+         !settings->menu.mouse.enable
 #ifdef HAVE_OVERLAY
          || (settings->input.overlay_enable && input_overlay_is_alive(NULL))
 #endif
@@ -1042,7 +1042,7 @@ static int menu_input_pointer_post_iterate(
       return -1;
 
 #ifdef HAVE_OVERLAY
-   check_overlay = check_overlay || 
+   check_overlay = check_overlay ||
       (settings->input.overlay_enable && input_overlay_is_alive(NULL));
 #endif
 
@@ -1059,7 +1059,7 @@ static int menu_input_pointer_post_iterate(
       int16_t pointer_y         = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
 
       metrics.type  = DISPLAY_METRIC_DPI;
-      metrics.value = &dpi; 
+      metrics.value = &dpi;
 
       video_context_driver_get_metrics(&metrics);
 
@@ -1176,10 +1176,10 @@ static unsigned menu_input_frame_pointer(unsigned *data)
    bool mouse_enabled                      = settings->menu.mouse.enable;
 #ifdef HAVE_OVERLAY
    if (!mouse_enabled)
-      mouse_enabled = !(settings->input.overlay_enable 
+      mouse_enabled = !(settings->input.overlay_enable
             && input_overlay_is_alive(NULL));
 #endif
-    
+
    if (!mouse_enabled)
       menu_input->mouse.ptr = 0;
 

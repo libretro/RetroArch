@@ -200,11 +200,11 @@ static bool command_read_ram(const char *arg)
 
    cheevos_parse_guest_addr(&var, strtoul(reply_at, (char**)&reply_at, 16));
    data = cheevos_get_memory(&var);
-   
+
    if (data)
    {
       unsigned nbytes = strtol(reply_at, NULL, 10);
-      
+
       for (i=0;i<nbytes;i++)
       {
          sprintf(reply_at+3*i, " %.2X", data[i]);
@@ -797,7 +797,7 @@ bool command_get(command_handle_t *handle)
 {
    if (!handle || !handle->handle)
       return false;
-   return handle->id < RARCH_BIND_LIST_END 
+   return handle->id < RARCH_BIND_LIST_END
       && handle->handle->state[handle->id];
 }
 
@@ -848,8 +848,8 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 
    if (control->set_eject_state(new_state))
       snprintf(msg, sizeof(msg), "%s %s",
-            new_state ? 
-            msg_hash_to_str(MSG_DISK_EJECTED) : 
+            new_state ?
+            msg_hash_to_str(MSG_DISK_EJECTED) :
             msg_hash_to_str(MSG_DISK_CLOSED),
             msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY));
    else
@@ -1089,7 +1089,7 @@ static void command_event_init_controllers(void)
    unsigned i;
    settings_t      *settings = config_get_ptr();
    rarch_system_info_t *info = NULL;
-   
+
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    for (i = 0; i < MAX_USERS; i++)
@@ -1476,7 +1476,7 @@ static bool command_event_save_core_config(void)
    }
 
    /* Infer file name based on libretro core. */
-   if (!string_is_empty(config_get_active_core_path()) 
+   if (!string_is_empty(config_get_active_core_path())
          && path_file_exists(config_get_active_core_path()))
    {
       unsigned i;
@@ -1527,8 +1527,8 @@ static bool command_event_save_core_config(void)
 
    if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
-      /* Overrides block config file saving, 
-       * make it appear as overrides weren't enabled 
+      /* Overrides block config file saving,
+       * make it appear as overrides weren't enabled
        * for a manual save. */
       runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
       overrides_active = true;
@@ -1664,9 +1664,9 @@ static void command_event_undo_save_state(char *s, size_t len)
 {
    if (content_undo_save_buf_is_empty())
    {
-      strlcpy(s, 
+      strlcpy(s,
          msg_hash_to_str(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET), len);
-      return; 
+      return;
    }
 
    if (!content_undo_save_state())
@@ -1710,13 +1710,13 @@ static void command_event_load_state(const char *path, char *s, size_t len)
 
 static void command_event_undo_load_state(char *s, size_t len)
 {
-   
+
    if (content_undo_load_buf_is_empty())
    {
-      strlcpy(s, 
+      strlcpy(s,
          msg_hash_to_str(MSG_NO_STATE_HAS_BEEN_LOADED_YET),
          len);
-      return; 
+      return;
    }
 
    if (!content_undo_load_state())
@@ -1727,7 +1727,7 @@ static void command_event_undo_load_state(char *s, size_t len)
       return;
    }
 
-   strlcpy(s, 
+   strlcpy(s,
          msg_hash_to_str(MSG_UNDID_LOAD_STATE), len);
 }
 
@@ -1995,8 +1995,8 @@ bool command_event(enum event_command cmd, void *data)
                break;
       case CMD_EVENT_QUIT_CONFIRM:
          handle_quit_event();
-               break;
-            case CMD_EVENT_QUIT:
+         break;
+      case CMD_EVENT_QUIT:
 #ifdef HAVE_MENU
          if (settings && settings->confirm_on_exit &&
                 !menu_popup_is_active() && !runloop_is_quit_confirm())
@@ -2441,7 +2441,7 @@ bool command_event(enum event_command cmd, void *data)
             global_t  *global         = global_get_ptr();
             global->sram.use = global->sram.use && !global->sram.save_disable;
 #ifdef HAVE_NETPLAY
-            global->sram.use = global->sram.use && 
+            global->sram.use = global->sram.use &&
                (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL)
                 || !global->netplay.is_client);
 #endif

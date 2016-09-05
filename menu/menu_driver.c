@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -70,6 +70,7 @@ static bool menu_driver_pending_quick_menu      = false;
 static bool menu_driver_prevent_populate        = false;
 static bool menu_driver_load_no_content         = false;
 static bool menu_driver_alive                   = false;
+static bool menu_driver_toggled                 = false;
 static bool menu_driver_data_own                = false;
 static bool menu_driver_pending_quit            = false;
 static bool menu_driver_pending_shutdown        = false;
@@ -98,7 +99,7 @@ const void *menu_driver_find_handle(int idx)
  * menu_driver_find_ident:
  * @idx              : index of driver to get handle to.
  *
- * Returns: Human-readable identifier of menu driver at index. 
+ * Returns: Human-readable identifier of menu driver at index.
  * Can be NULL if nothing found.
  **/
 const char *menu_driver_find_ident(int idx)
@@ -143,7 +144,7 @@ static void bundle_decompressed(void *task_data,
       free(dec);
    }
 
-   settings->bundle_assets_extract_last_version = 
+   settings->bundle_assets_extract_last_version =
       settings->bundle_assets_extract_version_current;
    settings->bundle_finished = true;
 }
@@ -178,19 +179,19 @@ static bool menu_init(menu_handle_t *menu_data)
    }
 
    if (      settings->bundle_assets_extract_enable
-         && !string_is_empty(settings->path.bundle_assets_src) 
+         && !string_is_empty(settings->path.bundle_assets_src)
          && !string_is_empty(settings->path.bundle_assets_dst)
 #ifdef IOS
          && menu_popup_is_push_pending()
 #else
-         && (settings->bundle_assets_extract_version_current 
+         && (settings->bundle_assets_extract_version_current
             != settings->bundle_assets_extract_last_version)
 #endif
       )
    {
       menu_popup_push_pending(true, MENU_POPUP_HELP_EXTRACT);
 #ifdef HAVE_ZLIB
-      task_push_decompress(settings->path.bundle_assets_src, 
+      task_push_decompress(settings->path.bundle_assets_src,
             settings->path.bundle_assets_dst,
             NULL, settings->path.bundle_assets_dst_subdir,
             NULL, bundle_decompressed, NULL);
@@ -221,7 +222,12 @@ static void menu_driver_toggle(bool latch)
    retro_keyboard_event_t *key_event          = NULL;
    retro_keyboard_event_t *frontend_key_event = NULL;
    settings_t                 *settings       = config_get_ptr();
-   
+
+   menu_driver_toggled = latch;
+
+   if (!latch)
+      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
+
    menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &latch);
 
    if (latch)
@@ -290,10 +296,10 @@ const char *menu_driver_ident(void)
 static void menu_update_libretro_info(void)
 {
    struct retro_system_info *info = NULL;
-   
+
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
          &info);
-   
+
    if (!info)
       return;
 
@@ -409,7 +415,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_SYSTEM_INFO_GET:
          {
-            struct retro_system_info **system = 
+            struct retro_system_info **system =
                (struct retro_system_info**)data;
             if (!system)
                return false;
@@ -438,14 +444,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (!menu_driver_data)
             return false;
 
-         if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER) 
+         if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER)
                != BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX))
             BIT64_SET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
          if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
             menu_display_set_framebuffer_dirty_flag();
 
-         if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX) 
+         if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX)
                && !string_is_empty(menu_driver_data->menu_state.msg))
          {
             menu_driver_ctl(RARCH_MENU_CTL_RENDER_MESSAGEBOX, NULL);
@@ -464,7 +470,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_driver_ctl(RARCH_MENU_CTL_BLIT_RENDER, NULL);
          }
 
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) 
+         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)
                && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
             menu_display_libretro();
 
@@ -509,6 +515,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_IS_PREVENT_POPULATE:
          return menu_driver_prevent_populate;
+      case RARCH_MENU_CTL_IS_TOGGLE:
+         return menu_driver_toggled;
+         break;
       case RARCH_MENU_CTL_SET_TOGGLE:
          menu_driver_toggle(true);
          break;
@@ -824,7 +833,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_LOAD_IMAGE:
          {
-            menu_ctx_load_image_t *load_image_info = 
+            menu_ctx_load_image_t *load_image_info =
                (menu_ctx_load_image_t*)data;
             if (!menu_driver_ctx || !menu_driver_ctx->load_image)
                return false;
@@ -867,7 +876,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
             if (!menu_driver_ctx || !menu_driver_ctx->iterate)
                return false;
-             
+
             if (menu_driver_ctx->iterate(menu_driver_data,
                      menu_userdata, iterate->action) == -1)
                return false;
@@ -875,7 +884,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_ENVIRONMENT:
          {
-            menu_ctx_environment_t *menu_environ = 
+            menu_ctx_environment_t *menu_environ =
                (menu_ctx_environment_t*)data;
 
             if (menu_driver_ctx->environ_cb)

@@ -42,6 +42,8 @@
 
 uintptr_t menu_display_white_texture;
 
+static enum menu_toggle_reason menu_display_toggle_reason = MENU_TOGGLE_REASON_NONE;
+
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D
    &menu_display_ctx_d3d,
@@ -58,6 +60,16 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
    &menu_display_ctx_null,
    NULL,
 };
+
+enum menu_toggle_reason menu_display_toggle_get_reason(void)
+{
+  return menu_display_toggle_reason;
+}
+
+void menu_display_toggle_set_reason(enum menu_toggle_reason reason)
+{
+  menu_display_toggle_reason = reason;
+}
 
 static const char *menu_video_get_ident(void)
 {
@@ -287,7 +299,7 @@ bool menu_display_libretro_running(void)
    settings_t *settings = config_get_ptr();
    if (!settings->menu.pause_libretro)
    {
-      if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+      if (rarch_ctl(RARCH_CTL_IS_INITED, NULL)
             && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          return true;
    }
@@ -430,7 +442,7 @@ float menu_display_get_dpi(void)
       return true;
 
    metrics.type  = DISPLAY_METRIC_DPI;
-   metrics.value = &dpi; 
+   metrics.value = &dpi;
 
    if (settings->menu.dpi.override_enable)
       return settings->menu.dpi.override_value;
@@ -530,7 +542,7 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
 
    if (!menu_display_libretro_running() && !menu_display_shader_pipeline_active())
       add_opacity_to_wallpaper = true;
-   if (string_is_equal(menu_driver_ident(), "xmb") 
+   if (string_is_equal(menu_driver_ident(), "xmb")
          && settings->menu.xmb.menu_color_theme == XMB_THEME_WALLPAPER)
       add_opacity_to_wallpaper = true;
 
@@ -757,7 +769,7 @@ void menu_display_snow(int width, int height)
          p->x            += menu_display_scalef(mouse_x, 0, width, -0.3, 0.3);
          p->x            += p->xspeed;
 
-         p->alive         = p->y >= 0 && p->y < height 
+         p->alive         = p->y >= 0 && p->y < height
             && p->x >= 0 && p->x < width;
       }
       else if (max_gen > 0 && timeout <= 0)
@@ -803,7 +815,7 @@ void menu_display_snow(int width, int height)
    }
 }
 
-void menu_display_draw_text(const char *msg, 
+void menu_display_draw_text(const char *msg,
       int width, int height, struct font_params *params)
 {
    void *fb_buf = menu_display_get_font_buffer();

@@ -16,6 +16,7 @@
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 
+#include "menu_display.h"
 #include "menu_driver.h"
 #include "menu_popup.h"
 
@@ -94,10 +95,10 @@ int menu_popup_iterate(char *s, size_t len, const char *label)
 
             for (i = 0; i < ARRAY_SIZE(binds); i++)
             {
-               const struct retro_keybind *keybind = 
+               const struct retro_keybind *keybind =
                   (const struct retro_keybind*)
                   &settings->input.binds[0][binds[i]];
-               const struct retro_keybind *auto_bind = 
+               const struct retro_keybind *auto_bind =
                   (const struct retro_keybind*)
                   input_get_auto_bind(0, binds[i]);
 
@@ -170,7 +171,7 @@ int menu_popup_iterate(char *s, size_t len, const char *label)
                   );
          }
          break;
-         
+
 #ifdef HAVE_CHEEVOS
       case MENU_POPUP_HELP_CHEEVOS_DESCRIPTION:
          desc_info.idx = menu_popup_current_id;
@@ -273,12 +274,17 @@ void menu_popup_reset(void)
    menu_popup_current_id   = 0;
    menu_popup_current_type = MENU_POPUP_NONE;
    menu_popup_current_msg  = MSG_UNKNOWN;
+
+   menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
 }
 
 void menu_popup_show_message(
       enum menu_popup_type type, enum msg_hash_enums msg)
 {
    menu_popup_current_msg = msg;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_IS_TOGGLE, NULL))
+      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
 
    menu_popup_push_pending(true, type);
    menu_popup_push();

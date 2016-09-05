@@ -61,6 +61,7 @@
 #include "tasks/tasks_internal.h"
 
 #ifdef HAVE_MENU
+#include "menu/menu_display.h"
 #include "menu/menu_driver.h"
 #include "menu/menu_popup.h"
 #endif
@@ -81,7 +82,7 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2].state, id) 
+#define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2].state, id)
 
 #define runloop_cmd_press(cmd, id)     BIT64_GET(cmd->state[0].state, id)
 #define runloop_cmd_pressed(cmd, id)   BIT64_GET(cmd->state[1].state, id)
@@ -583,7 +584,7 @@ static void runloop_check_shader_dir(
 /**
  * rarch_game_specific_options:
  *
- * Returns: true (1) if a game specific core 
+ * Returns: true (1) if a game specific core
  * options path has been found,
  * otherwise false (0).
  **/
@@ -591,7 +592,7 @@ static bool rarch_game_specific_options(char **output)
 {
    char game_path[PATH_MAX_LENGTH] = {0};
    config_file_t *option_file      = NULL;
-   
+
    if (!retroarch_validate_game_options(game_path,
             sizeof(game_path), false))
          return false;
@@ -601,7 +602,7 @@ static bool rarch_game_specific_options(char **output)
       return false;
 
    config_file_free(option_file);
-   
+
    RARCH_LOG("%s %s\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
          game_path);
@@ -625,7 +626,7 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
       return false;
 
    check_is_oneshot      = runloop_cmd_triggered(cmd,
-         RARCH_FRAMEADVANCE) 
+         RARCH_FRAMEADVANCE)
       || runloop_cmd_press(cmd, RARCH_REWIND);
 
    if (!runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
@@ -722,8 +723,8 @@ static bool runloop_check_state(event_cmd_state_t *cmd,
 
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
       runloop_check_movie();
-   
-   if (runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT) || 
+
+   if (runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT) ||
       runloop_cmd_triggered(cmd, RARCH_SHADER_PREV))
    {
       runloop_check_shader_dir(shader_dir,
@@ -814,17 +815,17 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             free(runloop_system.subsystem.data);
          runloop_system.subsystem.data = NULL;
          runloop_system.subsystem.size = 0;
-         
+
          if (runloop_system.ports.data)
             free(runloop_system.ports.data);
          runloop_system.ports.data = NULL;
          runloop_system.ports.size = 0;
-         
+
          if (runloop_system.mmaps.descriptors)
             free((void *)runloop_system.mmaps.descriptors);
          runloop_system.mmaps.descriptors     = NULL;
          runloop_system.mmaps.num_descriptors = 0;
-         
+
          runloop_key_event          = NULL;
          runloop_frontend_key_event = NULL;
 
@@ -844,7 +845,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_overrides_active = true;
          break;
       case RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE:
-         runloop_overrides_active = false; 
+         runloop_overrides_active = false;
          break;
       case RUNLOOP_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_overrides_active;
@@ -1160,7 +1161,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
             core_option_manager_get(runloop_core_options, var);
-            RARCH_LOG("\t%s\n", var->value ? var->value : 
+            RARCH_LOG("\t%s\n", var->value ? var->value :
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
          }
          break;
@@ -1172,10 +1173,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             global_t *global                  = global_get_ptr();
             settings_t *settings              = config_get_ptr();
             const char *options_path          = settings->path.core_options;
-            const struct retro_variable *vars = 
+            const struct retro_variable *vars =
                (const struct retro_variable*)data;
 
-            if (string_is_empty(options_path) 
+            if (string_is_empty(options_path)
                   && !string_is_empty(global->path.config))
             {
                fill_pathname_resolve_relative(buf, global->path.config,
@@ -1190,14 +1191,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if(ret)
             {
                runloop_ctl(RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE, NULL);
-               runloop_core_options = 
+               runloop_core_options =
                   core_option_manager_new(game_options_path, vars);
                free(game_options_path);
             }
             else
             {
                runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
-               runloop_core_options = 
+               runloop_core_options =
                   core_option_manager_new(options_path, vars);
             }
 
@@ -1233,7 +1234,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_KEY_EVENT_GET:
          {
-            retro_keyboard_event_t **key_event = 
+            retro_keyboard_event_t **key_event =
                (retro_keyboard_event_t**)data;
             if (!key_event)
                return false;
@@ -1242,7 +1243,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET:
          {
-            retro_keyboard_event_t **key_event = 
+            retro_keyboard_event_t **key_event =
                (retro_keyboard_event_t**)data;
             if (!key_event)
                return false;
@@ -1361,7 +1362,11 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
           !runloop_quit_confirm)
    {
       if (content_is_inited())
+      {
+         if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
+            menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
          rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      }
 
       menu_popup_show_message(MENU_POPUP_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
       return 1;
@@ -1413,8 +1418,8 @@ static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
  *
  * Run Libretro core in RetroArch for one frame.
  *
- * Returns: 0 on success, 1 if we have to wait until 
- * button input in order to wake up the loop, 
+ * Returns: 0 on success, 1 if we have to wait until
+ * button input in order to wake up the loop,
  * -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
 int runloop_iterate(unsigned *sleep_ms)
@@ -1436,14 +1441,14 @@ int runloop_iterate(unsigned *sleep_ms)
 
    if (runloop_ctl(RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT, NULL))
    {
-      struct retro_system_av_info *av_info = 
+      struct retro_system_av_info *av_info =
          video_viewport_get_system_av_info();
-      float fastforward_ratio              = 
-         (settings->fastforward_ratio == 0.0f) 
+      float fastforward_ratio              =
+         (settings->fastforward_ratio == 0.0f)
          ? 1.0f : settings->fastforward_ratio;
 
       frame_limit_last_time    = cpu_features_get_time_usec();
-      frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f 
+      frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
             / (av_info->timing.fps * fastforward_ratio));
 
       runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_LIMIT, NULL);
@@ -1463,7 +1468,7 @@ int runloop_iterate(unsigned *sleep_ms)
          input_driver_set_flushing_input();
       }
    }
-   
+
    if (runloop_frame_time.callback)
    {
       /* Updates frame timing if frame timing callback is in use by the core.
@@ -1499,7 +1504,7 @@ int runloop_iterate(unsigned *sleep_ms)
    {
       bool fullscreen_toggled = !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 #ifdef HAVE_MENU
-      fullscreen_toggled = fullscreen_toggled || 
+      fullscreen_toggled = fullscreen_toggled ||
          menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
 #endif
 
@@ -1511,17 +1516,20 @@ int runloop_iterate(unsigned *sleep_ms)
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
 
 #ifdef HAVE_MENU
-   if (runloop_cmd_menu_press(cmd_ptr) || 
+   if (runloop_cmd_menu_press(cmd_ptr) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && 
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
                !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
       }
       else
+      {
+         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
          rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      }
    }
 #endif
 
@@ -1546,6 +1554,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
       if (ret == -1)
          goto end;
+
       return ret;
    }
 #endif
@@ -1583,7 +1592,7 @@ int runloop_iterate(unsigned *sleep_ms)
             settings->input.analog_dpad_mode[i]);
    }
 
-   if ((settings->video.frame_delay > 0) && 
+   if ((settings->video.frame_delay > 0) &&
          !input_driver_is_nonblock_state())
       retro_sleep(settings->video.frame_delay);
 
@@ -1620,7 +1629,7 @@ end:
 #endif
 
    current                        = cpu_features_get_time_usec();
-   target                         = frame_limit_last_time + 
+   target                         = frame_limit_last_time +
       frame_limit_minimum_time;
    to_sleep_ms                    = (target - current) / 1000;
 
