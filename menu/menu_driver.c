@@ -517,7 +517,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          return menu_driver_prevent_populate;
       case RARCH_MENU_CTL_IS_TOGGLE:
          return menu_driver_toggled;
-         break;
       case RARCH_MENU_CTL_SET_TOGGLE:
          menu_driver_toggle(true);
          break;
