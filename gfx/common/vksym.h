@@ -47,6 +47,6 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 
-#include "../../libretro-common/include/vulkan/vulkan_symbol_wrapper.h"
+#include <vulkan/vulkan_symbol_wrapper.h>
 
 #endif
