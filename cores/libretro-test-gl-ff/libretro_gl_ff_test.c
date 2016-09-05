@@ -247,11 +247,11 @@ static void context_destroy(void)
 #ifdef HAVE_OPENGLES
 static bool retro_init_hw_context(void)
 {
-#if defined(GLES31)
+#if defined(HAVE_OPENGLES_3_1)
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES_VERSION;
    hw_render.version_major = 3;
    hw_render.version_minor = 1;
-#elif defined(GLES3)
+#elif defined(HAVE_OPENGLES3)
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES3;
 #else
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGLES2;
