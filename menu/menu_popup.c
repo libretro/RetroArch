@@ -19,6 +19,7 @@
 #include "menu_driver.h"
 #include "menu_popup.h"
 
+#include "../retroarch.h"
 #include "../configuration.h"
 #ifdef HAVE_CHEEVOS
 #include "../cheevos.h"
@@ -27,10 +28,12 @@
 #include "../input/input_config.h"
 
 static bool                menu_popup_pending_push   = false;
+static bool                 menu_popup_active       = false;
 static unsigned            menu_popup_current_id     = 0;
-static enum menu_help_type menu_popup_current_type   = MENU_HELP_NONE;
+static enum menu_popup_type menu_popup_current_type = MENU_POPUP_NONE;
+static enum msg_hash_enums  menu_popup_current_msg  = MSG_UNKNOWN;
 
-int menu_popup_iterate_help(char *s, size_t len, const char *label)
+int menu_popup_iterate(char *s, size_t len, const char *label)
 {
 #ifdef HAVE_CHEEVOS
    cheevos_ctx_desc_t desc_info;
@@ -40,7 +43,7 @@ int menu_popup_iterate_help(char *s, size_t len, const char *label)
 
    switch (menu_popup_current_type)
    {
-      case MENU_HELP_WELCOME:
+      case MENU_POPUP_WELCOME:
          {
             static int64_t timeout_end;
             int64_t timeout;
@@ -71,7 +74,7 @@ int menu_popup_iterate_help(char *s, size_t len, const char *label)
             }
          }
          break;
-      case MENU_HELP_CONTROLS:
+      case MENU_POPUP_HELP_CONTROLS:
          {
             unsigned i;
             char s2[PATH_MAX_LENGTH] = {0};
@@ -169,7 +172,7 @@ int menu_popup_iterate_help(char *s, size_t len, const char *label)
          break;
          
 #ifdef HAVE_CHEEVOS
-      case MENU_HELP_CHEEVOS_DESCRIPTION:
+      case MENU_POPUP_HELP_CHEEVOS_DESCRIPTION:
          desc_info.idx = menu_popup_current_id;
          desc_info.s   = s;
          desc_info.len = len;
@@ -177,29 +180,29 @@ int menu_popup_iterate_help(char *s, size_t len, const char *label)
          break;
 #endif
 
-      case MENU_HELP_WHAT_IS_A_CORE:
+      case MENU_POPUP_HELP_WHAT_IS_A_CORE:
          menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_WHAT_IS_A_CORE_DESC,
                s, len);
          break;
-      case MENU_HELP_LOADING_CONTENT:
+      case MENU_POPUP_HELP_LOADING_CONTENT:
          menu_hash_get_help_enum(MENU_ENUM_LABEL_LOAD_CONTENT_LIST,
                s, len);
          break;
-      case MENU_HELP_CHANGE_VIRTUAL_GAMEPAD:
+      case MENU_POPUP_HELP_CHANGE_VIRTUAL_GAMEPAD:
          menu_hash_get_help_enum(
                MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC,
                s, len);
          break;
-      case MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
+      case MENU_POPUP_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          menu_hash_get_help_enum(
                MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
                s, len);
          break;
-      case MENU_HELP_SCANNING_CONTENT:
+      case MENU_POPUP_HELP_SCANNING_CONTENT:
          menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT_DESC,
                s, len);
          break;
-      case MENU_HELP_EXTRACT:
+      case MENU_POPUP_HELP_EXTRACT:
          menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
                s, len);
 
@@ -209,14 +212,22 @@ int menu_popup_iterate_help(char *s, size_t len, const char *label)
             do_exit                   = true;
          }
          break;
-      case MENU_HELP_NONE:
+      case MENU_POPUP_QUIT_CONFIRM:
+      case MENU_POPUP_INFORMATION:
+      case MENU_POPUP_QUESTION:
+      case MENU_POPUP_WARNING:
+      case MENU_POPUP_ERROR:
+         menu_hash_get_help_enum(menu_popup_current_msg,
+               s, len);
+         break;
+      case MENU_POPUP_NONE:
       default:
          break;
    }
 
    if (do_exit)
    {
-      menu_popup_current_type = MENU_HELP_NONE;
+      menu_popup_current_type = MENU_POPUP_NONE;
       return 1;
    }
 
@@ -233,10 +244,11 @@ void menu_popup_unset_pending_push(void)
    menu_popup_pending_push = false;
 }
 
-void menu_popup_push_pending(bool push, enum menu_help_type type)
+void menu_popup_push_pending(bool push, enum menu_popup_type type)
 {
    menu_popup_pending_push = push;
    menu_popup_current_type = type;
+   menu_popup_active = true;
 }
 
 void menu_popup_push(void)
@@ -259,5 +271,30 @@ void menu_popup_reset(void)
 {
    menu_popup_pending_push = false;
    menu_popup_current_id   = 0;
-   menu_popup_current_type = MENU_HELP_NONE;
+   menu_popup_current_type = MENU_POPUP_NONE;
+   menu_popup_current_msg  = MSG_UNKNOWN;
+}
+
+void menu_popup_show_message(
+      enum menu_popup_type type, enum msg_hash_enums msg)
+{
+   menu_popup_current_msg = msg;
+
+   menu_popup_push_pending(true, type);
+   menu_popup_push();
+}
+
+bool menu_popup_is_active(void)
+{
+   return menu_popup_active;
+}
+
+void menu_popup_set_active(bool on)
+{
+   menu_popup_active = on;
+}
+
+enum menu_popup_type menu_popup_get_current_type(void)
+{
+   return menu_popup_current_type;
 }

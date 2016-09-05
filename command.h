@@ -59,6 +59,7 @@ enum event_command
    CMD_EVENT_TAKE_SCREENSHOT,
    /* Quits RetroArch. */
    CMD_EVENT_QUIT,
+   CMD_EVENT_QUIT_CONFIRM,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT,
    /* Toggles cheevos hardcore mode. */

@@ -4339,6 +4339,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CONFIRM_ON_EXIT,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,

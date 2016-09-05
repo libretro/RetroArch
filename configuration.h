@@ -446,6 +446,7 @@ typedef struct settings
 #endif
 
    bool config_save_on_exit;
+   bool confirm_on_exit;
    bool show_hidden_files;
 
 #ifdef HAVE_LAKKA

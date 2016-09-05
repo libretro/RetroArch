@@ -62,6 +62,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_popup.h"
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -118,6 +119,7 @@ static bool runloop_set_frame_limit              = false;
 static bool runloop_paused                       = false;
 static bool runloop_idle                         = false;
 static bool runloop_exec                         = false;
+static bool runloop_quit_confirm                 = false;
 static bool runloop_slowmotion                   = false;
 static bool runloop_shutdown_initiated           = false;
 static bool runloop_core_shutdown_initiated      = false;
@@ -1320,6 +1322,16 @@ static int runloop_iterate_time_to_exit_load_dummy(void)
    return 1;
 }
 
+bool runloop_is_quit_confirm(void)
+{
+   return runloop_quit_confirm;
+}
+
+void runloop_set_quit_confirm(bool on)
+{
+   runloop_quit_confirm = on;
+}
+
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -1330,6 +1342,7 @@ static int runloop_iterate_time_to_exit_load_dummy(void)
  */
 static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 {
+   settings_t *settings = config_get_ptr();
    bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
    time_to_exit                  = time_to_exit || quit_key_pressed;
    time_to_exit                  = time_to_exit || !video_driver_is_alive();
@@ -1339,6 +1352,21 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 
    if (!time_to_exit)
       return 1;
+
+#ifdef HAVE_MENU
+   if (!runloop_quit_confirm && menu_popup_is_active())
+      return 1;
+
+   if (settings && settings->confirm_on_exit &&
+          !runloop_quit_confirm)
+   {
+      if (content_is_inited())
+         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+
+      menu_popup_show_message(MENU_POPUP_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+      return 1;
+   }
+#endif
 
    if (runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL))
       runloop_ctl(RUNLOOP_CTL_UNSET_EXEC, NULL);
@@ -1508,7 +1536,6 @@ int runloop_iterate(unsigned *sleep_ms)
       command_event(CMD_EVENT_QUIT, NULL);
       return -1;
    }
-
 
 #ifdef HAVE_MENU
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
