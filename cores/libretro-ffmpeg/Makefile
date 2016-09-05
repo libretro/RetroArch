@@ -187,12 +187,6 @@ else
    CFLAGS += -O3
 endif
 
-ifeq ($(HAVE_NEON),1)
-	CFLAGS += -DHAVE_INTRINSICS_NEON=1
-else
-	CFLAGS += -DHAVE_INTRINSICS_NEON=0
-endif
-
 OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o)
 
 all: $(TARGET)

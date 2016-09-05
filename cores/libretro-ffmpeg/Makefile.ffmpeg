@@ -72,6 +72,12 @@ else
 	DEPS_SOURCE += $(wildcard $(DEPS_DIR)/libmp3lame/*.c)
 endif
 
+ifeq ($(HAVE_NEON),1)
+	DEFINES += -DHAVE_INTRINSICS_NEON=1
+else
+	DEFINES += -DHAVE_INTRINSICS_NEON=0
+endif
+
 ifeq ($(INTERNAL_LIBSPEEX),0)
 	#LIBS += -lspeex
 	#HAVE_LIBSPEEX = 1
