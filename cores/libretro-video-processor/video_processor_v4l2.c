@@ -31,7 +31,7 @@
 #define AUDIO_BUFSIZE		64
 #define ENVVAR_BUFLEN		1024
 
-#include "libretro.h"
+#include <libretro.h>
 
 #include <sys/mman.h>
 #include <errno.h>
