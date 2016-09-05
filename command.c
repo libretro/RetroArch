@@ -2000,10 +2000,12 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          if (settings && settings->confirm_on_exit &&
                 !menu_popup_is_active() && !runloop_is_quit_confirm())
+         {
             menu_popup_show_message(MENU_POPUP_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
-               break;
+            break;
+         }
 #endif
-               handle_quit_event();
+         handle_quit_event();
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
