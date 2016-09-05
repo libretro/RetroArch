@@ -135,10 +135,11 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #ifdef HAVE_OPENGLES
          if (gles3)
             return true;
-#endif
+#else
          if (gl_query_extension("ARB_sync") &&
                glFenceSync && glDeleteSync && glClientWaitSync)
             return true;
+#endif
          break;
       case GL_CAPS_MIPMAP:
          {
