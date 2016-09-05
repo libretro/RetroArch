@@ -30,10 +30,12 @@
 
 #include "../gfx/video_shader_driver.h"
 
+#ifdef HAVE_SHADER_MANAGER
 /* Menu shader */
 static char default_glslp[PATH_MAX_LENGTH];
 static char default_cgp[PATH_MAX_LENGTH];
 static char default_slangp[PATH_MAX_LENGTH];
+#endif
 
 /**
  * menu_shader_manager_init:
