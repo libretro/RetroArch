@@ -87,7 +87,6 @@ ifeq ($(OPENGL),1)
 endif
    HAVE_SSA := 1
 
-	CFLAGS += -DHAVE_STRUCT_SOCKADDR_STORAGE -DHAVE_STRUCT_ADDRINFO -DHAVE_FMINF
 	HAVE_POLL_H = 1
 	HAVE_GETADDRINFO = 1
 	HAVE_NETWORK = 1
@@ -111,7 +110,6 @@ endif
    OSXVER = `sw_vers -productVersion | cut -d. -f 2`
    OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
    fpic += -mmacosx-version-min=10.1
-	CFLAGS += -DHAVE_STRUCT_SOCKADDR_STORAGE -DHAVE_STRUCT_ADDRINFO
 	HAVE_POLL_H = 1
 	HAVE_GETADDRINFO = 1
 	HAVE_NETWORK = 1

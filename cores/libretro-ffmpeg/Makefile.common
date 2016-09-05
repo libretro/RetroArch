@@ -2,7 +2,7 @@ LIBAVCODEC_SOURCE  :=
 LIBAVFORMAT_SOURCE :=
 LIBAVUTIL_SOURCE   :=
 DEPS_SOURCE        :=
-DEFINES            := -DHAVE_GMTIME_R -DHAVE_LOCALTIME_R -DHAVE_SWRESAMPLE
+DEFINES            := -DHAVE_SWRESAMPLE
 LIBRETRO_SOURCE    := 
 GL_SOURCE          :=
 
@@ -136,6 +136,14 @@ ifeq ($(HAVE_SSA), 1)
 endif
 
 ifeq ($(BAKE_IN_FFMPEG),1)
+DEFINES += -DHAVE_GMTIME_R -DHAVE_LOCALTIME_R
+
+ifneq (,$(findstring unix,$(platform)))
+	DEFINES += -DHAVE_STRUCT_SOCKADDR_STORAGE -DHAVE_STRUCT_ADDRINFO -DHAVE_FMINF
+else ifneq (,$(findstring osx,$(platform)))
+	DEFINES += -DHAVE_STRUCT_SOCKADDR_STORAGE -DHAVE_STRUCT_ADDRINFO
+endif
+
 include $(CORE_DIR)/Makefile.ffmpeg
 endif
 
