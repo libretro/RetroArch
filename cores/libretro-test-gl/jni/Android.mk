@@ -21,11 +21,12 @@ ifeq ($(GLES), 3)
    LOCAL_CFLAGS += -DHAVE_OPENGLES3 -DGLES3
    GLES_LIB := -lGLESv3
 else
+   LOCAL_CFLAGS += -DHAVE_OPENGLES2 -DGLES3
    GLES_LIB := -lGLESv2
 endif
 
 LOCAL_SRC_FILES += $(addprefix ../,$(wildcard *.c) ../../../libretro-common/glsym/rglgen.c ../../../libretro-common/glsym/glsym_es2.c)
-LOCAL_CFLAGS += -O2 -Wall -std=gnu99 -ffast-math -DGLES -DHAVE_OPENGLES2 -I../../../libretro-common/include
+LOCAL_CFLAGS += -O2 -Wall -std=gnu99 -ffast-math -DHAVE_OPENGLES -I../../../libretro-common/include
 LOCAL_LDLIBS += $(GLES_LIB)
 
 include $(BUILD_SHARED_LIBRARY)

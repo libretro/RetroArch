@@ -27,7 +27,7 @@ static struct retro_hw_render_callback hw_render;
 
 #define BASE_WIDTH 320
 #define BASE_HEIGHT 240
-#ifdef GLES
+#ifdef HAVE_OPENGLES
 #define MAX_WIDTH 1024
 #define MAX_HEIGHT 1024
 #else
@@ -94,7 +94,7 @@ void retro_set_environment(retro_environment_t cb)
    struct retro_variable variables[] = {
       {
          "testgl_resolution",
-#ifdef GLES
+#ifdef HAVE_OPENGLES
          "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768",
 #else
          "Internal resolution; 320x240|360x480|480x272|512x384|512x512|640x240|640x448|640x480|720x576|800x600|960x720|1024x768|1024x1024|1280x720|1280x960|1600x1200|1920x1080|1920x1440|1920x1600|2048x2048",
@@ -244,7 +244,7 @@ static void context_destroy(void)
    fprintf(stderr, "Context destroy!\n");
 }
 
-#ifdef GLES
+#ifdef HAVE_OPENGLES
 static bool retro_init_hw_context(void)
 {
 #if defined(GLES31)

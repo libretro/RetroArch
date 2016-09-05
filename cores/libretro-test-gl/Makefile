@@ -67,7 +67,7 @@ endif
 
    GL_LIB := -framework OpenGLES
    DEFINES := -DIOS
-   CFLAGS += -DGLES $(DEFINES)
+   CFLAGS += -DHAVE_OPENGLES $(DEFINES)
    CC = cc -arch armv7 -isysroot $(IOSSDK)
 ifeq ($(platform),ios9)
 	CC     += -miphoneos-version-min=8.0
@@ -84,7 +84,6 @@ else ifneq (,$(findstring qnx,$(platform)))
 
    CC = qcc -Vgcc_ntoarmv7le
    AR = qcc -Vgcc_ntoarmv7le
-   CFLAGS += -DGLES
    GL_LIB := -lGLESv2
    GLES := 1
 else ifneq (,$(findstring armv,$(platform)))
@@ -140,11 +139,11 @@ OBJECTS := libretro_gl_test.o ../../libretro-common/glsym/rglgen.o
 CFLAGS += -Wall -pedantic $(fpic)
 
 ifeq ($(GLES), 1)
-   CFLAGS += -DGLES -DHAVE_OPENGLES2
+   CFLAGS += -DHAVE_OPENGLES -DHAVE_OPENGLES2
    ifeq ($(GLES31), 1)
-      CFLAGS += -DHAVE_OPENGLES3 -DGLES31 -DGLES3
+      CFLAGS += -DHAVE_OPENGLES3 -DHAVE_OPENGLES_3_1
    else ifeq ($(GLES3), 1)
-      CFLAGS += -DHAVE_OPENGLES3 -DGLES3
+      CFLAGS += -DHAVE_OPENGLES3
    endif
    LIBS += -lGLESv2 # Still link against GLESv2 when using GLES3 API, at least on desktop Linux.
    OBJECTS += ../../libretro-common/glsym/glsym_es2.o
