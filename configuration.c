@@ -48,7 +48,7 @@
 
 /* All config related settings go here. */
 
-struct config_bool_setting_ptr
+struct config_bool_setting
 { 
    const char *ident;
    bool *ptr;
@@ -57,7 +57,7 @@ struct config_bool_setting_ptr
    bool handle;
 };
 
-struct config_int_setting_ptr
+struct config_int_setting
 { 
    const char *ident;
    unsigned *ptr;
@@ -66,7 +66,7 @@ struct config_int_setting_ptr
    bool handle;
 };
 
-struct config_float_setting_ptr
+struct config_float_setting
 { 
    const char *ident;
    float *ptr;
@@ -75,7 +75,7 @@ struct config_float_setting_ptr
    bool handle;
 };
 
-struct config_array_setting_ptr
+struct config_array_setting
 { 
    const char *ident;
    char *ptr;
@@ -84,7 +84,7 @@ struct config_array_setting_ptr
    bool handle;
 };
 
-struct config_path_setting_ptr
+struct config_path_setting
 { 
    const char *ident;
    char *ptr;
@@ -109,19 +109,19 @@ struct config_path_setting_ptr
 } 
 
 #define SETTING_BOOL(key, configval, default_enable, default_setting, handle_setting) \
-   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_bool_setting_ptr, handle_setting)
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_bool_setting, handle_setting)
 
 #define SETTING_FLOAT(key, configval, default_enable, default_setting, handle_setting) \
-   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_float_setting_ptr, handle_setting)
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_float_setting, handle_setting)
 
 #define SETTING_INT(key, configval, default_enable, default_setting, handle_setting) \
-   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_int_setting_ptr, handle_setting)
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_int_setting, handle_setting)
 
 #define SETTING_PATH(key, configval, default_enable, default_setting, handle_setting) \
-   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_path_setting_ptr, handle_setting)
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_path_setting, handle_setting)
 
 #define SETTING_ARRAY(key, configval, default_enable, default_setting, handle_setting) \
-   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_array_setting_ptr, handle_setting)
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_array_setting, handle_setting)
 
 struct defaults g_defaults;
 static settings_t *configuration_settings = NULL;
@@ -512,10 +512,10 @@ static unsigned config_menu_btn_cancel_default(void)
 }
 #endif
 
-static int populate_settings_array(settings_t *settings, struct config_array_setting_ptr **out)
+static int populate_settings_array(settings_t *settings, struct config_array_setting **out)
 {
    unsigned count                        = 0;
-   struct config_array_setting_ptr *tmp = NULL;
+   struct config_array_setting *tmp      = NULL;
 
    /* Arrays */
    SETTING_ARRAY("playlist_names",           settings->playlist_names, false, NULL, true);
@@ -544,16 +544,16 @@ static int populate_settings_array(settings_t *settings, struct config_array_set
    SETTING_ARRAY("bundle_assets_dst_path_subdir", settings->path.bundle_assets_dst_subdir, false, NULL, true);
 
    *out = 
-      (struct config_array_setting_ptr*) malloc(count * sizeof(struct config_array_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_array_setting_ptr) * count);
+      (struct config_array_setting*) malloc(count * sizeof(struct config_array_setting));
+   memcpy(*out, tmp, sizeof(struct config_array_setting) * count);
    free(tmp);
    return count;
 }
 
-static int populate_settings_path(settings_t *settings, struct config_path_setting_ptr **out)
+static int populate_settings_path(settings_t *settings, struct config_path_setting **out)
 {
    unsigned count = 0;
-   struct config_path_setting_ptr *tmp = NULL;
+   struct config_path_setting     *tmp = NULL;
    global_t   *global                  = global_get_ptr();
 
    /* Paths */
@@ -663,17 +663,17 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
          settings->directory.screenshot, true, NULL, false);
 
    *out = 
-      (struct config_path_setting_ptr*) malloc(count * sizeof(struct config_path_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_path_setting_ptr) * count);
+      (struct config_path_setting*) malloc(count * sizeof(struct config_path_setting));
+   memcpy(*out, tmp, sizeof(struct config_path_setting) * count);
    free(tmp);
    return count;
 }
 
-static int populate_settings_bool(settings_t *settings, struct config_bool_setting_ptr **out)
+static int populate_settings_bool(settings_t *settings, struct config_bool_setting **out)
 {
    unsigned count                      = 0;
    global_t   *global                  = global_get_ptr();
-   struct config_bool_setting_ptr *tmp = NULL;
+   struct config_bool_setting     *tmp = NULL;
 
    SETTING_BOOL("ui_companion_start_on_boot",    &settings->ui.companion_start_on_boot, true, ui_companion_start_on_boot, false);
    SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable, true, ui_companion_enable, false);
@@ -802,16 +802,16 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("audio_rate_control",           &settings->audio.rate_control, true, rate_control, false);
 
    *out = 
-      (struct config_bool_setting_ptr*) malloc(count *sizeof(struct config_bool_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_bool_setting_ptr) * count);
+      (struct config_bool_setting*) malloc(count *sizeof(struct config_bool_setting));
+   memcpy(*out, tmp, sizeof(struct config_bool_setting) * count);
    free(tmp);
    return count;
 }
 
-static int populate_settings_float(settings_t *settings, struct config_float_setting_ptr **out)
+static int populate_settings_float(settings_t *settings, struct config_float_setting **out)
 {
    unsigned count = 0;
-   struct config_float_setting_ptr *tmp = NULL;
+   struct config_float_setting       *tmp = NULL;
 
    SETTING_FLOAT("video_aspect_ratio",       &settings->video.aspect_ratio, true, aspect_ratio, false);
    SETTING_FLOAT("video_scale",              &settings->video.scale, false, 0.0f, false);
@@ -836,16 +836,16 @@ static int populate_settings_float(settings_t *settings, struct config_float_set
    SETTING_FLOAT("input_axis_threshold",     &settings->input.axis_threshold, true, axis_threshold, false);
 
    *out = 
-      (struct config_float_setting_ptr*) malloc(count * sizeof(struct config_float_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_float_setting_ptr) * count);
+      (struct config_float_setting*) malloc(count * sizeof(struct config_float_setting));
+   memcpy(*out, tmp, sizeof(struct config_float_setting) * count);
    free(tmp);
    return count;
 }
 
-static int populate_settings_int(settings_t *settings, struct config_int_setting_ptr **out)
+static int populate_settings_int(settings_t *settings, struct config_int_setting **out)
 {
    unsigned count                     = 0;
-   struct config_int_setting_ptr *tmp = NULL;
+   struct config_int_setting     *tmp = NULL;
 #ifdef HAVE_NETPLAY
    global_t   *global                 = global_get_ptr();
 #endif
@@ -920,8 +920,8 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("bundle_assets_extract_version_current", &settings->bundle_assets_extract_version_current, true, 0, false);
    SETTING_INT("bundle_assets_extract_last_version",    &settings->bundle_assets_extract_last_version, true, 0, false);
 
-   *out = (struct config_int_setting_ptr*)malloc(count * sizeof(struct config_int_setting_ptr));
-   memcpy(*out, tmp, sizeof(struct config_int_setting_ptr) * count);
+   *out = (struct config_int_setting*)malloc(count * sizeof(struct config_int_setting));
+   memcpy(*out, tmp, sizeof(struct config_int_setting) * count);
    free(tmp);
    return count;
 }
@@ -947,9 +947,9 @@ static void config_set_defaults(void)
    const char *def_camera          = config_get_default_camera();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
-   struct config_bool_setting_ptr   *bool_settings  = NULL;
-   struct config_float_setting_ptr  *float_settings = NULL;
-   struct config_int_setting_ptr    *int_settings   = NULL;
+   struct config_bool_setting       *bool_settings  = NULL;
+   struct config_float_setting      *float_settings = NULL;
+   struct config_int_setting        *int_settings   = NULL;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
@@ -1646,11 +1646,11 @@ static bool config_load_file(const char *path, bool set_defaults,
    char tmp_append_path[PATH_MAX_LENGTH]           = {0}; /* Don't destroy append_config_path. */
    unsigned msg_color                              = 0;
    config_file_t *conf                             = NULL;
-   struct config_int_setting_ptr   *int_settings   = NULL;
-   struct config_float_setting_ptr *float_settings = NULL;
-   struct config_bool_setting_ptr *bool_settings   = NULL;
-   struct config_array_setting_ptr *array_settings = NULL;
-   struct config_path_setting_ptr *path_settings   = NULL;
+   struct config_int_setting       *int_settings   = NULL;
+   struct config_float_setting     *float_settings = NULL;
+   struct config_bool_setting     *bool_settings   = NULL;
+   struct config_array_setting     *array_settings = NULL;
+   struct config_path_setting     *path_settings   = NULL;
    char *override_username                         = NULL;
 #ifdef HAVE_NETPLAY
    char *override_netplay_ip_address               = NULL;
@@ -2828,19 +2828,21 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
 bool config_save_file(const char *path)
 {
    float msg_color;
-   unsigned i           = 0;
-   bool ret             = false;
-   int bool_settings_size  = 0, int_settings_size    = 0,
-       float_settings_size = 0, array_settings_size  = 0,
-       path_settings_size  = 0;
-   struct config_bool_setting_ptr *bool_settings     = NULL;
-   struct config_int_setting_ptr *int_settings       = NULL;
-   struct config_float_setting_ptr *float_settings   = NULL;
-   struct config_array_setting_ptr *array_settings   = NULL;
-   struct config_path_setting_ptr *path_settings     = NULL;
-   config_file_t *conf  = config_file_new(path);
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   unsigned i                                        = 0;
+   bool ret                                          = false;
+   int bool_settings_size                            = 0;
+   int int_settings_size                             = 0;
+   int float_settings_size                           = 0;
+   int array_settings_size                           = 0;
+   int path_settings_size                            = 0;
+   struct config_bool_setting     *bool_settings     = NULL;
+   struct config_int_setting     *int_settings       = NULL;
+   struct config_float_setting     *float_settings   = NULL;
+   struct config_array_setting     *array_settings   = NULL;
+   struct config_path_setting     *path_settings     = NULL;
+   config_file_t                              *conf  = config_file_new(path);
+   settings_t                              *settings = config_get_ptr();
+   global_t                                *global   = global_get_ptr();
 
    if (!conf)
       conf = config_file_new(NULL);
@@ -3007,16 +3009,16 @@ bool config_save_overrides(int override_type)
    global_t   *global                          = global_get_ptr();
    settings_t *overrides                       = config_get_ptr();
    rarch_system_info_t *system                 = NULL;
-   struct config_bool_setting_ptr *bool_settings    = NULL;
-   struct config_bool_setting_ptr *bool_overrides   = NULL;
-   struct config_int_setting_ptr *int_settings      = NULL;
-   struct config_int_setting_ptr *int_overrides     = NULL;
-   struct config_float_setting_ptr *float_settings  = NULL;
-   struct config_float_setting_ptr *float_overrides = NULL;
-   struct config_array_setting_ptr *array_settings  = NULL;
-   struct config_array_setting_ptr *array_overrides = NULL;
-   struct config_path_setting_ptr *path_settings    = NULL;
-   struct config_path_setting_ptr *path_overrides   = NULL;
+   struct config_bool_setting *bool_settings   = NULL;
+   struct config_bool_setting *bool_overrides  = NULL;
+   struct config_int_setting *int_settings     = NULL;
+   struct config_int_setting *int_overrides    = NULL;
+   struct config_float_setting *float_settings = NULL;
+   struct config_float_setting *float_overrides= NULL;
+   struct config_array_setting *array_settings = NULL;
+   struct config_array_setting *array_overrides= NULL;
+   struct config_path_setting *path_settings   = NULL;
+   struct config_path_setting *path_overrides  = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
