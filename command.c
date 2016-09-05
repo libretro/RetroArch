@@ -73,6 +73,7 @@
 #include "menu/menu_content.h"
 #include "menu/menu_display.h"
 #include "menu/menu_shader.h"
+#include "menu/menu_popup.h"
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -1775,6 +1776,27 @@ static void command_event_main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
+void handle_quit_event()
+{
+#ifdef HAVE_MENU
+   if (menu_popup_is_active())
+      return;
+#endif
+
+   command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
+   command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+   command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
+
+#ifdef HAVE_DYNAMIC
+   command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
+#endif
+
+   runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+#ifdef HAVE_MENU
+   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+#endif
+}
+
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -1954,14 +1976,10 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
-      case CMD_EVENT_QUIT:
          command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
          command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
          command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 
-         switch (cmd)
-         {
-            case CMD_EVENT_UNLOAD_CORE:
                if (content_is_inited())
                   if (!task_push_content_load_default(
                            NULL, NULL,
@@ -1975,25 +1993,17 @@ bool command_event(enum event_command cmd, void *data)
                core_unload();
 #endif
                break;
-            default:
+      case CMD_EVENT_QUIT_CONFIRM:
+         handle_quit_event();
                break;
-         }
-
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
-#endif
-
-         switch (cmd)
-         {
             case CMD_EVENT_QUIT:
-               runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
 #ifdef HAVE_MENU
-               rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+         if (settings && settings->confirm_on_exit &&
+                !menu_popup_is_active() && !runloop_is_quit_confirm())
+            menu_popup_show_message(MENU_POPUP_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+               break;
 #endif
-               break;
-            default:
-               break;
-         }
+               handle_quit_event();
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS

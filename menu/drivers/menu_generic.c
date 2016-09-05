@@ -31,6 +31,9 @@
 #include "../../performance_counters.h"
 
 #include "../../verbosity.h"
+#include "../../runloop.h"
+#include "../../content.h"
+#include "../../retroarch.h"
 
 static enum action_iterate_type action_iterate_type(uint32_t hash)
 {
@@ -100,12 +103,35 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
-         ret = menu_popup_iterate_help(
+         ret = menu_popup_iterate(
                menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
-         if (ret == 1 || action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
+         if (ret == 1 || action == MENU_ACTION_OK)
+         {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+            menu_popup_set_active(false);
+
+            if (menu_popup_get_current_type() == MENU_POPUP_QUIT_CONFIRM)
+            {
+               runloop_set_quit_confirm(true);
+               command_event(CMD_EVENT_QUIT_CONFIRM, NULL);
+            }
+         }
+
+         if (action == MENU_ACTION_CANCEL)
+         {
+            BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+            menu_popup_set_active(false);
+
+            if (menu_popup_get_current_type() == MENU_POPUP_QUIT_CONFIRM)
+            {
+               runloop_set_quit_confirm(false);
+
+               if (content_is_inited())
+                  rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+            }
+         }
          break;
       case ITERATE_TYPE_BIND:
          {
@@ -214,6 +240,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
+            menu_popup_set_active(false);
          break;
       case ITERATE_TYPE_DEFAULT:
          /* FIXME: Crappy hack, needed for mouse controls 
