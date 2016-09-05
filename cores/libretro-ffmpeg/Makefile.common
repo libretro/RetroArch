@@ -6,6 +6,7 @@ DEFINES            := -DHAVE_GMTIME_R -DHAVE_LOCALTIME_R -DHAVE_SWRESAMPLE
 LIBRETRO_SOURCE    := 
 GL_SOURCE          :=
 
+CPUOPTS            :=
 DEPS_DIR           := $(CORE_DIR)/deps
 LIBRETRO_COMM_DIR  := $(CORE_DIR)/libretro-common
 BASE_DIR       	 := $(CORE_DIR)/..
@@ -16,11 +17,112 @@ SWSCALE_DIR    	 := $(BASE_DIR)/libswscale
 SWRESAMPLE_DIR 	 := $(BASE_DIR)/libswresample
 
 
-INCFLAGS           := -I$(BASE_DIR) -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include
+INCFLAGS           += -I$(BASE_DIR) -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include
 
 LIBRETRO_SOURCE    += $(CORE_DIR)/ffmpeg_core.c \
 							 $(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 							 $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+
+ifeq ($(LIBRETRO_SWITCH),1)
+DEFINES += -DLIBRETRO_SWITCH=1
+INTERNAL_LIBAVCODEC    = 1
+INTERNAL_LIBAVFORMAT   = 1
+INTERNAL_LIBAVUTIL     = 1
+INTERNAL_LIBSWRESAMPLE = 1
+INTERNAL_LIBSWSCALE    = 1
+
+INTERNAL_LIBASS        = 0
+INTERNAL_LIBFLAC       = 1
+INTERNAL_LIBOGG        = 1
+INTERNAL_LIBLAME       = 1
+INTERNAL_LIBFAAC       = 1
+INTERNAL_LIBVORBIS     = 1
+INTERNAL_ZLIB          = 1
+endif
+
+ifeq ($(INTERNAL_LIBAVCODEC),1)
+	BAKE_IN_FFMPEG=1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libavcodec --libs)
+   CFLAGS += $(shell pkg-config libavcodec --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   LIBS += $(shell pkg-config libavcodec --libs)
+   CFLAGS += $(shell pkg-config libavcodec --cflags)
+else ifneq (,$(findstring win,$(platform)))
+   LIBS += -lavcodec
+endif
+endif
+
+ifeq ($(INTERNAL_LIBASS),1)
+else
+ifeq ($(WANT_LIBASS),1)
+
+ifneq (,$(findstring unix,$(platform)))
+ifneq (,$(findstring osx,$(platform)))
+   LIBS += $(shell pkg-config libass --libs)
+   CFLAGS += $(shell pkg-config libass --cflags)
+endif
+endif
+
+endif
+endif
+
+ifeq ($(INTERNAL_LIBAVFORMAT),1)
+	BAKE_IN_FFMPEG=1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libavformat --libs)
+   CFLAGS += $(shell pkg-config libavformat --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   LIBS += $(shell pkg-config libavformat --libs)
+   CFLAGS += $(shell pkg-config libavformat --cflags)
+else ifneq (,$(findstring win,$(platform)))
+   LIBS += -lavformat
+endif
+endif
+
+ifeq ($(INTERNAL_LIBSWRESAMPLE),1)
+	BAKE_IN_FFMPEG=1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libswresample --libs)
+   CFLAGS += $(shell pkg-config libswresample --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   LIBS += $(shell pkg-config libswresample --libs)
+   CFLAGS += $(shell pkg-config libswresample --cflags)
+else ifneq (,$(findstring win,$(platform)))
+   LIBS += -lswresample
+endif
+endif
+
+ifeq ($(INTERNAL_LIBSWSCALE),1)
+	BAKE_IN_FFMPEG=1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libswscale --libs)
+   CFLAGS += $(shell pkg-config libswscale --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   LIBS += $(shell pkg-config libswscale --libs)
+   CFLAGS += $(shell pkg-config libswscale --cflags)
+else ifneq (,$(findstring win,$(platform)))
+	LIBS += -lswscale
+endif
+endif
+
+ifeq ($(INTERNAL_LIBAVUTIL),1)
+	BAKE_IN_FFMPEG=1
+else
+ifneq (,$(findstring unix,$(platform)))
+   LIBS += $(shell pkg-config libavutil --libs)
+   CFLAGS += $(shell pkg-config libavutil --cflags)
+else ifneq (,$(findstring osx,$(platform)))
+   gIBS += $(shell pkg-config libavutil --libs)
+   CFLAGS += $(shell pkg-config libavutil --cflags)
+else ifneq (,$(findstring win,$(platform)))
+   LIBS += -lavutil
+endif
+endif
 
 ifeq ($(HAVE_BIGENDIAN),1)
 CPUOPTS += -DHAVE_BIGENDIAN=1 -DMSB_FIRST
@@ -34,7 +136,7 @@ ifeq ($(HAVE_SSA), 1)
 endif
 
 ifeq ($(BAKE_IN_FFMPEG),1)
-include Makefile.ffmpeg
+include $(CORE_DIR)/Makefile.ffmpeg
 endif
 
 ifeq ($(HAVE_OPENGL),1)

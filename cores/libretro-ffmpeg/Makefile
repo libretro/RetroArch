@@ -120,7 +120,7 @@ endif
 
 else ifneq (,$(findstring ios,$(platform)))
 
-   ARCH_ARM = 1
+   #ARCH_ARM = 1
    LIBRETRO_SWITCH = 1
    TARGET := $(TARGET_NAME)_libretro_ios.dylib
    fpic := -fPIC
@@ -174,109 +174,6 @@ ifeq ($(OPENGL),1)
 	WIN32_PLATFORM := 1
 endif
    LIBS += -L.
-endif
-
-ifeq ($(LIBRETRO_SWITCH),1)
-CFLAGS += -DLIBRETRO_SWITCH=1
-INTERNAL_LIBAVCODEC    = 1
-INTERNAL_LIBAVFORMAT   = 1
-INTERNAL_LIBAVUTIL     = 1
-INTERNAL_LIBSWRESAMPLE = 1
-INTERNAL_LIBSWSCALE    = 1
-
-INTERNAL_LIBASS        = 0
-INTERNAL_LIBFLAC       = 1
-INTERNAL_LIBOGG        = 1
-INTERNAL_LIBLAME       = 1
-INTERNAL_LIBFAAC       = 1
-INTERNAL_LIBVORBIS     = 1
-INTERNAL_ZLIB          = 1
-endif
-
-
-
-ifeq ($(INTERNAL_LIBAVCODEC),1)
-	BAKE_IN_FFMPEG=1
-else
-ifneq (,$(findstring unix,$(platform)))
-   LIBS += $(shell pkg-config libavcodec --libs)
-   CFLAGS += $(shell pkg-config libavcodec --cflags)
-else ifneq (,$(findstring osx,$(platform)))
-   LIBS += $(shell pkg-config libavcodec --libs)
-   CFLAGS += $(shell pkg-config libavcodec --cflags)
-else ifneq (,$(findstring win,$(platform)))
-   LIBS += -lavcodec
-endif
-endif
-
-ifeq ($(INTERNAL_LIBASS),1)
-else
-ifeq ($(WANT_LIBASS),1)
-
-ifneq (,$(findstring unix,$(platform)))
-ifneq (,$(findstring osx,$(platform)))
-   LIBS += $(shell pkg-config libass --libs)
-   CFLAGS += $(shell pkg-config libass --cflags)
-endif
-endif
-
-endif
-endif
-
-ifeq ($(INTERNAL_LIBAVFORMAT),1)
-	BAKE_IN_FFMPEG=1
-else
-ifneq (,$(findstring unix,$(platform)))
-   LIBS += $(shell pkg-config libavformat --libs)
-   CFLAGS += $(shell pkg-config libavformat --cflags)
-else ifneq (,$(findstring osx,$(platform)))
-   LIBS += $(shell pkg-config libavformat --libs)
-   CFLAGS += $(shell pkg-config libavformat --cflags)
-else ifneq (,$(findstring win,$(platform)))
-   LIBS += -lavformat
-endif
-endif
-
-ifeq ($(INTERNAL_LIBSWRESAMPLE),1)
-	BAKE_IN_FFMPEG=1
-else
-ifneq (,$(findstring unix,$(platform)))
-   LIBS += $(shell pkg-config libswresample --libs)
-   CFLAGS += $(shell pkg-config libswresample --cflags)
-else ifneq (,$(findstring osx,$(platform)))
-   LIBS += $(shell pkg-config libswresample --libs)
-   CFLAGS += $(shell pkg-config libswresample --cflags)
-else ifneq (,$(findstring win,$(platform)))
-   LIBS += -lswresample
-endif
-endif
-
-ifeq ($(INTERNAL_LIBSWSCALE),1)
-	BAKE_IN_FFMPEG=1
-else
-ifneq (,$(findstring unix,$(platform)))
-   LIBS += $(shell pkg-config libswscale --libs)
-   CFLAGS += $(shell pkg-config libswscale --cflags)
-else ifneq (,$(findstring osx,$(platform)))
-   LIBS += $(shell pkg-config libswscale --libs)
-   CFLAGS += $(shell pkg-config libswscale --cflags)
-else ifneq (,$(findstring win,$(platform)))
-	LIBS += -lswscale
-endif
-endif
-
-ifeq ($(INTERNAL_LIBAVUTIL),1)
-	BAKE_IN_FFMPEG=1
-else
-ifneq (,$(findstring unix,$(platform)))
-   LIBS += $(shell pkg-config libavutil --libs)
-   CFLAGS += $(shell pkg-config libavutil --cflags)
-else ifneq (,$(findstring osx,$(platform)))
-   gIBS += $(shell pkg-config libavutil --libs)
-   CFLAGS += $(shell pkg-config libavutil --cflags)
-else ifneq (,$(findstring win,$(platform)))
-   LIBS += -lavutil
-endif
 endif
 
 CFLAGS += -D__LIBRETRO__

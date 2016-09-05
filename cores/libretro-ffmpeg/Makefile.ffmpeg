@@ -1326,6 +1326,10 @@ LIBAVUTIL_SOURCE += \
 						  $(AVUTIL_DIR)/x86/float_dsp_init.c
 endif
 
+ifeq ($(ARCH_ARM),1)
+LIBAVUTIL_SOURCE += $(filter-out $(AVUTIL_BLACKLIST),$(wildcard $(AVUTIL_DIR)/arm/*.c))
+endif
+
 
 ifeq ($(ARCH_PPC),1)
 LIBAVUTIL_SOURCE += $(AVUTIL_DIR)/ppc/cpu.c \
@@ -1348,7 +1352,7 @@ DEFINES += -DHAVE_SWSCALE_H \
 			  -DCONFIG_SWSCALE_ALPHA=1 \
 			  -DSWS_MAX_FILTER_SIZE=256
 
-LIBSWSCALE_SOURCE += \
+LIBSWSCALE_SOURCE := \
 							$(SWSCALE_DIR)/alphablend.c \
 							$(SWSCALE_DIR)/input.c \
 							$(SWSCALE_DIR)/options.c \
@@ -1373,7 +1377,7 @@ endif
 
 #libswresample
 ifeq ($(INTERNAL_LIBSWRESAMPLE),1)
-LIBSWRESAMPLE_SOURCE += $(SWRESAMPLE_DIR)/audioconvert.c \
+LIBSWRESAMPLE_SOURCE := $(SWRESAMPLE_DIR)/audioconvert.c \
 			 $(SWRESAMPLE_DIR)/dither.c \
 			 $(SWRESAMPLE_DIR)/rematrix.c \
 			 $(SWRESAMPLE_DIR)/resample.c \
@@ -1460,6 +1464,7 @@ endif
 
 
 AVCODEC_BLACKLIST := \
+        $(AVCODEC_DIR)/arm/neontest.c \
 	$(AVCODEC_DIR)/vda.c \
 	$(AVCODEC_DIR)/libvo-aacenc.c \
 	$(AVCODEC_DIR)/libvo-amrwbenc.c \
@@ -1839,9 +1844,15 @@ AVCODEC_BLACKLIST += $(AVCODEC_DIR)/videotoolbox.c
 
 LIBAVCODEC_SOURCE += $(filter-out $(AVCODEC_BLACKLIST),$(wildcard $(AVCODEC_DIR)/*.c))
 
+ifeq ($(ARCH_ARM),1)
+LIBAVCODEC_SOURCE += $(filter-out $(AVCODEC_BLACKLIST),$(wildcard $(AVCODEC_DIR)/arm/*.c))
+DEFINES += -DHAVE_AS_DN_DIRECTIVE=0
+endif
+
 ifeq ($(ARCH_X86),1)
 LIBAVCODEC_SOURCE += $(filter-out $(AVCODEC_BLACKLIST),$(wildcard $(AVCODEC_DIR)/x86/*.c))
 endif
+
 endif
 
 # Parser switches
