@@ -20,7 +20,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <retro_inline.h>
 
 #include <glsym/glsym.h>
 
@@ -186,34 +185,7 @@ enum gl_capability_enum
 
 RETRO_BEGIN_DECLS
 
-static INLINE bool gl_check_error(char *error_string)
-{
-   int error = glGetError();
-   switch (error)
-   {
-      case GL_INVALID_ENUM:
-         error_string = strdup("GL: Invalid enum.");
-         break;
-      case GL_INVALID_VALUE:
-         error_string = strdup("GL: Invalid value.");
-         break;
-      case GL_INVALID_OPERATION:
-         error_string = strdup("GL: Invalid operation.");
-         break;
-      case GL_OUT_OF_MEMORY:
-         error_string = strdup("GL: Out of memory.");
-         break;
-      case GL_NO_ERROR:
-         return true;
-      default:
-         error_string = strdup("Non specified GL error.");
-         break;
-   }
-    
-   (void)error_string;
-
-   return false;
-}
+bool gl_check_error(char *error_string);
 
 bool gl_query_core_context_in_use(void);
 

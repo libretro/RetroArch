@@ -20,7 +20,6 @@
 #include <math.h>
 #include <string.h>
 
-#include <retro_inline.h>
 #include <boolean.h>
 
 #include "gl_capabilities.h"
@@ -57,7 +56,7 @@ void gl_query_core_context_unset(void)
    gl_core_context = false;
 }
 
-static INLINE bool gl_query_extension(const char *ext)
+static bool gl_query_extension(const char *ext)
 {
    bool ret = false;
 
@@ -87,6 +86,35 @@ static INLINE bool gl_query_extension(const char *ext)
    RARCH_LOG("Querying GL extension: %s => %s\n",
          ext, ret ? "exists" : "doesn't exist");
    return ret;
+}
+
+bool gl_check_error(char *error_string)
+{
+   int error = glGetError();
+   switch (error)
+   {
+      case GL_INVALID_ENUM:
+         error_string = strdup("GL: Invalid enum.");
+         break;
+      case GL_INVALID_VALUE:
+         error_string = strdup("GL: Invalid value.");
+         break;
+      case GL_INVALID_OPERATION:
+         error_string = strdup("GL: Invalid operation.");
+         break;
+      case GL_OUT_OF_MEMORY:
+         error_string = strdup("GL: Out of memory.");
+         break;
+      case GL_NO_ERROR:
+         return true;
+      default:
+         error_string = strdup("Non specified GL error.");
+         break;
+   }
+    
+   (void)error_string;
+
+   return false;
 }
 
 bool gl_check_capability(enum gl_capability_enum enum_idx)
