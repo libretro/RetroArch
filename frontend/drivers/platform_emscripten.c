@@ -20,6 +20,7 @@
 #include <file/config_file.h>
 #include <queues/task_queue.h>
 
+#include "../../configuration.h"
 #include "../../defaults.h"
 #include "../../general.h"
 #include "../../content.h"
