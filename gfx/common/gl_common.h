@@ -34,8 +34,6 @@
 #include "../video_context_driver.h"
 #include "../drivers/gl_capabilities.h"
 
-#define MAX_FENCES 4
-
 typedef struct gl
 {
    int version_major;
@@ -142,9 +140,12 @@ typedef struct gl
    float menu_texture_alpha;
 #endif
 
+#ifdef HAVE_GL_SYNC
+#define MAX_FENCES 4
    bool have_sync;
    GLsync fences[MAX_FENCES];
    unsigned fence_count;
+#endif
 
    GLuint vao;
 } gl_t;

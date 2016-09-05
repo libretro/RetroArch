@@ -760,6 +760,7 @@ endif
       endif
       OBJ += libretro-common/glsym/glsym_es2.o
    else
+      DEFINES += -DHAVE_GL_SYNC
       OBJ += libretro-common/glsym/glsym_gl.o
       GL_LIBS := -lGL
       ifeq ($(OSX), 1)
