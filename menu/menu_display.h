@@ -167,6 +167,16 @@ typedef struct menu_display_ctx_font
 
 typedef uintptr_t menu_texture_item;
 
+enum menu_toggle_reason
+{
+  MENU_TOGGLE_REASON_NONE = 0,
+  MENU_TOGGLE_REASON_USER,
+  MENU_TOGGLE_REASON_MESSAGE
+};
+
+enum menu_toggle_reason menu_display_toggle_get_reason(void);
+void menu_display_toggle_set_reason(enum menu_toggle_reason reason);
+
 void menu_display_blend_begin(void);
 void menu_display_blend_end(void);
 
@@ -230,7 +240,7 @@ void menu_display_handle_wallpaper_upload(void *task_data,
 void menu_display_handle_thumbnail_upload(void *task_data,
       void *user_data, const char *err);
 
-void menu_display_push_quad( 
+void menu_display_push_quad(
       unsigned width, unsigned height,
       const float *colors, int x1, int y1,
       int x2, int y2);
@@ -243,7 +253,7 @@ void menu_display_draw_cursor(
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height);
 
-void menu_display_draw_text(const char *msg, int width, int height, 
+void menu_display_draw_text(const char *msg, int width, int height,
       struct font_params *params);
 
 bool menu_display_shader_pipeline_active(void);

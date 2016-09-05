@@ -68,7 +68,7 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
  *
  * Runs RetroArch menu for one frame.
  *
- * Returns: 0 on success, -1 if we need to quit out of the loop. 
+ * Returns: 0 on success, -1 if we need to quit out of the loop.
  **/
 int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
@@ -94,7 +94,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    iterate_type              = action_iterate_type(hash);
 
    if (     action != MENU_ACTION_NOOP
-         || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
+         || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
          || menu_display_get_update_pending())
    {
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
@@ -128,7 +128,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             {
                runloop_set_quit_confirm(false);
 
-               if (content_is_inited())
+               if (content_is_inited() &&
+                      menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
                   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
             }
          }
@@ -153,12 +154,12 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
       case ITERATE_TYPE_INFO:
          {
             file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-            menu_file_list_cbs_t *cbs  = 
+            menu_file_list_cbs_t *cbs  =
                menu_entries_get_actiondata_at_offset(selection_buf, selection);
 
             if (cbs->enum_idx != MSG_UNKNOWN)
             {
-               ret = menu_hash_get_help_enum(cbs->enum_idx, 
+               ret = menu_hash_get_help_enum(cbs->enum_idx,
                      menu->menu_state.msg, sizeof(menu->menu_state.msg));
 #if 0
                RARCH_LOG("enum: %s\n", msg_hash_to_str(cbs->enum_idx));
@@ -231,7 +232,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                }
 
                if (enum_idx != MSG_UNKNOWN)
-                  ret = menu_hash_get_help_enum(enum_idx, 
+                  ret = menu_hash_get_help_enum(enum_idx,
                         menu->menu_state.msg, sizeof(menu->menu_state.msg));
 
             }
@@ -243,10 +244,10 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             menu_popup_set_active(false);
          break;
       case ITERATE_TYPE_DEFAULT:
-         /* FIXME: Crappy hack, needed for mouse controls 
+         /* FIXME: Crappy hack, needed for mouse controls
           * to not be completely broken in case we press back.
           *
-          * We need to fix this entire mess, mouse controls 
+          * We need to fix this entire mess, mouse controls
           * should not rely on a hack like this in order to work. */
          selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
 
@@ -271,7 +272,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
       menu_entries_pop_stack(&new_selection_ptr, 0, 0);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
    }
-   
+
    if (BIT64_GET(menu->state, MENU_STATE_POST_ITERATE))
       menu_input_post_iterate(&ret, action);
 

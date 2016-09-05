@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -71,7 +71,7 @@ enum menu_state_changes
    MENU_STATE_BLIT,
    MENU_STATE_POP_STACK,
    MENU_STATE_POST_ITERATE
-}; 
+};
 
 enum rarch_menu_ctl_state
 {
@@ -106,6 +106,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
    RARCH_MENU_CTL_IS_PREVENT_POPULATE,
    RARCH_MENU_CTL_SET_TEXTURE,
+   RARCH_MENU_CTL_IS_TOGGLE,
    RARCH_MENU_CTL_SET_TOGGLE,
    RARCH_MENU_CTL_UNSET_TOGGLE,
    RARCH_MENU_CTL_SET_ALIVE,
