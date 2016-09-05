@@ -23,7 +23,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <compat/posix_string.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
