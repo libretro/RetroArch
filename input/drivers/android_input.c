@@ -33,7 +33,7 @@
 #include "../../performance_counters.h"
 #include "../../general.h"
 #include "../../driver.h"
-#include ".././.configuration.h"
+#include "../../configuration.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_display.h"
