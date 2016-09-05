@@ -109,17 +109,11 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
 #ifdef HAVE_OPENGLES
-   bool gles3           = false;
-
    if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-      major = minor = 0;
-
-   if (major >= 3)
-      gles3 = true;
 #else
    if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
-      major = minor = 0;
 #endif
+      major = minor = 0;
     
    (void)vendor;
 
@@ -133,7 +127,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
       case GL_CAPS_SYNC:
 #ifdef HAVE_OPENGLES
-         if (gles3)
+         if (major >= 3)
             return true;
 #else
          if (gl_query_extension("ARB_sync") &&
@@ -209,13 +203,8 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          {
             struct retro_hw_render_callback *hwr =
                video_driver_get_hw_context();
-#ifdef HAVE_OPENGLES
-            if (gles3)
-               return true;
-#else
             if (major >= 3)
                return true;
-#endif
             if (hwr->stencil 
                   && !gl_query_extension("OES_packed_depth_stencil")
                   && !gl_query_extension("EXT_packed_depth_stencil"))
@@ -234,7 +223,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
       case GL_CAPS_UNPACK_ROW_LENGTH:
 #ifdef HAVE_OPENGLES
-         if (gles3)
+         if (major >= 3)
             return true;
 
          /* Extension GL_EXT_unpack_subimage, can copy textures faster
@@ -244,10 +233,9 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #endif
          break;
       case GL_CAPS_FULL_NPOT_SUPPORT:
-#ifdef HAVE_OPENGLES
-         if (gles3)
+         if (major >= 3)
             return true;
-
+#ifdef HAVE_OPENGLES
          if (gl_query_extension("ARB_texture_non_power_of_two") ||
                gl_query_extension("OES_texture_npot"))
             return true;
@@ -255,15 +243,9 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          {
             GLint max_texture_size = 0;
             GLint max_native_instr = 0;
-            bool arb_npot          = false;
-            bool arb_frag_program  = false;
-
-            if (major >= 3)
-               return true;
-
             /* try to detect actual npot support. might fail for older cards. */
-            arb_npot         = gl_query_extension("ARB_texture_non_power_of_two");
-            arb_frag_program = gl_query_extension("ARB_fragment_program");
+            bool  arb_npot         = gl_query_extension("ARB_texture_non_power_of_two");
+            bool  arb_frag_program = gl_query_extension("ARB_fragment_program");
 
             glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
 
@@ -281,13 +263,14 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
       case GL_CAPS_SRGB_FBO_ES3:
 #ifdef HAVE_OPENGLES
-         return gles3;
+         if (major >= 3)
+            return true;
 #else
          break;
 #endif
       case GL_CAPS_SRGB_FBO:
 #if defined(HAVE_OPENGLES)
-         if (gles3 || gl_query_extension("EXT_sRGB"))
+         if (major >= 3 || gl_query_extension("EXT_sRGB"))
             return true;
 #elif defined(HAVE_FBO)
          if (gl_query_core_context_in_use() || 
