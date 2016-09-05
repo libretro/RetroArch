@@ -20,6 +20,7 @@
 #include "input_keyboard.h"
 #include "input_remapping.h"
 
+#include "../configuration.h"
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"

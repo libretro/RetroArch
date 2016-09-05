@@ -36,6 +36,7 @@
 #include <streams/file_stream.h>
 
 #include "../../verbosity.h"
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../../frontend/frontend_driver.h"

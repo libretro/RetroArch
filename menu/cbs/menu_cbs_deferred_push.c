@@ -27,6 +27,7 @@
 
 #include "../../cores/internal_cores.h"
 
+#include "../../configuration.h"
 #include "../../core_info.h"
 #include "../../runloop.h"
 #include "../../system.h"

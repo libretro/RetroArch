@@ -15,6 +15,7 @@
  */
 
 #include "../../driver.h"
+#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
 

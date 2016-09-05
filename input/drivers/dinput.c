@@ -38,6 +38,7 @@
 
 #include <windowsx.h>
 
+#include "../../configuration.h"
 #include "../../general.h"
 #include "../../verbosity.h"
 #include "../input_autodetect.h"

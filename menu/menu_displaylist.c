@@ -35,6 +35,7 @@
 #include "../database_info.h"
 #endif
 
+#include "../configuration.h"
 #include "../file_path_special.h"
 #include "../defaults.h"
 #include "../managers/cheat_manager.h"

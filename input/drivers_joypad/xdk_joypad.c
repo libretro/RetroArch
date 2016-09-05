@@ -14,6 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+
+#include "../../configuration.h"
 #include "../input_autodetect.h"
 
 static uint64_t pad_state[MAX_PADS];

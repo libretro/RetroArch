@@ -24,6 +24,7 @@
 #include <compat/posix_string.h>
 
 #include "cheat_manager.h"
+#include "../configuration.h"
 #include "../runloop.h"
 #include "../dynamic.h"
 #include "../core.h"

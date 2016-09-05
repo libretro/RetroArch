@@ -21,6 +21,7 @@
 #include <string/stdstring.h>
 
 #include "input_keymaps.h"
+#include "../configuration.h"
 #include "../general.h"
 #include "../list_special.h"
 #include "../verbosity.h"

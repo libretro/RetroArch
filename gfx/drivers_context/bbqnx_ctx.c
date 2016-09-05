@@ -29,6 +29,7 @@
 #include <screen/screen.h>
 #include <sys/platform.h>
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"

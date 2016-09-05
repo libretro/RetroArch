@@ -14,7 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+
 #include "../input_autodetect.h"
+
+#include "../../configuration.h"
 
 #if defined(SN_TARGET_PSP2) || defined(VITA)
 #define PSP_MAX_PADS 2

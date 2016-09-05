@@ -14,9 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <retro_inline.h>
+
 #include "../input_autodetect.h"
 
-#include <retro_inline.h>
+#include "../../configuration.h"
 
 static uint64_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];

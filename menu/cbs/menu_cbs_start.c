@@ -24,6 +24,7 @@
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 
+#include "../../configuration.h"
 #include "../../core_info.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"

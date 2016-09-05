@@ -22,12 +22,13 @@
 #include <xenos/edram.h>
 #include <xenos/xenos.h>
 
-#include "../../driver.h"
-#include "../../general.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "../../configuration.h"
+#include "../../driver.h"
+#include "../../general.h"
 
 #define XE_W 512
 #define XE_H 512

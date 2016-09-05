@@ -34,6 +34,7 @@
 #include "video_context_driver.h"
 #include "../record/record_driver.h"
 #include "../config.def.h"
+#include "../configuration.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../performance_counters.h"

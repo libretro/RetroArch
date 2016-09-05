@@ -21,6 +21,7 @@
 #include "../menu_entry.h"
 #include "../menu_setting.h"
 
+#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../tasks/tasks_internal.h"
 

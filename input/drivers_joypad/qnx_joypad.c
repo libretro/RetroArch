@@ -17,6 +17,8 @@
 
 #include "../input_autodetect.h"
 
+#include "../../configuration.h"
+
 static const char *qnx_joypad_name(unsigned pad)
 {
    settings_t *settings = config_get_ptr();

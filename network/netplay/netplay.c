@@ -28,6 +28,7 @@
 
 #include "netplay_private.h"
 
+#include "../../configuration.h"
 #include "../../command.h"
 #include "../../movie.h"
 #include "../../runloop.h"

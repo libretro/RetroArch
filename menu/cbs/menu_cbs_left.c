@@ -26,6 +26,7 @@
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
 
+#include "../../configuration.h"
 #include "../../core_info.h"
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"

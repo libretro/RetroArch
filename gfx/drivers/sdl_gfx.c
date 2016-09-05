@@ -23,6 +23,7 @@
 
 #include "SDL.h"
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../performance_counters.h"

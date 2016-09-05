@@ -19,6 +19,7 @@
 #include <string/stdstring.h>
 
 #include "input_remapping.h"
+#include "../configuration.h"
 #include "../runloop.h"
 
 /**

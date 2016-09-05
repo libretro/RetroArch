@@ -23,6 +23,7 @@
 #include <bps/navigator.h>
 #include <sys/keycodes.h>
 
+#include "../../configuration.h"
 #include "../../general.h"
 #include "../../driver.h"
 #include "../input_autodetect.h"

@@ -22,6 +22,7 @@
 #include "../ui/ui_companion_driver.h"
 #include "../tasks/tasks_internal.h"
 
+#include "../configuration.h"
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"

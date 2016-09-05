@@ -24,6 +24,7 @@
 
 #include "../../defines/ps3_defines.h"
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"
 

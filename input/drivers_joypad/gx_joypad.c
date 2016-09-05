@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../configuration.h"
 #include "../input_autodetect.h"
 
 #include <gccore.h>

@@ -33,6 +33,7 @@
 #include "../common/vulkan_common.h"
 
 #include "../../driver.h"
+#include "../../configuration.h"
 #include "../../record/record_driver.h"
 #include "../../performance_counters.h"
 

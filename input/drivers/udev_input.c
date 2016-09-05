@@ -45,6 +45,7 @@
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
+#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
 

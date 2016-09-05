@@ -19,6 +19,7 @@
 
 #include <emscripten/emscripten.h>
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../video_context_driver.h"

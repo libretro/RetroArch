@@ -31,6 +31,7 @@
 
 #include <dynamic/dylib.h>
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../dynamic.h"
 #include "../../runloop.h"

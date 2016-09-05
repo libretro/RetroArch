@@ -31,6 +31,7 @@
 
 #include "input_remote.h"
 
+#include "../configuration.h"
 #include "../msg_hash.h"
 #include "../runloop.h"
 #include "../verbosity.h"

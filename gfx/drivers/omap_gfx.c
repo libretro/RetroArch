@@ -36,6 +36,7 @@
 #include <gfx/scaler/scaler.h>
 #include <string/stdstring.h>
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../retroarch.h"

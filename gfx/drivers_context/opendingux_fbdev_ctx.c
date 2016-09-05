@@ -17,6 +17,7 @@
 #include <signal.h>
 
 #include "../../frontend/frontend_driver.h"
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"

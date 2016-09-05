@@ -23,6 +23,7 @@
 
 #include <streams/file_stream.h>
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../drivers_font_renderer/bitmap.h"

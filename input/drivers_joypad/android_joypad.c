@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../configuration.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 
 static const char *android_joypad_name(unsigned pad)

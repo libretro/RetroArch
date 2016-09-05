@@ -23,6 +23,7 @@
 #include "../input_config.h"
 #include "../input_keymaps.h"
 
+#include "../../configuration.h"
 #include "../../driver.h"
 
 #include "../../general.h"

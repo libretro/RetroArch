@@ -20,6 +20,7 @@
 #include <formats/image.h>
 #include <string/stdstring.h>
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"

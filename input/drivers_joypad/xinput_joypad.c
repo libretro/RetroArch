@@ -33,6 +33,7 @@
 #include "../input_autodetect.h"
 #include "../input_config.h"
 
+#include "../../configuration.h"
 #include "../../general.h"
 #include "../../verbosity.h"
 

@@ -22,6 +22,7 @@
 #include "../drivers/d3d.h"
 #include "../common/win32_common.h"
 
+#include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
 

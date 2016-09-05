@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../../frontend/frontend_driver.h"

@@ -22,6 +22,7 @@
 #include "../input_keymaps.h"
 #include "cocoa_input.h"
 #include "../../general.h"
+#include "../../configuration.h"
 #include "../../driver.h"
 
 #include "../drivers_keyboard/keyboard_event_apple.h"

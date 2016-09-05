@@ -24,6 +24,7 @@
 #include <boolean.h>
 #include <libretro.h>
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"
 

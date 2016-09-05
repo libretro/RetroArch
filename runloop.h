@@ -16,10 +16,11 @@
 #ifndef __RETROARCH_RUNLOOP_H
 #define __RETROARCH_RUNLOOP_H
 
+#include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
-#include "configuration.h"
+#include "input/input_defines.h"
 
 RETRO_BEGIN_DECLS
 

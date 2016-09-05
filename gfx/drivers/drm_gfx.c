@@ -27,6 +27,7 @@
 #include "config.h"
 #endif
 
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../retroarch.h"

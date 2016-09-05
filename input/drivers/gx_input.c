@@ -25,6 +25,7 @@
 
 #include <libretro.h>
 
+#include "../../configuration.h"
 #include "../../driver.h"
 
 #ifndef MAX_PADS
