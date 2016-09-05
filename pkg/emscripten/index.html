@@ -12,8 +12,14 @@
       <div class="container">
          <a class="navbar-brand" href="#">RetroArch</a>
          <ul class="nav navbar-nav">
-           <li class="nav-item active">
-               <a class="nav-link" href="#">Gambatte <span class="sr-only">(current)</span></a>
+           <li class="nav-item gambatte">
+               <a class="nav-link" href="./?core=gambatte">Gambatte</a>
+            </li>
+           <li class="nav-item snes9x2010">
+               <a class="nav-link" href="./?core=snes9x2010">Snex9x 2010</a>
+            </li>
+           <li class="nav-item vba_next">
+               <a class="nav-link vba_next" href="./?core=vba_next">VBA Next</a>
             </li>
          </ul>
       </div>
@@ -28,7 +34,7 @@
    <div class="container">
       <div class="row">
          <div class="col-sm-12 form-group btn-group text-xs-center p-t-2" id="openrom">
-            <button class="btn btn-primary" id="btnStart" onclick="startRetroArch()">Start RetroArch</button>
+            <button class="btn btn-primary disabled" id="btnStart" onclick="startRetroArch()">Start RetroArch</button>
             <button class="btn btn-secondary" id="btnAuth" onclick="dropboxInit()">Sync DropBox</button>
             <button class="btn btn-secondary" id="btnLoad" disabled=true onclick="document.getElementById('rom').click()">Add Content</button>
             <input class="btn btn-secondary" style="display: none" type="file" id="rom" name="upload" onclick="document.getElementById('btnLoad').click();" onchange="selectFiles(event.target.files)" multiple />
@@ -46,10 +52,9 @@
 
    <script src="//code.jquery.com/jquery-3.1.0.min.js"></script>
    <script src="//cdnjs.cloudflare.com/ajax/libs/tether/1.3.4/js/tether.min.js"></script>
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/js/bootstrap.min.js"></script>
+   <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/js/bootstrap.min.js"></script>
    <script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
    <script src="browserfs.js"></script>
    <script src="webplayer.js"></script>
-   <script src="gambatte_libretro.js"></script>
 </body>
 </html>
