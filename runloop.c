@@ -1355,12 +1355,12 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
       return 1;
 
 #ifdef HAVE_MENU
-   if (!runloop_quit_confirm && menu_popup_is_active())
-      return 1;
-
    if (settings && settings->confirm_on_exit &&
           !runloop_quit_confirm)
    {
+      if (menu_popup_is_active())
+         return 1;
+
       if (content_is_inited())
       {
          if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)

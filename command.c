@@ -1778,8 +1778,10 @@ static void command_event_main_state(unsigned cmd)
 
 void handle_quit_event()
 {
+   settings_t *settings      = config_get_ptr();
 #ifdef HAVE_MENU
-   if (menu_popup_is_active())
+   if (settings && settings->confirm_on_exit &&
+         menu_popup_is_active())
       return;
 #endif
 
@@ -1980,19 +1982,21 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
          command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 
-               if (content_is_inited())
-                  if (!task_push_content_load_default(
-                           NULL, NULL,
-                           &content_info,
-                           CORE_TYPE_DUMMY,
-                           CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-                           NULL, NULL))
-                     return false;
+         if (content_is_inited())
+            if (!task_push_content_load_default(
+                     NULL, NULL,
+                     &content_info,
+                     CORE_TYPE_DUMMY,
+                     CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+                     NULL, NULL))
+               return false;
 #ifndef HAVE_DYNAMIC
-               core_unload_game();
-               core_unload();
+         core_unload_game();
+         core_unload();
+#else
+         command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
 #endif
-               break;
+         break;
       case CMD_EVENT_QUIT_CONFIRM:
          handle_quit_event();
          break;
