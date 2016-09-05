@@ -693,6 +693,7 @@ static void *gl_glsl_init(void *data, const char *path)
    unsigned i;
    struct shader_program_info shader_prog_info;
    bool shader_support        = false;
+   char *error_string         = NULL;
    config_file_t *conf        = NULL;
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;
@@ -843,8 +844,12 @@ static void *gl_glsl_init(void *data, const char *path)
       gl_glsl_find_uniforms(glsl, i, glsl->prg[i].id, &glsl->uniforms[i]);
 
 #ifdef GLSL_DEBUG
-   if (!gl_check_error())
+   if (!gl_check_error(error_string))
+   {
+      RARCH_ERR("%s\n", error_string);
+      free(error_string);
       RARCH_WARN("Detected GL error in GLSL.\n");
+   }
 #endif
 
    if (glsl->shader->variables)

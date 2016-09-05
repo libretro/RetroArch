@@ -1854,6 +1854,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    const char *renderer                 = NULL;
    const char *version                  = NULL;
    struct retro_hw_render_callback *hwr = NULL;
+   char *error_string                   = NULL;
    settings_t *settings                 = config_get_ptr();
    gl_t *gl                             = (gl_t*)calloc(1, sizeof(gl_t));
    const gfx_ctx_driver_t *ctx_driver   = gl_get_context(gl);
@@ -2094,8 +2095,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_pbo_readback(gl);
 #endif
 
-   if (!gl_check_error())
+   if (!gl_check_error(error_string))
+   {
+      RARCH_ERR("%s\n", error_string);
+      free(error_string);
       goto error;
+   }
 
    context_bind_hw_render(true);
    return gl;
