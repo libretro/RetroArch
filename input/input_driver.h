@@ -25,13 +25,10 @@
 #include <retro_common_api.h>
 
 #include "input_joypad_driver.h"
+#include "input_defines.h"
 
 #ifdef HAVE_OVERLAY
 #include "input_overlay.h"
-#endif
-
-#ifndef MAX_USERS
-#define MAX_USERS 16
 #endif
 
 RETRO_BEGIN_DECLS

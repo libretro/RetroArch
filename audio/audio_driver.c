@@ -28,6 +28,7 @@
 #include "audio_thread_wrapper.h"
 
 #include "../command.h"
+#include "../driver.h"
 #include "../configuration.h"
 #include "../retroarch.h"
 #include "../runloop.h"

@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
 #include <string/stdstring.h>
 
 #include <IOKit/hid/IOHIDManager.h>

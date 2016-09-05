@@ -23,6 +23,7 @@
 #include "camera_driver.h"
 
 #include "../configuration.h"
+#include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../list_special.h"

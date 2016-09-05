@@ -23,7 +23,7 @@
 #include <retro_common_api.h>
 
 #include "gfx/video_driver.h"
-#include "driver.h"
+#include "input/input_defines.h"
 
 enum override_type
 {
@@ -31,10 +31,6 @@ enum override_type
    OVERRIDE_CORE,
    OVERRIDE_GAME
 };
-
-#ifndef MAX_USERS
-#define MAX_USERS 16
-#endif
 
 RETRO_BEGIN_DECLS
 

@@ -23,6 +23,7 @@
 #include "location_driver.h"
 
 #include "../configuration.h"
+#include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../system.h"

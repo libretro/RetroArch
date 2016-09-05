@@ -20,11 +20,7 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
-#include "driver.h"
-
-#ifndef MAX_USERS
-#define MAX_USERS 16
-#endif
+#include "input/input_defines.h"
 
 RETRO_BEGIN_DECLS
 
