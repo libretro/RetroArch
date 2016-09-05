@@ -957,19 +957,19 @@ static void config_set_defaults(void)
    unsigned bool_settings_size     = populate_settings_bool  (settings, &bool_settings);
    int int_settings_size           = populate_settings_int   (settings, &int_settings);
 
-   for (i = 0; i < bool_settings_size; i++)
+   for (i = 0; i < (unsigned)bool_settings_size; i++)
    {
       if (bool_settings[i].def_enable)
          *bool_settings[i].ptr = bool_settings[i].def;
    }
 
-   for (i = 0; i < int_settings_size; i++)
+   for (i = 0; i < (unsigned)int_settings_size; i++)
    {
       if (int_settings[i].def_enable)
          *int_settings[i].ptr = int_settings[i].def;
    }
 
-   for (i = 0; i < float_settings_size; i++)
+   for (i = 0; i < (unsigned)float_settings_size; i++)
    {
       if (float_settings[i].def_enable)
          *float_settings[i].ptr = float_settings[i].def;
@@ -1712,7 +1712,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    /* Boolean settings */
 
-   for (i = 0; i < bool_settings_size; i++)
+   for (i = 0; i < (unsigned)bool_settings_size; i++)
    {
       bool tmp = false;
       if (config_get_bool(conf, bool_settings[i].ident, &tmp))
@@ -1779,7 +1779,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    /* Integer settings */
 
-   for (i = 0; i < int_settings_size; i++)
+   for (i = 0; i < (unsigned)int_settings_size; i++)
    {
       int tmp = 0;
       if (config_get_int(conf, int_settings[i].ident, &tmp))
@@ -1833,7 +1833,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 #endif
 
    /* Float settings */
-   for (i = 0; i < float_settings_size; i++)
+   for (i = 0; i < (unsigned)float_settings_size; i++)
    {
       float tmp = 0.0f;
       if (config_get_float(conf, float_settings[i].ident, &tmp))
@@ -1841,7 +1841,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    /* Array settings  */
-   for (i = 0; i < array_settings_size; i++)
+   for (i = 0; i < (unsigned)array_settings_size; i++)
    {
       if (!array_settings[i].handle)
          continue;
@@ -1850,7 +1850,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    /* Path settings  */
-   for (i = 0; i < path_settings_size; i++)
+   for (i = 0; i < (unsigned)path_settings_size; i++)
    {
       if (!path_settings[i].handle)
          continue;
@@ -2861,7 +2861,7 @@ bool config_save_file(const char *path)
    path_settings_size   = populate_settings_path  (settings, &path_settings);
 
    /* Path settings */
-   for (i = 0; i < path_settings_size; i++)
+   for (i = 0; i < (unsigned)path_settings_size; i++)
    {
       const char *value = path_settings[i].ptr;
 
@@ -2877,17 +2877,17 @@ bool config_save_file(const char *path)
 #endif
 
    /* String settings  */
-   for (i = 0; i < array_settings_size; i++)
+   for (i = 0; i < (unsigned)array_settings_size; i++)
       config_set_string(conf, array_settings[i].ident,
             array_settings[i].ptr);
 
    /* Float settings  */
-   for (i = 0; i < float_settings_size; i++)
+   for (i = 0; i < (unsigned)float_settings_size; i++)
       config_set_float(conf, float_settings[i].ident,
             *float_settings[i].ptr);
 
    /* Integer settings */
-   for (i = 0; i < int_settings_size; i++)
+   for (i = 0; i < (unsigned)int_settings_size; i++)
       config_set_int(conf, int_settings[i].ident,
             *int_settings[i].ptr);
 
@@ -2906,7 +2906,7 @@ bool config_save_file(const char *path)
    }
 
    /* Boolean settings */
-   for (i = 0; i < bool_settings_size; i++)
+   for (i = 0; i < (unsigned)bool_settings_size; i++)
       config_set_bool(conf, bool_settings[i].ident,
             *bool_settings[i].ptr);
 
@@ -3075,7 +3075,7 @@ bool config_save_overrides(int override_type)
 
    RARCH_LOG("[overrides] looking for changed settings... \n");
 
-   for (i = 0; i < bool_settings_size; i++)
+   for (i = 0; i < (unsigned)bool_settings_size; i++)
    {
       if ((*bool_settings[i].ptr) != (*bool_overrides[i].ptr))
       {
@@ -3087,7 +3087,7 @@ bool config_save_overrides(int override_type)
             (*bool_overrides[i].ptr));
       }
    }
-   for (i = 0; i < int_settings_size; i++)
+   for (i = 0; i < (unsigned)int_settings_size; i++)
    {
       if ((*int_settings[i].ptr) != (*int_overrides[i].ptr))
       {
@@ -3099,7 +3099,7 @@ bool config_save_overrides(int override_type)
                (*int_overrides[i].ptr));
       }
    }
-   for (i = 0; i < float_settings_size; i++)
+   for (i = 0; i < (unsigned)float_settings_size; i++)
    {
       if ((*float_settings[i].ptr) != (*float_overrides[i].ptr))
       {
@@ -3111,7 +3111,7 @@ bool config_save_overrides(int override_type)
             *float_overrides[i].ptr);
       }
    }
-   for (i = 0; i < array_settings_size; i++)
+   for (i = 0; i < (unsigned)array_settings_size; i++)
    {
       if (!string_is_equal(array_settings[i].ptr, array_overrides[i].ptr))
       {
@@ -3123,7 +3123,7 @@ bool config_save_overrides(int override_type)
             array_overrides[i].ptr);
       }
    }
-   for (i = 0; i < path_settings_size; i++)
+   for (i = 0; i < (unsigned)path_settings_size; i++)
    {
       if (!string_is_equal(path_settings[i].ptr, path_overrides[i].ptr))
       {
