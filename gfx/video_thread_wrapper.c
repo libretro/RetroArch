@@ -18,6 +18,7 @@
 #include <string.h>
 #include <limits.h>
 
+#include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <rthreads/rthreads.h>
 

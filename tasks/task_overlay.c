@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 
+#include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <file/config_file.h>

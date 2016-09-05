@@ -26,6 +26,7 @@
 #endif
 #include <errno.h>
 
+#include <compat/strl.h>
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>

@@ -13,6 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
+#include <compat/strl.h>
+
 #include "../common/vulkan_common.h"
 
 #include "../font_driver.h"

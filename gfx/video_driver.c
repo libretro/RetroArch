@@ -24,6 +24,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include <compat/strl.h>
 #include <retro_common_api.h>
 #include <file/config_file.h>
 #include <features/features_cpu.h>

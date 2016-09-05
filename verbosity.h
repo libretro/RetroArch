@@ -21,8 +21,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <compat/posix_string.h>
-#include <compat/strl.h>
 
 RETRO_BEGIN_DECLS
 

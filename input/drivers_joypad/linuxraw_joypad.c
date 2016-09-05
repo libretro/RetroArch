@@ -24,6 +24,8 @@
 #include <sys/inotify.h>
 #include <linux/joystick.h>
 
+#include <compat/strl.h>
+
 #include "../common/epoll_common.h"
 #include "../input_autodetect.h"
 #include "../input_driver.h"

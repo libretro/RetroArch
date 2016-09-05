@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 
+#include <compat/strl.h>
 #include <retro_endianness.h>
 
 #include "list_special.h"

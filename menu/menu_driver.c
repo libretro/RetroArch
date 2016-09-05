@@ -16,6 +16,7 @@
 
 #include <string.h>
 
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 

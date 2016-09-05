@@ -29,6 +29,7 @@
 #include <linux/input.h>
 
 #include <retro_inline.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
 
 #include "../input_autodetect.h"

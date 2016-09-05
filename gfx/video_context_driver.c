@@ -16,6 +16,7 @@
 
 #include <string.h>
 
+#include <compat/strl.h>
 #include <string/stdstring.h>
 
 #include "video_context_driver.h"

@@ -37,6 +37,7 @@
 #endif
 
 #include <file/file_path.h>
+#include <compat/strl.h>
 #include <string/stdstring.h>
 
 #include "../drivers_keyboard/keyboard_event_udev.h"

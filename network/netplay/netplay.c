@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <compat/strl.h>
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <retro_endianness.h>

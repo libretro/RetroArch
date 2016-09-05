@@ -23,12 +23,14 @@
 #include <string.h>
 #include <math.h>
 
+#include <compat/strl.h>
+#include <formats/image.h>
+
 #include "slang_reflection.hpp"
 
 #include "../video_shader_driver.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
-#include "../../libretro-common/include/formats/image.h"
 
 using namespace std;
 
