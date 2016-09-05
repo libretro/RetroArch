@@ -24,7 +24,6 @@
 
 #include "gl_capabilities.h"
 #include "../video_driver.h"
-#include "../../verbosity.h"
 
 static bool gl_core_context       = false;
 
@@ -70,8 +69,6 @@ static bool gl_query_extension(const char *ext)
       ret = str && strstr(str, ext);
    }
 
-   RARCH_LOG("Querying GL extension: %s => %s\n",
-         ext, ret ? "exists" : "doesn't exist");
    return ret;
 }
 
@@ -224,11 +221,9 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          return true;
       case GL_CAPS_ES2_COMPAT:
 #ifndef HAVE_OPENGLES
+         /* ATI card detected, skipping check for GL_RGB565 support... */
          if (vendor && renderer && (strstr(vendor, "ATI") || strstr(renderer, "ATI")))
-         {
-            RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
             return false;
-         }
 
          if (gl_query_extension("ARB_ES2_compatibility"))
             return true;
@@ -239,11 +234,10 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          if (gles3)
             return true;
 
+         /* Extension GL_EXT_unpack_subimage, can copy textures faster
+          * than using UNPACK_ROW_LENGTH */
          if (gl_query_extension("GL_EXT_unpack_subimage"))
-         {
-            RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
             return true;
-         }
 #endif
          break;
       case GL_CAPS_FULL_NPOT_SUPPORT:
