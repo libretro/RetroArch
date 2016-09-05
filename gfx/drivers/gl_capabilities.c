@@ -24,7 +24,8 @@
 #include <boolean.h>
 
 #include "gl_capabilities.h"
-#include "../common/gl_common.h"
+#include "../video_driver.h"
+#include "../../verbosity.h"
 
 #if defined(HAVE_FBO) && defined(HAVE_PSGL)
 #define glGenFramebuffers glGenFramebuffersOES
