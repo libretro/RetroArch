@@ -28,6 +28,7 @@
 
 #include "d3d.h"
 #include "../video_coord_array.h"
+#include "../../configuration.h"
 #include "../../dynamic.h"
 #include "d3d_renderchains/render_chain_driver.h"
 

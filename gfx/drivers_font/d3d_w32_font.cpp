@@ -16,6 +16,8 @@
 
 #include "../drivers/d3d.h"
 #include "../font_driver.h"
+
+#include "../../configuration.h"
 #include "../../general.h"
 
 #include "../include/d3d9/d3dx9core.h"

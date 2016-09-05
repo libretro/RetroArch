@@ -17,6 +17,7 @@
 #include <string/stdstring.h>
 
 #include "../../frontend/frontend_driver.h"
+#include "../../configuration.h"
 #include "../../general.h"
 #include "../../verbosity.h"
 #include "win32_common.h"
