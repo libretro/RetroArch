@@ -2993,10 +2993,12 @@ bool config_save_file(const char *path)
  **/
 bool config_save_overrides(int override_type)
 {
-   unsigned i                                 = 0;
-   int bool_settings_size   = 0, int_settings_size    = 0,
-       float_settings_size  = 0, array_settings_size = 0,
-       path_settings_size   = 0;
+   unsigned i                                  = 0;
+   int bool_settings_size                      = 0;
+   int int_settings_size                       = 0;
+   int float_settings_size                     = 0;
+   int array_settings_size                     = 0;
+   int path_settings_size                      = 0;
    bool ret                                    = false;
    char config_directory[PATH_MAX_LENGTH]      = {0};
    char override_directory[PATH_MAX_LENGTH]    = {0};
