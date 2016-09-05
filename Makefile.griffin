@@ -214,7 +214,7 @@ else ifeq ($(platform), vita)
   INCLUDE += -Ideps/zlib
   PLATCFLAGS := -mthumb -mfloat-abi=hard -ffast-math -fsingle-precision-constant -mword-relocations
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
-			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub \
+			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lSceFiber_stub\
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
 			 -lSceMotion_stub -lfreetype -lm -lc -lpng -ljpeg
 
