@@ -5,12 +5,16 @@
 #include "gfx/video_driver.h"
 #include "managers/core_option_manager.h"
 #include "cheevos.h"
+#include "content.h"
 #include "string/stdstring.h"
 #include "compat/zlib.h"
 #include "civetweb.h"
 
 #include <string.h>
 #include <stdarg.h>
+
+#define __STDC_FORMAT_MACROS 
+#include <inttypes.h>
 
 #define BASIC_INFO "info"
 #define MEMORY_MAP "memoryMap"
@@ -220,6 +224,7 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
     "\"pixelFormat\":\"%s\","
     "\"rotation\":%u,"
     "\"performaceLevel\":%u,"
+    "\"supportsNoGame\":%s,"
 #ifdef HAVE_CHEEVOS
     "\"frontendSupportsAchievements\":true,"
     "\"coreSupportsAchievements\":%s,"
@@ -227,10 +232,10 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
     "\"frontendSupportsAchievements\":false,"
     "\"coreSupportsAchievements\":null,"
 #endif
-    "\"saveRam\":{\"pointer\":\"%p\",\"size\":" STRING_REP_UINT64 "},"
-    "\"rtcRam\":{\"pointer\":\"%p\",\"size\":" STRING_REP_UINT64 "},"
-    "\"systemRam\":{\"pointer\":\"%p\",\"size\":" STRING_REP_UINT64 "},"
-    "\"videoRam\":{\"pointer\":\"%p\",\"size\":" STRING_REP_UINT64 "},",
+    "\"saveRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
+    "\"rtcRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
+    "\"systemRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},"
+    "\"videoRam\":{\"pointer\":\"%" PRIXPTR "\",\"size\":" STRING_REP_UINT64 "},",
     core_path,
     api.version,
     system->info.library_name,
@@ -242,13 +247,14 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
     pixel_format,
     system->rotation,
     system->performance_level,
+    content_does_not_need_content() ? "true" : "false",
 #ifdef HAVE_CHEEVOS
     cheevos_get_support_cheevos() ? "true" : "false",
 #endif
-    sram.data, sram.size,
-    rtc.data, rtc.size,
-    sysram.data, sysram.size,
-    vram.data, vram.size
+    (uintptr_t)sram.data, sram.size,
+    (uintptr_t)rtc.data, rtc.size,
+    (uintptr_t)sysram.data, sysram.size,
+    (uintptr_t)vram.data, vram.size
   );
 
   mg_printf(conn, "\"subSystems\":[");
@@ -326,7 +332,7 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
 
     for (q = 0; q < system->ports.data[p].num_types; q++, ctrl++)
     {
-      mg_printf(conn, "%s{\"index\":%u,\"id\":%u,\"description\":\"%s\"}", comma, p, ctrl->id, ctrl->desc);
+      mg_printf(conn, "%s{\"id\":%u,\"description\":\"%s\"}", comma, ctrl->id, ctrl->desc);
       comma = ",";
     }
   }
@@ -415,7 +421,7 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
       "%s{"
       "\"id\":%u,"
       "\"flags\":" STRING_REP_UINT64 ","
-      "\"ptr\":\"%p\","
+      "\"ptr\":\"%" PRIXPTR "\","
       "\"offset\":" STRING_REP_UINT64 ","
       "\"start\":" STRING_REP_UINT64 ","
       "\"select\":" STRING_REP_UINT64 ","
@@ -426,7 +432,7 @@ static int httpserver_handle_get_mmaps(struct mg_connection* conn, void* cbdata)
       comma,
       id,
       mmap->flags,
-      mmap->ptr,
+      (uintptr_t)mmap->ptr,
       mmap->offset,
       mmap->start,
       mmap->select,
