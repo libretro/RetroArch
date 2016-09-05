@@ -367,10 +367,10 @@ bool menu_shader_manager_save_preset(
  **/
 unsigned menu_shader_manager_get_type(const void *data)
 {
-   const struct video_shader *shader = (const struct video_shader*)data;
 #ifndef HAVE_SHADER_MANAGER
    return RARCH_SHADER_NONE;
 #else
+   const struct video_shader *shader = (const struct video_shader*)data;
    /* All shader types must be the same, or we cannot use it. */
    unsigned i = 0, type = 0;
 

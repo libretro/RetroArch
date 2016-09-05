@@ -1652,7 +1652,9 @@ static bool config_load_file(const char *path, bool set_defaults,
    struct config_array_setting_ptr *array_settings = NULL;
    struct config_path_setting_ptr *path_settings   = NULL;
    char *override_username                         = NULL;
+#ifdef HAVE_NETPLAY
    char *override_netplay_ip_address               = NULL;
+#endif
    global_t   *global                              = global_get_ptr();
    int bool_settings_size                          = populate_settings_bool  (settings, &bool_settings);
    int float_settings_size                         = populate_settings_float (settings, &float_settings);
