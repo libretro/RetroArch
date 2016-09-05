@@ -22,6 +22,8 @@
 
 #include <boolean.h>
 
+#include <retro_common_api.h>
+
 enum menu_help_type
 {
    MENU_HELP_NONE       = 0,
