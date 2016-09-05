@@ -26,26 +26,6 @@
 
 RETRO_BEGIN_DECLS
 
-enum gl_capability_enum
-{
-   GL_CAPS_NONE = 0,
-   GL_CAPS_EGLIMAGE,
-   GL_CAPS_SYNC,
-   GL_CAPS_MIPMAP,
-   GL_CAPS_VAO,
-   GL_CAPS_FBO,
-   GL_CAPS_ARGB8,
-   GL_CAPS_DEBUG,
-   GL_CAPS_PACKED_DEPTH_STENCIL,
-   GL_CAPS_ES2_COMPAT,
-   GL_CAPS_UNPACK_ROW_LENGTH,
-   GL_CAPS_FULL_NPOT_SUPPORT,
-   GL_CAPS_SRGB_FBO,
-   GL_CAPS_SRGB_FBO_ES3,
-   GL_CAPS_FP_FBO,
-   GL_CAPS_BGRA8888
-};
-
 void gl_renderchain_convert_geometry(gl_t *gl,
       struct video_fbo_rect *fbo_rect,
       struct gfx_fbo_scale *fbo_scale,
@@ -95,8 +75,6 @@ void gl_check_fbo_dimensions(gl_t *gl);
 void gl_renderchain_free(gl_t *gl);
 
 bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height);
-
-bool gl_check_capability(enum gl_capability_enum enum_idx);
 
 void context_bind_hw_render(bool enable);
 

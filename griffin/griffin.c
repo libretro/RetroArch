@@ -299,6 +299,7 @@ VIDEO DRIVER
 #ifdef HAVE_OPENGL
 #include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
+#include "../gfx/drivers/gl_capabilities.c"
 #include "../gfx/drivers/gl_renderchains/render_chain_gl_legacy.c"
 
 #ifndef HAVE_PSGL
