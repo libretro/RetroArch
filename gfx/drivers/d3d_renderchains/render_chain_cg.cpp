@@ -29,6 +29,7 @@
 
 #include "render_chain_driver.h"
 #include "../../video_driver.h"
+#include "../../../configuration.h"
 #include "../../../general.h"
 #include "../../../performance_counters.h"
 #include "../../../verbosity.h"
