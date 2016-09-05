@@ -114,6 +114,15 @@ function setupFileSystem()
   }
 }
 
+/**
+ * Retrieve the value of the given GET parameter.
+ */
+function getParam(name) {
+  var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+  if (results) {
+    return results[1] || null;
+  }
+}
 
 function setupFolderStructure()
 {
@@ -205,3 +214,21 @@ var Module =
      this.totalDependencies = Math.max(this.totalDependencies, left);
   }
 };
+
+// When the browser has loaded everything.
+$(function() {
+  // Find which core to load.
+  var core = getParam('core');
+  if (!core) {
+    core = 'gambatte';
+  }
+
+  // Show the current core as the active core.
+  $('.nav-item.' + core).addClass('active');
+
+  // Load the Core's related JavaScript.
+  $.getScript(core + '_libretro.js', function () {
+    // Activate the Start RetroArch button.
+    $('#btnStart').removeClass('disabled');
+  });
+});
