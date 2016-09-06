@@ -1,0 +1,37 @@
+# Use 'generic' to be able to override CC/CXX for clang
+language: generic
+
+matrix:
+  include:
+    - compiler: gcc
+    - compiler: clang
+      addons:
+        # Install a more recent clang than the default
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.8
+          packages:
+            - clang-3.8
+      env: COMPILER_NAME=clang-3.8 CXX=clang++-3.8 CC=clang-3.8
+    - os: osx
+      osx_image: xcode7.3
+      script:
+          - xcodebuild -target RetroArch -configuration Release -project pkg/apple/RetroArch.xcodeproj
+
+script:
+  - ./configure
+  - make
+
+addons:
+  apt:
+    packages:
+      - curl
+      - pkg-config
+      - libglu1-mesa-dev
+      - freeglut3-mesa
+      - mesa-common-dev
+      - libsdl1.2-dev
+      - libsdl-image1.2-dev
+      - libsdl-mixer1.2-dev
+      - libsdl-ttf2.0-dev
