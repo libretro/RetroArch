@@ -215,14 +215,17 @@ var Module =
   }
 };
 
+function switchCore(corename) {
+   localStorage.setItem("core", corename);
+}
+
 // When the browser has loaded everything.
 $(function() {
   // Find which core to load.
-  var core = getParam('core');
+  var core = localStorage.getItem("core", core);
   if (!core) {
     core = 'gambatte';
   }
-
   // Show the current core as the active core.
   $('.nav-item.' + core).addClass('active');
 
@@ -234,6 +237,7 @@ $(function() {
     /**
      * Attempt to disable some default browser keys.
      */
+
     window.addEventListener('keydown', function(e) {
       // Space key, arrows, and F1.
       if([32, 37, 38, 39, 40, 112].indexOf(e.keyCode) > -1) {

@@ -23,10 +23,10 @@
 #include "location_driver.h"
 
 #include "../configuration.h"
+#include "../core.h"
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../system.h"
 #include "../list_special.h"
 #include "../verbosity.h"
 

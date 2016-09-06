@@ -46,7 +46,6 @@
 #include "managers/core_option_manager.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
-#include "system.h"
 #include "list_special.h"
 #include "audio/audio_driver.h"
 #include "camera/camera_driver.h"

@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -40,7 +41,6 @@
 #include "record/record_driver.h"
 #include "core.h"
 #include "performance_counters.h"
-#include "system.h"
 #include "gfx/video_context_driver.h"
 
 #include "cores/internal_cores.h"

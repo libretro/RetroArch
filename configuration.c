@@ -36,7 +36,6 @@
 #include "core.h"
 #include "retroarch.h"
 #include "runloop.h"
-#include "system.h"
 #include "verbosity.h"
 #include "lakka.h"
 

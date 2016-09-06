@@ -16,6 +16,7 @@
 
 #include <string.h>
 
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
@@ -31,9 +32,9 @@
 #include "../content.h"
 #include "../configuration.h"
 #include "../dynamic.h"
+#include "../core.h"
 #include "../core_info.h"
 #include "../retroarch.h"
-#include "../system.h"
 #include "../defaults.h"
 #include "../frontend/frontend.h"
 #include "../list_special.h"

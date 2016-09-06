@@ -27,12 +27,12 @@
 #include "../menu_navigation.h"
 
 #include "../../configuration.h"
+#include "../../core.h"
 #include "../../core_info.h"
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
-#include "../../system.h"
 #include "../../ui/ui_companion_driver.h"
 
 #ifndef BIND_ACTION_RIGHT

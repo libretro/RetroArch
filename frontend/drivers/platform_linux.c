@@ -42,6 +42,7 @@
 #include <compat/strl.h>
 #include <rhash.h>
 #include <retro_stat.h>
+#include <lists/file_list.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
@@ -56,6 +57,7 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_display.h"
+#include "../../menu/menu_entries.h"
 #endif
 
 #ifdef ANDROID
@@ -1868,11 +1870,11 @@ static void frontend_linux_init(void *data)
 
 }
 
-#ifdef ANDROID
-static int frontend_android_parse_drive_list(void *data)
+static int frontend_linux_parse_drive_list(void *data)
 {
    file_list_t *list = (file_list_t*)data;
 
+#ifdef ANDROID
    menu_entries_append_enum(list,
          app_dir,
          msg_hash_to_str(MSG_APPLICATION_DIR),
@@ -1886,13 +1888,13 @@ static int frontend_android_parse_drive_list(void *data)
          internal_storage_path,
          msg_hash_to_str(MSG_INTERNAL_MEMORY),
          MSG_INTERNAL_MEMORY, FILE_TYPE_DIRECTORY, 0, 0);
+#endif
 
    menu_entries_append_enum(list, "/", "",
          MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 
    return 0;
 }
-#endif
 
 #ifndef HAVE_DYNAMIC
 
@@ -2076,11 +2078,7 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* load_content */
    frontend_linux_get_architecture,
    frontend_linux_get_powerstate,
-#ifdef ANDROID
-   frontend_android_parse_drive_list, /* parse_drive_list */
-#else
-   NULL,                         /* parse_drive_list */
-#endif
+   frontend_linux_parse_drive_list,
    frontend_linux_get_mem_total,
    frontend_linux_get_mem_used,
    frontend_linux_install_signal_handlers,

@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <retro_assert.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>

@@ -20,6 +20,7 @@
 #include <X11/keysym.h>
 
 #include <boolean.h>
+#include <compat/strl.h>
 
 #include "../input_config.h"
 #include "../input_joypad_driver.h"

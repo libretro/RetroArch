@@ -31,9 +31,9 @@
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../frontend/frontend.h"
 #include "../../configuration.h"
+#include "../../core.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
-#include "../../system.h"
 #include "../../tasks/tasks_internal.h"
 
 id apple_platform;

@@ -61,7 +61,6 @@
 #include "configuration.h"
 #include "runloop.h"
 #include "managers/cheat_manager.h"
-#include "system.h"
 #include "tasks/tasks_internal.h"
 
 #include "version.h"

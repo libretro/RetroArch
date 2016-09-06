@@ -23,6 +23,8 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 
+#include <compat/strl.h>
+
 #include "../input_autodetect.h"
 #include "../input_driver.h"
 #include "../../configuration.h"

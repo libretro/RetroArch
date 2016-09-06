@@ -45,11 +45,11 @@
 #include "menu_input.h"
 #include "menu_navigation.h"
 
+#include "../core.h"
 #include "../configuration.h"
 #include "../msg_hash.h"
 #include "../defaults.h"
 #include "../driver.h"
-#include "../system.h"
 #include "../core.h"
 #include "../dynamic.h"
 #include "../runloop.h"

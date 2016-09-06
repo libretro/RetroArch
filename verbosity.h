@@ -16,13 +16,10 @@
 #ifndef __RARCH_VERBOSITY_H
 #define __RARCH_VERBOSITY_H
 
-#include <stdio.h>
 #include <stdarg.h>
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <compat/posix_string.h>
-#include <compat/strl.h>
 
 RETRO_BEGIN_DECLS
 
@@ -34,7 +31,7 @@ void verbosity_disable(void);
 
 bool *verbosity_get_ptr(void);
 
-FILE *retro_main_log_file(void);
+void *retro_main_log_file(void);
 
 void retro_main_log_file_deinit(void);
 

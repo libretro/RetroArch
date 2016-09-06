@@ -563,11 +563,11 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "W³±cz przewijanie";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Wybierz z kolekcji";
+         return "Kolekcji";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Wybierz plik i dopasuj rdzeñ";
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return "Wybierz pobrany plik i dopasuj rdzeñ"; /* this makes little sense */
+         return "Wybierz pobrany plik i dopasuj rdzeñ"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Wczytaj z ostatnio u¿ywanych";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
@@ -657,7 +657,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Zawijanie nawigacji";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filtruj wed³ug wspieranych rozszerzeñ";
+         return "Filtruj wed³ug wspieranych rozszerzeñ"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Automatycznie wypakowuj pobierane archiwa";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

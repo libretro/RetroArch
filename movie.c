@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <rhash.h>
+#include <compat/strl.h>
 #include <retro_endianness.h>
 
 #include "configuration.h"

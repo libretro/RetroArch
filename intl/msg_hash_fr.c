@@ -602,10 +602,10 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Activer le rembobinage";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Via les collections";
+         return "Collections";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Via les fichiers (détecter le coeur)";
-      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
+      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST: /* FIXME/TODO - rewrite */
          return "Via les téléchargements (détecter le coeur)";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Récemment ouvert";
@@ -690,7 +690,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Saut-retour";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filtrer par extentions supportées";
+         return "Filtrer par extentions supportées"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Extraire automatiquement";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

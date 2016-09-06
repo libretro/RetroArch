@@ -20,9 +20,12 @@
 
 #include <boolean.h>
 #include <libretro.h>
+
+#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
 #include "core_type.h"
+#include "input/input_defines.h"
 
 RETRO_BEGIN_DECLS
 
@@ -39,6 +42,34 @@ enum
     * retro_input_state per frame. */
    POLL_TYPE_LATE
 };
+
+typedef struct rarch_system_info
+{
+   struct retro_system_info info;
+
+   unsigned rotation;
+   unsigned performance_level;
+
+   const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
+   char valid_extensions[PATH_MAX_LENGTH];
+
+   struct retro_disk_control_callback  disk_control_cb; 
+   struct retro_location_callback      location_cb;
+
+   struct
+   {
+      struct retro_subsystem_info *data;
+      unsigned size;
+   } subsystem;
+
+   struct
+   {
+      struct retro_controller_info *data;
+      unsigned size;
+   } ports;
+   
+   struct retro_memory_map mmaps;
+} rarch_system_info_t;
 
 typedef struct retro_ctx_input_state_info
 {
@@ -190,6 +221,10 @@ bool core_uninit_libretro_callbacks(void);
 void core_uninit_symbols(void);
 
 void core_set_input_state(retro_ctx_input_state_info_t *info);
+
+bool core_is_symbols_inited(void);
+
+bool core_is_inited(void);
 
 bool core_is_game_loaded(void);
 

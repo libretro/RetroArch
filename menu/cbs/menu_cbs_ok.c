@@ -30,6 +30,7 @@
 #include "../menu_popup.h"
 #include "../menu_content.h"
 
+#include "../../core.h"
 #include "../../configuration.h"
 #include "../../core_info.h"
 #include "../../frontend/frontend_driver.h"
@@ -39,7 +40,6 @@
 #include "../../input/input_remapping.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
-#include "../../system.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
 

@@ -16,6 +16,8 @@
 
 #include <stdint.h>
 
+#include <compat/strl.h>
+
 #include "SDL.h"
 
 #include "../../configuration.h"

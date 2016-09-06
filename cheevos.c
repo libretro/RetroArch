@@ -24,7 +24,6 @@
 #include "cheevos.h"
 #include "command.h"
 #include "dynamic.h"
-#include "system.h"
 #include "network/net_http_special.h"
 #include "tasks/tasks_internal.h"
 #include "configuration.h"

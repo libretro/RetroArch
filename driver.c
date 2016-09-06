@@ -20,7 +20,6 @@
 
 #include "command.h"
 #include "msg_hash.h"
-#include "system.h"
 
 #include "audio/audio_driver.h"
 #include "audio/audio_resampler_driver.h"

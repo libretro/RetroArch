@@ -18,14 +18,15 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include "general.h"
-#include "system.h"
 
 #include <file/file_path.h>
 #include <rthreads/rthreads.h>
 
+#include "general.h"
+
 #include "ui_qt.h"
 #include "../ui_companion_driver.h"
+#include "../../core.h"
 #include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"
 #include "qt/wrapper/wrapper.h"

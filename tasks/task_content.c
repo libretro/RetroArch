@@ -81,7 +81,6 @@
 #include "../content.h"
 #include "../dynamic.h"
 #include "../patch.h"
-#include "../system.h"
 #include "../runloop.h"
 #include "../retroarch.h"
 #include "../file_path_special.h"

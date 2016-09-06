@@ -27,12 +27,12 @@
 #include "../menu_navigation.h"
 
 #include "../../configuration.h"
+#include "../../core.h"
 #include "../../core_info.h"
 #include "../../managers/cheat_manager.h"
 #include "../../file_path_special.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
-#include "../../system.h"
 
 #ifndef BIND_ACTION_LEFT
 #define BIND_ACTION_LEFT(cbs, name) \

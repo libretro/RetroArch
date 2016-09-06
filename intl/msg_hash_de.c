@@ -785,7 +785,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Zurückspulen (Rewind) aktivieren";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Lade Content (Sammlung)";  /* FIXME */
+         return "Lade Content (Sammlung)";  /* FIXME/TODO - rewrite */
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Lade Content (Core erkennen)";  /* FIXME */
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
@@ -877,7 +877,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navigation umbrechen";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Bekannte Dateiendungen filtern";
+         return "Bekannte Dateiendungen filtern"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Heruntergeladene Archive automatisch entpacken";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

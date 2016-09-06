@@ -26,6 +26,9 @@
 #endif
 #endif
 
+#include <stdio.h>
+#include <stdarg.h>
+
 #ifdef ANDROID
 #include <android/log.h>
 #endif
@@ -60,7 +63,7 @@ bool *verbosity_get_ptr(void)
    return &main_verbosity;
 }
 
-FILE *retro_main_log_file(void)
+void *retro_main_log_file(void)
 {
    return log_file;
 }

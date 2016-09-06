@@ -1584,10 +1584,10 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Abilita riavvolgi";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Seleziona dalla collezione";
+         return "Collezione";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Seleziona il file ed intercetta il core";
-      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
+      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST: /* TODO/FIXME - rewrite */
          return "Seleziona file scaricati ed intercetta il core";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Carica Recenti";
@@ -1682,7 +1682,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navigazione avvolgente";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filtra con estensioni supportate";
+         return "Filtra con estensioni supportate"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Estrai automaticamente gli archivi scaricati";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

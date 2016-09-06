@@ -3915,12 +3915,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Apply Shader Changes";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Rewind Enable";
-      case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Select From Collection";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Select File And Detect Core";
-      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return "Select Downloaded File And Detect Core";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Load Recent";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
@@ -4019,8 +4015,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Buildbot Assets URL";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navigation Wrap-Around";
-      case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filter by supported extensions";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Automatically extract downloaded archive";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

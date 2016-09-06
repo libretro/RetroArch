@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include <compat/posix_string.h>
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
@@ -37,10 +38,10 @@
 #include "../menu_display.h"
 
 #include "../../core_info.h"
+#include "../../core.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../retroarch.h"
-#include "../../system.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"

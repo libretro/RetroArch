@@ -24,6 +24,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#include <compat/strl.h>
 #include <retro_common_api.h>
 #include <file/config_file.h>
 #include <features/features_cpu.h>
@@ -40,7 +41,6 @@
 #include "../performance_counters.h"
 #include "../list_special.h"
 #include "../core.h"
-#include "../system.h"
 #include "../command.h"
 #include "../msg_hash.h"
 
