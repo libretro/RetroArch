@@ -4,6 +4,10 @@ language: generic
 matrix:
   include:
     - compiler: gcc
+    - compiler: gcc
+      env: BUILD_C89=1
+    - compiler: gcc
+      env: BUILD_CXX=1
     - compiler: clang
       addons:
         # Install a more recent clang than the default
