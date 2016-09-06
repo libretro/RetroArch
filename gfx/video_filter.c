@@ -23,6 +23,10 @@
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "../frontend/frontend_driver.h"
 #include "../config_file_userdata.h"
 #include "../dynamic.h"

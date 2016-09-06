@@ -19,6 +19,10 @@
 #include <compat/strl.h>
 #include <retro_inline.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "../input/input_config.h"
 #include "../configuration.h"
 #include "../verbosity.h"

@@ -20,6 +20,10 @@
 #include "../configuration.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 static const font_renderer_driver_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
    &freetype_font_renderer,

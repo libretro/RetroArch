@@ -17,6 +17,10 @@
 
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "video_shader_driver.h"
 #include "../verbosity.h"
 
