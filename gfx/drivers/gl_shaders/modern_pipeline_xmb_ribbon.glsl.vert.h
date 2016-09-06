@@ -22,7 +22,7 @@ static const char *stock_vertex_xmb_modern = GLSL(
      mix( iqhash(n+170.0), iqhash(n+171.0),f.x),f.y),f.z);
    }
 
-  float height( const in vec3 pos )
+  float height(vec3 pos )
   {
     const float twoPi = 2.0 * 3.14159;
     float k = twoPi / 20.0;
