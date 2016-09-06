@@ -1,4 +1,8 @@
 [![Build Status](https://travis-ci.org/libretro/RetroArch.svg?branch=master)](https://travis-ci.org/libretro/RetroArch)
+<a href="https://scan.coverity.com/projects/retroarch">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/8936/badge.svg"/>
+</a>
 
 # RetroArch
 
