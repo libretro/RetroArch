@@ -24,6 +24,10 @@
 #include <VG/openvg.h>
 #include <bcm_host.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include <retro_inline.h>
 
 #include "../../configuration.h"

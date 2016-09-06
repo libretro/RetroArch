@@ -22,6 +22,10 @@
 #include "../../general.h"
 #include "../../runloop.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
 #endif

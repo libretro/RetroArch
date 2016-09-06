@@ -17,6 +17,10 @@
 
 #include <sys/ioctl.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 /* Includes and defines for framebuffer size retrieval */
 #include <linux/fb.h>
 #include <linux/vt.h>

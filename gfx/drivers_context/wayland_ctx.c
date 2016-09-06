@@ -14,6 +14,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sys/poll.h>
+#include <unistd.h>
+
+#include <wayland-client.h>
+
+#include <string/stdstring.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -22,15 +29,9 @@
 #include "../common/vulkan_common.h"
 #endif
 
-#include <sys/poll.h>
-#include <unistd.h>
-
-#include <wayland-client.h>
 #ifdef HAVE_EGL
 #include <wayland-egl.h>
 #endif
-
-#include <string/stdstring.h>
 
 #include "../../configuration.h"
 #include "../../driver.h"

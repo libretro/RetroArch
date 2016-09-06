@@ -18,6 +18,10 @@
 
 #include <stdint.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"

@@ -17,6 +17,10 @@
 #include <stdint.h>
 #include <signal.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef HAVE_OPENGL
 #include <GL/glx.h>
 #endif

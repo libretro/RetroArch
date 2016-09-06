@@ -16,18 +16,22 @@
 
 #include <stdint.h>
 
+#include <bps/screen.h>
+#include <bps/navigator.h>
+#include <bps/event.h>
+#include <screen/screen.h>
+#include <sys/platform.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef HAVE_OPENGLES
 #include <GLES2/gl2.h>
 #endif
 #ifdef HAVE_EGL
 #include <EGL/egl.h>
 #endif
-
-#include <bps/screen.h>
-#include <bps/navigator.h>
-#include <bps/event.h>
-#include <screen/screen.h>
-#include <sys/platform.h>
 
 #include "../../configuration.h"
 #include "../../driver.h"

@@ -20,6 +20,10 @@
 #include <formats/image.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../general.h"

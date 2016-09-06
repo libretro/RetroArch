@@ -14,6 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #if TARGET_OS_IPHONE
 #include <CoreGraphics/CoreGraphics.h>
 #else

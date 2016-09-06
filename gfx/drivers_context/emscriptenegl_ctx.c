@@ -19,6 +19,10 @@
 
 #include <emscripten/emscripten.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../runloop.h"

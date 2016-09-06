@@ -15,8 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #ifdef _XBOX
 #include <xtl.h>
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
 #endif
 
 #include "../drivers/d3d.h"
