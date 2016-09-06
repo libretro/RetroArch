@@ -216,7 +216,7 @@ enum
 #define AUDIO_DEFAULT_DRIVER AUDIO_NULL
 #endif
 
-#ifdef PSP
+#if defined(PSP) || defined(EMSCRIPTEN)
 #define AUDIO_DEFAULT_RESAMPLER_DRIVER  AUDIO_RESAMPLER_CC
 #else
 #define AUDIO_DEFAULT_RESAMPLER_DRIVER  AUDIO_RESAMPLER_SINC
@@ -681,7 +681,7 @@ static const char *audio_device = NULL;
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#ifdef ANDROID
+#if defined(ANDROID) || defined(EMSCRIPTEN)
 /* For most Android devices, 64ms is way too low. */
 static const int out_latency = 128;
 #else
