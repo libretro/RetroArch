@@ -1790,7 +1790,9 @@ void handle_quit_event()
    command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
 
 #ifdef HAVE_DYNAMIC
-   command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
+#endif
 #endif
 
    runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
@@ -1848,18 +1850,13 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
-      case CMD_EVENT_LOAD_CORE_DEINIT:
-#ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-#endif
-         break;
       case CMD_EVENT_LOAD_CORE_PERSIST:
-         command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
          {
 #ifdef HAVE_MENU
             bool *ptr = NULL;
             struct retro_system_info *system = NULL;
 
+            menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
             menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
 
             if (menu_driver_ctl(RARCH_MENU_CTL_LOAD_NO_CONTENT_GET, &ptr))
@@ -1991,7 +1988,9 @@ bool command_event(enum event_command cmd, void *data)
                      NULL, NULL))
                return false;
 #ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
+#ifdef HAVE_MENU
+         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
+#endif
 #else
          core_unload_game();
          core_unload();
