@@ -20,12 +20,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <math.h>
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <retro_miscellaneous.h>
-#include <libretro.h>
 
 RETRO_BEGIN_DECLS
 
