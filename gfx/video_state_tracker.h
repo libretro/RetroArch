@@ -22,10 +22,6 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
 RETRO_BEGIN_DECLS
 
 enum state_tracker_type
@@ -63,11 +59,9 @@ struct state_tracker_info
    const struct state_tracker_uniform_info *info;
    unsigned info_elem;
 
-#ifdef HAVE_PYTHON
    const char *script;
    const char *script_class;
    bool script_is_file;
-#endif
 };
 
 struct state_tracker_uniform
