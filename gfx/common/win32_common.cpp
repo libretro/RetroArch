@@ -279,6 +279,9 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       core_info_list_get_supported_cores(core_info_list,
             (const char*)szFilename, &core_info, &list_size);
 
+      if (!list_size)
+         return 0;
+
       runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
 
       if (!string_is_empty(config_get_active_core_path()))
