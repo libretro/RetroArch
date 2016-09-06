@@ -228,6 +228,12 @@ bool core_is_inited(void);
 
 bool core_is_game_loaded(void);
 
+rarch_system_info_t *core_system_info_get(void);
+
+void core_system_info_init(void);
+
+void core_system_info_free(void);
+
 RETRO_END_DECLS
 
 #endif

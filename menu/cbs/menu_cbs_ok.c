@@ -1540,11 +1540,9 @@ static int generic_action_ok_shader_preset_save(const char *path,
    char directory[PATH_MAX_LENGTH] = {0};
    char file[PATH_MAX_LENGTH]      = {0};
    char tmp[PATH_MAX_LENGTH]       = {0};
-   settings_t *settings            = config_get_ptr();
-   rarch_system_info_t *info       = NULL;
    const char *core_name           = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   settings_t *settings            = config_get_ptr();
+   rarch_system_info_t *info       = core_system_info_get();
 
    if (info)
       core_name           = info->info.library_name;
@@ -1660,11 +1658,9 @@ static int generic_action_ok_remap_file_save(const char *path,
 {
    char directory[PATH_MAX_LENGTH] = {0};
    char file[PATH_MAX_LENGTH]      = {0};
-   settings_t *settings            = config_get_ptr();
-   rarch_system_info_t *info       = NULL;
    const char *core_name           = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   settings_t *settings            = config_get_ptr();
+   rarch_system_info_t *info       = core_system_info_get();
 
    if (info)
       core_name           = info->info.library_name;

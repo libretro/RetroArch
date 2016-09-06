@@ -23,6 +23,7 @@
 
 #include <retro_inline.h>
 #include <boolean.h>
+#include <compat/strl.h>
 #include <lists/string_list.h>
 #include <libretro.h>
 
@@ -40,6 +41,12 @@
 #include "network/netplay/netplay.h"
 #endif
 
+#ifdef HAVE_ZLIB
+#define DEFAULT_EXT "zip"
+#else
+#define DEFAULT_EXT ""
+#endif
+
 static struct retro_core_t core;
 static bool                core_inited;
 static bool                core_symbols_inited;
@@ -48,6 +55,7 @@ static unsigned            core_poll_type;
 static bool                core_input_polled;
 static bool   core_has_set_input_descriptors = false;
 static struct retro_callbacks retro_ctx;
+static rarch_system_info_t core_system_info;
 
 static void core_input_state_poll_maybe(void)
 {
@@ -447,4 +455,46 @@ bool core_is_symbols_inited(void)
 bool core_is_game_loaded(void)
 {
   return core_game_loaded;
+}
+
+rarch_system_info_t *core_system_info_get(void)
+{
+   return &core_system_info;
+}
+
+void core_system_info_init(void)
+{
+   memset(&core_system_info, 0, sizeof(rarch_system_info_t));
+   core_get_system_info(&core_system_info.info);
+
+   if (!core_system_info.info.library_name)
+      core_system_info.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
+   if (!core_system_info.info.library_version)
+      core_system_info.info.library_version = "v0";
+
+   strlcpy(core_system_info.valid_extensions,
+         core_system_info.info.valid_extensions ?
+         core_system_info.info.valid_extensions : DEFAULT_EXT,
+         sizeof(core_system_info.valid_extensions));
+}
+
+void core_system_info_free(void)
+{
+   /* No longer valid. */
+   if (core_system_info.subsystem.data)
+      free(core_system_info.subsystem.data);
+   core_system_info.subsystem.data = NULL;
+   core_system_info.subsystem.size = 0;
+
+   if (core_system_info.ports.data)
+      free(core_system_info.ports.data);
+   core_system_info.ports.data = NULL;
+   core_system_info.ports.size = 0;
+
+   if (core_system_info.mmaps.descriptors)
+      free((void *)core_system_info.mmaps.descriptors);
+   core_system_info.mmaps.descriptors     = NULL;
+   core_system_info.mmaps.num_descriptors = 0;
+
+   memset(&core_system_info, 0, sizeof(rarch_system_info_t));
 }

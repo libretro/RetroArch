@@ -590,14 +590,12 @@ static bool init_video(void)
    video_viewport_t *custom_vp            = NULL;
    const input_driver_t *tmp              = NULL;
    const struct retro_game_geometry *geom = NULL;
-   rarch_system_info_t *system            = NULL;
    video_info_t video                     = {0};
    static uint16_t dummy_pixels[32]       = {0};
    settings_t *settings                   = config_get_ptr();
    struct retro_system_av_info *av_info   =
       video_viewport_get_system_av_info();
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   rarch_system_info_t *system            = core_system_info_get();
 
    init_video_filter(video_driver_state.pix_fmt);
    command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);

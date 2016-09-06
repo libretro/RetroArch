@@ -932,10 +932,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
    unsigned p;
    settings_t         *settings = config_get_ptr();
    global_t         *global     = global_get_ptr();
-   rarch_system_info_t *system  = NULL;
+   rarch_system_info_t *system  = core_system_info_get();
    
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
    if (ignore_environment_cb)
       return false;
 

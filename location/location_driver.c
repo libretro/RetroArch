@@ -206,10 +206,8 @@ bool driver_location_get_position(double *lat, double *lon,
 
 void init_location(void)
 {
-   rarch_system_info_t *system = NULL;
+   rarch_system_info_t *system = core_system_info_get();
    
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
    /* Resource leaks will follow if location interface is initialized twice. */
    if (location_data)
       return;
@@ -230,9 +228,7 @@ void init_location(void)
 
 static void uninit_location(void)
 {
-   rarch_system_info_t *system = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   rarch_system_info_t *system = core_system_info_get();
 
    if (location_data && location_driver)
    {
