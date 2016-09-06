@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/libretro/RetroArch.svg?branch=master)](https://travis-ci.org/libretro/RetroArch)
+
 # RetroArch
 
 RetroArch is the reference frontend for the libretro API.
