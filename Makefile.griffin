@@ -216,7 +216,7 @@ else ifeq ($(platform), vita)
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lSceFiber_stub\
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
-			 -lSceMotion_stub -lfreetype -lm -lc -lpng -ljpeg
+			 -lSceMotion_stub -lfreetype -lm -lc
 
   PLATEXTRA := deps/libvita2d/shader/compiled/clear_v_gxp.o \
 				  deps/libvita2d/shader/compiled/clear_f_gxp.o \
