@@ -1990,11 +1990,11 @@ bool command_event(enum event_command cmd, void *data)
                      CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
                      NULL, NULL))
                return false;
-#ifndef HAVE_DYNAMIC
+#ifdef HAVE_DYNAMIC
+         command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
+#else
          core_unload_game();
          core_unload();
-#else
-         command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
 #endif
          break;
       case CMD_EVENT_QUIT_CONFIRM:
