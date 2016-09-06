@@ -22,29 +22,21 @@ static const char *stock_vertex_xmb_modern = GLSL(
      mix( iqhash(n+170.0), iqhash(n+171.0),f.x),f.y),f.z);
    }
 
-   float xmb_noise2( vec3 x )
-   {
-     return cos((x.z*1.0)*2.0);
-   }
+  float height( const in vec3 pos )
+  {
+    const float twoPi = 2.0 * 3.14159;
+    float k = twoPi / 20.0;
+    float omega = twoPi / 15.0;
+    float y = sin( k * pos.x - omega * time );
+    y += noise( 0.27 * vec3( 0.4 * pos.x, 3.0, 2.0 * pos.z - 0.5 * time ) );
+    return y;
+  }
 
    void main()
    {
-     vec3 v = vec3(VertexCoord.x, 0.0, VertexCoord.y);
-     vec3 v2 = v;
-     vec3 v3 = v;
-
-     v.y = xmb_noise2(v2)/6.0;
-
-     v3.x = v3.x + time/5.0;
-     v3.x = v3.x / 2.0;
-
-     v3.z = v3.z + time/10.0;
-     v3.y = v3.y + time/100.0;
-
-     v.z = v.z + noise(v3*7.0)/15.0;
-     v.y = v.y + noise(v3*7.0)/15.0 + cos(v.x*2.0-time/5.0)/5.0 - 0.3;
-
-     gl_Position = vec4(v, 1.0);
-     fragVertexEc = gl_Position.xyz;
+    vec3 pos = VertexCoord;
+    pos.y = height( pos );
+    gl_Position = vec4(pos, 0.0, 1.0);
+    fragVertexEc =VertexCoord;
    }
 );
