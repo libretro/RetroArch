@@ -562,7 +562,13 @@ const char *retroarch_get_current_savefile_dir(void)
 
 enum rarch_content_type retroarch_path_is_media_type(const char *path)
 {
-   switch (msg_hash_to_file_type(msg_hash_calculate(path_get_extension(path))))
+   char ext_lower[PATH_MAX_LENGTH] = {0};
+
+   strlcpy(ext_lower, path_get_extension(path), sizeof(ext_lower));
+
+   string_to_lower(ext_lower);
+
+   switch (msg_hash_to_file_type(msg_hash_calculate(ext_lower)))
    {
 #ifdef HAVE_FFMPEG
       case FILE_TYPE_OGM:
@@ -572,14 +578,26 @@ enum rarch_content_type retroarch_path_is_media_type(const char *path)
       case FILE_TYPE_FLV:
       case FILE_TYPE_WEBM:
       case FILE_TYPE_3GP:
+      case FILE_TYPE_3G2:
       case FILE_TYPE_F4F:
       case FILE_TYPE_F4V:
       case FILE_TYPE_MOV:
       case FILE_TYPE_WMV:
+      case FILE_TYPE_MPG:
+      case FILE_TYPE_MPEG:
+      case FILE_TYPE_VOB:
+      case FILE_TYPE_ASF:
+      case FILE_TYPE_DIVX:
+      case FILE_TYPE_M2P:
+      case FILE_TYPE_M2TS:
+      case FILE_TYPE_PS:
+      case FILE_TYPE_TS:
+      case FILE_TYPE_MXF:
          return RARCH_CONTENT_MOVIE;
+      case FILE_TYPE_WMA:
+      case FILE_TYPE_OGG:
       case FILE_TYPE_MP3:
       case FILE_TYPE_M4A:
-      case FILE_TYPE_OGG:
       case FILE_TYPE_FLAC:
       case FILE_TYPE_WAV:
          return RARCH_CONTENT_MUSIC;

@@ -130,7 +130,6 @@ uint32_t msg_hash_calculate(const char *s)
    return djb2_calculate(s);
 }
 
-
 #define MENU_VALUE_FILE_WEBM                                                   0x7ca00b50U
 #define MENU_VALUE_FILE_F4F                                                    0x0b886be5U
 #define MENU_VALUE_FILE_F4V                                                    0x0b886bf5U
@@ -147,6 +146,18 @@ uint32_t msg_hash_calculate(const char *s)
 #define MENU_VALUE_FILE_WAV                                                    0x0b88ba13U
 #define MENU_VALUE_FILE_MOV                                                    0x0b889157U
 #define MENU_VALUE_FILE_WMV                                                    0x0b88bb9fU
+#define MENU_VALUE_FILE_3G2                                                    0x0b879951U
+#define MENU_VALUE_FILE_MPG                                                    0x0b889169U
+#define MENU_VALUE_FILE_MPEG                                                   0x7c9abeaeU
+#define MENU_VALUE_FILE_VOB                                                    0x0b88b78cU
+#define MENU_VALUE_FILE_ASF                                                    0x0b885ebfU
+#define MENU_VALUE_FILE_DIVX                                                   0x7c95b3c0U
+#define MENU_VALUE_FILE_M2P                                                    0x0b888974U
+#define MENU_VALUE_FILE_M2TS                                                   0x7c99b8ebU
+#define MENU_VALUE_FILE_PS                                                     0x00597928U
+#define MENU_VALUE_FILE_TS                                                     0x005979acU
+#define MENU_VALUE_FILE_MXF                                                    0x0b889270U
+#define MENU_VALUE_FILE_WMA                                                    0x0b88bb8aU
 
 #define MENU_VALUE_FILE_JPG                                                    0x0b8884a6U
 #define MENU_VALUE_FILE_JPEG                                                   0x7c99198bU
@@ -277,6 +288,30 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_FLAC;
       case MENU_VALUE_FILE_WAV:
          return FILE_TYPE_WAV;
+      case MENU_VALUE_FILE_3G2:
+         return FILE_TYPE_3G2;
+      case MENU_VALUE_FILE_MPG:
+         return FILE_TYPE_MPG;
+      case MENU_VALUE_FILE_MPEG:
+         return FILE_TYPE_MPEG;
+      case MENU_VALUE_FILE_VOB:
+         return FILE_TYPE_VOB;
+      case MENU_VALUE_FILE_ASF:
+         return FILE_TYPE_ASF;
+      case MENU_VALUE_FILE_DIVX:
+         return FILE_TYPE_DIVX;
+      case MENU_VALUE_FILE_M2P:
+         return FILE_TYPE_M2P;
+      case MENU_VALUE_FILE_M2TS:
+         return FILE_TYPE_M2TS;
+      case MENU_VALUE_FILE_PS:
+         return FILE_TYPE_PS;
+      case MENU_VALUE_FILE_TS:
+         return FILE_TYPE_TS;
+      case MENU_VALUE_FILE_MXF:
+         return FILE_TYPE_MXF;
+      case MENU_VALUE_FILE_WMA:
+         return FILE_TYPE_WMA;
 #endif
 #ifdef HAVE_IMAGEVIEWER
       case MENU_VALUE_FILE_JPG:
