@@ -18,11 +18,11 @@
 
 #include <compat/strl.h>
 
-#include "frontend_driver.h"
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
+
+#include "frontend_driver.h"
 
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
 #if defined(EMSCRIPTEN)
