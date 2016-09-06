@@ -23,7 +23,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <libretro.h>
 
 #include "font_driver.h"
 #include "video_filter.h"
