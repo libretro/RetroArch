@@ -23,6 +23,7 @@
 #include <conversion/s16_to_float.h>
 
 #include "audio_driver.h"
+#include "audio_dsp_filter.h"
 #include "audio_resampler_driver.h"
 #include "../record/record_driver.h"
 #include "audio_thread_wrapper.h"
@@ -842,12 +843,13 @@ bool audio_driver_init_resampler(void)
          audio_driver_data.audio_rate.source_ratio.original);
 }
 
-void audio_driver_process_resampler(struct resampler_data *data)
+void audio_driver_process_resampler(void *data)
 {
+   struct resampler_data *resampler = (struct resampler_data*)data;
    performance_counter_init(&resampler_proc, "resampler_proc");
    performance_counter_start(&resampler_proc);
    rarch_resampler_process(audio_driver_resampler, 
-         audio_driver_resampler_data, data);
+         audio_driver_resampler_data, resampler);
    performance_counter_stop(&resampler_proc);
 }
 

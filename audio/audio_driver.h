@@ -24,9 +24,6 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "audio_dsp_filter.h"
-#include "audio_resampler_driver.h"
-
 RETRO_BEGIN_DECLS
 
 #define AUDIO_CHUNK_SIZE_BLOCKING      512
@@ -105,7 +102,7 @@ void audio_driver_deinit_resampler(void);
 
 bool audio_driver_init_resampler(void);
 
-void audio_driver_process_resampler(struct resampler_data *data);
+void audio_driver_process_resampler(void *data);
 
 bool audio_driver_free_devices_list(void);
 
