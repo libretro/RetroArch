@@ -35,6 +35,7 @@
 #include "../../content.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
+#include "../../configuration.h"
 
 typedef struct
 {
