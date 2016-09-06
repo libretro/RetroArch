@@ -20,6 +20,10 @@
 #include <lists/string_list.h>
 #include <compat/strl.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "list_special.h"
 #include "frontend/frontend_driver.h"
 #include "core_info.h"

@@ -26,10 +26,6 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #define DB_QUERY_ENTRY                          0x1c310956U
 #define DB_QUERY_ENTRY_PUBLISHER                0x125e594dU
 #define DB_QUERY_ENTRY_DEVELOPER                0xcbd89be5U

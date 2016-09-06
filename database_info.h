@@ -24,6 +24,10 @@
 #include <file/archive_file.h>
 #include <retro_common_api.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "libretro-db/libretrodb.h"
 
 RETRO_BEGIN_DECLS

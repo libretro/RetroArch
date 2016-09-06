@@ -15,18 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-
-#include <setjmp.h>
-
-#include <boolean.h>
-#include <string/stdstring.h>
-#include <lists/string_list.h>
-
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -35,6 +23,22 @@
 #include <windows.h>
 #endif
 #endif
+
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <ctype.h>
+#include <errno.h>
+
+#include <setjmp.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <boolean.h>
+#include <string/stdstring.h>
+#include <lists/string_list.h>
 
 #include <compat/strl.h>
 #include <compat/getopt.h>

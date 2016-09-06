@@ -18,6 +18,10 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "command.h"
 #include "msg_hash.h"
 
@@ -33,10 +37,6 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
-#endif
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
 #endif
 
 #define HASH_LOCATION_DRIVER           0x09189689U

@@ -29,6 +29,10 @@
 #include <retro_stat.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "msg_hash.h"
 #include "patch.h"
 #include "runloop.h"

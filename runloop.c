@@ -19,6 +19,10 @@
 #include <stdarg.h>
 #include <math.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <retro_inline.h>
