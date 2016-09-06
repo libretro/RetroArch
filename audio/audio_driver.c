@@ -22,6 +22,10 @@
 #include <conversion/float_to_s16.h>
 #include <conversion/s16_to_float.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "audio_driver.h"
 #include "audio_dsp_filter.h"
 #include "audio_resampler_driver.h"
