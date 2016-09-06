@@ -1263,7 +1263,7 @@ static void decode_thread(void *data)
             double video_time = pts * av_q2d(fctx->streams[video_stream]->time_base);
 
 #ifdef HAVE_SSA
-            if (ass_render)
+            if (ass_render && ass_track_active)
             {
                int change     = 0;
                ASS_Image *img = ass_render_frame(ass_render, ass_track_active,
@@ -1308,13 +1308,13 @@ static void decode_thread(void *data)
             slock_unlock(fifo_lock);
          }
       }
-      else if (pkt.stream_index == audio_stream)
+      else if (pkt.stream_index == audio_stream && actx_active)
       {
          audio_buffer = decode_audio(actx_active, &pkt, aud_frame,
                audio_buffer, &audio_buffer_cap,
                swr[audio_stream_ptr]);
       }
-      else if (pkt.stream_index == subtitle_stream)
+      else if (pkt.stream_index == subtitle_stream && sctx_active)
       {
          AVSubtitle sub;
          int finished = 0;
@@ -1333,7 +1333,7 @@ static void decode_thread(void *data)
 #ifdef HAVE_SSA
          for (i = 0; i < sub.num_rects; i++)
          {
-            if (sub.rects[i]->ass)
+            if (sub.rects[i]->ass && ass_track_active)
                ass_process_data(ass_track_active,
                      sub.rects[i]->ass, strlen(sub.rects[i]->ass));
          }
