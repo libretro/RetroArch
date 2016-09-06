@@ -26,6 +26,10 @@
 #include <lists/string_list.h>
 #include <libretro.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "configuration.h"
 #include "dynamic.h"
 #include "core.h"

@@ -21,6 +21,10 @@
 #include <rhash.h>
 #include <libretro.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "cheevos.h"
 #include "command.h"
 #include "dynamic.h"
