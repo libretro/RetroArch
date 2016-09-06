@@ -458,7 +458,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Rewind Activeren";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Selecteer uit verzameling";
+         return "Verzameling";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Selecteer bestand en detecteer Core";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:

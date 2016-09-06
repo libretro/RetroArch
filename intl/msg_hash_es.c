@@ -1884,7 +1884,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Seleccionar de una colección";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Seleccionar archivo y detectar núcleo";
-      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
+      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST: /* TODO/FIXME - rewrite */
          return "Seleccionar archivo descargado y detectar núcleo";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Cargar archivos recientes";

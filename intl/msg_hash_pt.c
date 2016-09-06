@@ -1465,7 +1465,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Ativar Retrocesso";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Selecionar da Coleção";
+         return "Coleção";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Selecionar Arquivo e Detectar Core";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
