@@ -4025,7 +4025,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Ñavigatìon Wrap-Ãroúñd";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filter bý suppòrtêd èxtensiøns";
+         return "Filter bý suppòrtêd èxtensiøns"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Ãutomätically extract downlôadéd ärchive";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

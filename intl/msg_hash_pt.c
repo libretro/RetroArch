@@ -1561,7 +1561,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navegação Circular";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filtrar por Extensões Suportadas";
+         return "Filtrar por Extensões Suportadas"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Autoextrair Arquivos Baixados";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

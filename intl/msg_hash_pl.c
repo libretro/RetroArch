@@ -657,7 +657,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Zawijanie nawigacji";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filtruj wed³ug wspieranych rozszerzeñ";
+         return "Filtruj wed³ug wspieranych rozszerzeñ"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Automatycznie wypakowuj pobierane archiwa";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

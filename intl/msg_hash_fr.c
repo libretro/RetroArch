@@ -690,7 +690,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Saut-retour";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filtrer par extentions supportées";
+         return "Filtrer par extentions supportées"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Extraire automatiquement";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

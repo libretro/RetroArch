@@ -4015,8 +4015,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Buildbot Assets URL";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navigation Wrap-Around";
-      case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filter by supported extensions";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Automatically extract downloaded archive";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

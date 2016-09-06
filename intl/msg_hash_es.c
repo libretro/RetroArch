@@ -1979,7 +1979,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Seguir navegación";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filtrar por extensiones compatibles";
+         return "Filtrar por extensiones compatibles"; /* TODO/FIXME - rewrite */
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Extraer automáticamente el archivo descargado";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:

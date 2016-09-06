@@ -550,7 +550,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navigatie Wrap-Around";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filter op ondersteunde extensies";
+         return "Filtreer onbekende extensies";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Automatisch uitpakken van gedownloade archieven";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
