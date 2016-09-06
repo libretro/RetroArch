@@ -5252,7 +5252,7 @@ static bool setting_append_list(
                   &settings->menu.xmb.menu_color_theme,
                   msg_hash_to_str(MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME),
-                  menu_background_gradient,
+                  xmb_theme,
                   &group_info,
                   &subgroup_info,
                   parent_group,

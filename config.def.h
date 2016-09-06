@@ -549,10 +549,6 @@ static float menu_footer_opacity = 1.000;
 
 static float menu_header_opacity = 1.000;
 
-#if defined(HAVE_MATERIALUI) || defined(HAVE_XMB)
-static unsigned menu_background_gradient = 4;
-#endif
-
 #if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL) || defined(HAVE_VULKAN)
 #if defined(HAVE_OPENGLES2) || defined(OSX_PPC)
 static unsigned menu_shader_pipeline = 1;

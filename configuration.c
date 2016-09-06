@@ -889,7 +889,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("xmb_alpha_factor",             &settings->menu.xmb.alpha_factor, true, xmb_alpha_factor, false);
    SETTING_INT("xmb_scale_factor",             &settings->menu.xmb.scale_factor, true, xmb_scale_factor, false);
    SETTING_INT("xmb_theme",                    &settings->menu.xmb.theme, true, xmb_icon_theme, false);
-   SETTING_INT("xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme, true, menu_background_gradient, false);
+   SETTING_INT("xmb_menu_color_theme",         &settings->menu.xmb.menu_color_theme, true, xmb_theme, false);
 #endif
    SETTING_INT("materialui_menu_color_theme",  &settings->menu.materialui.menu_color_theme, true, MATERIALUI_THEME_BLUE, false);
 #ifdef HAVE_SHADERPIPELINE
