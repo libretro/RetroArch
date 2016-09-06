@@ -408,7 +408,7 @@ ifneq ($(DEBUG), 1)
 	arm-vita-eabi-strip -g $<
 endif
 	vita-elf-create $< $@
-	vita-make-fself $@ eboot.bin
+	vita-make-fself -s $@ eboot.bin
 
 %.elf32: %.elf
 ifeq ($(platform), xenon360)
