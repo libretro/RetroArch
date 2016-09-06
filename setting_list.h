@@ -18,7 +18,6 @@
 
 #include <boolean.h>
 
-#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
 #include "command.h"
