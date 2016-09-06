@@ -35,6 +35,8 @@
 #include "../../runloop.h"
 #include "../video_context_driver.h"
 
+#include "../../frontend/frontend_driver.h"
+
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
 #endif
