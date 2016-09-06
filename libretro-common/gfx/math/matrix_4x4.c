@@ -186,6 +186,9 @@ void matrix_4x4_multiply(
    unsigned r, c, k;
    math_matrix_4x4 mat;
 
+   if (!out || !a || !b)
+      return;
+
    for (r = 0; r < 4; r++)
    {
       for (c = 0; c < 4; c++)
