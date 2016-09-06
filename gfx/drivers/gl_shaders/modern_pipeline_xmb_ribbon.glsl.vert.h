@@ -28,7 +28,7 @@ static const char *stock_vertex_xmb_modern = GLSL(
     float k = twoPi / 20.0;
     float omega = twoPi / 15.0;
     float y = sin( k * pos.x - omega * time );
-    y += noise( 0.27 * vec3( 0.4 * pos.x, 3.0, 2.0 * pos.z - 0.5 * time ) );
+    y += noise( vec3(0.27) * vec3( 0.4 * pos.x, 3.0, 2.0 * pos.z - 0.5 * time ) );
     return y;
   }
 
