@@ -191,6 +191,10 @@ void core_uninit_symbols(void);
 
 void core_set_input_state(retro_ctx_input_state_info_t *info);
 
+bool core_is_symbols_inited(void);
+
+bool core_is_inited(void);
+
 bool core_is_game_loaded(void);
 
 RETRO_END_DECLS

@@ -42,6 +42,8 @@
 #endif
 
 static struct retro_core_t core;
+static bool                core_inited;
+static bool                core_symbols_inited;
 static bool                core_game_loaded;
 static unsigned            core_poll_type;
 static bool                core_input_polled;
@@ -159,6 +161,8 @@ bool core_deinit(void *data)
    cbs->state_cb        = NULL;
    cbs->poll_cb         = NULL;
 
+   core_inited          = false;
+
    return true;
 }
 
@@ -217,6 +221,7 @@ bool core_set_poll_type(unsigned *type)
 void core_uninit_symbols(void)
 {
    uninit_libretro_sym(&core);
+   core_symbols_inited = false;
 }
 
 bool core_init_symbols(enum rarch_core_type *type)
@@ -224,6 +229,7 @@ bool core_init_symbols(enum rarch_core_type *type)
    if (!type)
       return false;
    init_libretro_sym(*type, &core);
+   core_symbols_inited = true;
    return true;
 }
 
@@ -334,6 +340,7 @@ bool core_reset(void)
 bool core_init(void)
 {
    core.retro_init();
+   core_inited          = true;
    return true;
 }
 
@@ -426,6 +433,16 @@ void core_set_input_descriptors(void)
 void core_unset_input_descriptors(void)
 {
    core_has_set_input_descriptors = false;
+}
+
+bool core_is_inited(void)
+{
+  return core_inited;
+}
+
+bool core_is_symbols_inited(void)
+{
+  return core_symbols_inited;
 }
 
 bool core_is_game_loaded(void)
