@@ -675,6 +675,7 @@ DYNAMIC
 #include "../libretro-common/dynamic/dylib.c"
 #include "../dynamic.c"
 #include "../gfx/video_filter.c"
+#include "../gfx/video_frame.c"
 #include "../audio/audio_dsp_filter.c"
 
 /*============================================================
