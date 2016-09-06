@@ -15,8 +15,17 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "input_autodetect.h"
-#include "input_autodetect_builtin.h"
+#include "input_config.h"
+
+#define DECL_BTN(btn, bind) "input_" #btn "_btn = " #bind "\n"
+#define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
+#define DECL_MENU(btn) "input_menu_toggle_btn = " #btn "\n"
+#define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" #device "\" \ninput_driver = \"" #driver "\"                    \n" binds
 
 /* TODO/FIXME - Missing L2/R2 */
 

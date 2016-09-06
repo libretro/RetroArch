@@ -16,9 +16,17 @@
 
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "input_driver.h"
 #include "input_keyboard.h"
 #include "input_remapping.h"
+
+#ifdef HAVE_NETWORKGAMEPAD
+#include "input_remote.h"
+#endif
 
 #include "../configuration.h"
 #include "../driver.h"
@@ -28,10 +36,6 @@
 #include "../list_special.h"
 #include "../verbosity.h"
 #include "../command.h"
-
-#ifdef HAVE_NETWORKGAMEPAD
-#include "input_remote.h"
-#endif
 
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__

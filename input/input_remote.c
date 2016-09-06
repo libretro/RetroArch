@@ -29,6 +29,10 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "input_remote.h"
 
 #include "../configuration.h"

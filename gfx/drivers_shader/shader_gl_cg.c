@@ -22,12 +22,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../include/Cg/cg.h"
-#ifdef HAVE_OPENGL
-#include "../common/gl_common.h"
-#include "../include/Cg/cgGL.h"
-#endif
-
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/config_file.h>
@@ -36,12 +30,22 @@
 #include <rhash.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#include "../include/Cg/cg.h"
+#ifdef HAVE_OPENGL
+#include "../common/gl_common.h"
+#include "../include/Cg/cgGL.h"
+#endif
+
 #include "../video_shader_driver.h"
 #include "../video_shader_parse.h"
+#include "../video_state_tracker.h"
 #include "../../core.h"
 #include "../../dynamic.h"
 #include "../../managers/state_manager.h"
-#include "../video_state_tracker.h"
 
 #ifdef HAVE_SHADERPIPELINE
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"

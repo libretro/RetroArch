@@ -16,6 +16,10 @@
 
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "shader_hlsl.h"
 
 #include "../video_shader_parse.h"

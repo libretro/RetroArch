@@ -18,6 +18,10 @@
 #include <ctype.h>
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "input_hid_driver.h"
 #include "../list_special.h"
 #include "../verbosity.h"

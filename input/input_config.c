@@ -22,6 +22,10 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "input_config.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
@@ -30,9 +34,6 @@
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../verbosity.h"
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
 
 /* Input config. */
 struct input_bind_map

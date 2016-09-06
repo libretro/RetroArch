@@ -20,6 +20,10 @@
 
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "input_keymaps.h"
 #include "../configuration.h"
 #include "../general.h"

@@ -22,6 +22,10 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "input_config.h"
 #include "input_autodetect.h"
 
@@ -165,9 +169,6 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
           runloop_msg_queue_push(msg, 2, 60, false);
    }
    input_reindex_devices();
-#if 0
-   RARCH_LOG("Autodetect: %s\n", msg);
-#endif
 }
 
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
