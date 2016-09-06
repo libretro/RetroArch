@@ -834,8 +834,10 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 {
    char msg[128]                                     = {0};
    bool error                                        = false;
+   rarch_system_info_t *info                         = NULL;
    const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = core_system_info_get();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (info)
       control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
@@ -882,8 +884,10 @@ static void command_event_disk_control_set_index(unsigned idx)
    unsigned num_disks;
    bool error                                        = false;
    char msg[128]                                     = {0};
+   rarch_system_info_t                      *info    = NULL;
    const struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *info                         = core_system_info_get();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (info)
       control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
@@ -938,7 +942,9 @@ static bool command_event_disk_control_append_image(const char *path)
    struct retro_game_info info                        = {0};
    global_t                                  *global  = global_get_ptr();
    const struct retro_disk_control_callback *control  = NULL;
-   rarch_system_info_t *sysinfo                       = core_system_info_get();
+   rarch_system_info_t                       *sysinfo = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sysinfo);
 
    if (sysinfo)
       control = (const struct retro_disk_control_callback*)
@@ -1081,7 +1087,9 @@ static void command_event_init_controllers(void)
 {
    unsigned i;
    settings_t      *settings = config_get_ptr();
-   rarch_system_info_t *info = core_system_info_get();
+   rarch_system_info_t *info = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1806,7 +1814,9 @@ bool command_event(enum event_command cmd, void *data)
    unsigned i                = 0;
    bool boolean              = false;
    settings_t *settings      = config_get_ptr();
-   rarch_system_info_t *info = core_system_info_get();
+   rarch_system_info_t *info = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    (void)i;
 

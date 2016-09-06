@@ -413,7 +413,9 @@ static void retroarch_set_paths_redirect(void)
    bool check_global_library_name_hash         = false;
    global_t                *global             = global_get_ptr();
    settings_t              *settings           = config_get_ptr();
-   rarch_system_info_t      *info              = core_system_info_get();
+   rarch_system_info_t      *info              = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (!global)
       return;
@@ -1086,7 +1088,9 @@ static void retroarch_parse_input(int argc, char *argv[])
 static void retroarch_init_savefile_paths(void)
 {
    global_t            *global = global_get_ptr();
-   rarch_system_info_t *system = core_system_info_get();
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    command_event(CMD_EVENT_SAVEFILES_DEINIT, NULL);
 
@@ -1195,8 +1199,10 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    char config_directory[PATH_MAX_LENGTH] = {0};
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
+   rarch_system_info_t *system            = NULL;
    global_t *global                       = global_get_ptr();
-   rarch_system_info_t *system            = core_system_info_get();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
       core_name = system->info.library_name;

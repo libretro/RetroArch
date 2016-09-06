@@ -603,7 +603,8 @@ static unsigned cheevos_parse_operator(const char **memaddr)
 
 void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
 {
-   rarch_system_info_t *system = core_system_info_get();
+   rarch_system_info_t *system;
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    
    var->bank_id = -1;
    var->value   = value;
@@ -1088,7 +1089,8 @@ uint8_t *cheevos_get_memory(const cheevos_var_t *var)
 {
    if (var->bank_id >= 0)
    {
-      rarch_system_info_t *system = core_system_info_get();
+      rarch_system_info_t *system;
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
       
       if (system->mmaps.num_descriptors != 0)
          return (uint8_t *)system->mmaps.descriptors[var->bank_id].ptr + var->value;

@@ -170,13 +170,15 @@ uint32_t netplay_impl_magic(void)
    retro_ctx_api_info_t api_info;
    unsigned api;
    uint32_t res                        = 0;
+   rarch_system_info_t *info           = NULL;
    const char *lib                     = NULL;
    const char *ver                     = PACKAGE_VERSION;
-   rarch_system_info_t *info           = core_system_info_get();
 
    core_api_version(&api_info);
 
    api                                 = api_info.version;
+   
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
    
    if (info)
       lib = info->info.library_name;

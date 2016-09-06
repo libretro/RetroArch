@@ -2531,7 +2531,9 @@ static int menu_displaylist_parse_load_content_settings(
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
-      rarch_system_info_t *system = core_system_info_get();
+      rarch_system_info_t *system = NULL;
+
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RESUME_CONTENT),
@@ -2947,9 +2949,9 @@ static int menu_displaylist_parse_options_remappings(
       menu_displaylist_info_t *info)
 {
    unsigned p, retro_id;
+   rarch_system_info_t *system = NULL;
    menu_handle_t       *menu   = NULL;
    settings_t        *settings = config_get_ptr();
-   rarch_system_info_t *system = core_system_info_get();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
@@ -2986,34 +2988,36 @@ static int menu_displaylist_parse_options_remappings(
          MENU_ENUM_LABEL_REMAP_FILE_SAVE_GAME,
          MENU_SETTING_ACTION, 0, 0);
 
-   if (!system)
-      return 0;
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   for (p = 0; p < settings->input.max_users; p++)
+   if (system)
    {
-      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
+      for (p = 0; p < settings->input.max_users; p++)
       {
-         char desc_label[64]     = {0};
-         unsigned user           = p + 1;
-         unsigned desc_offset    = retro_id;
-         const char *description = NULL;
+         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
+         {
+            char desc_label[64]     = {0};
+            unsigned user           = p + 1;
+            unsigned desc_offset    = retro_id;
+            const char *description = NULL;
 
-         if (desc_offset >= RARCH_FIRST_CUSTOM_BIND)
-            desc_offset = RARCH_FIRST_CUSTOM_BIND 
-               + (desc_offset - RARCH_FIRST_CUSTOM_BIND) * 2;
+            if (desc_offset >= RARCH_FIRST_CUSTOM_BIND)
+               desc_offset = RARCH_FIRST_CUSTOM_BIND 
+                  + (desc_offset - RARCH_FIRST_CUSTOM_BIND) * 2;
+             
+            description = system->input_desc_btn[p][desc_offset];
 
-         description = system->input_desc_btn[p][desc_offset];
+            if (!description)
+               continue;
 
-         if (!description)
-            continue;
-
-         snprintf(desc_label, sizeof(desc_label),
-               "%s %u %s : ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
-               user, description);
-         menu_entries_append_enum(info->list, desc_label, "",
-               MSG_UNKNOWN,
-               MENU_SETTINGS_INPUT_DESC_BEGIN +
-               (p * (RARCH_FIRST_CUSTOM_BIND + 4)) +  retro_id, 0, 0);
+            snprintf(desc_label, sizeof(desc_label),
+                  "%s %u %s : ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER),
+                  user, description);
+            menu_entries_append_enum(info->list, desc_label, "",
+                  MSG_UNKNOWN,
+                  MENU_SETTINGS_INPUT_DESC_BEGIN +
+                  (p * (RARCH_FIRST_CUSTOM_BIND + 4)) +  retro_id, 0, 0);
+         }
       }
    }
 
@@ -4191,7 +4195,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          return true;
       case DISPLAYLIST_MAIN_MENU:
          {
-            rarch_system_info_t *system = core_system_info_get();
+            rarch_system_info_t *system   = NULL;
+            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
             if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                menu_displaylist_parse_settings_enum(menu, info,

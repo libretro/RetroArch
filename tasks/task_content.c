@@ -1134,8 +1134,10 @@ static bool load_content_from_compressed_archive(
    char new_basedir[PATH_MAX_LENGTH] = {0};
    ssize_t new_path_len              = 0;
    bool ret                          = false;
+   rarch_system_info_t      *sys_info= NULL;
    settings_t *settings              = config_get_ptr();
-   rarch_system_info_t *sys_info     = core_system_info_get();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
    if (sys_info && sys_info->info.block_extract)
       return true;
@@ -1455,8 +1457,10 @@ static bool content_file_init(struct string_list *temporary_content)
    struct string_list* additional_path_allocs = NULL;
    struct string_list *content                = NULL;
    const struct retro_subsystem_info *special = NULL;
+   rarch_system_info_t *system                = NULL;
    global_t *global                           = global_get_ptr();
-   rarch_system_info_t *system                = core_system_info_get();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!string_is_empty(global->subsystem))
    {
@@ -1664,8 +1668,9 @@ static bool task_load_content(content_ctx_info_t *content_info,
    {
       char tmp[PATH_MAX_LENGTH]      = {0};
       struct retro_system_info *info = NULL;
-      rarch_system_info_t *system    = core_system_info_get();
+      rarch_system_info_t *system    = NULL;
 
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
       if (system)
          info = &system->info;
 

@@ -2132,8 +2132,10 @@ bool config_load_override(void)
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
    bool should_append                     = false;
+   rarch_system_info_t *system            = NULL;
    global_t *global                       = global_get_ptr();
-   rarch_system_info_t *system            = core_system_info_get();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
       core_name = system->info.library_name;
@@ -2290,7 +2292,9 @@ bool config_load_remap(void)
    const char *game_name                   = NULL;
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
-   rarch_system_info_t *system             = core_system_info_get();
+   rarch_system_info_t *system             = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
       core_name = system->info.library_name;
@@ -2411,7 +2415,9 @@ bool config_load_shader_preset(void)
    const char *game_name                   = NULL;
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
-   rarch_system_info_t *system             = core_system_info_get();
+   rarch_system_info_t *system             = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
       core_name = system->info.library_name;
@@ -3001,6 +3007,9 @@ bool config_save_overrides(int override_type)
    const char *game_name                       = NULL;
    config_file_t *conf                         = NULL;
    settings_t *settings                        = NULL;
+   global_t   *global                          = global_get_ptr();
+   settings_t *overrides                       = config_get_ptr();
+   rarch_system_info_t *system                 = NULL;
    struct config_bool_setting *bool_settings   = NULL;
    struct config_bool_setting *bool_overrides  = NULL;
    struct config_int_setting *int_settings     = NULL;
@@ -3011,9 +3020,8 @@ bool config_save_overrides(int override_type)
    struct config_array_setting *array_overrides= NULL;
    struct config_path_setting *path_settings   = NULL;
    struct config_path_setting *path_overrides  = NULL;
-   global_t   *global                          = global_get_ptr();
-   settings_t *overrides                       = config_get_ptr();
-   rarch_system_info_t *system                 = core_system_info_get();
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
       core_name = system->info.library_name;

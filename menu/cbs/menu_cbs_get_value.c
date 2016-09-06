@@ -933,9 +933,10 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
       char *s2, size_t len2)
 {
    unsigned images = 0, current                = 0;
+   rarch_system_info_t *system                 = NULL;
    struct retro_disk_control_callback *control = NULL;
-   rarch_system_info_t *system                 = core_system_info_get();
 
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    if (!system)
       return;
 
@@ -1318,9 +1319,10 @@ static void menu_action_setting_disp_set_label_core_option_create(
       const char *path,
       char *s2, size_t len2)
 {
+   rarch_system_info_t *system = NULL;
    global_t            *global = global_get_ptr();
-   rarch_system_info_t *system = core_system_info_get();
 
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    if (!system)
       return;
 

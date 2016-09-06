@@ -704,21 +704,30 @@ static size_t mui_list_get_size(void *data, enum menu_list_type type)
 
 static int mui_get_core_title(char *s, size_t len)
 {
-   struct retro_system_info*system= NULL;
+   struct retro_system_info    *system = NULL;
+   rarch_system_info_t      *info = NULL;
    settings_t *settings           = config_get_ptr();
-   rarch_system_info_t *info      = core_system_info_get();
-   const char *core_name          = system->library_name;
-   const char *core_version       = system->library_version;
+   const char *core_name          = NULL;
+   const char *core_version       = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+         &system);
+   
+   core_name    = system->library_name;
+   core_version = system->library_version;
 
    if (!settings->menu.core_enable)
       return -1; 
 
-   if (info)
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info))
    {
-      if (string_is_empty(core_name))
-         core_name = info->info.library_name;
-      if (!core_version)
-         core_version = info->info.library_version;
+      if (info)
+      {
+         if (string_is_empty(core_name))
+            core_name = info->info.library_name;
+         if (!core_version)
+            core_version = info->info.library_version;
+      }
    }
 
    if (string_is_empty(core_name))
