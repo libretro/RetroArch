@@ -142,7 +142,6 @@ extern rarch_resampler_t CC_resampler;
 extern rarch_resampler_t nearest_resampler;
 extern rarch_resampler_t null_resampler;
 
-#ifndef DONT_HAVE_STRING_LIST
 /**
  * config_get_audio_resampler_driver_options:
  *
@@ -151,7 +150,6 @@ extern rarch_resampler_t null_resampler;
  * Returns: string listing of all resampler driver names, separated by '|'.
  **/
 const char* config_get_audio_resampler_driver_options(void);
-#endif
 
 /**
  * audio_resampler_driver_find_handle:
