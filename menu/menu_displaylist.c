@@ -42,7 +42,6 @@
 #include "../managers/core_option_manager.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../system.h"
 #include "../core.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"

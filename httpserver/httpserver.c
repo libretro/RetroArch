@@ -1,5 +1,5 @@
 #include <libretro.h>
-#include "system.h"
+#include "core.h"
 #include "runloop.h"
 #include "core.h"
 #include "gfx/video_driver.h"

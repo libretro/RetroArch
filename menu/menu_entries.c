@@ -24,9 +24,9 @@
 #include "menu_cbs.h"
 #include "menu_navigation.h"
 
+#include "../core.h"
 #include "../configuration.h"
 #include "../runloop.h"
-#include "../system.h"
 #include "../version.h"
 
 struct menu_list

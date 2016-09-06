@@ -41,7 +41,6 @@
 #include "record/record_driver.h"
 #include "core.h"
 #include "performance_counters.h"
-#include "system.h"
 #include "gfx/video_context_driver.h"
 
 #include "cores/internal_cores.h"

@@ -29,9 +29,9 @@
 #include "../../cores/internal_cores.h"
 
 #include "../../configuration.h"
+#include "../../core.h"
 #include "../../core_info.h"
 #include "../../runloop.h"
-#include "../../system.h"
 #include "../../verbosity.h"
 
 #ifndef BIND_ACTION_DEFERRED_PUSH

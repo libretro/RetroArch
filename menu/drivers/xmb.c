@@ -41,10 +41,10 @@
 #include "../menu_cbs.h"
 
 #include "../../frontend/frontend_driver.h"
+#include "../../core.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../system.h"
 #include "../../file_path_special.h"
 
 #include "../../tasks/tasks_internal.h"

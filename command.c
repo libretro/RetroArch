@@ -53,7 +53,6 @@
 #include "retroarch.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
-#include "system.h"
 #include "ui/ui_companion_driver.h"
 #include "tasks/tasks_internal.h"
 #include "list_special.h"

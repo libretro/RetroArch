@@ -41,7 +41,6 @@
 #include "../performance_counters.h"
 #include "../list_special.h"
 #include "../core.h"
-#include "../system.h"
 #include "../command.h"
 #include "../msg_hash.h"
 

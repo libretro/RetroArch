@@ -32,7 +32,6 @@
 #include "msg_hash.h"
 #include "managers/state_manager.h"
 #include "runloop.h"
-#include "system.h"
 #include "verbosity.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"

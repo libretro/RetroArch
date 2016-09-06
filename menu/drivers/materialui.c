@@ -38,10 +38,10 @@
 #include "../menu_display.h"
 
 #include "../../core_info.h"
+#include "../../core.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../retroarch.h"
-#include "../../system.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"

@@ -22,8 +22,8 @@
 #include <net/net_compat.h>
 #include <retro_endianness.h>
 
+#include "../../core.h"
 #include "../../msg_hash.h"
-#include "../../system.h"
 #include "../../verbosity.h"
 
 #ifdef ANDROID
