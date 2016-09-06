@@ -37,6 +37,6 @@ static const char *stock_vertex_xmb_modern = GLSL(
     vec3 pos = VertexCoord;
     pos.y = height( pos );
     gl_Position = vec4(pos, 0.0, 1.0);
-    fragVertexEc =VertexCoord;
+    fragVertexEc =pos;
    }
 );
