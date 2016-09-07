@@ -5,6 +5,7 @@
  */
 var dropbox = false;
 var client = new Dropbox.Client({ key: "il6e10mfd7pgf8r" });
+var XFS;
 
 var showError = function(error) {
   switch (error.status) {
@@ -85,7 +86,6 @@ function dropboxSync(dropboxClient, cb)
   });
 }
 
-var count = 0;
 function setupFileSystem()
 {
   console.log("WEBPLAYER: Initializing Filesystem");
@@ -95,8 +95,13 @@ function setupFileSystem()
      if(localStorage.getItem("fs_inited")!="true")
      {
         var lsfs = new BrowserFS.FileSystem.LocalStorage();
+        var mfs = new BrowserFS.FileSystem.MountableFileSystem();
+        var xfs = new BrowserFS.FileSystem.XmlHttpRequest
+            (".index-xhr", "https://bot.libretro.com/web/assets/");
+        mfs.mount('/', lsfs);
+        mfs.mount('/assets', xfs);
 
-        BrowserFS.initialize(lsfs);
+        BrowserFS.initialize(mfs);
         var BFS = new BrowserFS.EmscriptenFS();
         FS.mount(BFS, {root: '/'}, '/home');
         console.log('WEBPLAYER: Filesystem initialized');
@@ -105,6 +110,7 @@ function setupFileSystem()
      {
         console.log('WEBPLAYER: Filesystem already initialized');
      }
+
   }
   else
   {
@@ -135,7 +141,6 @@ function setupFolderStructure()
   FS.createPath('/', '/home/web_user', true, true);
   FS.createPath('/', '/home/web_user/.config', true, true);
   FS.createPath('/', '/home/web_user/.config/retroarch', true, true);
-  FS.createPath('/', '/assets', true, true);
   FS.createPath('/', '/content', true, true);
 }
 
@@ -162,9 +167,6 @@ function startRetroArch()
   $('#btnAdd').removeClass('disabled');
   $('#btnRom').removeClass('disabled');
 
-  setupFileSystem();
-  setupFolderStructure();
-
   Module['callMain'](Module['arguments']);
 }
 
@@ -173,7 +175,7 @@ function selectFiles(files)
    $('#btnAdd').addClass('disabled');
    $('#icnAdd').removeClass('fa-plus');
    $('#icnAdd').addClass('fa-spinner spinning');
-   count = files.length;
+   var count = files.length;
 
    for (var i = 0; i < files.length; i++) 
    {
@@ -254,6 +256,8 @@ $(function() {
     $('#btnRun').removeClass('disabled');
     $('#icnRun').removeClass('fa-spinner spinning');
     $('#icnRun').addClass('fa-play');
+    setupFileSystem();
+    setupFolderStructure();
     //$('#dropdownMenu1').text(localStorage.getItem("core"));
     /**
      * Attempt to disable some default browser keys.
