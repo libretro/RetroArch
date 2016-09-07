@@ -157,7 +157,24 @@ endif
 	HAVE_NETWORK = 1
 	HAVE_SOCKLEN = 1
 
-else ifneq (,$(findstring win,$(platform)))
+else ifeq ($(platform), emscripten)
+	ARCH_X86 = 0
+	ARCH_X86_64=0
+	ARCH_ARM = 0
+	TARGET := $(TARGET_NAME)_libretro_$(platform).bc
+	STATIC_LINKING=1
+   HAVE_PTHREADS=1
+   LIBRETRO_SWITCH = 1
+	CFLAGS += -DHAVE_UNISTD_H
+	CFLAGS += -DHAVE_STRUCT_SOCKADDR_STORAGE -DHAVE_STRUCT_ADDRINFO
+	HAVE_POLL_H = 1
+	HAVE_GETADDRINFO = 1
+	HAVE_NETWORK = 1
+	HAVE_SOCKLEN = 1
+	HAVE_PTHREADS=1
+
+# Windows
+else
 
 	ARCH_X86 = 1
    CC = gcc
@@ -198,7 +215,11 @@ all: $(TARGET)
 	$(CXX) -c -fno-strict-aliasing -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJECTS)
+ifeq ($(STATIC_LINKING),1)
+	$(AR) rcs $@ $(OBJECTS)
+else
 	$(CXX) -o $@ $^ $(LIBS) $(SHARED)
+endif
 
 clean:
 	rm -f $(OBJECTS)
