@@ -123,6 +123,10 @@ typedef struct video_info
 
    /* Use 32bit RGBA rather than native RGB565/XBGR1555. */
    bool rgb32;
+   
+#ifndef RARCH_INTERNAL
+   uintptr_t parent;
+#endif
 } video_info_t;
 
 #define FONT_COLOR_RGBA(r, g, b, a) (((unsigned)(r) << 24) | ((g) << 16) | ((b) << 8) | ((a) << 0))

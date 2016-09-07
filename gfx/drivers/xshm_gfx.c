@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _XOPEN_SOURCE 600 // TODO: this doesn't really belong here.
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -62,14 +64,20 @@ static void *xshm_gfx_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    xshm_t* xshm = (xshm_t*)malloc(sizeof(xshm_t));
+   Window parent;
    
    XInitThreads();
    
    xshm->display = XOpenDisplay(NULL);
    
+#ifdef RARCH_INTERNAL
+   parent = DefaultRootWindow(xshm->display);
+#else
+   parent = video->parent;
+#endif
    XSetWindowAttributes attributes;
    attributes.border_pixel=0;
-   xshm->wndw = XCreateWindow(xshm->display, DefaultRootWindow(xshm->display)/*xshm->parentwindow*/,
+   xshm->wndw = XCreateWindow(xshm->display, parent,
                               0, 0, video->width, video->height,
                               0, 24, CopyFromParent, NULL, CWBorderPixel, &attributes);
    XSetWindowBackground(xshm->display, xshm->wndw, 0);
@@ -91,8 +99,8 @@ static void *xshm_gfx_init(const video_info_t *video,
    xshm->width = video->width;
    xshm->height = video->height;
    
-   *input = NULL;
-   *input_data = NULL;
+   if (input) *input = NULL;
+   if (input_data) *input_data = NULL;
    
    return xshm;
 }
@@ -102,7 +110,7 @@ static bool xshm_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned pitch, const char *msg)
 {
    xshm_t* xshm = (xshm_t*)data;
-   int x, y;
+   int y;
    
    for (y=0;y<height;y++)
    {
