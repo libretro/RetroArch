@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+   <meta charset="utf-8">
+   <title>RetroArch Web Player</title>
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <!-- Bootstrap core CSS -->
+   <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css">
+    <!-- Material Design Bootstrap -->
+    <link href="https://bot.libretro.com/web/mdb/css/mdb.min.css" rel="stylesheet">
+   
+   <link href="proto.css" rel="stylesheet" type="text/css">
+   
+</head>
+<body>
+   
+   <script src="https://use.fontawesome.com/bb20806e1e.js"></script>
+   
+   <!--Navbar-->
+   <nav class="navbar navbar-dark bg-primary">
+
+       <!-- Collapse button-->
+       <button class="navbar-toggler hidden-sm-up" type="button" data-toggle="collapse" data-target="#collapseEx2">
+           <i class="fa fa-bars"></i>
+       </button>
+
+       <div class="container">
+
+           <!--Collapse content-->
+           <div class="collapse navbar-toggleable-xs" id="collapseEx2">
+               <!--Navbar Brand-->
+               <a class="navbar-brand" href="#">RetroArch</a>
+               <!--Links-->
+               <ul class="nav navbar-nav">
+                   <li class="nav-item dropdown">
+                       <a class="nav-link dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Core Selection</a>
+                       <div class="dropdown-menu dropdown-primary" aria-labelledby="dropdownMenu1" data-dropdown-in="fadeIn" data-dropdown-out="fadeOut">
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("fceumm")>FCEUmm</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("gambatte")>Gambatte</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("genesis_plus_gx")>Genesis Plus GX</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("nestopia")>Nestopia</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("prboom")>PrBoom</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("quicknes")>QuickNES</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("snes9x2005")>Snes9X 2005</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("snes9x2010")>Snes9X 2010</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("stella")>Stella</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("tgbdual")>TGB Dual</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("tyrquake")>TyrQuake</a>
+                          <a class="dropdown-item" href="./proto.html" onclick=switchCore("vba_next")>VBA Next</a>
+                       </div>
+                   </li>
+               </ul>
+           </div>
+           <!--/.Collapse content-->
+
+       </div>
+
+   </nav>
+   <div class="bg-inverse webplayer-container">
+      <div class="container">
+         <div class="webplayer_border text-xs-center" id="canvas_div" style="display: none">
+            <canvas class="webplayer col-xs-12" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()"></canvas>
+         </div>
+      </div>
+   </div>
+   <div class="container">
+      <div class="row">
+         <div class="col-sm-12 form-group btn-group text-xs-center p-t-2" id="openrom">
+            <button class="btn btn-primary disabled" id="btnRun" onclick="startRetroArch()">
+               <span class="fa fa-spinner spinning" id="icnRun"></span> Run
+            </button>
+            <button class="btn btn-primary" id="btnSync" onclick="dropboxInit()">
+               <span class="fa fa-dropbox" id="icnSync"></span> Sync
+            </button>
+            <button class="btn btn-primary disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()">
+               <span class="fa fa-plus" id="icnAdd"></span> Add Content
+            </button>
+            <input class="btn btn-primary" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
+            <button class="btn btn-primary disabled" id="btnFullscreen" onclick="Module.requestFullScreen()">
+               <span class="fa fa-desktop" id="icnAdd"></span> Fullscreen
+            </button>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-sm-12">
+            <div class="card">
+                <div class="view overlay hm-white-slight" align="center">
+                     <textarea id="output" rows="15"></textarea>
+                </div>
+            </div>
+
+         </div>
+      </div>
+   </div>
+
+   <script src="//code.jquery.com/jquery-3.1.0.min.js"></script>
+   <script src="//cdnjs.cloudflare.com/ajax/libs/tether/1.3.4/js/tether.min.js"></script>
+   <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/js/bootstrap.min.js"></script>
+   <script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
+   <script src="https://use.fontawesome.com/bb20806e1e.js"></script>
+   <script src="browserfs.js"></script>
+   <script src="proto.js"></script>
+</body>
+</html>
