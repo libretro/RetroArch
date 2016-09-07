@@ -11,6 +11,7 @@ config.log
 /retroarch
 /retroarch.cfg
 /retroarch.exe
+/retroarch_debug.exe
 /config.h
 /config.mk
 /tools/retroarch-joyconfig
