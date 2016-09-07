@@ -816,6 +816,10 @@ ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL = 0
 endif
 
+ifeq ($(HAVE_XSHM), 1)
+   OBJ += gfx/drivers/xshm_gfx.o
+endif
+
 ifeq ($(HAVE_VULKAN), 1)
    ifneq ($(findstring Win32,$(OS)),)
       GLSLANG_PLATFORM := Windows

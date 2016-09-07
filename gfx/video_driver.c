@@ -204,6 +204,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_PLAIN_DRM
    &video_drm,
 #endif
+#ifdef HAVE_XSHM
+   &video_xshm,
+#endif
    &video_null,
    NULL,
 };
