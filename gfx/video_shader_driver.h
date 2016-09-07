@@ -139,6 +139,8 @@ typedef struct shader_backend
 {
    void *(*init)(void *data, const char *path);
    void (*deinit)(void *data);
+
+   /* Set shader parameters. */
    void (*set_params)(void *data, void *shader_data,
          unsigned width, unsigned height, 
          unsigned tex_width, unsigned tex_height, 
@@ -148,13 +150,20 @@ typedef struct shader_backend
          const void *prev_info,
          const void *feedback_info,
          const void *fbo_info, unsigned fbo_info_cnt);
+
    void (*set_uniform_parameter)(void *data, struct uniform_info *param,
          void *uniform_data);
+
+   /* Compile a shader program. */
    bool (*compile_program)(void *data, unsigned idx,
          void *program_data, struct shader_program_info *program_info);
 
+   /* Use a shader program specified by variable 'index'. */
    void (*use)(void *data, void *shader_data, unsigned index, bool set_active);
+
+   /* Returns the number of currently loaded shaders. */
    unsigned (*num_shaders)(void *data);
+
    bool (*filter_type)(void *data, unsigned index, bool *smooth);
    enum gfx_wrap_type (*wrap_type)(void *data, unsigned index);
    void (*shader_scale)(void *data,

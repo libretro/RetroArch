@@ -96,7 +96,10 @@ typedef struct video_info
 
    /* Launch in fullscreen mode instead of windowed mode. */
    bool fullscreen;
+
+   /* Start with V-Sync enabled. */
    bool vsync;
+
    bool force_aspect;
 
 #ifdef GEKKO
