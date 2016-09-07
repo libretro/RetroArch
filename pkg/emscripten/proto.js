@@ -228,7 +228,6 @@ var Module =
 
 function switchCore(corename) {
    localStorage.setItem("core", corename);
-   $('#lblCore').text(corename);
 }
 
 // When the browser has loaded everything.
@@ -247,6 +246,7 @@ $(function() {
     $('#btnRun').removeClass('disabled');
     $('#icnRun').removeClass('fa-spinner spinning');
     $('#icnRun').addClass('fa-play');
+    //$('#dropdownMenu1').text(localStorage.getItem("core"));
     /**
      * Attempt to disable some default browser keys.
      */

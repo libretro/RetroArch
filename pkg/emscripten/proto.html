@@ -35,8 +35,9 @@
                <a class="navbar-brand" href="#">RetroArch</a>
                <!--Links-->
                <ul class="nav navbar-nav">
+                  <div class="dropdown">
                    <li class="nav-item dropdown">
-                       <a class="nav-link dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Core Selection</a>
+                       <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Core Selection</button>
                        <div class="dropdown-menu dropdown-primary" aria-labelledby="dropdownMenu1" data-dropdown-in="fadeIn" data-dropdown-out="fadeOut">
                           <a class="dropdown-item" href="." onclick=switchCore("fceumm")>FCEUmm</a>
                           <a class="dropdown-item" href="." onclick=switchCore("gambatte")>Gambatte</a>
@@ -52,6 +53,7 @@
                           <a class="dropdown-item" href="." onclick=switchCore("vba_next")>VBA Next</a>
                        </div>
                    </li>
+                </div>
                </ul>
            </div>
            <!--/.Collapse content-->
