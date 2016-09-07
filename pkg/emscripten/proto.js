@@ -183,13 +183,14 @@ function selectFiles(files)
 
 function uploadData(data,name)
 {
+   $('#btnAdd').addClass('disabled');
   var dataView = new Uint8Array(data);
-  FS.createDataFile('/', name, dataView, true, false);
+  FS.createDataFile('/content/', name, dataView, true, false);
 
-  var data = FS.readFile(name,{ encoding: 'binary' });
-  FS.writeFile('/content/' + name, data ,{ encoding: 'binary' });
-  FS.unlink(name);
-
+  //var data = FS.readFile(name,{ encoding: 'binary' });
+  //FS.writeFile('/content/' + name, data ,{ encoding: 'binary' });
+  //FS.unlink(name);
+  $('#btnAdd').removeClass('disabled');
 }
 
 var Module = 
