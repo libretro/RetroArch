@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -81,7 +81,7 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
       ncomponents = 4;
    }
 #endif
-    
+
 #if defined(GL_VERSION_3_0)
     if (gl_query_core_context_in_use() ||
         (hwr->context_type == RETRO_HW_CONTEXT_OPENGL &&
@@ -203,9 +203,10 @@ static void gl_raster_font_free_font(void *data)
       font->font_driver->free(font->font_data);
 
    if (settings->video.threaded)
-      video_context_driver_make_current(false);
+      video_context_driver_make_current(true);
 
    glDeleteTextures(1, &font->tex);
+
    free(font);
 }
 
@@ -221,7 +222,7 @@ static int gl_get_message_width(void *data, const char *msg,
       return 0;
 
    if (
-            !font->font_driver 
+            !font->font_driver
          || !font->font_driver->get_glyph
          || !font->font_data )
       return 0;
@@ -378,10 +379,10 @@ static void gl_raster_font_render_message(
    int lines = 0;
    float line_height;
 
-   if (     !msg 
-         || !*msg 
-         || !font->gl 
-         || !font 
+   if (     !msg
+         || !*msg
+         || !font->gl
+         || !font
          || !font->font_data
          || !font->font_driver)
       return;
@@ -394,7 +395,7 @@ static void gl_raster_font_render_message(
       return;
    }
 
-   line_height = 1 / 
+   line_height = 1 /
       (scale * (float) font->font_driver->get_line_height(font->font_data));
 
    for (;;)
@@ -529,7 +530,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       color_dark[3] = color[3] * drop_alpha;
 
       gl_raster_font_render_message(font, msg, scale, color_dark,
-            x + scale * drop_x / gl->vp.width, y + 
+            x + scale * drop_x / gl->vp.width, y +
             scale * drop_y / gl->vp.height, text_align);
    }
 
