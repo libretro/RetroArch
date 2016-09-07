@@ -170,6 +170,9 @@ function startRetroArch()
 
 function selectFiles(files)
 {
+  $('#btnAdd').addClass('disabled');
+  $('#icnAdd').removeClass('fa-plus');
+  $('#icnAdd').addClass('fa-spinner spinning');
   count = files.length;
 
   for (var i = 0; i < files.length; i++) 
@@ -179,18 +182,15 @@ function selectFiles(files)
      filereader.readAsArrayBuffer(files[i]);
      filereader.onload = function(){uploadData(this.result, this.file_name)};
   }
+  /*$('#btnAdd').removeClass('disabled');
+  $('#icnAdd').removeClass('fa-spinner spinning');
+  $('#icnAdd').addClass('fa-plus');*/
 }
 
 function uploadData(data,name)
 {
-   $('#btnAdd').addClass('disabled');
   var dataView = new Uint8Array(data);
   FS.createDataFile('/content/', name, dataView, true, false);
-
-  //var data = FS.readFile(name,{ encoding: 'binary' });
-  //FS.writeFile('/content/' + name, data ,{ encoding: 'binary' });
-  //FS.unlink(name);
-  $('#btnAdd').removeClass('disabled');
 }
 
 var Module = 
