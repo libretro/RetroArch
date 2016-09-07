@@ -93,9 +93,12 @@ typedef struct video_info
 {
    unsigned width;
    unsigned height;
+
+   /* Launch in fullscreen mode instead of windowed mode. */
    bool fullscreen;
    bool vsync;
    bool force_aspect;
+
 #ifdef GEKKO
    /* TODO - we can't really have driver system-specific
     * variables in here. There should be some
@@ -107,11 +110,14 @@ typedef struct video_info
    unsigned viwidth;
    bool vfilter;
 #endif
+
    /* If true, applies bilinear filtering to the image,
     * otherwise nearest filtering. */
    bool smooth;
+
    /* Maximum input size: RARCH_SCALE_BASE * input_scale */
    unsigned input_scale;
+
    /* Use 32bit RGBA rather than native RGB565/XBGR1555. */
    bool rgb32;
 } video_info_t;
@@ -135,8 +141,13 @@ typedef struct video_poke_interface
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*get_video_output_size)(void *data,
          unsigned *width, unsigned *height);
+
+   /* Move index to previous resolution */
    void (*get_video_output_prev)(void *data);
+
+   /* Move index to next resolution */
    void (*get_video_output_next)(void *data);
+
    uintptr_t (*get_current_framebuffer)(void *data);
    retro_proc_address_t (*get_proc_address)(void *data, const char *sym);
    void (*set_aspect_ratio)(void *data, unsigned aspectratio_index);
