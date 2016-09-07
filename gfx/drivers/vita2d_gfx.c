@@ -48,7 +48,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
 
    RARCH_LOG("vita2d_gfx_init: w: %i  h: %i\n", video->width, video->height);
    RARCH_LOG("RARCH_SCALE_BASE: %i input_scale: %i = %i\n",
-	RARCH_SCALE_BASE, video->input_scale, RARCH_SCALE_BASE * video->input_scale);
+	 RARCH_SCALE_BASE, video->input_scale, RARCH_SCALE_BASE * video->input_scale);
 
    vita2d_init();
    vita2d_set_clear_color(RGBA8(0x00, 0x00, 0x00, 0xFF));
@@ -544,7 +544,7 @@ static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
    vita->vp.maxDepth   = 1.0f;*/
 
 
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
+   //RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
 }
 
 static void vita2d_gfx_set_rotation(void *data,
@@ -702,7 +702,6 @@ static uintptr_t vita_load_texture(void *video_data, void *data,
      image->height,SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB);
    if (!texture)
       return 0;
-   RARCH_LOG("%d %d \n",image->height,image->width);
 
    if(filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || 
      filter_type == TEXTURE_FILTER_LINEAR)
