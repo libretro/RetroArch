@@ -468,8 +468,10 @@ static const bool video_shared_context = false;
 /* Sets GC/Wii screen width. */
 static const unsigned video_viwidth = 640;
 
+#ifdef GEKKO
 /* Removes 480i flicker, smooths picture a little. */
 static const bool video_vfilter = true;
+#endif
 
 /* Smooths picture. */
 static const bool video_smooth = true;

@@ -102,9 +102,13 @@ typedef struct video_info
     * kind of publicly accessible driver implementation
     * video struct for specific things like this.
     */
+
+   /* Wii-specific settings. Ignored for everything else. */
    unsigned viwidth;
-#endif
    bool vfilter;
+#endif
+   /* If true, applies bilinear filtering to the image,
+    * otherwise nearest filtering. */
    bool smooth;
    /* Maximum input size: RARCH_SCALE_BASE * input_scale */
    unsigned input_scale;
