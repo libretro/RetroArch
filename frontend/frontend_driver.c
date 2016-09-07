@@ -134,7 +134,7 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
    strlcpy(s, "pbp", len);
    return true;
 #elif defined(VITA)
-   strlcpy(s, "velf", len);
+   strlcpy(s, "self|bin", len);
    return true;
 #elif defined(_XBOX1)
    strlcpy(s, "xbe", len);
@@ -168,7 +168,7 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    strlcpy(s, "EBOOT.PBP", len);
    return true;
 #elif defined(VITA)
-   strlcpy(s, "default.velf", len);
+   strlcpy(s, "eboot.bin", len);
    return true;
 #elif defined(_XBOX1)
    strlcpy(s, "default.xbe", len);

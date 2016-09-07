@@ -22,7 +22,7 @@
 #include <psp2/moduleinfo.h>
 #include <psp2/power.h>
 #include <psp2/sysmodule.h>
-int scePowerSetArmClockFrequency(int freq);
+#include <psp2/appmgr.h>
 #else
 #include <pspkernel.h>
 #include <pspdebug.h>
@@ -101,8 +101,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    /* bundle data*/
    fill_pathname_join(g_defaults.dir.assets, "app0:/",
          "assets", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
-         "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core, "app0:/",
+         "", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
          "info", sizeof(g_defaults.dir.core_info));
    /* user data*/
@@ -178,12 +178,13 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    path_mkdir(g_defaults.dir.sram);
    path_mkdir(g_defaults.dir.system);
 
+
+
+#ifndef IS_SALAMANDER
 #ifdef VITA
    params = (struct rarch_main_wrap*)params_data;
    params->verbose = true;
 #endif
-
-#ifndef IS_SALAMANDER
    if (!string_is_empty(argv[1]))
    {
       static char path[PATH_MAX_LENGTH];
@@ -231,7 +232,8 @@ static void frontend_psp_shutdown(bool unused)
 {
    (void)unused;
 #ifdef VITA
-   sceKernelExitProcess(0);
+   //sceKernelExitProcess(0);
+   return;
 #else
    sceKernelExitGame();
 #endif
@@ -296,7 +298,7 @@ static void frontend_psp_init(void *data)
 
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
-#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER)
+#if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER) || defined(VITA)
    char *fullpath = NULL;
    char argp[512] = {0};
    SceSize   args = 0;
@@ -316,9 +318,11 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #endif
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
-
+#if defined(VITA)
+   sceAppMgrLoadExec(path, NULL, NULL);
+#else
    exitspawn_kernel(path, args, argp);
-
+#endif
 #endif
 }
 
