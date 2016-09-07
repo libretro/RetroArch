@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define _XOPEN_SOURCE 600 // TODO: this doesn't really belong here.
+#define _XOPEN_SOURCE 700 // TODO: this doesn't really belong here.
 
 #include <stdlib.h>
 #include <string.h>
@@ -22,18 +22,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include <retro_inline.h>
-#include <gfx/scaler/scaler.h>
-
-#include "../../configuration.h"
-#include "../../driver.h"
-#include "../../retroarch.h"
-#include "../../runloop.h"
-#include "../../performance_counters.h"
-#include "../../verbosity.h"
-#include "../video_context_driver.h"
-#include "../font_driver.h"
 
 #include "../common/x11_common.h"
 
