@@ -170,21 +170,28 @@ function startRetroArch()
 
 function selectFiles(files)
 {
-  $('#btnAdd').addClass('disabled');
-  $('#icnAdd').removeClass('fa-plus');
-  $('#icnAdd').addClass('fa-spinner spinning');
-  count = files.length;
+   $('#btnAdd').addClass('disabled');
+   $('#icnAdd').removeClass('fa-plus');
+   $('#icnAdd').addClass('fa-spinner spinning');
+   count = files.length;
 
-  for (var i = 0; i < files.length; i++) 
-  {
-     filereader = new FileReader();
-     filereader.file_name = files[i].name;
-     filereader.readAsArrayBuffer(files[i]);
-     filereader.onload = function(){uploadData(this.result, this.file_name)};
-  }
-  /*$('#btnAdd').removeClass('disabled');
-  $('#icnAdd').removeClass('fa-spinner spinning');
-  $('#icnAdd').addClass('fa-plus');*/
+   for (var i = 0; i < files.length; i++) 
+   {
+      filereader = new FileReader();
+      filereader.file_name = files[i].name;
+      filereader.readAsArrayBuffer(files[i]);
+      filereader.onload = function(){uploadData(this.result, this.file_name)};
+      filereader.onloadend = function(evt) 
+      {
+         if (evt.target.readyState == FileReader.DONE)
+         {
+            console.log("WEBPLAYER: File: " + this.file_name + " Upload Complete");
+            $('#btnAdd').removeClass('disabled');
+            $('#icnAdd').removeClass('fa-spinner spinning');
+            $('#icnAdd').addClass('fa-plus');
+         }
+       }
+   }
 }
 
 function uploadData(data,name)
