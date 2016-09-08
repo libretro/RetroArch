@@ -45,6 +45,14 @@
 #include <file/file_path.h>
 #include <rhash.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #include "../frontend_driver.h"
 #include "../../file_path_special.h"
 #include "../../configuration.h"
@@ -52,10 +60,6 @@
 #include "../../general.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
-
-#ifdef HAVE_MENU
-#include "../../menu/menu_driver.h"
-#endif
 
 #if 1
 #define RELEASE_BUILD

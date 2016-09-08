@@ -29,6 +29,10 @@
 #include <signal.h>
 #include <pthread.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef ANDROID
 #include <sys/system_properties.h>
 #ifdef __arm__

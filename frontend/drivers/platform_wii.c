@@ -30,6 +30,10 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../verbosity.h"
 
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)
