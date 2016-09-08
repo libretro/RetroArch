@@ -182,16 +182,14 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 
 #ifndef IS_SALAMANDER
 #ifdef VITA
-   params = (struct rarch_main_wrap*)params_data;
+   params          = (struct rarch_main_wrap*)params_data;
    params->verbose = true;
 #endif
    if (!string_is_empty(argv[1]))
    {
-      static char path[PATH_MAX_LENGTH];
-      struct rarch_main_wrap *args = NULL;
-
-      *path = '\0';
-      args = (struct rarch_main_wrap*)params_data;
+      static char path[PATH_MAX_LENGTH] = {0};
+      struct rarch_main_wrap      *args = 
+         (struct rarch_main_wrap*)params_data;
 
       if (args)
       {

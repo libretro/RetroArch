@@ -135,9 +135,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
 #ifndef IS_SALAMANDER
       if (*argc > 1 && !string_is_empty(argv[1]))
       {
-         static char path[PATH_MAX_LENGTH];
-         *path = '\0';
-         struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+         static char path[PATH_MAX_LENGTH] = {0};
+         struct rarch_main_wrap      *args = (struct rarch_main_wrap*)params_data;
 
          if (args)
          {
