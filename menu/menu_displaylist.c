@@ -31,6 +31,10 @@
 #include "menu_popup.h"
 #include "menu_cbs.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
 #endif
