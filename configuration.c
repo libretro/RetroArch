@@ -24,6 +24,10 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "file_path_special.h"
 #include "audio/audio_driver.h"
 #include "configuration.h"
@@ -40,10 +44,6 @@
 #include "lakka.h"
 
 #include "tasks/tasks_internal.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 /* All config related settings go here. */
 

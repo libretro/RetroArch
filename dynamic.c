@@ -32,6 +32,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_CHEEVOS
+#include "cheevos.h"
+#endif
+
 #include "dynamic.h"
 #include "command.h"
 
@@ -46,9 +50,6 @@
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
 #include "content.h"
-#ifdef HAVE_CHEEVOS
-#include "cheevos.h"
-#endif
 #include "retroarch.h"
 #include "runloop.h"
 #include "configuration.h"

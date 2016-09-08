@@ -13,15 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <stdlib.h>
-#include <boolean.h>
-#include <string.h>
-#include <time.h>
-#include <errno.h>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -33,6 +24,12 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
+#include <stdlib.h>
+#include <boolean.h>
+#include <string.h>
+#include <time.h>
+#include <errno.h>
+
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
@@ -40,6 +37,10 @@
 #include <compat/posix_string.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "configuration.h"
 #include "file_path_special.h"

@@ -35,6 +35,10 @@
 
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "file_path_special.h"
 #include "verbosity.h"
 

@@ -24,10 +24,6 @@
 #include "config.h"
 #endif
 
-#include "list_special.h"
-#include "frontend/frontend_driver.h"
-#include "core_info.h"
-
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #endif
@@ -40,6 +36,8 @@
 #include "location/location_driver.h"
 #endif
 
+#include "list_special.h"
+#include "frontend/frontend_driver.h"
 #include "core_info.h"
 #include "gfx/video_driver.h"
 #include "input/input_driver.h"

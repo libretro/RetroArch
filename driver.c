@@ -22,6 +22,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#endif
+
 #include "command.h"
 #include "msg_hash.h"
 
@@ -34,10 +38,6 @@
 #include "core.h"
 #include "runloop.h"
 #include "verbosity.h"
-
-#ifdef HAVE_MENU
-#include "menu/menu_driver.h"
-#endif
 
 #define HASH_LOCATION_DRIVER           0x09189689U
 #define HASH_CAMERA_DRIVER             0xf25db959U
