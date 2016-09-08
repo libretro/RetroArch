@@ -27,6 +27,11 @@
 
 #include <sys/process.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#include <compat/strl.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
