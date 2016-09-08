@@ -25,12 +25,6 @@
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
 
-#include "menu_content.h"
-#include "menu_driver.h"
-#include "menu_navigation.h"
-#include "menu_popup.h"
-#include "menu_cbs.h"
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -38,6 +32,20 @@
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
 #endif
+
+#ifdef HAVE_CHEEVOS
+#include "../cheevos.h"
+#endif
+
+#ifdef __linux__
+#include "../frontend/drivers/platform_linux.h"
+#endif
+
+#include "menu_content.h"
+#include "menu_driver.h"
+#include "menu_navigation.h"
+#include "menu_popup.h"
+#include "menu_cbs.h"
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -56,14 +64,6 @@
 #include "../list_special.h"
 #include "../performance_counters.h"
 #include "../core_info.h"
-
-#ifdef HAVE_CHEEVOS
-#include "../cheevos.h"
-#endif
-
-#ifdef __linux__
-#include "../frontend/drivers/platform_linux.h"
-#endif
 
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,

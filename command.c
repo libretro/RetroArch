@@ -39,6 +39,26 @@
 #include <string/stdstring.h>
 #endif
 
+#ifdef HAVE_CHEEVOS
+#include "cheevos.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#include "menu/menu_content.h"
+#include "menu/menu_display.h"
+#include "menu/menu_shader.h"
+#include "menu/menu_popup.h"
+#endif
+
+#ifdef HAVE_NETPLAY
+#include "network/netplay/netplay.h"
+#endif
+
+#ifdef HAVE_NETWORKING
+#include <net/net_compat.h>
+#endif
+
 #include "command.h"
 
 #include "defaults.h"
@@ -60,26 +80,6 @@
 #include "ui/ui_companion_driver.h"
 #include "tasks/tasks_internal.h"
 #include "list_special.h"
-
-#ifdef HAVE_CHEEVOS
-#include "cheevos.h"
-#endif
-
-#ifdef HAVE_MENU
-#include "menu/menu_driver.h"
-#include "menu/menu_content.h"
-#include "menu/menu_display.h"
-#include "menu/menu_shader.h"
-#include "menu/menu_popup.h"
-#endif
-
-#ifdef HAVE_NETPLAY
-#include "network/netplay/netplay.h"
-#endif
-
-#ifdef HAVE_NETWORKING
-#include <net/net_compat.h>
-#endif
 
 #include "core.h"
 #include "verbosity.h"

@@ -28,15 +28,19 @@
 #include <clamping.h>
 #include <rhash.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
 #include "input_overlay.h"
 #include "input_keyboard.h"
 
 #include "../configuration.h"
 #include "../verbosity.h"
-
-#ifdef HAVE_MENU
-#include "../menu/menu_driver.h"
-#endif
 
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)

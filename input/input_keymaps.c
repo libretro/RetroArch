@@ -19,14 +19,13 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <compat/strl.h>
+#include <retro_assert.h>
+#include <retro_miscellaneous.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
-
-#include <compat/strl.h>
-
-#include <retro_assert.h>
-#include <retro_miscellaneous.h>
 
 #ifdef ANDROID
 #include <android/keycodes.h>

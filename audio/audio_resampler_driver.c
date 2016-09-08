@@ -25,9 +25,7 @@
 
 #include "audio_resampler_driver.h"
 #include "../config_file_userdata.h"
-#ifdef RARCH_INTERNAL
 #include "../performance_counters.h"
-#endif
 #include "../list_special.h"
 
 static const rarch_resampler_t *resampler_drivers[] = {

@@ -20,13 +20,13 @@
 #include "../config.h"
 #endif
 
-#include "input_driver.h"
-#include "input_keyboard.h"
-#include "input_remapping.h"
-
 #ifdef HAVE_NETWORKGAMEPAD
 #include "input_remote.h"
 #endif
+
+#include "input_driver.h"
+#include "input_keyboard.h"
+#include "input_remapping.h"
 
 #include "../configuration.h"
 #include "../driver.h"
