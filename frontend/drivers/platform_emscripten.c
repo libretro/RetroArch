@@ -77,59 +77,99 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    (void)args;
 
    char base_path[PATH_MAX] = {0};
-   const char *xdg          = getenv("XDG_CONFIG_HOME");
+   char user_path[PATH_MAX] = {0};
    const char *home         = getenv("HOME");
 
-   if (xdg)
+   if (!string_is_empty(home))
+   {
       snprintf(base_path, sizeof(base_path),
-            "%s/retroarch", xdg);
-   else if (home)
-      snprintf(base_path, sizeof(base_path),
-            "%s/.config/retroarch", home);
+            "%s/retroarch", home);
+      snprintf(user_path, sizeof(user_path),
+            "%s/userdata", home);
+   }
    else
+   {
       snprintf(base_path, sizeof(base_path), "retroarch");
+      snprintf(user_path, sizeof(user_path), "userdata");
+   }
 
    fill_pathname_join(g_defaults.dir.core, base_path,
          "cores", sizeof(g_defaults.dir.core));
-   fill_pathname_join(g_defaults.dir.core_info, base_path,
-         "cores", sizeof(g_defaults.dir.core_info));
-   fill_pathname_join(g_defaults.dir.autoconfig, base_path,
-         "autoconfig", sizeof(g_defaults.dir.autoconfig));
 
-   fill_pathname_join(g_defaults.dir.menu_config, base_path,
-         "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
-         "remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.playlist, base_path,
-         "playlists", sizeof(g_defaults.dir.playlist));
+   /* data from the retroarch bundle */
+   fill_pathname_join(g_defaults.dir.assets, base_path,
+         "bundle/assets", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.autoconfig, base_path,
+         "bundle/autoconfig", sizeof(g_defaults.dir.autoconfig));
    fill_pathname_join(g_defaults.dir.cursor, base_path,
-         "database/cursors", sizeof(g_defaults.dir.cursor));
+         "bundle/database/cursors", sizeof(g_defaults.dir.cursor));
    fill_pathname_join(g_defaults.dir.database, base_path,
-         "database/rdb", sizeof(g_defaults.dir.database));
+         "bundle/database/rdb", sizeof(g_defaults.dir.database));
+   fill_pathname_join(g_defaults.dir.core_info, base_path,
+         "bundle/info", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.overlay, base_path,
+         "bundle/overlays", sizeof(g_defaults.dir.overlay));
+   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
+         "bundle/overlays", sizeof(g_defaults.dir.osk_overlay));
    fill_pathname_join(g_defaults.dir.shader, base_path,
-         "shaders", sizeof(g_defaults.dir.shader));
+         "bundle/shaders", sizeof(g_defaults.dir.shader));
+
+   /* user data dirs */
    fill_pathname_join(g_defaults.dir.cheats, base_path,
          "cheats", sizeof(g_defaults.dir.cheats));
-   fill_pathname_join(g_defaults.dir.overlay, base_path,
-         "overlay", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
-         "overlay", sizeof(g_defaults.dir.osk_overlay));
-   fill_pathname_join(g_defaults.dir.core_assets, base_path,
-         "downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.screenshot, base_path,
-         "screenshots", sizeof(g_defaults.dir.screenshot));
-   fill_pathname_join(g_defaults.dir.thumbnails, base_path,
-         "thumbnails", sizeof(g_defaults.dir.thumbnails));
-   fill_pathname_join(g_defaults.dir.sram, base_path,
-         "saves", sizeof(g_defaults.dir.sram));
-   fill_pathname_join(g_defaults.dir.savestate, base_path,
-         "states", sizeof(g_defaults.dir.savestate));
-
-   /* don't use XDG for these, we don't want these to Sync to cloud storage*/
-   fill_pathname_join(g_defaults.dir.menu_content, "/",
+   fill_pathname_join(g_defaults.dir.menu_config, user_path,
+         "config", sizeof(g_defaults.dir.menu_config));
+   fill_pathname_join(g_defaults.dir.menu_content, user_path,
          "content", sizeof(g_defaults.dir.thumbnails));
-   fill_pathname_join(g_defaults.dir.assets, "/",
-         "assets", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.core_assets, user_path,
+         "downloads", sizeof(g_defaults.dir.core_assets));
+   fill_pathname_join(g_defaults.dir.playlist, user_path,
+         "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
+         "remaps", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.sram, user_path,
+         "saves", sizeof(g_defaults.dir.sram));
+   fill_pathname_join(g_defaults.dir.screenshot, user_path,
+         "screenshots", sizeof(g_defaults.dir.screenshot));
+   fill_pathname_join(g_defaults.dir.savestate, user_path,
+         "states", sizeof(g_defaults.dir.savestate));
+   fill_pathname_join(g_defaults.dir.system, user_path,
+         "system", sizeof(g_defaults.dir.system));
+   fill_pathname_join(g_defaults.dir.thumbnails, user_path,
+         "thumbnails", sizeof(g_defaults.dir.thumbnails));
+
+   /* cache dir */
+   fill_pathname_join(g_defaults.dir.cache, "/tmp/retroarch/",
+         "system", sizeof(g_defaults.dir.system));
+
+   strlcpy(g_defaults.dir.content_history,
+         user_path, sizeof(g_defaults.dir.content_history));
+   fill_pathname_join(g_defaults.path.config, user_path,
+         file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
+
+   path_mkdir(g_defaults.dir.core);
+
+   path_mkdir(g_defaults.dir.assets);
+   path_mkdir(g_defaults.dir.autoconfig);
+   path_mkdir(g_defaults.dir.cursor);
+   path_mkdir(g_defaults.dir.database);
+   path_mkdir(g_defaults.dir.core_info);
+   path_mkdir(g_defaults.dir.overlay);
+   path_mkdir(g_defaults.dir.shader);
+
+   path_mkdir(g_defaults.dir.cheats);
+   path_mkdir(g_defaults.dir.menu_config);
+   path_mkdir(g_defaults.dir.menu_content);
+   path_mkdir(g_defaults.dir.core_assets);
+   path_mkdir(g_defaults.dir.playlist);
+   path_mkdir(g_defaults.dir.remap);
+   path_mkdir(g_defaults.dir.savestate);
+   path_mkdir(g_defaults.dir.screenshot);
+   path_mkdir(g_defaults.dir.sram);
+   path_mkdir(g_defaults.dir.system);
+   path_mkdir(g_defaults.dir.thumbnails);
+
+   path_mkdir(g_defaults.dir.cache);
 
    snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "rgui");
 }
