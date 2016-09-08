@@ -29,12 +29,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-
 #include <setjmp.h>
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <boolean.h>
 #include <string/stdstring.h>
@@ -49,6 +44,19 @@
 
 #include <features/features_cpu.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_COMMAND
+#include "command.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#endif
+
+#include "config.features.h"
 #include "content.h"
 #include "core_type.h"
 #include "core_info.h"
@@ -72,15 +80,6 @@
 
 #include "retroarch.h"
 
-#ifdef HAVE_COMMAND
-#include "command.h"
-#endif
-
-#ifdef HAVE_MENU
-#include "menu/menu_driver.h"
-#endif
-
-#include "config.features.h"
 #include "command.h"
 
 /* Descriptive names for options without short variant.

@@ -30,6 +30,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_NETPLAY
+#include "network/netplay/netplay.h"
+#endif
+
 #include "configuration.h"
 #include "dynamic.h"
 #include "core.h"
@@ -39,10 +43,6 @@
 #include "verbosity.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
-
-#ifdef HAVE_NETPLAY
-#include "network/netplay/netplay.h"
-#endif
 
 static struct retro_core_t core;
 static bool                core_inited;

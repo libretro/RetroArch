@@ -29,6 +29,10 @@
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifdef HAVE_COMMAND
 #include <net/net_compat.h>
 #include <net/net_socket.h>
@@ -61,12 +65,6 @@
 #include "cheevos.h"
 #endif
 
-#include "core.h"
-#include "verbosity.h"
-#include "runloop.h"
-#include "configuration.h"
-#include "input/input_remapping.h"
-
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_content.h"
@@ -82,6 +80,12 @@
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
 #endif
+
+#include "core.h"
+#include "verbosity.h"
+#include "runloop.h"
+#include "configuration.h"
+#include "input/input_remapping.h"
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096

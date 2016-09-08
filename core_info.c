@@ -15,22 +15,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+#include <string/stdstring.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
-#include <compat/strl.h>
-
-#include <string/stdstring.h>
-
-#include "core_info.h"
-#include "configuration.h"
-#include "file_path_special.h"
-#include "list_special.h"
-#include "config.def.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "config.def.h"
+#include "core_info.h"
+#include "configuration.h"
+#include "file_path_special.h"
+#include "list_special.h"
 
 static const char *core_info_tmp_path               = NULL;
 static const struct string_list *core_info_tmp_list = NULL;

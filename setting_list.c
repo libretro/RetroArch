@@ -19,15 +19,19 @@
 #include <string/stdstring.h>
 #include <compat/strl.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#endif
+
 #include "configuration.h"
 #include "config.def.h"
 #include "input/input_config.h"
 #include "input/input_autodetect.h"
 #include "setting_list.h"
-
-#ifdef HAVE_MENU
-#include "menu/menu_driver.h"
-#endif
 
 rarch_setting_t setting_terminator_setting(void)
 {

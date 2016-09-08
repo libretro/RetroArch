@@ -18,6 +18,10 @@
 #include <rhash.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "msg_hash.h"
 
 #include "configuration.h"

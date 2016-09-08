@@ -25,6 +25,11 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#include "menu/menu_entries.h"
+#endif
+
 #include "cheevos.h"
 #include "command.h"
 #include "dynamic.h"
@@ -35,11 +40,6 @@
 #include "msg_hash.h"
 #include "runloop.h"
 #include "core.h"
-
-#ifdef HAVE_MENU
-#include "menu/menu_driver.h"
-#include "menu/menu_entries.h"
-#endif
 
 #include "verbosity.h"
 

@@ -19,27 +19,42 @@
 #include <stdarg.h>
 #include <math.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <lists/dir_list.h>
-#include <file/file_path.h>
+#include <compat/strl.h>
 #include <retro_inline.h>
 #include <retro_assert.h>
+#include <lists/dir_list.h>
+#include <file/file_path.h>
 #include <queues/message_queue.h>
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
 #include <queues/task_queue.h>
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
 
-#include <compat/strl.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos.h"
 #endif
+
+#ifdef HAVE_MENU
+#include "menu/menu_display.h"
+#include "menu/menu_driver.h"
+#include "menu/menu_popup.h"
+#endif
+
+#ifdef HAVE_NETPLAY
+#include "network/netplay/netplay.h"
+#endif
+
+#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
+#include "httpserver/httpserver.h"
+#endif
+
 #include "autosave.h"
 #include "core_info.h"
 #include "configuration.h"
@@ -62,21 +77,6 @@
 
 #include "input/input_keyboard.h"
 #include "tasks/tasks_internal.h"
-
-#ifdef HAVE_MENU
-#include "menu/menu_display.h"
-#include "menu/menu_driver.h"
-#include "menu/menu_popup.h"
-#endif
-
-#ifdef HAVE_NETPLAY
-#include "network/netplay/netplay.h"
-#endif
-
-#if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
-#include "httpserver/httpserver.h"
-#endif
-
 #include "verbosity.h"
 
 #ifdef HAVE_ZLIB
