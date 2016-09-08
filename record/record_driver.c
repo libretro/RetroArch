@@ -16,13 +16,13 @@
 
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 
 #include "record_driver.h"
 
