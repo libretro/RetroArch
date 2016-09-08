@@ -382,6 +382,7 @@ check_pkgconf XCB xcb
 check_pkgconf WAYLAND wayland-egl
 
 check_pkgconf XKBCOMMON xkbcommon 0.3.2
+check_pkgconf DBUS dbus-1
 check_pkgconf XEXT xext
 check_pkgconf XF86VM xxf86vm
 check_pkgconf XINERAMA xinerama

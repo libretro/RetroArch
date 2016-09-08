@@ -612,6 +612,11 @@ ifeq ($(HAVE_XKBCOMMON), 1)
    LIBS += $(XKBCOMMON_LIBS)
 endif
 
+ifeq ($(HAVE_DBUS), 1)
+	LIBS += $(DBUS_LIBS)
+	CFLAGS += $(DBUS_CFLAGS)
+endif
+
 ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)

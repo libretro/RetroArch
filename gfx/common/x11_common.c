@@ -34,6 +34,12 @@
 #include "../../verbosity.h"
 #include "../../runloop.h"
 
+#ifdef HAVE_DBUS
+#include <dbus/dbus.h>
+static DBusConnection* dbus_connection;
+static unsigned int dbus_screensaver_cookie = 0;
+#endif
+
 Colormap g_x11_cmap;
 Window   g_x11_win;
 Display *g_x11_dpy;
@@ -146,6 +152,75 @@ void x11_set_window_attr(Display *dpy, Window win)
 }
 
 void x11_suspend_screensaver(Window wnd, bool enable)
+{
+    x11_suspend_screensaver_xdg_screensaver(wnd, enable);
+#ifdef HAVE_DBUS
+    x11_suspend_screensaver_dbus(enable);
+#endif
+}
+
+#ifdef HAVE_DBUS
+void x11_suspend_screensaver_dbus(bool enable)
+{
+    const char *app = "RetroArch";
+    const char *reason = "Playing a game";
+    DBusMessage *msg, *reply;
+
+    if (!enable)
+       return;
+
+    if (dbus_screensaver_cookie > 0)
+        return; // Already suspended
+
+    if (dbus_connection == NULL)
+        return; // DBus connection was not obtained
+
+    
+    msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
+        "/org/freedesktop/ScreenSaver",
+        "org.freedesktop.ScreenSaver",
+        "Inhibit");
+
+    if (msg != NULL)
+    {
+        dbus_message_append_args(msg,
+            DBUS_TYPE_STRING, &app,
+            DBUS_TYPE_STRING, &reason,
+            DBUS_TYPE_INVALID);
+    }
+
+    if (msg != NULL)
+    {
+        reply = dbus_connection_send_with_reply_and_block(dbus_connection, msg, 300, NULL);
+        if (reply != NULL) {
+            if (!dbus_message_get_args(reply, NULL,
+                DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
+                DBUS_TYPE_INVALID))
+            {
+                dbus_screensaver_cookie = 0;
+            }
+
+            dbus_message_unref(reply);
+        }
+
+        dbus_message_unref(msg);
+    }
+
+    if (dbus_screensaver_cookie == 0)
+    {
+        RARCH_ERR("[DBus]: Failed to suspend screensaver via DBus.\n");
+    }
+    else
+    {
+        RARCH_LOG("[DBus]: Suspended screensaver.\n");
+    }
+
+    return;
+
+}
+#endif
+
+void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
 {
    int ret;
    char cmd[64] = {0};
@@ -533,6 +608,22 @@ bool x11_connect(void)
          return false;
    }
 
+#ifdef HAVE_DBUS
+    DBusError err;
+    int ret;
+    dbus_error_init(&err);
+
+    dbus_connection = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
+    if (dbus_error_is_set(&err)) {
+        RARCH_ERR("[DBus]: Failed to get DBus connection. Screensaver will not be suspended.\n");
+        dbus_error_free(&err);
+    }
+    if (dbus_connection != NULL) {
+        dbus_connection_set_exit_on_disconnect(dbus_connection, true);
+    }
+#endif
+
+
    return true;
 }
 
@@ -573,6 +664,32 @@ void x11_window_destroy(bool fullscreen)
    if (!fullscreen)
       XDestroyWindow(g_x11_dpy, g_x11_win);
    g_x11_win = None;
+
+#ifdef HAVE_DBUS
+    if (dbus_connection != NULL)
+    {
+
+        DBusMessage *msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
+            "/org/freedesktop/ScreenSaver",
+            "org.freedesktop.ScreenSaver",
+            "UnInhibit");
+        dbus_message_append_args (msg,
+                                  DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
+                                  DBUS_TYPE_INVALID);
+        if (msg != NULL) {
+            if (dbus_connection_send(dbus_connection, msg, NULL)) {
+                dbus_connection_flush(dbus_connection);
+            }
+            dbus_message_unref(msg);
+        }
+
+        dbus_screensaver_cookie = 0;
+
+        dbus_connection_close(dbus_connection);
+        dbus_connection_unref(dbus_connection);
+        dbus_shutdown();
+    }
+#endif
 }
 
 void x11_colormap_destroy(void)
