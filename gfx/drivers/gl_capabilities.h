@@ -23,6 +23,10 @@
 
 #include <glsym/glsym.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #if defined(HAVE_FBO) && defined(HAVE_PSGL)
 #define glGenFramebuffers glGenFramebuffersOES
 #define glBindFramebuffer glBindFramebufferOES
