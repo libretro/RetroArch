@@ -31,6 +31,10 @@
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "menu_driver.h"
 #include "menu_input.h"
 #include "menu_animation.h"

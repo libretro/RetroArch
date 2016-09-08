@@ -161,9 +161,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             {
                ret = menu_hash_get_help_enum(cbs->enum_idx,
                      menu->menu_state.msg, sizeof(menu->menu_state.msg));
-#if 0
-               RARCH_LOG("enum: %s\n", msg_hash_to_str(cbs->enum_idx));
-#endif
             }
             else
             {
@@ -171,10 +168,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                enum msg_hash_enums enum_idx = MSG_UNKNOWN;
                menu_entries_get_at_offset(selection_buf, selection,
                      NULL, NULL, &type, NULL, NULL);
-
-#if 0
-               RARCH_LOG("file_type: %d\n", type);
-#endif
 
                switch (type)
                {

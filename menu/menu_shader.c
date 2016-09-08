@@ -21,6 +21,10 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "menu_driver.h"
 #include "menu_shader.h"
 #include "../file_path_special.h"

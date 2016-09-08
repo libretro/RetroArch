@@ -16,15 +16,21 @@
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef HAVE_CHEEVOS
+#include "../cheevos.h"
+#endif
+
 #include "menu_display.h"
 #include "menu_driver.h"
 #include "menu_popup.h"
 
 #include "../retroarch.h"
 #include "../configuration.h"
-#ifdef HAVE_CHEEVOS
-#include "../cheevos.h"
-#endif
+
 #include "../input/input_autodetect.h"
 #include "../input/input_config.h"
 

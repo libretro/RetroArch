@@ -36,6 +36,10 @@
 
 #include <compat/strl.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "../frontend/frontend_driver.h"
 
 #include "menu_setting.h"
@@ -69,11 +73,6 @@
 #include "../retroarch.h"
 
 #include "../tasks/tasks_internal.h"
-
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #ifdef HAVE_CHEEVOS
 static void setting_get_string_representation_cheevos_password(void *data,
