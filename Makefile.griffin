@@ -378,6 +378,9 @@ CFLAGS += -DHAVE_THREADS
 ifeq ($(platform), psp1)
 LIBS += -lpthread-psp
 endif
+ifeq ($(platform), vita)
+LIBS += -lpthread
+endif
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
