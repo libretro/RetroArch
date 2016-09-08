@@ -1352,28 +1352,6 @@ static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound
    return 0;
 }
 
-static void menu_input_st_string_cb(void *userdata, const char *str)
-{
-   if (str && *str)
-   {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
-
-      if (!string_is_empty(label))
-         setting = menu_setting_find(label);
-
-      if (setting)
-      {
-         setting_set_with_string_representation(setting, str);
-         menu_setting_generic(setting, false);
-      }
-   }
-
-   menu_input_key_end_line();
-}
-
 static void get_string_representation_bind_device(void * data, char *s,
       size_t len)
 {
