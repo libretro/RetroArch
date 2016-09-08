@@ -45,12 +45,12 @@
 #include "audio/audio_driver.h"
 
 static struct retro_core_t core;
-static bool                core_inited;
-static bool                core_symbols_inited;
-static bool                core_game_loaded;
 static unsigned            core_poll_type;
-static bool                core_input_polled;
-static bool   core_has_set_input_descriptors = false;
+static bool                core_inited         = false;
+static bool                core_symbols_inited = false;
+static bool                core_game_loaded    = false;
+static bool                core_input_polled   = false;
+static bool   core_has_set_input_descriptors   = false;
 static struct retro_callbacks retro_ctx;
 
 static void core_input_state_poll_maybe(void)
