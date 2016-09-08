@@ -16,6 +16,7 @@
  */
 
 #include <emscripten/emscripten.h>
+#include <string.h>
 
 #include <file/config_file.h>
 #include <queues/task_queue.h>
@@ -31,6 +32,7 @@
 #include "../../command.h"
 
 #include <file/file_path.h>
+#include "../../file_path_special.h"
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
 #endif
