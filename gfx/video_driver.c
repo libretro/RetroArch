@@ -17,18 +17,27 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <retro_assert.h>
-#include <gfx/scaler/pixconv.h>
-#include <gfx/scaler/scaler.h>
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
-
 #include <compat/strl.h>
 #include <retro_common_api.h>
 #include <file/config_file.h>
 #include <features/features_cpu.h>
 #include <file/file_path.h>
+
+#include <retro_assert.h>
+#include <gfx/scaler/pixconv.h>
+#include <gfx/scaler/scaler.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
+#ifdef HAVE_MENU
+#include "../menu/menu_setting.h"
+#endif
 
 #include "video_thread_wrapper.h"
 #include "../frontend/frontend_driver.h"
@@ -43,11 +52,6 @@
 #include "../core.h"
 #include "../command.h"
 #include "../msg_hash.h"
-
-#ifdef HAVE_MENU
-#include "../menu/menu_setting.h"
-#endif
-
 #include "../verbosity.h"
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)

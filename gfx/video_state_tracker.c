@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video_state_tracker.h"
 #include <stdlib.h>
+
 #include <compat/strl.h>
 #include <retro_inline.h>
 
@@ -23,13 +23,14 @@
 #include "../config.h"
 #endif
 
-#include "../input/input_config.h"
-#include "../configuration.h"
-#include "../verbosity.h"
-
 #ifdef HAVE_PYTHON
 #include "video_state_python.h"
 #endif
+
+#include "video_state_tracker.h"
+#include "../input/input_config.h"
+#include "../configuration.h"
+#include "../verbosity.h"
 
 struct state_tracker_internal
 {
