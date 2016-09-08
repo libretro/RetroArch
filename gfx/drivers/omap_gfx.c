@@ -33,6 +33,7 @@
 #include <linux/omapfb.h>
 
 #include <retro_inline.h>
+#include <retro_assert.h>
 #include <gfx/scaler/scaler.h>
 #include <string/stdstring.h>
 
@@ -333,7 +334,7 @@ static int omapfb_setup_pages(omapfb_data_t *pdata)
 
 static int omapfb_mmap(omapfb_data_t *pdata)
 {
-   assert(pdata->fb_mem == NULL);
+   retro_assert(pdata->fb_mem == NULL);
 
    pdata->fb_mem = mmap(NULL, pdata->current_state->mi.size, PROT_WRITE,
          MAP_SHARED, pdata->fd, 0);
@@ -351,9 +352,9 @@ static int omapfb_mmap(omapfb_data_t *pdata)
 
 static int omapfb_backup_state(omapfb_data_t *pdata)
 {
-   void* mem;
+   void* mem = NULL;
 
-   assert(pdata->saved_state == NULL);
+   retro_assert(pdata->saved_state == NULL);
 
    pdata->saved_state = calloc(1, sizeof(omapfb_state_t));
    if (!pdata->saved_state) return -1;
@@ -393,14 +394,14 @@ static int omapfb_backup_state(omapfb_data_t *pdata)
 
 static int omapfb_alloc_mem(omapfb_data_t *pdata)
 {
+   unsigned mem_size;
    struct omapfb_plane_info pi;
    struct omapfb_mem_info mi;
-   unsigned mem_size;
-   void* mem = NULL;
+   void                              *mem = NULL;
    const struct retro_game_geometry *geom = NULL;
-   struct retro_system_av_info *av_info = NULL;
+   struct retro_system_av_info *av_info   = NULL;
 
-   assert(pdata->current_state == NULL);
+   retro_assert(pdata->current_state == NULL);
 
    pdata->current_state = (omapfb_state_t*)calloc(1, sizeof(omapfb_state_t));
 
@@ -678,14 +679,14 @@ static int omapfb_set_mode(omapfb_data_t *pdata, int width, int height)
 
 static void omapfb_prepare(omapfb_data_t *pdata)
 {
-   omapfb_page_t *page;
+   omapfb_page_t *page = NULL;
 
    /* issue flip before getting free page */
    omapfb_page_flip(pdata);
 
    page            = omapfb_get_page(pdata);
 
-   assert(page != NULL);
+   retro_assert(page != NULL);
 
    pdata->old_page = pdata->cur_page;
    pdata->cur_page = page;

@@ -22,13 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <assert.h>
 
 #include <drm_fourcc.h>
 #include <libdrm/exynos_drmif.h>
 #include <exynos/exynos_fimg2d.h>
 
 #include <retro_inline.h>
+#include <retro_assert.h>
 #include <string/stdstring.h>
 
 #include "../common/drm_common.h"
@@ -265,7 +265,8 @@ static const char *exynos_buffer_name(enum exynos_buffer_type type)
       case EXYNOS_BUFFER_AUX:
          return "aux";
       default:
-         assert(false);
+         retro_assert(false);
+         break;
    }
 
    return NULL;

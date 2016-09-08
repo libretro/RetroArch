@@ -28,8 +28,9 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <rhash.h>
+
+#include <retro_assert.h>
 
 #include "libretrodb.h"
 
@@ -163,8 +164,8 @@ static dat_converter_bt_node_t* dat_converter_bt_node_insert(
       dat_converter_bt_node_t** node,
       dat_converter_map_t* map)
 {
-   assert(map->key);
-   assert(list->type == DAT_CONVERTER_MAP_LIST);
+   retro_assert(map->key);
+   retro_assert(list->type == DAT_CONVERTER_MAP_LIST);
 
    if (!*node)
    {
@@ -189,7 +190,8 @@ static dat_converter_bt_node_t* dat_converter_bt_node_insert(
       if (map->type == DAT_CONVERTER_LIST_MAP)
       {
          int i;
-         assert(list->values[(*node)->index].map.value.list->type 
+
+         retro_assert(list->values[(*node)->index].map.value.list->type 
                == map->value.list->type);
 
          for (i = 0; i < map->value.list->count; i++)
@@ -457,7 +459,7 @@ static const char* dat_converter_get_match(
 {
    int i;
 
-   assert(match_key);
+   retro_assert(match_key);
 
    if (list->type != DAT_CONVERTER_MAP_LIST)
       return NULL;
@@ -466,15 +468,16 @@ static const char* dat_converter_get_match(
    {
       if (list->values[i].map.hash == match_key->hash)
       {
-         assert(!strcmp(list->values[i].map.key, match_key->value));
+         retro_assert(!strcmp(list->values[i].map.key, match_key->value));
 
          if (match_key->next)
             return dat_converter_get_match(
                   list->values[i].map.value.list, match_key->next);
-         else  if ((list->values[i].map.type == DAT_CONVERTER_STRING_MAP))
+
+         if ((list->values[i].map.type == DAT_CONVERTER_STRING_MAP))
             return list->values[i].map.value.string;
-         else
-            return NULL;
+
+         return NULL;
 
       }
    }
@@ -486,12 +489,12 @@ static dat_converter_list_t* dat_converter_parser(
       dat_converter_list_t* lexer_list,
       dat_converter_match_key_t* match_key)
 {
-   bool skip = true;
-   dat_converter_list_item_t* current = lexer_list->values;
    dat_converter_map_t map;
+   dat_converter_list_item_t* current = lexer_list->values;
+   bool skip                          = true;
 
-   map.key = NULL;
-   map.type = DAT_CONVERTER_LIST_MAP;
+   map.key                            = NULL;
+   map.type                           = DAT_CONVERTER_LIST_MAP;
 
    if (!target)
    {
@@ -637,6 +640,8 @@ static int dat_converter_value_provider(
       dat_converter_list_item_t** current_item, struct rmsgpack_dom_value* out)
 {
    int i;
+   struct rmsgpack_dom_pair* current = NULL;
+
    out->type          = RDT_MAP;
    out->val.map.len   = 0;
    out->val.map.items = calloc((sizeof(rdb_mappings) / sizeof(*rdb_mappings)),
@@ -644,16 +649,16 @@ static int dat_converter_value_provider(
 
    (*current_item)--;
 
-   assert((*current_item)->map.type == DAT_CONVERTER_LIST_MAP);
+   retro_assert((*current_item)->map.type == DAT_CONVERTER_LIST_MAP);
 
    dat_converter_list_t* list = (*current_item)->map.value.list;
 
    if (!list)
       return 1;
 
-   assert(list->type == DAT_CONVERTER_MAP_LIST);
+   retro_assert(list->type == DAT_CONVERTER_MAP_LIST);
 
-   struct rmsgpack_dom_pair* current = out->val.map.items;
+   current = out->val.map.items;
 
    for (i = 0; i < (sizeof(rdb_mappings) / sizeof(*rdb_mappings)); i++)
    {
@@ -720,7 +725,7 @@ static int dat_converter_value_provider(
          }
          break;
       default:
-         assert(0);
+         retro_assert(0);
          break;
       }
       current++;

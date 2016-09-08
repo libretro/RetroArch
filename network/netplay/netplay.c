@@ -18,11 +18,11 @@
 #pragma comment(lib, "ws2_32")
 #endif
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <compat/strl.h>
+#include <retro_assert.h>
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <retro_endianness.h>
@@ -64,7 +64,7 @@ static void warn_hangup(void)
  */
 bool check_netplay_synched(netplay_t* netplay)
 {
-   assert(netplay);
+   retro_assert(netplay);
    return netplay->frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS);
 }
 
@@ -907,7 +907,7 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
    bool host_only          = !!(flags & CMD_OPT_HOST_ONLY);
    bool require_sync       = !!(flags & CMD_OPT_REQUIRE_SYNC);
 
-   assert(netplay);
+   retro_assert(netplay);
 
    if (netplay->spectate.enabled && !allowed_spectate)
    {
@@ -1063,7 +1063,7 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
  **/
 void netplay_pre_frame(netplay_t *netplay)
 {
-   assert(netplay && netplay->net_cbs->pre_frame);
+   retro_assert(netplay && netplay->net_cbs->pre_frame);
    netplay->net_cbs->pre_frame(netplay);
 }
 
@@ -1077,7 +1077,7 @@ void netplay_pre_frame(netplay_t *netplay)
  **/
 void netplay_post_frame(netplay_t *netplay)
 {
-   assert(netplay && netplay->net_cbs->post_frame);
+   retro_assert(netplay && netplay->net_cbs->post_frame);
    netplay->net_cbs->post_frame(netplay);
 }
 

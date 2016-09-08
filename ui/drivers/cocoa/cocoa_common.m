@@ -20,6 +20,9 @@
 #ifdef HAVE_COCOA
 #include "../ui_cocoa.h"
 #endif
+
+#include <retro_assert.h>
+
 #include "../../../verbosity.h"
 
 /* Define compatibility symbols and categories. */
@@ -343,7 +346,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     /* Creata a video device and input from that Device.  Add the input to the capture session. */
     videoDevice = (AVCaptureDevice*)[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
     if (videoDevice == nil)
-        assert(0);
+        retro_assert(0);
     
     /* Add the device to the session. */
     input = (AVCaptureDeviceInput*)[AVCaptureDeviceInput deviceInputWithDevice:videoDevice error:&error];
@@ -351,7 +354,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     if (error)
     {
         RARCH_ERR("video device input %s\n", error.localizedDescription.UTF8String);
-        assert(0);
+        retro_assert(0);
     }
     
     [_session addInput:input];

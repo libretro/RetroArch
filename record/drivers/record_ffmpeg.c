@@ -20,7 +20,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <assert.h>
+
+#include <retro_assert.h>
+#include <compat/msvc.h>
+
+#include <boolean.h>
+#include <queues/fifo_queue.h>
+#include <rthreads/rthreads.h>
+#include <gfx/scaler/scaler.h>
+#include <file/config_file.h>
+#include <conversion/float_to_s16.h>
+#include <conversion/s16_to_float.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -53,15 +63,6 @@ extern "C" {
 }
 #endif
 
-#include <compat/msvc.h>
-
-#include <boolean.h>
-#include <queues/fifo_queue.h>
-#include <rthreads/rthreads.h>
-#include <gfx/scaler/scaler.h>
-#include <file/config_file.h>
-#include <conversion/float_to_s16.h>
-#include <conversion/s16_to_float.h>
 
 #include "../record_driver.h"
 
@@ -675,7 +676,7 @@ static bool init_thread(ffmpeg_t *handle)
    handle->can_sleep = true;
    handle->thread = sthread_create(ffmpeg_thread, handle);
 
-   assert(handle->lock && handle->cond_lock &&
+   retro_assert(handle->lock && handle->cond_lock &&
       handle->cond && handle->audio_fifo &&
       handle->attr_fifo && handle->video_fifo && handle->thread);
 
@@ -1371,14 +1372,14 @@ static bool ffmpeg_finalize(void *data)
 static void ffmpeg_thread(void *data)
 {
    size_t audio_buf_size;
-   void *audio_buf;
-   ffmpeg_t *ff = (ffmpeg_t*)data;
-
+   void *audio_buf = NULL;
+   ffmpeg_t *ff    = (ffmpeg_t*)data;
    /* For some reason, FFmpeg has a tendency to crash 
     * if we don't overallocate a bit. */
    void *video_buf = av_malloc(2 * ff->params.fb_width *
          ff->params.fb_height * ff->video.pix_size);
-   assert(video_buf);
+
+   retro_assert(video_buf);
 
    audio_buf_size = ff->config.audio_enable ? 
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;

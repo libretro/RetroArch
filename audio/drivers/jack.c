@@ -24,6 +24,7 @@
 #include <jack/ringbuffer.h>
 
 #include <boolean.h>
+#include <retro_assert.h>
 #include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"
@@ -51,7 +52,7 @@ typedef struct jack
 static int process_cb(jack_nframes_t nframes, void *data)
 {
    int i;
-   jack_nframes_t f, avail[2], min_avail;
+   jack_nframes_t avail[2], min_avail;
    jack_t *jd = (jack_t*)data;
 
    if (nframes <= 0)
@@ -62,8 +63,8 @@ static int process_cb(jack_nframes_t nframes, void *data)
       return 0;
    }
 
-   avail[0] = jack_ringbuffer_read_space(jd->buffer[0]);
-   avail[1] = jack_ringbuffer_read_space(jd->buffer[1]);
+   avail[0]  = jack_ringbuffer_read_space(jd->buffer[0]);
+   avail[1]  = jack_ringbuffer_read_space(jd->buffer[1]);
    min_avail = ((avail[0] < avail[1]) ? avail[0] : avail[1]) / sizeof(jack_default_audio_sample_t);
 
    if (min_avail > nframes)
@@ -71,8 +72,10 @@ static int process_cb(jack_nframes_t nframes, void *data)
 
    for (i = 0; i < 2; i++)
    {
+      jack_nframes_t f;
       jack_default_audio_sample_t *out = (jack_default_audio_sample_t*)jack_port_get_buffer(jd->ports[i], nframes);
-      assert(out);
+
+      retro_assert(out);
       jack_ringbuffer_read(jd->buffer[i], (char*)out, min_avail * sizeof(jack_default_audio_sample_t));
 
       for (f = min_avail; f < nframes; f++)

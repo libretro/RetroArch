@@ -21,6 +21,7 @@
 #include <assert.h>
 
 #include <stdbool.h>
+#include <retro_assert.h>
 
 #include <retro_miscellaneous.h>
 
@@ -122,7 +123,7 @@ static void calculate_fft(const float *data, complex double *butterfly_buf, size
    unsigned i;
 
    /* Enforce POT. */
-   assert((samples & (samples - 1)) == 0);
+   retro_assert((samples & (samples - 1)) == 0);
 
    for (i = 0; i < samples; i++)
       butterfly_buf[i] = data[2 * i];
@@ -154,7 +155,7 @@ static void calculate_ifft(complex double *butterfly_buf, size_t samples, bool n
    unsigned step_size;
 
    /* Enforce POT. */
-   assert((samples & (samples - 1)) == 0);
+   retro_assert((samples & (samples - 1)) == 0);
 
    interleave(butterfly_buf, samples);
 
@@ -297,8 +298,8 @@ int main(int argc, char *argv[])
    output        = calloc(sizeof(float), (fft_samples + 16) * 2);
    butterfly_buf = calloc(sizeof(complex double), fft_samples / 2);
 
-   assert(input);
-   assert(output);
+   retro_assert(input);
+   retro_assert(output);
 
    if (!rarch_resampler_realloc(&re, &resampler, RESAMPLER_IDENT, ratio))
    {
