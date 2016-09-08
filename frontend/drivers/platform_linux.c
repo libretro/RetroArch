@@ -1876,6 +1876,7 @@ static void frontend_linux_init(void *data)
 
 static int frontend_linux_parse_drive_list(void *data)
 {
+#ifdef HAVE_MENU
    file_list_t *list = (file_list_t*)data;
 
 #ifdef ANDROID
@@ -1896,6 +1897,7 @@ static int frontend_linux_parse_drive_list(void *data)
 
    menu_entries_append_enum(list, "/", "",
          MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+#endif
 
    return 0;
 }

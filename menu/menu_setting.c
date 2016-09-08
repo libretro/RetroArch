@@ -1374,46 +1374,6 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
    menu_input_key_end_line();
 }
 
-static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
-{
-   menu_input_ctx_line_t line;
-   input_keyboard_line_complete_t cb = NULL;
-   rarch_setting_t      *setting = (rarch_setting_t*)data;
-   const char *short_description = menu_setting_get_short_description(setting);
-
-   if (!setting)
-      return -1;
-
-   (void)wraparound;
-
-   switch (setting_get_type(setting))
-   {
-      case ST_UINT:
-         cb = menu_input_st_uint_cb;
-         break;
-      case ST_HEX:
-         cb = menu_input_st_hex_cb;
-         break;
-      case ST_STRING:
-      case ST_STRING_OPTIONS:
-         cb = menu_input_st_string_cb;
-         break;
-      default:
-         break;
-   }
-
-   line.label         = short_description;
-   line.label_setting = setting->name;
-   line.type          = 0;
-   line.idx           = 0;
-   line.cb            = cb;
-
-   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
-      return -1;
-
-   return 0;
-}
-
 static void get_string_representation_bind_device(void * data, char *s,
       size_t len)
 {
@@ -1741,53 +1701,6 @@ void general_write_handler(void *data)
 
    if (rarch_cmd || setting->cmd_trigger.triggered)
       command_event(rarch_cmd, NULL);
-}
-
-static void setting_add_special_callbacks(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values)
-{
-   unsigned idx = list_info->index - 1;
-
-   if (values & SD_FLAG_ALLOW_INPUT)
-   {
-      (*list)[idx].action_ok     = setting_generic_action_ok_linefeed;
-      (*list)[idx].action_select = setting_generic_action_ok_linefeed;
-
-      switch ((*list)[idx].type)
-      {
-         case ST_UINT:
-            (*list)[idx].action_cancel = NULL;
-            break;
-         case ST_HEX:
-            (*list)[idx].action_cancel = NULL;
-            break;
-         case ST_STRING:
-            (*list)[idx].action_start  = setting_string_action_start_generic;
-            (*list)[idx].action_cancel = NULL;
-            break;
-         default:
-            break;
-      }
-   }
-}
-
-void settings_data_list_current_add_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values)
-{
-   (*list)[list_info->index - 1].flags |= values;
-   setting_add_special_callbacks(list, list_info, values);
-}
-
-void settings_data_list_current_add_free_flags(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      unsigned values)
-{
-   (*list)[list_info->index - 1].free_flags |= values;
 }
 
 #ifdef HAVE_OVERLAY

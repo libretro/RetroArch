@@ -357,6 +357,16 @@ int setting_generic_action_ok_default(void *data, bool wraparound);
 
 int setting_generic_action_start_default(void *data);
 
+void settings_data_list_current_add_flags(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values);
+
+void settings_data_list_current_add_free_flags(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values);
+
 rarch_setting_t setting_terminator_setting(void);
 
 RETRO_END_DECLS
