@@ -68,7 +68,8 @@ typedef struct dsound
    volatile bool thread_alive;
 } dsound_t;
 
-static INLINE unsigned write_avail(unsigned read_ptr, unsigned write_ptr, unsigned buffer_size)
+static INLINE unsigned write_avail(unsigned read_ptr,
+      unsigned write_ptr, unsigned buffer_size)
 {
    return (read_ptr + buffer_size - write_ptr) % buffer_size;
 }
@@ -91,8 +92,8 @@ struct audio_lock
 static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
       struct audio_lock *region)
 {
-   const char *err;
-   HRESULT res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, 
+   const char *err = NULL;
+   HRESULT     res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, 
          &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
 
    if (res == DSERR_BUFFERLOST)
@@ -132,7 +133,8 @@ static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
 
 static INLINE void release_region(dsound_t *ds, const struct audio_lock *region)
 {
-   IDirectSoundBuffer_Unlock(ds->dsb, region->chunk1, region->size1, region->chunk2, region->size2);
+   IDirectSoundBuffer_Unlock(ds->dsb, region->chunk1,
+         region->size1, region->chunk2, region->size2);
 }
 
 static void dsound_thread(void *data)
@@ -236,8 +238,9 @@ static bool dsound_start_thread(dsound_t *ds)
 
 static void dsound_clear_buffer(dsound_t *ds)
 {
-   void *ptr;
    DWORD size;
+   void *ptr  = NULL;
+
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
 
    if (IDirectSoundBuffer_Lock(ds->dsb, 0, 0, &ptr, &size,
@@ -424,8 +427,8 @@ static void dsound_set_nonblock_state(void *data, bool state)
 
 static ssize_t dsound_write(void *data, const void *buf_, size_t size)
 {
-   size_t written = 0;
-   dsound_t *ds = (dsound_t*)data;
+   size_t     written = 0;
+   dsound_t       *ds = (dsound_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
 
    if (!ds->thread_alive)

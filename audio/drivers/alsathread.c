@@ -54,8 +54,8 @@ typedef struct alsa_thread
 static void alsa_worker_thread(void *data)
 {
    alsa_thread_t *alsa = (alsa_thread_t*)data;
+   uint8_t        *buf = (uint8_t *)calloc(1, alsa->period_size);
 
-   uint8_t *buf = (uint8_t *)calloc(1, alsa->period_size);
    if (!buf)
    {
       RARCH_ERR("failed to allocate audio buffer");
@@ -158,19 +158,16 @@ static void alsa_thread_free(void *data)
 static void *alsa_thread_init(const char *device,
       unsigned rate, unsigned latency)
 {
-   alsa_thread_t *alsa = (alsa_thread_t*)calloc(1, sizeof(alsa_thread_t));
-
-   snd_pcm_hw_params_t *params = NULL;
-   snd_pcm_sw_params_t *sw_params = NULL;
-
-   const char *alsa_dev = device ? device : "default";
-
-   unsigned latency_usec = latency * 1000 / 2;
-
-   unsigned channels = 2;
-   unsigned periods = 4;
    snd_pcm_uframes_t buffer_size;
    snd_pcm_format_t format;
+   snd_pcm_hw_params_t *params    = NULL;
+   snd_pcm_sw_params_t *sw_params = NULL;
+   const char *alsa_dev           = device ? device : "default";
+   unsigned latency_usec          = latency * 1000 / 2;
+   unsigned channels              = 2;
+   unsigned periods               = 4;
+   alsa_thread_t            *alsa = (alsa_thread_t*)
+      calloc(1, sizeof(alsa_thread_t));
 
    if (!alsa)
       return NULL;
@@ -287,7 +284,8 @@ static ssize_t alsa_thread_write(void *data, const void *buf, size_t size)
          else
          {
             size_t write_amt = MIN(size - written, avail);
-            fifo_write(alsa->buffer, (const char*)buf + written, write_amt);
+            fifo_write(alsa->buffer,
+                  (const char*)buf + written, write_amt);
             slock_unlock(alsa->fifo_lock);
             written += write_amt;
          }

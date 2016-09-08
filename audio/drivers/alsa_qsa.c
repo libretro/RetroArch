@@ -49,11 +49,11 @@ static void *alsa_qsa_init(const char *device,
       unsigned rate, unsigned latency)
 {
    int err, card, dev, i;
-   snd_pcm_channel_params_t params = {0};
    snd_pcm_channel_info_t pi;
-   snd_pcm_channel_setup_t setup = {0};
-   settings_t *settings = config_get_ptr();
-   alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
+   snd_pcm_channel_params_t params = {0};
+   snd_pcm_channel_setup_t setup   = {0};
+   settings_t *settings            = config_get_ptr();
+   alsa_t *alsa                    = (alsa_t*)calloc(1, sizeof(alsa_t));
    if (!alsa)
       return NULL;
 
@@ -164,9 +164,9 @@ error:
 
 static int check_pcm_status(void *data, int channel_type)
 {
-   alsa_t *alsa = (alsa_t*)data;
    snd_pcm_channel_status_t status;
-   int ret = EOK;
+   alsa_t *alsa = (alsa_t*)data;
+   int ret      = EOK;
 
    memset(&status, 0, sizeof (status));
    status.channel = channel_type;

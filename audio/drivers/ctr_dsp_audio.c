@@ -39,7 +39,7 @@ typedef struct
 
 static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned latency)
 {
-   ctr_dsp_audio_t *ctr;
+   ctr_dsp_audio_t *ctr = NULL;
    settings_t *settings = config_get_ptr();
 
    (void)device;
@@ -95,10 +95,10 @@ static void ctr_dsp_audio_free(void *data)
 
 static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
 {
-   static struct retro_perf_counter ctraudio_dsp_f = {0};
-   ctr_dsp_audio_t* ctr = (ctr_dsp_audio_t*)data;
    u32 pos;
-   uint32_t sample_pos = ndspChnGetSamplePos(ctr->channel);
+   static struct retro_perf_counter ctraudio_dsp_f = {0};
+   ctr_dsp_audio_t                           * ctr = (ctr_dsp_audio_t*)data;
+   uint32_t sample_pos                             = ndspChnGetSamplePos(ctr->channel);
 
    if((((sample_pos  - ctr->pos) & CTR_DSP_AUDIO_COUNT_MASK) < (CTR_DSP_AUDIO_COUNT >> 2)) ||
       (((ctr->pos - sample_pos ) & CTR_DSP_AUDIO_COUNT_MASK) < (CTR_DSP_AUDIO_COUNT >> 4)) ||

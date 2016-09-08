@@ -118,9 +118,9 @@ static INLINE void copy_swapped(uint32_t * restrict dst,
 
 static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
 {
-   size_t frames = size >> 2;
+   size_t       frames = size >> 2;
    const uint32_t *buf = buf_;
-   gx_audio_t *wa = data;
+   gx_audio_t      *wa = data;
 
    while (frames)
    {

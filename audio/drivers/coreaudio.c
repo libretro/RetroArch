@@ -95,8 +95,8 @@ static OSStatus audio_write_cb(void *userdata,
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
 {
-   void *outbuf;
    unsigned write_avail;
+   void     *outbuf = NULL;
    coreaudio_t *dev = (coreaudio_t*)userdata;
 
    (void)time_stamp;
@@ -143,30 +143,30 @@ static void coreaudio_interrupt_listener(void *data, UInt32 interrupt_state)
 static void choose_output_device(coreaudio_t *dev, const char* device)
 {
    unsigned i;
-   AudioDeviceID *devices;
+   UInt32 deviceCount;
+   AudioDeviceID *devices = NULL;
    AudioObjectPropertyAddress propaddr =
    { 
       kAudioHardwarePropertyDevices, 
       kAudioObjectPropertyScopeGlobal, 
       kAudioObjectPropertyElementMaster 
    };
-
-   UInt32 size = 0, deviceCount;
+   UInt32 size = 0;
 
    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
             &propaddr, 0, 0, &size) != noErr)
       return;
 
    deviceCount = size / sizeof(AudioDeviceID);
-   devices = (AudioDeviceID*)malloc(size);
+   devices     = (AudioDeviceID*)malloc(size);
 
    if (!devices || AudioObjectGetPropertyData(kAudioObjectSystemObject,
             &propaddr, 0, 0, &size, devices) != noErr)
       goto done;
 
-   propaddr.mScope = kAudioDevicePropertyScopeOutput;
+   propaddr.mScope    = kAudioDevicePropertyScopeOutput;
    propaddr.mSelector = kAudioDevicePropertyDeviceName;
-   size = 1024;
+   size               = 1024;
 
    for (i = 0; i < deviceCount; i ++)
    {
@@ -206,20 +206,19 @@ static void *coreaudio_init(const char *device,
    AudioStreamBasicDescription stream_desc = {0};
    bool component_unavailable              = false;
    static bool session_initialized         = false;
-   coreaudio_t *dev                        = NULL;
 #ifdef OSX_PPC
    ComponentDescription desc               = {0};
 #else
    AudioComponentDescription desc          = {0};
 #endif
    settings_t *settings                    = config_get_ptr();
+   coreaudio_t *dev                        = (coreaudio_t*)
+      calloc(1, sizeof(*dev));
+   if (!dev)
+      return NULL;
 
    (void)session_initialized;
    (void)device;
-
-   dev = (coreaudio_t*)calloc(1, sizeof(*dev));
-   if (!dev)
-      return NULL;
 
    dev->lock = slock_new();
    dev->cond = scond_new();
@@ -344,9 +343,9 @@ error:
 
 static ssize_t coreaudio_write(void *data, const void *buf_, size_t size)
 {
-   coreaudio_t *dev = (coreaudio_t*)data;
+   coreaudio_t *dev   = (coreaudio_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
-   size_t written = 0;
+   size_t written     = 0;
 
    while (!g_interrupted && size > 0)
    {

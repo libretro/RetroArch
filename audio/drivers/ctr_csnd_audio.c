@@ -48,37 +48,40 @@ typedef struct
 
 static void ctr_csnd_audio_update_playpos(ctr_csnd_audio_t* ctr)
 {
-   uint32_t samples_played;
-   uint64_t current_tick;
+   uint64_t current_tick   = svcGetSystemTick();
+   uint32_t samples_played = (current_tick - ctr->cpu_ticks_last) 
+      / CTR_CSND_CPU_TICKS_PER_SAMPLE;
 
-   current_tick   = svcGetSystemTick();
-   samples_played = (current_tick - ctr->cpu_ticks_last) / CTR_CSND_CPU_TICKS_PER_SAMPLE;
    ctr->playpos   = (ctr->playpos + samples_played) & CTR_CSND_AUDIO_COUNT_MASK;
    ctr->cpu_ticks_last += samples_played * CTR_CSND_CPU_TICKS_PER_SAMPLE;
 }
 
 
-Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan, void* data0, void* data1, u32 size)
+Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
+      void* data0, void* data1, u32 size)
 {
-	if (!(csndChannels & BIT(chn)))
-		return 1;
-
-	u32 paddr0 = 0, paddr1 = 0;
-
+	u32 paddr0   = 0;
+   u32 paddr1   = 0;
 	int encoding = (flags >> 12) & 3;
 	int loopMode = (flags >> 10) & 3;
 
-	if (!loopMode) flags |= SOUND_ONE_SHOT;
+	if (!(csndChannels & BIT(chn)))
+		return 1;
+
+	if (!loopMode)
+      flags |= SOUND_ONE_SHOT;
 
 	if (encoding != CSND_ENCODING_PSG)
 	{
-		if (data0) paddr0 = osConvertVirtToPhys(data0);
-		if (data1) paddr1 = osConvertVirtToPhys(data1);
+		if (data0)
+         paddr0 = osConvertVirtToPhys(data0);
+		if (data1)
+         paddr1 = osConvertVirtToPhys(data1);
 
 		if (data0 && encoding == CSND_ENCODING_ADPCM)
 		{
 			int adpcmSample = ((s16*)data0)[-2];
-			int adpcmIndex = ((u8*)data0)[-2];
+			int adpcmIndex  = ((u8*)data0)[-2];
 			CSND_SetAdpcmState(chn, 0, adpcmSample, adpcmIndex);
 		}
 	}
@@ -102,7 +105,7 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan, void* data
 static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned latency)
 {
    ctr_csnd_audio_t *ctr = (ctr_csnd_audio_t*)calloc(1, sizeof(ctr_csnd_audio_t));
-   settings_t *settings = config_get_ptr();
+   settings_t *settings  = config_get_ptr();
 
    if (!ctr)
       return NULL;
@@ -158,11 +161,11 @@ static void ctr_csnd_audio_free(void *data)
 static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
 {
    int i;
-   uint32_t samples_played = 0;
-   uint64_t current_tick   = 0;
+   uint32_t samples_played                     = 0;
+   uint64_t current_tick                       = 0;
    static struct retro_perf_counter ctraudio_f = {0};
-   const uint16_t *src = buf;
-   ctr_csnd_audio_t    *ctr = (ctr_csnd_audio_t*)data;
+   const uint16_t                         *src = buf;
+   ctr_csnd_audio_t                       *ctr = (ctr_csnd_audio_t*)data;
 
    (void)data;
    (void)buf;

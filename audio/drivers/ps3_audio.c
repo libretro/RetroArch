@@ -81,20 +81,18 @@ static void *ps3_audio_init(const char *device,
       unsigned rate, unsigned latency)
 {
    CellAudioPortParam params;
-   ps3_audio_t *data = NULL;
+   ps3_audio_t *data = calloc(1, sizeof(*data));
+   if (!data)
+      return NULL;
 
    (void)latency;
    (void)device;
    (void)rate;
 
-   data = calloc(1, sizeof(*data));
-   if (!data)
-      return NULL;
-
    cellAudioInit();
 
    params.numChannels = AUDIO_CHANNELS;
-   params.numBlocks = AUDIO_BLOCKS;
+   params.numBlocks   = AUDIO_BLOCKS;
 #if 0
 #ifdef HAVE_HEADSET
    if(global->console.sound.mode == SOUND_MODE_HEADSET)

@@ -46,12 +46,11 @@ static bool oss_is_paused;
 static void *oss_init(const char *device, unsigned rate, unsigned latency)
 {
    int frags, frag, channels, format, new_rate;
-   int *fd = (int*)calloc(1, sizeof(int));
-   settings_t *settings = config_get_ptr();
-
+   int              *fd   = (int*)calloc(1, sizeof(int));
+   settings_t *settings   = config_get_ptr();
    const char *oss_device = device ? device : DEFAULT_OSS_DEV;
    
-   if (fd == NULL)
+   if (!fd)
       return NULL;
 
    if ((*fd = open(oss_device, O_WRONLY)) < 0)
@@ -62,39 +61,24 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    }
 
    frags = (latency * rate * 4) / (1000 * (1 << 10));
-   frag = (frags << 16) | 10;
+   frag  = (frags << 16) | 10;
 
    if (ioctl(*fd, SNDCTL_DSP_SETFRAGMENT, &frag) < 0)
       RARCH_WARN("Cannot set fragment sizes. Latency might not be as expected ...\n");
 
    channels = 2;
-   format = is_little_endian() ? AFMT_S16_LE : AFMT_S16_BE;
+   format   = is_little_endian() ? AFMT_S16_LE : AFMT_S16_BE;
 
    if (ioctl(*fd, SNDCTL_DSP_CHANNELS, &channels) < 0)
-   {
-      close(*fd);
-      free(fd);
-      perror("ioctl");
-      return NULL;
-   }
+      goto error;
 
    if (ioctl(*fd, SNDCTL_DSP_SETFMT, &format) < 0)
-   {
-      close(*fd);
-      free(fd);
-      perror("ioctl");
-      return NULL;
-   }
+      goto error;
 
    new_rate = rate;
 
    if (ioctl(*fd, SNDCTL_DSP_SPEED, &new_rate) < 0)
-   {
-      close(*fd);
-      free(fd);
-      perror("ioctl");
-      return NULL;
-   }
+      goto error;
 
    if (new_rate != (int)rate)
    {
@@ -103,6 +87,12 @@ static void *oss_init(const char *device, unsigned rate, unsigned latency)
    }
 
    return fd;
+
+error:
+   close(*fd);
+   free(fd);
+   perror("ioctl");
+   return NULL;
 }
 
 static ssize_t oss_write(void *data, const void *buf, size_t size)

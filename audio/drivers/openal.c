@@ -171,9 +171,9 @@ static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
 
 static ssize_t al_write(void *data, const void *buf_, size_t size)
 {
-   al_t *al = (al_t*)data;
+   al_t           *al = (al_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
-   size_t written = 0;
+   size_t     written = 0;
 
    while (size)
    {

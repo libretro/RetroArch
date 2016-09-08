@@ -59,15 +59,13 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency)
 {
    snd_pcm_format_t format;
    snd_pcm_uframes_t buffer_size;
-   snd_pcm_hw_params_t *params = NULL;
+   snd_pcm_hw_params_t *params    = NULL;
    snd_pcm_sw_params_t *sw_params = NULL;
-
-   unsigned latency_usec = latency * 1000;
-   unsigned channels = 2;
-   unsigned periods = 4;
-
-   const char *alsa_dev = "default";
-   alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
+   unsigned latency_usec          = latency * 1000;
+   unsigned channels              = 2;
+   unsigned periods               = 4;
+   const char *alsa_dev           = "default";
+   alsa_t *alsa                   = (alsa_t*)calloc(1, sizeof(alsa_t));
 
    if (!alsa)
       return NULL;

@@ -71,12 +71,12 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency)
    }
 
    rsd->cond_lock = slock_new();
-   rsd->cond = scond_new();
+   rsd->cond      = scond_new();
 
-   rsd->buffer = fifo_new(1024 * 4);
+   rsd->buffer    = fifo_new(1024 * 4);
 
-   channels = 2;
-   format   = RSD_S16_NE;
+   channels       = 2;
+   format         = RSD_S16_NE;
 
    rsd_set_param(rd, RSD_CHANNELS, &channels);
    rsd_set_param(rd, RSD_SAMPLERATE, &rate);
@@ -201,12 +201,13 @@ static void rs_free(void *data)
 
 static size_t rs_write_avail(void *data)
 {
+   size_t val;
    rsd_t *rsd = (rsd_t*)data;
 
    if (rsd->has_error)
       return 0;
    rsd_callback_lock(rsd->rd);
-   size_t val = fifo_write_avail(rsd->buffer);
+   val = fifo_write_avail(rsd->buffer);
    rsd_callback_unlock(rsd->rd);
    return val;
 }

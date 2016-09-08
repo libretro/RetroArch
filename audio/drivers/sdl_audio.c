@@ -44,8 +44,8 @@ typedef struct sdl_audio
 
 static void sdl_audio_cb(void *data, Uint8 *stream, int len)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
-   size_t avail = fifo_read_avail(sdl->buffer);
+   sdl_audio_t  *sdl = (sdl_audio_t*)data;
+   size_t      avail = fifo_read_avail(sdl->buffer);
    size_t write_size = len > (int)avail ? avail : len;
 
    fifo_read(sdl->buffer, stream, write_size);
@@ -71,9 +71,9 @@ static void *sdl_audio_init(const char *device,
 {
    int frames;
    size_t bufsize;
-   void *tmp;
    SDL_AudioSpec out;
-   SDL_AudioSpec spec = {0};
+   SDL_AudioSpec spec   = {0};
+   void            *tmp = NULL;
    settings_t *settings = config_get_ptr();
    sdl_audio_t *sdl     = NULL;
 
@@ -97,10 +97,10 @@ static void *sdl_audio_init(const char *device,
     * SDL double buffers audio and we do as well. */
    frames = find_num_frames(rate, latency / 4);
 
-   spec.freq = rate;
-   spec.format = AUDIO_S16SYS;
+   spec.freq     = rate;
+   spec.format   = AUDIO_S16SYS;
    spec.channels = 2;
-   spec.samples = frames; /* This is in audio frames, not samples ... :( */
+   spec.samples  = frames; /* This is in audio frames, not samples ... :( */
    spec.callback = sdl_audio_cb;
    spec.userdata = sdl;
 
@@ -114,16 +114,16 @@ static void *sdl_audio_init(const char *device,
    settings->audio.out_rate = out.freq;
 
 #ifdef HAVE_THREADS
-   sdl->lock = slock_new();
-   sdl->cond = scond_new();
+   sdl->lock                = slock_new();
+   sdl->cond                = scond_new();
 #endif
 
    RARCH_LOG("SDL audio: Requested %u ms latency, got %d ms\n", 
          latency, (int)(out.samples * 4 * 1000 / settings->audio.out_rate));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
-   bufsize = out.samples * 4 * sizeof(int16_t);
-   tmp = calloc(1, bufsize);
+   bufsize     = out.samples * 4 * sizeof(int16_t);
+   tmp         = calloc(1, bufsize);
    sdl->buffer = fifo_new(bufsize);
 
    if (tmp)

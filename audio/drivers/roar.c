@@ -36,8 +36,8 @@ typedef struct
 static void *ra_init(const char *device, unsigned rate, unsigned latency)
 {
    int err;
-   roar_vs_t *vss;
-   roar_t *roar = (roar_t*)calloc(1, sizeof(roar_t));
+   roar_vs_t *vss = NULL;
+   roar_t   *roar = (roar_t*)calloc(1, sizeof(roar_t));
 
    if (!roar)
       return NULL;
@@ -61,7 +61,7 @@ static ssize_t ra_write(void *data, const void *buf, size_t size)
 {
    int err;
    size_t written = 0;
-   roar_t *roar = (roar_t*)data;
+   roar_t   *roar = (roar_t*)data;
 
    if (size == 0)
       return 0;
