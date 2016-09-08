@@ -25,8 +25,7 @@
 #include <ogcsys.h>
 
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
-#include <ogc/mutex.h>
-#include <ogc/cond.h>
+#include <rthreads/rthreads.h>
 #include "../../memory/wii/mem2_manager.h"
 #endif
 
@@ -99,17 +98,18 @@ static devoptab_t dotab_stdout = {
 #endif
 
 #ifdef HW_RVL
-static struct {
+static struct
+{
    bool mounted;
    const DISC_INTERFACE *interface;
    const char *name;
 } gx_devices[GX_DEVICE_END];
 
-static slock_t *gx_device_mutex;
-static slock_t *gx_device_cond_mutex;
-static scond_t *gx_device_cond;
-static sthread_t *gx_device_thread;
-static volatile bool gx_stop_dev_thread;
+static slock_t *gx_device_mutex          = NULL;
+static slock_t *gx_device_cond_mutex     = NULL;
+static scond_t *gx_device_cond           = NULL;
+static sthread_t *gx_device_thread       = NULL;
+static volatile bool gx_stop_dev_thread  = false;
 
 static void gx_devthread(void *a)
 {
