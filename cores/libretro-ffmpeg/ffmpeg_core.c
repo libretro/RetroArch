@@ -239,7 +239,7 @@ void CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
    info->library_name     = "FFmpeg";
    info->library_version  = "v1";
    info->need_fullpath    = true;
-   info->valid_extensions = "mkv|avi|f4v|f4f|3gp|ogm|flv|mp4|mov|mp3|wav|webm|wmv|flac|ogg|m4a";
+   info->valid_extensions = "mkv|avi|f4v|f4f|3gp|ogm|flv|mp4|mp3|flac|ogg|m4a|webm|3g2|mov|wmv|mpg|mpeg|vob|asf|divx|m2p|m2ts|ps|ts|mxf|wma|wav";
 }
 
 void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
