@@ -33,8 +33,11 @@ typedef struct android_camera
 static void *android_camera_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)
 {
-   JNIEnv *env;
    jclass class;
+   androidcamera_t *androidcamera  = NULL;
+   JNIEnv                    *env  = NULL;
+   struct android_app *android_app = (struct android_app*)g_android;
+
    (void)device;
    (void)width;
    (void)height;
@@ -45,9 +48,7 @@ static void *android_camera_init(const char *device, uint64_t caps,
       return NULL;
    }
 
-   struct android_app *android_app = (struct android_app*)g_android;
-   androidcamera_t *androidcamera = (androidcamera_t*)
-         calloc(1, sizeof(androidcamera_t));
+   androidcamera = (androidcamera_t*)calloc(1, sizeof(androidcamera_t));
    if (!androidcamera)
       return NULL;
 
@@ -102,8 +103,9 @@ dealloc:
 static void android_camera_free(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   androidcamera_t *androidcamera = (androidcamera_t*)data;
-   JNIEnv *env = jni_thread_getenv();
+   androidcamera_t *androidcamera  = (androidcamera_t*)data;
+   JNIEnv                     *env = jni_thread_getenv();
+
    if (!env)
       return;
 
@@ -116,8 +118,9 @@ static void android_camera_free(void *data)
 static bool android_camera_start(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   androidcamera_t *androidcamera = (androidcamera_t*)data;
-   JNIEnv *env = jni_thread_getenv();
+   androidcamera_t *androidcamera  = (androidcamera_t*)data;
+   JNIEnv                     *env = jni_thread_getenv();
+
    if (!env)
       return NULL;
 
@@ -141,8 +144,9 @@ static bool android_camera_start(void *data)
 static void android_camera_stop(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   androidcamera_t *androidcamera = (androidcamera_t*)data;
-   JNIEnv *env = jni_thread_getenv();
+   androidcamera_t  *androidcamera = (androidcamera_t*)data;
+   JNIEnv                     *env = jni_thread_getenv();
+
    if (!env)
       return;
 
@@ -157,15 +161,16 @@ static bool android_camera_poll(void *data,
       retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
+   jboolean newFrame;
    struct android_app *android_app = (struct android_app*)g_android;
-   androidcamera_t *androidcamera = (androidcamera_t*)data;
-   JNIEnv *env = jni_thread_getenv();
+   androidcamera_t  *androidcamera = (androidcamera_t*)data;
+   JNIEnv                     *env = jni_thread_getenv();
+
    if (!env)
       return NULL;
 
    (void)frame_raw_cb;
 
-   jboolean newFrame;
    CALL_BOOLEAN_METHOD(env, newFrame, android_app->activity->clazz, 
          androidcamera->onCameraPoll);
 

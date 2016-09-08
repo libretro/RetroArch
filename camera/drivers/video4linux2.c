@@ -90,14 +90,12 @@ static int xioctl(int fd, int request, void *args)
 
 static bool init_mmap(void *data)
 {
-   struct v4l2_requestbuffers req;
-   video4linux_t *v4l = (video4linux_t*)data;
+   struct v4l2_requestbuffers req = {0};
+   video4linux_t *v4l             = (video4linux_t*)data;
 
-   memset(&req, 0, sizeof(req));
-
-   req.count  = 4;
-   req.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-   req.memory = V4L2_MEMORY_MMAP;
+   req.count                      = 4;
+   req.type                       = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   req.memory                     = V4L2_MEMORY_MMAP;
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_REQBUFS, &req) == -1)
    {
@@ -124,13 +122,11 @@ static bool init_mmap(void *data)
 
    for (v4l->n_buffers = 0; v4l->n_buffers < req.count; v4l->n_buffers++)
    {
-      struct v4l2_buffer buf;
+      struct v4l2_buffer buf = {0};
 
-      memset(&buf, 0, sizeof(buf));
-
-      buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       buf.memory = V4L2_MEMORY_MMAP;
-      buf.index = v4l->n_buffers;
+      buf.index  = v4l->n_buffers;
 
       if (xioctl(v4l->fd, (uint8_t)VIDIOC_QUERYBUF, &buf) == -1)
       {
@@ -139,7 +135,7 @@ static bool init_mmap(void *data)
       }
 
       v4l->buffers[v4l->n_buffers].length = buf.length;
-      v4l->buffers[v4l->n_buffers].start = mmap(NULL,
+      v4l->buffers[v4l->n_buffers].start  = mmap(NULL,
             buf.length, PROT_READ | PROT_WRITE,
             MAP_SHARED,
             v4l->fd, buf.m.offset);
@@ -156,11 +152,11 @@ static bool init_mmap(void *data)
 
 static bool init_device(void *data)
 {
-   struct v4l2_capability cap;
-   struct v4l2_cropcap cropcap;
    struct v4l2_crop crop;
-   struct v4l2_format fmt;
-   video4linux_t *v4l = (video4linux_t*)data;
+   struct v4l2_capability cap;
+   struct v4l2_format      fmt = {0};
+   struct v4l2_cropcap cropcap = {0};
+   video4linux_t          *v4l = (video4linux_t*)data;
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_QUERYCAP, &cap) < 0)
    {
@@ -184,24 +180,21 @@ static bool init_device(void *data)
       return false;
    }
 
-   memset(&cropcap, 0, sizeof(cropcap));
    cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_CROPCAP, &cropcap) == 0)
    {
       crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-      crop.c = cropcap.defrect;
+      crop.c    = cropcap.defrect;
       /* Ignore errors here. */
       xioctl(v4l->fd, VIDIOC_S_CROP, &crop);
    }
 
-   memset(&fmt, 0, sizeof(fmt));
-
-   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-   fmt.fmt.pix.width  = v4l->width;
-   fmt.fmt.pix.height = v4l->height;
+   fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   fmt.fmt.pix.width       = v4l->width;
+   fmt.fmt.pix.height      = v4l->height;
    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-   fmt.fmt.pix.field = V4L2_FIELD_NONE;
+   fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_S_FMT, &fmt) < 0)
    {
@@ -255,9 +248,7 @@ static bool v4l_start(void *data)
 
    for (i = 0; i < v4l->n_buffers; i++)
    {
-      struct v4l2_buffer buf;
-
-      memset(&buf, 0, sizeof(buf));
+      struct v4l2_buffer buf = {0};
 
       buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       buf.memory = V4L2_MEMORY_MMAP;
@@ -372,12 +363,10 @@ error:
 
 static bool preprocess_image(void *data)
 {
-   video4linux_t *v4l = (video4linux_t*)data;
-   struct v4l2_buffer buf;
+   video4linux_t     *v4l = (video4linux_t*)data;
+   struct v4l2_buffer buf = {0};
 
-   memset(&buf, 0, sizeof(buf));
-
-   buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    buf.memory = V4L2_MEMORY_MMAP;
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_DQBUF, &buf) == -1)
@@ -385,11 +374,13 @@ static bool preprocess_image(void *data)
       switch (errno)
       {
          case EAGAIN:
-            return false;
+            break;
          default:
             RARCH_ERR("VIDIOC_DQBUF.\n");
-            return false;
+            break;
       }
+
+      return false;
    }
 
    retro_assert(buf.index < v4l->n_buffers);
