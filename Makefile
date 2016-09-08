@@ -134,7 +134,7 @@ retroarch: $(RARCH_OBJ)
 ifeq ($(DEBUG), 1)
    ifeq ($(findstring Win32,$(OS)),)
 		$(Q)$(LINK) -o $@_debug $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
-endif
+   endif
 else	
 		$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 endif
