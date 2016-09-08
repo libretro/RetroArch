@@ -16,6 +16,10 @@
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
 #include "../../general.h"

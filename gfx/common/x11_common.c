@@ -23,6 +23,10 @@
 
 #include <X11/Xatom.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "x11_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/input_x11_common.h"

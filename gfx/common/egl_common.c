@@ -14,15 +14,19 @@
  */
 
 #include <stdlib.h>
+
 #include <retro_assert.h>
 
-#include "../../verbosity.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
-#include "egl_common.h"
 #ifdef HAVE_OPENGL
 #include "gl_common.h"
 #endif
 
+#include "egl_common.h"
+#include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 
 bool g_egl_inited;

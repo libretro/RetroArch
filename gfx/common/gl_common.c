@@ -14,10 +14,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gfx/math/matrix_4x4.h>
+
 #include "../drivers/gl_capabilities.h"
 #include "../video_coord_array.h"
-
-#include <gfx/math/matrix_4x4.h>
 
 void gl_ff_vertex(const struct video_coords *coords)
 {

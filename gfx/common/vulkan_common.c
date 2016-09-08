@@ -13,6 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_assert.h>
+#include <dynamic/dylib.h>
+#include <string/stdstring.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -22,10 +26,6 @@
 #include <X11/Xlib-xcb.h>
 #endif
 #endif
-
-#include <retro_assert.h>
-#include <dynamic/dylib.h>
-#include <string/stdstring.h>
 
 #include "vulkan_common.h"
 #include "../../configuration.h"
