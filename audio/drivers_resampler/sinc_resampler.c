@@ -141,10 +141,9 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
          float val;
          int               n = j * phases + i;
          double window_phase = (double)n / (phases * taps); /* [0, 1). */
-         window_phase = 2.0 * window_phase - 1.0; /* [-1, 1) */
-         sinc_phase = sidelobes * window_phase;
-
-         val = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
+         window_phase        = 2.0 * window_phase - 1.0; /* [-1, 1) */
+         sinc_phase          = sidelobes * window_phase;
+         val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
             window_function(window_phase) / window_mod;
          phase_table[i * stride * taps + j] = val;
       }
@@ -170,12 +169,12 @@ static void init_sinc_table(rarch_sinc_resampler_t *resamp, double cutoff,
       {
          float val, delta;
          double sinc_phase;
-         int n = j * phases + (phase + 1);
+         int n               = j * phases + (phase + 1);
          double window_phase = (double)n / (phases * taps); /* (0, 1]. */
-         window_phase = 2.0 * window_phase - 1.0; /* (-1, 1] */
-         sinc_phase = sidelobes * window_phase;
+         window_phase        = 2.0 * window_phase - 1.0; /* (-1, 1] */
+         sinc_phase          = sidelobes * window_phase;
 
-         val = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
+         val                 = cutoff * sinc(M_PI * sinc_phase * cutoff) * 
             window_function(window_phase) / window_mod;
          delta = (val - phase_table[phase * stride * taps + j]);
          phase_table[(phase * stride + 1) * taps + j] = delta;
@@ -416,8 +415,8 @@ static void resampler_sinc_free(void *re)
 static void *resampler_sinc_new(const struct resampler_config *config,
       double bandwidth_mod, resampler_simd_mask_t mask)
 {
-   size_t phase_elems, elems;
    double cutoff;
+   size_t phase_elems, elems;
    rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)
       calloc(1, sizeof(*re));
 
@@ -439,24 +438,24 @@ static void *resampler_sinc_new(const struct resampler_config *config,
 
    /* Be SIMD-friendly. */
 #if (defined(__AVX__) && ENABLE_AVX) || (defined(__ARM_NEON__)&& !defined(VITA))
-   re->taps = (re->taps + 7) & ~7;
+   re->taps     = (re->taps + 7) & ~7;
 #else
-   re->taps = (re->taps + 3) & ~3;
+   re->taps     = (re->taps + 3) & ~3;
 #endif
 
-   phase_elems = (1 << PHASE_BITS) * re->taps;
+   phase_elems  = (1 << PHASE_BITS) * re->taps;
 #if SINC_COEFF_LERP
    phase_elems *= 2;
 #endif
-   elems = phase_elems + 4 * re->taps;
+   elems        = phase_elems + 4 * re->taps;
 
    re->main_buffer = (float*)memalign_alloc(128, sizeof(float) * elems);
    if (!re->main_buffer)
       goto error;
 
    re->phase_table = re->main_buffer;
-   re->buffer_l = re->main_buffer + phase_elems;
-   re->buffer_r = re->buffer_l + 2 * re->taps;
+   re->buffer_l    = re->main_buffer + phase_elems;
+   re->buffer_r    = re->buffer_l + 2 * re->taps;
 
    init_sinc_table(re, cutoff, re->phase_table,
          1 << PHASE_BITS, re->taps, SINC_COEFF_LERP);

@@ -59,10 +59,10 @@ typedef struct rarch_CC_resampler
 static void resampler_CC_process(void *re_, struct resampler_data *data)
 {
    float ratio, fraction;
-   audio_frame_float_t *inp = (audio_frame_float_t*)data->data_in;
+   audio_frame_float_t     *inp = (audio_frame_float_t*)data->data_in;
    audio_frame_float_t *inp_max = (audio_frame_float_t*)
       (inp + data->input_frames);
-   audio_frame_float_t *outp = (audio_frame_float_t*)data->data_out;
+   audio_frame_float_t    *outp = (audio_frame_float_t*)data->data_out;
 
    (void)re_;
 
@@ -196,15 +196,15 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
       __m128 vec_in;
       __m128 vec_ratio =
          _mm_mul_ps(_mm_set_ps1(ratio), _mm_set_ps(3.0, 2.0, 1.0, 0.0));
-      __m128 vec_w = _mm_sub_ps(_mm_set_ps1(re->distance), vec_ratio);
+      __m128 vec_w     = _mm_sub_ps(_mm_set_ps1(re->distance), vec_ratio);
 
-      __m128 vec_w1 = _mm_add_ps(vec_w , _mm_set_ps1(0.5));
-      __m128 vec_w2 = _mm_sub_ps(vec_w , _mm_set_ps1(0.5));
+      __m128 vec_w1    = _mm_add_ps(vec_w , _mm_set_ps1(0.5));
+      __m128 vec_w2    = _mm_sub_ps(vec_w , _mm_set_ps1(0.5));
 
-      __m128 vec_b = _mm_set_ps1(b);
+      __m128 vec_b     = _mm_set_ps1(b);
 
-      vec_w1 = _mm_mul_ps(vec_w1, vec_b);
-      vec_w2 = _mm_mul_ps(vec_w2, vec_b);
+      vec_w1           = _mm_mul_ps(vec_w1, vec_b);
+      vec_w2           = _mm_mul_ps(vec_w2, vec_b);
 
       (void)vec_ww1;
       (void)vec_ww2;
