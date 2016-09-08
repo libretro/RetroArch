@@ -16,13 +16,17 @@
 
 #include <retro_miscellaneous.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#include "../menu_display.h"
+
 #include "../../config.def.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/common/vulkan_common.h"
 #include "../../gfx/video_shader_driver.h"
-
-#include "../menu_display.h"
 
 /* Will do Y-flip later, but try to make it similar to GL. */
 static const float vk_vertexes[] = {

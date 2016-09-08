@@ -13,7 +13,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vita2d.h>
+
 #include <retro_miscellaneous.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#include "../menu_display.h"
 
 #include "../../config.def.h"
 #include "../../retroarch.h"
@@ -21,9 +29,6 @@
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/video_shader_driver.h"
 #include "../../gfx/common/vita2d_common.h"
-#include <vita2d.h>
-
-#include "../menu_display.h"
 
 static const float vita2d_vertexes[] = {
    0, 0,

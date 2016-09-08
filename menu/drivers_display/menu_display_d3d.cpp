@@ -17,15 +17,18 @@
 
 #include <gfx/math/matrix_4x4.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#include "../menu_display.h"
+
 #include "../../config.def.h"
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/drivers/d3d.h"
 #include "../../gfx/common/d3d_common.h"
-
-#include "../menu_display.h"
-
 #include "../../gfx/include/d3d9/d3dx9math.h"
 
 #define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
