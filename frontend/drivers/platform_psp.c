@@ -23,6 +23,7 @@
 #include <psp2/power.h>
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
+#include <pthread.h>
 #else
 #include <pspkernel.h>
 #include <pspdebug.h>
@@ -298,6 +299,7 @@ static void frontend_psp_init(void *data)
 #ifdef VITA
    scePowerSetArmClockFrequency(444);
    sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
+   pthread_init();
 #else
    (void)data;
    /* initialize debug screen */
