@@ -31,6 +31,10 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
