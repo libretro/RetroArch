@@ -86,7 +86,8 @@ static dylib_t lib_handle;
 #define SYMBOL_VIDEOPROCESSOR(x) current_core->x = libretro_videoprocessor_##x
 #endif
 
-static bool ignore_environment_cb;
+static bool ignore_environment_cb = false;
+static bool *load_no_content_hook = NULL;
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info, unsigned num_info,
@@ -149,7 +150,6 @@ void libretro_free_system_info(struct retro_system_info *info)
    memset(info, 0, sizeof(*info));
 }
 
-static bool *load_no_content_hook;
 
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
 {
@@ -733,9 +733,10 @@ static size_t mmap_inflate(size_t addr, size_t mask)
     while (mask)
    {
       size_t tmp = (mask - 1) & ~mask;
+
       /* to put in an 1 bit instead, OR in tmp+1 */
-      addr = ((addr & ~tmp) << 1) | (addr & tmp);
-      mask = mask & (mask - 1);
+      addr       = ((addr & ~tmp) << 1) | (addr & tmp);
+      mask       = mask & (mask - 1);
    }
    
    return addr;
@@ -746,8 +747,8 @@ static size_t mmap_reduce(size_t addr, size_t mask)
    while (mask)
    {
       size_t tmp = (mask - 1) & ~mask;
-      addr = (addr & tmp) | ((addr >> 1) & ~tmp);
-      mask = (mask & (mask - 1)) >> 1;
+      addr       = (addr & tmp) | ((addr >> 1) & ~tmp);
+      mask       = (mask & (mask - 1)) >> 1;
    }
    
    return addr;
@@ -762,9 +763,9 @@ static size_t mmap_highest_bit(size_t n)
 static bool mmap_preprocess_descriptors(struct retro_memory_descriptor *first, unsigned count)
 {
    size_t disconnect_mask;
+   size_t                           top_addr = 1;
    struct retro_memory_descriptor *desc      = NULL;
    const struct retro_memory_descriptor *end = first + count;
-   size_t top_addr = 1;
    
    for (desc = first; desc < end; desc++)
    {
