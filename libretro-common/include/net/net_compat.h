@@ -59,37 +59,21 @@
 
 #elif defined(VITA)
 
+#include <sys/socket.h>
+#include <sys/types.h>
+
 #include <psp2/net/net.h>
 #include <psp2/net/netctl.h>
 
 #define sockaddr_in SceNetSockaddrIn
-#define sockaddr SceNetSockaddr
-#define sendto sceNetSendto
-#define recvfrom sceNetRecvfrom
-#define socket(a,b,c) sceNetSocket("unknown",a,b,c)
-#define bind sceNetBind
-#define accept sceNetAccept
-#define setsockopt sceNetSetsockopt
-#define connect sceNetConnect
-#define listen sceNetListen
-#define send sceNetSend
-#define recv sceNetRecv
-#define MSG_DONTWAIT SCE_NET_MSG_DONTWAIT
-#define AF_INET SCE_NET_AF_INET
-#define AF_UNSPEC 0
+
 #define INADDR_ANY SCE_NET_INADDR_ANY
 #define INADDR_NONE 0xffffffff
-#define SOCK_STREAM SCE_NET_SOCK_STREAM
-#define SOCK_DGRAM SCE_NET_SOCK_DGRAM
-#define SOL_SOCKET SCE_NET_SOL_SOCKET
-#define SO_REUSEADDR SCE_NET_SO_REUSEADDR
-#define SO_SNDBUF SCE_NET_SO_SNDBUF
-#define SO_SNDTIMEO SCE_NET_SO_SNDTIMEO
+
 #define SO_NBIO SCE_NET_SO_NBIO
 #define htonl sceNetHtonl
 #define ntohl sceNetNtohl
 #define htons sceNetHtons
-#define socklen_t unsigned int
 
 struct hostent
 {
@@ -146,8 +130,8 @@ static INLINE bool isagain(int bytes)
    if (WSAGetLastError() != WSAEWOULDBLOCK)
       return false;
    return true;
-#elif defined(VITA)
-	 return (bytes<0 && (bytes == SCE_NET_ERROR_EAGAIN || bytes == SCE_NET_ERROR_EWOULDBLOCK));
+//#elif defined(VITA)
+	// return (bytes<0 && (bytes == SCE_NET_ERROR_EAGAIN || bytes == SCE_NET_ERROR_EWOULDBLOCK));
 #else
    return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK));
 #endif
