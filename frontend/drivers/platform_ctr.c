@@ -136,13 +136,12 @@ static void ctr_check_dspfirm(void)
       fclose(dsp_fp);
    else
    {
-      uint32_t* code_buffer;
-      uint32_t* ptr;
-      FILE* code_fp;
       size_t code_size;
+      uint32_t* code_buffer     = NULL;
+      uint32_t* ptr             = NULL;
       const uint32_t dsp1_magic = 0x31505344; /* "DSP1" */
+      FILE             *code_fp = fopen("sdmc:/3ds/code.bin", "rb");
 
-      code_fp =fopen("sdmc:/3ds/code.bin", "rb");
       if(code_fp)
       {
          fseek(code_fp, 0, SEEK_END);
