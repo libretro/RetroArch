@@ -18,6 +18,14 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
 #include "frontend.h"
 #include "../ui/ui_companion_driver.h"
 #include "../tasks/tasks_internal.h"
@@ -26,10 +34,6 @@
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-
-#ifdef HAVE_MENU
-#include "../menu/menu_driver.h"
-#endif
 
 /**
  * main_exit:

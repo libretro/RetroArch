@@ -23,13 +23,6 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
-#include "cheat_manager.h"
-#include "../configuration.h"
-#include "../runloop.h"
-#include "../dynamic.h"
-#include "../core.h"
-#include "../verbosity.h"
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -37,6 +30,13 @@
 #ifdef HAVE_CHEEVOS
 #include "../cheevos.h"
 #endif
+
+#include "cheat_manager.h"
+#include "../configuration.h"
+#include "../runloop.h"
+#include "../dynamic.h"
+#include "../core.h"
+#include "../verbosity.h"
 
 struct item_cheat
 {
