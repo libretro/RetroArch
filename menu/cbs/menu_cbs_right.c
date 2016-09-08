@@ -18,6 +18,10 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../menu_content.h"
 #include "../menu_driver.h"
 #include "../menu_cbs.h"

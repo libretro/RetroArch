@@ -16,6 +16,10 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_entry.h"

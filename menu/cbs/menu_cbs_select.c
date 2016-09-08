@@ -15,6 +15,10 @@
 
 #include <queues/task_queue.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_cbs.h"

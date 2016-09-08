@@ -21,6 +21,10 @@
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../menu_display.h"
