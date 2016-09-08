@@ -1636,20 +1636,17 @@ static bool task_load_content(content_ctx_info_t *content_info,
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-#ifdef HAVE_MENU
    if (launched_from_menu)
    {
+#ifdef HAVE_MENU
       /* redraw menu frame */
       menu_display_set_msg_force(true);
       menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
       if (!string_is_empty(fullpath))
          fill_pathname_base(name, fullpath, sizeof(name));
-   }
 #endif
 
-   if (launched_from_menu)
-   {
       /** Show loading OSD message */
       if (!string_is_empty(fullpath))
       {
@@ -1765,7 +1762,6 @@ static bool command_event_cmd_exec(const char *data,
 #endif
 #endif
 
-   fullpath = NULL;
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (fullpath != (void*)data)
