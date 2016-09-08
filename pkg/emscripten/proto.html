@@ -106,9 +106,6 @@
             <button class="btn btn-primary disabled" id="btnRun" onclick="startRetroArch()">
                <span class="fa fa-spinner spinning" id="icnRun"></span> Run
             </button>
-            <button class="btn btn-primary" id="btnSync" onclick="dropboxInit()">
-               <span class="fa fa-dropbox" id="icnSync"></span> Sync
-            </button>
             <button class="btn btn-primary disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()">
                <span class="fa fa-plus" id="icnAdd"></span> Add Content
             </button>
@@ -119,7 +116,23 @@
          </div>
       </div>
       <div class="row">
-         <div class="col-sm-12">
+         <div class="col-sm-12 form-group btn-group text-xs-center p-t-2">
+            <div class="btn-group" data-toggle="buttons">
+               <label class="btn btn-primary" id="lblLocal" onclick=switchStorage("browser")>
+                  <input type="radio" name="options" id="btnLocal" autocomplete="off" checked>
+                     <span class="fa fa-chrome" id="icnLocal"></span> Browser
+                  </input>
+                 </label>
+               <label class="btn btn-primary" id="lblDrop" onclick=switchStorage("dropbox")>
+                  <input type="radio" name="options" id="btnDrop" autocomplete="off">
+                     <span class="fa fa-dropbox" id="icnDrop"></span> Dropbox
+                  </input>
+              </label>
+            </div>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-sm-12 form-group btn-group text-xs-center p-t-2">
             <div class="card">
                 <div class="view overlay hm-white-slight" align="center">
                      <textarea id="output" rows="15"></textarea>
@@ -131,7 +144,7 @@
    </div>
    <div align="center">
       <p>For now, we recommend you use <a href="https://www.google.com/chrome/">Google Chrome</a> for the best possible performance.</p>
-      <a href="http://www.libretro.com"><img align="center" src="http://www.libretro.com/wp-content/uploads/2013/10/copy-libretro_final_thumb.png" /></a>
+      <a href="http://www.libretro.com"><img align="center" src="media/libretro-logo.png" /></a>
    </div>
 
    <script src="//code.jquery.com/jquery-3.1.0.min.js"></script>

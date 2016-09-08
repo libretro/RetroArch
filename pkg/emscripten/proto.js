@@ -48,9 +48,9 @@ var showError = function(error) {
 function dropboxInit()
 {
   document.getElementById('btnRun').disabled = true;
-  document.getElementById('btnSync').disabled = true;
-  $('#icnSync').removeClass('fa-dropbox');
-  $('#icnSync').addClass('fa-spinner spinning');
+  document.getElementById('btnDrop').disabled = true;
+  $('#icnDrop').removeClass('fa-dropbox');
+  $('#icnDrop').addClass('fa-spinner spinning');
   
 
   client.authDriver(new Dropbox.AuthDriver.Redirect());
@@ -66,63 +66,77 @@ function dropboxInit()
 function success()
 {
   document.getElementById('btnRun').disabled = false;
-  $('#icnSync').removeClass('fa-spinner spinning');
-  $('#icnSync').addClass('fa-check');
+  $('#icnDrop').removeClass('fa-spinner spinning');
+  $('#icnDrop').addClass('fa-check');
   console.log("WEBPLAYER: Sync successful");
+  setupFileSystem("dropbox");
+  setupFolderStructure();
 }
+
+var afs;
+
 function dropboxSync(dropboxClient, cb)
 {
   var dbfs = new BrowserFS.FileSystem.Dropbox(dropboxClient);
-  // Wrap in AsyncMirrorFS.
-  var asyncMirror = new BrowserFS.FileSystem.AsyncMirror(
+  // Wrap in afsFS.
+  afs = new BrowserFS.FileSystem.AsyncMirror(
      new BrowserFS.FileSystem.InMemory(), dbfs);
 
-  asyncMirror.initialize(function(err)
+  afs.initialize(function(err)
   {
       // Initialize it as the root file system.
-     BrowserFS.initialize(asyncMirror);
-
-     cb();
+      //BrowserFS.initialize(afs);
+      cb();
   });
 }
 
-function setupFileSystem()
+function setupFileSystem(backend)
 {
-  console.log("WEBPLAYER: Initializing Filesystem");
-  if(!client.isAuthenticated())
-  {
-     console.log("WEBPLAYER: Initializing LocalStorage");
-     if(localStorage.getItem("fs_inited")!="true")
-     {
-        var lsfs = new BrowserFS.FileSystem.LocalStorage();
-        var mfs = new BrowserFS.FileSystem.MountableFileSystem();
-        var xfs = new BrowserFS.FileSystem.XmlHttpRequest
-            (".index-xhr", "https://bot.libretro.com/web/assets/");
-        mfs.mount('/', lsfs);
-        mfs.mount('/assets', xfs);
+   console.log("WEBPLAYER: Initializing Filesystem");
+   if(backend == "browser")
+   {
+      console.log("WEBPLAYER: Initializing LocalStorage");
+      /* create a mountable filesystem that will server as a root 
+         mountpoint for browserfs */
+      var mfs =  new BrowserFS.FileSystem.MountableFileSystem();
+      /* create a local filesystem */
+      var lsfs = new BrowserFS.FileSystem.LocalStorage();
+      /* create an XmlHttpRequest filesystem for assets */
+      var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
+         (".index-xhr", "https://bot.libretro.com/web/assets/");
+      var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
+         (".index-xhr", "https://bot.libretro.com/assets/cores/");
+         
+      /* mount the local filesystem at the root of mfs*/
+      mfs.mount('/home/web_user/userdata', lsfs);
+      mfs.mount('/home/web_user/retroarch/bundle', xfs1);
+      mfs.mount('/home/web_user/downloads', xfs2);
 
-        BrowserFS.initialize(mfs);
-        var BFS = new BrowserFS.EmscriptenFS();
-        FS.mount(BFS, {root: '/'}, '/home');
-        console.log('WEBPLAYER: Filesystem initialized');
-     }
-     else
-     {
-        console.log('WEBPLAYER: Filesystem already initialized');
-     }
-
+      BrowserFS.initialize(mfs);
+      var BFS = new BrowserFS.EmscriptenFS();
+      FS.mount(BFS, {root: '/home'}, '/home');
+      console.log('WEBPLAYER: Filesystem initialized');
   }
   else
   {
-     console.log("WEBPLAYER: Initializing DropBoxFS");
-     // Grab the BrowserFS Emscripten FS plugin.
-     var BFS = new BrowserFS.EmscriptenFS();
-     // Create the folder that we'll turn into a mount point.
-     FS.createPath(FS.root, 'home', true, true);
-     // Mount BFS's root folder into the '/data' folder.
-     console.log('WEBPLAYER: Mounting');
-     FS.mount(BFS, {root: '/'}, '/home');
-     console.log('WEBPLAYER: DropBox initialized');
+      /* create a mountable filesystem that will server as a root 
+         mountpoint for browserfs */
+      var mfs =  new BrowserFS.FileSystem.MountableFileSystem();
+      /* create an XmlHttpRequest filesystem for assets */
+      var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
+         (".index-xhr", "https://bot.libretro.com/web/assets/");
+      var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
+         (".index-xhr", "https://bot.libretro.com/assets/cores/");
+     
+      /* mount the local filesystem at the root of mfs*/
+      mfs.mount('/home/web_user/userdata', afs);
+      mfs.mount('/home/web_user/retroarch/bundle', xfs1);
+      mfs.mount('/home/web_user/downloads', xfs2);
+
+      BrowserFS.initialize(mfs);
+      var BFS = new BrowserFS.EmscriptenFS();
+      FS.mount(BFS, {root: '/home'}, '/home');
+      console.log('WEBPLAYER: Filesystem initialized');
   }
 }
 
@@ -139,9 +153,6 @@ function getParam(name) {
 function setupFolderStructure()
 {
   FS.createPath('/', '/home/web_user', true, true);
-  FS.createPath('/', '/home/web_user/.config', true, true);
-  FS.createPath('/', '/home/web_user/.config/retroarch', true, true);
-  FS.createPath('/', '/content', true, true);
 }
 
 function stat(path)
@@ -159,15 +170,16 @@ function stat(path)
 
 function startRetroArch()
 {
-  document.getElementById('canvas_div').style.display = 'block';
-  document.getElementById('btnSync').disabled = true;
-  document.getElementById('btnRun').disabled = true;
+   document.getElementById('canvas_div').style.display = 'block';
+   document.getElementById('btnDrop').disabled = true;
+   document.getElementById('btnRun').disabled = true;
   
-  $('#btnFullscreen').removeClass('disabled');
-  $('#btnAdd').removeClass('disabled');
-  $('#btnRom').removeClass('disabled');
+   $('#btnFullscreen').removeClass('disabled');
+   $('#btnAdd').removeClass('disabled');
+   $('#btnRom').removeClass('disabled');
 
-  Module['callMain'](Module['arguments']);
+   Module['callMain'](Module['arguments']);
+   document.getElementById('canvas').focus();
 }
 
 function selectFiles(files)
@@ -198,8 +210,12 @@ function selectFiles(files)
 
 function uploadData(data,name)
 {
-  var dataView = new Uint8Array(data);
-  FS.createDataFile('/content/', name, dataView, true, false);
+   var dataView = new Uint8Array(data);
+   FS.createDataFile('/', name, dataView, true, false);
+
+   var data = FS.readFile(name,{ encoding: 'binary' });
+   FS.writeFile('/home/web_user/userdata/content/' + name, data ,{ encoding: 'binary' });
+   FS.unlink(name);
 }
 
 var Module = 
@@ -228,16 +244,23 @@ var Module =
      element.scrollTop = 99999; // focus on bottom
   },
   canvas: document.getElementById('canvas'),
-
   totalDependencies: 0,
   monitorRunDependencies: function(left) 
   {
      this.totalDependencies = Math.max(this.totalDependencies, left);
-  }  
+  }
 };
 
 function switchCore(corename) {
    localStorage.setItem("core", corename);
+}
+
+function switchStorage(backend) {
+   if (backend != localStorage.getItem("backend"))
+   {
+      localStorage.setItem("backend", backend);
+      location.reload();
+   }
 }
 
 // When the browser has loaded everything.
@@ -256,8 +279,19 @@ $(function() {
     $('#btnRun').removeClass('disabled');
     $('#icnRun').removeClass('fa-spinner spinning');
     $('#icnRun').addClass('fa-play');
-    setupFileSystem();
-    setupFolderStructure();
+
+    if (localStorage.getItem("backend") == "dropbox")
+    {
+      $('#lblDrop').addClass('active');
+      $('#lblLocal').removeClass('active');
+      dropboxInit();
+    }
+    else {
+      $('#lblDrop').removeClass('active');
+      $('#lblLocal').addClass('active');
+      setupFileSystem("browser");
+      setupFolderStructure();
+    }
     //$('#dropdownMenu1').text(localStorage.getItem("core"));
     /**
      * Attempt to disable some default browser keys.

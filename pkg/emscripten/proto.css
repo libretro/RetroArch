@@ -40,7 +40,7 @@ textarea {
     height: 95%;
     width:  95%;
     border-style: none; 
-    border-color: Transparent; 
+    border-color: transparent; 
     overflow: auto;
     resize: none;
 }
