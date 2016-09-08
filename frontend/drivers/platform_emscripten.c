@@ -82,7 +82,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    char user_path[PATH_MAX] = {0};
    const char *home         = getenv("HOME");
 
-   if (!string_is_empty(home))
+   if (home)
    {
       snprintf(base_path, sizeof(base_path),
             "%s/retroarch", home);
