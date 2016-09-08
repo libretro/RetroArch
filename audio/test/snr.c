@@ -121,6 +121,7 @@ static void butterflies(complex double *butterfly_buf, double phase_dir, size_t 
 static void calculate_fft(const float *data, complex double *butterfly_buf, size_t samples)
 {
    unsigned i;
+   unsigned step_size;
 
    /* Enforce POT. */
    retro_assert((samples & (samples - 1)) == 0);
@@ -132,7 +133,7 @@ static void calculate_fft(const float *data, complex double *butterfly_buf, size
    interleave(butterfly_buf, samples);
 
    /* Fly, lovely butterflies! :D */
-   for (unsigned step_size = 1; step_size < samples; step_size *= 2)
+   for (step_size = 1; step_size < samples; step_size *= 2)
       butterflies(butterfly_buf, -1.0, step_size, samples);
 }
 
