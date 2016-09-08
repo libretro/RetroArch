@@ -352,7 +352,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       goto error;
    }
 
-   if (!egl_create_surface(&xegl->egl, (EGLNativeWindowType)g_x11_win))
+   if (!egl_create_surface(&xegl->egl, (void*)g_x11_win))
       goto error;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);

@@ -34,11 +34,16 @@
 #include "../../config.h"
 #endif
 
-#include "../include/Cg/cg.h"
 #ifdef HAVE_OPENGL
 #include "../common/gl_common.h"
 #include "../include/Cg/cgGL.h"
 #endif
+
+#ifdef HAVE_SHADERPIPELINE
+#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
+#endif
+
+#include "../include/Cg/cg.h"
 
 #include "../video_shader_driver.h"
 #include "../video_shader_parse.h"
@@ -46,10 +51,6 @@
 #include "../../core.h"
 #include "../../dynamic.h"
 #include "../../managers/state_manager.h"
-
-#ifdef HAVE_SHADERPIPELINE
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
-#endif
 
 #define SEMANTIC_TEXCOORD     0x92ee91cdU
 #define SEMANTIC_TEXCOORD0    0xf0c0cb9dU

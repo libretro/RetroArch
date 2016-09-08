@@ -16,10 +16,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
@@ -27,15 +23,19 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_OPENGL
+#include "../common/gl_common.h"
+#endif
+
 #include "shader_glsl.h"
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
 #include "../../managers/state_manager.h"
 #include "../../core.h"
-
-#ifdef HAVE_OPENGL
-#include "../common/gl_common.h"
-#endif
 
 #define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
 
