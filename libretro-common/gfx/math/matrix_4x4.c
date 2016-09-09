@@ -119,20 +119,18 @@ void matrix_4x4_ortho(math_matrix_4x4 *mat,
       float bottom, float top,
       float znear, float zfar)
 {
-   float tx, ty, tz;
+   float rl = right - left;
+   float tb = top   - bottom;
+   float fn = zfar  - znear;
 
    matrix_4x4_identity(mat);
 
-   tx = -(right + left) / (right - left);
-   ty = -(top + bottom) / (top - bottom);
-   tz = -(zfar + znear) / (zfar - znear);
-
-   MAT_ELEM_4X4(*mat, 0, 0) =  2.0f / (right - left);
-   MAT_ELEM_4X4(*mat, 1, 1) =  2.0f / (top - bottom);
-   MAT_ELEM_4X4(*mat, 2, 2) = -2.0f / (zfar - znear);
-   MAT_ELEM_4X4(*mat, 0, 3) = tx;
-   MAT_ELEM_4X4(*mat, 1, 3) = ty;
-   MAT_ELEM_4X4(*mat, 2, 3) = tz;
+   MAT_ELEM_4X4(*mat, 0, 0) =  2.0f / rl;
+   MAT_ELEM_4X4(*mat, 1, 1) =  2.0f / tb;
+   MAT_ELEM_4X4(*mat, 2, 2) = -2.0f / fn;
+   MAT_ELEM_4X4(*mat, 0, 3) = -(left + right)  / rl;
+   MAT_ELEM_4X4(*mat, 1, 3) = -(top  + bottom) / tb;
+   MAT_ELEM_4X4(*mat, 2, 3) = -(zfar + znear)  / fn;
 }
 
 void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y,
