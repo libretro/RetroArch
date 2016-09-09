@@ -92,7 +92,7 @@ function dropboxSync(dropboxClient, cb)
 
 function setupFileSystem(backend)
 {
-   /* create a mountable filesystem that will server as a root 
+   /* create a mountable filesystem that will server as a root
       mountpoint for browserfs */
    var mfs =  new BrowserFS.FileSystem.MountableFileSystem();
 
