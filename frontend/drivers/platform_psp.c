@@ -131,14 +131,30 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 #else
+   /* it seems recursive mkdir doesn't always works on PSP
+      so create this dir first */
    path_mkdir(user_path);
-   /* bundle data */
-   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
-         "ASSETS", sizeof(g_defaults.dir.assets));
+
    fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
          "CORES", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,
          "INFO", sizeof(g_defaults.dir.core_info));
+
+   /* bundle data */
+   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+         "BUNDLE/ASSETS", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.autoconfig, g_defaults.dir.port,
+         "BUNDLE/AUTOCONFIG", sizeof(g_defaults.dir.autoconfig));
+   fill_pathname_join(g_defaults.dir.cursor, base_path,
+         "BUNDLE/DATABASE/CURSORS", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.database, base_path,
+         "BUNDLE/DATABASE/RDB", sizeof(g_defaults.dir.database));
+   fill_pathname_join(g_defaults.dir.overlay, base_path,
+         "BUNDLE/OVERLAYS", sizeof(g_defaults.dir.overlay));
+   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
+         "BUNDLE/OVERLAYS", sizeof(g_defaults.dir.osk_overlay));
+   fill_pathname_join(g_defaults.dir.shader, base_path,
+         "BUNDLE/SHADERS", sizeof(g_defaults.dir.shader));
 
    /* user data */
    fill_pathname_join(g_defaults.dir.cheats, user_path,
