@@ -25,6 +25,12 @@
 #include <glsym/glsym.h>
 #include <glsm/glsm.h>
 
+#ifndef GL_DEPTH_CLAMP
+#define GL_DEPTH_CLAMP                    0x864F
+#define GL_RASTERIZER_DISCARD             0x8C89
+#define GL_SAMPLE_MASK                    0x8E51
+#endif
+
 struct gl_cached_state
 {
    struct
