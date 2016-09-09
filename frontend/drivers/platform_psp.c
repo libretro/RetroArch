@@ -187,7 +187,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path.config, user_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 #endif
-   /* create user data dirs */ 
+   /* create user data dirs */
    path_mkdir(g_defaults.dir.cheats);
    path_mkdir(g_defaults.dir.core_assets);
    path_mkdir(g_defaults.dir.playlist);
