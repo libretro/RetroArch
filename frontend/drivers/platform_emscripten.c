@@ -87,12 +87,12 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
       snprintf(base_path, sizeof(base_path),
             "%s/retroarch", home);
       snprintf(user_path, sizeof(user_path),
-            "%s/userdata", home);
+            "%s/retroarch/userdata", home);
    }
    else
    {
       snprintf(base_path, sizeof(base_path), "retroarch");
-      snprintf(user_path, sizeof(user_path), "userdata");
+      snprintf(user_path, sizeof(user_path), "retroarch/userdata");
    }
 
    fill_pathname_join(g_defaults.dir.core, base_path,

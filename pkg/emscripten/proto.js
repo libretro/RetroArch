@@ -92,52 +92,40 @@ function dropboxSync(dropboxClient, cb)
 
 function setupFileSystem(backend)
 {
+   /* create a mountable filesystem that will server as a root 
+      mountpoint for browserfs */
+   var mfs =  new BrowserFS.FileSystem.MountableFileSystem();
+
+   /* create an XmlHttpRequest filesystem for the bundled data */
+   var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
+      (".index-xhr", "/web/assets/");
+   /* create an XmlHttpRequest filesystem for core assets */
+   var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
+      (".index-xhr", "/assets/cores/");
+
    console.log("WEBPLAYER: Initializing Filesystem");
    if(backend == "browser")
    {
       console.log("WEBPLAYER: Initializing LocalStorage");
-      /* create a mountable filesystem that will server as a root 
-         mountpoint for browserfs */
-      var mfs =  new BrowserFS.FileSystem.MountableFileSystem();
+
       /* create a local filesystem */
       var lsfs = new BrowserFS.FileSystem.LocalStorage();
-      /* create an XmlHttpRequest filesystem for assets */
-      var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
-         (".index-xhr", "/web/assets/");
-      var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
-         (".index-xhr", "/assets/cores/");
-         
-      /* mount the local filesystem at the root of mfs*/
-      mfs.mount('/home/web_user/userdata', lsfs);
-      mfs.mount('/home/web_user/retroarch/bundle', xfs1);
-      mfs.mount('/home/web_user/downloads', xfs2);
 
-      BrowserFS.initialize(mfs);
-      var BFS = new BrowserFS.EmscriptenFS();
-      FS.mount(BFS, {root: '/home'}, '/home');
-      console.log('WEBPLAYER: Filesystem initialized');
-  }
-  else
-  {
-      /* create a mountable filesystem that will server as a root 
-         mountpoint for browserfs */
-      var mfs =  new BrowserFS.FileSystem.MountableFileSystem();
-      /* create an XmlHttpRequest filesystem for assets */
-      var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
-         (".index-xhr", "/web/assets/");
-      var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
-         (".index-xhr", "/assets/cores/");
-     
-      /* mount the local filesystem at the root of mfs*/
-      mfs.mount('/home/web_user/userdata', afs);
-      mfs.mount('/home/web_user/retroarch/bundle', xfs1);
-      mfs.mount('/home/web_user/downloads', xfs2);
+      /* mount the filesystems onto mfs */
+      mfs.mount('/home/web_user/retroarch/userdata', lsfs);
+   }
+   else
+   {
+      /* mount the filesystems onto mfs */
+      mfs.mount('/home/web_user/retroarch/userdata', afs);
+   }
 
-      BrowserFS.initialize(mfs);
-      var BFS = new BrowserFS.EmscriptenFS();
-      FS.mount(BFS, {root: '/home'}, '/home');
-      console.log('WEBPLAYER: Filesystem initialized');
-  }
+   mfs.mount('/home/web_user/retroarch/bundle', xfs1);
+   mfs.mount('/home/web_user/retroarch/downloads', xfs2);
+   BrowserFS.initialize(mfs);
+   var BFS = new BrowserFS.EmscriptenFS();
+   FS.mount(BFS, {root: '/home'}, '/home');
+   console.log("WEBPLAYER: " + backened + " filesystem initialized");
 }
 
 /**
