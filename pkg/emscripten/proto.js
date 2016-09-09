@@ -103,9 +103,9 @@ function setupFileSystem(backend)
       var lsfs = new BrowserFS.FileSystem.LocalStorage();
       /* create an XmlHttpRequest filesystem for assets */
       var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
-         (".index-xhr", "https://bot.libretro.com/web/assets/");
+         (".index-xhr", "/web/assets/");
       var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
-         (".index-xhr", "https://bot.libretro.com/assets/cores/");
+         (".index-xhr", "/assets/cores/");
          
       /* mount the local filesystem at the root of mfs*/
       mfs.mount('/home/web_user/userdata', lsfs);
@@ -124,9 +124,9 @@ function setupFileSystem(backend)
       var mfs =  new BrowserFS.FileSystem.MountableFileSystem();
       /* create an XmlHttpRequest filesystem for assets */
       var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
-         (".index-xhr", "https://bot.libretro.com/web/assets/");
+         (".index-xhr", "/web/assets/");
       var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
-         (".index-xhr", "https://bot.libretro.com/assets/cores/");
+         (".index-xhr", "/assets/cores/");
      
       /* mount the local filesystem at the root of mfs*/
       mfs.mount('/home/web_user/userdata', afs);
@@ -265,16 +265,17 @@ function switchStorage(backend) {
 
 // When the browser has loaded everything.
 $(function() {
-  // Find which core to load.
-  var core = localStorage.getItem("core", core);
-  if (!core) {
-    core = 'gambatte';
-  }
-  // Show the current core as the active core.
-  $('.nav-item.' + core).addClass('active');
+   // Find which core to load.
+   var core = localStorage.getItem("core", core);
+   if (!core) {
+     core = 'gambatte';
+   }
+   // Show the current core as the active core.
+   $('.nav-item.' + core).addClass('active');
 
-  // Load the Core's related JavaScript.
-  $.getScript(core + '_libretro.js', function () {
+   // Load the Core's related JavaScript.
+   $.getScript(core + '_libretro.js', function () 
+   {
     // Activate the Start RetroArch button.
     $('#btnRun').removeClass('disabled');
     $('#icnRun').removeClass('fa-spinner spinning');
@@ -297,11 +298,44 @@ $(function() {
      * Attempt to disable some default browser keys.
      */
 
-    window.addEventListener('keydown', function(e) {
-      // Space key, arrows, and F1.
-      if([32, 37, 38, 39, 40, 112].indexOf(e.keyCode) > -1) {
-        e.preventDefault();
+     var util = { };
+
+   document.addEventListener('keydown', function(e)
+   {
+      var key = util.key[e.which];
+      if( key )
+      {
+         e.preventDefault();
       }
-    }, false);
-  });
-});
+   })
+
+   util.key = { 
+      9: "tab",
+      13: "enter",
+      16: "shift",
+      18: "alt",
+      27: "esc",
+      33: "rePag",
+      34: "avPag",
+      35: "end",
+      36: "home",
+      37: "left",
+      38: "up",
+      39: "right",
+      40: "down",
+      112: "F1",
+      113: "F2",
+      114: "F3",
+      115: "F4",
+      116: "F5",
+      117: "F6",
+      118: "F7",
+      119: "F8",
+      120: "F9",
+      121: "F10",
+      122: "F11",
+      123: "F12"
+   }
+
+   });
+ });
