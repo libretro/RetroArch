@@ -202,7 +202,7 @@ function uploadData(data,name)
    FS.createDataFile('/', name, dataView, true, false);
 
    var data = FS.readFile(name,{ encoding: 'binary' });
-   FS.writeFile('/home/web_user/userdata/content/' + name, data ,{ encoding: 'binary' });
+   FS.writeFile('/home/web_user/retroarch/userdata/content/' + name, data ,{ encoding: 'binary' });
    FS.unlink(name);
 }
 
