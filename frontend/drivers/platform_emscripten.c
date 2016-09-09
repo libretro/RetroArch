@@ -117,7 +117,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
          "bundle/shaders", sizeof(g_defaults.dir.shader));
 
    /* user data dirs */
-   fill_pathname_join(g_defaults.dir.cheats, base_path,
+   fill_pathname_join(g_defaults.dir.cheats, user_path,
          "cheats", sizeof(g_defaults.dir.cheats));
    fill_pathname_join(g_defaults.dir.menu_config, user_path,
          "config", sizeof(g_defaults.dir.menu_config));
@@ -150,20 +150,11 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path.config, user_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 
-   path_mkdir(g_defaults.dir.core);
-
-   path_mkdir(g_defaults.dir.assets);
-   path_mkdir(g_defaults.dir.autoconfig);
-   path_mkdir(g_defaults.dir.cursor);
-   path_mkdir(g_defaults.dir.database);
-   path_mkdir(g_defaults.dir.core_info);
-   path_mkdir(g_defaults.dir.overlay);
-   path_mkdir(g_defaults.dir.shader);
-
+   /* create user data dirs */
    path_mkdir(g_defaults.dir.cheats);
+   path_mkdir(g_defaults.dir.core_assets);
    path_mkdir(g_defaults.dir.menu_config);
    path_mkdir(g_defaults.dir.menu_content);
-   path_mkdir(g_defaults.dir.core_assets);
    path_mkdir(g_defaults.dir.playlist);
    path_mkdir(g_defaults.dir.remap);
    path_mkdir(g_defaults.dir.savestate);
@@ -172,6 +163,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    path_mkdir(g_defaults.dir.system);
    path_mkdir(g_defaults.dir.thumbnails);
 
+   /* create cache dir */
    path_mkdir(g_defaults.dir.cache);
 
    snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "rgui");

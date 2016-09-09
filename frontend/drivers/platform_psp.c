@@ -131,9 +131,6 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 #else
-   /* it seems recursive mkdir doesn't always works on PSP
-      so create this dir first */
-   path_mkdir(user_path);
 
    fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
          "CORES", sizeof(g_defaults.dir.core));
@@ -141,6 +138,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "INFO", sizeof(g_defaults.dir.core_info));
 
    /* bundle data */
+   /*
    fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
          "BUNDLE/ASSETS", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.autoconfig, g_defaults.dir.port,
@@ -155,6 +153,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "BUNDLE/OVERLAYS", sizeof(g_defaults.dir.osk_overlay));
    fill_pathname_join(g_defaults.dir.shader, base_path,
          "BUNDLE/SHADERS", sizeof(g_defaults.dir.shader));
+   */
 
    /* user data */
    fill_pathname_join(g_defaults.dir.cheats, user_path,
@@ -175,6 +174,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "SCREENSHOTS", sizeof(g_defaults.dir.screenshot));
    fill_pathname_join(g_defaults.dir.system, user_path,
          "SYSTEM", sizeof(g_defaults.dir.system));
+   /* fill_pathname_join(g_defaults.dir.thumbnails, user_path,
+         "THUMBNAILS", sizeof(g_defaults.dir.thumbnails)); */
 
    /* cache dir */
    fill_pathname_join(g_defaults.dir.cache, user_path,
@@ -186,18 +187,21 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.path.config, user_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 #endif
-   /* create the dirs to avoid problems further down the line */
-   path_mkdir(g_defaults.dir.assets);
-   path_mkdir(g_defaults.dir.cache);
+   /* create user data dirs */ 
    path_mkdir(g_defaults.dir.cheats);
    path_mkdir(g_defaults.dir.core_assets);
    path_mkdir(g_defaults.dir.playlist);
    path_mkdir(g_defaults.dir.menu_config);
+   path_mkdir(g_defaults.dir.playlist);
    path_mkdir(g_defaults.dir.remap);
    path_mkdir(g_defaults.dir.savestate);
    path_mkdir(g_defaults.dir.screenshot);
    path_mkdir(g_defaults.dir.sram);
    path_mkdir(g_defaults.dir.system);
+   /* path_mkdir(g_defaults.dir.thumbnails); */
+
+   /* create cache dir */
+   path_mkdir(g_defaults.dir.cache);
 
 
 
