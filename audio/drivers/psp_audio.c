@@ -45,8 +45,8 @@ typedef struct psp_audio
    volatile bool running;
    volatile uint16_t read_pos;
    volatile uint16_t write_pos;
-   
-#ifdef VITA 
+
+#ifdef VITA
    char lock[32] __attribute__ ((aligned (8)));
    char cond_lock[32] __attribute__ ((aligned (8)));
    char cond[32] __attribute__ ((aligned (8)));
@@ -101,8 +101,8 @@ static int audioMainLoop(SceSize args, void* argp)
 
 #ifdef VITA
       sceKernelUnlockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1);
-      sceKernelSignalLwCond(&psp->cond);
-      
+      sceKernelSignalLwCond((struct SceKernelLwCondWork*)&psp->cond);
+
       sceAudioOutOutput(port,
         cond ? (psp->zeroBuffer)
               : (psp->buffer + read_pos_2));
@@ -145,7 +145,7 @@ static void *psp_audio_init(const char *device,
 
    sceKernelCreateLwMutex((struct SceKernelLwMutexWork*)&psp->lock, "audio_get_lock", 0, 0, 0);
    sceKernelCreateLwMutex((struct SceKernelLwMutexWork*)&psp->cond_lock, "audio_get_cond_lock", 0, 0, 0);
-   sceKernelCreateLwCond(&psp->cond, "audio_get_cond", 0, &psp->cond_lock, 0);
+   sceKernelCreateLwCond((struct SceKernelLwCondWork*)&psp->cond, "audio_get_cond", 0, (struct SceKernelLwMutexWork*)&psp->cond_lock, 0);
    psp->thread      = sceKernelCreateThread
       ("audioMainLoop", audioMainLoop, 0x10000100, 0x10000, 0, 0, NULL);
 #else
@@ -172,7 +172,7 @@ static void psp_audio_free(void *data)
    sceKernelWaitThreadEnd(psp->thread, NULL, &timeout);
    sceKernelDeleteLwMutex((struct SceKernelLwMutexWork*)&psp->lock);
    sceKernelDeleteLwMutex((struct SceKernelLwMutexWork*)&psp->cond_lock);
-   sceKernelDeleteLwCond(&psp->cond);
+   sceKernelDeleteLwCond((struct SceKernelLwCondWork*)&psp->cond);
 #else
    sceKernelWaitThreadEnd(psp->thread, &timeout);
 #endif
@@ -187,7 +187,7 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    psp_audio_t* psp     = (psp_audio_t*)data;
    uint16_t write_pos   = psp->write_pos;
    uint16_t sampleCount = size / sizeof(uint32_t);
-       
+
 #ifdef VITA
    if (psp->nonblocking)
    {
@@ -198,7 +198,7 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
 
    while (AUDIO_BUFFER_SIZE - ((uint16_t)
          (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size){
-      sceKernelWaitLwCond(&psp->cond, 0);
+      sceKernelWaitLwCond((struct SceKernelLwCondWork*)&psp->cond, 0);
    }
 
    sceKernelLockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1, 0);
@@ -218,11 +218,11 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    write_pos      &= AUDIO_BUFFER_SIZE_MASK;
    psp->write_pos  = write_pos;
    sceKernelUnlockLwMutex((struct SceKernelLwMutexWork*)&psp->lock, 1);
-   
+
   return size;
 #else
 
-  
+
 
 #if 0
    if (psp->nonblocking)
