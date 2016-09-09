@@ -697,7 +697,7 @@ static uint64_t frontend_darwin_get_mem_total(void)
 
 static uint64_t frontend_darwin_get_mem_used(void)
 {
-#if defined(OSX) && !defined(OSX_PPC)
+#if (defined(OSX) && !(defined(__ppc__) || defined(__ppc64__)))
     vm_size_t page_size;
     vm_statistics64_data_t vm_stats;
     mach_port_t mach_port        = mach_host_self();

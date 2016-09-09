@@ -36,20 +36,12 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#if defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
-
-#ifndef OSX_PPC
-#define OSX_PPC
-#endif
-
-#endif
-
 typedef struct coreaudio
 {
    slock_t *lock;
    scond_t *cond;
 
-#ifdef OSX_PPC
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    ComponentInstance dev;
 #else
    AudioComponentInstance dev;
@@ -74,7 +66,7 @@ static void coreaudio_free(void *data)
    if (dev->dev_alive)
    {
       AudioOutputUnitStop(dev->dev);
-#ifdef OSX_PPC
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
       CloseComponent(dev->dev);
 #else
       AudioComponentInstanceDispose(dev->dev);
@@ -194,7 +186,7 @@ static void *coreaudio_init(const char *device,
    size_t fifo_size;
    UInt32 i_size;
    AudioStreamBasicDescription real_desc;
-#ifdef OSX_PPC
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    Component comp;
 #else
    AudioComponent comp;
@@ -206,7 +198,7 @@ static void *coreaudio_init(const char *device,
    AudioStreamBasicDescription stream_desc = {0};
    bool component_unavailable              = false;
    static bool session_initialized         = false;
-#ifdef OSX_PPC
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    ComponentDescription desc               = {0};
 #else
    AudioComponentDescription desc          = {0};
@@ -241,7 +233,7 @@ static void *coreaudio_init(const char *device,
 #endif
    desc.componentManufacturer = kAudioUnitManufacturer_Apple;
 
-#ifdef OSX_PPC
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    comp = FindNextComponent(NULL, &desc);
 #else
    comp = AudioComponentFindNext(NULL, &desc);
@@ -249,7 +241,7 @@ static void *coreaudio_init(const char *device,
    if (comp == NULL)
       goto error;
    
-#ifdef OSX_PPC
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
    component_unavailable = (OpenAComponent(comp, &dev->dev) != noErr);
 #else
    component_unavailable = (AudioComponentInstanceNew(comp, &dev->dev) != noErr);

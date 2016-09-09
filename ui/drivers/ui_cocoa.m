@@ -38,7 +38,7 @@
 
 id apple_platform;
 
-#ifdef OSX_PPC
+#if (defined(__MACH__) && (defined(__ppc__) || defined(__ppc64__)))
 @interface RetroArch_OSX : NSObject
 #else
 @interface RetroArch_OSX : NSObject <NSApplicationDelegate>
