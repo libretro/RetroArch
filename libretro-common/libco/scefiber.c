@@ -55,7 +55,7 @@ cothread_t co_create(unsigned int heapsize, void (*coentry)(void))
    }
 
    //_sceFiberInitializeImpl
-   int ret = _sceFiberInitializeImpl(tailFiber, "tailFiber", co_thunk, (uint32_t)coentry, (void*) m_contextBuffer, 10000, NULL);
+   int ret = _sceFiberInitializeImpl(tailFiber, "tailFiber", co_thunk, (uint32_t)coentry, (void*) m_contextBuffer, heapsize, NULL);
    if(ret==0){
      return (cothread_t)tailFiber;
    }else{
@@ -66,6 +66,9 @@ cothread_t co_create(unsigned int heapsize, void (*coentry)(void))
 
 void co_delete(cothread_t cothread)
 {
+	 if(cothread == (cothread_t)1){
+		 return;
+	 }
    sceFiberFinalize((SceFiber*)cothread);
 }
 
