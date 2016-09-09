@@ -98,7 +98,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.core, base_path,
          "cores", sizeof(g_defaults.dir.core));
 
-   /* data from the retroarch bundle */
+   /* bundle data */
    fill_pathname_join(g_defaults.dir.assets, base_path,
          "bundle/assets", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.autoconfig, base_path,
@@ -122,7 +122,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.menu_config, user_path,
          "config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.menu_content, user_path,
-         "content", sizeof(g_defaults.dir.thumbnails));
+         "content", sizeof(g_defaults.dir.menu_content));
    fill_pathname_join(g_defaults.dir.core_assets, user_path,
          "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.playlist, user_path,
@@ -141,9 +141,10 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
          "thumbnails", sizeof(g_defaults.dir.thumbnails));
 
    /* cache dir */
-   fill_pathname_join(g_defaults.dir.cache, "/tmp/retroarch/",
-         "system", sizeof(g_defaults.dir.system));
+   fill_pathname_join(g_defaults.dir.cache, "/tmp/",
+         "retroarch", sizeof(g_defaults.dir.cache));
 
+   /* history and main config */
    strlcpy(g_defaults.dir.content_history,
          user_path, sizeof(g_defaults.dir.content_history));
    fill_pathname_join(g_defaults.path.config, user_path,

@@ -139,6 +139,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "CORES", sizeof(g_defaults.dir.core));
    fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.port,
          "INFO", sizeof(g_defaults.dir.core_info));
+
    /* user data */
    fill_pathname_join(g_defaults.dir.cheats, user_path,
          "CHEATS", sizeof(g_defaults.dir.cheats));
@@ -148,7 +149,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "DOWNLOADS", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.playlist, user_path,
          "PLAYLISTS", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.remap, user_path,
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
          "REMAPS", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.dir.sram, user_path,
          "SAVEFILES", sizeof(g_defaults.dir.sram));
@@ -158,8 +159,12 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "SCREENSHOTS", sizeof(g_defaults.dir.screenshot));
    fill_pathname_join(g_defaults.dir.system, user_path,
          "SYSTEM", sizeof(g_defaults.dir.system));
+
+   /* cache dir */
    fill_pathname_join(g_defaults.dir.cache, user_path,
          "TEMP", sizeof(g_defaults.dir.cache));
+
+   /* history and main config */
    strlcpy(g_defaults.dir.content_history,
          user_path, sizeof(g_defaults.dir.content_history));
    fill_pathname_join(g_defaults.path.config, user_path,
