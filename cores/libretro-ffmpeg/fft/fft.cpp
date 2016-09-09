@@ -159,9 +159,11 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
    glClearColor(0.1f, 0.15f, 0.1f, 1.0f);
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-   vec3 eye(0, 80, -60);
+   vec3 eye        = vec3(0, 80, -60);
+   vec3 center     = eye + vec3(0.0f, 0.0f, 1.0f);
+   vec3 up         = vec3(0.0f, 1.0f, 0.0f);
    mat4 mvp_persp  = perspective((float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
-   mat4 mvp_lookat = lookAt(eye, eye + vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f));
+   mat4 mvp_lookat = lookAt(eye, center, up);
    mat4 mvp        = mvp_persp * mvp_lookat;
 
    glUseProgram(fft->block.prog);
