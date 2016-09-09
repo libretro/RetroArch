@@ -153,8 +153,6 @@ static GLuint fft_compile_program(glfft_t *fft,
 
 static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned height)
 {
-   mat4 mvp;
-
    /* Render scene. */
    glBindFramebuffer(GL_FRAMEBUFFER, fft->ms_fbo ? fft->ms_fbo : backbuffer);
    glViewport(0, 0, width, height);
@@ -162,8 +160,9 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
    vec3 eye(0, 80, -60);
-   mvp = perspective((float)M_HALF_PI, (float)width / height, 1.0f, 500.0f) *
-      lookAt(eye, eye + vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f));
+   mat4 mvp_persp  = perspective((float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
+   mat4 mvp_lookat = lookAt(eye, eye + vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f));
+   mat4 mvp        = mvp_persp * mvp_lookat;
 
    glUseProgram(fft->block.prog);
    glUniformMatrix4fv(glGetUniformLocation(fft->block.prog, "uMVP"),
