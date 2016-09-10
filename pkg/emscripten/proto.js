@@ -125,7 +125,7 @@ function setupFileSystem(backend)
    BrowserFS.initialize(mfs);
    var BFS = new BrowserFS.EmscriptenFS();
    FS.mount(BFS, {root: '/home'}, '/home');
-   console.log("WEBPLAYER: " + backened + " filesystem initialized");
+   console.log("WEBPLAYER: " + backend + " filesystem initialized");
 }
 
 /**
