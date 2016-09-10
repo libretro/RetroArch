@@ -158,7 +158,8 @@ function stat(path)
 
 function startRetroArch()
 {
-   document.getElementById('canvas_div').style.display = 'block';
+   $('.webplayer').show();
+   $('.webplayer-preview').hide();
    document.getElementById('btnDrop').disabled = true;
    document.getElementById('btnRun').disabled = true;
   
@@ -300,6 +301,14 @@ $(function() {
    // Load the Core's related JavaScript.
    $.getScript(core + '_libretro.js', function () 
    {
+    /**
+     * Make the Preview image clickable to start RetroArch.
+     */
+    $('.webplayer-preview').addClass('loaded').click(function () {
+      startRetroArch();
+      return false;
+    });
+
     // Activate the Start RetroArch button.
     $('#btnRun').removeClass('disabled');
     $('#icnRun').removeClass('fa-spinner spinning');
