@@ -253,6 +253,42 @@ function switchStorage(backend) {
 
 // When the browser has loaded everything.
 $(function() {
+  /**
+   * Attempt to disable some default browser keys.
+   */
+	var keys = {
+    9: "tab",
+    13: "enter",
+    16: "shift",
+    18: "alt",
+    27: "esc",
+    33: "rePag",
+    34: "avPag",
+    35: "end",
+    36: "home",
+    37: "left",
+    38: "up",
+    39: "right",
+    40: "down",
+    112: "F1",
+    113: "F2",
+    114: "F3",
+    115: "F4",
+    116: "F5",
+    117: "F6",
+    118: "F7",
+    119: "F8",
+    120: "F9",
+    121: "F10",
+    122: "F11",
+    123: "F12"
+  };
+	window.addEventListener('keydown', function (e) {
+    if (keys[e.which]) {
+      e.preventDefault();
+    }
+  });
+
    // Find which core to load.
    var core = localStorage.getItem("core", core);
    if (!core) {
@@ -282,48 +318,5 @@ $(function() {
       setupFolderStructure();
     }
     //$('#dropdownMenu1').text(localStorage.getItem("core"));
-    /**
-     * Attempt to disable some default browser keys.
-     */
-
-     var util = { };
-
-   document.addEventListener('keydown', function(e)
-   {
-      var key = util.key[e.which];
-      if( key )
-      {
-         e.preventDefault();
-      }
-   })
-
-   util.key = { 
-      9: "tab",
-      13: "enter",
-      16: "shift",
-      18: "alt",
-      27: "esc",
-      33: "rePag",
-      34: "avPag",
-      35: "end",
-      36: "home",
-      37: "left",
-      38: "up",
-      39: "right",
-      40: "down",
-      112: "F1",
-      113: "F2",
-      114: "F3",
-      115: "F4",
-      116: "F5",
-      117: "F6",
-      118: "F7",
-      119: "F8",
-      120: "F9",
-      121: "F10",
-      122: "F11",
-      123: "F12"
-   }
-
    });
  });
