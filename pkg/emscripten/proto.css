@@ -15,6 +15,7 @@
  * Webplayer Preview when not loaded.
  */
 .webplayer-preview {
+  margin: 0 auto;
   cursor: wait;
   opacity: 0.2;
   transition: all 0.8s;
