@@ -30,12 +30,44 @@
   -moz-animation: loaded 0.8s ease-in-out;
   animation: loaded 0.8s ease-in-out;
 }
+@keyframes loaded {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@-moz-keyframes loaded {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
 @-webkit-keyframes loaded {
   from {
     opacity: 0.2;
   }
   to {
     opacity: 1;
+  }
+}
+@keyframes loading{
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+@-moz-keyframes loading{
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0.35;
   }
 }
 @-webkit-keyframes loading {
