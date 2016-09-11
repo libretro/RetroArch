@@ -1045,7 +1045,7 @@ XML
 HTTP SERVER
 ============================================================ */
 #if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
-#include "httpserver/civetweb.c"
+#include "../deps/civetweb/civetweb.c"
 #include "httpserver/httpserver.c"
 #endif
 

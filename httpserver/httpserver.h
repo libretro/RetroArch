@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
   int  httpserver_init(unsigned port);
-  void httpserver_destroy();
+  void httpserver_destroy(void);
 
 #ifdef __cplusplus
 }
