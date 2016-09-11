@@ -5,6 +5,7 @@
  */
 var dropbox = false;
 var client = new Dropbox.Client({ key: "il6e10mfd7pgf8r" });
+var BrowserFS = browserfs;
 
 var showError = function(error) {
   switch (error.status) {
