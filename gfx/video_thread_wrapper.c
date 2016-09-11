@@ -208,7 +208,7 @@ static void video_thread_reply(thread_video_t *thr, const thread_packet_t *pkt)
    thr->cmd_data = *pkt;
 
    thr->reply_cmd = pkt->type;
-   thr->send_cmd  = CMD_NONE;
+   thr->send_cmd  = CMD_VIDEO_NONE;
 
    scond_signal(thr->cond_cmd);
    slock_unlock(thr->lock);
@@ -223,7 +223,7 @@ static void video_thread_send_packet(thread_video_t *thr,
    thr->cmd_data = *pkt;
 
    thr->send_cmd  = pkt->type;
-   thr->reply_cmd = CMD_NONE;
+   thr->reply_cmd = CMD_VIDEO_NONE;
 
    scond_signal(thr->cond_thread);
    slock_unlock(thr->lock);
@@ -239,7 +239,7 @@ static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
       scond_wait(thr->cond_cmd, thr->lock);
 
    *pkt = thr->cmd_data;
-   thr->cmd_data.type = CMD_NONE;
+   thr->cmd_data.type = CMD_VIDEO_NONE;
 
    slock_unlock(thr->lock);
 }
@@ -515,7 +515,7 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, &pkt);
          break;
 
-      case CMD_NONE:
+      case CMD_VIDEO_NONE:
          /* Never reply on no command. Possible deadlock if
           * thread sends command right after frame update. */
          break;
@@ -537,7 +537,7 @@ static void video_thread_loop(void *data)
       bool updated = false;
 
       slock_lock(thr->lock);
-      while (thr->send_cmd == CMD_NONE && !thr->frame.updated)
+      while (thr->send_cmd == CMD_VIDEO_NONE && !thr->frame.updated)
          scond_wait(thr->cond_thread, thr->lock);
       if (thr->frame.updated)
          updated = true;

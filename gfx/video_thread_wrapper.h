@@ -28,7 +28,7 @@ RETRO_BEGIN_DECLS
 
 enum thread_cmd
 {
-   CMD_NONE = 0,
+   CMD_VIDEO_NONE = 0,
    CMD_INIT,
    CMD_SET_SHADER,
    CMD_FREE,
