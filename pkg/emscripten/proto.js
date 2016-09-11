@@ -50,7 +50,7 @@ function dropboxInit()
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnDrop').disabled = true;
   $('#icnDrop').removeClass('fa-dropbox');
-  $('#icnDrop').addClass('fa-spinner spinning');
+  $('#icnDrop').addClass('fa-spinner fa-spin');
   
 
   client.authDriver(new Dropbox.AuthDriver.Redirect());
@@ -66,7 +66,7 @@ function dropboxInit()
 function success()
 {
   document.getElementById('btnRun').disabled = false;
-  $('#icnDrop').removeClass('fa-spinner spinning');
+  $('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
   $('#icnDrop').addClass('fa-check');
   console.log("WEBPLAYER: Sync successful");
   setupFileSystem("dropbox");
@@ -311,7 +311,7 @@ $(function() {
 
     // Activate the Start RetroArch button.
     $('#btnRun').removeClass('disabled');
-    $('#icnRun').removeClass('fa-spinner spinning');
+    $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
     $('#icnRun').addClass('fa-play');
 
     if (localStorage.getItem("backend") == "dropbox")
