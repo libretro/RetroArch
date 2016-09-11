@@ -25,25 +25,26 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_EGL
+#include <wayland-egl.h>
+#endif
+
 #ifdef HAVE_VULKAN
 #include "../common/vulkan_common.h"
 #endif
 
 #ifdef HAVE_EGL
-#include <wayland-egl.h>
+#include "../common/egl_common.h"
+#endif
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#include "../common/gl_common.h"
 #endif
 
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../frontend/frontend_driver.h"
-#include "../../general.h"
 #include "../../runloop.h"
-#ifdef HAVE_EGL
-#include "../common/egl_common.h"
-#endif
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-#include "../common/gl_common.h"
-#endif
 
 typedef struct gfx_ctx_wayland_data
 {

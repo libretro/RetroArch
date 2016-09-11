@@ -29,14 +29,10 @@
 #ifdef HAVE_OPENGLES
 #include <GLES2/gl2.h>
 #endif
+
 #ifdef HAVE_EGL
 #include <EGL/egl.h>
 #endif
-
-#include "../../configuration.h"
-#include "../../driver.h"
-#include "../../general.h"
-#include "../../runloop.h"
 
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
@@ -45,6 +41,10 @@
 #ifdef HAVE_OPENGLES
 #include "../common/gl_common.h"
 #endif
+
+#include "../../configuration.h"
+#include "../../driver.h"
+#include "../../runloop.h"
 
 #define WINDOW_BUFFERS 2
 

@@ -24,11 +24,6 @@
 #include "../../config.h"
 #endif
 
-#include "../../configuration.h"
-#include "../../driver.h"
-#include "../../general.h"
-#include "../../runloop.h"
-
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
 #endif
@@ -42,6 +37,9 @@
 #endif
 
 #include "../../frontend/drivers/platform_linux.h"
+#include "../../configuration.h"
+#include "../../driver.h"
+#include "../../runloop.h"
 
 static enum gfx_ctx_api android_api;
 

@@ -16,12 +16,6 @@
 
 #include <signal.h>
 
-#include "../../configuration.h"
-#include "../../driver.h"
-#include "../../frontend/frontend_driver.h"
-#include "../../general.h"
-#include "../../runloop.h"
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -33,6 +27,11 @@
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../common/gl_common.h"
 #endif
+
+#include "../../configuration.h"
+#include "../../driver.h"
+#include "../../frontend/frontend_driver.h"
+#include "../../runloop.h"
 
 typedef struct
 {
