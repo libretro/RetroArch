@@ -1999,7 +1999,7 @@ bool task_push_content_load_default(
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         if (!g(content_info, loading_from_menu, mode))
+         if (!task_load_content(content_info, loading_from_menu, mode))
             goto error;
          break;
 #ifndef HAVE_DYNAMIC
