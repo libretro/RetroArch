@@ -23,11 +23,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "../command.h"
-#include "../input/input_driver.h"
 #include "../setting_list.h"
-
-#include "../msg_hash.h"
 
 RETRO_BEGIN_DECLS
 

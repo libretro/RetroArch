@@ -20,8 +20,6 @@
 
 #include <boolean.h>
 
-#include "menu_entries.h"
-
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,

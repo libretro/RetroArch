@@ -22,8 +22,6 @@
 #include <retro_common_api.h>
 #include <lists/file_list.h>
 
-#include "../msg_hash.h"
-
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
 #endif
