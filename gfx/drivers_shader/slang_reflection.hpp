@@ -80,7 +80,7 @@ enum slang_stage
    SLANG_STAGE_FRAGMENT_MASK = 1 << 1
 };
 
-// Vulkan minimum limit.
+/* Vulkan minimum limit. */
 #define SLANG_NUM_BINDINGS 16
 
 struct slang_texture_semantic_meta

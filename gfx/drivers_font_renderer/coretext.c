@@ -19,6 +19,11 @@
 #include <string.h>
 
 #include <CoreFoundation/CFString.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef IOS
 #include <CoreText/CoreText.h>
 #include <CoreGraphics/CoreGraphics.h>
@@ -27,7 +32,7 @@
 #endif
 
 #include "../font_driver.h"
-#include "../../general.h"
+#include "../../runloop.h"
 
 #define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16

@@ -20,6 +20,10 @@
 #include <string>
 #include <vector>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../include/Cg/cg.h"
 #include "../../include/Cg/cgD3D9.h"
 
@@ -27,15 +31,15 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
+#include "../d3d.h"
+#include "../d3d_shaders/opaque.cg.d3d9.h"
+
 #include "render_chain_driver.h"
 #include "../../video_driver.h"
-#include "../../../configuration.h"
-#include "../../../general.h"
 #include "../../../performance_counters.h"
+#include "../../../configuration.h"
+#include "../../../runloop.h"
 #include "../../../verbosity.h"
-#include "../d3d.h"
-
-#include "../d3d_shaders/opaque.cg.d3d9.h"
 
 #define cg_d3d9_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
 namespace {

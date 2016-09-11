@@ -16,8 +16,12 @@
 
 #include <xtl.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../font_driver.h"
-#include "../../general.h"
+#include "../../runloop.h"
 
 typedef struct
 {

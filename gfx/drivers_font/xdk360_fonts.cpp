@@ -18,9 +18,13 @@
 
 #include <string/stdstring.h>
 
-#include "../font_driver.h"
+#ifdef HAVE_CONFIG_H
+#include "../../runloop.h"
+#endif
+
 #include "../d3d/d3d.h"
-#include "../../general.h"
+#include "../font_driver.h"
+#include "../../runloop.h"
 
 #include "../drivers/d3d_shaders/font.hlsl.d3d9.h"
 

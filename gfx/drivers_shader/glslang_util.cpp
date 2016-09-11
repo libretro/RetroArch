@@ -14,29 +14,32 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <string>
 #include <sstream>
 #include <algorithm>
 
+#include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
+#include <retro_miscellaneous.h>
 
 #include "glslang_util.hpp"
 #include "glslang.hpp"
 
-#include "../../general.h"
-#include "../../libretro-common/include/file/file_path.h"
+#include "../../verbosity.h"
 
 using namespace std;
 
 static bool read_shader_file(const char *path, vector<string> *output, bool root_file)
 {
-   char                *buf = nullptr;
-   ssize_t              len = 0;
-   const char *basename     = path_basename(path);
-   char include_path[PATH_MAX];
-   char tmp[PATH_MAX];
    vector<const char *> lines;
+   char                          *ptr = NULL;
+   char                          *buf = nullptr;
+   ssize_t                        len = 0;
+   char include_path[PATH_MAX_LENGTH] = {0};
+   char tmp[PATH_MAX_LENGTH]          = {0};
+   const char *basename               = path_basename(path);
 
    if (!filestream_read_file(path, (void**)&buf, &len))
    {
@@ -44,8 +47,9 @@ static bool read_shader_file(const char *path, vector<string> *output, bool root
       return false;
    }
 
-   // Cannot use string_split since it removes blank lines (strtok).
-   char *ptr = buf;
+   /* Cannot use string_split since it removes blank lines (strtok). */
+   ptr = buf;
+
    while (ptr && *ptr)
    {
       lines.push_back(ptr);
@@ -75,13 +79,14 @@ static bool read_shader_file(const char *path, vector<string> *output, bool root
       }
 
       output->push_back(lines[0]);
-      // Allows us to use #line to make dealing with shader errors easier.
-      // This is supported by glslang, but since we always use glslang statically,
-      // this is fine.
+      /* Allows us to use #line to make dealing with shader errors easier.
+       * This is supported by glslang, but since we always use glslang statically,
+       * this is fine. */
       output->push_back("#extension GL_GOOGLE_cpp_style_line_directive : require");
    }
 
-   // At least VIM treats the first line as line #1, so offset everything by one.
+   /* At least VIM treats the first line as line #1, 
+    * so offset everything by one. */
    snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", root_file ? 2 : 1, basename);
    output->push_back(tmp);
 
@@ -90,7 +95,9 @@ static bool read_shader_file(const char *path, vector<string> *output, bool root
       const char *line = lines[i];
       if (strstr(line, "#include ") == line)
       {
-         char *c = (char*)strchr(line, '"');
+         char *closing = NULL;
+         char *c       = (char*)strchr(line, '"');
+
          if (!c)
          {
             RARCH_ERR("Invalid include statement \"%s\".\n", line);
@@ -98,14 +105,18 @@ static bool read_shader_file(const char *path, vector<string> *output, bool root
             return false;
          }
          c++;
-         char *closing = (char*)strchr(c, '"');
+
+         closing = (char*)strchr(c, '"');
+
          if (!closing)
          {
             RARCH_ERR("Invalid include statement \"%s\".\n", line);
             free(buf);
             return false;
          }
+
          *closing = '\0';
+
          fill_pathname_resolve_relative(include_path, path, c, sizeof(include_path));
 
          if (!read_shader_file(include_path, output, false))
@@ -114,15 +125,18 @@ static bool read_shader_file(const char *path, vector<string> *output, bool root
             return false;
          }
 
-         // After including a file, use line directive to pull it back to current file.
+         /* After including a file, use line directive 
+          * to pull it back to current file. */
          snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 1), basename);
          output->push_back(tmp);
       }
       else if (strstr(line, "#endif") || strstr(line, "#pragma"))
       {
-         // #line seems to be ignored if preprocessor tests fail,
-         // so we should reapply #line after each #endif.
-         // Add extra offset here since we're setting #line for the line after this one.
+         /* #line seems to be ignored if preprocessor tests fail,
+          * so we should reapply #line after each #endif.
+          * Add extra offset here since we're setting #line 
+          * for the line after this one.
+          */
          snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", unsigned(i + 2), basename);
          output->push_back(line);
          output->push_back(tmp);
@@ -140,7 +154,7 @@ static string build_stage_source(const vector<string> &lines, const char *stage)
    ostringstream str;
    bool active = true;
 
-   // Version header.
+   /* Version header. */
    str << lines.front();
    str << '\n';
 
@@ -157,7 +171,7 @@ static string build_stage_source(const vector<string> &lines, const char *stage)
       else if (itr->find("#pragma name ") == 0 ||
                itr->find("#pragma format ") == 0)
       {
-         // Ignore
+         /* Ignore */
       }
       else if (active)
          str << *itr;
@@ -253,10 +267,11 @@ static glslang_format glslang_find_format(const char *fmt)
 
 static bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
 {
-   char id[64] = {};
+   char id[64]   = {};
    char desc[64] = {};
 
    *meta = glslang_meta{};
+
    for (auto &line : lines)
    {
       if (line.find("#pragma name ") == 0)
@@ -290,7 +305,8 @@ static bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
                      return param.id == id;
                   });
 
-            // Allow duplicate #pragma parameter, but only if they are exactly the same.
+            /* Allow duplicate #pragma parameter, but only 
+             * if they are exactly the same. */
             if (itr != end(meta->parameters))
             {
                if (itr->desc != desc ||
@@ -314,13 +330,16 @@ static bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
       }
       else if (line.find("#pragma format ") == 0)
       {
+         const char *str = NULL;
+
          if (meta->rt_format != SLANG_FORMAT_UNKNOWN)
          {
             RARCH_ERR("[slang]: Trying to declare format multiple times for file.\n");
             return false;
          }
 
-         const char *str = line.c_str() + strlen("#pragma format ");
+         str = line.c_str() + strlen("#pragma format ");
+
          while (*str == ' ')
             str++;
 

@@ -14,11 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../drivers/d3d.h"
 #include "../font_driver.h"
 
 #include "../../configuration.h"
-#include "../../general.h"
+#include "../../runloop.h"
 
 #include "../include/d3d9/d3dx9core.h"
 
