@@ -20,6 +20,7 @@
 #include <retro_assert.h>
 #include <gfx/scaler/scaler.h>
 #include <retro_assert.h>
+#include "../../verbosity.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
