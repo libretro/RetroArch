@@ -31,6 +31,40 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
+enum thread_cmd
+{
+   CMD_VIDEO_NONE = 0,
+   CMD_INIT,
+   CMD_SET_SHADER,
+   CMD_FREE,
+   CMD_ALIVE, /* Blocking alive check. Used when paused. */
+   CMD_SET_VIEWPORT,
+   CMD_SET_ROTATION,
+   CMD_READ_VIEWPORT,
+
+   CMD_OVERLAY_ENABLE,
+   CMD_OVERLAY_LOAD,
+   CMD_OVERLAY_TEX_GEOM,
+   CMD_OVERLAY_VERTEX_GEOM,
+   CMD_OVERLAY_FULL_SCREEN,
+
+   CMD_POKE_SET_VIDEO_MODE,
+   CMD_POKE_SET_FILTERING,
+   CMD_POKE_GET_VIDEO_OUTPUT_SIZE,
+   CMD_POKE_GET_VIDEO_OUTPUT_PREV,
+   CMD_POKE_GET_VIDEO_OUTPUT_NEXT,
+
+   CMD_POKE_SET_FBO_STATE,
+   CMD_POKE_GET_FBO_STATE,
+
+   CMD_POKE_SET_ASPECT_RATIO,
+   CMD_POKE_SET_OSD_MSG,
+   CMD_FONT_INIT,
+   CMD_CUSTOM_COMMAND,
+
+   CMD_DUMMY = INT_MAX
+};
+
 struct thread_packet
 {
    enum thread_cmd type;
