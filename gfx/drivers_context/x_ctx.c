@@ -15,6 +15,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <signal.h>
 
 #ifdef HAVE_CONFIG_H
