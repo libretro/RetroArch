@@ -1280,6 +1280,51 @@ static void retroarch_validate_cpu_features(void)
 #endif
 }
 
+static void retroarch_main_init_media(void)
+{
+   char    *fullpath    = NULL;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   if (  !settings->multimedia.builtin_mediaplayer_enable &&
+         !settings->multimedia.builtin_imageviewer_enable
+      )
+      return;
+
+   if (!runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
+      return;
+
+   if (string_is_empty(fullpath))
+      return;
+
+   switch (retroarch_path_is_media_type(fullpath))
+   {
+      case RARCH_CONTENT_MOVIE:
+      case RARCH_CONTENT_MUSIC:
+         if (settings->multimedia.builtin_mediaplayer_enable)
+         {
+#ifdef HAVE_FFMPEG
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
+            retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
+#endif
+         }
+         break;
+#ifdef HAVE_IMAGEVIEWER
+      case RARCH_CONTENT_IMAGE:
+         if (settings->multimedia.builtin_imageviewer_enable)
+         {
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
+            retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
+         }
+         break;
+#endif
+      default:
+         break;
+   }
+}
+
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
@@ -1326,43 +1371,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
    runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
 
-   {
-      settings_t *settings = config_get_ptr();
-
-      if (settings && (settings->multimedia.builtin_mediaplayer_enable ||
-               settings->multimedia.builtin_imageviewer_enable))
-      {
-         char *fullpath    = NULL;
-         if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath) 
-               && !string_is_empty(fullpath))
-         {
-            switch (retroarch_path_is_media_type(fullpath))
-            {
-               case RARCH_CONTENT_MOVIE:
-               case RARCH_CONTENT_MUSIC:
-                  if (settings->multimedia.builtin_mediaplayer_enable)
-                  {
-#ifdef HAVE_FFMPEG
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
-                     retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
-#endif
-                  }
-                  break;
-#ifdef HAVE_IMAGEVIEWER
-               case RARCH_CONTENT_IMAGE:
-                  if (settings->multimedia.builtin_imageviewer_enable)
-                  {
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
-                     retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
-                  }
-                  break;
-#endif
-               default:
-                  break;
-            }
-         }
-      }
-   }
+   retroarch_main_init_media();
 
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
 
