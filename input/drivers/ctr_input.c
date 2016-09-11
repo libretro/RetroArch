@@ -19,9 +19,12 @@
 #include <boolean.h>
 #include <libretro.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../general.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 

@@ -22,11 +22,14 @@
 #include <boolean.h>
 #include <libretro.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../defines/ps3_defines.h"
 
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../general.h"
 
 #ifdef HAVE_MOUSE
 #ifndef __PSL1GHT__

@@ -23,8 +23,11 @@
 #include <bps/navigator.h>
 #include <sys/keycodes.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../configuration.h"
-#include "../../general.h"
 #include "../../driver.h"
 #include "../input_autodetect.h"
 

@@ -17,6 +17,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef _XBOX
 #include <xtl.h>
 #endif
@@ -26,7 +30,6 @@
 
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../general.h"
 
 #define MAX_PADS 4
 

@@ -17,6 +17,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #if defined(SN_TARGET_PSP2)
 #include <sceerror.h>
 #include <kernel.h>
@@ -30,15 +34,15 @@
 #include <boolean.h>
 #include <libretro.h>
 
+#ifdef HAVE_KERNEL_PRX
+#include "../../bootstrap/psp1/kernel_functions.h"
+#endif
+
 #include "../../defines/psp_defines.h"
 
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../general.h"
 #include "../input_config.h"
-#ifdef HAVE_KERNEL_PRX
-#include "../../bootstrap/psp1/kernel_functions.h"
-#endif
 
 typedef struct psp_input
 {

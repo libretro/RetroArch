@@ -19,7 +19,6 @@
 
 #include <stdint.h>
 #include <boolean.h>
-#include "../../general.h"
 
 /* Input responder */
 #define MAX_TOUCHES  16

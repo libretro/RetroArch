@@ -26,8 +26,6 @@
 #include "../../configuration.h"
 #include "../../driver.h"
 
-#include "../../general.h"
-
 typedef struct rwebinput_state
 {
    uint8_t keys[32];

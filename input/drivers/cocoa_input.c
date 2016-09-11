@@ -17,11 +17,14 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
 #include "cocoa_input.h"
-#include "../../general.h"
 #include "../../configuration.h"
 #include "../../driver.h"
 

@@ -25,19 +25,22 @@
 #include <retro_inline.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_display.h"
+#endif
+
 #include "../../frontend/drivers/platform_linux.h"
 #include "../input_autodetect.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "../../performance_counters.h"
-#include "../../general.h"
 #include "../../driver.h"
 #include "../../configuration.h"
-
-#ifdef HAVE_MENU
-#include "../../menu/menu_display.h"
-#endif
 
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
