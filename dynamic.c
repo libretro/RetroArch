@@ -1266,7 +1266,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
-#if defined(HAVE_THREADS) && !defined(__CELLOS_LV2__)
+#ifdef HAVE_THREADS
       {
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
          audio_driver_set_callback(data);
