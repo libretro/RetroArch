@@ -108,12 +108,11 @@ enum
    RA_OPT_MAX_FRAMES
 };
 
-static bool current_core_explicitly_set = false;
-static enum rarch_core_type current_core_type;
-static enum rarch_core_type explicit_current_core_type;
-static char current_savefile_dir[PATH_MAX_LENGTH];
-
-static char error_string[PATH_MAX_LENGTH];
+static bool current_core_explicitly_set                 = false;
+static enum rarch_core_type current_core_type           = CORE_TYPE_PLAIN;
+static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
+static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
+static char error_string[PATH_MAX_LENGTH]               = {0};
 static jmp_buf error_sjlj_context;
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
