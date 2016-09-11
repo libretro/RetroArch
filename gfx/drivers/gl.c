@@ -41,7 +41,6 @@
 #include "gl_renderchains/render_chain_gl.h"
 
 #include "../../configuration.h"
-#include "../../driver.h"
 #include "../../record/record_driver.h"
 #include "../../performance_counters.h"
 

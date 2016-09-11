@@ -30,7 +30,6 @@
 
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
-#include "../../driver.h"
 #include "../../runloop.h"
 
 typedef struct

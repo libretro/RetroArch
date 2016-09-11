@@ -30,8 +30,6 @@
 
 #include "../gfx/video_shader_driver.h"
 
-#include "../driver.h"
-
 RETRO_BEGIN_DECLS
 
 #ifndef MAX_COUNTERS

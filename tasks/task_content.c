@@ -94,10 +94,6 @@
 #include "../deps/7zip/7zFile.h"
 #endif
 
-#ifdef HAVE_MENU
-#include "../menu/menu_driver.h"
-#endif
-
 #ifdef HAVE_CHEEVOS
 #include "../cheevos.h"
 #endif

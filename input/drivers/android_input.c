@@ -39,7 +39,6 @@
 #include "../input_joypad_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "../../performance_counters.h"
-#include "../../driver.h"
 #include "../../configuration.h"
 
 #define MAX_TOUCH 16

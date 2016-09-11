@@ -26,7 +26,7 @@
 #include <libretro.h>
 
 #include "../../configuration.h"
-#include "../../driver.h"
+#include "../input_joypad_driver.h"
 
 #ifndef MAX_PADS
 #define MAX_PADS 4

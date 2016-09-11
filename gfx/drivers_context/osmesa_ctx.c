@@ -14,11 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../driver.h"
-#include "../../runloop.h"
-#include "../common/gl_common.h"
 
-#include <GL/osmesa.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -28,6 +24,11 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <poll.h>
+
+#include <GL/osmesa.h>
+
+#include "../../runloop.h"
+#include "../common/gl_common.h"
 
 #if (OSMESA_MAJOR_VERSION * 1000 + OSMESA_MINOR_VERSION) >= 11002
 #define HAVE_OSMESA_CREATE_CONTEXT_ATTRIBS 1

@@ -34,7 +34,6 @@
 #include "../drivers_font_renderer/bitmap.h"
 #include "../../defines/gx_defines.h"
 #include "../../configuration.h"
-#include "../../driver.h"
 #include "../../runloop.h"
 #include "../../menu/menu_driver.h"
 #include "../../menu/menu_display.h"

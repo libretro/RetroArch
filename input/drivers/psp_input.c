@@ -41,7 +41,7 @@
 #include "../../defines/psp_defines.h"
 
 #include "../../configuration.h"
-#include "../../driver.h"
+#include "../input_joypad_driver.h"
 #include "../input_config.h"
 
 typedef struct psp_input

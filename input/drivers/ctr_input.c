@@ -24,7 +24,6 @@
 #endif
 
 #include "../../configuration.h"
-#include "../../driver.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 

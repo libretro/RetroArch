@@ -26,7 +26,6 @@
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
-#include "../../driver.h"
 
 typedef struct rwebinput_state
 {

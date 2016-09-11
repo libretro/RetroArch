@@ -15,7 +15,6 @@
  */
 
 #include "../input_driver.h"
-#include "../../driver.h"
 #include "../../verbosity.h"
 
 static void *nullinput_input_init(void)

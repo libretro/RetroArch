@@ -29,7 +29,6 @@
 
 #include "../../configuration.h"
 #include "../../command.h"
-#include "../../driver.h"
 
 #include "../../retroarch.h"
 #include "../../performance_counters.h"

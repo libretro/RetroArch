@@ -30,7 +30,6 @@
 #include <OpenGL/gl.h>
 
 #include "../../configuration.h"
-#include "../../driver.h"
 #include "../../runloop.h"
 #include "../../configuration.h"
 #include "../video_context_driver.h"

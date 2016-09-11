@@ -26,7 +26,6 @@
 #endif
 #endif
 
-#include "../../driver.h"
 #include "../../runloop.h"
 #include "../../defines/ps3_defines.h"
 #include "../common/gl_common.h"

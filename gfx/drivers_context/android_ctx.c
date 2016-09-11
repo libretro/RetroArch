@@ -38,7 +38,6 @@
 
 #include "../../frontend/drivers/platform_linux.h"
 #include "../../configuration.h"
-#include "../../driver.h"
 #include "../../runloop.h"
 
 static enum gfx_ctx_api android_api;

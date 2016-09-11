@@ -29,7 +29,6 @@
 #endif
 
 #include "../../defines/psp_defines.h"
-#include "../../driver.h"
 #include "../../runloop.h"
 
 #ifndef SCEGU_SCR_WIDTH

@@ -28,8 +28,8 @@
 #include <boolean.h>
 #include <libretro.h>
 
+#include "../input_joypad_driver.h"
 #include "../../configuration.h"
-#include "../../driver.h"
 
 #define MAX_PADS 4
 

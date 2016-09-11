@@ -28,7 +28,7 @@
 #endif
 
 #include "../../configuration.h"
-#include "../../driver.h"
+#include "../input_joypad_driver.h"
 #include "../input_autodetect.h"
 
 #define MAX_PADS 8

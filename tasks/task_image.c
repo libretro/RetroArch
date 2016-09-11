@@ -25,6 +25,10 @@
 #include <lists/string_list.h>
 #include <rhash.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #endif

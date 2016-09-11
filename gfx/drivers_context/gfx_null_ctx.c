@@ -16,7 +16,6 @@
 
 /* Null context. */
 
-#include "../../driver.h"
 #include "../video_context_driver.h"
 
 static void gfx_ctx_null_swap_interval(void *data, unsigned interval)

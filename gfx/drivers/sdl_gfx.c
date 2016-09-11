@@ -33,7 +33,6 @@
 #include "SDL_syswm.h"
 
 #include "../../configuration.h"
-#include "../../driver.h"
 #include "../../runloop.h"
 #include "../../performance_counters.h"
 

@@ -26,7 +26,6 @@
 #endif
 
 #include "../../configuration.h"
-#include "../../driver.h"
 
 #include "../../frontend/frontend_driver.h"
 #include "../common/gl_common.h"

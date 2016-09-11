@@ -31,7 +31,6 @@
 #include <retro_inline.h>
 
 #include "../../configuration.h"
-#include "../../driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
 #include "../font_driver.h"

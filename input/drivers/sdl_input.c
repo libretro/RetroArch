@@ -22,7 +22,6 @@
 #include <libretro.h>
 
 #include "../../configuration.h"
-#include "../../driver.h"
 
 #include "SDL.h"
 #include "../../gfx/video_context_driver.h"

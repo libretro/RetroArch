@@ -24,11 +24,15 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
-#include "tasks_internal.h"
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
 #endif
+
+#include "tasks_internal.h"
 
 #include "../list_special.h"
 #include "../msg_hash.h"

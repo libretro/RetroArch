@@ -43,7 +43,6 @@
 #endif
 
 #include "../../configuration.h"
-#include "../../driver.h"
 #include "../../runloop.h"
 
 #define WINDOW_BUFFERS 2

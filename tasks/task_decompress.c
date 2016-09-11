@@ -13,9 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
 
 #include <lists/string_list.h>
 #include <string/stdstring.h>
