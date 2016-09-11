@@ -150,12 +150,12 @@ static int httpserver_handle_basic_info(struct mg_connection* conn, void* cbdata
    unsigned p, q, r;
    retro_ctx_api_info_t api;
    retro_ctx_region_info_t region;
-   const char* pixel_format;
    retro_ctx_memory_info_t sram;
    retro_ctx_memory_info_t rtc;
    retro_ctx_memory_info_t sysram;
    retro_ctx_memory_info_t vram;
    char core_path[PATH_MAX_LENGTH]                 = {0};
+   const char* pixel_format                        = NULL;
    const rarch_system_info_t* system               = NULL;
    const struct retro_subsystem_info* subsys       = NULL;
    const struct retro_subsystem_rom_info* rom      = NULL;
