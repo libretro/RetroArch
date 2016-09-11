@@ -17,13 +17,14 @@
 #ifndef COMMAND_H__
 #define COMMAND_H__
 
+#include <stdint.h>
+
+#include <boolean.h>
+#include <retro_common_api.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include <stdint.h>
-#include <boolean.h>
-#include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 

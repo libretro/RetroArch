@@ -22,6 +22,10 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gfx/video_driver.h"
 #include "input/input_defines.h"
 
