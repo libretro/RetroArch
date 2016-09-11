@@ -146,10 +146,12 @@ static void buffer_attr_cb(pa_stream *s, void *data)
 
 static void *pulse_init(const char *device, unsigned rate, unsigned latency)
 {
-   pa_sample_spec               spec = {0};
+   pa_sample_spec               spec;
    pa_buffer_attr        buffer_attr = {0};
    const pa_buffer_attr *server_attr = NULL;
    pa_t                          *pa = (pa_t*)calloc(1, sizeof(*pa));
+
+   memset(&spec, 0, sizeof(spec));
 
    if (!pa)
       goto error;

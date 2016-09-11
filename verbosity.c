@@ -143,7 +143,7 @@ static aslclient asl_client;
 #else
 
 #ifdef HAVE_FILE_LOGGER
-   fp = retro_main_log_file();
+   fp = (FILE*)retro_main_log_file();
 #else
    fp = stderr;
 #endif
