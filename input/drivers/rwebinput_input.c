@@ -15,6 +15,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <boolean.h>
 
 #include "../input_joypad_driver.h"
