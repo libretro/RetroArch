@@ -26,9 +26,13 @@
 #include <gfx/math/matrix_3x3.h>
 #include <libretro.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../video_context_driver.h"
-#include "../../general.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../driver.h"
 #include "../../performance_counters.h"
 #include "../font_driver.h"

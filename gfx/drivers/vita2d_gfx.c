@@ -19,15 +19,19 @@
 #include <retro_inline.h>
 #include <string/stdstring.h>
 
-#include "../../defines/psp_defines.h"
-#include "../common/vita2d_common.h"
-#include "../../general.h"
-#include "../../driver.h"
-#include "../video_coord_array.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
+
+#include "../../defines/psp_defines.h"
+#include "../common/vita2d_common.h"
+#include "../../driver.h"
+#include "../../runloop.h"
+#include "../video_coord_array.h"
 
 static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);

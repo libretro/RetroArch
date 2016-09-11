@@ -16,7 +16,6 @@
 
 #include "../../driver.h"
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 static void *null_gfx_init(const video_info_t *video,

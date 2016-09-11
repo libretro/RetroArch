@@ -21,26 +21,25 @@
 #include <gfx/scaler/scaler.h>
 #include <retro_assert.h>
 
-#include "SDL.h"
-
-#include "../../configuration.h"
-#include "../../driver.h"
-#include "../../general.h"
-#include "../../performance_counters.h"
-
-#include "../video_frame.h"
-#include "../video_context_driver.h"
-#include "../font_driver.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
 #ifdef HAVE_X11
 #include "../common/x11_common.h"
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
+#include "SDL.h"
 #include "SDL_syswm.h"
+
+#include "../../configuration.h"
+#include "../../driver.h"
+#include "../../runloop.h"
+#include "../../performance_counters.h"
+
+#include "../video_frame.h"
+#include "../video_context_driver.h"
+#include "../font_driver.h"
 
 typedef struct sdl_menu_frame
 {

@@ -23,12 +23,12 @@
 #include <xenos/xenos.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../general.h"
+#include "../../runloop.h"
 
 #define XE_W 512
 #define XE_H 512

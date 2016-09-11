@@ -21,11 +21,14 @@
 
 #include <retro_inline.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "ctr_gu.h"
 
 #include "../../configuration.h"
 #include "../../command.h"
-#include "../../general.h"
 #include "../../driver.h"
 
 #include "../../retroarch.h"

@@ -19,21 +19,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "../common/x11_common.h"
-
-#ifdef HAVE_MENU
-#include "../../menu/menu_driver.h"
-#endif
-
 #include <sys/shm.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XShm.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
+#include "../common/x11_common.h"
 
 typedef struct xshm
 {

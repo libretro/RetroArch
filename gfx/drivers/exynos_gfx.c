@@ -31,12 +31,15 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 
-#include "../common/drm_common.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
-#include "../../general.h"
+#include "../common/drm_common.h"
+#include "../font_driver.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
-#include "../font_driver.h"
+#include "../../runloop.h"
 
 /* TODO: Honor these properties: vsync, menu rotation, menu alpha, aspect ratio change */
 

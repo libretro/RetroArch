@@ -24,15 +24,15 @@
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
+#include "../font_driver.h"
+#include "../video_context_driver.h"
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../general.h"
 #include "../../retroarch.h"
-#include "../video_context_driver.h"
-#include "../font_driver.h"
+#include "../../runloop.h"
 
 #include "drm_pixformats.h"
 

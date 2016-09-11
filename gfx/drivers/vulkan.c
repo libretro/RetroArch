@@ -18,10 +18,6 @@
 #include <math.h>
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <compat/strl.h>
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
@@ -29,6 +25,14 @@
 #include <retro_miscellaneous.h>
 #include <retro_assert.h>
 #include <libretro.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
 
 #include "../common/vulkan_common.h"
 
@@ -40,10 +44,6 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
-
-#ifdef HAVE_MENU
-#include "../../menu/menu_driver.h"
-#endif
 
 #include "../font_driver.h"
 #include "../video_context_driver.h"

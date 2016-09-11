@@ -24,8 +24,12 @@
 #include <rthreads/rthreads.h>
 #include <string/stdstring.h>
 
-#include "../../general.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../font_driver.h"
 
 #define NUMPAGES 2

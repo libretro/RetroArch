@@ -18,13 +18,13 @@
 #include <rthreads/rthreads.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../general.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../video_context_driver.h"
 #include "../font_driver.h"
 

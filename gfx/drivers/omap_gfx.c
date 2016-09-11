@@ -26,7 +26,7 @@
 #include <assert.h>
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../../config.h"
 #endif
 
 #include <sys/mman.h>
@@ -39,8 +39,8 @@
 
 #include "../../configuration.h"
 #include "../../driver.h"
-#include "../../general.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 
 #include "../video_context_driver.h"
 #include "../video_frame.h"

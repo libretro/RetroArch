@@ -23,20 +23,23 @@
 
 #include <streams/file_stream.h>
 
-#include "../../configuration.h"
-#include "../../driver.h"
-#include "../../general.h"
-#include "../drivers_font_renderer/bitmap.h"
-#include "../../menu/menu_driver.h"
-#include "../../menu/menu_display.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
 #ifdef HW_RVL
 #include "../../memory/wii/mem2_manager.h"
 #endif
 
+#include "../drivers_font_renderer/bitmap.h"
 #include "../../defines/gx_defines.h"
+#include "../../configuration.h"
+#include "../../driver.h"
+#include "../../runloop.h"
+#include "../../menu/menu_driver.h"
+#include "../../menu/menu_display.h"
 
-extern syssram* __SYS_LockSram();
+extern syssram* __SYS_LockSram(void);
 extern u32 __SYS_UnlockSram(u32 write);
 
 struct gx_overlay_data
@@ -66,13 +69,6 @@ typedef struct gx_video
    void *framebuf[2];
 } gx_video_t;
 
-unsigned g_current_framebuf;
-
-bool g_vsync;
-OSCond g_video_cond;
-volatile bool g_draw_done;
-uint32_t g_orientation;
-
 static struct
 {
    uint32_t *data; /* needs to be resizable. */
@@ -87,13 +83,19 @@ static struct
    GXTexObj obj;
 } menu_tex ATTRIBUTE_ALIGN(32);
 
-uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
-uint8_t display_list[1024] ATTRIBUTE_ALIGN(32);
+static OSCond g_video_cond;
+static unsigned g_current_framebuf;
+static volatile bool g_draw_done = false;
+static bool              g_vsync = false;
+static uint32_t g_orientation    = 0;
+
+static uint8_t gx_fifo[256 * 1024] ATTRIBUTE_ALIGN(32);
+static uint8_t display_list[1024]  ATTRIBUTE_ALIGN(32);
+static size_t display_list_size;
 uint16_t gx_xOrigin, gx_yOrigin;
 int8_t gx_system_xOrigin, gx_used_system_xOrigin;
 int8_t gx_xOriginNeg, gx_xOriginPos;
 int8_t gx_yOriginNeg, gx_yOriginPos;
-size_t display_list_size;
 GXRModeObj gx_mode;
 unsigned gx_old_width, gx_old_height;
 

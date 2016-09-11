@@ -24,9 +24,13 @@
 #include <retro_assert.h>
 #include <retro_inline.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../../defines/psp_defines.h"
-#include "../../general.h"
 #include "../../driver.h"
+#include "../../runloop.h"
 
 #ifndef SCEGU_SCR_WIDTH
 #define SCEGU_SCR_WIDTH 480
