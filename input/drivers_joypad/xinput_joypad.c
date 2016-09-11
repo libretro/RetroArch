@@ -26,9 +26,10 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <retro_inline.h>
-#include <dynamic/dylib.h>
 #include <boolean.h>
+#include <retro_inline.h>
+#include <compat/strl.h>
+#include <dynamic/dylib.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
