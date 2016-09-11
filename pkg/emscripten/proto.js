@@ -290,13 +290,20 @@ $(function() {
     }
   });
 
+   // Switch the core when selecting one.
+   $('#core-selector a').click(function () {
+      var coreChoice = $(this).data('core');
+      switchCore(coreChoice);
+   });
+
    // Find which core to load.
    var core = localStorage.getItem("core", core);
    if (!core) {
-     core = 'gambatte';
+      core = 'gambatte';
    }
-   // Show the current core as the active core.
-   $('.nav-item.' + core).addClass('active');
+   // Make the core the selected core in the UI.
+   var coreTitle = $('#core-selector a[data-core="' + core + '"]').addClass('active').text();
+   $('#dropdownMenu1').text(coreTitle);
 
    // Load the Core's related JavaScript.
    $.getScript(core + '_libretro.js', function () 
