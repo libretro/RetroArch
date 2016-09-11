@@ -107,7 +107,13 @@ struct command
    bool state[RARCH_BIND_LIST_END];
 };
 
-enum cmd_source_t { cmd_none, cmd_stdin, cmd_network };
+enum cmd_source_t
+{
+   CMD_NONE = 0,
+   CMD_STDIN,
+   CMD_NETWORK
+};
+
 #if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static enum cmd_source_t lastcmd_source;
 #endif
@@ -122,14 +128,14 @@ static socklen_t lastcmd_net_source_len;
 static bool command_reply(const char * data, size_t len)
 {
 #ifdef HAVE_STDIN_CMD
-   if (lastcmd_source == cmd_stdin)
+   if (lastcmd_source == CMD_STDIN)
    {
       fwrite(data, 1,len, stdout);
       return true;
    }
 #endif
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   if (lastcmd_source == cmd_network)
+   if (lastcmd_source == CMD_NETWORK)
    {
       sendto(lastcmd_net_fd, data, len, 0,
             (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
@@ -373,7 +379,7 @@ static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t so
       command_parse_sub_msg(handle, tok);
       tok = strtok_r(NULL, "\n", &save);
    }
-   lastcmd_source = cmd_none;
+   lastcmd_source = CMD_NONE;
 }
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
@@ -562,7 +568,7 @@ static void command_network_poll(command_t *handle)
 
       buf[ret] = '\0';
 
-      command_parse_msg(handle, buf, cmd_network);
+      command_parse_msg(handle, buf, CMD_NETWORK);
    }
 }
 #endif
@@ -765,7 +771,7 @@ static void command_stdin_poll(command_t *handle)
    *last_newline++ = '\0';
    msg_len = last_newline - handle->stdin_buf;
 
-   command_parse_msg(handle, handle->stdin_buf, cmd_stdin);
+   command_parse_msg(handle, handle->stdin_buf, CMD_STDIN);
 
    memmove(handle->stdin_buf, last_newline,
          handle->stdin_buf_ptr - msg_len);
