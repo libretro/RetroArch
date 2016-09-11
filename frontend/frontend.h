@@ -21,10 +21,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include <boolean.h>
 #include <retro_common_api.h>
-
-#include "frontend_driver.h"
 
 RETRO_BEGIN_DECLS
 

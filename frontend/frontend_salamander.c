@@ -26,6 +26,10 @@
 #include <string/stdstring.h>
 #include <compat/strl.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "frontend_driver.h"
 #include "../defaults.h"
 #include "../verbosity.h"
