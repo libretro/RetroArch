@@ -44,7 +44,7 @@
 #include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_navigation.h"
-#include "menu_popup.h"
+#include "widgets/menu_popup.h"
 #include "menu_cbs.h"
 
 #include "../configuration.h"

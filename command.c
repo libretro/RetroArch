@@ -48,7 +48,7 @@
 #include "menu/menu_content.h"
 #include "menu/menu_display.h"
 #include "menu/menu_shader.h"
-#include "menu/menu_popup.h"
+#include "menu/widgets/menu_popup.h"
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -1897,7 +1897,11 @@ bool command_event(enum event_command cmd, void *data)
                info_find.path = config_get_active_core_path();
 
                if (!core_info_load(&info_find))
+               {
+#ifdef HAVE_DYNAMIC
                   return false;
+#endif
+               }
             }
 #endif
          }

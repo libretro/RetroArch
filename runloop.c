@@ -44,7 +44,7 @@
 #ifdef HAVE_MENU
 #include "menu/menu_display.h"
 #include "menu/menu_driver.h"
-#include "menu/menu_popup.h"
+#include "menu/widgets/menu_popup.h"
 #endif
 
 #ifdef HAVE_NETPLAY

@@ -17,22 +17,23 @@
 #include <features/features_cpu.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "../../config.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "../cheevos.h"
+#include "../../cheevos.h"
 #endif
 
-#include "menu_display.h"
-#include "menu_driver.h"
 #include "menu_popup.h"
 
-#include "../retroarch.h"
-#include "../configuration.h"
+#include "../menu_display.h"
+#include "../menu_driver.h"
 
-#include "../input/input_autodetect.h"
-#include "../input/input_config.h"
+#include "../../retroarch.h"
+#include "../../configuration.h"
+
+#include "../../input/input_autodetect.h"
+#include "../../input/input_config.h"
 
 static bool                menu_popup_pending_push   = false;
 static bool                 menu_popup_active       = false;

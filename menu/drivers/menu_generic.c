@@ -25,7 +25,7 @@
 #include "../menu_displaylist.h"
 #include "../menu_navigation.h"
 #include "../menu_entries.h"
-#include "../menu_popup.h"
+#include "../widgets/menu_popup.h"
 
 #include "../../configuration.h"
 #include "../../performance_counters.h"
