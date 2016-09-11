@@ -255,13 +255,12 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
-   if (!load_info)
-      return false;
-
-   if (load_info->special)
+   if (load_info && load_info->special)
       core_game_loaded = core.retro_load_game_special(load_info->special->id, load_info->info, load_info->content->size);
+   else if (load_info && *load_info->content->elems[0].data)
+      core_game_loaded = core.retro_load_game(load_info->info);
    else
-      core_game_loaded = core.retro_load_game(*load_info->content->elems[0].data ? load_info->info : NULL);
+      core_game_loaded = core.retro_load_game(NULL);
 
    return core_game_loaded;
 }
