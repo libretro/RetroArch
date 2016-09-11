@@ -871,8 +871,10 @@ static void content_load_init_wrap(
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
 
+#ifndef HAVE_DYNAMIC
    if (!args->no_content)
    {
+#endif
       if (args->content_path)
       {
          RARCH_LOG("Using content: %s.\n", args->content_path);
@@ -886,7 +888,9 @@ static void content_load_init_wrap(
          argv[(*argc)++] = strdup("--menu");
       }
 #endif
+#ifndef HAVE_DYNAMIC
    }
+#endif
 
    if (args->sram_path)
    {
@@ -1995,7 +1999,7 @@ bool task_push_content_load_default(
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         if (!task_load_content(content_info, loading_from_menu, mode))
+         if (!g(content_info, loading_from_menu, mode))
             goto error;
          break;
 #ifndef HAVE_DYNAMIC
