@@ -23,17 +23,19 @@
 #include <lists/file_list.h>
 #include <file/file_path.h>
 
-#include "../frontend_driver.h"
-#include "../../configuration.h"
-#include "../../general.h"
-#include "../../verbosity.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../frontend_driver.h"
+#include "../../configuration.h"
 #include "../../defaults.h"
-
+#include "../../runloop.h"
+#include "../../verbosity.h"
 
 /* We only load this library once, so we let it be 
  * unloaded at application shutdown, since unloading 

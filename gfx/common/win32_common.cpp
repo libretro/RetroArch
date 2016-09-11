@@ -20,11 +20,10 @@
 #include "../../config.h"
 #endif
 
+#include "win32_common.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../configuration.h"
-#include "../../general.h"
 #include "../../verbosity.h"
-#include "win32_common.h"
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../../tasks/tasks_internal.h"

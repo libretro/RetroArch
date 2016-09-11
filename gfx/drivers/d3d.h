@@ -44,7 +44,6 @@
 #include <xfont.h>
 #endif
 
-#include "../../general.h"
 #include "../../driver.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)

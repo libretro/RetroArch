@@ -20,29 +20,31 @@
 
 #include <file/config_file.h>
 #include <queues/task_queue.h>
-
-#include "../../configuration.h"
-#include "../../defaults.h"
-#include "../../general.h"
-#include "../../content.h"
-#include "../frontend.h"
-#include "../../retroarch.h"
-#include "../../runloop.h"
-#include "../frontend_driver.h"
-#include "../../command.h"
-
+#include <retro_stat.h>
 #include <file/file_path.h>
-#include "../../file_path_special.h"
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
 #endif
 
-#include <retro_stat.h>
+#include "../frontend.h"
+#include "../frontend_driver.h"
+#include "../../configuration.h"
+#include "../../defaults.h"
+#include "../../content.h"
+#include "../../retroarch.h"
+#include "../../runloop.h"
+#include "../../command.h"
+#include "../../file_path_special.h"
 
 static void emscripten_mainloop(void)
 {
    unsigned sleep_ms = 0;
-   int ret = runloop_iterate(&sleep_ms);
+   int           ret = runloop_iterate(&sleep_ms);
    if (ret == 1 && sleep_ms > 0)
       retro_sleep(sleep_ms);
    task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);

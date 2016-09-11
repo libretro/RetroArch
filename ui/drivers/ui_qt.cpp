@@ -22,14 +22,18 @@
 #include <file/file_path.h>
 #include <rthreads/rthreads.h>
 
-#include "general.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 
 #include "ui_qt.h"
+#include "qt/wrapper/wrapper.h"
 #include "../ui_companion_driver.h"
 #include "../../core.h"
 #include "../../configuration.h"
+#include "../../runloop.h"
 #include "../../tasks/tasks_internal.h"
-#include "qt/wrapper/wrapper.h"
 
 #ifdef HAVE_QT_WRAPPER
 struct Wimp* wimp;

@@ -25,6 +25,10 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef __OBJC__
 #include <Foundation/NSPathUtilities.h>
 #include <objc/message.h>
@@ -45,10 +49,6 @@
 #include <file/file_path.h>
 #include <rhash.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -57,7 +57,7 @@
 #include "../../file_path_special.h"
 #include "../../configuration.h"
 #include "../../defaults.h"
-#include "../../general.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../ui/ui_companion_driver.h"
 

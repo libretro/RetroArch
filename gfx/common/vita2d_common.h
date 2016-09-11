@@ -23,7 +23,6 @@
 #include <string/stdstring.h>
 
 #include "../../defines/psp_defines.h"
-#include "../../general.h"
 #include "../../driver.h"
 #include "../video_coord_array.h"
 
