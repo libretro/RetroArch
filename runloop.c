@@ -58,6 +58,7 @@
 #include "autosave.h"
 #include "core_info.h"
 #include "configuration.h"
+#include "driver.h"
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"

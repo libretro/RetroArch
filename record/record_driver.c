@@ -28,6 +28,7 @@
 
 #include "../command.h"
 #include "../configuration.h"
+#include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"

@@ -22,8 +22,7 @@
 
 #include <retro_common_api.h>
 
-#include "driver.h"
-#include "input/input_driver.h"
+#include "input/input_defines.h"
 
 RETRO_BEGIN_DECLS
 

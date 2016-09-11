@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <ctype.h>
 
+#include <retro_miscellaneous.h>
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
@@ -34,6 +35,7 @@
 
 #include "tasks_internal.h"
 
+#include "../driver.h"
 #include "../list_special.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"

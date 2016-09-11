@@ -36,6 +36,7 @@
 #include "location/location_driver.h"
 #include "configuration.h"
 #include "core.h"
+#include "driver.h"
 #include "runloop.h"
 #include "verbosity.h"
 

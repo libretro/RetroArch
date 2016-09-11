@@ -61,6 +61,7 @@
 #include "core_type.h"
 #include "core_info.h"
 #include "dynamic.h"
+#include "driver.h"
 #include "msg_hash.h"
 #include "movie.h"
 #include "file_path_special.h"
