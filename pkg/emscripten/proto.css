@@ -15,6 +15,7 @@
  * Webplayer Preview when not loaded.
  */
 .webplayer-preview {
+  margin: 0 auto;
   cursor: wait;
   opacity: 0.2;
   transition: all 0.8s;
@@ -29,12 +30,44 @@
   -moz-animation: loaded 0.8s ease-in-out;
   animation: loaded 0.8s ease-in-out;
 }
+@keyframes loaded {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@-moz-keyframes loaded {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
 @-webkit-keyframes loaded {
   from {
     opacity: 0.2;
   }
   to {
     opacity: 1;
+  }
+}
+@keyframes loading{
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+@-moz-keyframes loading{
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0.35;
   }
 }
 @-webkit-keyframes loading {
@@ -52,21 +85,6 @@
 canvas.webplayer {
   border: none;
   outline: none;
-}
-
-.fa.spinning {
-    animation: spin 1s infinite linear;
-    -webkit-animation: spin2 1s infinite linear;
-}
-
-@keyframes spin {
-    from { transform: scale(1) rotate(0deg); }
-    to { transform: scale(1) rotate(360deg); }
-}
-
-@-webkit-keyframes spin2 {
-    from { -webkit-transform: rotate(0deg); }
-    to { -webkit-transform: rotate(360deg); }
 }
 
 textarea {

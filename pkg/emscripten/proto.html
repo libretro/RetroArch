@@ -88,7 +88,7 @@
                        </div>
 
                       <button class="btn btn-primary disabled" id="btnRun" onclick="startRetroArch()">
-                         <span class="fa fa-spinner spinning" id="icnRun"></span> Run
+                         <span class="fa fa-spinner fa-spin" id="icnRun"></span> Run
                       </button>
                       <button class="btn btn-primary disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()">
                          <span class="fa fa-plus" id="icnAdd"></span> Add Content
@@ -108,7 +108,7 @@
       <div class="container">
          <div class="webplayer_border text-xs-center" id="canvas_div">
             <canvas class="webplayer col-xs-12" id="canvas" tabindex="1" oncontextmenu="event.preventDefault()" style="display: none"></canvas>
-            <img class="webplayer-preview img-fluid" src="media/canvas.png" width="900px" height="675px" alt="RetroArch Logo">
+            <img class="webplayer-preview img-fluid" src="media/canvas.png" width="960px" height="720px" alt="RetroArch Logo">
          </div>
       </div>
    </div>
@@ -152,7 +152,7 @@
    <script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
    <script src="https://use.fontawesome.com/bb20806e1e.js"></script>
    <script src="analytics.js"></script>
-   <script src="browserfs.min.js"></script>
+   <script src="//wzrd.in/standalone/browserfs@0.6.1"></script>
    <script src="proto.js"></script>
 </body>
 </html>

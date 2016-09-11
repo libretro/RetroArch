@@ -5646,12 +5646,12 @@ static bool setting_append_list(
 #endif
          break;
       case SETTINGS_LIST_CORE_UPDATER:
-#ifdef HAVE_NETWORKING
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS),
                parent_group);
          parent_group = msg_hash_to_str(MENU_ENUM_LABEL_UPDATER_SETTINGS);
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+#ifdef HAVE_NETWORKING
 
          CONFIG_STRING(
                list, list_info,
@@ -5699,25 +5699,24 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE);
-
+#endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
-#endif
          break;
       case SETTINGS_LIST_NETPLAY:
+         START_GROUP(list, list_info, &group_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
+               parent_group);
+
+         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS);
+
+         START_SUB_GROUP(list, list_info, "Netplay", &group_info, &subgroup_info, parent_group);
+
          {
+#ifdef HAVE_NETPLAY
 #if defined(HAVE_NETWORK_CMD)
             unsigned user;
 #endif
-#ifdef HAVE_NETPLAY
-            START_GROUP(list, list_info, &group_info,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
-                  parent_group);
-
-            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS);
-
-            START_SUB_GROUP(list, list_info, "Netplay", &group_info, &subgroup_info, parent_group);
-
             CONFIG_BOOL(
                   list, list_info,
                   &global->netplay.enable,
@@ -5945,10 +5944,10 @@ static bool setting_append_list(
                   SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_STDIN_CMD_ENABLE);
 #endif
-            END_SUB_GROUP(list, list_info, parent_group);
-            END_GROUP(list, list_info, parent_group);
 #endif
          }
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_LAKKA_SERVICES:
          {
