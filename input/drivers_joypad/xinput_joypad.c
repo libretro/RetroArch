@@ -30,11 +30,15 @@
 #include <dynamic/dylib.h>
 #include <boolean.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../input_autodetect.h"
 #include "../input_config.h"
 
 #include "../../configuration.h"
-#include "../../general.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 
 

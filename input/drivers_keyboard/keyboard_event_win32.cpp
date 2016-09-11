@@ -14,11 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../general.h"
-#include "../input_keyboard.h"
-#include "../../gfx/common/win32_common.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../input_config.h"
 #include "../input_keymaps.h"
+#include "../input_keyboard.h"
+#include "../../runloop.h"
+#include "../../gfx/common/win32_common.h"
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
 		WPARAM wparam, LPARAM lparam)

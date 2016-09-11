@@ -17,11 +17,15 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../input_config.h"
 #include "../input_keymaps.h"
 #include "../input_keyboard.h"
 
-#include "../../general.h"
+#include "../../runloop.h"
 #include "../../driver.h"
 
 #include "keyboard_event_apple.h"

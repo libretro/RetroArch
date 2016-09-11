@@ -23,13 +23,17 @@
 
 #include <boolean.h>
 
-#include "../../configuration.h"
-#include "../../general.h"
-#include "../../verbosity.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../input_autodetect.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
+#include "../../configuration.h"
+#include "../../runloop.h"
+#include "../../verbosity.h"
 
 struct dinput_joypad
 {

@@ -14,11 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../input_joypad_driver.h"
 #include "../input_driver.h"
 #include "../input_autodetect.h"
 #include "../../configuration.h"
-#include "../../general.h"
+#include "../../runloop.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../command.h"
