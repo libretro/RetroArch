@@ -337,3 +337,40 @@ $(function() {
     //$('#dropdownMenu1').text(localStorage.getItem("core"));
    });
  });
+
+function keyPress(k)
+{
+   kp(k, "keydown");
+   setInterval(function(){kp(k, "keyup")}, 1000);
+}
+
+kp = function(k, event) {
+   var oEvent = document.createEvent('KeyboardEvent');
+ 
+   // Chromium Hack
+   Object.defineProperty(oEvent, 'keyCode', {
+      get : function() {
+         return this.keyCodeVal;
+      }
+   });
+   Object.defineProperty(oEvent, 'which', {
+      get : function() {
+         return this.keyCodeVal;
+      }
+   });
+ 
+   if (oEvent.initKeyboardEvent) {
+      oEvent.initKeyboardEvent(event, true, true, document.defaultView, false, false, false, false, k, k);
+   } else {
+      oEvent.initKeyEvent(event, true, true, document.defaultView, false, false, false, false, k, 0);
+   }
+ 
+   oEvent.keyCodeVal = k;
+ 
+   if (oEvent.keyCode !== k) {
+      alert("keyCode mismatch " + oEvent.keyCode + "(" + oEvent.which + ")");
+   }
+ 
+   document.dispatchEvent(oEvent);
+   document.getElementById('canvas').focus();
+}
