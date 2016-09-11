@@ -76,4 +76,4 @@ fetch_git "https://github.com/libretro/retroarch-assets.git" "media/assets"
 fetch_git "https://github.com/libretro/retroarch-joypad-autoconfig.git" "media/autoconfig"
 fetch_git "https://github.com/libretro/libretro-database.git" "media/libretrodb"
 
-git submodule update --init
+git submodule update --init --recursive
