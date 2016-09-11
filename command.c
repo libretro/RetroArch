@@ -1309,7 +1309,9 @@ static void command_event_set_savestate_auto_index(void)
 
 static bool event_init_content(void)
 {
+#ifdef HAVE_NETPLAY
    global_t   *global               = global_get_ptr();
+#endif
 
    rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
 
