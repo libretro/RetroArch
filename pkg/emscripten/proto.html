@@ -86,14 +86,23 @@
                           <a class="dropdown-item" href="." onclick=switchCore("virtualjaguar")>Virtual Jaguar</a>
                           <a class="dropdown-item" href="." onclick=switchCore("yabause")>Yabause</a>
                        </div>
+
+                      <button class="btn btn-primary disabled" id="btnRun" onclick="startRetroArch()">
+                         <span class="fa fa-spinner spinning" id="icnRun"></span> Run
+                      </button>
+                      <button class="btn btn-primary disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()">
+                         <span class="fa fa-plus" id="icnAdd"></span> Add Content
+                      </button>
+                      <input class="btn btn-primary" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
+                      <button class="btn btn-primary disabled" id="btnFullscreen" onclick="Module.requestFullScreen()" title="Fullscreen">
+                         <span class="fa fa-desktop" id="icnAdd"></span> <span class="sr-only">Fullscreen</span>
+                      </button>
                    </li>
                 </div>
                </ul>
            </div>
            <!--/.Collapse content-->
-
        </div>
-
    </nav>
    <div class="bg-inverse webplayer-container">
       <div class="container">
@@ -104,20 +113,6 @@
       </div>
    </div>
    <div class="container">
-      <div class="row">
-         <div class="col-sm-12 form-group btn-group text-xs-center p-t-2" id="openrom">
-            <button class="btn btn-primary disabled" id="btnRun" onclick="startRetroArch()">
-               <span class="fa fa-spinner spinning" id="icnRun"></span> Run
-            </button>
-            <button class="btn btn-primary disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()">
-               <span class="fa fa-plus" id="icnAdd"></span> Add Content
-            </button>
-            <input class="btn btn-primary" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
-            <button class="btn btn-primary disabled" id="btnFullscreen" onclick="Module.requestFullScreen()">
-               <span class="fa fa-desktop" id="icnAdd"></span> Fullscreen
-            </button>
-         </div>
-      </div>
       <div class="row">
          <div class="col-sm-12 form-group btn-group text-xs-center p-t-2">
             <div class="btn-group" data-toggle="buttons">
