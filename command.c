@@ -1309,6 +1309,8 @@ static void command_event_set_savestate_auto_index(void)
 
 static bool event_init_content(void)
 {
+   global_t   *global               = global_get_ptr();
+
    rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
 
    /* No content to be loaded for dummy core,
@@ -1323,7 +1325,13 @@ static bool event_init_content(void)
       return false;
 
    if (content_does_not_need_content())
+   {
+#ifdef HAVE_NETPLAY
+      if (global->netplay.enable)
+         RARCH_ERR("sorry, unimplemented: cores that don't demand content cannot participate in netplay\n");
+#endif
       return true;
+   }
 
    command_event_set_savestate_auto_index();
 
