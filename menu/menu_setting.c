@@ -14,15 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(__CELLOS_LV2__)
-#include <sdk_version.h>
-
-#if (CELL_SDK_VERSION > 0x340000)
-#include <sysutil/sysutil_bgmplayback.h>
-#endif
-
-#endif
-
 #ifdef _WIN32
 #include <direct.h>
 #else
@@ -38,6 +29,15 @@
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
+#endif
+
+#if defined(__CELLOS_LV2__)
+#include <sdk_version.h>
+
+#if (CELL_SDK_VERSION > 0x340000)
+#include <sysutil/sysutil_bgmplayback.h>
+#endif
+
 #endif
 
 #include "../frontend/frontend_driver.h"
