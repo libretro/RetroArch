@@ -15,6 +15,8 @@
 
 #include <libretro.h>
 
+#include "../performance_counters.h"
+
 #include "video_driver.h"
 #include "video_frame.h"
 
@@ -174,4 +176,36 @@ void video_frame_convert_rgba_to_bgr(
       dst[1] = src[1];
       dst[2] = src[0];
    }
+}
+
+bool video_pixel_frame_scale(
+      struct scaler_ctx *scaler,
+      void *output, const void *data,
+      unsigned width, unsigned height,
+      size_t pitch)
+{
+   static struct retro_perf_counter video_frame_conv = {0};
+
+   performance_counter_init(&video_frame_conv, "video_frame_conv");
+
+   if (     !data 
+         || video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
+      return false;
+   if (data == RETRO_HW_FRAME_BUFFER_VALID)
+      return false;
+
+   performance_counter_start(&video_frame_conv);
+
+   scaler->in_width      = width;
+   scaler->in_height     = height;
+   scaler->out_width     = width;
+   scaler->out_height    = height;
+   scaler->in_stride     = pitch;
+   scaler->out_stride    = width * sizeof(uint16_t);
+
+   scaler_ctx_scale(scaler, output, data);
+
+   performance_counter_stop(&video_frame_conv);
+
+   return true;
 }

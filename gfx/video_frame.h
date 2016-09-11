@@ -67,4 +67,11 @@ void video_frame_convert_rgba_to_bgr(
       void *dst_data,
       unsigned width);
 
+bool video_pixel_frame_scale(
+      struct scaler_ctx *scaler,
+      void *output,
+      const void *data,
+      unsigned width, unsigned height,
+      size_t pitch);
+
 #endif

@@ -39,9 +39,11 @@
 #include "../menu/menu_setting.h"
 #endif
 
+#include "video_frame.h"
 #include "video_thread_wrapper.h"
-#include "../frontend/frontend_driver.h"
 #include "video_context_driver.h"
+
+#include "../frontend/frontend_driver.h"
 #include "../record/record_driver.h"
 #include "../config.def.h"
 #include "../configuration.h"
@@ -2082,37 +2084,6 @@ unsigned video_pixel_get_alignment(unsigned pitch)
    return 8;
 }
 
-static bool video_pixel_frame_scale(const void *data,
-      unsigned width, unsigned height,
-      size_t pitch)
-{
-   static struct retro_perf_counter video_frame_conv = {0};
-
-   performance_counter_init(&video_frame_conv, "video_frame_conv");
-
-   if (     !data 
-         || video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
-      return false;
-   if (data == RETRO_HW_FRAME_BUFFER_VALID)
-      return false;
-
-   performance_counter_start(&video_frame_conv);
-
-   video_driver_scaler_ptr->scaler->in_width      = width;
-   video_driver_scaler_ptr->scaler->in_height     = height;
-   video_driver_scaler_ptr->scaler->out_width     = width;
-   video_driver_scaler_ptr->scaler->out_height    = height;
-   video_driver_scaler_ptr->scaler->in_stride     = pitch;
-   video_driver_scaler_ptr->scaler->out_stride    = width * sizeof(uint16_t);
-
-   scaler_ctx_scale(video_driver_scaler_ptr->scaler,
-         video_driver_scaler_ptr->scaler_out, data);
-
-   performance_counter_stop(&video_frame_conv);
-
-   return true;
-}
-
 /**
  * video_driver_frame:
  * @data                 : pointer to data of the video frame.
@@ -2138,7 +2109,10 @@ void video_driver_frame(const void *data, unsigned width,
       return;
 
    if (video_driver_scaler_ptr &&
-         video_pixel_frame_scale(data, width, height, pitch))
+         video_pixel_frame_scale(
+            video_driver_scaler_ptr->scaler,
+            video_driver_scaler_ptr->scaler_out,
+            data, width, height, pitch))
    {
       data                = video_driver_scaler_ptr->scaler_out;
       pitch               = video_driver_scaler_ptr->scaler->out_stride;
