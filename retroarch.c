@@ -1292,7 +1292,6 @@ static void retroarch_validate_cpu_features(void)
 bool retroarch_main_init(int argc, char *argv[])
 {
    bool init_failed = false;
-   bool menu_alive  = false;
 
    retroarch_init_state();
 
@@ -1367,11 +1366,6 @@ bool retroarch_main_init(int argc, char *argv[])
 
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
 
-#ifdef HAVE_MENU
-   /* Check if menu is active */
-   menu_alive = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
-#endif
-
    /* Attempt to initialize core */
    if (current_core_explicitly_set)
    {
@@ -1387,21 +1381,19 @@ bool retroarch_main_init(int argc, char *argv[])
    {
 #ifdef HAVE_MENU
       /* Check if menu was active prior to core initialization */
-      if (menu_alive)
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
-         /* Attemot initializing dummy core */
+         /* Attempt initializing dummy core */
          current_core_type = CORE_TYPE_DUMMY;
          if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
             goto error;
       }
       else
+#endif
       {
          /* Fall back to regular error handling */
          goto error;
       }
-#else
-      goto error;
-#endif
    }
 
    driver_ctl(RARCH_DRIVER_CTL_INIT_ALL, NULL);
