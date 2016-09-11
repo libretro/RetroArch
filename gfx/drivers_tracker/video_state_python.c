@@ -27,10 +27,10 @@
 #include <libretro.h>
 
 #include "video_state_python.h"
-#include "../dynamic.h"
-#include "../core.h"
-#include "../verbosity.h"
-#include "../input/input_config.h"
+#include "../../dynamic.h"
+#include "../../core.h"
+#include "../../verbosity.h"
+#include "../../input/input_config.h"
 
 static PyObject* py_read_wram(PyObject *self, PyObject *args)
 {

@@ -308,7 +308,7 @@ endif
 ifeq ($(HAVE_PYTHON), 1)
    DEFINES += $(PYTHON_CFLAGS) -Wno-unused-parameter
    LIBS += $(PYTHON_LIBS)
-   OBJ += gfx/video_state_python.o
+   OBJ += gfx/drivers_tracker/video_state_python.o
 endif
 
 ifeq ($(HAVE_EMSCRIPTEN), 1)

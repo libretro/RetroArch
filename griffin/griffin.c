@@ -523,7 +523,7 @@ STATE TRACKER
 #include "../gfx/video_state_tracker.c"
 
 #ifdef HAVE_PYTHON
-#include "../gfx/video_state_python.c"
+#include "../gfx/drivers_tracker/video_state_python.c"
 #endif
 
 /*============================================================
