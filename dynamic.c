@@ -167,7 +167,49 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
    return true;
 }
 
-#ifndef HAVE_DYNAMIC
+#ifdef HAVE_DYNAMIC
+static dylib_t libretro_get_system_info_lib(const char *path,
+      struct retro_system_info *info, bool *load_no_content)
+{
+   dylib_t lib = dylib_load(path);
+   void (*proc)(struct retro_system_info*);
+
+   if (!lib)
+   {
+      RARCH_ERR("%s: \"%s\"\n",
+            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+            path);
+      RARCH_ERR("Error(s): %s\n", dylib_error());
+      return NULL;
+   }
+
+   proc = (void (*)(struct retro_system_info*))
+      dylib_proc(lib, "retro_get_system_info");
+
+   if (!proc)
+   {
+      dylib_close(lib);
+      return NULL;
+   }
+
+   proc(info);
+
+   if (load_no_content)
+   {
+      void (*set_environ)(retro_environment_t);
+      *load_no_content = false;
+      set_environ = (void (*)(retro_environment_t))
+         dylib_proc(lib, "retro_set_environment");
+
+      if (!set_environ)
+         return lib;
+
+      libretro_get_environment_info(set_environ, load_no_content);
+   }
+
+   return lib;
+}
+#else
 static bool libretro_get_system_info_static(struct retro_system_info *info,
       bool *load_no_content)
 {
@@ -273,47 +315,6 @@ void libretro_get_environment_info(void (*func)(retro_environment_t),
    ignore_environment_cb = false;
 }
 
-static dylib_t libretro_get_system_info_lib(const char *path,
-      struct retro_system_info *info, bool *load_no_content)
-{
-   dylib_t lib = dylib_load(path);
-   void (*proc)(struct retro_system_info*);
-
-   if (!lib)
-   {
-      RARCH_ERR("%s: \"%s\"\n",
-            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
-            path);
-      RARCH_ERR("Error(s): %s\n", dylib_error());
-      return NULL;
-   }
-
-   proc = (void (*)(struct retro_system_info*))
-      dylib_proc(lib, "retro_get_system_info");
-
-   if (!proc)
-   {
-      dylib_close(lib);
-      return NULL;
-   }
-
-   proc(info);
-
-   if (load_no_content)
-   {
-      void (*set_environ)(retro_environment_t);
-      *load_no_content = false;
-      set_environ = (void (*)(retro_environment_t))
-         dylib_proc(lib, "retro_set_environment");
-
-      if (!set_environ)
-         return lib;
-
-      libretro_get_environment_info(set_environ, load_no_content);
-   }
-
-   return lib;
-}
 
 
 static void load_dynamic_core(void)
