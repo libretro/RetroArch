@@ -871,8 +871,10 @@ static void content_load_init_wrap(
    *argc = 0;
    argv[(*argc)++] = strdup("retroarch");
 
+#ifndef HAVE_DYNAMIC
    if (!args->no_content)
    {
+#endif
       if (args->content_path)
       {
          RARCH_LOG("Using content: %s.\n", args->content_path);
@@ -886,7 +888,9 @@ static void content_load_init_wrap(
          argv[(*argc)++] = strdup("--menu");
       }
 #endif
+#ifndef HAVE_DYNAMIC
    }
+#endif
 
    if (args->sram_path)
    {
