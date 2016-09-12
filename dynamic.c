@@ -168,7 +168,7 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
 }
 
 #ifndef HAVE_DYNAMIC
-bool libretro_get_system_info_static(struct retro_system_info *info,
+static bool libretro_get_system_info_static(struct retro_system_info *info,
       bool *load_no_content)
 {
    struct retro_system_info dummy_info = {0};
@@ -296,6 +296,7 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 bool libretro_get_system_info(const char *path,
       struct retro_system_info *info, bool *load_no_content)
 {
+#ifdef HAVE_DYNAMIC
    struct retro_system_info dummy_info = {0};
    dylib_t lib = libretro_get_system_info_lib(path,
          &dummy_info, load_no_content);
@@ -309,6 +310,9 @@ bool libretro_get_system_info(const char *path,
       info->valid_extensions = strdup(dummy_info.valid_extensions);
    dylib_close(lib);
    return true;
+#else
+   return libretro_get_system_info_static(info, load_no_content);
+#endif
 }
 
 static void load_dynamic_core(void)

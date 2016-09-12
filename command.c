@@ -1886,14 +1886,11 @@ bool command_event(enum event_command cmd, void *data)
 #if defined(HAVE_DYNAMIC)
                if (string_is_empty(config_get_active_core_path()))
                   return false;
-
+#endif
                libretro_get_system_info(
                      config_get_active_core_path(),
                      system,
                      ptr);
-#else
-               libretro_get_system_info_static(system, ptr);
-#endif
                info_find.path = config_get_active_core_path();
 
                if (!core_info_load(&info_find))
