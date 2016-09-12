@@ -32,6 +32,7 @@ static void netplay_net_pre_frame(netplay_t *netplay)
 
    if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
    {
+       serial_info.data_const = NULL;
        serial_info.data = netplay->buffer[netplay->self_ptr].state;
        serial_info.size = netplay->state_size;
 
@@ -79,13 +80,17 @@ static void netplay_net_post_frame(netplay_t *netplay)
 
       /* Replay frames. */
       netplay->is_replay = true;
-      netplay->replay_ptr = netplay->other_ptr;
-      netplay->replay_frame_count = netplay->other_frame_count;
+      netplay->replay_ptr = PREV_PTR(netplay->other_ptr);
+      netplay->replay_frame_count = netplay->other_frame_count - 1;
 
-      serial_info.data_const = netplay->buffer[netplay->other_ptr].state;
-      serial_info.size       = netplay->state_size;
-
-      core_unserialize(&serial_info);
+      if (netplay->replay_frame_count < netplay->self_frame_count)
+      {
+         serial_info.data       = NULL;
+         serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
+         serial_info.size       = netplay->state_size;
+   
+         core_unserialize(&serial_info);
+      }
 
       while (netplay->replay_frame_count < netplay->self_frame_count)
       {
@@ -106,11 +111,21 @@ static void netplay_net_post_frame(netplay_t *netplay)
          netplay->replay_frame_count++;
       }
 
+      /* For the remainder of the frames up to the read count, we can use the real data */
+      while (netplay->replay_frame_count < netplay->read_frame_count)
+      {
+          netplay->buffer[netplay->replay_ptr].is_simulated = false;
+          netplay->buffer[netplay->replay_ptr].used_real = true;
+          netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
+          netplay->replay_frame_count++;
+      }
+
       netplay->other_ptr = netplay->read_ptr;
       netplay->other_frame_count = netplay->read_frame_count;
       netplay->is_replay = false;
    }
 
+#if 0
    /* And if the other side has gotten too far ahead of /us/, skip to catch up
     * FIXME: Make this configurable */
    if (netplay->read_frame_count > netplay->self_frame_count + 10 ||
@@ -149,6 +164,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
        netplay->other_frame_count = netplay->read_frame_count;
        netplay->is_replay = false;
    }
+#endif
 
 }
 static bool netplay_net_init_buffers(netplay_t *netplay)

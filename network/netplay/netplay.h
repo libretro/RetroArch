@@ -40,7 +40,7 @@ enum rarch_netplay_ctl_state
 
 enum netplay_cmd
 {
-   /* Miscellaneous commands */
+   /* Basic commands */
 
    /* Acknowlegement response */
    NETPLAY_CMD_ACK            = 0x0000, 
@@ -48,23 +48,28 @@ enum netplay_cmd
    /* Failed acknowlegement response */
    NETPLAY_CMD_NAK            = 0x0001, 
 
+   /* Input data */
+   NETPLAY_CMD_INPUT          = 0x0002,
+
+   /* Misc. commands */
+
    /* Swap inputs between player 1 and player 2 */
-   NETPLAY_CMD_FLIP_PLAYERS   = 0x0002,
+   NETPLAY_CMD_FLIP_PLAYERS   = 0x0003,
 
    /* Toggle spectate/join mode */
-   NETPLAY_CMD_SPECTATE       = 0x0003, 
+   NETPLAY_CMD_SPECTATE       = 0x0004, 
 
    /* Gracefully disconnects from host */
-   NETPLAY_CMD_DISCONNECT     = 0x0004, 
+   NETPLAY_CMD_DISCONNECT     = 0x0005, 
 
    /* Sends multiple config requests over, 
     * See enum netplay_cmd_cfg */
-   NETPLAY_CMD_CFG            = 0x0005, 
+   NETPLAY_CMD_CFG            = 0x0006, 
 
    /* CMD_CFG streamlines sending multiple
       configurations. This acknowledges
       each one individually */
-   NETPLAY_CMD_CFG_ACK        = 0x0006, 
+   NETPLAY_CMD_CFG_ACK        = 0x0007, 
 
    /* Loading and synchronization */
 

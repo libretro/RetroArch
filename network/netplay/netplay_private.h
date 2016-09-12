@@ -30,10 +30,9 @@
 #define HAVE_IPV6
 #endif
 
-#define UDP_FRAME_PACKETS     16
-#define UDP_WORDS_PER_FRAME   4 /* Allows us to send 128 bits worth of state per frame. */
-#define MAX_SPECTATORS        16
-#define RARCH_DEFAULT_PORT    55435
+#define WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
+#define MAX_SPECTATORS 16
+#define RARCH_DEFAULT_PORT 55435
 
 #define NETPLAY_PROTOCOL_VERSION 1
 
@@ -46,9 +45,9 @@ struct delta_frame
 
    void *state;
 
-   uint32_t real_input_state[UDP_WORDS_PER_FRAME - 1];
-   uint32_t simulated_input_state[UDP_WORDS_PER_FRAME - 1];
-   uint32_t self_state[UDP_WORDS_PER_FRAME - 1];
+   uint32_t real_input_state[WORDS_PER_FRAME - 1];
+   uint32_t simulated_input_state[WORDS_PER_FRAME - 1];
+   uint32_t self_state[WORDS_PER_FRAME - 1];
 
    bool have_local;
    bool is_simulated;
@@ -98,9 +97,8 @@ struct netplay
    /* If we end up having to drop remote frame data because it's ahead of us, fast-forward is URGENT */
    bool must_fast_forward;
 
-   /* To compat UDP packet loss we also send 
-    * old data along with the packets. */
-   uint32_t packet_buffer[UDP_FRAME_PACKETS * UDP_WORDS_PER_FRAME];
+   /* A buffer for outgoing input packets. */
+   uint32_t packet_buffer[2 + WORDS_PER_FRAME];
    uint32_t self_frame_count;
    uint32_t read_frame_count;
    uint32_t other_frame_count;

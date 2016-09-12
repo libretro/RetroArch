@@ -347,13 +347,16 @@ bool netplay_is_spectate(netplay_t* netplay)
 
 bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame)
 {
+    void *remember_state;
     if (delta->frame == frame) return true;
     if (netplay->other_frame_count <= delta->frame)
     {
         /* We haven't even replayed this frame yet, so we can't overwrite it! */
         return false;
     }
+    remember_state = delta->state;
     memset(delta, 0, sizeof(struct delta_frame));
     delta->frame = frame;
+    delta->state = remember_state;
     return true;
 }
