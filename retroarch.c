@@ -722,7 +722,8 @@ static void retroarch_parse_input(int argc, char *argv[])
     * bogus arguments.
     */
 
-   retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
+   if (!current_core_explicitly_set)
+      retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
 
    *global->subsystem                    = '\0';
 
@@ -1071,12 +1072,14 @@ static void retroarch_parse_input(int argc, char *argv[])
          RARCH_ERR("--menu was used, but content file was passed as well.\n");
          retroarch_fail(1, "retroarch_parse_input()");
       }
+#ifdef HAVE_DYNAMIC
       else
       {
          /* Allow stray -L arguments to go through to workaround cases where it's used as "config file".
           * This seems to still be the case for Android, which should be properly fixed. */
          retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
       }
+#endif
    }
 
    if (string_is_empty(global->subsystem) && optind < argc)
