@@ -32,8 +32,6 @@
 
 RETRO_BEGIN_DECLS
 
-#define FILTER_UNITY (1 << 14)
-
 enum scaler_pix_fmt
 {
    SCALER_FMT_ARGB8888 = 0,
