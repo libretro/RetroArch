@@ -202,6 +202,40 @@ static bool libretro_get_system_info_static(struct retro_system_info *info,
 }
 #endif
 
+/**
+ * libretro_get_system_info:
+ * @path                         : Path to libretro library.
+ * @info                         : Pointer to system info information.
+ * @load_no_content              : If true, core should be able to auto-start
+ *                                 without any content loaded.
+ *
+ * Gets system info from an arbitrary lib.
+ * The struct returned must be freed as strings are allocated dynamically.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool libretro_get_system_info(const char *path,
+      struct retro_system_info *info, bool *load_no_content)
+{
+#ifdef HAVE_DYNAMIC
+   struct retro_system_info dummy_info = {0};
+   dylib_t lib = libretro_get_system_info_lib(path,
+         &dummy_info, load_no_content);
+   if (!lib)
+      return false;
+
+   memcpy(info, &dummy_info, sizeof(*info));
+   info->library_name    = strdup(dummy_info.library_name);
+   info->library_version = strdup(dummy_info.library_version);
+   if (dummy_info.valid_extensions)
+      info->valid_extensions = strdup(dummy_info.valid_extensions);
+   dylib_close(lib);
+   return true;
+#else
+   return libretro_get_system_info_static(info, load_no_content);
+#endif
+}
+
 #ifdef HAVE_DYNAMIC
 /**
  * libretro_get_environment_info:
@@ -281,39 +315,6 @@ static dylib_t libretro_get_system_info_lib(const char *path,
    return lib;
 }
 
-/**
- * libretro_get_system_info:
- * @path                         : Path to libretro library.
- * @info                         : Pointer to system info information.
- * @load_no_content              : If true, core should be able to auto-start
- *                                 without any content loaded.
- *
- * Gets system info from an arbitrary lib.
- * The struct returned must be freed as strings are allocated dynamically.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool libretro_get_system_info(const char *path,
-      struct retro_system_info *info, bool *load_no_content)
-{
-#ifdef HAVE_DYNAMIC
-   struct retro_system_info dummy_info = {0};
-   dylib_t lib = libretro_get_system_info_lib(path,
-         &dummy_info, load_no_content);
-   if (!lib)
-      return false;
-
-   memcpy(info, &dummy_info, sizeof(*info));
-   info->library_name    = strdup(dummy_info.library_name);
-   info->library_version = strdup(dummy_info.library_version);
-   if (dummy_info.valid_extensions)
-      info->valid_extensions = strdup(dummy_info.valid_extensions);
-   dylib_close(lib);
-   return true;
-#else
-   return libretro_get_system_info_static(info, load_no_content);
-#endif
-}
 
 static void load_dynamic_core(void)
 {
