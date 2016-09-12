@@ -99,7 +99,7 @@ struct turbo_buttons
 
 static turbo_buttons_t input_driver_turbo_btns;
 #ifdef HAVE_COMMAND
-static command_t *input_driver_command          = NULL;
+static command_t *input_driver_command            = NULL;
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_remote        = NULL;

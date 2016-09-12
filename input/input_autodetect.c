@@ -103,23 +103,18 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
          && params->pid != 0
          && input_vid   != 0
          && input_pid   != 0)
-   {
       score += 3;
-   }
 
    /* Check for name match */
    if (string_is_equal(ident, params->name))
-   {
       score += 2;
-   }
    else
    {
       if (!string_is_empty(ident) 
             && !strncmp(params->name, ident, strlen(ident)))
-      {
          score += 1;
-      }
    }
+
    return score;
 }
 
@@ -225,7 +220,8 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    for (i = 0; i < list->size; i++)
    {
       conf = config_file_new(list->elems[i].data);
-      ret = input_try_autoconfigure_joypad_from_conf(conf, params);
+      ret  = input_try_autoconfigure_joypad_from_conf(conf, params);
+
       if(ret >= current_best)
       {
          index = i;
