@@ -1,0 +1,52 @@
+How Netplay works (as documented by somebody who didn't write it):
+
+Note that this documentation is all for (the poorly-named) “net” mode, which is
+the normal mode, and not “spectator” mode, which has its own whole host of
+problems.
+
+Netplay in RetroArch works by expecting input to come delayed from the network,
+then rewinding and re-playing with the delayed input to get a consistent state.
+So long as both sides agree on which frame is which, it should be impossible
+for them to become de-synced, since each input event always happens at the
+correct frame.
+
+Within the state buffers, there are three locations: self, other and read. Self
+is where the emulator believes itself to be, which inevitably will be ahead of
+what it's read from the peer. Other is where it was most recently in perfect
+sync: i.e., other has been read and actioned. Read is where it's read up to,
+which can be slightly ahead of other since it can't always immediately act upon
+new data. In general, other ≤ read ≤ self. If read > self, logically it should
+try to catch up, but that logic currently doesn't seem to exist (?)
+
+In terms of the implementation, Netplay is in effect an input buffer and some
+pre- and post-frame behaviors.
+
+Pre-frame, it serializes the core's state, polls for input from the other side,
+and if input has not been received for the other side up to the current frame
+(which it shouldn't be), “simulates” the other side's input up to the current
+frame. The simulation is simply assuming that the input state hasn't changed.
+Each frame's local serialized state and simulated or real input goes into the
+frame buffers. Frame buffers that are simulated are marked as such.
+
+Post-frame, it checks whether it's read more than it's actioned, i.e. if read >
+other. If so, it rewinds to other and runs the core in replay mode with the
+real data up to read, then sets other = read.
+
+When in Netplay mode, the callback for receiving input is replaced by
+input_state_net. It is the role of input_state_net to combine the true local
+input (whether live or replay) with the remote input (whether true or
+simulated).
+
+In the previous implementation, there was seemingly nothing to prevent the self
+frame from advancing past the other frame in the ring buffer, causing local
+input from one time to be mixed with remote input from another. The new
+implementation uses a not-at-all-better strategy of simply refusing local input
+if it steps past remote input.
+
+Some thoughts about "frame counts": The frame counters act like indexes into a
+0-indexed array; i.e., they refer to the first unactioned frame. With
+self_frame_count it's slightly more complicated, since there are two relevant
+actions: Reading the data and emulating with the data. The frame count is only
+incremented after the latter, but the nature of the emulation assures that the
+current frame's input will always be read before it's actioned (or at least, we
+should certainly hope so!)
