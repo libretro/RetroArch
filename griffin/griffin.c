@@ -1046,7 +1046,7 @@ HTTP SERVER
 ============================================================ */
 #if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
 #include "../deps/civetweb/civetweb.c"
-#include "httpserver/httpserver.c"
+#include "network/httpserver/httpserver.c"
 #endif
 
 #ifdef __cplusplus

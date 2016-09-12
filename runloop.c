@@ -52,7 +52,7 @@
 #endif
 
 #if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
-#include "httpserver/httpserver.h"
+#include "network/httpserver/httpserver.h"
 #endif
 
 #include "autosave.h"

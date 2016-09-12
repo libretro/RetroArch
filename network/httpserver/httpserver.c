@@ -9,19 +9,19 @@
 #include <string/stdstring.h>
 #include <compat/zlib.h>
 
-#include "../core.h"
-#include "../runloop.h"
-#include "../core.h"
-#include "../gfx/video_driver.h"
-#include "../managers/core_option_manager.h"
-#include "../cheevos.h"
-#include "../content.h"
+#include "../../core.h"
+#include "../../runloop.h"
+#include "../../core.h"
+#include "../../gfx/video_driver.h"
+#include "../../managers/core_option_manager.h"
+#include "../../cheevos.h"
+#include "../../content.h"
 
 #define BASIC_INFO "info"
 #define MEMORY_MAP "memoryMap"
 
 static struct mg_callbacks s_httpserver_callbacks;
-static struct mg_context* s_httpserver_ctx;
+static struct mg_context   *s_httpserver_ctx       = NULL;
 
 /* Based on https://github.com/zeromq/rfc/blob/master/src/spec_32.c */
 static void httpserver_z85_encode_inplace(Bytef* data, size_t size)
