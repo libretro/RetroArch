@@ -272,10 +272,11 @@ bool libretro_get_system_info(const char *path,
    if (dummy_info.valid_extensions)
       info->valid_extensions = strdup(dummy_info.valid_extensions);
    dylib_close(lib);
-   return true;
 #else
-   return libretro_get_system_info_static(info, load_no_content);
+   if (!libretro_get_system_info_static(info, load_no_content))
+      return false;
 #endif
+   return true;
 }
 
 #ifdef HAVE_DYNAMIC
