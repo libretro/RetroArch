@@ -35,17 +35,22 @@
 #define MAX_SPECTATORS        16
 #define RARCH_DEFAULT_PORT    55435
 
+#define NETPLAY_PROTOCOL_VERSION 1
+
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
 struct delta_frame
 {
+   uint32_t frame;
+
    void *state;
 
    uint32_t real_input_state[UDP_WORDS_PER_FRAME - 1];
    uint32_t simulated_input_state[UDP_WORDS_PER_FRAME - 1];
    uint32_t self_state[UDP_WORDS_PER_FRAME - 1];
 
+   bool have_local;
    bool is_simulated;
    bool used_real;
 };
@@ -81,8 +86,8 @@ struct netplay
    /* Pointer to where we are reading. 
     * Generally, other_ptr <= read_ptr <= self_ptr. */
    size_t read_ptr;
-   /* A temporary pointer used on replay. */
-   size_t tmp_ptr;
+   /* A pointer used temporarily for replay. */
+   size_t replay_ptr;
 
    size_t state_size;
 
@@ -90,14 +95,16 @@ struct netplay
    bool is_replay;
    /* We don't want to poll several times on a frame. */
    bool can_poll;
+   /* If we end up having to drop remote frame data because it's ahead of us, fast-forward is URGENT */
+   bool must_fast_forward;
 
    /* To compat UDP packet loss we also send 
     * old data along with the packets. */
    uint32_t packet_buffer[UDP_FRAME_PACKETS * UDP_WORDS_PER_FRAME];
-   uint32_t frame_count;
+   uint32_t self_frame_count;
    uint32_t read_frame_count;
    uint32_t other_frame_count;
-   uint32_t tmp_frame_count;
+   uint32_t replay_frame_count;
    struct addrinfo *addr;
    struct sockaddr_storage their_addr;
    bool has_client_addr;
@@ -157,5 +164,7 @@ bool netplay_get_info(netplay_t *netplay);
 bool netplay_is_server(netplay_t* netplay);
 
 bool netplay_is_spectate(netplay_t* netplay);
+
+bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame);
 
 #endif

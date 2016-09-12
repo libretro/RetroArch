@@ -199,6 +199,8 @@ uint32_t netplay_impl_magic(void)
    for (i = 0; i < len; i++)
       res ^= ver[i] << ((i & 0xf) + 16);
 
+   res ^= NETPLAY_PROTOCOL_VERSION << 24;
+
    return res;
 }
 
@@ -341,4 +343,17 @@ bool netplay_is_spectate(netplay_t* netplay)
    if (!netplay)
       return false;
    return netplay->spectate.enabled;
+}
+
+bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame)
+{
+    if (delta->frame == frame) return true;
+    if (netplay->other_frame_count <= delta->frame)
+    {
+        /* We haven't even replayed this frame yet, so we can't overwrite it! */
+        return false;
+    }
+    memset(delta, 0, sizeof(struct delta_frame));
+    delta->frame = frame;
+    return true;
 }

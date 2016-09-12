@@ -30,10 +30,13 @@ static void netplay_net_pre_frame(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
 
-   serial_info.data = netplay->buffer[netplay->self_ptr].state;
-   serial_info.size = netplay->state_size;
+   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
+   {
+       serial_info.data = netplay->buffer[netplay->self_ptr].state;
+       serial_info.size = netplay->state_size;
 
-   core_serialize(&serial_info);
+       core_serialize(&serial_info);
+   }
 
    netplay->can_poll = true;
 
@@ -49,7 +52,7 @@ static void netplay_net_pre_frame(netplay_t *netplay)
  **/
 static void netplay_net_post_frame(netplay_t *netplay)
 {
-   netplay->frame_count++;
+   netplay->self_frame_count++;
 
    /* Nothing to do... */
    if (netplay->other_frame_count == netplay->read_frame_count)
@@ -69,24 +72,24 @@ static void netplay_net_post_frame(netplay_t *netplay)
       netplay->other_frame_count++;
    }
 
+   /* Now replay the real input if we've gotten ahead of it */
    if (netplay->other_frame_count < netplay->read_frame_count)
    {
       retro_ctx_serialize_info_t serial_info;
-      bool first = true;
 
       /* Replay frames. */
       netplay->is_replay = true;
-      netplay->tmp_ptr = netplay->other_ptr;
-      netplay->tmp_frame_count = netplay->other_frame_count;
+      netplay->replay_ptr = netplay->other_ptr;
+      netplay->replay_frame_count = netplay->other_frame_count;
 
       serial_info.data_const = netplay->buffer[netplay->other_ptr].state;
       serial_info.size       = netplay->state_size;
 
       core_unserialize(&serial_info);
 
-      while (first || (netplay->tmp_ptr != netplay->self_ptr))
+      while (netplay->replay_frame_count < netplay->self_frame_count)
       {
-         serial_info.data       = netplay->buffer[netplay->tmp_ptr].state;
+         serial_info.data       = netplay->buffer[netplay->replay_ptr].state;
          serial_info.size       = netplay->state_size;
          serial_info.data_const = NULL;
 
@@ -99,15 +102,54 @@ static void netplay_net_post_frame(netplay_t *netplay)
 #if defined(HAVE_THREADS)
          autosave_unlock();
 #endif
-         netplay->tmp_ptr = NEXT_PTR(netplay->tmp_ptr);
-         netplay->tmp_frame_count++;
-         first = false;
+         netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
+         netplay->replay_frame_count++;
       }
 
       netplay->other_ptr = netplay->read_ptr;
       netplay->other_frame_count = netplay->read_frame_count;
       netplay->is_replay = false;
    }
+
+   /* And if the other side has gotten too far ahead of /us/, skip to catch up
+    * FIXME: Make this configurable */
+   if (netplay->read_frame_count > netplay->self_frame_count + 10 ||
+       netplay->must_fast_forward)
+   {
+       /* "replay" into the future */
+       netplay->is_replay = true;
+       netplay->replay_ptr = netplay->self_ptr;
+       netplay->replay_frame_count = netplay->self_frame_count;
+
+       /* just assume input doesn't change for the intervening frames */
+       while (netplay->replay_frame_count < netplay->read_frame_count)
+       {
+           size_t cur = netplay->replay_ptr;
+           size_t prev = PREV_PTR(cur);
+
+           memcpy(netplay->buffer[cur].self_state, netplay->buffer[prev].self_state,
+                sizeof(netplay->buffer[prev].self_state));
+
+#if defined(HAVE_THREADS)
+         autosave_lock();
+#endif
+         core_run();
+#if defined(HAVE_THREADS)
+         autosave_unlock();
+#endif
+
+         netplay->replay_ptr = NEXT_PTR(cur);
+         netplay->replay_frame_count++;
+       }
+
+       /* at this point, other = read = self */
+       netplay->self_ptr = netplay->replay_ptr;
+       netplay->self_frame_count = netplay->replay_frame_count;
+       netplay->other_ptr = netplay->read_ptr;
+       netplay->other_frame_count = netplay->read_frame_count;
+       netplay->is_replay = false;
+   }
+
 }
 static bool netplay_net_init_buffers(netplay_t *netplay)
 {

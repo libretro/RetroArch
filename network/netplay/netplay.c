@@ -65,7 +65,7 @@ static void warn_hangup(void)
 bool check_netplay_synched(netplay_t* netplay)
 {
    retro_assert(netplay);
-   return netplay->frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS);
+   return netplay->self_frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS);
 }
 
 static bool netplay_info_cb(netplay_t* netplay, unsigned frames) {
@@ -142,7 +142,9 @@ static bool get_self_input_state(netplay_t *netplay)
    uint32_t state[UDP_WORDS_PER_FRAME - 1] = {0};
    struct delta_frame *ptr                 = &netplay->buffer[netplay->self_ptr];
 
-   if (!input_driver_is_libretro_input_blocked() && netplay->frame_count > 0)
+   if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count)) return false;
+
+   if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
    {
       unsigned i;
       settings_t *settings = config_get_ptr();
@@ -185,7 +187,7 @@ static bool get_self_input_state(netplay_t *netplay)
     */
    memmove(netplay->packet_buffer, netplay->packet_buffer + UDP_WORDS_PER_FRAME,
          sizeof (netplay->packet_buffer) - UDP_WORDS_PER_FRAME * sizeof(uint32_t));
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME] = htonl(netplay->frame_count); 
+   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME] = htonl(netplay->self_frame_count); 
    netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME + 1] = htonl(state[0]);
    netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME + 2] = htonl(state[1]);
    netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME + 3] = htonl(state[2]);
@@ -227,15 +229,17 @@ static bool netplay_get_cmd(netplay_t *netplay)
 {
    uint32_t cmd;
    uint32_t flip_frame;
-   size_t cmd_size;
+   uint32_t cmd_size;
 
    if (!socket_receive_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
       return false;
 
    cmd      = ntohl(cmd);
 
-   cmd_size = cmd & 0xffff;
-   cmd      = cmd >> 16;
+   if (!socket_receive_all_blocking(netplay->fd, &cmd_size, sizeof(cmd)))
+       return false;
+
+   cmd_size = ntohl(cmd_size);
 
    switch (cmd)
    {
@@ -371,13 +375,21 @@ static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
    for (i = 0; i < size * UDP_WORDS_PER_FRAME; i++)
       buffer[i] = ntohl(buffer[i]);
 
-   for (i = 0; i < size && netplay->read_frame_count <= netplay->frame_count; i++)
+   for (i = 0; i < size; i++)
    {
       uint32_t frame = buffer[UDP_WORDS_PER_FRAME * i + 0];
       const uint32_t *state = &buffer[UDP_WORDS_PER_FRAME * i + 1];
 
       if (frame != netplay->read_frame_count)
          continue;
+
+      if (!netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr], netplay->read_frame_count))
+      {
+          netplay->must_fast_forward = true;
+          continue;
+      }
+
+      /* FIXME: acknowledge when we completely drop data on the floor */
 
       netplay->buffer[netplay->read_ptr].is_simulated = false;
       memcpy(netplay->buffer[netplay->read_ptr].real_input_state, state,
@@ -427,7 +439,7 @@ static bool netplay_poll(netplay_t *netplay)
 
    /* We skip reading the first frame so the host has a chance to grab 
     * our host info so we don't block forever :') */
-   if (netplay->frame_count == 0)
+   if (netplay->self_frame_count == 0)
    {
       netplay->buffer[0].used_real        = true;
       netplay->buffer[0].is_simulated     = false;
@@ -464,7 +476,7 @@ static bool netplay_poll(netplay_t *netplay)
          }
          parse_packet(netplay, buffer, UDP_FRAME_PACKETS);
 
-      } while ((netplay->read_frame_count <= netplay->frame_count) && 
+      } while ((netplay->read_frame_count <= netplay->self_frame_count) && 
             poll_input(netplay, (netplay->other_ptr == netplay->self_ptr) && 
                (first_read == netplay->read_frame_count)) == 1);
    }
@@ -478,7 +490,7 @@ static bool netplay_poll(netplay_t *netplay)
       }
    }
 
-   if (netplay->read_ptr != netplay->self_ptr)
+   if (netplay->read_frame_count <= netplay->self_frame_count)
       simulate_input(netplay);
    else
       netplay->buffer[PREV_PTR(netplay->self_ptr)].used_real = true;
@@ -533,13 +545,13 @@ static bool netplay_is_alive(netplay_t *netplay)
 
 static bool netplay_flip_port(netplay_t *netplay, bool port)
 {
-   size_t frame = netplay->frame_count;
+   size_t frame = netplay->self_frame_count;
 
    if (netplay->flip_frame == 0)
       return port;
 
    if (netplay->is_replay)
-      frame = netplay->tmp_frame_count;
+      frame = netplay->replay_frame_count;
 
    return port ^ netplay->flip ^ (frame < netplay->flip_frame);
 }
@@ -549,7 +561,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
       unsigned idx, unsigned id)
 {
    size_t ptr = netplay->is_replay ? 
-      netplay->tmp_ptr : PREV_PTR(netplay->self_ptr);
+      netplay->replay_ptr : PREV_PTR(netplay->self_ptr);
 
    const uint32_t *curr_input_state = netplay->buffer[ptr].self_state;
 
@@ -871,10 +883,15 @@ error:
 static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
       const void *data, size_t size)
 {
-   cmd = (cmd << 16) | (size & 0xffff);
+   uint32_t cmd_size;
+
    cmd = htonl(cmd);
+   cmd_size = htonl(size);
 
    if (!socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd), false))
+      return false;
+
+   if (!socket_send_all_blocking(netplay->fd, &cmd_size, sizeof(cmd_size), false))
       return false;
 
    if (!socket_send_all_blocking(netplay->fd, data, size, false))
@@ -953,7 +970,7 @@ error:
  **/
 static void netplay_flip_users(netplay_t *netplay)
 {
-   uint32_t flip_frame = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
+   uint32_t flip_frame = netplay->self_frame_count + 2 * UDP_FRAME_PACKETS;
    uint32_t flip_frame_net = htonl(flip_frame);
    bool command = netplay_command(
       netplay, NETPLAY_CMD_FLIP_PLAYERS,
