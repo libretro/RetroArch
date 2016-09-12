@@ -310,7 +310,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
          }
 
          /* The data's good! */
-         netplay->buffer[netplay->read_ptr].is_simulated = false;
+         netplay->buffer[netplay->read_ptr].have_remote = true;
          memcpy(netplay->buffer[netplay->read_ptr].real_input_state, buffer + 1, sizeof(buffer) - sizeof(uint32_t));
          netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
          netplay->read_frame_count++;
@@ -498,7 +498,7 @@ static void simulate_input(netplay_t *netplay)
          netplay->buffer[prev].real_input_state,
          sizeof(netplay->buffer[prev].real_input_state));
 
-   netplay->buffer[ptr].is_simulated = true;
+   netplay->buffer[ptr].have_remote = false;
    netplay->buffer[ptr].used_real = false;
 }
 
@@ -529,7 +529,7 @@ static bool netplay_poll(netplay_t *netplay)
    if (netplay->self_frame_count == 0)
    {
       netplay->buffer[0].used_real        = true;
-      netplay->buffer[0].is_simulated     = false;
+      netplay->buffer[0].have_remote      = true;
 
       memset(netplay->buffer[0].real_input_state,
             0, sizeof(netplay->buffer[0].real_input_state));
@@ -667,10 +667,10 @@ static int16_t netplay_input_state(netplay_t *netplay,
 
    if (netplay->port == (netplay_flip_port(netplay, port) ? 1 : 0))
    {
-      if (netplay->buffer[ptr].is_simulated)
-         curr_input_state = netplay->buffer[ptr].simulated_input_state;
-      else
+      if (netplay->buffer[ptr].have_remote)
          curr_input_state = netplay->buffer[ptr].real_input_state;
+      else
+         curr_input_state = netplay->buffer[ptr].simulated_input_state;
    }
 
    switch (device)

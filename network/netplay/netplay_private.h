@@ -52,10 +52,10 @@ struct delta_frame
    /* Have we read local input? */
    bool have_local;
 
-   /* Badly named: This is !have_real(_remote) */
-   bool is_simulated;
+   /* Have we read the real remote input? */
+   bool have_remote;
 
-   /* Is the current state as of self_frame_count using the real data? */
+   /* Is the current state as of self_frame_count using the real remote data? */
    bool used_real;
 };
 

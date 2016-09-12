@@ -114,7 +114,6 @@ static void netplay_net_post_frame(netplay_t *netplay)
       /* For the remainder of the frames up to the read count, we can use the real data */
       while (netplay->replay_frame_count < netplay->read_frame_count)
       {
-          netplay->buffer[netplay->replay_ptr].is_simulated = false;
           netplay->buffer[netplay->replay_ptr].used_real = true;
           netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
           netplay->replay_frame_count++;
@@ -205,8 +204,6 @@ static bool netplay_net_init_buffers(netplay_t *netplay)
 
       if (!netplay->buffer[i].state)
          return false;
-
-      netplay->buffer[i].is_simulated = true;
    }
 
    return true;
