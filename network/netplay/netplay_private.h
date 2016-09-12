@@ -41,6 +41,7 @@
 
 struct delta_frame
 {
+   bool used; /* a bit derpy, but this is how we know if the delta's been used at all */
    uint32_t frame;
 
    void *state;
@@ -143,6 +144,7 @@ struct netplay
    uint32_t pause_frame;
 
    /* And stalling */
+   uint32_t stall_frames;
    int stall;
 
    struct netplay_callbacks* net_cbs;

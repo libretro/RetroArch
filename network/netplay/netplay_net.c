@@ -36,7 +36,12 @@ static void netplay_net_pre_frame(netplay_t *netplay)
        serial_info.data = netplay->buffer[netplay->self_ptr].state;
        serial_info.size = netplay->state_size;
 
-       core_serialize(&serial_info);
+       if (!core_serialize(&serial_info))
+       {
+           /* If the core can't serialize properly, we must stall for the
+            * remote input on EVERY frame, because we can't recover */
+           netplay->stall_frames = 0;
+       }
    }
 
    netplay->can_poll = true;
@@ -55,9 +60,11 @@ static void netplay_net_post_frame(netplay_t *netplay)
 {
    netplay->self_frame_count++;
 
+#if 0
    /* Nothing to do... */
    if (netplay->other_frame_count == netplay->read_frame_count)
       return;
+#endif
 
    /* Skip ahead if we predicted correctly.
     * Skip until our simulation failed. */
@@ -80,8 +87,8 @@ static void netplay_net_post_frame(netplay_t *netplay)
 
       /* Replay frames. */
       netplay->is_replay = true;
-      netplay->replay_ptr = PREV_PTR(netplay->other_ptr);
-      netplay->replay_frame_count = netplay->other_frame_count - 1;
+      netplay->replay_ptr = netplay->other_ptr;
+      netplay->replay_frame_count = netplay->other_frame_count;
 
       if (netplay->replay_frame_count < netplay->self_frame_count)
       {
@@ -114,7 +121,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
       /* For the remainder of the frames up to the read count, we can use the real data */
       while (netplay->replay_frame_count < netplay->read_frame_count)
       {
-          netplay->buffer[netplay->replay_ptr].used_real = true;
+          /*netplay->buffer[netplay->replay_ptr].used_real = true;*/
           netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
           netplay->replay_frame_count++;
       }
@@ -222,7 +229,11 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
          return false;
    }
 
-   netplay->buffer_size = frames + 1;
+   /* * 2 + 1 because:
+    * Self sits in the middle,
+    * Other is allowed to drift as much as 'frames' frames behind
+    * Read is allowed to drift as much as 'frames' frames ahead */
+   netplay->buffer_size = frames * 2 + 1;
 
    if (!netplay_net_init_buffers(netplay))
       return false;

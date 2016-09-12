@@ -143,7 +143,7 @@ static bool send_chunk(netplay_t *netplay)
  **/
 static bool get_self_input_state(netplay_t *netplay)
 {
-   uint32_t state[WORDS_PER_FRAME - 1] = {0};
+   uint32_t state[WORDS_PER_FRAME - 1] = {0, 0, 0};
    struct delta_frame *ptr                 = &netplay->buffer[netplay->self_ptr];
 
    if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
@@ -261,9 +261,9 @@ static bool netplay_get_cmd(netplay_t *netplay)
    uint32_t flip_frame;
    uint32_t cmd_size;
 
-   /* If we're not ready for input, wait until we are. Could fill the TCP buffer, stalling the other side. */
-   if (!netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr], netplay->read_frame_count))
-      return false;
+   /* FIXME: This depends on delta_frame_ready */
+
+   netplay->timeout_cnt = 0;
 
    if (!socket_receive_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
       return false;
@@ -314,7 +314,6 @@ static bool netplay_get_cmd(netplay_t *netplay)
          memcpy(netplay->buffer[netplay->read_ptr].real_input_state, buffer + 1, sizeof(buffer) - sizeof(uint32_t));
          netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
          netplay->read_frame_count++;
-         netplay->timeout_cnt = 0;
          return true;
       }
 
@@ -409,9 +408,13 @@ static int poll_input(netplay_t *netplay, bool block)
        * but we aren't using the TCP connection for anything useful atm. */
       if (FD_ISSET(netplay->fd, &fds))
       {
-          had_input = true;
-          if (!netplay_get_cmd(netplay))
-              return -1; 
+          /* If we're not ready for input, wait until we are. Could fill the TCP buffer, stalling the other side. */
+          if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr], netplay->read_frame_count))
+          {
+             had_input = true;
+             if (!netplay_get_cmd(netplay))
+                return -1; 
+          }
       }
 
 #if 0
@@ -431,9 +434,9 @@ static int poll_input(netplay_t *netplay, bool block)
       }
 #endif
 
-      RARCH_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
-            netplay->timeout_cnt, MAX_RETRIES);
-   } while (had_input);
+      RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
+            netplay->self_frame_count, netplay->timeout_cnt, MAX_RETRIES);
+   } while (had_input || (block && (netplay->read_frame_count <= netplay->self_frame_count)));
 
    /*if (block)
       return -1;*/
@@ -521,9 +524,13 @@ static bool netplay_poll(netplay_t *netplay)
 
    netplay->can_poll = false;
 
+#if 0
    if (!get_self_input_state(netplay))
       return false;
+#endif
+   get_self_input_state(netplay);
 
+#if 0
    /* We skip reading the first frame so the host has a chance to grab 
     * our host info so we don't block forever :') */
    if (netplay->self_frame_count == 0)
@@ -538,9 +545,11 @@ static bool netplay_poll(netplay_t *netplay)
       netplay->read_frame_count++;
       return true;
    }
+#endif
 
-   /* Read Netplay input */
-   res = poll_input(netplay, 0); /* FIXME: configure stalling intervals */
+   /* Read Netplay input, block if we're configured to stall for input every
+    * frame */
+   res = poll_input(netplay, netplay->stall_frames == 0);
    if (res == -1)
    {
       netplay->has_connection = false;
@@ -580,8 +589,8 @@ static bool netplay_poll(netplay_t *netplay)
 
    if (netplay->read_frame_count < netplay->self_frame_count)
       simulate_input(netplay);
-   else
-      netplay->buffer[PREV_PTR(netplay->self_ptr)].used_real = true;
+   /*else
+      netplay->buffer[PREV_PTR(netplay->self_ptr)].used_real = true;*/
 
    /* Consider stalling */
    switch (netplay->stall) {
@@ -591,7 +600,7 @@ static bool netplay_poll(netplay_t *netplay)
           break;
 
        default: /* not stalling */
-          if (netplay->read_frame_count < netplay->self_frame_count - 10)
+          if (netplay->read_frame_count + netplay->stall_frames <= netplay->self_frame_count)
              netplay->stall = RARCH_NETPLAY_STALL_RUNNING_FAST;
    }
 
@@ -774,6 +783,9 @@ static int init_tcp_connection(const struct addrinfo *res,
 {
    bool ret = true;
    int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+   int flag = 1;
+
+   setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
 
    if (fd < 0)
    {
@@ -937,10 +949,8 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       bool spectate,
       const char *nick)
 {
+   uint32_t buffer_frames;
    netplay_t *netplay = NULL;
-
-   /*if (frames > UDP_FRAME_PACKETS)
-      frames = UDP_FRAME_PACKETS;*/
 
    netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -953,6 +963,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    netplay->spectate.enabled  = spectate;
    netplay->is_server         = server == NULL;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
+   netplay->stall_frames = frames;
 
    if(spectate)
       netplay->net_cbs = netplay_get_cbs_spectate();
