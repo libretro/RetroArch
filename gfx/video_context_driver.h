@@ -22,10 +22,6 @@
 
 #include "video_driver.h"
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
 RETRO_BEGIN_DECLS
 
 #ifndef MAX_EGLIMAGE_TEXTURES

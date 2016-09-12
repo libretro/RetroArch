@@ -17,18 +17,19 @@
 #define _VIDEO_FRAME_H
 
 #include <stdint.h>
+#include <retro_common_api.h>
 
-#include <gfx/scaler/scaler.h>
+RETRO_BEGIN_DECLS
 
 void video_frame_convert_rgb16_to_rgb32(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output,
       const void *input,
       int width, int height,
       int in_pitch);
 
 void video_frame_scale(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output,
       const void *input,
       enum scaler_pix_fmt format,
@@ -40,7 +41,7 @@ void video_frame_scale(
       unsigned pitch);
 
 void video_frame_record_scale(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output,
       const void *input,
       unsigned scaler_width,
@@ -52,12 +53,12 @@ void video_frame_record_scale(
       bool bilinear);
 
 void video_frame_convert_argb8888_to_abgr8888(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output, const void *input,
       int width, int height, int in_pitch);
 
 void video_frame_convert_to_bgr24(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output, const void *input,
       int width, int height, int in_pitch,
       bool bgr24);
@@ -68,10 +69,12 @@ void video_frame_convert_rgba_to_bgr(
       unsigned width);
 
 bool video_pixel_frame_scale(
-      struct scaler_ctx *scaler,
+      void *scaler_data,
       void *output,
       const void *data,
       unsigned width, unsigned height,
       size_t pitch);
+
+RETRO_END_DECLS
 
 #endif
