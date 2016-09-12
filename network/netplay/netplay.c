@@ -149,6 +149,13 @@ static bool get_self_input_state(netplay_t *netplay)
    if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
       return false;
 
+   if (ptr->have_local)
+   {
+      /* We've already read this frame! */
+      netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+      return true;
+   }
+
    if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
    {
       unsigned i;
@@ -206,6 +213,7 @@ static bool get_self_input_state(netplay_t *netplay)
    }
 
    memcpy(ptr->self_state, state, sizeof(state));
+   ptr->have_local = true;
    netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
    return true;
 }
@@ -296,14 +304,8 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
          if (buffer[0] != netplay->read_frame_count)
          {
-             /* FIXME: JUST drop it? */
-             return netplay_cmd_nak(netplay);
-         }
-
-         if (!netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr], netplay->read_frame_count))
-         {
-             /* FIXME: If we're here, we're desyncing. */
-             netplay->must_fast_forward = true;
+             /* FIXME: Except on the first (null) frame, this should be
+              * impossible, so maybe just disconnect? */
              return netplay_cmd_nak(netplay);
          }
 
@@ -313,7 +315,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
          netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
          netplay->read_frame_count++;
          netplay->timeout_cnt = 0;
-         return netplay_cmd_ack(netplay);
+         return true;
       }
 
       case NETPLAY_CMD_FLIP_PLAYERS:
@@ -431,7 +433,7 @@ static int poll_input(netplay_t *netplay, bool block)
 
       RARCH_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
             netplay->timeout_cnt, MAX_RETRIES);
-   } while (had_input || (block && netplay->read_frame_count < netplay->self_frame_count));
+   } while (had_input);
 
    /*if (block)
       return -1;*/
@@ -537,9 +539,8 @@ static bool netplay_poll(netplay_t *netplay)
       return true;
    }
 
-   /* We might have reached the end of the buffer, where we 
-    * simply have to block. */
-   res = poll_input(netplay, netplay->read_frame_count < netplay->self_frame_count - 10); /* FIXME: configure stalling intervals */
+   /* Read Netplay input */
+   res = poll_input(netplay, 0); /* FIXME: configure stalling intervals */
    if (res == -1)
    {
       netplay->has_connection = false;
@@ -581,6 +582,18 @@ static bool netplay_poll(netplay_t *netplay)
       simulate_input(netplay);
    else
       netplay->buffer[PREV_PTR(netplay->self_ptr)].used_real = true;
+
+   /* Consider stalling */
+   switch (netplay->stall) {
+       case RARCH_NETPLAY_STALL_RUNNING_FAST:
+          if (netplay->read_frame_count >= netplay->self_frame_count)
+             netplay->stall = RARCH_NETPLAY_STALL_NONE;
+          break;
+
+       default: /* not stalling */
+          if (netplay->read_frame_count < netplay->self_frame_count - 10)
+             netplay->stall = RARCH_NETPLAY_STALL_RUNNING_FAST;
+   }
 
    return true;
 }

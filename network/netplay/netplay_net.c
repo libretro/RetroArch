@@ -166,6 +166,20 @@ static void netplay_net_post_frame(netplay_t *netplay)
    }
 #endif
 
+   /* If we're supposed to stall, rewind */
+   if (netplay->stall)
+   {
+      retro_ctx_serialize_info_t serial_info;
+
+      netplay->self_ptr = PREV_PTR(netplay->self_ptr);
+      netplay->self_frame_count--;
+
+      serial_info.data       = NULL;
+      serial_info.data_const = netplay->buffer[netplay->self_ptr].state;
+      serial_info.size       = netplay->state_size;
+
+      core_unserialize(&serial_info);
+   }
 }
 static bool netplay_net_init_buffers(netplay_t *netplay)
 {

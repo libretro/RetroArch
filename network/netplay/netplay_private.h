@@ -49,8 +49,13 @@ struct delta_frame
    uint32_t simulated_input_state[WORDS_PER_FRAME - 1];
    uint32_t self_state[WORDS_PER_FRAME - 1];
 
+   /* Have we read local input? */
    bool have_local;
+
+   /* Badly named: This is !have_real(_remote) */
    bool is_simulated;
+
+   /* Is the current state as of self_frame_count using the real data? */
    bool used_real;
 };
 
@@ -58,6 +63,12 @@ struct netplay_callbacks {
    void (*pre_frame) (netplay_t *netplay);
    void (*post_frame)(netplay_t *netplay);
    bool (*info_cb)   (netplay_t *netplay, unsigned frames);
+};
+
+enum rarch_netplay_stall_reasons
+{
+    RARCH_NETPLAY_STALL_NONE = 0,
+    RARCH_NETPLAY_STALL_RUNNING_FAST
 };
 
 struct netplay
@@ -130,6 +141,9 @@ struct netplay
     */
    bool pause;
    uint32_t pause_frame;
+
+   /* And stalling */
+   int stall;
 
    struct netplay_callbacks* net_cbs;
 };
