@@ -30,6 +30,10 @@
 
 #include "../input/input_driver.h"
 
+#ifdef HAVE_OVERLAY
+#include "../input/input_overlay.h"
+#endif
+
 RETRO_BEGIN_DECLS
 
 enum texture_filter_type

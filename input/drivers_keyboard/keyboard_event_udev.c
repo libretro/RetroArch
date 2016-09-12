@@ -13,6 +13,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_miscellaneous.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #include "../input_keymaps.h"
 #include "../input_keyboard.h"
 #include "../../driver.h"
