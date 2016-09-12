@@ -20,6 +20,10 @@
 #include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "input/input_defines.h"
 
 RETRO_BEGIN_DECLS
