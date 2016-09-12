@@ -24,6 +24,10 @@
 #include <gccore.h>
 #include <ogcsys.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include <rthreads/rthreads.h>
 #include "../../memory/wii/mem2_manager.h"

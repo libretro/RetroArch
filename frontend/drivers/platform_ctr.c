@@ -22,6 +22,11 @@
 #include <3ds.h>
 
 #include <file/file_path.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
 #endif

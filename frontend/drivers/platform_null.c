@@ -14,10 +14,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../frontend_driver.h"
-
 #include <stdint.h>
-#include <string.h>
+
+#include "../frontend_driver.h"
 
 frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* environment_get */
