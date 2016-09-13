@@ -386,6 +386,9 @@ static int poll_input(netplay_t *netplay, bool block)
 
       RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
             netplay->self_frame_count, netplay->timeout_cnt, MAX_RETRIES);
+
+      if (netplay->timeout_cnt >= MAX_RETRIES)
+         return -1;
    } while (had_input || (block && (netplay->read_frame_count <= netplay->self_frame_count)));
 
    return 0;
