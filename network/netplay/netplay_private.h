@@ -20,6 +20,7 @@
 #include "netplay.h"
 
 #include <net/net_compat.h>
+#include <features/features_cpu.h>
 #include <retro_endianness.h>
 
 #include "../../core.h"
@@ -144,6 +145,7 @@ struct netplay
    /* And stalling */
    uint32_t stall_frames;
    int stall;
+   retro_time_t stall_time;
 
    struct netplay_callbacks* net_cbs;
 };

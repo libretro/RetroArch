@@ -64,6 +64,10 @@ static void netplay_net_post_frame(netplay_t *netplay)
 {
    netplay->self_frame_count++;
 
+   /* Only relevant if we're connected */
+   if (!netplay->has_connection)
+      return;
+
    /* Skip ahead if we predicted correctly.
     * Skip until our simulation failed. */
    while (netplay->other_frame_count < netplay->read_frame_count)

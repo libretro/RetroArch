@@ -26,6 +26,7 @@
 #include <retro_assert.h>
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#include <features/features_cpu.h>
 #include <retro_endianness.h>
 
 #include "netplay_private.h"
@@ -408,6 +409,8 @@ static void simulate_input(netplay_t *netplay)
    netplay->buffer[ptr].used_real = false;
 }
 
+#define MAX_STALL_TIME_USEC 10000000
+
 /**
  * netplay_poll:
  * @netplay              : pointer to netplay object
@@ -451,7 +454,23 @@ static bool netplay_poll(netplay_t *netplay)
 
       default: /* not stalling */
          if (netplay->read_frame_count + netplay->stall_frames <= netplay->self_frame_count)
+         {
             netplay->stall = RARCH_NETPLAY_STALL_RUNNING_FAST;
+            netplay->stall_time = cpu_features_get_time_usec();
+         }
+   }
+
+   /* If we're stalling, consider disconnection */
+   if (netplay->stall)
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      if (now - netplay->stall_time >= MAX_STALL_TIME_USEC)
+      {
+         /* Stalled out! */
+         netplay->has_connection = false;
+         warn_hangup();
+         return false;
+      }
    }
 
    return true;
