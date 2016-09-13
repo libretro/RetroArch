@@ -58,20 +58,6 @@ static void warn_hangup(void)
    runloop_msg_queue_push("Netplay has disconnected. Will continue without connection.", 0, 480, false);
 }
 
-/**
- * check_netplay_synched:
- * @netplay: pointer to the netplay object.
- * Checks to see if the host and client have synchronized states. Returns true
- * on success and false on failure.
- */
-bool check_netplay_synched(netplay_t* netplay)
-{
-   retro_assert(netplay);
-   /*return netplay->self_frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS);*/
-   /* FIXME */
-   return true;
-}
-
 static bool netplay_info_cb(netplay_t* netplay, unsigned frames) {
    return netplay->net_cbs->info_cb(netplay, frames);
 }
@@ -203,23 +189,9 @@ static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
    return true;
 }
 
-static bool netplay_cmd_ack(netplay_t *netplay)
-{
-   return netplay_send_raw_cmd(netplay, NETPLAY_CMD_ACK, NULL, 0);
-}
-
 static bool netplay_cmd_nak(netplay_t *netplay)
 {
    return netplay_send_raw_cmd(netplay, NETPLAY_CMD_NAK, NULL, 0);
-}
-
-static bool netplay_get_response(netplay_t *netplay)
-{
-   uint32_t response;
-   if (!socket_receive_all_blocking(netplay->fd, &response, sizeof(response)))
-      return false;
-
-   return ntohl(response) == NETPLAY_CMD_ACK;
 }
 
 static bool netplay_get_cmd(netplay_t *netplay)
@@ -312,7 +284,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
          RARCH_LOG("Netplay users are flipped.\n");
          runloop_msg_queue_push("Netplay users are flipped.", 1, 180, false);
 
-         return netplay_cmd_ack(netplay);
+         return true;
 
       case NETPLAY_CMD_SPECTATE:
          RARCH_ERR("NETPLAY_CMD_SPECTATE unimplemented.\n");
@@ -320,7 +292,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
       case NETPLAY_CMD_DISCONNECT:
          warn_hangup();
-         return netplay_cmd_ack(netplay);
+         return true;
 
       case NETPLAY_CMD_LOAD_SAVESTATE:
          RARCH_ERR("NETPLAY_CMD_LOAD_SAVESTATE unimplemented.\n");
@@ -328,11 +300,11 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
       case NETPLAY_CMD_PAUSE:
          command_event(CMD_EVENT_PAUSE, NULL);
-         return netplay_cmd_ack(netplay);
+         return true;
 
       case NETPLAY_CMD_RESUME:
          command_event(CMD_EVENT_UNPAUSE, NULL);
-         return netplay_cmd_ack(netplay);
+         return true;
 
       default: break;
    }
@@ -849,7 +821,6 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
    const char* msg         = NULL;
    bool allowed_spectate   = !!(flags & CMD_OPT_ALLOWED_IN_SPECTATE_MODE);
    bool host_only          = !!(flags & CMD_OPT_HOST_ONLY);
-   bool require_sync       = !!(flags & CMD_OPT_REQUIRE_SYNC);
 
    retro_assert(netplay);
 
@@ -865,21 +836,11 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
       goto error;
    }
 
-   if(require_sync && check_netplay_synched(netplay))
-   {
-      msg = "Cannot %s while host and client are not in sync.";
+   if (!netplay_send_raw_cmd(netplay, cmd, data, sz))
       goto error;
-   }
 
-   if(netplay_send_raw_cmd(netplay, cmd, data, sz)) {
-      if(netplay_get_response(netplay))
-         runloop_msg_queue_push(success_msg, 1, 180, false);
-      else
-      {
-         msg = "Failed to send command \"%s\"";
-         goto error;
-      }
-   }
+   runloop_msg_queue_push(success_msg, 1, 180, false);
+
    return true;
 
 error:
