@@ -1639,6 +1639,10 @@ void command_event_save_current_config(int override_type)
       {
          snprintf(msg, sizeof(msg), "Overrides saved successfully");
          RARCH_LOG("[overrides] %s\n", msg);
+
+         /* set overrides to active so the original config can be
+            restored after closing content */
+         runloop_ctl(RUNLOOP_CTL_SET_OVERRIDES_ACTIVE, NULL);
       }
       else
       {
