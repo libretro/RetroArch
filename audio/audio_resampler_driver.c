@@ -19,10 +19,6 @@
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
 #include "audio_resampler_driver.h"
 #include "../config_file_userdata.h"
 #include "../performance_counters.h"
