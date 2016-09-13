@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
       data.input_frames = sizeof(input_f) / (2 * sizeof(float));
       data.ratio = ratio * rate_mod;
 
-      rarch_resampler_process(resampler, re, &data);
+      resampler->process(re, &data);
 
       output_samples = data.output_frames * 2;
 
@@ -97,6 +97,9 @@ int main(int argc, char *argv[])
          break;
    }
 
-   rarch_resampler_freep(&resampler, &re);
+   if (resampler && re)
+      resampler->free(re);
+   resampler      = NULL;
+   re             = NULL;
 }
 

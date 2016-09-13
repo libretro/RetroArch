@@ -762,8 +762,10 @@ static void ffmpeg_free(void *data)
    if (handle->config.audio_opts)
       av_dict_free(&handle->config.audio_opts);
 
-   rarch_resampler_freep(&handle->audio.resampler,
-         &handle->audio.resampler_data);
+   if (handle->audio.resampler && handle->audio.resampler_data)
+      handle->audio.resampler->free(handle->audio.resampler_data);
+   handle->audio.resampler      = NULL;
+   handle->audio.resampler_data = NULL;
 
    av_free(handle->audio.float_conv);
    av_free(handle->audio.resample_out);
@@ -1188,10 +1190,10 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
       info.input_frames = aud->frames;
       info.ratio        = handle->audio.ratio;
 
-      rarch_resampler_process(handle->audio.resampler,
-            handle->audio.resampler_data, &info);
-      aud->data   = handle->audio.resample_out;
-      aud->frames = info.output_frames;
+      handle->audio.resampler->process(handle->audio.resampler_data, &info);
+
+      aud->data         = handle->audio.resample_out;
+      aud->frames       = info.output_frames;
 
       if (!handle->audio.use_float)
       {
