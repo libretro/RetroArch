@@ -92,6 +92,7 @@ enum
    XMB_TEXTURE_RESUME,
    XMB_TEXTURE_SAVESTATE,
    XMB_TEXTURE_LOADSTATE,
+   XMB_TEXTURE_UNDO,
    XMB_TEXTURE_CORE_INFO,
    XMB_TEXTURE_CORE_OPTIONS,
    XMB_TEXTURE_INPUT_REMAPPING_OPTIONS,
@@ -1623,6 +1624,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
+      case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
+      case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
+         return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          return xmb->textures.list[XMB_TEXTURE_SCREENSHOT];
       case MENU_ENUM_LABEL_DELETE_ENTRY:
@@ -2813,6 +2817,8 @@ static const char *xmb_texture_path(unsigned id)
          return "savestate.png";
       case XMB_TEXTURE_LOADSTATE:
          return "loadstate.png";
+      case XMB_TEXTURE_UNDO:
+         return "undo.png";
       case XMB_TEXTURE_CORE_INFO:
          return "core-infos.png";
       case XMB_TEXTURE_CORE_OPTIONS:
