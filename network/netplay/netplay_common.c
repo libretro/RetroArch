@@ -79,7 +79,7 @@ uint32_t *netplay_bsv_header_generate(size_t *size, uint32_t magic)
    uint32_t *header, bsv_header[4] = {0};
 
    core_serialize_size(&info);
-   
+
    serialize_size = info.size;
    header_size    = sizeof(bsv_header) + serialize_size;
    *size          = header_size;
@@ -177,9 +177,9 @@ uint32_t netplay_impl_magic(void)
    core_api_version(&api_info);
 
    api                                 = api_info.version;
-   
+
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-   
+
    if (info)
       lib = info->info.library_name;
 
@@ -217,7 +217,7 @@ bool netplay_send_info(netplay_t *netplay)
 
    core_get_memory(&mem_info);
    content_get_crc(&content_crc_ptr);
-   
+
    header[0] = htonl(*content_crc_ptr);
    header[1] = htonl(netplay_impl_magic());
    header[2] = htonl(mem_info.size);
@@ -347,20 +347,20 @@ bool netplay_is_spectate(netplay_t* netplay)
 
 bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame)
 {
-    void *remember_state;
-    if (delta->used)
-    {
-        if (delta->frame == frame) return true;
-        if (netplay->other_frame_count <= delta->frame)
-        {
-           /* We haven't even replayed this frame yet, so we can't overwrite it! */
-           return false;
-        }
-    }
-    remember_state = delta->state;
-    memset(delta, 0, sizeof(struct delta_frame));
-    delta->used = true;
-    delta->frame = frame;
-    delta->state = remember_state;
-    return true;
+   void *remember_state;
+   if (delta->used)
+   {
+      if (delta->frame == frame) return true;
+      if (netplay->other_frame_count <= delta->frame)
+      {
+         /* We haven't even replayed this frame yet, so we can't overwrite it! */
+         return false;
+      }
+   }
+   remember_state = delta->state;
+   memset(delta, 0, sizeof(struct delta_frame));
+   delta->used = true;
+   delta->frame = frame;
+   delta->state = remember_state;
+   return true;
 }

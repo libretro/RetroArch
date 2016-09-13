@@ -196,7 +196,7 @@ static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
 
    if (size > 0)
       if (!socket_send_all_blocking(netplay->fd, data, size, false))
-          return false;
+         return false;
 
    return true;
 }
@@ -236,7 +236,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
    cmd      = ntohl(cmd);
 
    if (!socket_receive_all_blocking(netplay->fd, &cmd_size, sizeof(cmd)))
-       return false;
+      return false;
 
    cmd_size = ntohl(cmd_size);
 
@@ -248,39 +248,39 @@ static bool netplay_get_cmd(netplay_t *netplay)
          return true;
 
       case NETPLAY_CMD_INPUT:
-      {
-         uint32_t buffer[WORDS_PER_FRAME];
-         unsigned i;
-
-         if (cmd_size != WORDS_PER_FRAME * sizeof(uint32_t))
          {
-             RARCH_ERR("NETPLAY_CMD_INPUT received an unexpected payload size.\n");
-             return netplay_cmd_nak(netplay);
+            uint32_t buffer[WORDS_PER_FRAME];
+            unsigned i;
+
+            if (cmd_size != WORDS_PER_FRAME * sizeof(uint32_t))
+            {
+               RARCH_ERR("NETPLAY_CMD_INPUT received an unexpected payload size.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            if (!socket_receive_all_blocking(netplay->fd, buffer, sizeof(buffer)))
+            {
+               RARCH_ERR("Failed to receive NETPLAY_CMD_INPUT input.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            for (i = 0; i < WORDS_PER_FRAME; i++)
+               buffer[i] = ntohl(buffer[i]);
+
+            if (buffer[0] != netplay->read_frame_count)
+            {
+               /* FIXME: Except on the first (null) frame, this should be
+                * impossible, so maybe just disconnect? */
+               return netplay_cmd_nak(netplay);
+            }
+
+            /* The data's good! */
+            netplay->buffer[netplay->read_ptr].have_remote = true;
+            memcpy(netplay->buffer[netplay->read_ptr].real_input_state, buffer + 1, sizeof(buffer) - sizeof(uint32_t));
+            netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
+            netplay->read_frame_count++;
+            return true;
          }
-
-         if (!socket_receive_all_blocking(netplay->fd, buffer, sizeof(buffer)))
-         {
-             RARCH_ERR("Failed to receive NETPLAY_CMD_INPUT input.\n");
-             return netplay_cmd_nak(netplay);
-         }
-
-         for (i = 0; i < WORDS_PER_FRAME; i++)
-             buffer[i] = ntohl(buffer[i]);
-
-         if (buffer[0] != netplay->read_frame_count)
-         {
-             /* FIXME: Except on the first (null) frame, this should be
-              * impossible, so maybe just disconnect? */
-             return netplay_cmd_nak(netplay);
-         }
-
-         /* The data's good! */
-         netplay->buffer[netplay->read_ptr].have_remote = true;
-         memcpy(netplay->buffer[netplay->read_ptr].real_input_state, buffer + 1, sizeof(buffer) - sizeof(uint32_t));
-         netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
-         netplay->read_frame_count++;
-         return true;
-      }
 
       case NETPLAY_CMD_FLIP_PLAYERS:
          if (cmd_size != sizeof(uint32_t))
@@ -371,13 +371,13 @@ static int poll_input(netplay_t *netplay, bool block)
        * but we aren't using the TCP connection for anything useful atm. */
       if (FD_ISSET(netplay->fd, &fds))
       {
-          /* If we're not ready for input, wait until we are. Could fill the TCP buffer, stalling the other side. */
-          if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr], netplay->read_frame_count))
-          {
-             had_input = true;
-             if (!netplay_get_cmd(netplay))
-                return -1; 
-          }
+         /* If we're not ready for input, wait until we are. Could fill the TCP buffer, stalling the other side. */
+         if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr], netplay->read_frame_count))
+         {
+            had_input = true;
+            if (!netplay_get_cmd(netplay))
+               return -1;
+         }
       }
 
       if (!block)
@@ -440,14 +440,14 @@ static bool netplay_poll(netplay_t *netplay)
 
    /* Consider stalling */
    switch (netplay->stall) {
-       case RARCH_NETPLAY_STALL_RUNNING_FAST:
-          if (netplay->read_frame_count >= netplay->self_frame_count)
-             netplay->stall = RARCH_NETPLAY_STALL_NONE;
-          break;
+      case RARCH_NETPLAY_STALL_RUNNING_FAST:
+         if (netplay->read_frame_count >= netplay->self_frame_count)
+            netplay->stall = RARCH_NETPLAY_STALL_NONE;
+         break;
 
-       default: /* not stalling */
-          if (netplay->read_frame_count + netplay->stall_frames <= netplay->self_frame_count)
-             netplay->stall = RARCH_NETPLAY_STALL_RUNNING_FAST;
+      default: /* not stalling */
+         if (netplay->read_frame_count + netplay->stall_frames <= netplay->self_frame_count)
+            netplay->stall = RARCH_NETPLAY_STALL_RUNNING_FAST;
    }
 
    return true;
@@ -881,7 +881,7 @@ static void netplay_flip_users(netplay_t *netplay)
       &flip_frame_net, sizeof flip_frame_net,
       CMD_OPT_HOST_ONLY | CMD_OPT_REQUIRE_SYNC,
       "flip users", "Successfully flipped users.\n");
-   
+
    if(command)
    {
       netplay->flip       ^= true;

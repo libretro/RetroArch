@@ -35,16 +35,16 @@ static void netplay_net_pre_frame(netplay_t *netplay)
 
    if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
    {
-       serial_info.data_const = NULL;
-       serial_info.data = netplay->buffer[netplay->self_ptr].state;
-       serial_info.size = netplay->state_size;
+      serial_info.data_const = NULL;
+      serial_info.data = netplay->buffer[netplay->self_ptr].state;
+      serial_info.size = netplay->state_size;
 
-       if (!core_serialize(&serial_info))
-       {
-           /* If the core can't serialize properly, we must stall for the
-            * remote input on EVERY frame, because we can't recover */
-           netplay->stall_frames = 0;
-       }
+      if (!core_serialize(&serial_info))
+      {
+         /* If the core can't serialize properly, we must stall for the
+          * remote input on EVERY frame, because we can't recover */
+         netplay->stall_frames = 0;
+      }
    }
 
    netplay->can_poll = true;
@@ -118,9 +118,9 @@ static void netplay_net_post_frame(netplay_t *netplay)
       /* For the remainder of the frames up to the read count, we can use the real data */
       while (netplay->replay_frame_count < netplay->read_frame_count)
       {
-          retro_assert(netplay->buffer[netplay->replay_ptr].have_remote);
-          netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
-          netplay->replay_frame_count++;
+         retro_assert(netplay->buffer[netplay->replay_ptr].have_remote);
+         netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
+         netplay->replay_frame_count++;
       }
 
       netplay->other_ptr = netplay->read_ptr;
@@ -153,7 +153,7 @@ static bool netplay_net_init_buffers(netplay_t *netplay)
 
    netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
          sizeof(*netplay->buffer));
-   
+
    if (!netplay->buffer)
       return false;
 
