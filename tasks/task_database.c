@@ -112,6 +112,32 @@ static int task_database_iterate_start(database_info_handle_t *db,
    return 0;
 }
 
+static int iso_get_serial(database_state_handle_t *db_state,
+      database_info_handle_t *db, const char *name, char* serial)
+{
+   int rv;
+   int32_t offset = 0;
+   const char* system_name = NULL;
+
+   if ((rv = detect_system(name, offset, &system_name)) < 0)
+      return rv;
+
+   if (string_is_equal(system_name, "psp"))
+   {
+      if (detect_psp_game(name, serial) == 0)
+         return 0;
+      RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+   }
+   else if (string_is_equal(system_name, "ps1"))
+   {
+      if (detect_ps1_game(name, serial) == 0)
+         return 0;
+      RARCH_LOG("%s '%s'\n", msg_hash_to_str(MSG_FOUND_DISK_LABEL), serial);
+   }
+
+   return 0;
+} 
+
 static bool file_get_crc(database_state_handle_t *db_state,
       const char *name, uint32_t *crc)
 {
@@ -155,6 +181,11 @@ static int task_database_iterate_playlist(
 #else
          break;
 #endif
+	 case FILE_TYPE_ISO:
+         db_state->serial[0] = '\0';
+         iso_get_serial(db_state, db, name, db_state->serial);
+         db->type = DATABASE_TYPE_SERIAL_LOOKUP;
+         break;
       case FILE_TYPE_LUTRO:
          db->type = DATABASE_TYPE_ITERATE_LUTRO;
          break;
