@@ -15,8 +15,11 @@
  */
 
 #include <compat/strl.h>
+#include <stdio.h>
 
 #include "netplay_private.h"
+
+#include "retro_assert.h"
 
 #include "../../autosave.h"
 
@@ -95,7 +98,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
          serial_info.data       = NULL;
          serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
          serial_info.size       = netplay->state_size;
-   
+
          core_unserialize(&serial_info);
       }
 
@@ -121,7 +124,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
       /* For the remainder of the frames up to the read count, we can use the real data */
       while (netplay->replay_frame_count < netplay->read_frame_count)
       {
-          /*netplay->buffer[netplay->replay_ptr].used_real = true;*/
+          retro_assert(netplay->buffer[netplay->replay_ptr].have_remote);
           netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
           netplay->replay_frame_count++;
       }

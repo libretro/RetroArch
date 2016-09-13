@@ -549,7 +549,7 @@ static bool netplay_poll(netplay_t *netplay)
 
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
-   res = poll_input(netplay, netplay->stall_frames == 0);
+   res = poll_input(netplay, (netplay->stall_frames == 0) && (netplay->read_frame_count <= netplay->self_frame_count));
    if (res == -1)
    {
       netplay->has_connection = false;
@@ -587,10 +587,8 @@ static bool netplay_poll(netplay_t *netplay)
    }
 #endif
 
-   if (netplay->read_frame_count < netplay->self_frame_count)
+   if (netplay->read_frame_count <= netplay->self_frame_count)
       simulate_input(netplay);
-   /*else
-      netplay->buffer[PREV_PTR(netplay->self_ptr)].used_real = true;*/
 
    /* Consider stalling */
    switch (netplay->stall) {
@@ -677,7 +675,10 @@ static int16_t netplay_input_state(netplay_t *netplay,
    if (netplay->port == (netplay_flip_port(netplay, port) ? 1 : 0))
    {
       if (netplay->buffer[ptr].have_remote)
+      {
+         netplay->buffer[ptr].used_real = true;
          curr_input_state = netplay->buffer[ptr].real_input_state;
+      }
       else
          curr_input_state = netplay->buffer[ptr].simulated_input_state;
    }
