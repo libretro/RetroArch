@@ -63,12 +63,6 @@ static void netplay_net_post_frame(netplay_t *netplay)
 {
    netplay->self_frame_count++;
 
-#if 0
-   /* Nothing to do... */
-   if (netplay->other_frame_count == netplay->read_frame_count)
-      return;
-#endif
-
    /* Skip ahead if we predicted correctly.
     * Skip until our simulation failed. */
    while (netplay->other_frame_count < netplay->read_frame_count)
@@ -133,47 +127,6 @@ static void netplay_net_post_frame(netplay_t *netplay)
       netplay->other_frame_count = netplay->read_frame_count;
       netplay->is_replay = false;
    }
-
-#if 0
-   /* And if the other side has gotten too far ahead of /us/, skip to catch up
-    * FIXME: Make this configurable */
-   if (netplay->read_frame_count > netplay->self_frame_count + 10 ||
-       netplay->must_fast_forward)
-   {
-       /* "replay" into the future */
-       netplay->is_replay = true;
-       netplay->replay_ptr = netplay->self_ptr;
-       netplay->replay_frame_count = netplay->self_frame_count;
-
-       /* just assume input doesn't change for the intervening frames */
-       while (netplay->replay_frame_count < netplay->read_frame_count)
-       {
-           size_t cur = netplay->replay_ptr;
-           size_t prev = PREV_PTR(cur);
-
-           memcpy(netplay->buffer[cur].self_state, netplay->buffer[prev].self_state,
-                sizeof(netplay->buffer[prev].self_state));
-
-#if defined(HAVE_THREADS)
-         autosave_lock();
-#endif
-         core_run();
-#if defined(HAVE_THREADS)
-         autosave_unlock();
-#endif
-
-         netplay->replay_ptr = NEXT_PTR(cur);
-         netplay->replay_frame_count++;
-       }
-
-       /* at this point, other = read = self */
-       netplay->self_ptr = netplay->replay_ptr;
-       netplay->self_frame_count = netplay->replay_frame_count;
-       netplay->other_ptr = netplay->read_ptr;
-       netplay->other_frame_count = netplay->read_frame_count;
-       netplay->is_replay = false;
-   }
-#endif
 
    /* If we're supposed to stall, rewind */
    if (netplay->stall)

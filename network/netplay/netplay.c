@@ -98,41 +98,6 @@ static bool netplay_can_poll(netplay_t *netplay)
    return netplay->can_poll;
 }
 
-#if 0
-static bool send_chunk(netplay_t *netplay)
-{
-   const struct sockaddr *addr = NULL;
-
-   if (netplay->addr)
-      addr = netplay->addr->ai_addr;
-   else if (netplay->has_client_addr)
-      addr = (const struct sockaddr*)&netplay->their_addr;
-
-   if (addr)
-   {
-      ssize_t bytes_sent;
-
-#ifdef HAVE_IPV6
-      bytes_sent = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
-               sizeof(netplay->packet_buffer), 0, addr,
-               sizeof(struct sockaddr_in6)));
-#else
-      bytes_sent = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
-               sizeof(netplay->packet_buffer), 0, addr,
-               sizeof(struct sockaddr_in)));
-#endif
-
-      if (bytes_sent != sizeof(netplay->packet_buffer))
-      {
-         warn_hangup();
-         netplay->has_connection = false;
-         return false;
-      }
-   }
-   return true;
-}
-#endif
-
 /**
  * get_self_input_state:
  * @netplay              : pointer to netplay object
@@ -380,8 +345,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
 static int poll_input(netplay_t *netplay, bool block)
 {
    bool had_input    = false;
-   int max_fd        = (netplay->fd > netplay->udp_fd ? 
-         netplay->fd : netplay->udp_fd) + 1;
+   int max_fd        = netplay->fd + 1;
    struct timeval tv = {0};
    tv.tv_sec         = 0;
    tv.tv_usec        = block ? (RETRY_MS * 1000) : 0;
@@ -398,7 +362,6 @@ static int poll_input(netplay_t *netplay, bool block)
       netplay->timeout_cnt++;
 
       FD_ZERO(&fds);
-      FD_SET(netplay->udp_fd, &fds);
       FD_SET(netplay->fd, &fds);
 
       if (socket_select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
@@ -417,79 +380,15 @@ static int poll_input(netplay_t *netplay, bool block)
           }
       }
 
-#if 0
-      if (FD_ISSET(netplay->udp_fd, &fds))
-         return 1;
-#endif
-
       if (!block)
          continue;
-
-#if 0
-      if (!send_chunk(netplay))
-      {
-         warn_hangup();
-         netplay->has_connection = false;
-         return -1;
-      }
-#endif
 
       RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
             netplay->self_frame_count, netplay->timeout_cnt, MAX_RETRIES);
    } while (had_input || (block && (netplay->read_frame_count <= netplay->self_frame_count)));
 
-   /*if (block)
-      return -1;*/
    return 0;
 }
-
-#if 0
-static bool receive_data(netplay_t *netplay, uint32_t *buffer, size_t size)
-{
-   socklen_t addrlen = sizeof(netplay->their_addr);
-
-   if (recvfrom(netplay->udp_fd, (char*)buffer, size, 0,
-            (struct sockaddr*)&netplay->their_addr, &addrlen) != (ssize_t)size)
-      return false;
-
-   netplay->has_client_addr = true;
-
-   return true;
-}
-
-static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
-{
-   unsigned i;
-
-   for (i = 0; i < size * UDP_WORDS_PER_FRAME; i++)
-      buffer[i] = ntohl(buffer[i]);
-
-   for (i = 0; i < size; i++)
-   {
-      uint32_t frame = buffer[UDP_WORDS_PER_FRAME * i + 0];
-      const uint32_t *state = &buffer[UDP_WORDS_PER_FRAME * i + 1];
-
-      if (frame != netplay->read_frame_count)
-         continue;
-
-      if (!netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr], netplay->read_frame_count))
-      {
-          netplay->must_fast_forward = true;
-          continue;
-      }
-
-      /* FIXME: acknowledge when we completely drop data on the floor */
-
-      netplay->buffer[netplay->read_ptr].is_simulated = false;
-      memcpy(netplay->buffer[netplay->read_ptr].real_input_state, state,
-            sizeof(netplay->buffer[netplay->read_ptr].real_input_state));
-
-      netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
-      netplay->read_frame_count++;
-      netplay->timeout_cnt = 0;
-   }
-}
-#endif
 
 /* TODO: Somewhat better prediction. :P */
 static void simulate_input(netplay_t *netplay)
@@ -524,28 +423,7 @@ static bool netplay_poll(netplay_t *netplay)
 
    netplay->can_poll = false;
 
-#if 0
-   if (!get_self_input_state(netplay))
-      return false;
-#endif
    get_self_input_state(netplay);
-
-#if 0
-   /* We skip reading the first frame so the host has a chance to grab 
-    * our host info so we don't block forever :') */
-   if (netplay->self_frame_count == 0)
-   {
-      netplay->buffer[0].used_real        = true;
-      netplay->buffer[0].have_remote      = true;
-
-      memset(netplay->buffer[0].real_input_state,
-            0, sizeof(netplay->buffer[0].real_input_state));
-
-      netplay->read_ptr                   = NEXT_PTR(netplay->read_ptr);
-      netplay->read_frame_count++;
-      return true;
-   }
-#endif
 
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
@@ -556,36 +434,6 @@ static bool netplay_poll(netplay_t *netplay)
       warn_hangup();
       return false;
    }
-
-#if 0
-   if (res == 1)
-   {
-      uint32_t first_read = netplay->read_frame_count;
-      do 
-      {
-         uint32_t buffer[UDP_FRAME_PACKETS * UDP_WORDS_PER_FRAME];
-         if (!receive_data(netplay, buffer, sizeof(buffer)))
-         {
-            warn_hangup();
-            netplay->has_connection = false;
-            return false;
-         }
-         parse_packet(netplay, buffer, UDP_FRAME_PACKETS);
-
-      } while ((netplay->read_frame_count <= netplay->self_frame_count) && 
-            poll_input(netplay, (netplay->other_ptr == netplay->self_ptr) && 
-               (first_read == netplay->read_frame_count)) == 1);
-   }
-   else
-   {
-      /* Cannot allow this. Should not happen though. */
-      if (netplay->self_ptr == netplay->other_ptr)
-      {
-         warn_hangup();
-         return false;
-      }
-   }
-#endif
 
    if (netplay->read_frame_count <= netplay->self_frame_count)
       simulate_input(netplay);
@@ -887,45 +735,12 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    return ret;
 }
 
-static bool init_udp_socket(netplay_t *netplay, const char *server,
-      uint16_t port)
-{
-   int fd = socket_init((void**)&netplay->addr, port, server, SOCKET_TYPE_DATAGRAM);
-
-   if (fd < 0)
-      goto error;
-
-   netplay->udp_fd = fd;
-
-   if (!server)
-   {
-      /* Not sure if we have to do this for UDP, but hey :) */
-      if (!socket_bind(netplay->udp_fd, (void*)netplay->addr))
-      {
-         RARCH_ERR("Failed to bind socket.\n");
-         socket_close(netplay->udp_fd);
-         netplay->udp_fd = -1;
-      }
-
-      freeaddrinfo_retro(netplay->addr);
-      netplay->addr = NULL;
-   }
-
-   return true;
-
-error:
-   RARCH_ERR("Failed to initialize socket.\n");
-   return false;
-}
-
 static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 {
    if (!network_init())
       return false;
 
    if (!init_tcp_socket(netplay, server, port, netplay->spectate.enabled))
-      return false;
-   if (!netplay->spectate.enabled && !init_udp_socket(netplay, server, port))
       return false;
 
    return true;
@@ -958,7 +773,6 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       return NULL;
 
    netplay->fd                = -1;
-   netplay->udp_fd            = -1;
    netplay->cbs               = *cb;
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
@@ -985,8 +799,6 @@ netplay_t *netplay_new(const char *server, uint16_t port,
 error:
    if (netplay->fd >= 0)
       socket_close(netplay->fd);
-   if (netplay->udp_fd >= 0)
-      socket_close(netplay->udp_fd);
 
    free(netplay);
    return NULL;
@@ -1099,8 +911,6 @@ void netplay_free(netplay_t *netplay)
    }
    else
    {
-      socket_close(netplay->udp_fd);
-
       for (i = 0; i < netplay->buffer_size; i++)
          free(netplay->buffer[i].state);
 
