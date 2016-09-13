@@ -1110,12 +1110,18 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
 {
    switch (msg)
    {
-      case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
+         return "Directory precedente";
+	  case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Abilita mappatura gamepad tastiera";
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
          return "Tipologia di mappatura gamepad tastiera";
       case MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
          return "Abilita tastiera ridotta";
+	  case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+         return "Salva override del core";
+      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+         return "Salva override di gioco";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
          return "Salva configurazione attuale";
       case MENU_ENUM_LABEL_VALUE_STATE_SLOT:
@@ -1187,7 +1193,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
          return "Aggiorna i files info dei core";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
-         return "Contenuto scaricato";
+         return "Scarica contenuto";
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
          return "<Scansiona questa directory>";
       case MENU_ENUM_LABEL_VALUE_SCAN_FILE:
@@ -1445,8 +1451,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Fotogrammi stimati del monitor";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Valore fittizio sull'arresto del core";
-      case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
-         return "Non avviare automaticamente un core";
+      case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+         return "Avvia automaticamente un core";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limita la velocità massima di caricamento";
       case MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO:
@@ -1587,8 +1593,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Collezione";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Seleziona il file ed intercetta il core";
-      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST: /* TODO/FIXME - rewrite */
-         return "Seleziona file scaricati ed intercetta il core";
+      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
+         return "Scarica directories";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Carica Recenti";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
@@ -1633,6 +1639,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Contatore dei core";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Cattura Screenshot";
+	  case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
+         return "Rimuovi dalla Playlist";
       case MENU_ENUM_LABEL_VALUE_RESUME:
          return "Riprendi";
       case MENU_ENUM_LABEL_VALUE_DISK_INDEX:
@@ -1682,7 +1690,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navigazione avvolgente";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filtra con estensioni supportate"; /* TODO/FIXME - rewrite */
+         return "Filtra estensioni sconosciute";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Estrai automaticamente gli archivi scaricati";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
