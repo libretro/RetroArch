@@ -217,9 +217,12 @@ static bool netplay_get_cmd(netplay_t *netplay)
    switch (cmd)
    {
       case NETPLAY_CMD_ACK:
-      case NETPLAY_CMD_NAK:
          /* Why are we even bothering? */
          return true;
+
+      case NETPLAY_CMD_NAK:
+         /* Disconnect now! */
+         return false;
 
       case NETPLAY_CMD_INPUT:
          {
@@ -243,8 +246,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
             if (buffer[0] != netplay->read_frame_count)
             {
-               /* FIXME: Except on the first (null) frame, this should be
-                * impossible, so maybe just disconnect? */
+               /* Out of order = out of luck */
                return netplay_cmd_nak(netplay);
             }
 
