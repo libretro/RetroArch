@@ -284,7 +284,7 @@ $(function() {
   // Hide the logging window and allow the user to show it.
   $('#output').hide();
   $('#btnlogs').click(function () {
-    $('#output').slideToggle();
+    $('#output').toggle();
   });
 
   /**
