@@ -45,6 +45,7 @@
 #endif
 
 #include <boolean.h>
+#include <compat/apple_compat.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <rhash.h>
@@ -104,32 +105,6 @@ typedef enum
    CFSystemDomainMask   = 8,       /* provided by Apple, unmodifiable (/System) */
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
-
-#ifndef __has_feature
-/* Compatibility with non-Clang compilers. */
-#define __has_feature(x) 0
-#endif
-
-#ifndef CF_RETURNS_RETAINED
-#if __has_feature(attribute_cf_returns_retained)
-#define CF_RETURNS_RETAINED __attribute__((cf_returns_retained))
-#else
-#define CF_RETURNS_RETAINED
-#endif
-#endif
-
-#ifndef NS_INLINE
-#define NS_INLINE inline
-#endif
-
-NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
-{
-#if __has_feature(objc_arc)
-   return (__bridge_retained CFTypeRef)X;
-#else
-   return X;
-#endif
-}
 
 static NSSearchPathDirectory NSConvertFlagsCF(unsigned flags)
 {

@@ -36,6 +36,7 @@
 #endif
 
 #include <retro_assert.h>
+#include <compat/apple_compat.h>
 
 #import "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../video_context_driver.h"
