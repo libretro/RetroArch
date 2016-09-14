@@ -36,7 +36,7 @@
 
 #ifdef HAVE_DBUS
 #include <dbus/dbus.h>
-static DBusConnection* dbus_connection;
+static DBusConnection* dbus_connection      = NULL;
 static unsigned int dbus_screensaver_cookie = 0;
 #endif
 
@@ -63,7 +63,7 @@ unsigned g_x11_screen;
 #define MOVERESIZE_Y_SHIFT 9
 
 #ifdef HAVE_DBUS
-static void dbus_get_connection()
+static void dbus_get_connection(void)
 {
     DBusError err;
     int ret;
@@ -71,18 +71,18 @@ static void dbus_get_connection()
     dbus_error_init(&err);
 
     dbus_connection = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
+
     if (dbus_error_is_set(&err))
     {
         RARCH_ERR("[DBus]: Failed to get DBus connection. Screensaver will not be suspended via DBus.\n");
         dbus_error_free(&err);
     }
 
-    if (dbus_connection != NULL) {
+    if (dbus_connection != NULL)
         dbus_connection_set_exit_on_disconnect(dbus_connection, true);
-    }
 }
 
-static void dbus_close_connection()
+static void dbus_close_connection(void)
 {
     if (dbus_connection != NULL)
     {
@@ -91,17 +91,17 @@ static void dbus_close_connection()
     }   
 }
 
-static void dbus_screensaver_inhibit()
+static void dbus_screensaver_inhibit(void)
 {
     const char *app = "RetroArch";
     const char *reason = "Playing a game";
     DBusMessage *msg, *reply;
 
     if (dbus_connection == NULL)
-        return; // DBus connection was not obtained
+        return; /* DBus connection was not obtained */
 
     if (dbus_screensaver_cookie > 0)
-        return; // Already inhibited
+        return; /* Already inhibited */
 
     msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
         "/org/freedesktop/ScreenSaver",
@@ -118,14 +118,15 @@ static void dbus_screensaver_inhibit()
 
     if (msg != NULL)
     {
-        reply = dbus_connection_send_with_reply_and_block(dbus_connection, msg, 300, NULL);
-        if (reply != NULL) {
+        reply = dbus_connection_send_with_reply_and_block(dbus_connection,
+              msg, 300, NULL);
+
+        if (reply != NULL)
+        {
             if (!dbus_message_get_args(reply, NULL,
                 DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
                 DBUS_TYPE_INVALID))
-            {
                 dbus_screensaver_cookie = 0;
-            }
 
             dbus_message_unref(reply);
         }
@@ -143,38 +144,46 @@ static void dbus_screensaver_inhibit()
     }
 }
 
-static void dbus_screensaver_uninhibit()
+static void dbus_screensaver_uninhibit(void)
 {
-    if (dbus_connection != NULL && dbus_screensaver_cookie > 0)
-    {
-        DBusMessage *msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
-            "/org/freedesktop/ScreenSaver",
-            "org.freedesktop.ScreenSaver",
-            "UnInhibit");
-        dbus_message_append_args (msg,
-                                  DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
-                                  DBUS_TYPE_INVALID);
-        if (msg != NULL) {
-            if (dbus_connection_send(dbus_connection, msg, NULL)) {
-                dbus_connection_flush(dbus_connection);
-            }
-            dbus_message_unref(msg);
-        }
+   DBusMessage *msg = NULL;
 
-        dbus_screensaver_cookie = 0;
-    }
+   if (!dbus_connection)
+      return;
+
+   if (dbus_screensaver_cookie <= 0)
+      return;
+
+   msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
+         "/org/freedesktop/ScreenSaver",
+         "org.freedesktop.ScreenSaver",
+         "UnInhibit");
+   dbus_message_append_args (msg,
+         DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
+         DBUS_TYPE_INVALID);
+
+   if (msg != NULL)
+   {
+      if (dbus_connection_send(dbus_connection, msg, NULL))
+         dbus_connection_flush(dbus_connection);
+      dbus_message_unref(msg);
+   }
+
+   dbus_screensaver_cookie = 0;
 }
 
 void x11_suspend_screensaver_dbus(bool enable)
 {
-    if (!enable && !dbus_screensaver_cookie == 0)
-       return;  // Disable requested and was not already suspended
+   /* Disable requested and was not already suspended */
+   if (!enable && !dbus_screensaver_cookie == 0)
+      return;
 
-    if (!enable && dbus_screensaver_cookie > 0)
-        dbus_screensaver_uninhibit();   // Disable requesed and was suspended -> unsuspend
+   /* Disable requesed and was suspended -> unsuspend */
+   if (!enable && dbus_screensaver_cookie > 0)
+      dbus_screensaver_uninhibit();   
 
-    if (enable)
-        dbus_screensaver_inhibit();
+   if (enable)
+      dbus_screensaver_inhibit();
 }
 #endif
 
@@ -504,13 +513,12 @@ void x11_destroy_input_context(XIM *xim, XIC *xic)
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
-   int pixels_x, pixels_y, physical_width, physical_height;
    unsigned     screen_no  = 0;
    Display           *dpy  = (Display*)XOpenDisplay(NULL);
-   pixels_x                = DisplayWidth(dpy, screen_no);
-   pixels_y                = DisplayHeight(dpy, screen_no);
-   physical_width          = DisplayWidthMM(dpy, screen_no);
-   physical_height         = DisplayHeightMM(dpy, screen_no);
+   int pixels_x            = DisplayWidth(dpy, screen_no);
+   int pixels_y            = DisplayHeight(dpy, screen_no);
+   int physical_width      = DisplayWidthMM(dpy, screen_no);
+   int physical_height     = DisplayHeightMM(dpy, screen_no);
 
    (void)pixels_y;
 
