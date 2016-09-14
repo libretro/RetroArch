@@ -166,7 +166,7 @@ struct zui_tabbed
 };
 
 
-static enum zarch_layout_type zarch_layout;
+static enum zarch_layout_type zarch_layout = LAY_HOME;
 
 static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
 {
