@@ -128,11 +128,11 @@ function setupFileSystem(backend)
       /* mount the filesystems onto mfs */
       mfs.mount('/home/web_user/retroarch/userdata', lsfs);
 
-      /* create a memory filesystem for content only */
-      var imfs = new BrowserFS.FileSystem.InMemory();
+      /* create a memory filesystem for content only 
+      var imfs = new BrowserFS.FileSystem.InMemory();*/
 
-      /* mount the filesystems onto mfs */
-      mfs.mount('/home/web_user/retroarch/userdata/content/', imfs);
+      /* mount the filesystems onto mfs 
+      mfs.mount('/home/web_user/retroarch/userdata/content/', imfs);*/
    }
    else
    {
