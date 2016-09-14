@@ -93,9 +93,10 @@ static void dbus_close_connection(void)
 
 static void dbus_screensaver_inhibit(void)
 {
-    const char *app = "RetroArch";
+    const char *app    = "RetroArch";
     const char *reason = "Playing a game";
-    DBusMessage *msg, *reply;
+    DBusMessage   *msg = NULL;
+    DBusMessage *reply = NULL;
 
     if (dbus_connection == NULL)
         return; /* DBus connection was not obtained */
@@ -277,7 +278,7 @@ void x11_set_window_attr(Display *dpy, Window win)
 static void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
 {
    int ret;
-   char cmd[64] = {0};
+   char               cmd[64] = {0};
    static bool screensaver_na = false;
 
    if (!enable)
