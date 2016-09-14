@@ -52,7 +52,7 @@ typedef float CGFloat;
 #define NS_INLINE inline
 #endif
 
-static NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
+NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 {
 #if __has_feature(objc_arc)
    return (__bridge_retained CFTypeRef)X;
