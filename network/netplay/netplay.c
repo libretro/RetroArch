@@ -242,7 +242,12 @@ static bool netplay_get_cmd(netplay_t *netplay)
             for (i = 0; i < WORDS_PER_FRAME; i++)
                buffer[i] = ntohl(buffer[i]);
 
-            if (buffer[0] != netplay->read_frame_count)
+            if (buffer[0] < netplay->read_frame_count)
+            {
+               /* We already had this, so ignore the new transmission */
+               return true;
+            }
+            else if (buffer[0] > netplay->read_frame_count)
             {
                /* Out of order = out of luck */
                return netplay_cmd_nak(netplay);
@@ -295,8 +300,58 @@ static bool netplay_get_cmd(netplay_t *netplay)
          return true;
 
       case NETPLAY_CMD_LOAD_SAVESTATE:
-         RARCH_ERR("NETPLAY_CMD_LOAD_SAVESTATE unimplemented.\n");
-         return netplay_cmd_nak(netplay);
+         {
+            uint32_t frame;
+
+            /* There is a subtlty in whether the load comes before or after the
+             * current frame:
+             *
+             * If it comes before the current frame, then we need to force a
+             * rewind to that point.
+             *
+             * If it comes after the current frame, we need to jump ahead, then
+             * (strangely) force a rewind to the frame we're already on, so it
+             * gets loaded. This is just to avoid having reloading implemented in
+             * too many places. */
+            if (cmd_size > netplay->state_size + sizeof(uint32_t))
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected save state size.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            if (!socket_receive_all_blocking(netplay->fd, &frame, sizeof(frame)))
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate frame.\n");
+               return netplay_cmd_nak(netplay);
+            }
+            frame = ntohl(frame);
+
+            if (frame != netplay->read_frame_count)
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE loading a state out of order!\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            if (!socket_receive_all_blocking(netplay->fd,
+                  netplay->buffer[netplay->read_ptr].state, cmd_size - sizeof(uint32_t)))
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            /* Skip ahead if it's past where we are */
+            if (frame > netplay->self_frame_count)
+            {
+               netplay->self_ptr = netplay->read_ptr;
+               netplay->self_frame_count = frame;
+            }
+
+            /* And force rewind to it */
+            netplay->force_rewind = true;
+            netplay->other_ptr = netplay->read_ptr;
+            netplay->other_frame_count = frame;
+            return true;
+         }
 
       case NETPLAY_CMD_PAUSE:
          netplay->remote_paused = true;
@@ -1018,6 +1073,61 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
       netplay_send_raw_cmd(netplay, paused ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
 }
 
+/**
+ * netplay_load_savestate
+ * @netplay              : pointer to netplay object
+ * @serial_info          : the savestate being loaded
+ *
+ * Inform Netplay of a savestate load and send it to the other side
+ **/
+void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info)
+{
+   uint32_t header[3];
+
+   if (!netplay->has_connection)
+      return;
+
+   /* Record it in our own buffer */
+   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
+   {
+      if (serial_info->size <= netplay->state_size)
+      {
+         memcpy(netplay->buffer[netplay->self_ptr].state,
+                serial_info->data_const, serial_info->size);
+      }
+   }
+
+   /* We need to ignore any intervening data from the other side, and never rewind past this */
+   if (netplay->read_frame_count < netplay->self_frame_count)
+   {
+      netplay->read_ptr = netplay->self_ptr;
+      netplay->read_frame_count = netplay->self_frame_count;
+   }
+   if (netplay->other_frame_count < netplay->self_frame_count)
+   {
+      netplay->other_ptr = netplay->self_ptr;
+      netplay->other_frame_count = netplay->self_frame_count;
+   }
+
+   /* And send it to the peer (FIXME: this is an ugly way to do this) */
+   header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
+   header[1] = htonl(serial_info->size + sizeof(uint32_t));
+   header[2] = htonl(netplay->self_frame_count);
+   if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
+   {
+      warn_hangup();
+      netplay->has_connection = false;
+      return;
+   }
+
+   if (!socket_send_all_blocking(netplay->fd, serial_info->data_const, serial_info->size, false))
+   {
+      warn_hangup();
+      netplay->has_connection = false;
+      return;
+   }
+}
+
 void deinit_netplay(void)
 {
    netplay_t *netplay = (netplay_t*)netplay_data;
@@ -1118,6 +1228,9 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          break;
       case RARCH_NETPLAY_CTL_UNPAUSE:
          netplay_frontend_paused((netplay_t*)netplay_data, false);
+         break;
+      case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
+         netplay_load_savestate((netplay_t*)netplay_data, (retro_ctx_serialize_info_t*)data);
          break;
       default:
       case RARCH_NETPLAY_CTL_NONE:

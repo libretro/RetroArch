@@ -69,24 +69,28 @@ static void netplay_net_post_frame(netplay_t *netplay)
    if (!netplay->has_connection)
       return;
 
-   /* Skip ahead if we predicted correctly.
-    * Skip until our simulation failed. */
-   while (netplay->other_frame_count < netplay->read_frame_count &&
-          netplay->other_frame_count < netplay->self_frame_count)
+   if (!netplay->force_rewind)
    {
-      const struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
+      /* Skip ahead if we predicted correctly.
+       * Skip until our simulation failed. */
+      while (netplay->other_frame_count < netplay->read_frame_count &&
+            netplay->other_frame_count < netplay->self_frame_count)
+      {
+         const struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
 
-      if (memcmp(ptr->simulated_input_state, ptr->real_input_state,
-               sizeof(ptr->real_input_state)) != 0
-            && !ptr->used_real)
-         break;
-      netplay->other_ptr = NEXT_PTR(netplay->other_ptr);
-      netplay->other_frame_count++;
+         if (memcmp(ptr->simulated_input_state, ptr->real_input_state,
+                  sizeof(ptr->real_input_state)) != 0
+               && !ptr->used_real)
+            break;
+         netplay->other_ptr = NEXT_PTR(netplay->other_ptr);
+         netplay->other_frame_count++;
+      }
    }
 
    /* Now replay the real input if we've gotten ahead of it */
-   if (netplay->other_frame_count < netplay->read_frame_count &&
-       netplay->other_frame_count < netplay->self_frame_count)
+   if (netplay->force_rewind ||
+       (netplay->other_frame_count < netplay->read_frame_count &&
+        netplay->other_frame_count < netplay->self_frame_count))
    {
       retro_ctx_serialize_info_t serial_info;
 
@@ -134,6 +138,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
          netplay->other_frame_count = netplay->self_frame_count;
       }
       netplay->is_replay = false;
+      netplay->force_rewind = false;
    }
 
    /* If we're supposed to stall, rewind (we shouldn't get this far if we're

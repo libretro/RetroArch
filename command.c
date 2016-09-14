@@ -1919,11 +1919,6 @@ bool command_event(enum event_command cmd, void *data)
          if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return false;
 
-#ifdef HAVE_NETPLAY
-         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-            return false;
-#endif
-
 #ifdef HAVE_CHEEVOS
          if (settings->cheevos.hardcore_mode_enable)
             return false;

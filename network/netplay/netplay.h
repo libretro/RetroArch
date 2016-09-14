@@ -37,7 +37,8 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_PRE_FRAME,
    RARCH_NETPLAY_CTL_IS_DATA_INITED,
    RARCH_NETPLAY_CTL_PAUSE,
-   RARCH_NETPLAY_CTL_UNPAUSE
+   RARCH_NETPLAY_CTL_UNPAUSE,
+   RARCH_NETPLAY_CTL_LOAD_SAVESTATE
 };
 
 enum netplay_cmd
@@ -77,6 +78,7 @@ enum netplay_cmd
 
    /* Send a savestate for the client to load */
    NETPLAY_CMD_LOAD_SAVESTATE = 0x0012, 
+
    /* Sends over cheats enabled on client */
    NETPLAY_CMD_CHEATS         = 0x0013, 
 
@@ -180,6 +182,15 @@ void netplay_post_frame(netplay_t *handle);
  * Inform Netplay of the frontend's pause state (paused or otherwise)
  **/
 void netplay_frontend_paused(netplay_t *netplay, bool paused);
+
+/**
+ * netplay_load_savestate
+ * @netplay              : pointer to netplay object
+ * @serial_info          : the savestate being loaded
+ *
+ * Inform Netplay of a savestate load and send it to the other side
+ **/
+void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info);
 
 /**
  * init_netplay:

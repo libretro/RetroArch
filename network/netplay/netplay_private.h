@@ -103,10 +103,13 @@ struct netplay
 
    /* Are we replaying old frames? */
    bool is_replay;
+
    /* We don't want to poll several times on a frame. */
    bool can_poll;
-   /* If we end up having to drop remote frame data because it's ahead of us, fast-forward is URGENT */
-   bool must_fast_forward;
+
+   /* Force a rewind to other_frame_count/other_ptr. This is for synchronized
+    * events, such as player flipping or savestate loading. */
+   bool force_rewind;
 
    /* A buffer for outgoing input packets. */
    uint32_t packet_buffer[2 + WORDS_PER_FRAME];
