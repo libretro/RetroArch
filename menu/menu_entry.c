@@ -19,10 +19,7 @@
 #include <string/stdstring.h>
 
 #include "menu_driver.h"
-#include "menu_display.h"
 #include "menu_navigation.h"
-
-#include "../setting_list.h"
 
 /* This file provides an abstraction of the currently displayed
  * menu.
