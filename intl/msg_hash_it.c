@@ -1359,6 +1359,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Directory degli asset";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Directory degli sfondi dinamici";
+	  case MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY:
+         return "Directory delle miniature";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Directory di selezione file";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -1425,6 +1427,30 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Abilita DPI Override";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
          return "DPI Override";
+	  case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
+         return "Fattore di scala del menù";
+      case MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR:
+         return "Fattore alpha del menù";
+      case MENU_ENUM_LABEL_VALUE_XMB_FONT:
+         return "Carattere del menù";
+      case MENU_ENUM_LABEL_VALUE_XMB_THEME:
+         return "Icona a tema del menù";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
+         return "Colore tema del menù";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME:
+         return "Colore tema del menù";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
+         return "Abilità ombre per l'icona";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS:
+         return "Mostra scheda settaggi";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES:
+         return "Mostra scheda immagini";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC:
+         return "Mostra scheda musica";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO:
+         return "Mostra scheda video";
+      case MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY:
+         return "Mostra scheda storia";
       case MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "Spegni salvaschermo";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
@@ -1460,7 +1486,11 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Carica file di rimappatura automaticamente";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
-         return "Slow-Motion Ratio";
+         return "Rapporto di slow-motion";
+	  case MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER:
+         return "Filtro lineare del menù";
+	  case MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE:
+         return "Frequenza fotogrammi del menù";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configurazione per core";
 	  case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
@@ -1471,6 +1501,10 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Carica file di override automaticamente";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Salva configurazione all'uscita";
+	  case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
+         return "Chiedi conferma all'uscita";
+	  case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
+         return "Mostra files e cartelle nascoste";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "Filtro bilineare hardware";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA:
@@ -1481,6 +1515,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Sincronizza GPU";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL:
          return "Intervallo di swap vsync";
+	  case MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES:
+         return "Massimo swapchain di immagini";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC:
          return "VSync";
       case MENU_ENUM_LABEL_VALUE_VIDEO_THREADED:
@@ -1717,6 +1753,12 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Salva stato";
       case MENU_ENUM_LABEL_VALUE_LOAD_STATE:
          return "Carica stato";
+	  case MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE:
+         return "Annulla carica stato";
+      case MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE:
+         return "Annulla salva stato";
+      case MSG_UNDID_LOAD_STATE:
+         return "Annullato carica stato.";
       case MENU_ENUM_LABEL_VALUE_RESUME_CONTENT:
          return "Riprendi";
       case MENU_ENUM_LABEL_VALUE_INPUT_DRIVER:
@@ -1755,7 +1797,9 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Sfondo dinamico";
       case MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Opzioni di rimappatura degli input del core";
-      case MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS: /* UPDATE/FIXME */
+      case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
+         return "Miniature";
+	  case MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS:
          return "Shaders";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
          return "Antemprima Parametri Shader";
@@ -2071,6 +2115,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Avvia Core";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
          return "Tipo di ritardo";
+	  case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
+         return "Opacità dello sfondo";
       default:
          break;
    }
