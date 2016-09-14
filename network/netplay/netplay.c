@@ -982,7 +982,7 @@ bool netplay_pre_frame(netplay_t *netplay)
       netplay_frontend_paused(netplay, false);
    }
    netplay->net_cbs->pre_frame(netplay);
-   return (!netplay->stall && !netplay->remote_paused);
+   return (!netplay->has_connection || (!netplay->stall && !netplay->remote_paused));
 }
 
 /**
