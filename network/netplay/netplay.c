@@ -378,7 +378,7 @@ static void simulate_input(netplay_t *netplay)
          sizeof(netplay->buffer[prev].real_input_state));
 }
 
-#define MAX_STALL_TIME_USEC 10000000
+#define MAX_STALL_TIME_USEC (10*1000*1000)
 
 /**
  * netplay_poll:
@@ -521,7 +521,9 @@ static int16_t netplay_input_state(netplay_t *netplay,
          curr_input_state = netplay->buffer[ptr].real_input_state;
       }
       else
+      {
          curr_input_state = netplay->buffer[ptr].simulated_input_state;
+      }
    }
 
    switch (device)

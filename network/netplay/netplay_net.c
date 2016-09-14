@@ -127,7 +127,9 @@ static void netplay_net_post_frame(netplay_t *netplay)
       {
          netplay->other_ptr = netplay->read_ptr;
          netplay->other_frame_count = netplay->read_frame_count;
-      } else {
+      }
+      else
+      {
          netplay->other_ptr = netplay->self_ptr;
          netplay->other_frame_count = netplay->self_frame_count;
       }
