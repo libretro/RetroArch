@@ -1712,8 +1712,7 @@ bool video_driver_is_alive(void)
 {
    if (current_video)
       return current_video->alive(video_driver_data);
-   else
-      return true;
+   return true;
 }
 
 bool video_driver_is_focused(void)
@@ -2153,9 +2152,7 @@ void video_driver_frame(const void *data, unsigned width,
             video_driver_data, data, width, height,
             video_driver_frame_count,
             pitch, video_driver_msg))
-   {
       video_driver_unset_active();
-   }
 
    video_driver_frame_count++;
 }
