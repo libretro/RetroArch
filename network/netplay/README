@@ -11,8 +11,8 @@ Furthermore, if the core supports serialization (save states), Netplay allows
 for latency and clock drift, providing both host and client with a smooth
 experience.
 
-Note that this documentation is all for (the poorly-named) “net” mode, which is
-the normal mode, and not “spectator” mode, which has its own whole host of
+Note that this documentation is all for (the poorly-named) "net" mode, which is
+the normal mode, and not "spectator" mode, which has its own whole host of
 problems.
 
 Netplay in RetroArch works by expecting input to come delayed from the network,
