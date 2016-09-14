@@ -281,8 +281,7 @@ function switchStorage(backend) {
 // When the browser has loaded everything.
 $(function() {
 
-  // Hide the logging window and allow the user to show it.
-  $('#output').hide();
+  // Allow the user to show/hide the log console.
   $('#btnlogs').click(function () {
     $('#output').toggle();
   });
