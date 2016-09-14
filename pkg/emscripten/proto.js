@@ -112,7 +112,7 @@ function setupFileSystem(backend)
 
    /* create an XmlHttpRequest filesystem for the bundled data */
    var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
-      (".index-xhr", "/web/assets/");
+      (".index-xhr", "/assets/frontend/bundle/");
    /* create an XmlHttpRequest filesystem for core assets */
    var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
       (".index-xhr", "/assets/cores/");
