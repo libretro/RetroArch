@@ -625,9 +625,13 @@ static int init_tcp_connection(const struct addrinfo *res,
 {
    bool ret = true;
    int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-   int flag = 1;
 
-   setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
+#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
+   {
+      int flag = 1;
+      setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
+   }
+#endif
 
    if (fd < 0)
    {
