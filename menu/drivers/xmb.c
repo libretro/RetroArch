@@ -42,6 +42,8 @@
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 
+#include "../widgets/menu_list.h"
+
 #include "../menu_cbs.h"
 
 #include "../../frontend/frontend_driver.h"

@@ -130,9 +130,6 @@ typedef struct menu_file_list_cbs
 
 } menu_file_list_cbs_t;
 
-
-typedef struct menu_list menu_list_t;
-
 size_t menu_entries_get_end(void);
 
 void menu_entries_get(size_t i, menu_entry_t *entry);

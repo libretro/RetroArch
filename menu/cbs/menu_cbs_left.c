@@ -30,6 +30,8 @@
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
 
+#include "../widgets/menu_list.h"
+
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
