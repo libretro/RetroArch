@@ -70,7 +70,8 @@ static void netplay_net_post_frame(netplay_t *netplay)
 
    /* Skip ahead if we predicted correctly.
     * Skip until our simulation failed. */
-   while (netplay->other_frame_count < netplay->read_frame_count)
+   while (netplay->other_frame_count < netplay->read_frame_count &&
+          netplay->other_frame_count < netplay->self_frame_count)
    {
       const struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
 
@@ -83,7 +84,8 @@ static void netplay_net_post_frame(netplay_t *netplay)
    }
 
    /* Now replay the real input if we've gotten ahead of it */
-   if (netplay->other_frame_count < netplay->read_frame_count)
+   if (netplay->other_frame_count < netplay->read_frame_count &&
+       netplay->other_frame_count < netplay->self_frame_count)
    {
       retro_ctx_serialize_info_t serial_info;
 
@@ -120,16 +122,14 @@ static void netplay_net_post_frame(netplay_t *netplay)
          netplay->replay_frame_count++;
       }
 
-      /* For the remainder of the frames up to the read count, we can use the real data */
-      while (netplay->replay_frame_count < netplay->read_frame_count)
+      if (netplay->read_frame_count < netplay->self_frame_count)
       {
-         retro_assert(netplay->buffer[netplay->replay_ptr].have_remote);
-         netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
-         netplay->replay_frame_count++;
+         netplay->other_ptr = netplay->read_ptr;
+         netplay->other_frame_count = netplay->read_frame_count;
+      } else {
+         netplay->other_ptr = netplay->self_ptr;
+         netplay->other_frame_count = netplay->self_frame_count;
       }
-
-      netplay->other_ptr = netplay->read_ptr;
-      netplay->other_frame_count = netplay->read_frame_count;
       netplay->is_replay = false;
    }
 
