@@ -25,7 +25,7 @@
 #include "../../autosave.h"
 
 /**
- * pre_frame:   
+ * netplay_net_pre_frame:
  * @netplay              : pointer to netplay object
  *
  * Pre-frame for Netplay (normal version).
@@ -54,7 +54,7 @@ static void netplay_net_pre_frame(netplay_t *netplay)
 }
 
 /**
- * post_frame:   
+ * netplay_net_post_frame:
  * @netplay              : pointer to netplay object
  *
  * Post-frame for Netplay (normal version).

@@ -79,3 +79,58 @@ which we've actually read self_frame_count+1 frames of local input.
 
 
 * Guarantee not actually a guarantee.
+
+
+Netplay's command format
+
+Netplay commands consist of a 32-bit command identifier, followed by a 32-bit
+payload size, both in network byte order, followed by a payload. The command
+identifiers are listed in netplay.h. The commands are described below. Unless
+specified otherwise, all payload values are in network byte order.
+
+Command: ACK
+Payload: None
+Description:
+    Acknowledgement. Not used.
+
+Command: NAK
+Payload: None
+Description:
+    Negative Acknowledgement. If received, the connection is terminated. Sent
+    whenever a command is malformed or otherwise not understood.
+
+Command: INPUT
+Payload:
+    {
+       frame number: uint32
+       joypad input: uint32
+       analog 1 input: uint32
+       analog 2 input: uint32
+       OPTIONAL state CRC: uint32
+    }
+Description:
+    Input state for each frame. Netplay must send an INPUT command for every
+    frame in order to function at all.
+
+Command: FLIP_PLAYERS
+Payload:
+    {
+       frame number: uint32
+    }
+Description:
+    Flip players at the requested frame.
+
+Command: DISCONNECT
+Payload: None
+Description:
+    Gracefully disconnect. Not used.
+
+Command: LOAD_SAVESTATE
+Payload:
+    {
+       frame number: uint32
+       serialized save state: blob (variable size)
+    }
+Description:
+    Cause the other side to load a savestate, notionally one which the sending
+    side has also loaded.
