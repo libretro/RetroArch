@@ -20,6 +20,7 @@
 #include "netplay.h"
 
 #include <net/net_compat.h>
+#include <features/features_cpu.h>
 #include <retro_endianness.h>
 
 #include "../../core.h"
@@ -30,23 +31,33 @@
 #define HAVE_IPV6
 #endif
 
-#define UDP_FRAME_PACKETS     16
-#define UDP_WORDS_PER_FRAME   4 /* Allows us to send 128 bits worth of state per frame. */
-#define MAX_SPECTATORS        16
-#define RARCH_DEFAULT_PORT    55435
+#define WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
+#define MAX_SPECTATORS 16
+#define RARCH_DEFAULT_PORT 55435
+
+#define NETPLAY_PROTOCOL_VERSION 1
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
 struct delta_frame
 {
+   bool used; /* a bit derpy, but this is how we know if the delta's been used at all */
+   uint32_t frame;
+
    void *state;
 
-   uint32_t real_input_state[UDP_WORDS_PER_FRAME - 1];
-   uint32_t simulated_input_state[UDP_WORDS_PER_FRAME - 1];
-   uint32_t self_state[UDP_WORDS_PER_FRAME - 1];
+   uint32_t real_input_state[WORDS_PER_FRAME - 1];
+   uint32_t simulated_input_state[WORDS_PER_FRAME - 1];
+   uint32_t self_state[WORDS_PER_FRAME - 1];
 
-   bool is_simulated;
+   /* Have we read local input? */
+   bool have_local;
+
+   /* Have we read the real remote input? */
+   bool have_remote;
+
+   /* Is the current state as of self_frame_count using the real remote data? */
    bool used_real;
 };
 
@@ -54,6 +65,12 @@ struct netplay_callbacks {
    void (*pre_frame) (netplay_t *netplay);
    void (*post_frame)(netplay_t *netplay);
    bool (*info_cb)   (netplay_t *netplay, unsigned frames);
+};
+
+enum rarch_netplay_stall_reasons
+{
+    RARCH_NETPLAY_STALL_NONE = 0,
+    RARCH_NETPLAY_STALL_RUNNING_FAST
 };
 
 struct netplay
@@ -65,8 +82,6 @@ struct netplay
    struct retro_callbacks cbs;
    /* TCP connection for state sending, etc. Also used for commands */
    int fd;
-   /* UDP connection for game state updates. */
-   int udp_fd;
    /* Which port is governed by netplay (other user)? */
    unsigned port;
    bool has_connection;
@@ -81,8 +96,8 @@ struct netplay
    /* Pointer to where we are reading. 
     * Generally, other_ptr <= read_ptr <= self_ptr. */
    size_t read_ptr;
-   /* A temporary pointer used on replay. */
-   size_t tmp_ptr;
+   /* A pointer used temporarily for replay. */
+   size_t replay_ptr;
 
    size_t state_size;
 
@@ -90,14 +105,15 @@ struct netplay
    bool is_replay;
    /* We don't want to poll several times on a frame. */
    bool can_poll;
+   /* If we end up having to drop remote frame data because it's ahead of us, fast-forward is URGENT */
+   bool must_fast_forward;
 
-   /* To compat UDP packet loss we also send 
-    * old data along with the packets. */
-   uint32_t packet_buffer[UDP_FRAME_PACKETS * UDP_WORDS_PER_FRAME];
-   uint32_t frame_count;
+   /* A buffer for outgoing input packets. */
+   uint32_t packet_buffer[2 + WORDS_PER_FRAME];
+   uint32_t self_frame_count;
    uint32_t read_frame_count;
    uint32_t other_frame_count;
-   uint32_t tmp_frame_count;
+   uint32_t replay_frame_count;
    struct addrinfo *addr;
    struct sockaddr_storage their_addr;
    bool has_client_addr;
@@ -125,6 +141,11 @@ struct netplay
     */
    bool pause;
    uint32_t pause_frame;
+
+   /* And stalling */
+   uint32_t stall_frames;
+   int stall;
+   retro_time_t stall_time;
 
    struct netplay_callbacks* net_cbs;
 };
@@ -157,5 +178,7 @@ bool netplay_get_info(netplay_t *netplay);
 bool netplay_is_server(netplay_t* netplay);
 
 bool netplay_is_spectate(netplay_t* netplay);
+
+bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame);
 
 #endif

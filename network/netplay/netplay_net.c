@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C)      2016 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -15,8 +16,11 @@
  */
 
 #include <compat/strl.h>
+#include <stdio.h>
 
 #include "netplay_private.h"
+
+#include "retro_assert.h"
 
 #include "../../autosave.h"
 
@@ -30,10 +34,19 @@ static void netplay_net_pre_frame(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
 
-   serial_info.data = netplay->buffer[netplay->self_ptr].state;
-   serial_info.size = netplay->state_size;
+   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
+   {
+      serial_info.data_const = NULL;
+      serial_info.data = netplay->buffer[netplay->self_ptr].state;
+      serial_info.size = netplay->state_size;
 
-   core_serialize(&serial_info);
+      if (!core_serialize(&serial_info))
+      {
+         /* If the core can't serialize properly, we must stall for the
+          * remote input on EVERY frame, because we can't recover */
+         netplay->stall_frames = 0;
+      }
+   }
 
    netplay->can_poll = true;
 
@@ -49,15 +62,17 @@ static void netplay_net_pre_frame(netplay_t *netplay)
  **/
 static void netplay_net_post_frame(netplay_t *netplay)
 {
-   netplay->frame_count++;
+   netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+   netplay->self_frame_count++;
 
-   /* Nothing to do... */
-   if (netplay->other_frame_count == netplay->read_frame_count)
+   /* Only relevant if we're connected */
+   if (!netplay->has_connection)
       return;
 
    /* Skip ahead if we predicted correctly.
     * Skip until our simulation failed. */
-   while (netplay->other_frame_count < netplay->read_frame_count)
+   while (netplay->other_frame_count < netplay->read_frame_count &&
+          netplay->other_frame_count < netplay->self_frame_count)
    {
       const struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
 
@@ -69,24 +84,29 @@ static void netplay_net_post_frame(netplay_t *netplay)
       netplay->other_frame_count++;
    }
 
-   if (netplay->other_frame_count < netplay->read_frame_count)
+   /* Now replay the real input if we've gotten ahead of it */
+   if (netplay->other_frame_count < netplay->read_frame_count &&
+       netplay->other_frame_count < netplay->self_frame_count)
    {
       retro_ctx_serialize_info_t serial_info;
-      bool first = true;
 
       /* Replay frames. */
       netplay->is_replay = true;
-      netplay->tmp_ptr = netplay->other_ptr;
-      netplay->tmp_frame_count = netplay->other_frame_count;
+      netplay->replay_ptr = netplay->other_ptr;
+      netplay->replay_frame_count = netplay->other_frame_count;
 
-      serial_info.data_const = netplay->buffer[netplay->other_ptr].state;
-      serial_info.size       = netplay->state_size;
-
-      core_unserialize(&serial_info);
-
-      while (first || (netplay->tmp_ptr != netplay->self_ptr))
+      if (netplay->replay_frame_count < netplay->self_frame_count)
       {
-         serial_info.data       = netplay->buffer[netplay->tmp_ptr].state;
+         serial_info.data       = NULL;
+         serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
+         serial_info.size       = netplay->state_size;
+
+         core_unserialize(&serial_info);
+      }
+
+      while (netplay->replay_frame_count < netplay->self_frame_count)
+      {
+         serial_info.data       = netplay->buffer[netplay->replay_ptr].state;
          serial_info.size       = netplay->state_size;
          serial_info.data_const = NULL;
 
@@ -99,14 +119,36 @@ static void netplay_net_post_frame(netplay_t *netplay)
 #if defined(HAVE_THREADS)
          autosave_unlock();
 #endif
-         netplay->tmp_ptr = NEXT_PTR(netplay->tmp_ptr);
-         netplay->tmp_frame_count++;
-         first = false;
+         netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
+         netplay->replay_frame_count++;
       }
 
-      netplay->other_ptr = netplay->read_ptr;
-      netplay->other_frame_count = netplay->read_frame_count;
+      if (netplay->read_frame_count < netplay->self_frame_count)
+      {
+         netplay->other_ptr = netplay->read_ptr;
+         netplay->other_frame_count = netplay->read_frame_count;
+      }
+      else
+      {
+         netplay->other_ptr = netplay->self_ptr;
+         netplay->other_frame_count = netplay->self_frame_count;
+      }
       netplay->is_replay = false;
+   }
+
+   /* If we're supposed to stall, rewind */
+   if (netplay->stall)
+   {
+      retro_ctx_serialize_info_t serial_info;
+
+      netplay->self_ptr = PREV_PTR(netplay->self_ptr);
+      netplay->self_frame_count--;
+
+      serial_info.data       = NULL;
+      serial_info.data_const = netplay->buffer[netplay->self_ptr].state;
+      serial_info.size       = netplay->state_size;
+
+      core_unserialize(&serial_info);
    }
 }
 static bool netplay_net_init_buffers(netplay_t *netplay)
@@ -119,7 +161,7 @@ static bool netplay_net_init_buffers(netplay_t *netplay)
 
    netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
          sizeof(*netplay->buffer));
-   
+
    if (!netplay->buffer)
       return false;
 
@@ -133,8 +175,6 @@ static bool netplay_net_init_buffers(netplay_t *netplay)
 
       if (!netplay->buffer[i].state)
          return false;
-
-      netplay->buffer[i].is_simulated = true;
    }
 
    return true;
@@ -153,7 +193,11 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
          return false;
    }
 
-   netplay->buffer_size = frames + 1;
+   /* * 2 + 1 because:
+    * Self sits in the middle,
+    * Other is allowed to drift as much as 'frames' frames behind
+    * Read is allowed to drift as much as 'frames' frames ahead */
+   netplay->buffer_size = frames * 2 + 1;
 
    if (!netplay_net_init_buffers(netplay))
       return false;
