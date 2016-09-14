@@ -1558,6 +1558,11 @@ int runloop_iterate(unsigned *sleep_ms)
             menu_event(cmd.state[0], cmd.state[2]),
             sleep_ms);
 
+#ifdef HAVE_NETPLAY
+      /* FIXME: This is an ugly way to tell Netplay this... */
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+
       if (ret == -1)
          goto end;
 
@@ -1568,6 +1573,11 @@ int runloop_iterate(unsigned *sleep_ms)
    if (!runloop_check_state(&cmd, &runloop_shader_dir))
    {
       /* RetroArch has been paused. */
+#ifdef HAVE_NETPLAY
+      /* FIXME: This is an ugly way to tell Netplay this... */
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+      core_poll();
       *sleep_ms = 10;
       return 1;
    }
