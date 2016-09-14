@@ -62,6 +62,7 @@ static void netplay_net_pre_frame(netplay_t *netplay)
  **/
 static void netplay_net_post_frame(netplay_t *netplay)
 {
+   netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
    netplay->self_frame_count++;
 
    /* Only relevant if we're connected */

@@ -105,7 +105,6 @@ static bool get_self_input_state(netplay_t *netplay)
    if (ptr->have_local)
    {
       /* We've already read this frame! */
-      netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
       return true;
    }
 
@@ -167,7 +166,6 @@ static bool get_self_input_state(netplay_t *netplay)
 
    memcpy(ptr->self_state, state, sizeof(state));
    ptr->have_local = true;
-   netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
    return true;
 }
 
@@ -372,7 +370,7 @@ static int poll_input(netplay_t *netplay, bool block)
 /* TODO: Somewhat better prediction. :P */
 static void simulate_input(netplay_t *netplay)
 {
-   size_t ptr  = PREV_PTR(netplay->self_ptr);
+   size_t ptr  = netplay->self_ptr;
    size_t prev = PREV_PTR(netplay->read_ptr);
 
    memcpy(netplay->buffer[ptr].simulated_input_state,
@@ -414,7 +412,7 @@ static bool netplay_poll(netplay_t *netplay)
    }
 
    /* Simulate the input if we don't have real input */
-   if (!netplay->buffer[PREV_PTR(netplay->self_ptr)].have_remote)
+   if (!netplay->buffer[netplay->self_ptr].have_remote)
       simulate_input(netplay);
 
    /* Consider stalling */
@@ -511,7 +509,7 @@ static int16_t netplay_input_state(netplay_t *netplay,
       unsigned idx, unsigned id)
 {
    size_t ptr = netplay->is_replay ? 
-      netplay->replay_ptr : PREV_PTR(netplay->self_ptr);
+      netplay->replay_ptr : netplay->self_ptr;
 
    const uint32_t *curr_input_state = netplay->buffer[ptr].self_state;
 
