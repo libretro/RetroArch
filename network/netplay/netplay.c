@@ -464,14 +464,14 @@ void video_frame_net(const void *data, unsigned width,
 void audio_sample_net(int16_t left, int16_t right)
 {
    netplay_t *netplay = (netplay_t*)netplay_data;
-   if (!netplay_should_skip(netplay))
+   if (!netplay_should_skip(netplay) && !netplay->stall)
       netplay->cbs.sample_cb(left, right);
 }
 
 size_t audio_sample_batch_net(const int16_t *data, size_t frames)
 {
    netplay_t *netplay = (netplay_t*)netplay_data;
-   if (!netplay_should_skip(netplay))
+   if (!netplay_should_skip(netplay) && !netplay->stall)
       return netplay->cbs.sample_batch_cb(data, frames);
    return frames;
 }
