@@ -126,7 +126,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.menu_content, user_path,
          "content", sizeof(g_defaults.dir.menu_content));
    fill_pathname_join(g_defaults.dir.core_assets, user_path,
-         "downloads", sizeof(g_defaults.dir.core_assets));
+         "content/downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.playlist, user_path,
          "playlists", sizeof(g_defaults.dir.playlist));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,

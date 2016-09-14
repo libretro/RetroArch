@@ -141,7 +141,7 @@ function setupFileSystem(backend)
    }
 
    mfs.mount('/home/web_user/retroarch/bundle', xfs1);
-   mfs.mount('/home/web_user/retroarch/userdata/downloads', xfs2);
+   mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs2);
    BrowserFS.initialize(mfs);
    var BFS = new BrowserFS.EmscriptenFS();
    FS.mount(BFS, {root: '/home'}, '/home');
