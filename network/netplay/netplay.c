@@ -1083,7 +1083,12 @@ bool init_netplay(void)
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
    if (!netplay_data)
-      return false;
+   {
+      if (state == RARCH_NETPLAY_CTL_IS_DATA_INITED)
+         return false;
+      else
+         return true;
+   }
 
    switch (state)
    {
