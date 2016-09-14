@@ -84,17 +84,17 @@
                           <a class="dropdown-item" href="." data-core="yabause">Yabause</a>
                        </div>
 
-                      <button class="btn btn-primary disabled" id="btnRun" onclick="startRetroArch()">
+                      <button class="btn btn-primary disabled" id="btnRun" onclick="startRetroArch()" disabled>
                          <span class="fa fa-spinner fa-spin" id="icnRun"></span> Run
                       </button>
-                      <button class="btn btn-primary disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()">
+                      <button class="btn btn-primary disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()" disabled>
                          <span class="fa fa-plus" id="icnAdd"></span> Add Content
                       </button>
-                      <input class="btn btn-primary" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
-                      <button class="btn btn-primary disabled" id="btnFullscreen" onclick="Module.requestFullScreen()" title="Fullscreen">
+                      <input class="btn btn-primary disabled" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
+                      <button class="btn btn-primary disabled" id="btnFullscreen" onclick="Module.requestFullScreen()" title="Fullscreen" disabled>
                          <span class="fa fa-desktop" id="icnAdd"></span> <span class="sr-only">Fullscreen</span>
                       </button>
-                      <button class="btn btn-primary" id="btnMenu" onclick="keyPress(112);" title="Menu toggle">
+                      <button class="btn btn-primary disabled" id="btnMenu" onclick="keyPress(112);" title="Menu toggle" disabled>
                         <span class="fa fa-bars" id="btnMenu"></span> <span class="sr-only">Menu</span>
                       </button>
                    </li>

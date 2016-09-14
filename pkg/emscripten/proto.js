@@ -61,17 +61,20 @@ function dropboxInit()
      {
         return showError(error);
      }
-     dropboxSync(client, success);
+     dropboxSync(client, dropboxSyncComplete);
   });
 }
-function success()
+
+function dropboxSyncComplete()
 {
   document.getElementById('btnRun').disabled = false;
   $('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
   $('#icnDrop').addClass('fa-check');
   console.log("WEBPLAYER: Sync successful");
+
   setupFileSystem("dropbox");
   setupFolderStructure();
+  preLoadingComplete();
 }
 
 var afs;
@@ -90,6 +93,16 @@ function dropboxSync(dropboxClient, cb)
       cb();
   });
 }
+
+function preLoadingComplete()
+{
+   /* Make the Preview image clickable to start RetroArch. */
+   $('.webplayer-preview').addClass('loaded').click(function () {
+      startRetroArch();
+      return false;
+  });
+}
+
 
 function setupFileSystem(backend)
 {
@@ -114,6 +127,12 @@ function setupFileSystem(backend)
 
       /* mount the filesystems onto mfs */
       mfs.mount('/home/web_user/retroarch/userdata', lsfs);
+
+      /* create a memory filesystem for content only */
+      var imfs = new BrowserFS.FileSystem.InMemory();
+
+      /* mount the filesystems onto mfs */
+      mfs.mount('/home/web_user/retroarch/userdata/content/', imfs);
    }
    else
    {
@@ -165,8 +184,14 @@ function startRetroArch()
    document.getElementById('btnRun').disabled = true;
   
    $('#btnFullscreen').removeClass('disabled');
+   $('#btnMenu').removeClass('disabled');
    $('#btnAdd').removeClass('disabled');
    $('#btnRom').removeClass('disabled');
+
+   document.getElementById("btnAdd").disabled = false;
+   document.getElementById("btnRom").disabled = false;
+   document.getElementById("btnMenu").disabled = false;
+   document.getElementById("btnFullscreen").disabled = false;
 
    Module['callMain'](Module['arguments']);
    document.getElementById('canvas').focus();
@@ -187,9 +212,9 @@ function selectFiles(files)
       filereader.onload = function(){uploadData(this.result, this.file_name)};
       filereader.onloadend = function(evt) 
       {
+         console.log("WEBPLAYER: File: " + this.file_name + " Upload Complete");
          if (evt.target.readyState == FileReader.DONE)
          {
-            console.log("WEBPLAYER: File: " + this.file_name + " Upload Complete");
             $('#btnAdd').removeClass('disabled');
             $('#icnAdd').removeClass('fa-spinner spinning');
             $('#icnAdd').addClass('fa-plus');
@@ -309,32 +334,27 @@ $(function() {
    // Load the Core's related JavaScript.
    $.getScript(core + '_libretro.js', function () 
    {
-    /**
-     * Make the Preview image clickable to start RetroArch.
-     */
-    $('.webplayer-preview').addClass('loaded').click(function () {
-      startRetroArch();
-      return false;
-    });
+      // Activate the Start RetroArch button.
+      $('#btnRun').removeClass('disabled');
+      $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
+      $('#icnRun').addClass('fa-play');
 
-    // Activate the Start RetroArch button.
-    $('#btnRun').removeClass('disabled');
-    $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
-    $('#icnRun').addClass('fa-play');
+      document.getElementById("btnRun").disabled = false;
 
-    if (localStorage.getItem("backend") == "dropbox")
-    {
-      $('#lblDrop').addClass('active');
-      $('#lblLocal').removeClass('active');
-      dropboxInit();
-    }
-    else {
-      $('#lblDrop').removeClass('active');
-      $('#lblLocal').addClass('active');
-      setupFileSystem("browser");
-      setupFolderStructure();
-    }
-    //$('#dropdownMenu1').text(localStorage.getItem("core"));
+      if (localStorage.getItem("backend") == "dropbox")
+      {
+         $('#lblDrop').addClass('active');
+         $('#lblLocal').removeClass('active');
+         dropboxInit();
+      }
+      else
+      {
+         $('#lblDrop').removeClass('active');
+         $('#lblLocal').addClass('active');
+         preLoadingComplete();
+         setupFileSystem("browser");
+         setupFolderStructure();
+      }
    });
  });
 
