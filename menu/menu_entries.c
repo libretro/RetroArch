@@ -292,14 +292,15 @@ size_t menu_entries_get_end(void)
 }
 
 /* Get an entry from the top of the menu stack */
-void menu_entries_get(size_t i, menu_entry_t *entry)
+void menu_entries_get(size_t i, void *entry_data)
 {
    const char *label             = NULL;
    const char *path              = NULL;
    const char *entry_label       = NULL;
    menu_file_list_cbs_t *cbs     = NULL;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_entry_t *entry           = (menu_entry_t*)entry_data;
+   file_list_t *selection_buf    = menu_entries_get_selection_buf_ptr(0);
 
    menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
 

@@ -22,7 +22,9 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#include "menu_input.h"
+#include "../../msg_hash.h"
+
+#include "../menu_input.h"
 
 RETRO_BEGIN_DECLS
 

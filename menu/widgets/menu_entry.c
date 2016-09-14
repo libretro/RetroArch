@@ -18,8 +18,8 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
-#include "menu_driver.h"
-#include "menu_navigation.h"
+#include "../menu_driver.h"
+#include "../menu_navigation.h"
 
 /* This file provides an abstraction of the currently displayed
  * menu.

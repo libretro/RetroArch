@@ -26,6 +26,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "widgets/menu_entry.h"
+#include "menu_input.h"
 #include "menu_entries.h"
 
 #include "../gfx/video_shader_driver.h"

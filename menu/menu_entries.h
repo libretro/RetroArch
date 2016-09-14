@@ -23,7 +23,6 @@
 #include <retro_common_api.h>
 
 #include "menu_setting.h"
-#include "menu_entry.h"
 #include "menu_displaylist.h"
 
 RETRO_BEGIN_DECLS
@@ -132,7 +131,7 @@ typedef struct menu_file_list_cbs
 
 size_t menu_entries_get_end(void);
 
-void menu_entries_get(size_t i, menu_entry_t *entry);
+void menu_entries_get(size_t i, void *data_entry);
 
 int menu_entries_get_title(char *title, size_t title_len);
 

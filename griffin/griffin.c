@@ -888,11 +888,11 @@ MENU
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
 #include "../menu/menu_input.c"
-#include "../menu/menu_entry.c"
 #include "../menu/menu_entries.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
+#include "../menu/widgets/menu_entry.c"
 #include "../menu/widgets/menu_popup.c"
 #include "../menu/widgets/menu_list.c"
 #include "../menu/cbs/menu_cbs_ok.c"
