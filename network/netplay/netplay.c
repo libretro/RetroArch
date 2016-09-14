@@ -378,9 +378,6 @@ static void simulate_input(netplay_t *netplay)
    memcpy(netplay->buffer[ptr].simulated_input_state,
          netplay->buffer[prev].real_input_state,
          sizeof(netplay->buffer[prev].real_input_state));
-
-   netplay->buffer[ptr].have_remote = false;
-   netplay->buffer[ptr].used_real = false;
 }
 
 #define MAX_STALL_TIME_USEC 10000000
@@ -416,7 +413,8 @@ static bool netplay_poll(netplay_t *netplay)
       return false;
    }
 
-   if (netplay->read_frame_count <= netplay->self_frame_count)
+   /* Simulate the input if we don't have real input */
+   if (!netplay->buffer[PREV_PTR(netplay->self_ptr)].have_remote)
       simulate_input(netplay);
 
    /* Consider stalling */
