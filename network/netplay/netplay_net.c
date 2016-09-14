@@ -136,7 +136,8 @@ static void netplay_net_post_frame(netplay_t *netplay)
       netplay->is_replay = false;
    }
 
-   /* If we're supposed to stall, rewind */
+   /* If we're supposed to stall, rewind (we shouldn't get this far if we're
+    * stalled, so this is a last resort) */
    if (netplay->stall)
    {
       retro_ctx_serialize_info_t serial_info;

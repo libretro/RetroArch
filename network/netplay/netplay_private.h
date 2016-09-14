@@ -139,8 +139,8 @@ struct netplay
 
    /* Netplay pausing
     */
-   bool pause;
-   uint32_t pause_frame;
+   bool local_paused;
+   bool remote_paused;
 
    /* And stalling */
    uint32_t stall_frames;

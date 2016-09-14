@@ -299,11 +299,11 @@ static bool netplay_get_cmd(netplay_t *netplay)
          return netplay_cmd_nak(netplay);
 
       case NETPLAY_CMD_PAUSE:
-         command_event(CMD_EVENT_PAUSE, NULL);
+         netplay->remote_paused = true;
          return true;
 
       case NETPLAY_CMD_RESUME:
-         command_event(CMD_EVENT_UNPAUSE, NULL);
+         netplay->remote_paused = false;
          return true;
 
       default: break;
@@ -360,7 +360,7 @@ static int poll_input(netplay_t *netplay, bool block)
       RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
             netplay->self_frame_count, netplay->timeout_cnt, MAX_RETRIES);
 
-      if (netplay->timeout_cnt >= MAX_RETRIES)
+      if (netplay->timeout_cnt >= MAX_RETRIES && !netplay->remote_paused)
          return -1;
    } while (had_input || (block && (netplay->read_frame_count <= netplay->self_frame_count)));
 
@@ -434,7 +434,12 @@ static bool netplay_poll(netplay_t *netplay)
    if (netplay->stall)
    {
       retro_time_t now = cpu_features_get_time_usec();
-      if (now - netplay->stall_time >= MAX_STALL_TIME_USEC)
+      if (netplay->remote_paused)
+      {
+         /* Don't stall out while they're paused */
+         netplay->stall_time = now;
+      }
+      else if (now - netplay->stall_time >= MAX_STALL_TIME_USEC)
       {
          /* Stalled out! */
          netplay->has_connection = false;
@@ -964,11 +969,20 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
  *
  * Pre-frame for Netplay.
  * Call this before running retro_run().
+ *
+ * Returns: true (1) if the frontend is cleared to emulate the frame, false (0)
+ * if we're stalled or paused
  **/
-void netplay_pre_frame(netplay_t *netplay)
+bool netplay_pre_frame(netplay_t *netplay)
 {
    retro_assert(netplay && netplay->net_cbs->pre_frame);
+   if (netplay->local_paused)
+   {
+      /* FIXME: This is an ugly way to learn we're not paused anymore */
+      netplay_frontend_paused(netplay, false);
+   }
    netplay->net_cbs->pre_frame(netplay);
+   return (!netplay->stall && !netplay->remote_paused);
 }
 
 /**
@@ -983,6 +997,25 @@ void netplay_post_frame(netplay_t *netplay)
 {
    retro_assert(netplay && netplay->net_cbs->post_frame);
    netplay->net_cbs->post_frame(netplay);
+}
+
+/**
+ * netplay_frontend_paused
+ * @netplay              : pointer to netplay object
+ * @paused               : true if frontend is paused
+ *
+ * Inform Netplay of the frontend's pause state (paused or otherwise)
+ **/
+void netplay_frontend_paused(netplay_t *netplay, bool paused)
+{
+   /* Nothing to do if we already knew this */
+   if (netplay->local_paused == paused)
+      return;
+
+   fprintf(stderr, "Paused? %d\n", paused);
+   netplay->local_paused = paused;
+   if (netplay->has_connection)
+      netplay_send_raw_cmd(netplay, paused ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
 }
 
 void deinit_netplay(void)
@@ -1060,8 +1093,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_post_frame((netplay_t*)netplay_data);
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
-         netplay_pre_frame((netplay_t*)netplay_data);
-         break;
+         return netplay_pre_frame((netplay_t*)netplay_data);
       case RARCH_NETPLAY_CTL_FLIP_PLAYERS:
          {
             bool *state = (bool*)data;
@@ -1075,6 +1107,12 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             if (*state)
                command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
          }
+         break;
+      case RARCH_NETPLAY_CTL_PAUSE:
+         netplay_frontend_paused((netplay_t*)netplay_data, true);
+         break;
+      case RARCH_NETPLAY_CTL_UNPAUSE:
+         netplay_frontend_paused((netplay_t*)netplay_data, false);
          break;
       default:
       case RARCH_NETPLAY_CTL_NONE:

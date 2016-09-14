@@ -35,7 +35,9 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE,
    RARCH_NETPLAY_CTL_POST_FRAME,
    RARCH_NETPLAY_CTL_PRE_FRAME,
-   RARCH_NETPLAY_CTL_IS_DATA_INITED
+   RARCH_NETPLAY_CTL_IS_DATA_INITED,
+   RARCH_NETPLAY_CTL_PAUSE,
+   RARCH_NETPLAY_CTL_UNPAUSE
 };
 
 enum netplay_cmd
@@ -154,8 +156,11 @@ void netplay_free(netplay_t *handle);
  *
  * Pre-frame for Netplay.
  * Call this before running retro_run().
+ *
+ * Returns: true (1) if the frontend is clear to emulate the frame, false (0)
+ * if we're stalled or paused
  **/
-void netplay_pre_frame(netplay_t *handle);
+bool netplay_pre_frame(netplay_t *handle);
 
 /**
  * netplay_post_frame:   
@@ -166,6 +171,15 @@ void netplay_pre_frame(netplay_t *handle);
  * Call this after running retro_run().
  **/
 void netplay_post_frame(netplay_t *handle);
+
+/**
+ * netplay_frontend_paused
+ * @netplay              : pointer to netplay object
+ * @paused               : true if frontend is paused
+ *
+ * Inform Netplay of the frontend's pause state (paused or otherwise)
+ **/
+void netplay_frontend_paused(netplay_t *netplay, bool paused);
 
 /**
  * init_netplay:
