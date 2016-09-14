@@ -84,11 +84,11 @@ static void dbus_get_connection(void)
 
 static void dbus_close_connection(void)
 {
-    if (dbus_connection != NULL)
-    {
-        dbus_connection_close(dbus_connection);
-        dbus_connection_unref(dbus_connection);
-    }   
+   if (!dbus_connection)
+      return;
+
+   dbus_connection_close(dbus_connection);
+   dbus_connection_unref(dbus_connection);
 }
 
 static void dbus_screensaver_inhibit(void)
@@ -109,12 +109,10 @@ static void dbus_screensaver_inhibit(void)
         "Inhibit");
 
     if (msg != NULL)
-    {
         dbus_message_append_args(msg,
             DBUS_TYPE_STRING, &app,
             DBUS_TYPE_STRING, &reason,
             DBUS_TYPE_INVALID);
-    }
 
     if (msg != NULL)
     {
@@ -225,13 +223,13 @@ void x11_windowed_fullscreen(Display *dpy, Window win)
    XA_INIT(_NET_WM_STATE);
    XA_INIT(_NET_WM_STATE_FULLSCREEN);
 
-   xev.xclient.type = ClientMessage;
-   xev.xclient.send_event = True;
+   xev.xclient.type         = ClientMessage;
+   xev.xclient.send_event   = True;
    xev.xclient.message_type = XA_NET_WM_STATE;
-   xev.xclient.window = win;
-   xev.xclient.format = 32;
-   xev.xclient.data.l[0] = _NET_WM_STATE_ADD;
-   xev.xclient.data.l[1] = XA_NET_WM_STATE_FULLSCREEN;
+   xev.xclient.window       = win;
+   xev.xclient.format       = 32;
+   xev.xclient.data.l[0]    = _NET_WM_STATE_ADD;
+   xev.xclient.data.l[1]    = XA_NET_WM_STATE_FULLSCREEN;
 
    XSendEvent(dpy, DefaultRootWindow(dpy), False,
          SubstructureRedirectMask | SubstructureNotifyMask,
@@ -672,7 +670,7 @@ bool x11_connect(void)
    }
 
 #ifdef HAVE_DBUS
-    dbus_get_connection();
+   dbus_get_connection();
 #endif
 
 
