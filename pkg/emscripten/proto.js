@@ -239,9 +239,9 @@ var Module =
   arguments: ["-v", "--menu"],
   preRun: [],
   postRun: [],
-  // Print both stdout and stderr to the browser console.
-  print: console.log,
-  printErr: console.log,
+  // Log both stdout and stderr with the browser's console object.
+  print: console.log.bind(console),
+  printErr: console.log.bind(console),
   canvas: document.getElementById('canvas'),
   totalDependencies: 0,
   monitorRunDependencies: function(left) 
