@@ -41,7 +41,7 @@
 #include <commdlg.h>
 #include "../../retroarch.h"
 #include "../video_thread_wrapper.h"
-#include <Shellapi.h>
+#include <shellapi.h>
 #ifndef _MSC_VER
 extern "C" {
 #endif
