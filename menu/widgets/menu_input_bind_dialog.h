@@ -28,6 +28,13 @@
 
 RETRO_BEGIN_DECLS
 
+enum menu_input_binds_ctl_state
+{
+   MENU_INPUT_BINDS_CTL_BIND_NONE = 0,
+   MENU_INPUT_BINDS_CTL_BIND_SINGLE,
+   MENU_INPUT_BINDS_CTL_BIND_ALL
+};
+
 typedef struct menu_input_ctx_bind
 {
    char *s;
@@ -41,7 +48,7 @@ typedef struct menu_input_ctx_bind_limits
 } menu_input_ctx_bind_limits_t;
 
 bool menu_input_key_bind_set_mode(
-      enum menu_input_ctl_state state, void *data);
+      enum menu_input_binds_ctl_state state, void *data);
 
 bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim);
 

@@ -198,10 +198,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
       case MENU_INPUT_CTL_UNSET_POINTER_DRAGGED:
          pointer_dragging = false;
          break;
-      case MENU_INPUT_CTL_BIND_NONE:
-      case MENU_INPUT_CTL_BIND_SINGLE:
-      case MENU_INPUT_CTL_BIND_ALL:
-         return menu_input_key_bind_set_mode(state, data);
       default:
       case MENU_INPUT_CTL_NONE:
          break;

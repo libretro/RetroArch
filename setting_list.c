@@ -26,6 +26,7 @@
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/widgets/menu_input_dialog.h"
+#include "menu/widgets/menu_input_bind_dialog.h"
 #endif
 
 #include "configuration.h"
@@ -141,7 +142,7 @@ static int setting_bind_action_ok(void *data, bool wraparound)
 
 #ifdef HAVE_MENU
    /* TODO - get rid of menu dependency */
-   if (!menu_input_ctl(MENU_INPUT_CTL_BIND_SINGLE, data))
+   if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_SINGLE, data))
       return -1;
 #endif
    return 0;

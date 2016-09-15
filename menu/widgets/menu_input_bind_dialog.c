@@ -78,7 +78,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
 }
 
 static int menu_input_key_bind_set_mode_common(
-      enum menu_input_ctl_state state,
+      enum menu_input_binds_ctl_state state,
       rarch_setting_t  *setting)
 {
    size_t selection;
@@ -98,9 +98,7 @@ static int menu_input_key_bind_set_mode_common(
 
    switch (state)
    {
-      case MENU_INPUT_CTL_BIND_NONE:
-         return -1;
-      case MENU_INPUT_CTL_BIND_SINGLE:
+      case MENU_INPUT_BINDS_CTL_BIND_SINGLE:
          keybind    = (struct retro_keybind*)setting_get_ptr(setting);
 
          if (!keybind)
@@ -123,7 +121,7 @@ static int menu_input_key_bind_set_mode_common(
          if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
             menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
          break;
-      case MENU_INPUT_CTL_BIND_ALL:
+      case MENU_INPUT_BINDS_CTL_BIND_ALL:
          menu_input_binds.target = &settings->input.binds
             [index_offset][0];
          menu_input_binds.begin  = MENU_SETTINGS_BIND_BEGIN;
@@ -141,7 +139,7 @@ static int menu_input_key_bind_set_mode_common(
             menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
          break;
       default:
-      case MENU_INPUT_CTL_NONE:
+      case MENU_INPUT_BINDS_CTL_BIND_NONE:
          break;
    }
 
@@ -236,7 +234,7 @@ static void menu_input_key_bind_poll_bind_state(
 }
 
 bool menu_input_key_bind_set_mode(
-      enum menu_input_ctl_state state, void *data)
+      enum menu_input_binds_ctl_state state, void *data)
 {
    unsigned index_offset;
    input_keyboard_ctx_wait_t keys;
