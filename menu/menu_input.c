@@ -40,6 +40,7 @@
 #include "menu_animation.h"
 #include "menu_display.h"
 #include "widgets/menu_entry.h"
+#include "widgets/menu_input_dialog.h"
 #include "menu_setting.h"
 #include "menu_shader.h"
 #include "menu_navigation.h"
@@ -130,24 +131,6 @@ static menu_input_t *menu_input_get_ptr(void)
 {
    static menu_input_t menu_input_state;
    return &menu_input_state;
-}
-
-static void menu_input_search_cb(void *userdata, const char *str)
-{
-   size_t idx = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   if (!selection_buf)
-      return;
-
-   if (str && *str && file_list_search(selection_buf, str, &idx))
-   {
-      bool scroll = true;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
-   }
-
-   menu_input_dialog_end();
 }
 
 void menu_input_st_uint_cb(void *userdata, const char *str)
@@ -670,101 +653,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
       case MENU_INPUT_CTL_NONE:
          break;
    }
-
-   return true;
-}
-
-static const char **menu_input_dialog_keyboard_buffer;
-static bool menu_input_dialog_keyboard_display             = false;
-static unsigned menu_input_dialog_keyboard_type            = 0;
-static unsigned menu_input_dialog_keyboard_idx             = 0;
-static char menu_input_dialog_keyboard_label_setting[256]  = {0};
-static char menu_input_dialog_keyboard_label[256]          = {0};
-
-const char *menu_input_dialog_get_label_buffer(void)
-{
-   return menu_input_dialog_keyboard_label;
-}
-
-const char *menu_input_dialog_get_label_setting_buffer(void)
-{
-   return menu_input_dialog_keyboard_label_setting;
-}
-
-void menu_input_dialog_end(void)
-{
-   menu_input_dialog_keyboard_type             = 0;
-   menu_input_dialog_keyboard_idx              = 0;
-   menu_input_dialog_keyboard_display          = false; 
-   menu_input_dialog_keyboard_label[0]         = '\0';
-   menu_input_dialog_keyboard_label_setting[0] = '\0';
-
-   /* Avoid triggering states on pressing return. */
-   input_driver_set_flushing_input();
-}
-
-const char *menu_input_dialog_get_buffer(void)
-{
-   if (!(*menu_input_dialog_keyboard_buffer))
-      return "";
-   return *menu_input_dialog_keyboard_buffer;
-}
-
-unsigned menu_input_dialog_get_kb_type(void)
-{
-   return menu_input_dialog_keyboard_type;
-}
-
-bool menu_input_dialog_get_display_kb(void)
-{
-   return menu_input_dialog_keyboard_display; 
-}
-
-void menu_input_dialog_display_kb(void)
-{
-   menu_input_dialog_keyboard_display = true; 
-}
-
-void menu_input_dialog_hide_kb(void)
-{
-   menu_input_dialog_keyboard_display = false; 
-}
-
-bool menu_input_dialog_start_search(void)
-{
-   menu_handle_t      *menu = NULL;
-
-   if (!menu_driver_ctl(
-            RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return false;
-
-   menu_input_dialog_display_kb();
-   strlcpy(menu_input_dialog_keyboard_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
-         sizeof(menu_input_dialog_keyboard_label));
-   menu_input_dialog_keyboard_buffer   =
-      input_keyboard_start_line(menu, menu_input_search_cb);
-
-   return true;
-}
-
-bool menu_input_dialog_start(menu_input_ctx_line_t *line)
-{
-   menu_handle_t    *menu      = NULL;
-   if (!line)
-      return false;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return false;
-
-   menu_input_dialog_display_kb();
-   strlcpy(menu_input_dialog_keyboard_label, line->label, 
-         sizeof(menu_input_dialog_keyboard_label));
-   strlcpy(menu_input_dialog_keyboard_label_setting,
-         line->label_setting, sizeof(menu_input_dialog_keyboard_label_setting));
-
-   menu_input_dialog_keyboard_type   = line->type;
-   menu_input_dialog_keyboard_idx    = line->idx;
-   menu_input_dialog_keyboard_buffer =
-      input_keyboard_start_line(menu, line->cb);
 
    return true;
 }

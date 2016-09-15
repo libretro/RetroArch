@@ -98,35 +98,6 @@ typedef struct menu_input_ctx_bind
    size_t len;
 } menu_input_ctx_bind_t;
 
-typedef struct menu_input_ctx_line
-{
-   const char *label;
-   const char *label_setting;
-   unsigned type;
-   unsigned idx;
-   input_keyboard_line_complete_t cb;
-} menu_input_ctx_line_t;
-
-const char *menu_input_dialog_get_label_setting_buffer(void);
-
-const char *menu_input_dialog_get_label_buffer(void);
-
-const char *menu_input_dialog_get_buffer(void);
-
-unsigned menu_input_dialog_get_kb_type(void);
-
-bool menu_input_dialog_start_search(void);
-
-void menu_input_dialog_hide_kb(void);
-
-void menu_input_dialog_display_kb(void);
-
-bool menu_input_dialog_get_display_kb(void);
-
-bool menu_input_dialog_start(menu_input_ctx_line_t *line);
-
-void menu_input_dialog_end(void);
-
 typedef struct menu_input_ctx_bind_limits
 {
    unsigned min;

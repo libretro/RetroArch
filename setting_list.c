@@ -25,6 +25,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/widgets/menu_input_dialog.h"
 #endif
 
 #include "configuration.h"

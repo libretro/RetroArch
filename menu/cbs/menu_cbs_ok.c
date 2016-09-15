@@ -32,6 +32,7 @@
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
 #include "../widgets/menu_dialog.h"
+#include "../widgets/menu_input_dialog.h"
 #include "../menu_content.h"
 
 #include "../../core.h"
