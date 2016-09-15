@@ -1766,18 +1766,19 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
    for (; i < end; i++)
    {
-      menu_entry_t entry          = {{0}};
       float icon_x, icon_y;
       menu_animation_ctx_ticker_t ticker;
-      char ticker_str[PATH_MAX_LENGTH] = {0};
-      char name[PATH_MAX_LENGTH]  = {0};
-      char value[PATH_MAX_LENGTH] = {0};
-      const float half_size       = xmb->icon.size / 2.0f;
-      uintptr_t texture_switch    = 0;
-      xmb_node_t *   node         = (xmb_node_t*)
+      menu_entry_t entry                = {{0}};
+      char ticker_str[PATH_MAX_LENGTH]  = {0};
+      char name[PATH_MAX_LENGTH]        = {0};
+      char value[PATH_MAX_LENGTH]       = {0};
+      char entry_value[PATH_MAX_LENGTH] = {0};
+      const float half_size             = xmb->icon.size / 2.0f;
+      uintptr_t texture_switch          = 0;
+      xmb_node_t *   node               = (xmb_node_t*)
          menu_entries_get_userdata_at_offset(list, i);
-      bool do_draw_text           = false;
-      unsigned ticker_limit       = 35;
+      bool do_draw_text                 = false;
+      unsigned ticker_limit             = 35;
 
       if (!node)
          continue;
@@ -1803,17 +1804,18 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          fill_short_pathname_representation(entry.path, entry.path,
                sizeof(entry.path));
 
+      menu_entry_get_value(i, entry_value, sizeof(entry_value));
 
-      if (string_is_equal(entry.value, "disabled") ||
-            string_is_equal(entry.value, "off"))
+      if (string_is_equal(entry_value, "disabled") ||
+            string_is_equal(entry_value, "off"))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
          else
             do_draw_text = true;
       }
-      else if (string_is_equal(entry.value, "enabled") ||
-            string_is_equal(entry.value, "on"))
+      else if (string_is_equal(entry_value, "enabled") ||
+            string_is_equal(entry_value, "on"))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
@@ -1822,7 +1824,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       }
       else
       {
-         switch (msg_hash_to_file_type(msg_hash_calculate(entry.value)))
+         switch (msg_hash_to_file_type(msg_hash_calculate(entry_value)))
          {
             case FILE_TYPE_COMPRESSED:
             case FILE_TYPE_MORE:
@@ -1853,7 +1855,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          }
       }
 
-      if (string_is_empty(entry.value))
+      if (string_is_empty(entry_value))
       {
          if (!string_is_equal(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
             ticker_limit = 40;
@@ -1881,7 +1883,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       ticker.s        = value;
       ticker.len      = 35;
       ticker.idx      = *frame_count / 20;
-      ticker.str      = entry.value;
+      ticker.str      = entry_value;
       ticker.selected = (i == current);
 
       menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
