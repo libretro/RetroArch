@@ -1805,7 +1805,7 @@ void handle_quit_event()
    settings_t *settings      = config_get_ptr();
 #ifdef HAVE_MENU
    if (settings && settings->confirm_on_exit &&
-         menu_popup_is_active())
+         menu_dialog_is_active())
       return;
 #endif
 
@@ -2027,9 +2027,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_QUIT:
 #ifdef HAVE_MENU
          if (settings && settings->confirm_on_exit &&
-                !menu_popup_is_active() && !runloop_is_quit_confirm())
+                !menu_dialog_is_active() && !runloop_is_quit_confirm())
          {
-            menu_popup_show_message(MENU_POPUP_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+            menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
             break;
          }
 #endif

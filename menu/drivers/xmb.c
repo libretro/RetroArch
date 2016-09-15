@@ -33,25 +33,25 @@
 #include "../../config.h"
 #endif
 
+#ifndef HAVE_DYNAMIC
+#include "../../frontend/frontend_driver.h"
+#endif
+
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../widgets/menu_entry.h"
 #include "../menu_animation.h"
-#include "../menu_display.h"
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 
+#include "../widgets/menu_entry.h"
 #include "../widgets/menu_list.h"
 
 #include "../menu_cbs.h"
 
-#include "../../frontend/frontend_driver.h"
-#include "../../core.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../file_path_special.h"
 
 #include "../../tasks/tasks_internal.h"
 

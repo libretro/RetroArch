@@ -22,13 +22,8 @@
 
 #include "../menu_driver.h"
 #include "../menu_display.h"
-#include "../menu_displaylist.h"
 #include "../menu_navigation.h"
-#include "../menu_entries.h"
 #include "../widgets/menu_dialog.h"
-
-#include "../../configuration.h"
-#include "../../performance_counters.h"
 
 #include "../../verbosity.h"
 #include "../../runloop.h"
@@ -103,16 +98,16 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
-         ret = menu_popup_iterate(
+         ret = menu_dialog_iterate(
                menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (ret == 1 || action == MENU_ACTION_OK)
          {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
-            menu_popup_set_active(false);
+            menu_dialog_set_active(false);
 
-            if (menu_popup_get_current_type() == MENU_POPUP_QUIT_CONFIRM)
+            if (menu_dialog_get_current_type() == MENU_DIALOG_QUIT_CONFIRM)
             {
                runloop_set_quit_confirm(true);
                command_event(CMD_EVENT_QUIT_CONFIRM, NULL);
@@ -122,9 +117,9 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          if (action == MENU_ACTION_CANCEL)
          {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
-            menu_popup_set_active(false);
+            menu_dialog_set_active(false);
 
-            if (menu_popup_get_current_type() == MENU_POPUP_QUIT_CONFIRM)
+            if (menu_dialog_get_current_type() == MENU_DIALOG_QUIT_CONFIRM)
             {
                runloop_set_quit_confirm(false);
 
@@ -234,7 +229,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (action == MENU_ACTION_OK || action == MENU_ACTION_CANCEL)
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
-            menu_popup_set_active(false);
+            menu_dialog_set_active(false);
          break;
       case ITERATE_TYPE_DEFAULT:
          /* FIXME: Crappy hack, needed for mouse controls
@@ -253,7 +248,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
          /* Have to defer it so we let settings refresh. */
-         menu_popup_push();
+         menu_dialog_push();
          break;
    }
 

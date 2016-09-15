@@ -1362,7 +1362,7 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    if (settings && settings->confirm_on_exit &&
           !runloop_quit_confirm)
    {
-      if (menu_popup_is_active())
+      if (menu_dialog_is_active())
          return 1;
 
       if (content_is_inited())
@@ -1372,7 +1372,7 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
          rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
       }
 
-      menu_popup_show_message(MENU_POPUP_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+      menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
       return 1;
    }
 #endif
