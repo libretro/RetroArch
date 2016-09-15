@@ -138,7 +138,7 @@ static menu_input_t *menu_input_get_ptr(void)
    return &menu_input_state;
 }
 
-void menu_input_key_end_line(void)
+void menu_input_dialog_end(void)
 {
    bool keyboard_display    = false;
 
@@ -165,7 +165,7 @@ static void menu_input_search_cb(void *userdata, const char *str)
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
    }
 
-   menu_input_key_end_line();
+   menu_input_dialog_end();
 }
 
 void menu_input_st_uint_cb(void *userdata, const char *str)
@@ -181,7 +181,7 @@ void menu_input_st_uint_cb(void *userdata, const char *str)
       setting_set_with_string_representation(setting, str);
    }
 
-   menu_input_key_end_line();
+   menu_input_dialog_end();
 }
 
 void menu_input_st_hex_cb(void *userdata, const char *str)
@@ -205,7 +205,7 @@ void menu_input_st_hex_cb(void *userdata, const char *str)
       }
    }
 
-   menu_input_key_end_line();
+   menu_input_dialog_end();
 }
 
 void menu_input_st_cheat_cb(void *userdata, const char *str)
@@ -224,7 +224,7 @@ void menu_input_st_cheat_cb(void *userdata, const char *str)
       cheat_manager_set_code(cheat_index, str);
    }
 
-   menu_input_key_end_line();
+   menu_input_dialog_end();
 }
 
 static bool menu_input_key_bind_custom_bind_keyboard_cb(

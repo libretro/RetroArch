@@ -139,7 +139,7 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
 bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox);
 
-void menu_input_key_end_line(void);
+void menu_input_dialog_end(void);
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
 

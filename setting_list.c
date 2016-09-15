@@ -1787,7 +1787,7 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
       }
    }
 
-   menu_input_key_end_line();
+   menu_input_dialog_end();
 }
 
 static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
