@@ -1475,7 +1475,7 @@ static int action_ok_cheat(const char *path,
    line.idx           = idx;
    line.cb            = menu_input_st_cheat_cb;
 
-   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+   if (!menu_input_dialog_start(&line))
       return -1;
    return 0;
 }
@@ -1526,7 +1526,7 @@ static int action_ok_shader_preset_save_as(const char *path,
    line.idx           = idx;
    line.cb            = menu_input_st_string_cb_save_preset;
 
-   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+   if (!menu_input_dialog_start(&line))
       return -1;
    return 0;
 }
@@ -1647,7 +1647,7 @@ static int action_ok_cheat_file_save_as(const char *path,
    line.idx           = idx;
    line.cb            = menu_input_st_string_cb_cheat_file_save_as;
 
-   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+   if (!menu_input_dialog_start(&line))
       return -1;
    return 0;
 }

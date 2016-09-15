@@ -628,10 +628,11 @@ bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox
    return inside_hitbox;
 }
 
+static const char **menu_input_keyboard_buffer;
+
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
    static char menu_input_keyboard_label_setting[256];
-   static const char **menu_input_keyboard_buffer;
    static const char *menu_input_keyboard_label = NULL;
    static bool pointer_dragging                 = false;
    menu_input_t *menu_input                     = menu_input_get_ptr();
@@ -761,33 +762,35 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
                return false;
             return menu_input_key_bind_iterate(bind->s, bind->len);
          }
-      case MENU_INPUT_CTL_START_LINE:
-         {
-            bool keyboard_display       = true;
-            menu_handle_t    *menu      = NULL;
-            menu_input_ctx_line_t *line = (menu_input_ctx_line_t*)data;
-            if (!menu_input || !line)
-               return false;
-            if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-               return false;
-
-            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,
-                  &keyboard_display);
-            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL,
-                  &line->label);
-            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING,
-                  &line->label_setting);
-
-            menu_input->keyboard.type   = line->type;
-            menu_input->keyboard.idx    = line->idx;
-            menu_input_keyboard_buffer  =
-               input_keyboard_start_line(menu, line->cb);
-         }
-         break;
       default:
       case MENU_INPUT_CTL_NONE:
          break;
    }
+
+   return true;
+}
+
+bool menu_input_dialog_start(menu_input_ctx_line_t *line)
+{
+   bool keyboard_display       = true;
+   menu_handle_t    *menu      = NULL;
+   menu_input_t *menu_input    = menu_input_get_ptr();
+   if (!menu_input || !line)
+      return false;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return false;
+
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,
+         &keyboard_display);
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL,
+         &line->label);
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING,
+         &line->label_setting);
+
+   menu_input->keyboard.type   = line->type;
+   menu_input->keyboard.idx    = line->idx;
+   menu_input_keyboard_buffer  =
+      input_keyboard_start_line(menu, line->cb);
 
    return true;
 }

@@ -91,8 +91,7 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_BIND_SINGLE,
    MENU_INPUT_CTL_BIND_ALL,
    MENU_INPUT_CTL_BIND_ITERATE,
-   MENU_INPUT_CTL_BIND_SET_MIN_MAX,
-   MENU_INPUT_CTL_START_LINE
+   MENU_INPUT_CTL_BIND_SET_MIN_MAX
 };
 
 typedef struct menu_input_ctx_hitbox
@@ -118,6 +117,10 @@ typedef struct menu_input_ctx_line
    input_keyboard_line_complete_t cb;
 } menu_input_ctx_line_t;
 
+bool menu_input_dialog_start(menu_input_ctx_line_t *line);
+
+void menu_input_dialog_end(void);
+
 typedef struct menu_input_ctx_bind_limits
 {
    unsigned min;
@@ -139,7 +142,6 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
 bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox);
 
-void menu_input_dialog_end(void);
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
 

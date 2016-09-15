@@ -1824,7 +1824,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
    line.idx           = 0;
    line.cb            = cb;
 
-   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+   if (!menu_input_dialog_start(&line))
       return -1;
 
    return 0;
