@@ -1790,6 +1790,39 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
    menu_input_dialog_end();
 }
 
+static void menu_input_st_uint_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      const char        *label = menu_input_dialog_get_label_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
+      setting_set_with_string_representation(setting, str);
+   }
+
+   menu_input_dialog_end();
+}
+
+static void menu_input_st_hex_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      const char        *label = menu_input_dialog_get_label_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
+      if (setting)
+      {
+         unsigned *ptr = (unsigned*)setting_get_ptr(setting);
+         if (str[0] == '#')
+            str++;
+         if (ptr)
+            *ptr = strtoul(str, NULL, 16);
+      }
+   }
+
+   menu_input_dialog_end();
+}
+
 static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 {
    menu_input_ctx_line_t line;

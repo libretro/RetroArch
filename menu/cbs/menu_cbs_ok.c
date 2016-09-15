@@ -1465,6 +1465,20 @@ static int action_ok_cheevos(const char *path,
          MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION);
 }
 
+static void menu_input_st_cheat_cb(void *userdata, const char *str)
+{
+   (void)userdata;
+
+   if (str && *str)
+   {
+      unsigned cheat_index = menu_input_dialog_get_kb_type()
+         - MENU_SETTINGS_CHEAT_BEGIN;
+      cheat_manager_set_code(cheat_index, str);
+   }
+
+   menu_input_dialog_end();
+}
+
 static int action_ok_cheat(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {

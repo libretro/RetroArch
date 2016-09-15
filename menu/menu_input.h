@@ -87,12 +87,6 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
-
-/* Keyboard input callbacks */
-void menu_input_st_uint_cb  (void *userdata, const char *str);
-void menu_input_st_hex_cb   (void *userdata, const char *str);
-void menu_input_st_cheat_cb (void *userdata, const char *str);
-
 unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_state);
 
 void menu_input_post_iterate(int *ret, unsigned action);
