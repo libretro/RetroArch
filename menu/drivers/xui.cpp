@@ -592,9 +592,10 @@ static void xui_render(void *data)
 
    if (display_kb)
 	{
-		char msg[1024]  = {0};
-      const char *str = NULL, *label = NULL;
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
+		char msg[1024]    = {0};
+      const char *label = NULL;
+      const char *str   = menu_input_dialog_get_buffer();
+
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
 
 		if (!str)

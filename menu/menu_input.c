@@ -635,6 +635,10 @@ bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox
    return inside_hitbox;
 }
 
+const char *menu_input_dialog_get_buffer(void)
+{
+   return *menu_input_keyboard_buffer;
+}
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
@@ -692,12 +696,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          break;
       case MENU_INPUT_CTL_UNSET_POINTER_DRAGGED:
          pointer_dragging = false;
-         break;
-      case MENU_INPUT_CTL_KEYBOARD_BUFF_PTR:
-         {
-            const char **ptr = (const char**)data;
-            *ptr = *menu_input_keyboard_buffer;
-         }
          break;
       case MENU_INPUT_CTL_KEYBOARD_LABEL:
          {

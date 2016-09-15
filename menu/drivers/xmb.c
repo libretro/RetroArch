@@ -2366,9 +2366,9 @@ static void xmb_frame(void *data)
 
    if (menu_input_dialog_get_display_kb())
    {
-      const char *str   = NULL;
       const char *label = NULL;
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
+      const char *str   = menu_input_dialog_get_buffer();
+
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
 
       if (!str)
