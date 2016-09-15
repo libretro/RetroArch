@@ -150,14 +150,14 @@ static void dbus_screensaver_uninhibit(void)
    if (!dbus_connection)
       return;
 
-   if (dbus_screensaver_cookie <= 0)
+   if (!dbus_screensaver_cookie)
       return;
 
    msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
          "/org/freedesktop/ScreenSaver",
          "org.freedesktop.ScreenSaver",
          "UnInhibit");
-   dbus_message_append_args (msg,
+   dbus_message_append_args(msg,
          DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
          DBUS_TYPE_INVALID);
 
@@ -173,16 +173,8 @@ static void dbus_screensaver_uninhibit(void)
 
 void x11_suspend_screensaver_dbus(bool enable)
 {
-   /* Disable requested and was not already suspended */
-   if (!enable && !dbus_screensaver_cookie == 0)
-      return;
-
-   /* Disable requesed and was suspended -> unsuspend */
-   if (!enable && dbus_screensaver_cookie > 0)
-      dbus_screensaver_uninhibit();   
-
-   if (enable)
-      dbus_screensaver_inhibit();
+   if (enable) dbus_screensaver_inhibit();
+   if (!enable) dbus_screensaver_uninhibit();
 }
 #endif
 
