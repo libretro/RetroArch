@@ -845,7 +845,6 @@ static void mui_frame(void *data)
    unsigned header_height          = 0;
    size_t selection                = 0;
    size_t title_margin             = 0;
-   bool display_kb                 = false;
    mui_handle_t *mui               = (mui_handle_t*)data;
    uint64_t *frame_count           = video_driver_get_frame_count_ptr();
    settings_t *settings            = config_get_ptr();
@@ -1204,9 +1203,7 @@ static void mui_frame(void *data)
 
    mui_draw_scrollbar(mui, width, height, &grey_bg[0]);
 
-   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
-
-   if (display_kb)
+   if (menu_input_dialog_get_display_kb())
    {
       const char *str = NULL, *label = NULL;
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);

@@ -693,12 +693,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
       case MENU_INPUT_CTL_UNSET_POINTER_DRAGGED:
          pointer_dragging = false;
          break;
-      case MENU_INPUT_CTL_KEYBOARD_DISPLAY:
-         {
-            bool *ptr = (bool*)data;
-            *ptr = menu_input->keyboard.display;
-         }
-         break;
       case MENU_INPUT_CTL_KEYBOARD_BUFF_PTR:
          {
             const char **ptr = (const char**)data;

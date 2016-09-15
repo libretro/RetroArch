@@ -2152,7 +2152,6 @@ static void xmb_frame(void *data)
    char msg[PATH_MAX_LENGTH]               = {0};
    char title_msg[256]                     = {0};
    char title_truncated[256]               = {0};
-   bool display_kb                         = false;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    file_list_t *menu_stack                 = NULL;
@@ -2365,9 +2364,7 @@ static void xmb_frame(void *data)
 
    menu_display_font_flush_block();
 
-   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
-
-   if (display_kb)
+   if (menu_input_dialog_get_display_kb())
    {
       const char *str   = NULL;
       const char *label = NULL;
