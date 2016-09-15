@@ -155,7 +155,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
    return true;
 }
 
-static int menu_input_pointer(unsigned *action)
+static int menu_event_pointer(unsigned *action)
 {
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input                     = menu_input_get_ptr();
@@ -696,7 +696,7 @@ unsigned menu_event(retro_input_t input,
       menu_input->mouse.ptr = 0;
 
    if (settings->menu.pointer.enable)
-      menu_input_pointer(&ret);
+      menu_event_pointer(&ret);
    else
       memset(&menu_input->pointer, 0, sizeof(menu_input->pointer));
 
