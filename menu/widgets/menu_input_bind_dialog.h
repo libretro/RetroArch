@@ -45,7 +45,7 @@ bool menu_input_key_bind_set_mode(
 
 bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim);
 
-bool menu_input_key_bind_iterate(char *s, size_t len);
+bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind);
 
 RETRO_END_DECLS
 

@@ -79,8 +79,7 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_DEINIT,
    MENU_INPUT_CTL_BIND_NONE,
    MENU_INPUT_CTL_BIND_SINGLE,
-   MENU_INPUT_CTL_BIND_ALL,
-   MENU_INPUT_CTL_BIND_ITERATE
+   MENU_INPUT_CTL_BIND_ALL
 };
 
 typedef struct menu_input_ctx_hitbox

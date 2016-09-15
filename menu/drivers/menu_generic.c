@@ -137,7 +137,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             bind.s   = menu->menu_state.msg;
             bind.len = sizeof(menu->menu_state.msg);
 
-            if (menu_input_ctl(MENU_INPUT_CTL_BIND_ITERATE, &bind))
+            if (menu_input_key_bind_iterate(&bind))
             {
                menu_entries_pop_stack(&selection, 0, 0);
                menu_navigation_ctl(

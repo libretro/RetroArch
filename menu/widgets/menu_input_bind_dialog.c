@@ -383,7 +383,7 @@ bool menu_input_key_bind_set_min_max(menu_input_ctx_bind_limits_t *lim)
    return true;
 }
 
-bool menu_input_key_bind_iterate(char *s, size_t len)
+bool menu_input_key_bind_iterate(menu_input_ctx_bind_t *bind)
 {
    struct menu_bind_state binds;
    bool               timed_out = false;
@@ -391,6 +391,9 @@ bool menu_input_key_bind_iterate(char *s, size_t len)
    int64_t current              = cpu_features_get_time_usec();
    int timeout                  =
       (menu_input_binds.timeout_end - current) / 1000000;
+
+   if (!bind)
+      return false;
 
    if (timeout <= 0)
    {
@@ -403,10 +406,10 @@ bool menu_input_key_bind_iterate(char *s, size_t len)
       timed_out = true;
    }
 
-   snprintf(s, len,
+   snprintf(bind->s, bind->len,
          "[%s]\npress keyboard or joypad\n(timeout %d %s)",
          input_config_bind_map_get_desc(
-         menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN),
+            menu_input_binds.begin - MENU_SETTINGS_BIND_BEGIN),
          timeout,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
 
