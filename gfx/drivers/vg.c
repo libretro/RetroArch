@@ -15,6 +15,7 @@
  */
 
 #include <math.h>
+#include <string.h>
 
 #include <VG/openvg.h>
 #include <VG/vgext.h>
