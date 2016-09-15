@@ -5,6 +5,16 @@
  */
 
 /**
+ * Style the header
+ */
+h1.navbar-brand {
+  font-size: 2.5rem;
+  padding-bottom: 0;
+  padding-right: 1rem;
+  margin-bottom: 0;
+}
+
+/**
  * Make sure the background of the player is black.
  */
 .webplayer-container {
