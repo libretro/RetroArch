@@ -80,8 +80,7 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_BIND_NONE,
    MENU_INPUT_CTL_BIND_SINGLE,
    MENU_INPUT_CTL_BIND_ALL,
-   MENU_INPUT_CTL_BIND_ITERATE,
-   MENU_INPUT_CTL_BIND_SET_MIN_MAX
+   MENU_INPUT_CTL_BIND_ITERATE
 };
 
 typedef struct menu_input_ctx_hitbox
