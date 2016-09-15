@@ -21,6 +21,10 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 RETRO_BEGIN_DECLS
 
 enum
