@@ -239,9 +239,25 @@ var Module =
   arguments: ["-v", "--menu"],
   preRun: [],
   postRun: [],
-  // Print both stdout and stderr to the browser console.
-  print: console.log,
-  printErr: console.log,
+  print: (function() 
+  {
+     var element = document.getElementById('output');
+     element.value = ''; // clear browser cache
+     return function(text) 
+     {
+        text = Array.prototype.slice.call(arguments).join(' ');
+        element.value += text + "\n";
+        element.scrollTop = 99999; // focus on bottom
+     };
+  })(),
+
+  printErr: function(text)
+  {
+     var text = Array.prototype.slice.call(arguments).join(' ');
+     var element = document.getElementById('output');
+     element.value += text + "\n";
+     element.scrollTop = 99999; // focus on bottom
+  },
   canvas: document.getElementById('canvas'),
   totalDependencies: 0,
   monitorRunDependencies: function(left) 
