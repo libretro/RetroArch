@@ -22,6 +22,14 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef HAVE_THREADS
+#include "../gfx/video_thread_wrapper.h"
+#endif
+
 #include "../config.def.h"
 #include "../retroarch.h"
 #include "../configuration.h"
@@ -35,9 +43,6 @@
 #include "menu_animation.h"
 #include "menu_display.h"
 
-#ifdef HAVE_THREADS
-#include "../gfx/video_thread_wrapper.h"
-#endif
 
 
 uintptr_t menu_display_white_texture;
