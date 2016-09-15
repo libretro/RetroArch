@@ -293,7 +293,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
          flip_frame = ntohl(flip_frame);
 
-         if (flip_frame < netplay->flip_frame)
+         if (flip_frame < netplay->read_frame_count)
          {
             RARCH_ERR("Host asked us to flip users in the past. Not possible ...\n");
             return netplay_cmd_nak(netplay);
@@ -301,6 +301,12 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
          netplay->flip ^= true;
          netplay->flip_frame = flip_frame;
+
+         /* Force a rewind to assure the flip happens: This just prevents us
+          * from skipping other past the flip because our prediction was
+          * correct */
+         if (flip_frame < netplay->self_frame_count)
+            netplay->force_rewind = true;
 
          RARCH_LOG("Netplay users are flipped.\n");
          runloop_msg_queue_push("Netplay users are flipped.", 1, 180, false);
@@ -1008,7 +1014,8 @@ error:
  **/
 static void netplay_flip_users(netplay_t *netplay)
 {
-   uint32_t flip_frame = netplay->self_frame_count + 32; /* FIXME: This value is now arbitrary */
+   /* Must be in the future because we may have already sent this frame's data */
+   uint32_t flip_frame = netplay->self_frame_count + 1;
    uint32_t flip_frame_net = htonl(flip_frame);
    bool command = netplay_command(
       netplay, NETPLAY_CMD_FLIP_PLAYERS,

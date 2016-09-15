@@ -143,11 +143,10 @@ struct netplay
       size_t input_sz;
    } spectate;
    bool is_server;
+
    /* User flipping
-    * Flipping state. If ptr >= flip_frame, we apply the flip.
-    * If not, we apply the opposite, effectively creating a trigger point.
-    * To avoid collition we need to make sure our client/host is synced up 
-    * well after flip_frame before allowing another flip. */
+    * Flipping state. If frame >= flip_frame, we apply the flip.
+    * If not, we apply the opposite, effectively creating a trigger point. */
    bool flip;
    uint32_t flip_frame;
 
