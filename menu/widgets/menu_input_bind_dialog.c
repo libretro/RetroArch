@@ -82,17 +82,12 @@ static int menu_input_key_bind_set_mode_common(
       rarch_setting_t  *setting)
 {
    size_t selection;
-   unsigned index_offset, bind_type;
+   unsigned bind_type            = 0;
    menu_displaylist_info_t info  = {0};
    struct retro_keybind *keybind = NULL;
-   file_list_t *menu_stack       = NULL;
    settings_t     *settings      = config_get_ptr();
-
-   if (!setting)
-      return -1;
-
-   index_offset = setting_get_index_offset(setting);
-   menu_stack   = menu_entries_get_menu_stack_ptr(0);
+   unsigned         index_offset = setting_get_index_offset(setting);
+   file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
