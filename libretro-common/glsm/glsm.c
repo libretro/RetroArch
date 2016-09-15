@@ -1848,6 +1848,55 @@ void rglWaitSync(void *sync, GLbitfield flags, uint64_t timeout)
 #endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.4
+ * OpenGLES  : Not available
+ */
+void rglBufferStorage(GLenum target, GLsizeiptr size, const GLvoid *data, GLbitfield flags) {
+#if defined(HAVE_OPENGL)
+  glBufferStorage(target, size, data, flags);
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 3.0
+ * OpenGLES  : 3.0
+ */
+void rglFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length) {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+  glFlushMappedBufferRange(target, offset, length);
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 3.2
+ * OpenGLES  : 3.0
+ */
+GLenum rglClientWaitSync(GLsync sync, GLbitfield flags, GLuint64 timeout) {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+  return glClientWaitSync(sync, flags, timeout);
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 3.2
+ * OpenGLES  : Not available
+ */
+void rglDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type,
+			       GLvoid *indices, GLint basevertex) {
+#if defined(HAVE_OPENGL)
+  glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
+#endif
+}
+
 /* GLSM-side */
 
 static void glsm_state_setup(void)
@@ -2076,6 +2125,8 @@ static bool glsm_state_ctx_destroy(void *data)
    if (gl_state.bind_textures.ids)
       free(gl_state.bind_textures.ids);
    gl_state.bind_textures.ids = NULL;
+
+   return true;
 }
 
 static bool glsm_state_ctx_init(void *data)
