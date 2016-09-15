@@ -113,6 +113,10 @@ typedef struct menu_input_ctx_line
 
 bool menu_input_dialog_start_search(void);
 
+void menu_input_dialog_hide_kb(void);
+
+void menu_input_dialog_display_kb(void);
+
 bool menu_input_dialog_start(menu_input_ctx_line_t *line);
 
 void menu_input_dialog_end(void);
@@ -137,7 +141,6 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state);
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
 bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox);
-
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
 

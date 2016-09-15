@@ -736,6 +736,24 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
    return true;
 }
 
+void menu_input_dialog_display_kb(void)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   if (!menu_input)
+      return;
+   menu_input->keyboard.display = true; 
+}
+
+void menu_input_dialog_hide_kb(void)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   if (!menu_input)
+      return;
+   menu_input->keyboard.display = false; 
+}
+
 bool menu_input_dialog_start_search(void)
 {
    menu_handle_t      *menu = NULL;
