@@ -68,6 +68,7 @@ function dropboxInit()
 function dropboxSyncComplete()
 {
   document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnDrop').disabled = false;
   $('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
   $('#icnDrop').addClass('fa-dropbox');
   console.log("WEBPLAYER: Sync successful");
@@ -239,25 +240,7 @@ var Module =
   arguments: ["-v", "--menu"],
   preRun: [],
   postRun: [],
-  print: (function() 
-  {
-     var element = document.getElementById('output');
-     element.value = ''; // clear browser cache
-     return function(text) 
-     {
-        text = Array.prototype.slice.call(arguments).join(' ');
-        element.value += text + "\n";
-        element.scrollTop = 99999; // focus on bottom
-     };
-  })(),
-
-  printErr: function(text)
-  {
-     var text = Array.prototype.slice.call(arguments).join(' ');
-     var element = document.getElementById('output');
-     element.value += text + "\n";
-     element.scrollTop = 99999; // focus on bottom
-  },
+  
   canvas: document.getElementById('canvas'),
   totalDependencies: 0,
   monitorRunDependencies: function(left) 
