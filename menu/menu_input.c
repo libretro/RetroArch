@@ -23,9 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <compat/strl.h>
-#include <string/stdstring.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -543,29 +540,6 @@ void menu_input_post_iterate(int *ret, unsigned action)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
 }
 
-static unsigned menu_input_frame_pointer(unsigned *data)
-{
-   unsigned ret                            = *data;
-   settings_t *settings                    = config_get_ptr();
-   menu_input_t *menu_input                = menu_input_get_ptr();
-   bool mouse_enabled                      = settings->menu.mouse.enable;
-#ifdef HAVE_OVERLAY
-   if (!mouse_enabled)
-      mouse_enabled = !(settings->input.overlay_enable
-            && input_overlay_is_alive(NULL));
-#endif
-
-   if (!mouse_enabled)
-      menu_input->mouse.ptr = 0;
-
-   if (settings->menu.pointer.enable)
-      menu_input_pointer(&ret);
-   else
-      memset(&menu_input->pointer, 0, sizeof(menu_input->pointer));
-
-   return ret;
-}
-
 unsigned menu_event(retro_input_t input,
       retro_input_t trigger_input)
 {
@@ -575,6 +549,7 @@ unsigned menu_event(retro_input_t input,
    static bool initial_held                = true;
    static bool first_held                  = false;
    bool set_scroll                         = false;
+   bool mouse_enabled                      = false;
    size_t new_scroll_accel                 = 0;
    settings_t *settings                    = config_get_ptr();
    menu_input_t *menu_input                = menu_input_get_ptr();
@@ -710,5 +685,20 @@ unsigned menu_event(retro_input_t input,
    else if (trigger_input.state & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
 
-   return menu_input_frame_pointer(&ret);
+   mouse_enabled                      = settings->menu.mouse.enable;
+#ifdef HAVE_OVERLAY
+   if (!mouse_enabled)
+      mouse_enabled = !(settings->input.overlay_enable
+            && input_overlay_is_alive(NULL));
+#endif
+
+   if (!mouse_enabled)
+      menu_input->mouse.ptr = 0;
+
+   if (settings->menu.pointer.enable)
+      menu_input_pointer(&ret);
+   else
+      memset(&menu_input->pointer, 0, sizeof(menu_input->pointer));
+
+   return ret;
 }
