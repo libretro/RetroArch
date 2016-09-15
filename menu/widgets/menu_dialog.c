@@ -24,7 +24,7 @@
 #include "../../cheevos.h"
 #endif
 
-#include "menu_popup.h"
+#include "menu_dialog.h"
 
 #include "../menu_display.h"
 #include "../menu_driver.h"
@@ -35,11 +35,11 @@
 #include "../../input/input_autodetect.h"
 #include "../../input/input_config.h"
 
-static bool                menu_popup_pending_push   = false;
-static bool                 menu_popup_active       = false;
-static unsigned            menu_popup_current_id     = 0;
-static enum menu_popup_type menu_popup_current_type = MENU_POPUP_NONE;
-static enum msg_hash_enums  menu_popup_current_msg  = MSG_UNKNOWN;
+static bool                 menu_popup_pending_push   = false;
+static bool                 menu_popup_active         = false;
+static unsigned             menu_popup_current_id     = 0;
+static enum menu_popup_type menu_popup_current_type   = MENU_POPUP_NONE;
+static enum msg_hash_enums  menu_popup_current_msg    = MSG_UNKNOWN;
 
 int menu_popup_iterate(char *s, size_t len, const char *label)
 {
