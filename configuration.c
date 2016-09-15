@@ -912,7 +912,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
 #ifdef HAVE_NETPLAY
    SETTING_INT("netplay_ip_port",              &global->netplay.port, false, 0 /* TODO */, false);
    SETTING_INT("netplay_delay_frames",         &global->netplay.sync_frames, false, 16, false);
-   SETTING_INT("netplay_check_frames",         &global->netplay.check_frames, false, 60, false);
+   SETTING_INT("netplay_check_frames",         &global->netplay.check_frames, false, 0, false);
 #endif
 #ifdef HAVE_LANGEXTRA
    SETTING_INT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH, false);
