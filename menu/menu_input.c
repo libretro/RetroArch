@@ -40,7 +40,6 @@
 #include "menu_display.h"
 #include "menu_navigation.h"
 
-#include "../managers/cheat_manager.h"
 #include "../configuration.h"
 #include "../core.h"
 
