@@ -764,10 +764,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       bool spectate,
       const char *nick)
 {
-   uint32_t buffer_frames;
-   netplay_t *netplay = NULL;
-
-   netplay = (netplay_t*)calloc(1, sizeof(*netplay));
+   netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
       return NULL;
 
