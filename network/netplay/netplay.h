@@ -136,6 +136,7 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
  * @server               : IP address of server.
  * @port                 : Port of server.
  * @frames               : Amount of lag frames.
+ * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
  * @nick                 : Nickname of user.
@@ -146,7 +147,7 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
  * Returns: new netplay handle.
  **/
 netplay_t *netplay_new(const char *server,
-      uint16_t port, unsigned frames,
+      uint16_t port, unsigned frames, unsigned check_frames,
       const struct retro_callbacks *cb, bool spectate,
       const char *nick);
 

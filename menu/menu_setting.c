@@ -1675,6 +1675,17 @@ void general_write_handler(void *data)
          }
 #endif
          break;
+      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
+#ifdef HAVE_NETPLAY
+         {
+            bool val = (global->netplay.check_frames > 0);
+
+            if (val)
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+            else
+               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+         }
+#endif
       default:
          break;
    }
@@ -5813,6 +5824,21 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, 0, 10, 1, true, false);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &global->netplay.check_frames,
+                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES),
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 10, 1, true, false);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES);
 
             CONFIG_UINT(
                   list, list_info,

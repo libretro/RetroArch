@@ -28,8 +28,11 @@ static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *de
 {
    if (netplay_is_server(netplay))
    {
-      delta->crc = netplay_delta_frame_crc(netplay, delta);
-      netplay_cmd_crc(netplay, delta);
+      if (netplay->check_frames && delta->frame % netplay->check_frames == 0)
+      {
+         delta->crc = netplay_delta_frame_crc(netplay, delta);
+         netplay_cmd_crc(netplay, delta);
+      }
    }
    else if (delta->crc)
    {

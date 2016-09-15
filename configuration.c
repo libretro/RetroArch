@@ -911,7 +911,8 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETPLAY
    SETTING_INT("netplay_ip_port",              &global->netplay.port, false, 0 /* TODO */, false);
-   SETTING_INT("netplay_delay_frames",         &global->netplay.sync_frames, false, 0 /* TODO */, false);
+   SETTING_INT("netplay_delay_frames",         &global->netplay.sync_frames, false, 16, false);
+   SETTING_INT("netplay_check_frames",         &global->netplay.check_frames, false, 60, false);
 #endif
 #ifdef HAVE_LANGEXTRA
    SETTING_INT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH, false);
@@ -1788,6 +1789,8 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_NETPLAY
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES))
       CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_delay_frames");
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES))
+      CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_check_frames");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT))
       CONFIG_GET_INT_BASE(conf, global, netplay.port, "netplay_ip_port");
 #endif

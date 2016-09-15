@@ -161,6 +161,9 @@ struct netplay
    int stall;
    retro_time_t stall_time;
 
+   /* Frequency with which to check CRCs */
+   uint32_t check_frames;
+
    struct netplay_callbacks* net_cbs;
 };
 

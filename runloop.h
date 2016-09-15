@@ -228,6 +228,7 @@ typedef struct global
       bool is_client;
       bool is_spectate;
       unsigned sync_frames;
+      unsigned check_frames;
       unsigned port;
    } netplay;
 #endif

@@ -898,6 +898,7 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
  * @server               : IP address of server.
  * @port                 : Port of server.
  * @frames               : Amount of lag frames.
+ * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
  * @nick                 : Nickname of user.
@@ -908,9 +909,8 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
  * Returns: new netplay handle.
  **/
 netplay_t *netplay_new(const char *server, uint16_t port,
-      unsigned frames, const struct retro_callbacks *cb,
-      bool spectate,
-      const char *nick)
+      unsigned frames, unsigned check_frames, const struct retro_callbacks *cb,
+      bool spectate, const char *nick)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -923,6 +923,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    netplay->is_server         = server == NULL;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
    netplay->stall_frames = frames;
+   netplay->check_frames = check_frames;
 
    if(spectate)
       netplay->net_cbs = netplay_get_cbs_spectate();
@@ -1263,8 +1264,8 @@ bool init_netplay(void)
    netplay_data = (netplay_t*)netplay_new(
          global->netplay.is_client ? global->netplay.server : NULL,
          global->netplay.port ? global->netplay.port : RARCH_DEFAULT_PORT,
-         global->netplay.sync_frames, &cbs, global->netplay.is_spectate,
-         settings->username);
+         global->netplay.sync_frames, global->netplay.check_frames, &cbs,
+         global->netplay.is_spectate, settings->username);
 
    if (netplay_data)
       return true;
