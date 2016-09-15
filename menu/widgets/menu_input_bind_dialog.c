@@ -186,7 +186,6 @@ static void menu_input_key_bind_poll_bind_state_internal(
         joypad->poll();
 
     /* poll only the relevant port */
-    /* for (i = 0; i < settings->input.max_users; i++) */
     for (b = 0; b < MENU_MAX_BUTTONS; b++)
         state->state[port].buttons[b] =
            input_joypad_button_raw(joypad, port, b);
@@ -360,13 +359,9 @@ static bool menu_input_key_bind_poll_find_trigger(
                state, new_state, i))
          continue;
 
-      /* Update the joypad mapping automatically.
-       * More friendly that way. */
-#if 0
-      settings->input.joypad_map[state->user] = i;
-#endif
       return true;
    }
+
    return false;
 }
 
