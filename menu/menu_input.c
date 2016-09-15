@@ -38,17 +38,11 @@
 #include "menu_input.h"
 #include "menu_animation.h"
 #include "menu_display.h"
-#include "menu_setting.h"
-#include "menu_shader.h"
 #include "menu_navigation.h"
 
 #include "../managers/cheat_manager.h"
-#include "../performance_counters.h"
 #include "../configuration.h"
 #include "../core.h"
-#include "../input/input_joypad_driver.h"
-#include "../input/input_remapping.h"
-#include "../input/input_config.h"
 
 enum menu_mouse_action
 {
