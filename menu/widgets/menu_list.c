@@ -15,10 +15,6 @@
 
 #include <string.h>
 
-#include <retro_inline.h>
-#include <compat/strl.h>
-#include <string/stdstring.h>
-
 #include "menu_list.h"
 
 #include "../menu_driver.h"
