@@ -736,6 +736,15 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
    return true;
 }
 
+bool menu_input_dialog_get_display_kb(void)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   if (!menu_input)
+      return false;
+   return menu_input->keyboard.display; 
+}
+
 void menu_input_dialog_display_kb(void)
 {
    menu_input_t *menu_input = menu_input_get_ptr();
