@@ -31,7 +31,7 @@
 #include "../../../runloop.h"
 
 #ifdef HAVE_MENU
-#include "../../../menu/menu_entry.h"
+#include "../../../menu/widgets/menu_entry.h"
 #include "../../../menu/menu_navigation.h"
 #include "../../../menu/drivers/menu_generic.h"
 #endif
