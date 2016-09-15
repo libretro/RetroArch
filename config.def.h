@@ -650,10 +650,8 @@ static const bool font_enable = true;
  * disable VSync, and leave this at its default. */
 #ifdef _3DS
 static const float refresh_rate = (32730.0 * 8192.0) / 4481134.0 ;
-#elif defined(RARCH_CONSOLE)
-static const float refresh_rate = 60/1.001;
 #else
-static const float refresh_rate = 59.94;
+static const float refresh_rate = 60/1.001;
 #endif
 
 /* Allow games to set rotation. If false, rotation requests are
