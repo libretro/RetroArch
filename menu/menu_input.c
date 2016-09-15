@@ -190,12 +190,9 @@ void menu_input_st_uint_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
+      const char        *label = menu_input_dialog_get_label_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
 
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
-
-      setting = menu_setting_find(label);
       setting_set_with_string_representation(setting, str);
    }
 
@@ -206,12 +203,8 @@ void menu_input_st_hex_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
-
-      setting = menu_setting_find(label);
+      const char        *label = menu_input_dialog_get_label_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
 
       if (setting)
       {
@@ -648,6 +641,8 @@ bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox
 
 const char *menu_input_dialog_get_buffer(void)
 {
+   if (!(*menu_input_keyboard_buffer))
+      return "";
    return *menu_input_keyboard_buffer;
 }
 
@@ -707,18 +702,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          break;
       case MENU_INPUT_CTL_UNSET_POINTER_DRAGGED:
          pointer_dragging = false;
-         break;
-      case MENU_INPUT_CTL_KEYBOARD_LABEL:
-         {
-            const char **ptr = (const char**)data;
-            *ptr = menu_input_keyboard_label;
-         }
-         break;
-      case MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING:
-         {
-            const char **ptr = (const char**)data;
-            *ptr = menu_input_keyboard_label_setting;
-         }
          break;
       case MENU_INPUT_CTL_BIND_NONE:
       case MENU_INPUT_CTL_BIND_SINGLE:

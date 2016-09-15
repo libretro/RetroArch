@@ -2366,13 +2366,9 @@ static void xmb_frame(void *data)
 
    if (menu_input_dialog_get_display_kb())
    {
-      const char *label = NULL;
       const char *str   = menu_input_dialog_get_buffer();
+      const char *label = menu_input_dialog_get_label_buffer();
 
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
-
-      if (!str)
-         str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       render_background = true;
    }

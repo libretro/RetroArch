@@ -611,10 +611,8 @@ static void rgui_render(void *data)
 
    if (menu_input_dialog_get_display_kb())
    {
-      const char *label = NULL;
       const char *str   = menu_input_dialog_get_buffer();
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
+      const char *label = menu_input_dialog_get_label_buffer();
 
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       rgui_render_messagebox(msg);

@@ -1205,13 +1205,9 @@ static void mui_frame(void *data)
 
    if (menu_input_dialog_get_display_kb())
    {
-      const char *label = NULL;
       const char *str   = menu_input_dialog_get_buffer();
+      const char *label = menu_input_dialog_get_label_buffer();
 
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
-
-      if (!str)
-         str = "";
       mui_render_quad(mui, 0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       mui_render_messagebox(mui, msg, &body_bg_color[0], font_hover_color);

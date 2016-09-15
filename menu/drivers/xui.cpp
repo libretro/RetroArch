@@ -526,10 +526,10 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
 static void xui_render(void *data)
 {
    uint64_t *frame_count;
-   bool display_kb, msg_force;
    unsigned fb_width;
 	size_t end, i, selection;
 	char title[PATH_MAX_LENGTH] = {0};
+   bool msg_force              = false;
 	const char *dir             = NULL;
    const char *label           = NULL;
 	unsigned menu_type          = 0;
@@ -584,22 +584,18 @@ static void xui_render(void *data)
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
       xui_set_list_text(i, msg_left, msg_right);
    }
+
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
+
 	XuiListSetCurSelVisible(m_menulist, selection);
 
-   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
-
-   if (display_kb)
+   if (menu_input_dialog_get_display_kb())
 	{
 		char msg[1024]    = {0};
-      const char *label = NULL;
       const char *str   = menu_input_dialog_get_buffer();
+      const char *label = menu_input_dialog_get_label_buffer();
 
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
-
-		if (!str)
-			str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
 		xui_render_messagebox(msg);			
 	}
