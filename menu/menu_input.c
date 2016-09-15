@@ -629,11 +629,11 @@ bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox
 }
 
 static const char **menu_input_keyboard_buffer;
+static char menu_input_keyboard_label_setting[256];
+static const char *menu_input_keyboard_label = NULL;
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
-   static char menu_input_keyboard_label_setting[256];
-   static const char *menu_input_keyboard_label = NULL;
    static bool pointer_dragging                 = false;
    menu_input_t *menu_input                     = menu_input_get_ptr();
 
@@ -656,19 +656,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
       case MENU_INPUT_CTL_DEINIT:
          memset(menu_input, 0, sizeof(menu_input_t));
          pointer_dragging      = false;
-         break;
-      case MENU_INPUT_CTL_SEARCH_START:
-         {
-            menu_handle_t      *menu = NULL;
-            if (!menu_driver_ctl(
-                     RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-               return false;
-
-            menu_input->keyboard.display = true;
-            menu_input_keyboard_label    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
-            menu_input_keyboard_buffer   =
-               input_keyboard_start_line(menu, menu_input_search_cb);
-         }
          break;
       case MENU_INPUT_CTL_MOUSE_PTR:
          {
@@ -766,6 +753,23 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
       case MENU_INPUT_CTL_NONE:
          break;
    }
+
+   return true;
+}
+
+bool menu_input_dialog_start_search(void)
+{
+   bool keyboard_display    = true;
+   menu_handle_t      *menu = NULL;
+   if (!menu_driver_ctl(
+            RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return false;
+
+   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,
+         &keyboard_display);
+   menu_input_keyboard_label    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
+   menu_input_keyboard_buffer   =
+      input_keyboard_start_line(menu, menu_input_search_cb);
 
    return true;
 }

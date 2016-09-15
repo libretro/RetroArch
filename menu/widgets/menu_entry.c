@@ -402,7 +402,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
                   entry->label, entry->type, i);
          break;
       case MENU_ACTION_SEARCH:
-         menu_input_ctl(MENU_INPUT_CTL_SEARCH_START, NULL);
+         menu_input_dialog_start_search();
          break;
 
       case MENU_ACTION_SCAN:

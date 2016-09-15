@@ -85,7 +85,6 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING,
    MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING,
    MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING,
-   MENU_INPUT_CTL_SEARCH_START,
    MENU_INPUT_CTL_DEINIT,
    MENU_INPUT_CTL_BIND_NONE,
    MENU_INPUT_CTL_BIND_SINGLE,
@@ -116,6 +115,8 @@ typedef struct menu_input_ctx_line
    unsigned idx;
    input_keyboard_line_complete_t cb;
 } menu_input_ctx_line_t;
+
+bool menu_input_dialog_start_search(void);
 
 bool menu_input_dialog_start(menu_input_ctx_line_t *line);
 
