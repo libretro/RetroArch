@@ -138,13 +138,18 @@ static menu_input_t *menu_input_get_ptr(void)
    return &menu_input_state;
 }
 
+static const char **menu_input_keyboard_buffer;
+static char menu_input_keyboard_label_setting[256]  = {0};
+static const char *menu_input_keyboard_label        = NULL;
+
 void menu_input_dialog_end(void)
 {
    bool keyboard_display    = false;
 
    menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY, &keyboard_display);
-   menu_input_ctl(MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL, NULL);
-   menu_input_ctl(MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING, NULL);
+
+   menu_input_keyboard_label            = NULL;
+   menu_input_keyboard_label_setting[0] = '\0';
 
    /* Avoid triggering states on pressing return. */
    input_driver_set_flushing_input();
@@ -628,9 +633,6 @@ bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox
    return inside_hitbox;
 }
 
-static const char **menu_input_keyboard_buffer;
-static char menu_input_keyboard_label_setting[256];
-static const char *menu_input_keyboard_label = NULL;
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
@@ -719,9 +721,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             menu_input_keyboard_label = *ptr;
          }
          break;
-      case MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL:
-         menu_input_keyboard_label = NULL;
-         break;
       case MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING:
          {
             const char **ptr = (const char**)data;
@@ -734,9 +733,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             strlcpy(menu_input_keyboard_label_setting,
             *ptr, sizeof(menu_input_keyboard_label_setting));
          }
-         break;
-      case MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING:
-         menu_input_keyboard_label_setting[0] = '\0';
          break;
       case MENU_INPUT_CTL_BIND_NONE:
       case MENU_INPUT_CTL_BIND_SINGLE:
