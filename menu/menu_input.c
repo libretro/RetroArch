@@ -138,9 +138,20 @@ static menu_input_t *menu_input_get_ptr(void)
    return &menu_input_state;
 }
 
+
 static const char **menu_input_keyboard_buffer;
 static char menu_input_keyboard_label_setting[256]  = {0};
 static char menu_input_keyboard_label[256]          = {0};
+
+const char *menu_input_dialog_get_label_buffer(void)
+{
+   return menu_input_keyboard_label;
+}
+
+const char *menu_input_dialog_get_label_setting_buffer(void)
+{
+   return menu_input_keyboard_label_setting;
+}
 
 void menu_input_dialog_end(void)
 {

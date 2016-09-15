@@ -616,8 +616,6 @@ static void rgui_render(void *data)
 
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
 
-      if (!str)
-         str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       rgui_render_messagebox(msg);
    }

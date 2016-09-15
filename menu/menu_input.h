@@ -109,6 +109,10 @@ typedef struct menu_input_ctx_line
    input_keyboard_line_complete_t cb;
 } menu_input_ctx_line_t;
 
+const char *menu_input_dialog_get_label_setting_buffer(void);
+
+const char *menu_input_dialog_get_label_buffer(void);
+
 const char *menu_input_dialog_get_buffer(void);
 
 bool menu_input_dialog_start_search(void);
