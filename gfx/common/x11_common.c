@@ -306,9 +306,17 @@ static void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
 
 void x11_suspend_screensaver(Window wnd, bool enable)
 {
-    x11_suspend_screensaver_xdg_screensaver(wnd, enable);
 #ifdef HAVE_DBUS
     x11_suspend_screensaver_dbus(enable);
+    if (dbus_screensaver_cookie == 0)
+    {
+        // Only attempt xdg-screensaver method if dbus didn't succeed
+#endif
+
+        x11_suspend_screensaver_xdg_screensaver(wnd, enable);
+
+#ifdef HAVE_DBUS
+    }
 #endif
 }
 
