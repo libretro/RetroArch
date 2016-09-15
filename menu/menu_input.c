@@ -566,7 +566,7 @@ static unsigned menu_input_frame_pointer(unsigned *data)
    return ret;
 }
 
-unsigned menu_input_frame_retropad(retro_input_t input,
+unsigned menu_event(retro_input_t input,
       retro_input_t trigger_input)
 {
    menu_animation_ctx_delta_t delta;

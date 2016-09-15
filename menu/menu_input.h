@@ -87,7 +87,14 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
-unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_state);
+/* Send input code to menu for one frame.
+ *
+ * TODO/FIXME - needs to be overhauled so we can send multiple
+ * events per frame if we want to, and we shouldn't send the
+ * entire button state either but do a separate event per button
+ * state.
+ */
+unsigned menu_event(retro_input_t input, retro_input_t trigger_state);
 
 void menu_input_post_iterate(int *ret, unsigned action);
 
