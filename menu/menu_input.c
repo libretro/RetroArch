@@ -140,15 +140,17 @@ static menu_input_t *menu_input_get_ptr(void)
 
 static const char **menu_input_keyboard_buffer;
 static char menu_input_keyboard_label_setting[256]  = {0};
-static const char *menu_input_keyboard_label        = NULL;
+static char menu_input_keyboard_label[256]          = {0};
 
 void menu_input_dialog_end(void)
 {
-   bool keyboard_display    = false;
+   menu_input_t *menu_input = menu_input_get_ptr();
 
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY, &keyboard_display);
+   if (!menu_input)
+      return;
 
-   menu_input_keyboard_label            = NULL;
+   menu_input->keyboard.display         = false; 
+   menu_input_keyboard_label[0]         = '\0';
    menu_input_keyboard_label_setting[0] = '\0';
 
    /* Avoid triggering states on pressing return. */
@@ -697,12 +699,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             *ptr = menu_input->keyboard.display;
          }
          break;
-      case MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY:
-         {
-            bool *ptr = (bool*)data;
-            menu_input->keyboard.display = *ptr;
-         }
-         break;
       case MENU_INPUT_CTL_KEYBOARD_BUFF_PTR:
          {
             const char **ptr = (const char**)data;
@@ -715,23 +711,10 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             *ptr = menu_input_keyboard_label;
          }
          break;
-      case MENU_INPUT_CTL_SET_KEYBOARD_LABEL:
-         {
-            char **ptr = (char**)data;
-            menu_input_keyboard_label = *ptr;
-         }
-         break;
       case MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING:
          {
             const char **ptr = (const char**)data;
             *ptr = menu_input_keyboard_label_setting;
-         }
-         break;
-      case MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING:
-         {
-            char **ptr = (char**)data;
-            strlcpy(menu_input_keyboard_label_setting,
-            *ptr, sizeof(menu_input_keyboard_label_setting));
          }
          break;
       case MENU_INPUT_CTL_BIND_NONE:
@@ -755,15 +738,18 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
 bool menu_input_dialog_start_search(void)
 {
-   bool keyboard_display    = true;
    menu_handle_t      *menu = NULL;
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   if (!menu_input)
+      return false;
    if (!menu_driver_ctl(
             RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
 
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,
-         &keyboard_display);
-   menu_input_keyboard_label    = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
+   menu_input->keyboard.display = true; 
+   strlcpy(menu_input_keyboard_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+         sizeof(menu_input_keyboard_label));
    menu_input_keyboard_buffer   =
       input_keyboard_start_line(menu, menu_input_search_cb);
 
@@ -772,7 +758,6 @@ bool menu_input_dialog_start_search(void)
 
 bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 {
-   bool keyboard_display       = true;
    menu_handle_t    *menu      = NULL;
    menu_input_t *menu_input    = menu_input_get_ptr();
    if (!menu_input || !line)
@@ -780,12 +765,11 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
 
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,
-         &keyboard_display);
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL,
-         &line->label);
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING,
-         &line->label_setting);
+   menu_input->keyboard.display = true; 
+   strlcpy(menu_input_keyboard_label, line->label, 
+         sizeof(menu_input_keyboard_label));
+   strlcpy(menu_input_keyboard_label_setting,
+         line->label_setting, sizeof(menu_input_keyboard_label_setting));
 
    menu_input->keyboard.type   = line->type;
    menu_input->keyboard.idx    = line->idx;
