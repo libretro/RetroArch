@@ -661,8 +661,8 @@ static void mui_render_menu_list(mui_handle_t *mui,
       int y;
       size_t selection;
       char rich_label[PATH_MAX_LENGTH] = {0};
+      char entry_value[PATH_MAX_LENGTH] = {0};
       bool entry_selected = false;
-      menu_entry_t entry  = {{0}};
 
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
@@ -673,7 +673,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
             || ((y + (int)mui->line_height) < 0))
          continue;
 
-      menu_entry_get(&entry, 0, i, NULL, true);
+      menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
 
       entry_selected = selection == i;
@@ -687,7 +687,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
          entry_selected ? font_hover_color : font_normal_color, 
          entry_selected,
          rich_label, 
-         entry.value, 
+         entry_value, 
          menu_list_color
       ); 
    }
