@@ -125,6 +125,22 @@ Payload: None
 Description:
     Gracefully disconnect. Not used.
 
+Command: CRC
+Payload:
+    {
+       frame number: uint32
+       hash: uint32
+    }
+Description:
+    Informs the peer of the correct CRC hash for the specified frame. If the
+    receiver's hash doesn't match, they should send a REQUEST_SAVESTATE
+    command.
+
+Command: REQUEST_SAVESTATE
+Payload: None
+Description:
+    Requests that the peer send a savestate.
+
 Command: LOAD_SAVESTATE
 Payload:
     {
