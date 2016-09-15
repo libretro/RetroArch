@@ -22,17 +22,12 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "widgets/menu_list.h"
+
 #include "menu_setting.h"
 #include "menu_displaylist.h"
 
 RETRO_BEGIN_DECLS
-
-enum menu_list_type
-{
-   MENU_LIST_PLAIN = 0,
-   MENU_LIST_HORIZONTAL,
-   MENU_LIST_TABS
-};
 
 enum menu_entries_ctl_state
 {

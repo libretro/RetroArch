@@ -25,9 +25,14 @@
 #include <retro_common_api.h>
 #include <lists/file_list.h>
 
-#include "../menu_entries.h"
-
 RETRO_BEGIN_DECLS
+
+enum menu_list_type
+{
+   MENU_LIST_PLAIN = 0,
+   MENU_LIST_HORIZONTAL,
+   MENU_LIST_TABS
+};
 
 typedef struct menu_ctx_list
 {
