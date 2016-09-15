@@ -45,7 +45,11 @@ struct delta_frame
    bool used; /* a bit derpy, but this is how we know if the delta's been used at all */
    uint32_t frame;
 
+   /* The serialized state of the core at this frame, before input */
    void *state;
+
+   /* The CRC-32 of the serialized state if we've calculated it, else 0 */
+   uint32_t crc;
 
    uint32_t real_input_state[WORDS_PER_FRAME - 1];
    uint32_t simulated_input_state[WORDS_PER_FRAME - 1];
@@ -110,6 +114,13 @@ struct netplay
    /* Force a rewind to other_frame_count/other_ptr. This is for synchronized
     * events, such as player flipping or savestate loading. */
    bool force_rewind;
+
+   /* Force our state to be sent to the other side. Used when they request a
+    * savestate, to send at the next pre-frame. */
+   bool force_send_savestate;
+
+   /* Have we requested a savestate as a sync point? */
+   bool savestate_request_outstanding;
 
    /* A buffer for outgoing input packets. */
    uint32_t packet_buffer[2 + WORDS_PER_FRAME];
@@ -183,5 +194,11 @@ bool netplay_is_server(netplay_t* netplay);
 bool netplay_is_spectate(netplay_t* netplay);
 
 bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame);
+
+uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta);
+
+bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta);
+
+bool netplay_cmd_request_savestate(netplay_t *netplay);
 
 #endif

@@ -20,6 +20,8 @@
 #include "netplay_private.h"
 #include <net/net_socket.h>
 
+#include "compat/zlib.h"
+
 #include "../../movie.h"
 #include "../../msg_hash.h"
 #include "../../content.h"
@@ -364,4 +366,11 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, ui
    delta->frame = frame;
    delta->state = remember_state;
    return true;
+}
+
+uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta)
+{
+   if (!netplay->state_size)
+      return 0;
+   return crc32(0L, delta->state, netplay->state_size);
 }

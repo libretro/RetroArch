@@ -192,6 +192,22 @@ static bool netplay_cmd_nak(netplay_t *netplay)
    return netplay_send_raw_cmd(netplay, NETPLAY_CMD_NAK, NULL, 0);
 }
 
+bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta)
+{
+   uint32_t payload[2];
+   payload[0] = htonl(delta->frame);
+   payload[1] = htonl(delta->crc);
+   return netplay_send_raw_cmd(netplay, NETPLAY_CMD_CRC, payload, sizeof(payload));
+}
+
+bool netplay_cmd_request_savestate(netplay_t *netplay)
+{
+   if (netplay->savestate_request_outstanding)
+      return true;
+   netplay->savestate_request_outstanding = true;
+   return netplay_send_raw_cmd(netplay, NETPLAY_CMD_REQUEST_SAVESTATE, NULL, 0);
+}
+
 static bool netplay_get_cmd(netplay_t *netplay)
 {
    uint32_t cmd;
@@ -299,6 +315,72 @@ static bool netplay_get_cmd(netplay_t *netplay)
          warn_hangup();
          return true;
 
+      case NETPLAY_CMD_CRC:
+         {
+            uint32_t buffer[2];
+            size_t tmp_ptr = netplay->self_ptr;
+            bool found = false;
+
+            if (cmd_size != sizeof(buffer))
+            {
+               RARCH_ERR("NETPLAY_CMD_CRC received unexpected payload size.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            if (!socket_receive_all_blocking(netplay->fd, buffer, sizeof(buffer)))
+            {
+               RARCH_ERR("NETPLAY_CMD_CRC failed to receive payload.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            buffer[0] = ntohl(buffer[0]);
+            buffer[1] = ntohl(buffer[1]);
+
+            /* Received a CRC for some frame. If we still have it, check if it
+             * matched. This approach could be improved with some quick modular
+             * arithmetic. */
+            do {
+               if (netplay->buffer[tmp_ptr].frame == buffer[0])
+               {
+                  found = true;
+                  break;
+               }
+
+               tmp_ptr = PREV_PTR(tmp_ptr);
+            } while (tmp_ptr != netplay->self_ptr);
+
+            if (!found)
+            {
+               /* Oh well, we got rid of it! */
+               return true;
+            }
+
+            if (buffer[0] <= netplay->other_frame_count)
+            {
+               /* We've already replayed up to this frame, so we can check it
+                * directly */
+               uint32_t local_crc = netplay_delta_frame_crc(netplay, &netplay->buffer[tmp_ptr]);
+               if (buffer[1] != local_crc)
+               {
+                  /* Problem! */
+                  netplay_cmd_request_savestate(netplay);
+               }
+            }
+            else
+            {
+               /* We'll have to check it when we catch up */
+               netplay->buffer[tmp_ptr].crc = buffer[1];
+            }
+
+            return true;
+         }
+
+      case NETPLAY_CMD_REQUEST_SAVESTATE:
+         /* Delay until next frame so we don't send the savestate after the
+          * input */
+         netplay->force_send_savestate = true;
+         return true;
+
       case NETPLAY_CMD_LOAD_SAVESTATE:
          {
             uint32_t frame;
@@ -353,6 +435,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
             /* And force rewind to it */
             netplay->force_rewind = true;
+            netplay->savestate_request_outstanding = false;
             netplay->other_ptr = netplay->read_ptr;
             netplay->other_frame_count = frame;
             return true;
@@ -1072,7 +1155,6 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
    if (netplay->local_paused == paused)
       return;
 
-   fprintf(stderr, "Paused? %d\n", paused);
    netplay->local_paused = paused;
    if (netplay->has_connection)
       netplay_send_raw_cmd(netplay, paused ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
@@ -1082,10 +1164,11 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
  * netplay_load_savestate
  * @netplay              : pointer to netplay object
  * @serial_info          : the savestate being loaded
+ * @save                 : whether to save the provided serial_info into the frame buffer
  *
  * Inform Netplay of a savestate load and send it to the other side
  **/
-void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info)
+void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info, bool save)
 {
    uint32_t header[3];
 
@@ -1093,7 +1176,7 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
       return;
 
    /* Record it in our own buffer */
-   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
+   if (save && netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
    {
       if (serial_info->size <= netplay->state_size)
       {
@@ -1235,7 +1318,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_frontend_paused((netplay_t*)netplay_data, false);
          break;
       case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
-         netplay_load_savestate((netplay_t*)netplay_data, (retro_ctx_serialize_info_t*)data);
+         netplay_load_savestate((netplay_t*)netplay_data, (retro_ctx_serialize_info_t*)data, true);
          break;
       default:
       case RARCH_NETPLAY_CTL_NONE:

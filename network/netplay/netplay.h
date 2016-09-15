@@ -76,6 +76,12 @@ enum netplay_cmd
 
    /* Loading and synchronization */
 
+   /* Send the CRC hash of a frame's state */
+   NETPLAY_CMD_CRC            = 0x0010,
+
+   /* Request a savestate */
+   NETPLAY_CMD_REQUEST_SAVESTATE = 0x0011,
+
    /* Send a savestate for the client to load */
    NETPLAY_CMD_LOAD_SAVESTATE = 0x0012, 
 
@@ -187,10 +193,11 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused);
  * netplay_load_savestate
  * @netplay              : pointer to netplay object
  * @serial_info          : the savestate being loaded
+ * @save                 : whether to save the provided serial_info into the frame buffer
  *
  * Inform Netplay of a savestate load and send it to the other side
  **/
-void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info);
+void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info, bool save);
 
 /**
  * init_netplay:

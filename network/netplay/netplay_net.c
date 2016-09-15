@@ -24,6 +24,25 @@
 
 #include "../../autosave.h"
 
+static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *delta)
+{
+   if (netplay_is_server(netplay))
+   {
+      delta->crc = netplay_delta_frame_crc(netplay, delta);
+      netplay_cmd_crc(netplay, delta);
+   }
+   else if (delta->crc)
+   {
+      /* We have a remote CRC, so check it */
+      uint32_t local_crc = netplay_delta_frame_crc(netplay, delta);
+      if (local_crc != delta->crc)
+      {
+         /* Fix this! */
+         netplay_cmd_request_savestate(netplay);
+      }
+   }
+}
+
 /**
  * netplay_net_pre_frame:
  * @netplay              : pointer to netplay object
@@ -40,7 +59,17 @@ static void netplay_net_pre_frame(netplay_t *netplay)
       serial_info.data = netplay->buffer[netplay->self_ptr].state;
       serial_info.size = netplay->state_size;
 
-      if (!core_serialize(&serial_info))
+      if (core_serialize(&serial_info))
+      {
+         if (netplay->force_send_savestate)
+         {
+            /* Send this along to the other side */
+            serial_info.data_const = netplay->buffer[netplay->self_ptr].state;
+            netplay_load_savestate(netplay, &serial_info, false);
+            netplay->force_send_savestate = false;
+         }
+      }
+      else
       {
          /* If the core can't serialize properly, we must stall for the
           * remote input on EVERY frame, because we can't recover */
@@ -76,12 +105,13 @@ static void netplay_net_post_frame(netplay_t *netplay)
       while (netplay->other_frame_count < netplay->read_frame_count &&
             netplay->other_frame_count < netplay->self_frame_count)
       {
-         const struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
+         struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
 
          if (memcmp(ptr->simulated_input_state, ptr->real_input_state,
                   sizeof(ptr->real_input_state)) != 0
                && !ptr->used_real)
             break;
+         netplay_handle_frame_hash(netplay, ptr);
          netplay->other_ptr = NEXT_PTR(netplay->other_ptr);
          netplay->other_frame_count++;
       }
@@ -99,22 +129,22 @@ static void netplay_net_post_frame(netplay_t *netplay)
       netplay->replay_ptr = netplay->other_ptr;
       netplay->replay_frame_count = netplay->other_frame_count;
 
-      if (netplay->replay_frame_count < netplay->self_frame_count)
-      {
-         serial_info.data       = NULL;
-         serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
-         serial_info.size       = netplay->state_size;
+      serial_info.data       = NULL;
+      serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
+      serial_info.size       = netplay->state_size;
 
-         core_unserialize(&serial_info);
-      }
+      core_unserialize(&serial_info);
 
       while (netplay->replay_frame_count < netplay->self_frame_count)
       {
-         serial_info.data       = netplay->buffer[netplay->replay_ptr].state;
+         struct delta_frame *ptr = &netplay->buffer[netplay->replay_ptr];
+         serial_info.data       = ptr->state;
          serial_info.size       = netplay->state_size;
          serial_info.data_const = NULL;
 
          core_serialize(&serial_info);
+
+         netplay_handle_frame_hash(netplay, ptr);
 
 #if defined(HAVE_THREADS)
          autosave_lock();
@@ -177,7 +207,7 @@ static bool netplay_net_init_buffers(netplay_t *netplay)
 
    for (i = 0; i < netplay->buffer_size; i++)
    {
-      netplay->buffer[i].state = malloc(netplay->state_size);
+      netplay->buffer[i].state = calloc(netplay->state_size, 1);
 
       if (!netplay->buffer[i].state)
          return false;
