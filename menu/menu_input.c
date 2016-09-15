@@ -309,9 +309,14 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 #endif
          )
    {
-      /* HACK: Need to lie to avoid false hits if mouse is held when entering the RetroArch window */
-      /* this happens if, for example, someone double clicks the window border to maximize it */
-      /* the proper fix is, of course, triggering on WM_LBUTTONDOWN rather than this state change */
+      /* HACK: Need to lie to avoid false hits if mouse is held 
+       * when entering the RetroArch window. */
+
+      /* This happens if, for example, someone double clicks the 
+       * window border to maximize it.
+       *
+       * The proper fix is, of course, triggering on WM_LBUTTONDOWN 
+       * rather than this state change. */
       mouse_oldleft   = true;
       mouse_oldright  = true;
       return 0;
@@ -609,50 +614,17 @@ static unsigned menu_input_frame_pointer(unsigned *data)
    return ret;
 }
 
-static unsigned menu_input_frame_build(retro_input_t trigger_input)
-{
-   settings_t *settings = config_get_ptr();
-   unsigned ret         = MENU_ACTION_NOOP;
-
-   if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
-      ret = MENU_ACTION_UP;
-   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
-      ret = MENU_ACTION_DOWN;
-   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT))
-      ret = MENU_ACTION_LEFT;
-   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
-      ret = MENU_ACTION_RIGHT;
-   else if (trigger_input.state & (UINT64_C(1) << settings->menu_scroll_up_btn))
-      ret = MENU_ACTION_SCROLL_UP;
-   else if (trigger_input.state & (UINT64_C(1) << settings->menu_scroll_down_btn))
-      ret = MENU_ACTION_SCROLL_DOWN;
-   else if (trigger_input.state & (UINT64_C(1) << settings->menu_cancel_btn))
-      ret = MENU_ACTION_CANCEL;
-   else if (trigger_input.state & (UINT64_C(1) << settings->menu_ok_btn))
-      ret = MENU_ACTION_OK;
-   else if (trigger_input.state & (UINT64_C(1) << settings->menu_search_btn))
-      ret = MENU_ACTION_SEARCH;
-   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
-      ret = MENU_ACTION_SCAN;
-   else if (trigger_input.state & (UINT64_C(1) << settings->menu_default_btn))
-      ret = MENU_ACTION_START;
-   else if (trigger_input.state & (UINT64_C(1) << settings->menu_info_btn))
-      ret = MENU_ACTION_INFO;
-   else if (trigger_input.state & (UINT64_C(1) << RARCH_MENU_TOGGLE))
-      ret = MENU_ACTION_TOGGLE;
-
-   return menu_input_frame_pointer(&ret);
-}
-
 unsigned menu_input_frame_retropad(retro_input_t input,
       retro_input_t trigger_input)
 {
    menu_animation_ctx_delta_t delta;
    float delta_time;
+   unsigned ret                            = MENU_ACTION_NOOP;
    static bool initial_held                = true;
    static bool first_held                  = false;
    bool set_scroll                         = false;
    size_t new_scroll_accel                 = 0;
+   settings_t *settings                    = config_get_ptr();
    menu_input_t *menu_input                = menu_input_get_ptr();
 
    if (!menu_input)
@@ -759,5 +731,32 @@ unsigned menu_input_frame_retropad(retro_input_t input,
       trigger_input.state = 0;
    }
 
-   return menu_input_frame_build(trigger_input);
+   if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
+      ret = MENU_ACTION_UP;
+   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
+      ret = MENU_ACTION_DOWN;
+   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      ret = MENU_ACTION_LEFT;
+   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      ret = MENU_ACTION_RIGHT;
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_scroll_up_btn))
+      ret = MENU_ACTION_SCROLL_UP;
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_scroll_down_btn))
+      ret = MENU_ACTION_SCROLL_DOWN;
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_cancel_btn))
+      ret = MENU_ACTION_CANCEL;
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_ok_btn))
+      ret = MENU_ACTION_OK;
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_search_btn))
+      ret = MENU_ACTION_SEARCH;
+   else if (trigger_input.state & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
+      ret = MENU_ACTION_SCAN;
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_default_btn))
+      ret = MENU_ACTION_START;
+   else if (trigger_input.state & (UINT64_C(1) << settings->menu_info_btn))
+      ret = MENU_ACTION_INFO;
+   else if (trigger_input.state & (UINT64_C(1) << RARCH_MENU_TOGGLE))
+      ret = MENU_ACTION_TOGGLE;
+
+   return menu_input_frame_pointer(&ret);
 }
