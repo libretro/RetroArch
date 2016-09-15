@@ -753,6 +753,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
          settings->directory.thumbnails,
          xmb->title_name,
          sizeof(xmb->thumbnail_file_path));
+
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
@@ -760,8 +761,9 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    if (tmp)
    {
-      fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
-            tmp, sizeof(xmb->thumbnail_file_path));
+      char tmp_new[PATH_MAX_LENGTH];
+      fill_pathname_join(tmp_new, xmb->thumbnail_file_path, tmp, sizeof(tmp_new));
+      strlcpy(xmb->thumbnail_file_path, tmp_new, sizeof(xmb->thumbnail_file_path));
       free(tmp);
    }
 
