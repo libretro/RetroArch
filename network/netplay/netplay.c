@@ -342,8 +342,13 @@ static bool netplay_get_cmd(netplay_t *netplay)
             /* Skip ahead if it's past where we are */
             if (frame > netplay->self_frame_count)
             {
-               netplay->self_ptr = netplay->read_ptr;
-               netplay->self_frame_count = frame;
+               /* This is squirrely: We need to assure that when we advance the
+                * frame in post_frame, THEN we're referring to the frame to
+                * load into. If we refer directly to read_ptr, then we'll end
+                * up never reading the input for read_frame_count itself, which
+                * will make the other side unhappy. */
+               netplay->self_ptr = PREV_PTR(netplay->read_ptr);
+               netplay->self_frame_count = frame - 1;
             }
 
             /* And force rewind to it */
