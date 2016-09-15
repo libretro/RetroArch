@@ -24,6 +24,7 @@
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 #include "../widgets/menu_dialog.h"
+#include "../widgets/menu_input_bind_dialog.h"
 
 #include "../../verbosity.h"
 #include "../../runloop.h"

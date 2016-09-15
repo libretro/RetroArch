@@ -92,17 +92,6 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
-typedef struct menu_input_ctx_bind
-{
-   char *s;
-   size_t len;
-} menu_input_ctx_bind_t;
-
-typedef struct menu_input_ctx_bind_limits
-{
-   unsigned min;
-   unsigned max;
-} menu_input_ctx_bind_limits_t;
 
 /* Keyboard input callbacks */
 void menu_input_st_uint_cb  (void *userdata, const char *str);

@@ -42,6 +42,8 @@
 
 #include "../frontend/frontend_driver.h"
 
+#include "widgets/menu_input_bind_dialog.h"
+
 #include "menu_setting.h"
 #include "menu_driver.h"
 #include "menu_animation.h"

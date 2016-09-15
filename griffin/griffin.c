@@ -895,6 +895,7 @@ MENU
 #include "../menu/widgets/menu_entry.c"
 #include "../menu/widgets/menu_dialog.c"
 #include "../menu/widgets/menu_input_dialog.c"
+#include "../menu/widgets/menu_input_bind_dialog.c"
 #include "../menu/widgets/menu_list.c"
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"
