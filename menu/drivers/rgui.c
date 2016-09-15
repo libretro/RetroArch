@@ -42,6 +42,8 @@
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 
+#include "../widgets/menu_input_dialog.h"
+
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"

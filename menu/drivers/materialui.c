@@ -45,6 +45,8 @@
 #include "../menu_navigation.h"
 #include "../menu_display.h"
 
+#include "../widgets/menu_input_dialog.h"
+
 #include "../../core_info.h"
 #include "../../core.h"
 #include "../../configuration.h"
