@@ -22,6 +22,7 @@
 #include "menu_list.h"
 
 #include "../menu_driver.h"
+#include "../menu_navigation.h"
 
 struct menu_list
 {
@@ -131,4 +132,84 @@ size_t menu_list_get_stack_size(menu_list_t *list, size_t idx)
    if (!list)
       return 0;
    return file_list_get_size(list->menu_stack[idx]);
+}
+
+static int menu_list_flush_stack_type(const char *needle, const char *label,
+      unsigned type, unsigned final_type)
+{
+   return needle ? strcmp(needle, label) : (type != final_type);
+}
+
+void menu_list_flush_stack(menu_list_t *list,
+      size_t idx, const char *needle, unsigned final_type)
+{
+   bool refresh           = false;
+   const char *path       = NULL;
+   const char *label      = NULL;
+   unsigned type          = 0;
+   size_t entry_idx       = 0;
+   file_list_t *menu_list = menu_list_get(list, idx);
+   if (!list)
+      return;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   menu_entries_get_last(menu_list,
+         &path, &label, &type, &entry_idx);
+
+   while (menu_list_flush_stack_type(
+            needle, label, type, final_type) != 0)
+   {
+      size_t new_selection_ptr;
+
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION,
+            &new_selection_ptr);
+
+      if (!menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
+         break;
+
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
+            &new_selection_ptr);
+
+      menu_list = menu_list_get(list, idx);
+
+      menu_entries_get_last(menu_list,
+            &path, &label, &type, &entry_idx);
+   }
+}
+
+bool menu_list_pop_stack(menu_list_t *list,
+      size_t idx, size_t *directory_ptr, bool animate)
+{
+   menu_ctx_list_t list_info;
+   bool refresh           = false;
+   file_list_t *menu_list = menu_list_get(list, idx);
+   if (!list)
+      return false;
+
+   if (menu_list_get_stack_size(list, idx) <= 1)
+      return false;
+
+   list_info.type   = MENU_LIST_PLAIN;
+   list_info.action = 0;
+
+   if (animate)
+      menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+
+   if (menu_list->size != 0)
+   {
+      menu_ctx_list_t list_info;
+
+      list_info.list      = menu_list;
+      list_info.idx       = menu_list->size - 1;
+      list_info.list_size = menu_list->size - 1;
+
+      menu_driver_ctl(RARCH_MENU_CTL_LIST_FREE, &list_info);
+   }
+
+   file_list_pop(menu_list, directory_ptr);
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_SET_SELECTION, menu_list);
+   if (animate)
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+
+   return true;
 }

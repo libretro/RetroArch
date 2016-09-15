@@ -57,6 +57,12 @@ file_list_t *menu_list_get_selection(menu_list_t *list, unsigned idx);
 
 size_t menu_list_get_stack_size(menu_list_t *list, size_t idx);
 
+void menu_list_flush_stack(menu_list_t *list,
+      size_t idx, const char *needle, unsigned final_type);
+
+bool menu_list_pop_stack(menu_list_t *list,
+      size_t idx, size_t *directory_ptr, bool animate);
+
 RETRO_END_DECLS
 
 #endif
