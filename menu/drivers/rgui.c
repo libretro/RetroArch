@@ -582,7 +582,7 @@ static void rgui_render(void *data)
       entry_title_buf[0] = '\0';
       type_str_buf[0]    = '\0';
 
-      menu_entry_get_value(i, entry_value, sizeof(entry_value));
+      menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label(i, entry_path, sizeof(entry_path));
 
       ticker.s        = entry_title_buf;

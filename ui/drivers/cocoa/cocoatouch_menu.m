@@ -121,7 +121,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                                     reuseIdentifier:cell_id];
 
   menu_entry_get_path(self.i, label, sizeof(label));
-  menu_entry_get_value(self.i, buffer, sizeof(buffer));
+  menu_entry_get_value(self.i, NULL, buffer, sizeof(buffer));
 
   result.textLabel.text = BOXSTRING(label);
 

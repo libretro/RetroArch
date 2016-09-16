@@ -1805,7 +1805,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          fill_short_pathname_representation(entry.path, entry.path,
                sizeof(entry.path));
 
-      menu_entry_get_value(i, entry_value, sizeof(entry_value));
+      menu_entry_get_value(i, list, entry_value, sizeof(entry_value));
 
       if (string_is_equal(entry_value, "disabled") ||
             string_is_equal(entry_value, "off"))

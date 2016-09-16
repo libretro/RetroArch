@@ -675,7 +675,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
             || ((y + (int)mui->line_height) < 0))
          continue;
 
-      menu_entry_get_value(i, entry_value, sizeof(entry_value));
+      menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
 
       entry_selected = selection == i;

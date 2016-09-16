@@ -525,19 +525,14 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
 
 static void xui_render(void *data)
 {
-   uint64_t *frame_count;
-   unsigned fb_width;
 	size_t end, i, selection;
 	char title[PATH_MAX_LENGTH] = {0};
-   bool msg_force              = false;
 	const char *dir             = NULL;
    const char *label           = NULL;
 	unsigned menu_type          = 0;
-
-   frame_count = video_driver_get_frame_count_ptr();
-
-   fb_width = menu_display_get_width();
-   msg_force = menu_display_get_msg_force();
+   uint64_t *frame_count       = video_driver_get_frame_count_ptr();
+   unsigned           fb_width = menu_display_get_width();
+   bool              msg_force = menu_display_get_msg_force();
 
    if (
          menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
@@ -577,7 +572,7 @@ static void xui_render(void *data)
       wchar_t msg_right[PATH_MAX_LENGTH]   = {0};
       wchar_t msg_left[PATH_MAX_LENGTH]    = {0};
 
-      menu_entry_get_value(i, entry_value, sizeof(entry_value));
+      menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
       mbstowcs(msg_left,  entry_path,  sizeof(msg_left)  / sizeof(wchar_t));
