@@ -38,6 +38,16 @@ struct gl_cached_state
       GLuint *ids;
    } bind_textures;
 
+   struct
+   {
+      bool used[MAX_ATTRIB];
+      GLint size[MAX_ATTRIB];
+      GLenum type[MAX_ATTRIB];
+      GLboolean normalized[MAX_ATTRIB];
+      GLsizei stride[MAX_ATTRIB];
+      const GLvoid *pointer[MAX_ATTRIB];
+   } attrib_pointer;
+
 #ifndef HAVE_OPENGLES
    GLenum colorlogicop;
 #endif
@@ -1212,6 +1222,12 @@ void rglVertexAttribPointer(GLuint name, GLint size,
       GLenum type, GLboolean normalized, GLsizei stride,
       const GLvoid* pointer)
 {
+   gl_state.attrib_pointer.used[name] = 1;
+   gl_state.attrib_pointer.size[name] = size;
+   gl_state.attrib_pointer.type[name] = type;
+   gl_state.attrib_pointer.normalized[name] = normalized;
+   gl_state.attrib_pointer.stride[name] = stride;
+   gl_state.attrib_pointer.pointer[name] = pointer;
    glVertexAttribPointer(name, size, type, normalized, stride, pointer);
 }
 
@@ -1920,7 +1936,10 @@ static void glsm_state_setup(void)
 #endif
 
    for (i = 0; i < MAX_ATTRIB; i++)
+   {
       gl_state.vertex_attrib_pointer.enabled[i] = 0;
+      gl_state.attrib_pointer.used[i] = 0;
+   }
 
    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &glsm_max_textures);
 
@@ -1967,6 +1986,17 @@ static void glsm_state_bind(void)
          glEnableVertexAttribArray(i);
       else
          glDisableVertexAttribArray(i);
+
+      if (gl_state.attrib_pointer.used[i])
+      {
+         glVertexAttribPointer(
+               i,
+               gl_state.attrib_pointer.size[i],
+               gl_state.attrib_pointer.type[i],
+               gl_state.attrib_pointer.normalized[i],
+               gl_state.attrib_pointer.stride[i],
+               gl_state.attrib_pointer.pointer[i]);
+      }
    }
 
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
