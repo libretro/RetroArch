@@ -436,9 +436,9 @@ void CORE_PREFIX(retro_run)(void)
    double min_pts;
    int16_t audio_buffer[2048];
    bool left, right, up, down, l, r;
-   size_t to_read_frames = 0;
-   int seek_frames = 0;
-   bool updated = false;
+   size_t to_read_frames        = 0;
+   int seek_frames              = 0;
+   bool updated                 = false;
 #ifdef HAVE_GL_FFT
    unsigned old_fft_width       = fft_width;
    unsigned old_fft_height      = fft_height;
@@ -1172,12 +1172,10 @@ static void decode_thread(void *data)
    (void)data;
    
    if (video_stream >= 0)
-   {
       sws = sws_getCachedContext(NULL,
             media.width, media.height, vctx->pix_fmt,
             media.width, media.height, PIX_FMT_RGB32,
             SWS_POINT, NULL, NULL, NULL);
-   }
 
    for (i = 0; (int)i < audio_streams_num; i++)
    {
