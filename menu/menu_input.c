@@ -181,70 +181,12 @@ static int menu_event_pointer(unsigned *action)
    return 0;
 }
 
-static int menu_input_mouse_frame(
-      menu_file_list_cbs_t *cbs, menu_entry_t *entry,
-      uint64_t input_mouse, unsigned action)
-{
-   int ret                  = 0;
-   menu_input_t *menu_input = menu_input_get_ptr();
-
-   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_BUTTON_L))
-   {
-      menu_ctx_pointer_t point;
-
-      point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-      point.ptr    = menu_input->mouse.ptr;
-      point.cbs    = cbs;
-      point.entry  = entry;
-      point.action = action;
-
-      menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
-
-      ret = point.retcode;
-   }
-
-   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_BUTTON_R))
-   {
-      size_t selection;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-      menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
-   }
-
-   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_WHEEL_DOWN))
-   {
-      unsigned increment_by = 1;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, &increment_by);
-   }
-
-   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_WHEEL_UP))
-   {
-      unsigned decrement_by = 1;
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
-   }
-
-   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_UP))
-   {
-      /* stub */
-   }
-
-   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN))
-   {
-      /* stub */
-   }
-
-   return ret;
-}
-
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       menu_file_list_cbs_t *cbs, unsigned action)
 {
    settings_t *settings       = config_get_ptr();
    static bool mouse_oldleft  = false;
    static bool mouse_oldright = false;
-
-   *input_mouse = MENU_MOUSE_ACTION_NONE;
-
 
    if (
          !settings->menu.mouse.enable
@@ -325,6 +267,67 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
    return 0;
 }
+
+static int menu_input_mouse_frame(
+      menu_file_list_cbs_t *cbs, menu_entry_t *entry,
+      unsigned action)
+{
+   uint64_t mouse_state     = MENU_MOUSE_ACTION_NONE;
+   int ret                  = 0;
+   settings_t *settings     = config_get_ptr();
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   if (settings->menu.mouse.enable)
+      ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action);
+
+   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_L))
+   {
+      menu_ctx_pointer_t point;
+
+      point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      point.ptr    = menu_input->mouse.ptr;
+      point.cbs    = cbs;
+      point.entry  = entry;
+      point.action = action;
+
+      menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
+
+      ret = point.retcode;
+   }
+
+   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_R))
+   {
+      size_t selection;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+      menu_entry_action(entry, selection, MENU_ACTION_CANCEL);
+   }
+
+   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_DOWN))
+   {
+      unsigned increment_by = 1;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, &increment_by);
+   }
+
+   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_WHEEL_UP))
+   {
+      unsigned decrement_by = 1;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
+   }
+
+   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_HORIZ_WHEEL_UP))
+   {
+      /* stub */
+   }
+
+   if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN))
+   {
+      /* stub */
+   }
+
+   return ret;
+}
+
 
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
 {
@@ -512,7 +515,6 @@ static int menu_input_pointer_post_iterate(
 void menu_input_post_iterate(int *ret, unsigned action)
 {
    size_t selection;
-   uint64_t mouse_state       = 0;
    menu_file_list_cbs_t *cbs  = NULL;
    menu_entry_t entry         = {{0}};
    settings_t *settings       = config_get_ptr();
@@ -526,10 +528,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
    menu_entry_get(&entry, 0, selection, NULL, false);
 
-   if (settings->menu.mouse.enable)
-      *ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action);
-
-   *ret = menu_input_mouse_frame(cbs, &entry, mouse_state, action);
+   *ret = menu_input_mouse_frame(cbs, &entry, action);
 
    if (settings->menu.pointer.enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
