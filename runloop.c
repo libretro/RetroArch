@@ -1577,7 +1577,6 @@ int runloop_iterate(unsigned *sleep_ms)
       /* FIXME: This is an ugly way to tell Netplay this... */
       netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
-      core_poll();
       *sleep_ms = 10;
       return 1;
    }
@@ -1590,7 +1589,6 @@ int runloop_iterate(unsigned *sleep_ms)
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
    {
       /* Paused due to Netplay */
-      core_poll();
       *sleep_ms = 10;
       return 1;
    }
