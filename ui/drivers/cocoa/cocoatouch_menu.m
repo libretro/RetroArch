@@ -429,7 +429,7 @@ replacementString:(NSString *)string
    field          = [alertView textFieldAtIndex:0];
    field.delegate = self.formatter;
 
-   menu_entry_get_value(self.i, buffer, sizeof(buffer));
+   menu_entry_get_value(self.i, NULL, buffer, sizeof(buffer));
    if (string_is_empty(buffer))
       strlcpy(buffer,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
