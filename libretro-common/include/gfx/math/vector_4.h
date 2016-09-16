@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (vector_3.c).
+ * The following license statement only applies to this file (vector_4.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,68 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifndef __LIBRETRO_SDK_GFX_MATH_VECTOR_4_H__
+#define __LIBRETRO_SDK_GFX_MATH_VECTOR_4_H__
+
 #include <stdint.h>
-#include <math.h>
 
-#include <gfx/math/vector_3.h>
+typedef float vec4_t[4];
 
-float vec3_dot(const float *a, const float *b) 
-{
-	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
+void vec4_add(float *dst, const float *src);
 
-void vec3_cross(float* dst, const float *a, const float *b) 
-{
-   dst[0] = a[1]*b[2] - a[2]*b[1];
-   dst[1] = a[2]*b[0] - a[0]*b[2];
-   dst[2] = a[0]*b[1] - a[1]*b[0];
-}
+void vec4_subtract(float *dst, const float *src);
 
-float vec3_length(const float *a)
-{
-	float length_sq     = vec3_dot(a,a);
-	float length        = sqrtf(length_sq);
-	return length;
-}
+void vec4_scale(float *dst, const float scale);
 
-void vec3_add(float *dst, const float *src)
-{
-   unsigned i;
-   unsigned n = 3;
+void vec4_copy(float *dst, const float *src);
 
-   for (i = 0; i < n; i++)
-      dst[i] += src[i];
-}
+#endif
 
-void vec3_subtract(float *dst, const float *src)
-{
-   unsigned i;
-   unsigned n = 3;
-
-   for (i = 0; i < n; i++)
-      dst[i] -= src[i];
-}
-
-void vec3_scale(float *dst, const float scale)
-{
-   unsigned i;
-   unsigned n = 3;
-
-   for (i = 0; i < n; i++)
-      dst[i] *= scale;
-}
-
-void vec3_copy(float *dst, const float *src)
-{
-   unsigned i;
-   unsigned n = 3;
-
-   for (i = 0; i < n; i++)
-      dst[i] = src[i];
-}
-
-void vec3_normalize(float *dst)
-{
-	float length = vec3_length(dst);
-	vec3_scale(dst,1.0f/length);
-}

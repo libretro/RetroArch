@@ -37,18 +37,27 @@ float vec2_cross(const float *a, const float *b)
 
 void vec2_add(float *dst, const float *src)
 {
-	dst[0] += src[0];
-	dst[1] += src[1];
+   unsigned i;
+   unsigned n = 2;
+
+   for (i = 0; i < n; i++)
+      dst[i] += src[i];
 }
 
 void vec2_subtract(float *dst, const float *src)
 {
-	dst[0] -= src[0];
-	dst[1] -= src[1];
+   unsigned i;
+   unsigned n = 2;
+
+   for (i = 0; i < n; i++)
+      dst[i] -= src[i];
 }
 
 void vec2_copy(float *dst, const float *src)
 {
-	dst[0] = src[0];
-	dst[1] = src[1];
+   unsigned i;
+   unsigned n = 2;
+
+   for (i = 0; i < n; i++)
+      dst[i] = src[i];
 }
