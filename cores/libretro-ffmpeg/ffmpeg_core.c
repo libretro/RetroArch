@@ -272,10 +272,10 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    static const struct retro_variable vars[] = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; enabled|disabled" },
-#endif
 #ifdef HAVE_GL_FFT
       { "ffmpeg_fft_resolution", "GLFFT Resolution; 1280x720|1920x1080|640x360|320x180" },
       { "ffmpeg_fft_multisample", "GLFFT Multisample; 1x|2x|4x" },
+#endif
 #endif
       { "ffmpeg_color_space", "Colorspace; auto|BT.709|BT.601|FCC|SMPTE240M" },
       { NULL, NULL },
@@ -343,7 +343,6 @@ static void check_variables(void)
       else if (!strcmp(var.value, "disabled"))
          temporal_interpolation = false;
    }
-#endif
 
 #ifdef HAVE_GL_FFT
    fft_var.key = "ffmpeg_fft_resolution";
@@ -365,6 +364,7 @@ static void check_variables(void)
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &fft_ms_var) && fft_ms_var.value)
       fft_multisample = strtoul(fft_ms_var.value, NULL, 0);
+#endif
 #endif
 
    color_var.key = "ffmpeg_color_space";
