@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -82,7 +83,7 @@ frontend_ctx_driver_t *frontend_ctx_find_driver(const char *ident)
 
    for (i = 0; frontend_ctx_drivers[i]; i++)
    {
-      if (!strcmp(frontend_ctx_drivers[i]->ident, ident))
+      if (string_is_equal(frontend_ctx_drivers[i]->ident, ident))
          return frontend_ctx_drivers[i];
    }
 

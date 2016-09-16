@@ -133,7 +133,7 @@ static void salamander_init(char *s, size_t len)
          config_get_array(conf, "libretro_path", tmp_str, sizeof(tmp_str));
          config_file_free(conf);
 
-         if (strcmp(tmp_str, "builtin") != 0)
+         if (!string_is_equal(tmp_str, "builtin"))
             strlcpy(s, tmp_str, len);
       }
 #ifdef GEKKO
@@ -146,7 +146,7 @@ static void salamander_init(char *s, size_t len)
 #endif
    }
 
-   if (!config_file_exists || !strcmp(s, ""))
+   if (!config_file_exists || string_is_equal(s, ""))
    {
       char executable_name[PATH_MAX_LENGTH];
 
