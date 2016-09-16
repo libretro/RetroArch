@@ -182,10 +182,12 @@ static void dbus_screensaver_uninhibit(void)
    dbus_screensaver_cookie = 0;
 }
 
-void x11_suspend_screensaver_dbus(bool enable)
+/* Returns false when fallback should be attempted */
+bool x11_suspend_screensaver_dbus(bool enable)
 {
-   if (enable) dbus_screensaver_inhibit();
-   if (!enable) dbus_screensaver_uninhibit();
+   if (enable) return dbus_screensaver_inhibit();
+   dbus_screensaver_uninhibit();
+   return false;
 }
 #endif
 
@@ -346,10 +348,11 @@ void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
 
 void x11_suspend_screensaver(Window wnd, bool enable)
 {
-    x11_suspend_screensaver_xdg_screensaver(wnd, enable);
 #ifdef HAVE_DBUS
-    x11_suspend_screensaver_dbus(enable);
+    /* Fall-through */
+    if (!x11_suspend_screensaver_dbus(enable))
 #endif
+    x11_suspend_screensaver_xdg_screensaver(wnd, enable);
 }
 
 static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
