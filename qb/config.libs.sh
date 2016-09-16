@@ -41,7 +41,7 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    [ -d /opt/vc/include ] && add_include_dirs /opt/vc/include
    [ -d /opt/vc/include/interface/vcos/pthreads ] && add_include_dirs /opt/vc/include/interface/vcos/pthreads
    [ -d /opt/vc/include/interface/vmcs_host/linux ] && add_include_dirs /opt/vc/include/interface/vmcs_host/linux
-   HAVE_GLES='auto'
+   HAVE_OPENGLES='auto'
    EXTRA_GL_LIBS="-lEGL -lGLESv2 -lbcm_host -lvcos -lvchiq_arm"
 fi
 
@@ -255,7 +255,7 @@ else
    HAVE_D3D9=no
 fi
 
-if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_GLES" != 'yes' ]; then
+if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_header OPENGL "OpenGL/gl.h"
       check_lib OPENGL "-framework OpenGL"
@@ -338,14 +338,14 @@ fi
 check_pkgconf LIBXML2 libxml-2.0
 
 if [ "$HAVE_EGL" = "yes" ]; then
-   if [ "$HAVE_GLES" != "no" ]; then
+   if [ "$HAVE_OPENGLES" != "no" ]; then
       if [ "$GLES_LIBS" ] || [ "$GLES_CFLAGS" ]; then
          echo "Notice: Using custom OpenGLES CFLAGS ($GLES_CFLAGS) and LDFLAGS ($GLES_LIBS)."
          add_define_make GLES_LIBS "$GLES_LIBS"
          add_define_make GLES_CFLAGS "$GLES_CFLAGS"
       else
-         HAVE_GLES=auto check_pkgconf GLES glesv2
-         [ "$HAVE_GLES" = "no" ] && HAVE_GLES=auto check_lib GLES "-lGLESv2 $EXTRA_GL_LIBS" && add_define_make GLES_LIBS "-lGLESv2 $EXTRA_GL_LIBS"
+         HAVE_OPENGLES=auto check_pkgconf GLES glesv2
+         [ "$HAVE_OPENGLES" = "no" ] && HAVE_OPENGLES=auto check_lib GLES "-lGLESv2 $EXTRA_GL_LIBS" && add_define_make GLES_LIBS "-lGLESv2 $EXTRA_GL_LIBS"
       fi
    fi
    if [ "$HAVE_VG" != "no" ]; then
@@ -357,7 +357,7 @@ if [ "$HAVE_EGL" = "yes" ]; then
    fi
 else
    HAVE_VG=no
-   HAVE_GLES=no
+   HAVE_OPENGLES=no
 fi
 
 check_pkgconf V4L2 libv4l2
@@ -367,7 +367,7 @@ if [ "$OS" = 'Darwin' ]; then
 elif [ "$OS" = 'Win32' ]; then
    HAVE_FBO=yes
 else
-   if [ "$HAVE_GLES" = "yes" ]; then
+   if [ "$HAVE_OPENGLES" = "yes" ]; then
       [ $HAVE_FBO != "no" ] && HAVE_FBO=yes
    else
       check_lib FBO -lGL glFramebufferTexture2D
@@ -434,7 +434,7 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
 		HAVE_XMB=no
       HAVE_ZARCH=no
 		echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled."
-	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_GLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
+	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_OPENGLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
 		HAVE_MATERIALUI=no
 		HAVE_XMB=no
       HAVE_ZARCH=no
