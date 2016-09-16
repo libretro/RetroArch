@@ -81,7 +81,7 @@ static void dbus_ensure_connection(void)
         dbus_error_free(&err);
     }
 
-    if (dbus_connection != NULL)
+    if (dbus_connection)
         dbus_connection_set_exit_on_disconnect(dbus_connection, true);
 }
 
@@ -97,61 +97,62 @@ static void dbus_close_connection(void)
 
 static bool dbus_screensaver_inhibit(void)
 {
-    const char *app    = "RetroArch";
-    const char *reason = "Playing a game";
-    DBusMessage   *msg = NULL;
-    DBusMessage *reply = NULL;
-    bool ret = false;
+   const char *app    = "RetroArch";
+   const char *reason = "Playing a game";
+   DBusMessage   *msg = NULL;
+   DBusMessage *reply = NULL;
+   bool ret           = false;
 
-    if (dbus_connection == NULL)
-        return false; /* DBus connection was not obtained */
+   if (!dbus_connection)
+      return false; /* DBus connection was not obtained */
 
-    if (dbus_screensaver_cookie > 0)
-        return true; /* Already inhibited */
+   if (dbus_screensaver_cookie > 0)
+      return true; /* Already inhibited */
 
-    msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
-        "/org/freedesktop/ScreenSaver",
-        "org.freedesktop.ScreenSaver",
-        "Inhibit");
+   msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
+         "/org/freedesktop/ScreenSaver",
+         "org.freedesktop.ScreenSaver",
+         "Inhibit");
 
-    if (!msg)
-        return false;
+   if (!msg)
+      return false;
 
-    if (!dbus_message_append_args(msg,
-        DBUS_TYPE_STRING, &app,
-        DBUS_TYPE_STRING, &reason,
-        DBUS_TYPE_INVALID)) {
-        dbus_message_unref(msg);
-        return false;
-    }
-
-    reply = dbus_connection_send_with_reply_and_block(dbus_connection,
-          msg, 300, NULL);
-
-    if (reply != NULL)
-    {
-        if (!dbus_message_get_args(reply, NULL,
-            DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
+   if (!dbus_message_append_args(msg,
+            DBUS_TYPE_STRING, &app,
+            DBUS_TYPE_STRING, &reason,
             DBUS_TYPE_INVALID))
-            dbus_screensaver_cookie = 0;
-        else
-            ret = true;
+   {
+      dbus_message_unref(msg);
+      return false;
+   }
 
-        dbus_message_unref(reply);
-    }
+   reply = dbus_connection_send_with_reply_and_block(dbus_connection,
+         msg, 300, NULL);
 
-    dbus_message_unref(msg);
+   if (reply != NULL)
+   {
+      if (!dbus_message_get_args(reply, NULL,
+               DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
+               DBUS_TYPE_INVALID))
+         dbus_screensaver_cookie = 0;
+      else
+         ret = true;
 
-    if (dbus_screensaver_cookie == 0)
-    {
-        RARCH_ERR("[DBus]: Failed to suspend screensaver via DBus.\n");
-    }
-    else
-    {
-        RARCH_LOG("[DBus]: Suspended screensaver via DBus.\n");
-    }
+      dbus_message_unref(reply);
+   }
 
-    return ret;
+   dbus_message_unref(msg);
+
+   if (dbus_screensaver_cookie == 0)
+   {
+      RARCH_ERR("[DBus]: Failed to suspend screensaver via DBus.\n");
+   }
+   else
+   {
+      RARCH_LOG("[DBus]: Suspended screensaver via DBus.\n");
+   }
+
+   return ret;
 }
 
 static void dbus_screensaver_uninhibit(void)
@@ -328,6 +329,7 @@ static void xdg_screensaver_uninhibit(Window wnd)
    snprintf(cmd, sizeof(cmd), "xdg-screensaver resume 0x%x", (int)wnd);
 
    ret = system(cmd);
+
    if (ret == -1)
    {
       xdg_screensaver_available = false;
@@ -342,15 +344,16 @@ static void xdg_screensaver_uninhibit(Window wnd)
 
 void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
 {
-   if (enable) xdg_screensaver_inhibit(wnd);
+   if (enable)
+      xdg_screensaver_inhibit(wnd);
    xdg_screensaver_uninhibit(wnd);
 }
 
 void x11_suspend_screensaver(Window wnd, bool enable)
 {
 #ifdef HAVE_DBUS
-    /* Fall-through */
-    if (!x11_suspend_screensaver_dbus(enable))
+    if (x11_suspend_screensaver_dbus(enable))
+       return;
 #endif
     x11_suspend_screensaver_xdg_screensaver(wnd, enable);
 }
@@ -474,11 +477,11 @@ bool x11_get_xinerama_coord(Display *dpy, int screen,
 unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
       int w, int h)
 {
-   int i, num_screens = 0;
-   unsigned monitor   = 0;
-   int largest_area   = 0;
-
+   int       i, num_screens = 0;
+   unsigned       monitor   = 0;
+   int       largest_area   = 0;
    XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
+
    RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
 
    for (i = 0; i < num_screens; i++)
@@ -489,8 +492,8 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
       int max_ty = MAX(y, info[i].y_org);
       int min_by = MIN(y + h, info[i].y_org + info[i].height);
 
-      int len_x = min_rx - max_lx;
-      int len_y = min_by - max_ty;
+      int len_x  = min_rx - max_lx;
+      int len_y  = min_by - max_ty;
 
       /* The whole window is outside the screen. */
       if (len_x < 0 || len_y < 0)
