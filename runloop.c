@@ -109,33 +109,33 @@ typedef struct event_cmd_state
 } event_cmd_state_t;
 
 static struct rarch_dir_list runloop_shader_dir;
-static char runloop_fullpath[PATH_MAX_LENGTH];
-static char runloop_default_shader_preset[PATH_MAX_LENGTH];
 static rarch_system_info_t runloop_system;
-static unsigned runloop_pending_windowed_scale;
 static struct retro_frame_time_callback runloop_frame_time;
-static retro_keyboard_event_t runloop_key_event          = NULL;
-static retro_keyboard_event_t runloop_frontend_key_event = NULL;
-static retro_usec_t runloop_frame_time_last      = 0;
-static unsigned runloop_max_frames               = false;
-static bool runloop_force_nonblock               = false;
-static bool runloop_frame_time_last_enable       = false;
-static bool runloop_set_frame_limit              = false;
-static bool runloop_paused                       = false;
-static bool runloop_idle                         = false;
-static bool runloop_exec                         = false;
-static bool runloop_quit_confirm                 = false;
-static bool runloop_slowmotion                   = false;
-static bool runloop_shutdown_initiated           = false;
-static bool runloop_core_shutdown_initiated      = false;
-static bool runloop_perfcnt_enable               = false;
-static bool runloop_overrides_active             = false;
-static bool runloop_game_options_active          = false;
-static core_option_manager_t *runloop_core_options = NULL;
+static char runloop_fullpath[PATH_MAX_LENGTH]              = {0};
+static char runloop_default_shader_preset[PATH_MAX_LENGTH] = {0};
+static retro_keyboard_event_t runloop_key_event            = NULL;
+static retro_keyboard_event_t runloop_frontend_key_event   = NULL;
+static core_option_manager_t *runloop_core_options         = NULL;
 #ifdef HAVE_THREADS
-static slock_t *_runloop_msg_queue_lock           = NULL;
+static slock_t *_runloop_msg_queue_lock                    = NULL;
 #endif
-static msg_queue_t *runloop_msg_queue            = NULL;
+static msg_queue_t *runloop_msg_queue                      = NULL;
+static unsigned runloop_pending_windowed_scale             = 0;
+static retro_usec_t runloop_frame_time_last                = 0;
+static unsigned runloop_max_frames                         = false;
+static bool runloop_force_nonblock                         = false;
+static bool runloop_frame_time_last_enable                 = false;
+static bool runloop_set_frame_limit                        = false;
+static bool runloop_paused                                 = false;
+static bool runloop_idle                                   = false;
+static bool runloop_exec                                   = false;
+static bool runloop_quit_confirm                           = false;
+static bool runloop_slowmotion                             = false;
+static bool runloop_shutdown_initiated                     = false;
+static bool runloop_core_shutdown_initiated                = false;
+static bool runloop_perfcnt_enable                         = false;
+static bool runloop_overrides_active                       = false;
+static bool runloop_game_options_active                    = false;
 
 global_t *global_get_ptr(void)
 {
