@@ -235,8 +235,9 @@ void menu_entry_reset(uint32_t i)
 
 void menu_entry_get_value(uint32_t i, void *data, char *s, size_t len)
 {
-   file_list_t *list  = (void*)data;
+   file_list_t *list  = (file_list_t*)data;
    menu_entry_t entry = {{0}};
+
    menu_entry_get(&entry, 0, i, list, true);
    strlcpy(s, entry.value, len);
 }

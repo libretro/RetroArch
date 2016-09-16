@@ -372,5 +372,5 @@ uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta)
 {
    if (!netplay->state_size)
       return 0;
-   return crc32(0L, delta->state, netplay->state_size);
+   return crc32(0L, (const unsigned char*)delta->state, netplay->state_size);
 }
