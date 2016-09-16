@@ -52,7 +52,7 @@ void matrix_4x4_multiply(math_matrix_4x4 *out, const math_matrix_4x4 *a, const m
 
 void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y, float z);
 void matrix_4x4_translate(math_matrix_4x4 *out, float x, float y, float z);
-void matrix_4x4_projection(math_matrix_4x4 *out, float znear, float zfar);
+void matrix_4x4_projection(math_matrix_4x4 *out, float y_fov, float aspect, float znear, float zfar);
 
 #endif
 

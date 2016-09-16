@@ -160,17 +160,21 @@ void matrix_4x4_translate(math_matrix_4x4 *out, float x,
 /*
  * Creates a perspective projection matrix.
  */
-void matrix_4x4_projection(math_matrix_4x4 *out, float znear,
+void matrix_4x4_projection(math_matrix_4x4 *out, 
+      float y_fov,
+      float aspect,
+      float znear,
       float zfar)
 {
+   float const a = 1.f / tan(y_fov / 2.f);
    float delta_z = zfar - znear;
 
    memset(out, 0, sizeof(*out));
-   MAT_ELEM_4X4(*out, 0, 0) = znear;
-   MAT_ELEM_4X4(*out, 1, 1) = zfar;
-   MAT_ELEM_4X4(*out, 2, 2) = (zfar + znear) / delta_z;
-   MAT_ELEM_4X4(*out, 2, 3) = -2.0f * zfar * znear / delta_z;
-   MAT_ELEM_4X4(*out, 3, 2) = -1.0f;
+   MAT_ELEM_4X4(*out, 0, 0) = a / aspect;
+   MAT_ELEM_4X4(*out, 1, 1) = a;
+   MAT_ELEM_4X4(*out, 2, 2) = -((zfar + znear) / (zfar - znear));
+   MAT_ELEM_4X4(*out, 2, 3) = -1.f;
+   MAT_ELEM_4X4(*out, 3, 2) = -((2.f * zfar * znear) / (zfar - znear));
 }
 
 /*
