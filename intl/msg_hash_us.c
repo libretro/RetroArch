@@ -1558,6 +1558,22 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Increasing this value will increase \n"
                "performance, but introduce more latency.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
+         snprintf(s, len,
+               "The frequency in frames with which netplay \n"
+               "will verify that the host and client are in \n"
+               "sync. \n"
+               " \n"
+               "With most cores, this value will have no \n"
+               "visible effect and can be ignored. With \n"
+               "nondeterminstic cores, this value determines \n"
+               "how often the netplay peers will be brought \n"
+               "into sync. With buggy cores, setting this \n"
+               "to any non-zero value will cause severe \n"
+               "performance issues. Set to zero to perform \n"
+               "no checks. This value is only used on the \n"
+               "netplay host. \n");
+         break;
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          snprintf(s, len,
                "Maximum amount of swapchain images. This \n"
@@ -2424,6 +2440,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "bluetooth_enable";
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
          return "netplay_delay_frames";
+      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
+         return "netplay_check_frames";
       case MENU_ENUM_LABEL_NETPLAY_MODE:
          return "netplay_mode";
       case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
@@ -3747,6 +3765,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Bluetooth Enable";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Netplay Delay Frames";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES:
+         return "Netplay Check Frames";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_MODE:
          return "Netplay Client Enable";
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:

@@ -45,7 +45,11 @@ struct delta_frame
    bool used; /* a bit derpy, but this is how we know if the delta's been used at all */
    uint32_t frame;
 
+   /* The serialized state of the core at this frame, before input */
    void *state;
+
+   /* The CRC-32 of the serialized state if we've calculated it, else 0 */
+   uint32_t crc;
 
    uint32_t real_input_state[WORDS_PER_FRAME - 1];
    uint32_t simulated_input_state[WORDS_PER_FRAME - 1];
@@ -62,7 +66,7 @@ struct delta_frame
 };
 
 struct netplay_callbacks {
-   void (*pre_frame) (netplay_t *netplay);
+   bool (*pre_frame) (netplay_t *netplay);
    void (*post_frame)(netplay_t *netplay);
    bool (*info_cb)   (netplay_t *netplay, unsigned frames);
 };
@@ -103,10 +107,20 @@ struct netplay
 
    /* Are we replaying old frames? */
    bool is_replay;
+
    /* We don't want to poll several times on a frame. */
    bool can_poll;
-   /* If we end up having to drop remote frame data because it's ahead of us, fast-forward is URGENT */
-   bool must_fast_forward;
+
+   /* Force a rewind to other_frame_count/other_ptr. This is for synchronized
+    * events, such as player flipping or savestate loading. */
+   bool force_rewind;
+
+   /* Force our state to be sent to the other side. Used when they request a
+    * savestate, to send at the next pre-frame. */
+   bool force_send_savestate;
+
+   /* Have we requested a savestate as a sync point? */
+   bool savestate_request_outstanding;
 
    /* A buffer for outgoing input packets. */
    uint32_t packet_buffer[2 + WORDS_PER_FRAME];
@@ -124,28 +138,31 @@ struct netplay
    struct {
       bool enabled;
       int fds[MAX_SPECTATORS];
+      uint32_t frames[MAX_SPECTATORS];
       uint16_t *input;
       size_t input_ptr;
       size_t input_sz;
    } spectate;
    bool is_server;
+
    /* User flipping
-    * Flipping state. If ptr >= flip_frame, we apply the flip.
-    * If not, we apply the opposite, effectively creating a trigger point.
-    * To avoid collition we need to make sure our client/host is synced up 
-    * well after flip_frame before allowing another flip. */
+    * Flipping state. If frame >= flip_frame, we apply the flip.
+    * If not, we apply the opposite, effectively creating a trigger point. */
    bool flip;
    uint32_t flip_frame;
 
    /* Netplay pausing
     */
-   bool pause;
-   uint32_t pause_frame;
+   bool local_paused;
+   bool remote_paused;
 
    /* And stalling */
    uint32_t stall_frames;
    int stall;
    retro_time_t stall_time;
+
+   /* Frequency with which to check CRCs */
+   uint32_t check_frames;
 
    struct netplay_callbacks* net_cbs;
 };
@@ -180,5 +197,11 @@ bool netplay_is_server(netplay_t* netplay);
 bool netplay_is_spectate(netplay_t* netplay);
 
 bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame);
+
+uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta);
+
+bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta);
+
+bool netplay_cmd_request_savestate(netplay_t *netplay);
 
 #endif

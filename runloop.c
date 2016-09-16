@@ -1577,7 +1577,13 @@ int runloop_iterate(unsigned *sleep_ms)
 #endif
 
 #ifdef HAVE_NETPLAY
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
+   {
+      /* Paused due to Netplay */
+      core_poll();
+      *sleep_ms = 10;
+      return 1;
+   }
 #endif
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))

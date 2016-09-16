@@ -41,15 +41,15 @@ ring, other is the first frame that it's unsafe to overwrite.
 Read is where it's read up to, which can be slightly ahead of other since it
 can't always immediately act upon new data.
 
-In general, other ≤ read and other ≤ self. In all likelyhood, read ≤ self, but
+In general, other ≤ read and other ≤ self. In all likelihood, read ≤ self, but
 it is both possible and supported for the remote host to get ahead of the local
 host.
 
 Pre-frame, Netplay serializes the core's state, polls for local input, and
 polls for input from the other side. If the input from the other side is too
 far behind, it stalls to allow the other side to catch up. To assure that this
-stalling does not block the UI thread, it is implemented by rewinding the
-thread every frame until data is ready.
+stalling does not block the UI thread, it is implemented similarly to pausing,
+rather than by blocking on the socket.
 
 If input has not been received for the other side up to the current frame (the
 usual case), the remote input is simulated in a simplistic manner.  Each
@@ -57,12 +57,13 @@ frame's local serialized state and simulated or real input goes into the frame
 buffers.
 
 During the frame of execution, when the core requests input, it receives the
-input from the thread buffer, both local and real or simulated remote.
+input from the state buffer, both local and real or simulated remote.
 
 Post-frame, it checks whether it's read more than it's actioned, i.e. if read >
-other. If so, it rewinds to other (by loading the serialized state there) and
-runs the core in replay mode with the real data up to read, then sets other =
-read.
+other self > other. If so, it first checks whether its simulated remote data
+was correct. If it was, it simply moves other up. If not, it rewinds to other
+(by loading the serialized state there) and runs the core in replay mode with
+the real data up to the least of self and read, then sets other to that.
 
 When in Netplay mode, the callback for receiving input is replaced by
 input_state_net. It is the role of input_state_net to combine the true local
@@ -79,3 +80,74 @@ which we've actually read self_frame_count+1 frames of local input.
 
 
 * Guarantee not actually a guarantee.
+
+
+Netplay's command format
+
+Netplay commands consist of a 32-bit command identifier, followed by a 32-bit
+payload size, both in network byte order, followed by a payload. The command
+identifiers are listed in netplay.h. The commands are described below. Unless
+specified otherwise, all payload values are in network byte order.
+
+Command: ACK
+Payload: None
+Description:
+    Acknowledgement. Not used.
+
+Command: NAK
+Payload: None
+Description:
+    Negative Acknowledgement. If received, the connection is terminated. Sent
+    whenever a command is malformed or otherwise not understood.
+
+Command: INPUT
+Payload:
+    {
+       frame number: uint32
+       joypad input: uint32
+       analog 1 input: uint32
+       analog 2 input: uint32
+       OPTIONAL state CRC: uint32
+    }
+Description:
+    Input state for each frame. Netplay must send an INPUT command for every
+    frame in order to function at all.
+
+Command: FLIP_PLAYERS
+Payload:
+    {
+       frame number: uint32
+    }
+Description:
+    Flip players at the requested frame.
+
+Command: DISCONNECT
+Payload: None
+Description:
+    Gracefully disconnect. Not used.
+
+Command: CRC
+Payload:
+    {
+       frame number: uint32
+       hash: uint32
+    }
+Description:
+    Informs the peer of the correct CRC hash for the specified frame. If the
+    receiver's hash doesn't match, they should send a REQUEST_SAVESTATE
+    command.
+
+Command: REQUEST_SAVESTATE
+Payload: None
+Description:
+    Requests that the peer send a savestate.
+
+Command: LOAD_SAVESTATE
+Payload:
+    {
+       frame number: uint32
+       serialized save state: blob (variable size)
+    }
+Description:
+    Cause the other side to load a savestate, notionally one which the sending
+    side has also loaded.

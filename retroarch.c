@@ -90,6 +90,7 @@
 enum
 {
    RA_OPT_MENU = 256, /* must be outside the range of a char */
+   RA_OPT_CHECK_FRAMES,
    RA_OPT_PORT,
    RA_OPT_SPECTATE,
    RA_OPT_NICK,
@@ -306,6 +307,8 @@ static void retroarch_print_help(const char *arg0)
    puts("  -C, --connect=HOST    Connect to netplay server as user 2.");
    puts("      --port=PORT       Port used to netplay. Default is 55435.");
    puts("  -F, --frames=NUMBER   Sync frames when using netplay.");
+   puts("      --check-frames=NUMBER\n"
+        "                        Check frames when using netplay.");
    puts("      --spectate        Connect to netplay server as spectator.");
 #endif
    puts("      --nick=NICK       Picks a username (for use with netplay). "
@@ -677,6 +680,7 @@ static void retroarch_parse_input(int argc, char *argv[])
       { "host",         0, NULL, 'H' },
       { "connect",      1, NULL, 'C' },
       { "frames",       1, NULL, 'F' },
+      { "check-frames", 1, NULL, RA_OPT_CHECK_FRAMES },
       { "port",         1, NULL, RA_OPT_PORT },
       { "spectate",     0, NULL, RA_OPT_SPECTATE },
 #endif
@@ -978,6 +982,11 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
 #ifdef HAVE_NETPLAY
+         case RA_OPT_CHECK_FRAMES:
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+            global->netplay.check_frames = strtoul(optarg, NULL, 0);
+            break;
+
          case RA_OPT_PORT:
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
             global->netplay.port = strtoul(optarg, NULL, 0);
@@ -1645,6 +1654,7 @@ static bool has_set_netplay_mode        = false;
 static bool has_set_netplay_ip_address  = false;
 static bool has_set_netplay_ip_port     = false;
 static bool has_set_netplay_delay_frames= false;
+static bool has_set_netplay_check_frames= false;
 static bool has_set_ups_pref            = false;
 static bool has_set_bps_pref            = false;
 static bool has_set_ips_pref            = false;
@@ -1671,6 +1681,8 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx)
          return has_set_netplay_ip_port;
       case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
          return has_set_netplay_delay_frames;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
+         return has_set_netplay_check_frames;
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
          return has_set_ups_pref;
       case RARCH_OVERRIDE_SETTING_BPS_PREF:
@@ -1717,6 +1729,9 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx)
       case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
          has_set_netplay_delay_frames = true;
          break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
+         has_set_netplay_check_frames = true;
+         break;
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
          has_set_ups_pref = true;
          break;
@@ -1762,6 +1777,9 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx)
          break;
       case RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES:
          has_set_netplay_delay_frames = false;
+         break;
+      case RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES:
+         has_set_netplay_check_frames = false;
          break;
       case RARCH_OVERRIDE_SETTING_UPS_PREF:
          has_set_ups_pref = false;

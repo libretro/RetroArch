@@ -109,20 +109,10 @@ static bool core_init_libretro_cbs(void *data)
    /* Force normal poll type for netplay. */
    core_poll_type = POLL_TYPE_NORMAL;
 
-   if (global->netplay.is_spectate)
-   {
-      core.retro_set_input_state(
-            (global->netplay.is_client ?
-             input_state_spectate_client : input_state_spectate)
-            );
-   }
-   else
-   {
-      core.retro_set_video_refresh(video_frame_net);
-      core.retro_set_audio_sample(audio_sample_net);
-      core.retro_set_audio_sample_batch(audio_sample_batch_net);
-      core.retro_set_input_state(input_state_net);
-   }
+   core.retro_set_video_refresh(video_frame_net);
+   core.retro_set_audio_sample(audio_sample_net);
+   core.retro_set_audio_sample_batch(audio_sample_batch_net);
+   core.retro_set_input_state(input_state_net);
 #endif
 
    return true;
