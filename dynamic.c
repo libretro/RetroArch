@@ -168,6 +168,84 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
 }
 
 #ifdef HAVE_DYNAMIC
+/**
+ * libretro_get_environment_info:
+ * @func                         : Function pointer for get_environment_info.
+ * @load_no_content              : If true, core should be able to auto-start
+ *                                 without any content loaded.
+ *
+ * Sets environment callback in order to get statically known
+ * information from it.
+ *
+ * Fetched via environment callbacks instead of
+ * retro_get_system_info(), as this info is part of extensions.
+ *
+ * Should only be called once right after core load to
+ * avoid overwriting the "real" environ callback.
+ *
+ * For statically linked cores, pass retro_set_environment as argument.
+ */
+void libretro_get_environment_info(void (*func)(retro_environment_t),
+      bool *load_no_content)
+{
+   load_no_content_hook = load_no_content;
+
+   /* load_no_content gets set in this callback. */
+   func(environ_cb_get_system_info);
+
+   /* It's possible that we just set get_system_info callback 
+    * to the currently running core.
+    *
+    * Make sure we reset it to the actual environment callback.
+    * Ignore any environment callbacks here in case we're running 
+    * on the non-current core. */
+   ignore_environment_cb = true;
+   func(rarch_environment_cb);
+   ignore_environment_cb = false;
+}
+
+static void load_dynamic_core(void)
+{
+   function_t sym       = dylib_proc(NULL, "retro_init");
+
+   if (sym)
+   {
+      /* Try to verify that -lretro was not linked in from other modules
+       * since loading it dynamically and with -l will fail hard. */
+      RARCH_ERR("Serious problem. RetroArch wants to load libretro cores"
+            "dyamically, but it is already linked.\n");
+      RARCH_ERR("This could happen if other modules RetroArch depends on "
+            "link against libretro directly.\n");
+      RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
+      retroarch_fail(1, "init_libretro_sym()");
+   }
+
+   if (string_is_empty(config_get_active_core_path()))
+   {
+      RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
+            "libretro_path is not set. Cannot continue.\n");
+      retroarch_fail(1, "init_libretro_sym()");
+   }
+
+   /* Need to use absolute path for this setting. It can be
+    * saved to content history, and a relative path would
+    * break in that scenario. */
+   path_resolve_realpath(
+         config_get_active_core_path_ptr(),
+         config_get_active_core_path_size());
+
+   RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
+         config_get_active_core_path());
+   lib_handle = dylib_load(config_get_active_core_path());
+   if (!lib_handle)
+   {
+      RARCH_ERR("Failed to open libretro core: \"%s\"\n",
+            config_get_active_core_path());
+      RARCH_ERR("Error(s): %s\n", dylib_error());
+      retroarch_fail(1, "load_dynamic()");
+   }
+}
+
 static dylib_t libretro_get_system_info_lib(const char *path,
       struct retro_system_info *info, bool *load_no_content)
 {
@@ -279,87 +357,6 @@ bool libretro_get_system_info(const char *path,
    return true;
 }
 
-#ifdef HAVE_DYNAMIC
-/**
- * libretro_get_environment_info:
- * @func                         : Function pointer for get_environment_info.
- * @load_no_content              : If true, core should be able to auto-start
- *                                 without any content loaded.
- *
- * Sets environment callback in order to get statically known
- * information from it.
- *
- * Fetched via environment callbacks instead of
- * retro_get_system_info(), as this info is part of extensions.
- *
- * Should only be called once right after core load to
- * avoid overwriting the "real" environ callback.
- *
- * For statically linked cores, pass retro_set_environment as argument.
- */
-void libretro_get_environment_info(void (*func)(retro_environment_t),
-      bool *load_no_content)
-{
-   load_no_content_hook = load_no_content;
-
-   /* load_no_content gets set in this callback. */
-   func(environ_cb_get_system_info);
-
-   /* It's possible that we just set get_system_info callback 
-    * to the currently running core.
-    *
-    * Make sure we reset it to the actual environment callback.
-    * Ignore any environment callbacks here in case we're running 
-    * on the non-current core. */
-   ignore_environment_cb = true;
-   func(rarch_environment_cb);
-   ignore_environment_cb = false;
-}
-
-
-
-static void load_dynamic_core(void)
-{
-   function_t sym       = dylib_proc(NULL, "retro_init");
-
-   if (sym)
-   {
-      /* Try to verify that -lretro was not linked in from other modules
-       * since loading it dynamically and with -l will fail hard. */
-      RARCH_ERR("Serious problem. RetroArch wants to load libretro cores"
-            "dyamically, but it is already linked.\n");
-      RARCH_ERR("This could happen if other modules RetroArch depends on "
-            "link against libretro directly.\n");
-      RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-      retroarch_fail(1, "init_libretro_sym()");
-   }
-
-   if (string_is_empty(config_get_active_core_path()))
-   {
-      RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
-            "libretro_path is not set. Cannot continue.\n");
-      retroarch_fail(1, "init_libretro_sym()");
-   }
-
-   /* Need to use absolute path for this setting. It can be
-    * saved to content history, and a relative path would
-    * break in that scenario. */
-   path_resolve_realpath(
-         config_get_active_core_path_ptr(),
-         config_get_active_core_path_size());
-
-   RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
-         config_get_active_core_path());
-   lib_handle = dylib_load(config_get_active_core_path());
-   if (!lib_handle)
-   {
-      RARCH_ERR("Failed to open libretro core: \"%s\"\n",
-            config_get_active_core_path());
-      RARCH_ERR("Error(s): %s\n", dylib_error());
-      retroarch_fail(1, "load_dynamic()");
-   }
-}
-#endif
 
 /**
  * load_symbols:
