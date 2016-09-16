@@ -1589,16 +1589,17 @@ static bool command_event_save_core_config(void)
  **/
 void command_event_save_current_config(int override_type)
 {
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
+   char msg[128]           = {0};
 
    if (!override_type)
    {
+      settings_t *settings = config_get_ptr();
+      global_t   *global   = global_get_ptr();
 
-      if (settings->config_save_on_exit && !string_is_empty(global->path.config))
+      if (      settings->config_save_on_exit 
+            && !string_is_empty(global->path.config))
       {
          bool ret                = false;
-         char msg[128]           = {0};
          const char *config_path = config_get_active_path();
 
          /* Save last core-specific config to the default config location,
@@ -1624,18 +1625,11 @@ void command_event_save_current_config(int override_type)
                   global->path.config);
             RARCH_ERR("%s\n", msg);
          }
-
-         runloop_msg_queue_push(msg, 1, 180, true);
       }
    }
    else
    {
-      bool ret                = false;
-      char msg[128]           = {0};
-
-      ret = config_save_overrides(override_type);
-
-      if (ret)
+      if (config_save_overrides(override_type))
       {
          snprintf(msg, sizeof(msg), "Overrides saved successfully");
          RARCH_LOG("[overrides] %s\n", msg);
@@ -1649,10 +1643,10 @@ void command_event_save_current_config(int override_type)
          snprintf(msg, sizeof(msg), "Error saving overrides");
          RARCH_ERR("[overrides] %s\n", msg);
       }
-
-      runloop_msg_queue_push(msg, 1, 180, true);
-      return;
    }
+
+   if (!string_is_empty(msg))
+      runloop_msg_queue_push(msg, 1, 180, true);
 }
 
 /**
