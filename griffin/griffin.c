@@ -268,6 +268,7 @@ VIDEO DRIVER
 #include "../libretro-common/gfx/math/matrix_3x3.c"
 #include "../libretro-common/gfx/math/vector_2.c"
 #include "../libretro-common/gfx/math/vector_3.c"
+#include "../libretro-common/gfx/math/vector_4.c"
 
 #if defined(GEKKO)
 #ifdef HW_RVL
