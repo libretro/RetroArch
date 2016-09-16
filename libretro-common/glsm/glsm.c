@@ -1878,9 +1878,10 @@ void rglFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length
  * OpenGL    : 3.2
  * OpenGLES  : 3.0
  */
-GLenum rglClientWaitSync(GLsync sync, GLbitfield flags, GLuint64 timeout) {
+GLenum rglClientWaitSync(void *sync, GLbitfield flags, uint64_t timeout)
+{
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-  return glClientWaitSync(sync, flags, timeout);
+  return glClientWaitSync((GLsync)sync, flags, (GLuint64)timeout);
 #endif
 }
 

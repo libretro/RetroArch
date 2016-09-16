@@ -403,7 +403,7 @@ void *rglFenceSync(GLenum condition, GLbitfield flags);
 void rglWaitSync(void *sync, GLbitfield flags, uint64_t timeout);
 void rglBufferStorage(GLenum target, GLsizeiptr size, const GLvoid *data, GLbitfield flags);
 void rglFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length);
-GLenum rglClientWaitSync(GLsync sync, GLbitfield flags, GLuint64 timeout);
+GLenum rglClientWaitSync(void *sync, GLbitfield flags, uint64_t timeout);
 void rglDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type,
 			       GLvoid *indices, GLint basevertex);
 
