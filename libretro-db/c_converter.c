@@ -31,6 +31,7 @@
 #include <rhash.h>
 
 #include <retro_assert.h>
+#include <string/stdstring.h>
 
 #include "libretrodb.h"
 
@@ -341,13 +342,13 @@ static dat_converter_list_t* dat_parser_table(
 
       if (!map.key)
       {
-         if (!strcmp(current->token.label, ")"))
+         if (string_is_equal(current->token.label, ")"))
          {
             current++;
             *start_token = current;
             return parsed_table;
          }
-         else if (!strcmp(current->token.label, "("))
+         else if (string_is_equal(current->token.label, "("))
          {
             printf("%s:%d:%d: fatal error: Unexpected '(' instead of key\n",
                    current->token.fname,
@@ -363,14 +364,14 @@ static dat_converter_list_t* dat_parser_table(
       }
       else
       {
-         if (!strcmp(current->token.label, "("))
+         if (string_is_equal(current->token.label, "("))
          {
             current++;
             map.type = DAT_CONVERTER_LIST_MAP;
             map.value.list = dat_parser_table(&current);
             dat_converter_list_append(parsed_table, &map);
          }
-         else if (!strcmp(current->token.label, ")"))
+         else if (string_is_equal(current->token.label, ")"))
          {
             printf("%s:%d:%d: fatal error: Unexpected ')' instead of value\n",
                    current->token.fname,
@@ -468,7 +469,7 @@ static const char* dat_converter_get_match(
    {
       if (list->values[i].map.hash == match_key->hash)
       {
-         retro_assert(!strcmp(list->values[i].map.key, match_key->value));
+         retro_assert(string_is_equal(list->values[i].map.key, match_key->value));
 
          if (match_key->next)
             return dat_converter_get_match(
@@ -510,14 +511,14 @@ static dat_converter_list_t* dat_converter_parser(
    {
       if (!map.key)
       {
-         if (!strcmp(current->token.label, "game"))
+         if (string_is_equal(current->token.label, "game"))
             skip = false;
          map.key = current->token.label;
          current++;
       }
       else
       {
-         if (!strcmp(current->token.label, "("))
+         if (string_is_equal(current->token.label, "("))
          {
             current++;
             map.value.list = dat_parser_table(&current);

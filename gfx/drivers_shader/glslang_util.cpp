@@ -19,10 +19,11 @@
 #include <sstream>
 #include <algorithm>
 
+#include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
-#include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #include "glslang_util.hpp"
 #include "glslang.hpp"
@@ -227,7 +228,7 @@ const char *glslang_format_to_string(enum glslang_format fmt)
 static glslang_format glslang_find_format(const char *fmt)
 {
 #undef FMT
-#define FMT(x) if (!strcmp(fmt, #x)) return SLANG_FORMAT_ ## x
+#define FMT(x) if (string_is_equal(fmt, #x)) return SLANG_FORMAT_ ## x
    FMT(R8_UNORM);
    FMT(R8_UINT);
    FMT(R8_SINT);
@@ -309,7 +310,7 @@ static bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
              * if they are exactly the same. */
             if (itr != end(meta->parameters))
             {
-               if (itr->desc != desc ||
+               if (   itr->desc != desc    ||
                    itr->initial != initial ||
                    itr->minimum != minimum ||
                    itr->maximum != maximum ||

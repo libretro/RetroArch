@@ -44,7 +44,7 @@ static const uint32_t opaque_frag[] =
 
 static unsigned num_miplevels(unsigned width, unsigned height)
 {
-   unsigned size = std::max(width, height);
+   unsigned size   = std::max(width, height);
    unsigned levels = 0;
    while (size)
    {
@@ -60,7 +60,7 @@ static void image_layout_transition_levels(
       VkAccessFlags src_access, VkAccessFlags dst_access,
       VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages)
 {
-   VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+   VkImageMemoryBarrier barrier        = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 
    barrier.srcAccessMask               = src_access;
    barrier.dstAccessMask               = dst_access;
