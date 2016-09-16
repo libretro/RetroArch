@@ -345,16 +345,18 @@ static int menu_input_pointer_post_iterate(
    static int16_t pointer_old_x = 0;
    static int16_t pointer_old_y = 0;
    int ret                      = 0;
+   bool check_overlay           = false;
    menu_input_t *menu_input     = menu_input_get_ptr();
    settings_t *settings         = config_get_ptr();
-   bool check_overlay           = settings ? !settings->menu.pointer.enable : false;
-
+   
    if (!menu_input || !settings)
       return -1;
 
+   check_overlay = !settings->menu.pointer.enable;
 #ifdef HAVE_OVERLAY
-   check_overlay = check_overlay ||
-      (settings->input.overlay_enable && input_overlay_is_alive(NULL));
+   if (!check_overlay)
+      check_overlay = (settings->input.overlay_enable 
+            && input_overlay_is_alive(NULL));
 #endif
 
    if (check_overlay)
