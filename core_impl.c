@@ -87,9 +87,6 @@ void core_set_input_state(retro_ctx_input_state_info_t *info)
 static bool core_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
-#ifdef HAVE_NETPLAY
-   global_t            *global = global_get_ptr();
-#endif
 
    if (!cbs)
       return false;
