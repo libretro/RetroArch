@@ -72,17 +72,17 @@ unsigned menu_event(retro_input_t input,
 {
    menu_animation_ctx_delta_t delta;
    float delta_time;
+   /* Used for key repeat */
+   static float delay_timer                = 0.0f;
+   static float delay_count                = 0.0f;
    unsigned ret                            = MENU_ACTION_NOOP;
    static bool initial_held                = true;
    static bool first_held                  = false;
    bool set_scroll                         = false;
    bool mouse_enabled                      = false;
    size_t new_scroll_accel                 = 0;
+   menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
-   menu_input_t *menu_input                = menu_input_get_ptr();
-
-   if (!menu_input)
-      return 0;
 
    if (input.state)
    {
@@ -91,12 +91,12 @@ unsigned menu_event(retro_input_t input,
          /* don't run anything first frame, only capture held inputs
           * for old_input_state. */
 
-         first_held = true;
-         menu_input->delay.timer = initial_held ? 12 : 6;
-         menu_input->delay.count = 0;
+         first_held  = true;
+         delay_timer = initial_held ? 12 : 6;
+         delay_count = 0;
       }
 
-      if (menu_input->delay.count >= menu_input->delay.timer)
+      if (delay_count >= delay_timer)
       {
          retro_input_t input_repeat = {0};
          BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_UP);
@@ -136,7 +136,7 @@ unsigned menu_event(retro_input_t input,
    delta.current = delta_time;
 
    if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
-      menu_input->delay.count += delta.ideal;
+      delay_count += delta.ideal;
 
    if (menu_input_dialog_get_display_kb())
    {
@@ -216,6 +216,9 @@ unsigned menu_event(retro_input_t input,
       mouse_enabled = !(settings->input.overlay_enable
             && input_overlay_is_alive(NULL));
 #endif
+
+   if (!(menu_input = menu_input_get_ptr()))
+      return 0;
 
    if (!mouse_enabled)
       menu_input->mouse.ptr = 0;

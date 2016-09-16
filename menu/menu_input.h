@@ -97,14 +97,6 @@ typedef struct menu_input
       bool back;
       unsigned ptr;
    } pointer;
-
-
-   /* Used for key repeat */
-   struct
-   {
-      float timer;
-      float count;
-   } delay;
 } menu_input_t;
 
 typedef struct menu_input_ctx_hitbox
