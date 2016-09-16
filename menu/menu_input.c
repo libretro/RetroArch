@@ -34,7 +34,6 @@
 #include "menu_navigation.h"
 
 #include "../configuration.h"
-#include "../core.h"
 
 enum menu_mouse_action
 {
