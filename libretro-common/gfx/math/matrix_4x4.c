@@ -24,6 +24,7 @@
 #include <math.h>
 
 #include <gfx/math/matrix_4x4.h>
+#include <gfx/math/vector_3.h>
 
 void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src)
 {
@@ -172,9 +173,48 @@ void matrix_4x4_projection(math_matrix_4x4 *out,
    memset(out, 0, sizeof(*out));
    MAT_ELEM_4X4(*out, 0, 0) = a / aspect;
    MAT_ELEM_4X4(*out, 1, 1) = a;
-   MAT_ELEM_4X4(*out, 2, 2) = -((zfar + znear) / (zfar - znear));
+   MAT_ELEM_4X4(*out, 2, 2) = -((zfar + znear) / delta_z);
    MAT_ELEM_4X4(*out, 2, 3) = -1.f;
-   MAT_ELEM_4X4(*out, 3, 2) = -((2.f * zfar * znear) / (zfar - znear));
+   MAT_ELEM_4X4(*out, 3, 2) = -((2.f * zfar * znear) / delta_z);
+}
+
+/* TODO/FIXME - finish */
+void matrix_4x4_lookat(math_matrix_4x4 *out,
+      vec3_t eye,
+      vec3_t center,
+      vec3_t up)
+{
+   vec3_t s, t, f;
+
+   vec3_copy(&f[0], center);
+   vec3_subtract(&f[0], eye);
+   vec3_normalize(&f[0]);
+
+   vec3_cross(&s[0], &f[0], up);
+   vec3_normalize(&s[0]);
+
+   vec3_cross(&t[0], &s[0], f);
+
+   memset(out, 0, sizeof(*out));
+
+   MAT_ELEM_4X4(*out, 0, 0) = s[0];
+   MAT_ELEM_4X4(*out, 0, 1) = t[0];
+   MAT_ELEM_4X4(*out, 0, 2) = -f[0];
+
+   MAT_ELEM_4X4(*out, 1, 0) = s[1];
+   MAT_ELEM_4X4(*out, 1, 1) = t[1];
+   MAT_ELEM_4X4(*out, 1, 2) = -f[1];
+
+   MAT_ELEM_4X4(*out, 2, 0) = s[2];
+   MAT_ELEM_4X4(*out, 2, 1) = t[2];
+   MAT_ELEM_4X4(*out, 2, 2) = -f[2];
+
+   MAT_ELEM_4X4(*out, 3, 3) = 1.f;
+
+#if 0
+   mat4x4_translate_in_place(m, -eye[0], -eye[1], -eye[2]);
+#endif
+
 }
 
 /*
