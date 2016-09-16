@@ -49,9 +49,9 @@ var showError = function(error) {
 function dropboxInit()
 {
   document.getElementById('btnRun').disabled = true;
-  document.getElementById('btnDrop').disabled = true;
-  $('#icnDrop').removeClass('fa-dropbox');
-  $('#icnDrop').addClass('fa-spinner fa-spin');
+  //document.getElementById('btnDrop').disabled = true;
+  //$('#icnDrop').removeClass('fa-dropbox');
+  //$('#icnDrop').addClass('fa-spinner fa-spin');
   
 
   client.authDriver(new Dropbox.AuthDriver.Redirect());
@@ -68,9 +68,9 @@ function dropboxInit()
 function dropboxSyncComplete()
 {
   document.getElementById('btnRun').disabled = false;
-  document.getElementById('btnDrop').disabled = false;
-  $('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
-  $('#icnDrop').addClass('fa-dropbox');
+  //document.getElementById('btnDrop').disabled = false;
+  //$('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
+  //$('#icnDrop').addClass('fa-dropbox');
   console.log("WEBPLAYER: Sync successful");
 
   setupFileSystem("dropbox");
@@ -181,7 +181,7 @@ function startRetroArch()
 {
    $('.webplayer').show();
    $('.webplayer-preview').hide();
-   document.getElementById('btnDrop').disabled = true;
+   //document.getElementById('btnDrop').disabled = true;
    document.getElementById('btnRun').disabled = true;
   
    $('#btnFullscreen').removeClass('disabled');
@@ -331,14 +331,14 @@ $(function() {
 
       if (localStorage.getItem("backend") == "dropbox")
       {
-         $('#icnDrop').removeClass('fa-globe');
-         $('#icnDrop').addClass('fa-dropbox');
+         //$('#icnDrop').removeClass('fa-globe');
+         //$('#icnDrop').addClass('fa-dropbox');
          dropboxInit();
       }
       else
       {
-         $('#icnDrop').addClass('fa-globe');
-         $('#icnDrop').removeClass('fa-dropbox');
+         //$('#icnDrop').addClass('fa-globe');
+         //$('#icnDrop').removeClass('fa-dropbox');
          preLoadingComplete();
          setupFileSystem("browser");
          setupFolderStructure();
