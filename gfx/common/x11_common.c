@@ -89,6 +89,7 @@ static void dbus_close_connection(void)
 
    dbus_connection_close(dbus_connection);
    dbus_connection_unref(dbus_connection);
+   dbus_connection = NULL;
 }
 
 static void dbus_screensaver_inhibit(void)
