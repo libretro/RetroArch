@@ -462,7 +462,7 @@ static uint64_t bytes_to_gb(uint64_t bytes)
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
    int controller;
-#if defined(HAVE_OPENGL) || defined(HAVE_GLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    gfx_ctx_ident_t ident_info;
 #endif
    char tmp[PATH_MAX_LENGTH]             = {0};
@@ -798,7 +798,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       }
    }
 
-#if defined(HAVE_OPENGL) || defined(HAVE_GLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    video_context_driver_get_ident(&ident_info);
    tmp_string = ident_info.ident;
 
