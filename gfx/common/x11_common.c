@@ -74,7 +74,7 @@ static void dbus_ensure_connection(void)
 
     if (dbus_error_is_set(&err))
     {
-        RARCH_ERR("[DBus]: Failed to get DBus connection. Screensaver will not be suspended via DBus.\n");
+        RARCH_LOG("[DBus]: Failed to get DBus connection. Screensaver will not be suspended via DBus.\n");
         dbus_error_free(&err);
     }
 
