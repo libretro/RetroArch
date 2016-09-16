@@ -5,7 +5,6 @@
  */
 var dropbox = false;
 var client = new Dropbox.Client({ key: "il6e10mfd7pgf8r" });
-var XFS;
 var BrowserFS = browserfs;
 
 var showError = function(error) {
@@ -45,6 +44,11 @@ var showError = function(error) {
   // Tell the user an error occurred, ask them to refresh the page.
   }
 };
+
+function reload()
+{
+   window.top.location.reload();
+}
 
 function dropboxInit()
 {
@@ -240,7 +244,25 @@ var Module =
   arguments: ["-v", "--menu"],
   preRun: [],
   postRun: [],
-  
+  print: (function() 
+  {
+     var element = document.getElementById('output');
+     element.value = ''; // clear browser cache
+     return function(text) 
+     {
+        text = Array.prototype.slice.call(arguments).join(' ');
+        element.value += text + "\n";
+        element.scrollTop = 99999; // focus on bottom
+     };
+  })(),
+
+  printErr: function(text)
+  {
+     var text = Array.prototype.slice.call(arguments).join(' ');
+     var element = document.getElementById('output');
+     element.value += text + "\n";
+     element.scrollTop = 99999; // focus on bottom
+  },
   canvas: document.getElementById('canvas'),
   totalDependencies: 0,
   monitorRunDependencies: function(left) 
