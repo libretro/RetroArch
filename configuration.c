@@ -407,38 +407,6 @@ const char *config_get_default_joypad(void)
    return "null";
 }
 
-#ifdef HAVE_MENU
-/**
- * config_get_default_menu:
- *
- * Gets default menu driver.
- *
- * Returns: Default menu driver.
- **/
-const char *config_get_default_menu(void)
-{
-   if (!string_is_empty(g_defaults.settings.menu))
-      return g_defaults.settings.menu;
-
-   switch (MENU_DEFAULT_DRIVER)
-   {
-      case MENU_RGUI:
-         return "rgui";
-      case MENU_XUI:
-         return "xui";
-      case MENU_MATERIALUI:
-         return "glui";
-      case MENU_XMB:
-         return "xmb";
-      case MENU_NUKLEAR:
-         return "nuklear";
-      default:
-         break;
-   }
-
-   return "null";
-}
-#endif
 
 /**
  * config_get_default_camera:
@@ -488,14 +456,38 @@ const char *config_get_default_location(void)
    return "null";
 }
 
-bool config_overlay_enable_default(void)
+#ifdef HAVE_MENU
+/**
+ * config_get_default_menu:
+ *
+ * Gets default menu driver.
+ *
+ * Returns: Default menu driver.
+ **/
+const char *config_get_default_menu(void)
 {
-   if (g_defaults.overlay.set)
-      return g_defaults.overlay.enable;
-   return true;
+   if (!string_is_empty(g_defaults.settings.menu))
+      return g_defaults.settings.menu;
+
+   switch (MENU_DEFAULT_DRIVER)
+   {
+      case MENU_RGUI:
+         return "rgui";
+      case MENU_XUI:
+         return "xui";
+      case MENU_MATERIALUI:
+         return "glui";
+      case MENU_XMB:
+         return "xmb";
+      case MENU_NUKLEAR:
+         return "nuklear";
+      default:
+         break;
+   }
+
+   return "null";
 }
 
-#ifdef HAVE_MENU
 static unsigned config_menu_btn_ok_default(void)
 {
    if (g_defaults.menu.controls.set)
@@ -510,6 +502,13 @@ static unsigned config_menu_btn_cancel_default(void)
    return default_menu_btn_cancel;
 }
 #endif
+
+bool config_overlay_enable_default(void)
+{
+   if (g_defaults.overlay.set)
+      return g_defaults.overlay.enable;
+   return true;
+}
 
 static int populate_settings_array(settings_t *settings, struct config_array_setting **out)
 {
