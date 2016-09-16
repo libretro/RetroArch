@@ -1549,12 +1549,14 @@ int runloop_iterate(unsigned *sleep_ms)
       return -1;
    }
 
+   core_poll();
+
 #ifdef HAVE_MENU
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       int ret = runloop_iterate_menu((enum menu_action)
-      menu_event(cmd.state[0], cmd.state[2]),
-      sleep_ms);
+            menu_event(cmd.state[0], cmd.state[2]),
+            sleep_ms);
 
       if (ret == -1)
          goto end;
@@ -1566,7 +1568,6 @@ int runloop_iterate(unsigned *sleep_ms)
    if (!runloop_check_state(&cmd, &runloop_shader_dir))
    {
       /* RetroArch has been paused. */
-      core_poll();
       *sleep_ms = 10;
       return 1;
    }

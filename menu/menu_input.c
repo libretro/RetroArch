@@ -553,15 +553,13 @@ unsigned menu_event(retro_input_t input,
    if (!menu_input)
       return 0;
 
-   core_poll();
-
-   /* don't run anything first frame, only capture held inputs
-    * for old_input_state. */
-
    if (input.state)
    {
       if (!first_held)
       {
+         /* don't run anything first frame, only capture held inputs
+          * for old_input_state. */
+
          first_held = true;
          menu_input->delay.timer = initial_held ? 12 : 6;
          menu_input->delay.count = 0;
