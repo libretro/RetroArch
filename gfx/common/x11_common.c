@@ -92,47 +92,52 @@ static void dbus_close_connection(void)
    dbus_connection = NULL;
 }
 
-static void dbus_screensaver_inhibit(void)
+static bool dbus_screensaver_inhibit(void)
 {
     const char *app    = "RetroArch";
     const char *reason = "Playing a game";
     DBusMessage   *msg = NULL;
     DBusMessage *reply = NULL;
+    bool ret = false;
 
     if (dbus_connection == NULL)
-        return; /* DBus connection was not obtained */
+        return false; /* DBus connection was not obtained */
 
     if (dbus_screensaver_cookie > 0)
-        return; /* Already inhibited */
+        return true; /* Already inhibited */
 
     msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
         "/org/freedesktop/ScreenSaver",
         "org.freedesktop.ScreenSaver",
         "Inhibit");
 
-    if (msg != NULL)
-        dbus_message_append_args(msg,
-            DBUS_TYPE_STRING, &app,
-            DBUS_TYPE_STRING, &reason,
-            DBUS_TYPE_INVALID);
+    if (!msg)
+        return false;
 
-    if (msg != NULL)
-    {
-        reply = dbus_connection_send_with_reply_and_block(dbus_connection,
-              msg, 300, NULL);
-
-        if (reply != NULL)
-        {
-            if (!dbus_message_get_args(reply, NULL,
-                DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
-                DBUS_TYPE_INVALID))
-                dbus_screensaver_cookie = 0;
-
-            dbus_message_unref(reply);
-        }
-
+    if (!dbus_message_append_args(msg,
+        DBUS_TYPE_STRING, &app,
+        DBUS_TYPE_STRING, &reason,
+        DBUS_TYPE_INVALID)) {
         dbus_message_unref(msg);
+        return false;
     }
+
+    reply = dbus_connection_send_with_reply_and_block(dbus_connection,
+          msg, 300, NULL);
+
+    if (reply != NULL)
+    {
+        if (!dbus_message_get_args(reply, NULL,
+            DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
+            DBUS_TYPE_INVALID))
+            dbus_screensaver_cookie = 0;
+        else
+            ret = true;
+
+        dbus_message_unref(reply);
+    }
+
+    dbus_message_unref(msg);
 
     if (dbus_screensaver_cookie == 0)
     {
@@ -142,6 +147,8 @@ static void dbus_screensaver_inhibit(void)
     {
         RARCH_LOG("[DBus]: Suspended screensaver via DBus.\n");
     }
+
+    return ret;
 }
 
 static void dbus_screensaver_uninhibit(void)
@@ -151,23 +158,23 @@ static void dbus_screensaver_uninhibit(void)
    if (!dbus_connection)
       return;
 
-   if (!dbus_screensaver_cookie)
+   if (dbus_screensaver_cookie == 0)
       return;
 
    msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
          "/org/freedesktop/ScreenSaver",
          "org.freedesktop.ScreenSaver",
          "UnInhibit");
+   if (!msg)
+       return;
+
    dbus_message_append_args(msg,
          DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
          DBUS_TYPE_INVALID);
 
-   if (msg != NULL)
-   {
-      if (dbus_connection_send(dbus_connection, msg, NULL))
-         dbus_connection_flush(dbus_connection);
-      dbus_message_unref(msg);
-   }
+   if (dbus_connection_send(dbus_connection, msg, NULL))
+      dbus_connection_flush(dbus_connection);
+   dbus_message_unref(msg);
 
    dbus_screensaver_cookie = 0;
 }
