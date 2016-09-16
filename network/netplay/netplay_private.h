@@ -66,7 +66,7 @@ struct delta_frame
 };
 
 struct netplay_callbacks {
-   void (*pre_frame) (netplay_t *netplay);
+   bool (*pre_frame) (netplay_t *netplay);
    void (*post_frame)(netplay_t *netplay);
    bool (*info_cb)   (netplay_t *netplay, unsigned frames);
 };
@@ -138,6 +138,7 @@ struct netplay
    struct {
       bool enabled;
       int fds[MAX_SPECTATORS];
+      uint32_t frames[MAX_SPECTATORS];
       uint16_t *input;
       size_t input_ptr;
       size_t input_sz;

@@ -125,12 +125,6 @@ void audio_sample_net(int16_t left, int16_t right);
 
 size_t audio_sample_batch_net(const int16_t *data, size_t frames);
 
-int16_t input_state_spectate(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
-
-int16_t input_state_spectate_client(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
-
 /**
  * netplay_new:
  * @server               : IP address of server.

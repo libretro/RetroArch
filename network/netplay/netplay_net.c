@@ -52,7 +52,7 @@ static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *de
  *
  * Pre-frame for Netplay (normal version).
  **/
-static void netplay_net_pre_frame(netplay_t *netplay)
+static bool netplay_net_pre_frame(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
 
@@ -83,6 +83,8 @@ static void netplay_net_pre_frame(netplay_t *netplay)
    netplay->can_poll = true;
 
    input_poll_net();
+
+   return true;
 }
 
 /**
@@ -190,34 +192,6 @@ static void netplay_net_post_frame(netplay_t *netplay)
       core_unserialize(&serial_info);
    }
 }
-static bool netplay_net_init_buffers(netplay_t *netplay)
-{
-   unsigned i;
-   retro_ctx_size_info_t info;
-
-   if (!netplay)
-      return false;
-
-   netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
-         sizeof(*netplay->buffer));
-
-   if (!netplay->buffer)
-      return false;
-
-   core_serialize_size(&info);
-
-   netplay->state_size = info.size;
-
-   for (i = 0; i < netplay->buffer_size; i++)
-   {
-      netplay->buffer[i].state = calloc(netplay->state_size, 1);
-
-      if (!netplay->buffer[i].state)
-         return false;
-   }
-
-   return true;
-}
 
 static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
 {
@@ -231,15 +205,6 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
       if (!netplay_get_info(netplay))
          return false;
    }
-
-   /* * 2 + 1 because:
-    * Self sits in the middle,
-    * Other is allowed to drift as much as 'frames' frames behind
-    * Read is allowed to drift as much as 'frames' frames ahead */
-   netplay->buffer_size = frames * 2 + 1;
-
-   if (!netplay_net_init_buffers(netplay))
-      return false;
 
    netplay->has_connection = true;
 

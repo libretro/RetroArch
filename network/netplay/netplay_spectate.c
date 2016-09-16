@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C)      2016 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,10 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
@@ -25,157 +24,266 @@
 
 #include "netplay_private.h"
 
-#include "../../runloop.h"
+#include "retro_assert.h"
+
+#include "../../autosave.h"
 
 /**
- * netplay_pre_frame_spectate:   
+ * netplay_spectate_pre_frame:
  * @netplay              : pointer to netplay object
  *
- * Pre-frame for Netplay (spectate mode version).
+ * Pre-frame for Netplay (spectator version).
  **/
-static void netplay_spectate_pre_frame(netplay_t *netplay)
+static bool netplay_spectate_pre_frame(netplay_t *netplay)
 {
-   unsigned i;
-   uint32_t *header;
-   int new_fd, idx, bufsize;
-   size_t header_size;
-   struct sockaddr_storage their_addr;
-   socklen_t addr_size;
-   fd_set fds;
-   struct timeval tmp_tv = {0};
-
-   if (!netplay_is_server(netplay))
-      return;
-
-   FD_ZERO(&fds);
-   FD_SET(netplay->fd, &fds);
-
-   if (socket_select(netplay->fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
-      return;
-
-   if (!FD_ISSET(netplay->fd, &fds))
-      return;
-
-   addr_size = sizeof(their_addr);
-   new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
-   if (new_fd < 0)
+   if (netplay_is_server(netplay))
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR));
-      return;
-   }
+      fd_set fds;
+      struct timeval tmp_tv = {0};
+      int new_fd, idx, i;
+      struct sockaddr_storage their_addr;
+      socklen_t addr_size;
+      retro_ctx_serialize_info_t serial_info;
+      uint32_t header[3];
 
-   idx = -1;
-   for (i = 0; i < MAX_SPECTATORS; i++)
-   {
-      if (netplay->spectate.fds[i] == -1)
+      netplay->can_poll = true;
+      input_poll_net();
+
+      /* Send our input to any connected spectators */
+      for (i = 0; i < MAX_SPECTATORS; i++)
       {
-         idx = i;
-         break;
+         if (netplay->spectate.fds[i] >= 0)
+         {
+            netplay->packet_buffer[2] = htonl(netplay->self_frame_count - netplay->spectate.frames[i]);
+            if (!socket_send_all_blocking(netplay->spectate.fds[i], netplay->packet_buffer, sizeof(netplay->packet_buffer), false))
+            {
+               socket_close(netplay->spectate.fds[i]);
+               netplay->spectate.fds[i] = -1;
+            }
+         }
       }
-   }
 
-   /* No vacant client streams :( */
-   if (idx == -1)
+      /* Check for connections */
+      FD_ZERO(&fds);
+      FD_SET(netplay->fd, &fds);
+      if (socket_select(netplay->fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+         return true;
+
+      if (!FD_ISSET(netplay->fd, &fds))
+         return true;
+
+      addr_size = sizeof(their_addr);
+      new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
+      if (new_fd < 0)
+      {
+         RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR));
+         return true;
+      }
+
+      idx = -1;
+      for (i = 0; i < MAX_SPECTATORS; i++)
+      {
+         if (netplay->spectate.fds[i] == -1)
+         {
+            idx = i;
+            break;
+         }
+      }
+
+      /* No vacant client streams :( */
+      if (idx == -1)
+      {
+         socket_close(new_fd);
+         return true;
+      }
+
+      if (!netplay_get_nickname(netplay, new_fd))
+      {
+         RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT));
+         socket_close(new_fd);
+         return true;
+      }
+
+      if (!netplay_send_nickname(netplay, new_fd))
+      {
+         RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT));
+         socket_close(new_fd);
+         return true;
+      }
+
+      /* Start them at the current frame */
+      netplay->spectate.frames[idx] = netplay->self_frame_count;
+      serial_info.data_const = NULL;
+      serial_info.data = netplay->buffer[netplay->self_ptr].state;
+      serial_info.size = netplay->state_size;
+      if (core_serialize(&serial_info))
+      {
+         /* Send them the savestate */
+         header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
+         header[1] = htonl(serial_info.size + sizeof(uint32_t));
+         header[2] = htonl(0);
+         if (!socket_send_all_blocking(new_fd, header, sizeof(header), false))
+         {
+            socket_close(new_fd);
+            return true;
+         }
+
+         if (!socket_send_all_blocking(new_fd, serial_info.data, serial_info.size, false))
+         {
+            socket_close(new_fd);
+            return true;
+         }
+      }
+
+      /* And send them this frame's input */
+      netplay->packet_buffer[2] = htonl(0);
+      if (!socket_send_all_blocking(new_fd, netplay->packet_buffer, sizeof(netplay->packet_buffer), false))
+      {
+         socket_close(new_fd);
+         return true;
+      }
+
+      netplay->spectate.fds[idx] = new_fd;
+
+   }
+   else
    {
-      socket_close(new_fd);
-      return;
+      if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
+      {
+         /* Mark our own data as already read, so we ignore local input */
+         netplay->buffer[netplay->self_ptr].have_local = true;
+      }
+
+      netplay->can_poll = true;
+      input_poll_net();
+
+      /* Only proceed if we have data */
+      if (netplay->read_frame_count <= netplay->self_frame_count)
+         return false;
+
    }
 
-   if (!netplay_get_nickname(netplay, new_fd))
-   {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT));
-      socket_close(new_fd);
-      return;
-   }
-
-   if (!netplay_send_nickname(netplay, new_fd))
-   {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT));
-      socket_close(new_fd);
-      return;
-   }
-
-   header = netplay_bsv_header_generate(&header_size,
-         netplay_impl_magic());
-
-   if (!header)
-   {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_GENERATE_BSV_HEADER));
-      socket_close(new_fd);
-      return;
-   }
-
-   bufsize = header_size;
-   setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, (const char*)&bufsize,
-         sizeof(int));
-
-   if (!socket_send_all_blocking(new_fd, header, header_size, false))
-   {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_SEND_HEADER_TO_CLIENT));
-      socket_close(new_fd);
-      free(header);
-      return;
-   }
-
-   free(header);
-   netplay->spectate.fds[idx] = new_fd;
-
-#ifndef HAVE_SOCKET_LEGACY
-   netplay_log_connection(&their_addr, idx, netplay->other_nick);
-#endif
+   return true;
 }
 
 /**
- * netplay_post_frame_spectate:   
+ * netplay_spectate_post_frame:
  * @netplay              : pointer to netplay object
  *
- * Post-frame for Netplay (spectate mode version).
- * We check if we have new input and replay from recorded input.
+ * Post-frame for Netplay (spectator version).
+ * Not much here, just fast forward if we're behind the server.
  **/
 static void netplay_spectate_post_frame(netplay_t *netplay)
 {
-   unsigned i;
+   netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+   netplay->self_frame_count++;
 
-   if (!netplay_is_server(netplay))
-      return;
-
-   for (i = 0; i < MAX_SPECTATORS; i++)
+   if (netplay_is_server(netplay))
    {
-      char msg[128];
+      /* Not expecting any client data */
+      netplay->read_ptr = netplay->other_ptr = netplay->self_ptr;
+      netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
 
-      if (netplay->spectate.fds[i] == -1)
-         continue;
-
-      if (socket_send_all_blocking(netplay->spectate.fds[i],
-               netplay->spectate.input,
-               netplay->spectate.input_ptr * sizeof(int16_t),
-               false))
-         continue;
-
-      RARCH_LOG("Client (#%u) disconnected ...\n", i);
-
-      snprintf(msg, sizeof(msg), "Client (#%u) disconnected.", i);
-      runloop_msg_queue_push(msg, 1, 180, false);
-
-      socket_close(netplay->spectate.fds[i]);
-      netplay->spectate.fds[i] = -1;
-      break;
    }
+   else
+   {
+      /* If we must rewind, it's because we got a save state */
+      if (netplay->force_rewind)
+      {
+         retro_ctx_serialize_info_t serial_info;
 
-   netplay->spectate.input_ptr = 0;
+         /* Replay frames. */
+         netplay->is_replay = true;
+         netplay->replay_ptr = netplay->other_ptr;
+         netplay->replay_frame_count = netplay->other_frame_count;
+
+         serial_info.data       = NULL;
+         serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
+         serial_info.size       = netplay->state_size;
+
+         core_unserialize(&serial_info);
+
+         while (netplay->replay_frame_count < netplay->self_frame_count)
+         {
+#if defined(HAVE_THREADS)
+            autosave_lock();
+#endif
+            core_run();
+#if defined(HAVE_THREADS)
+            autosave_unlock();
+#endif
+            netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
+            netplay->replay_frame_count++;
+         }
+
+         netplay->is_replay = false;
+         netplay->force_rewind = false;
+      }
+
+      /* We're in sync by definition */
+      if (netplay->read_frame_count < netplay->self_frame_count)
+      {
+         netplay->other_ptr = netplay->read_ptr;
+         netplay->other_frame_count = netplay->read_frame_count;
+      }
+      else
+      {
+         netplay->other_ptr = netplay->self_ptr;
+         netplay->other_frame_count = netplay->self_frame_count;
+      }
+
+      /* If the server gets significantly ahead, skip to catch up */
+      if (netplay->self_frame_count + netplay->stall_frames <= netplay->read_frame_count)
+      {
+         /* "Replay" into the future */
+         netplay->is_replay = true;
+         netplay->replay_ptr = netplay->self_ptr;
+         netplay->replay_frame_count = netplay->self_frame_count;
+
+         while (netplay->replay_frame_count < netplay->read_frame_count - 1)
+         {
+#if defined(HAVE_THREADS)
+            autosave_lock();
+#endif
+            core_run();
+#if defined(HAVE_THREADS)
+            autosave_unlock();
+#endif
+
+            netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
+            netplay->replay_frame_count++;
+            netplay->self_ptr = netplay->replay_ptr;
+            netplay->self_frame_count = netplay->replay_frame_count;
+         }
+
+         netplay->is_replay = false;
+      }
+
+   }
 }
 
-static bool netplay_spectate_info_cb(netplay_t *netplay, unsigned frames)
+static bool netplay_spectate_info_cb(netplay_t* netplay, unsigned frames)
 {
-   unsigned i;
-   if(netplay_is_server(netplay))
+   if (netplay_is_server(netplay))
    {
-      if(!netplay_get_info(netplay))
+      int i;
+      for (i = 0; i < MAX_SPECTATORS; i++)
+      {
+         netplay->spectate.fds[i] = -1;
+      }
+
+   }
+   else
+   {
+      if (!netplay_send_nickname(netplay, netplay->fd))
+         return false;
+
+      if (!netplay_get_nickname(netplay, netplay->fd))
          return false;
    }
 
-   for (i = 0; i < MAX_SPECTATORS; i++)
-      netplay->spectate.fds[i] = -1;
+   netplay->has_connection = true;
+
    return true;
 }
 
@@ -186,6 +294,5 @@ struct netplay_callbacks* netplay_get_cbs_spectate(void)
       &netplay_spectate_post_frame,
       &netplay_spectate_info_cb
    };
-
    return &cbs;
 }

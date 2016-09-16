@@ -157,11 +157,14 @@ static bool get_self_input_state(netplay_t *netplay)
    netplay->packet_buffer[4] = htonl(state[1]);
    netplay->packet_buffer[5] = htonl(state[2]);
 
-   if (!socket_send_all_blocking(netplay->fd, netplay->packet_buffer, sizeof(netplay->packet_buffer), false))
+   if (!netplay->spectate.enabled) /* Spectate sends in its own way */
    {
-      warn_hangup();
-      netplay->has_connection = false;
-      return false;
+      if (!socket_send_all_blocking(netplay->fd, netplay->packet_buffer, sizeof(netplay->packet_buffer), false))
+      {
+         warn_hangup();
+         netplay->has_connection = false;
+         return false;
+      }
    }
 
    memcpy(ptr->self_state, state, sizeof(state));
@@ -550,6 +553,10 @@ static bool netplay_poll(netplay_t *netplay)
 
    get_self_input_state(netplay);
 
+   /* No network side in spectate mode */
+   if (netplay_is_server(netplay) && netplay->spectate.enabled)
+      return true;
+
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
    res = poll_input(netplay, (netplay->stall_frames == 0) && (netplay->read_frame_count <= netplay->self_frame_count));
@@ -899,6 +906,41 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
    return true;
 }
 
+static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
+{
+   unsigned i;
+   retro_ctx_size_info_t info;
+
+   if (!netplay)
+      return false;
+
+   /* * 2 + 1 because:
+    * Self sits in the middle,
+    * Other is allowed to drift as much as 'frames' frames behind
+    * Read is allowed to drift as much as 'frames' frames ahead */
+   netplay->buffer_size = frames * 2 + 1;
+
+   netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
+         sizeof(*netplay->buffer));
+
+   if (!netplay->buffer)
+      return false;
+
+   core_serialize_size(&info);
+
+   netplay->state_size = info.size;
+
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      netplay->buffer[i].state = calloc(netplay->state_size, 1);
+
+      if (!netplay->buffer[i].state)
+         return false;
+   }
+
+   return true;
+}
+
 /**
  * netplay_new:
  * @server               : IP address of server.
@@ -930,6 +972,12 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
    netplay->stall_frames = frames;
    netplay->check_frames = check_frames;
+
+   if (!netplay_init_buffers(netplay, frames))
+   {
+      free(netplay);
+      return NULL;
+   }
 
    if(spectate)
       netplay->net_cbs = netplay_get_cbs_spectate();
@@ -1064,56 +1112,6 @@ void netplay_free(netplay_t *netplay)
    free(netplay);
 }
 
-
-static void netplay_set_spectate_input(netplay_t *netplay, int16_t input)
-{
-   if (netplay->spectate.input_ptr >= netplay->spectate.input_sz)
-   {
-      netplay->spectate.input_sz++;
-      netplay->spectate.input_sz *= 2;
-      netplay->spectate.input = (uint16_t*)realloc(netplay->spectate.input,
-            netplay->spectate.input_sz * sizeof(uint16_t));
-   }
-
-   netplay->spectate.input[netplay->spectate.input_ptr++] = swap_if_big16(input);
-}
-
-int16_t input_state_spectate(unsigned port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   netplay_t *netplay = (netplay_t*)netplay_data;
-   int16_t res        = netplay->cbs.state_cb(port, device, idx, id);
-
-   netplay_set_spectate_input(netplay, res);
-   return res;
-}
-
-static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
-      unsigned device, unsigned idx, unsigned id)
-{
-   int16_t inp;
-   retro_ctx_input_state_info_t input_info;
-
-   if (socket_receive_all_blocking(netplay->fd, (char*)&inp, sizeof(inp)))
-      return swap_if_big16(inp);
-
-   RARCH_ERR("Connection with host was cut.\n");
-   runloop_msg_queue_push("Connection with host was cut.", 1, 180, true);
-
-   input_info.cb = netplay->cbs.state_cb;
-
-   core_set_input_state(&input_info);
-
-   return netplay->cbs.state_cb(port, device, idx, id);
-}
-
-int16_t input_state_spectate_client(unsigned port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   return netplay_get_spectate_input((netplay_t*)netplay_data, port,
-         device, idx, id);
-}
-
 /**
  * netplay_pre_frame:   
  * @netplay              : pointer to netplay object
@@ -1132,7 +1130,8 @@ bool netplay_pre_frame(netplay_t *netplay)
       /* FIXME: This is an ugly way to learn we're not paused anymore */
       netplay_frontend_paused(netplay, false);
    }
-   netplay->net_cbs->pre_frame(netplay);
+   if (!netplay->net_cbs->pre_frame(netplay))
+      return false;
    return (!netplay->has_connection || (!netplay->stall && !netplay->remote_paused));
 }
 
@@ -1164,7 +1163,7 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
       return;
 
    netplay->local_paused = paused;
-   if (netplay->has_connection)
+   if (netplay->has_connection && !netplay->spectate.enabled)
       netplay_send_raw_cmd(netplay, paused ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
 }
 
