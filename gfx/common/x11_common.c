@@ -63,7 +63,7 @@ unsigned g_x11_screen;
 #define MOVERESIZE_Y_SHIFT 9
 
 #ifdef HAVE_DBUS
-static void dbus_get_connection(void)
+static void dbus_ensure_connection(void)
 {
     DBusError err;
     int ret;
@@ -663,7 +663,7 @@ bool x11_connect(void)
    }
 
 #ifdef HAVE_DBUS
-   dbus_get_connection();
+   dbus_ensure_connection();
 #endif
 
 
