@@ -23,6 +23,9 @@ script:
   - ./configure
   - make
 
+env:
+  global:
+   - secure: "JTh3ZOkb8UhxvkVfhevS79nPfxZ50vqTxoyhDCu0GrOUlhRbwwOswoZty4RwMFu5qpSK5TDRgTYMbyEa9mmiHQSevf3gOA9hXjwjzeYldDQzfrUJ83If9Ci3U7xA7M73AW2vMo4zFNvat/EEGFsUM+z0XagMoUX52kjjrs+7x+w="
 addons:
   apt:
     packages:
@@ -35,3 +38,11 @@ addons:
       - libsdl-image1.2-dev
       - libsdl-mixer1.2-dev
       - libsdl-ttf2.0-dev
+  coverity_scan:
+    project:
+      name: "RetroArch"
+      description: "RetroArch is the official reference frontend for the libretro API."
+    notification_email: libretro@gmail.com
+    build_command_prepend: "./configure; make clean"
+    build_command:   "make"
+    branch_pattern: coverity_scan
