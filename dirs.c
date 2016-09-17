@@ -21,10 +21,6 @@
 #include <retro_assert.h>
 #include <retro_stat.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "dirs.h"
 
 static char dir_osk_overlay[PATH_MAX_LENGTH] = {0};
