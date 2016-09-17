@@ -41,6 +41,10 @@ void dir_set_savefile(const char *path);
 
 void dir_set_savestate(const char *path);
 
+size_t dir_get_savestate_size(void);
+
+size_t dir_get_savefile_size(void);
+
 void dir_clear_all(void);
 
 RETRO_END_DECLS

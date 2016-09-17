@@ -47,6 +47,24 @@ bool dir_is_savestate_empty(void)
    return string_is_empty(global->dir.savestate);
 }
 
+size_t dir_get_savestate_size(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return 0;
+   return sizeof(global->dir.savestate);
+}
+
+size_t dir_get_savefile_size(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return 0;
+   return sizeof(global->dir.savefile);
+}
+
 void dir_clear_savefile(void)
 {
    global_t *global = global_get_ptr();
