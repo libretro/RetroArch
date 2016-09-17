@@ -365,3 +365,49 @@ void path_init_savefile(void)
       string_list_append(global->savefiles, savefile_name_rtc, attr);
    }
 }
+
+void path_set_names(const char *path)
+{
+   global_t *global = global_get_ptr();
+
+   path_set_basename(path);
+
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+      fill_pathname_noext(global->name.savefile, global->name.base,
+            file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
+
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+      fill_pathname_noext(global->name.savestate, global->name.base,
+            file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
+
+   fill_pathname_noext(global->name.cheatfile, global->name.base,
+         file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(global->name.cheatfile));
+
+   path_set_redirect();
+}
+
+void path_fill_names(void)
+{
+   global_t *global = global_get_ptr();
+
+   path_init_savefile();
+   bsv_movie_set_path(global->name.savefile);
+
+   if (string_is_empty(global->name.base))
+      return;
+
+   if (string_is_empty(global->name.ups))
+      fill_pathname_noext(global->name.ups, global->name.base,
+            file_path_str(FILE_PATH_UPS_EXTENSION),
+            sizeof(global->name.ups));
+
+   if (string_is_empty(global->name.bps))
+      fill_pathname_noext(global->name.bps, global->name.base,
+            file_path_str(FILE_PATH_BPS_EXTENSION),
+            sizeof(global->name.bps));
+
+   if (string_is_empty(global->name.ips))
+      fill_pathname_noext(global->name.ips, global->name.base,
+            file_path_str(FILE_PATH_IPS_EXTENSION),
+            sizeof(global->name.ips));
+}

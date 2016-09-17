@@ -74,6 +74,7 @@
 #include "dynamic.h"
 #include "content.h"
 #include "movie.h"
+#include "paths.h"
 #include "msg_hash.h"
 #include "retroarch.h"
 #include "managers/cheat_manager.h"
@@ -989,8 +990,8 @@ static bool command_event_disk_control_append_image(const char *path)
        * If we actually use append_image, we assume that we
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
-      retroarch_set_pathnames(path);
-      retroarch_fill_pathnames();
+      path_set_names(path);
+      path_fill_names();
    }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
@@ -1327,7 +1328,7 @@ static bool event_init_content(void)
       return true;
 
    if (!content_does_not_need_content())
-      retroarch_fill_pathnames();
+      path_fill_names();
 
    if (!content_init())
       return false;

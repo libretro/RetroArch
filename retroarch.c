@@ -867,7 +867,7 @@ static void retroarch_parse_input(int argc, char *argv[])
    {
       /* We requested explicit ROM, so use PLAIN core type. */
       retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
-      retroarch_set_pathnames((const char*)argv[optind]);
+      path_set_names((const char*)argv[optind]);
    }
    else if (!string_is_empty(global->subsystem) && optind < argc)
    {
@@ -1271,52 +1271,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    }
 
    return true;
-}
-
-void retroarch_set_pathnames(const char *path)
-{
-   global_t *global = global_get_ptr();
-
-   path_set_basename(path);
-
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
-      fill_pathname_noext(global->name.savefile, global->name.base,
-            file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
-
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
-      fill_pathname_noext(global->name.savestate, global->name.base,
-            file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
-
-   fill_pathname_noext(global->name.cheatfile, global->name.base,
-         file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(global->name.cheatfile));
-
-   path_set_redirect();
-}
-
-void retroarch_fill_pathnames(void)
-{
-   global_t *global = global_get_ptr();
-
-   path_init_savefile();
-   bsv_movie_set_path(global->name.savefile);
-
-   if (string_is_empty(global->name.base))
-      return;
-
-   if (string_is_empty(global->name.ups))
-      fill_pathname_noext(global->name.ups, global->name.base,
-            file_path_str(FILE_PATH_UPS_EXTENSION),
-            sizeof(global->name.ups));
-
-   if (string_is_empty(global->name.bps))
-      fill_pathname_noext(global->name.bps, global->name.base,
-            file_path_str(FILE_PATH_BPS_EXTENSION),
-            sizeof(global->name.bps));
-
-   if (string_is_empty(global->name.ips))
-      fill_pathname_noext(global->name.ips, global->name.base,
-            file_path_str(FILE_PATH_IPS_EXTENSION),
-            sizeof(global->name.ips));
 }
 
 static bool has_set_verbosity           = false;

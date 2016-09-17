@@ -23,6 +23,10 @@ RETRO_BEGIN_DECLS
 
 void path_init_savefile(void);
 
+void path_set_names(const char *path);
+
+void path_fill_names(void);
+
 void path_set_redirect(void);
 
 void path_set_special(char **argv, unsigned num_content);
