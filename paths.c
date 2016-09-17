@@ -45,6 +45,8 @@
 static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};
+/* Config file associated with per-core configs. */
+static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
 
 void path_set_redirect(void)
 {
@@ -456,9 +458,6 @@ bool path_is_config_empty(void)
 
 void path_set_config(const char *path)
 {
-   global_t   *global = global_get_ptr();
-   if (!global)
-      return;
    strlcpy(path_config_file, path, sizeof(path_config_file));
 }
 
@@ -477,9 +476,7 @@ void path_clear_config(void)
 
 bool path_is_core_options_empty(void)
 {
-   global_t   *global          = global_get_ptr();
-
-   if (global && string_is_empty(global->path.core_options_path))
+   if (string_is_empty(path_core_options_file))
       return true;
 
    return false;
@@ -487,28 +484,18 @@ bool path_is_core_options_empty(void)
 
 void path_clear_core_options(void)
 {
-   global_t   *global = global_get_ptr();
-   if (!global)
-      return;
-   *global->path.core_options_path = '\0';
+   *path_core_options_file = '\0';
 }
 
 void path_set_core_options(const char *path)
 {
-   global_t   *global = global_get_ptr();
-   if (!global)
-      return;
-   strlcpy(global->path.core_options_path, path, sizeof(global->path.core_options_path));
+   strlcpy(path_core_options_file, path, sizeof(path_core_options_file));
 }
 
 const char *path_get_core_options(void)
 {
    if (!path_is_core_options_empty())
-   {
-      global_t   *global = global_get_ptr();
-      if (global)
-         return global->path.core_options_path;
-   }
+      return path_core_options_file;
 
    return NULL;
 }

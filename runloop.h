@@ -162,8 +162,6 @@ typedef struct rarch_path
 #ifdef HAVE_FILE_LOGGER
    char default_log[PATH_MAX_LENGTH];
 #endif
-   /* Config file associated with per-core configs. */
-   char core_options_path[PATH_MAX_LENGTH];
 } rarch_path_t;
 
 typedef struct rarch_resolution
