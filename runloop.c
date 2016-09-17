@@ -745,7 +745,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_frontend_key_event = NULL;
 
          audio_driver_unset_callback();
-         path_clear_all();
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
@@ -916,6 +915,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             core_unset_input_descriptors();
 
             global = global_get_ptr();
+            path_clear_all();
             memset(global, 0, sizeof(struct global));
             retroarch_override_setting_free_state();
             config_free_state();
