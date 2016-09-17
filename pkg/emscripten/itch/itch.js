@@ -50,6 +50,11 @@ function reload()
    window.top.location.reload();
 }
 
+function cleanupStorage()
+{
+   localStorage.clear();
+}
+
 function dropboxInit()
 {
   document.getElementById('btnRun').disabled = true;

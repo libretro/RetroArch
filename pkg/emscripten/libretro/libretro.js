@@ -45,6 +45,11 @@ var showError = function(error) {
   }
 };
 
+function cleanupStorage()
+{
+   localStorage.clear();
+}
+
 function dropboxInit()
 {
   document.getElementById('btnRun').disabled = true;
@@ -329,6 +334,7 @@ $(function() {
          $('#lblLocal').addClass('active');
          preLoadingComplete();
          setupFileSystem("browser");
+         document.getElementById("btnClean").disabled = false;
       }
    });
  });

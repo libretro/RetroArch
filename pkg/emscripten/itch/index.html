@@ -88,6 +88,9 @@
                       <button class="btn btn-danger disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()" title="Add Games" disabled>
                          <span class="fa fa-plus" id="icnAdd"></span> </span> <span class="sr-only"></span>
                       </button>
+                      <button class="btn btn-primary enabled" id="btnClean" onclick="cleanupStorage();" title="Cleanup" disabled>
+                        <span class="fa fa-trash-o" id="btnCleanup"></span> <span class="sr-only">Cleanup</span>
+                      </button>
                       <input class="btn btn-danger disabled" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
                       <button class="btn btn-danger disabled" id="btnFullscreen" onclick="Module.requestFullScreen()" title="Fullscreen" disabled>
                          <span class="fa fa-desktop" id="icnAdd"></span> <span class="sr-only">Fullscreen</span>
