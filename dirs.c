@@ -27,9 +27,12 @@
 
 #include "dirs.h"
 
-static char dir_system[PATH_MAX_LENGTH]     = {0};
-static char dir_savefile[PATH_MAX_LENGTH]   = {0};
-static char dir_savestate[PATH_MAX_LENGTH]  = {0};
+static char dir_osk_overlay[PATH_MAX_LENGTH] = {0};
+static char dir_system[PATH_MAX_LENGTH]      = {0};
+static char dir_savefile[PATH_MAX_LENGTH]    = {0};
+static char dir_savestate[PATH_MAX_LENGTH]   = {0};
+
+/* empty functions */
 
 bool dir_is_system_empty(void)
 {
@@ -46,6 +49,13 @@ bool dir_is_savestate_empty(void)
    return string_is_empty(dir_savestate);
 }
 
+bool dir_is_osk_overlay_empty(void)
+{
+   return string_is_empty(dir_osk_overlay);
+}
+
+/* get size functions */
+
 size_t dir_get_system_size(void)
 {
    return sizeof(dir_system);
@@ -60,6 +70,13 @@ size_t dir_get_savefile_size(void)
 {
    return sizeof(dir_savefile);
 }
+
+size_t dir_get_osk_overlay_size(void)
+{
+   return sizeof(dir_osk_overlay);
+}
+
+/* clear functions */
 
 void dir_clear_system(void)
 {
@@ -76,6 +93,26 @@ void dir_clear_savestate(void)
    *dir_savestate = '\0';
 }
 
+void dir_clear_osk_overlay(void)
+{
+   *dir_osk_overlay = '\0';
+}
+
+void dir_clear_all(void)
+{
+   dir_clear_system();
+   dir_clear_osk_overlay();
+   dir_clear_savefile();
+   dir_clear_savestate();
+}
+
+/* get ptr functions */
+
+char *dir_get_osk_overlay_ptr(void)
+{
+   return dir_osk_overlay;
+}
+
 char *dir_get_savefile_ptr(void)
 {
    return dir_savefile;
@@ -84,6 +121,18 @@ char *dir_get_savefile_ptr(void)
 char *dir_get_system_ptr(void)
 {
    return dir_system;
+}
+
+char *dir_get_savestate_ptr(void)
+{
+   return dir_savestate;
+}
+
+/* get functions */
+
+const char *dir_get_osk_overlay(void)
+{
+   return dir_osk_overlay;
 }
 
 const char *dir_get_system(void)
@@ -96,14 +145,17 @@ const char *dir_get_savefile(void)
    return dir_savefile;
 }
 
-char *dir_get_savestate_ptr(void)
+const char *dir_get_savestate(void)
 {
    return dir_savestate;
 }
 
-const char *dir_get_savestate(void)
+/* set functions */
+
+void dir_set_osk_overlay(const char *path)
 {
-   return dir_savestate;
+   strlcpy(dir_osk_overlay, path,
+         sizeof(dir_osk_overlay));
 }
 
 void dir_set_system(const char *path)
@@ -122,11 +174,4 @@ void dir_set_savefile(const char *path)
 {
    strlcpy(dir_savefile, path,
          sizeof(dir_savefile));
-}
-
-void dir_clear_all(void)
-{
-   dir_clear_system();
-   dir_clear_savefile();
-   dir_clear_savestate();
 }

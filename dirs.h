@@ -21,11 +21,17 @@
 
 RETRO_BEGIN_DECLS
 
+/* empty functions */
+
 bool dir_is_savefile_empty(void);
 
 bool dir_is_savestate_empty(void);
 
 bool dir_is_system_empty(void);
+
+bool dir_is_osk_overlay_empty(void);
+
+/* clear functions */
 
 void dir_clear_system(void);
 
@@ -33,23 +39,13 @@ void dir_clear_savefile(void);
 
 void dir_clear_savestate(void);
 
-char *dir_get_savefile_ptr(void);
+void dir_clear_osk_overlay(void);
 
-const char *dir_get_savefile(void);
+void dir_clear_all(void);
 
-char *dir_get_savestate_ptr(void);
+/* get size functions */
 
-const char *dir_get_savestate(void);
-
-char *dir_get_system_ptr(void);
-
-const char *dir_get_system(void);
-
-void dir_set_savefile(const char *path);
-
-void dir_set_savestate(const char *path);
-
-void dir_set_system(const char *path);
+size_t dir_get_osk_overlay_size(void);
 
 size_t dir_get_system_size(void);
 
@@ -57,7 +53,37 @@ size_t dir_get_savestate_size(void);
 
 size_t dir_get_savefile_size(void);
 
-void dir_clear_all(void);
+/* get ptr functions */
+
+char *dir_get_osk_overlay_ptr(void);
+
+char *dir_get_savefile_ptr(void);
+
+char *dir_get_savestate_ptr(void);
+
+char *dir_get_system_ptr(void);
+
+char *dir_get_osk_overlay_ptr(void);
+
+/* get functions */
+
+const char *dir_get_osk_overlay(void);
+
+const char *dir_get_savefile(void);
+
+const char *dir_get_savestate(void);
+
+const char *dir_get_system(void);
+
+/* set functions */
+
+void dir_set_osk_overlay(const char *path);
+
+void dir_set_savefile(const char *path);
+
+void dir_set_savestate(const char *path);
+
+void dir_set_system(const char *path);
 
 RETRO_END_DECLS
 
