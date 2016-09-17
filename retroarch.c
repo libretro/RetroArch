@@ -84,6 +84,13 @@
 
 #include "command.h"
 
+#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
+
+#define FAIL_CPU(simd_type) do { \
+   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   retroarch_fail(1, "validate_cpu_features()"); \
+} while(0)
+
 /* Descriptive names for options without short variant.
  *
  * Please keep the name in sync with the option name.
@@ -110,13 +117,30 @@ enum
    RA_OPT_MAX_FRAMES
 };
 
+static jmp_buf error_sjlj_context;
 static bool current_core_explicitly_set                 = false;
 static enum rarch_core_type current_core_type           = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
 static char error_string[PATH_MAX_LENGTH]               = {0};
-static jmp_buf error_sjlj_context;
 
-#define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
+static bool has_set_username                            = false;
+static bool rarch_is_inited                             = false;
+static bool rarch_error_on_init                         = false;
+static bool rarch_block_config_read                     = false;
+static bool rarch_force_fullscreen                      = false;
+static bool has_set_verbosity                           = false;
+static bool has_set_libretro                            = false;
+static bool has_set_libretro_directory                  = false;
+static bool has_set_save_path                           = false;
+static bool has_set_state_path                          = false;
+static bool has_set_netplay_mode                        = false;
+static bool has_set_netplay_ip_address                  = false;
+static bool has_set_netplay_ip_port                     = false;
+static bool has_set_netplay_delay_frames                = false;
+static bool has_set_netplay_check_frames                = false;
+static bool has_set_ups_pref                            = false;
+static bool has_set_bps_pref                            = false;
+static bool has_set_ips_pref                            = false;
 
 static void retroarch_print_features(void)
 {
@@ -352,7 +376,6 @@ static void retroarch_print_help(const char *arg0)
 #define NETPLAY_ARG
 #endif
 
-
 #define BSV_MOVIE_ARG "P:R:M:"
 
 /**
@@ -531,7 +554,8 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 's':
             strlcpy(global->name.savefile, optarg,
                   sizeof(global->name.savefile));
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_SAVE_PATH);
             break;
 
          case 'f':
@@ -541,12 +565,14 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'S':
             strlcpy(global->name.savestate, optarg,
                   sizeof(global->name.savestate));
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_STATE_PATH);
             break;
 
          case 'v':
             verbosity_enable();
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY);
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_VERBOSITY);
             break;
 
          case 'N':
@@ -642,13 +668,15 @@ static void retroarch_parse_input(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
          case 'H':
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
             global->netplay.enable = true;
             *global->netplay.server = '\0';
             break;
 
          case 'C':
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
             global->netplay.enable = true;
             strlcpy(global->netplay.server, optarg,
                   sizeof(global->netplay.server));
@@ -656,7 +684,8 @@ static void retroarch_parse_input(int argc, char *argv[])
 
          case 'F':
             global->netplay.sync_frames = strtol(optarg, NULL, 0);
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
             break;
 #endif
 
@@ -697,17 +726,20 @@ static void retroarch_parse_input(int argc, char *argv[])
 
 #ifdef HAVE_NETPLAY
          case RA_OPT_CHECK_FRAMES:
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
             global->netplay.check_frames = strtoul(optarg, NULL, 0);
             break;
 
          case RA_OPT_PORT:
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
             global->netplay.port = strtoul(optarg, NULL, 0);
             break;
 
          case RA_OPT_SPECTATE:
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
             global->netplay.is_spectate = true;
             break;
 
@@ -797,8 +829,11 @@ static void retroarch_parse_input(int argc, char *argv[])
 #ifdef HAVE_DYNAMIC
       else
       {
-         /* Allow stray -L arguments to go through to workaround cases where it's used as "config file".
-          * This seems to still be the case for Android, which should be properly fixed. */
+         /* Allow stray -L arguments to go through to workaround cases 
+          * where it's used as "config file".
+          *
+          * This seems to still be the case for Android, which 
+          * should be properly fixed. */
          retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
       }
 #endif
@@ -877,11 +912,6 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 
    return true;
 }
-
-#define FAIL_CPU(simd_type) do { \
-   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   retroarch_fail(1, "validate_cpu_features()"); \
-} while(0)
 
 /* Validates CPU features for given processor architecture.
  * Make sure we haven't compiled for something we cannot run.
@@ -1055,11 +1085,6 @@ error:
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
-   static bool has_set_username            = false;
-   static bool rarch_is_inited             = false;
-   static bool rarch_error_on_init         = false;
-   static bool rarch_block_config_read     = false;
-   static bool rarch_force_fullscreen      = false;
    settings_t *settings                    = config_get_ptr();
 
    switch(state)
@@ -1214,19 +1239,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
-static bool has_set_verbosity           = false;
-static bool has_set_libretro            = false;
-static bool has_set_libretro_directory  = false;
-static bool has_set_save_path           = false;
-static bool has_set_state_path          = false;
-static bool has_set_netplay_mode        = false;
-static bool has_set_netplay_ip_address  = false;
-static bool has_set_netplay_ip_port     = false;
-static bool has_set_netplay_delay_frames= false;
-static bool has_set_netplay_check_frames= false;
-static bool has_set_ups_pref            = false;
-static bool has_set_bps_pref            = false;
-static bool has_set_ips_pref            = false;
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx)
 {
