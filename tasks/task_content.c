@@ -86,6 +86,7 @@
 #include "../retroarch.h"
 #include "../file_path_special.h"
 #include "../core.h"
+#include "../dirs.h"
 #include "../paths.h"
 #include "../verbosity.h"
 
@@ -1608,9 +1609,9 @@ static void menu_content_environment_get(int *argc, char *argv[],
    if (!path_is_config_empty())
       wrap_args->config_path   = path_get_config();
    if (!string_is_empty(global->dir.savefile))
-      wrap_args->sram_path     = global->dir.savefile;
+      wrap_args->sram_path     = dir_get_savefile();
    if (!string_is_empty(global->dir.savestate))
-      wrap_args->state_path    = global->dir.savestate;
+      wrap_args->state_path    = dir_get_savestate();
    if (fullpath && *fullpath)
       wrap_args->content_path  = fullpath;
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO))

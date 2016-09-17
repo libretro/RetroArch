@@ -56,6 +56,7 @@
 #include "../msg_hash.h"
 #include "../defaults.h"
 #include "../driver.h"
+#include "../dirs.h"
 #include "../paths.h"
 #include "../dynamic.h"
 #include "../runloop.h"
@@ -6544,7 +6545,7 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               global->dir.savefile,
+               dir_get_savefile_ptr(),
                sizeof(global->dir.savefile),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVEFILE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY),
@@ -6559,7 +6560,7 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               global->dir.savestate,
+               dir_get_savestate_ptr(),
                sizeof(global->dir.savestate),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY),

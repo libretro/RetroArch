@@ -25,6 +25,7 @@
 #include "config.h"
 #endif
 
+#include "dirs.h"
 #include "paths.h"
 
 #include "configuration.h"
@@ -65,8 +66,8 @@ void path_set_redirect(void)
    if (!global)
       return;
 
-   old_savefile_dir  = global->dir.savefile;
-   old_savestate_dir = global->dir.savestate;
+   old_savefile_dir  = dir_get_savefile();
+   old_savestate_dir = dir_get_savestate();
 
    if (info->info.library_name &&
          !string_is_empty(info->info.library_name))
@@ -307,7 +308,7 @@ void path_init_savefile(void)
             global->subsystem_fullpaths ?
             global->subsystem_fullpaths->size : 0);
 
-      bool use_sram_dir = path_is_directory(global->dir.savefile);
+      bool use_sram_dir = path_is_directory(dir_get_savefile());
 
       for (i = 0; i < num_content; i++)
       {
@@ -325,7 +326,7 @@ void path_init_savefile(void)
             if (use_sram_dir)
             {
                /* Redirect content fullpath to save directory. */
-               strlcpy(path, global->dir.savefile, sizeof(path));
+               strlcpy(path, dir_get_savefile(), sizeof(path));
                fill_pathname_dir(path,
                      global->subsystem_fullpaths->elems[i].data, ext,
                      sizeof(path));
