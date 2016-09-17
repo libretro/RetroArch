@@ -59,6 +59,8 @@ bool path_is_core_options_empty(void);
 
 void path_clear_core(void);
 
+void path_clear_config(void);
+
 void path_clear_core_options(void);
 
 void path_clear_all(void);

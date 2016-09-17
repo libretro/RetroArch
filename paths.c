@@ -44,6 +44,7 @@
 
 static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
+static char path_config_file[PATH_MAX_LENGTH]           = {0};
 
 void path_set_redirect(void)
 {
@@ -447,9 +448,7 @@ void path_clear_core(void)
 
 bool path_is_config_empty(void)
 {
-   global_t   *global          = global_get_ptr();
-
-   if (global && string_is_empty(global->path.config))
+   if (string_is_empty(path_config_file))
       return true;
 
    return false;
@@ -460,19 +459,20 @@ void path_set_config(const char *path)
    global_t   *global = global_get_ptr();
    if (!global)
       return;
-   strlcpy(global->path.config, path, sizeof(global->path.config));
+   strlcpy(path_config_file, path, sizeof(path_config_file));
 }
 
 const char *path_get_config(void)
 {
    if (!path_is_config_empty())
-   {
-      global_t   *global = global_get_ptr();
-      if (global)
-         return global->path.config;
-   }
+      return path_config_file;
 
    return NULL;
+}
+
+void path_clear_config(void)
+{
+   *path_config_file = '\0';
 }
 
 bool path_is_core_options_empty(void)
@@ -516,7 +516,8 @@ const char *path_get_core_options(void)
 void path_clear_all(void)
 {
    global_t   *global = global_get_ptr();
-
+ 
+   path_clear_config();
    path_clear_core();
    path_clear_core_options();
 
