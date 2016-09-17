@@ -2155,7 +2155,9 @@ bool config_load_override(void)
    const char *game_name                  = NULL;
    bool should_append                     = false;
    rarch_system_info_t *system            = NULL;
+#ifdef HAVE_NETPLAY
    global_t *global                       = global_get_ptr();
+#endif
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
