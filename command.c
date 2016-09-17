@@ -1480,14 +1480,12 @@ static bool command_event_save_core_config(void)
    bool found_path                   = false;
    bool overrides_active             = false;
    settings_t *settings              = config_get_ptr();
-   global_t   *global                = global_get_ptr();
 
-   *config_dir = '\0';
    if (!string_is_empty(settings->directory.menu_config))
       strlcpy(config_dir, settings->directory.menu_config,
             sizeof(config_dir));
-   else if (!string_is_empty(global->path.config)) /* Fallback */
-      fill_pathname_basedir(config_dir, global->path.config,
+   else if (!path_is_config_empty()) /* Fallback */
+      fill_pathname_basedir(config_dir, path_get_config(),
             sizeof(config_dir));
    else
    {
@@ -1556,8 +1554,7 @@ static bool command_event_save_core_config(void)
 
    if ((ret = config_save_file(config_path)))
    {
-      strlcpy(global->path.config, config_path,
-            sizeof(global->path.config));
+      path_set_config(config_path);
       snprintf(msg, sizeof(msg), "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
@@ -1594,10 +1591,8 @@ void command_event_save_current_config(int override_type)
    if (!override_type)
    {
       settings_t *settings = config_get_ptr();
-      global_t   *global   = global_get_ptr();
 
-      if (      settings->config_save_on_exit 
-            && !string_is_empty(global->path.config))
+      if (settings->config_save_on_exit && !path_is_config_empty())
       {
          bool ret                = false;
          const char *config_path = path_get_config();
@@ -1615,14 +1610,14 @@ void command_event_save_current_config(int override_type)
          {
             snprintf(msg, sizeof(msg), "%s \"%s\".",
                   msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-                  global->path.config);
+                  path_get_config());
             RARCH_LOG("%s\n", msg);
          }
          else
          {
             snprintf(msg, sizeof(msg), "%s \"%s\".",
                   msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
-                  global->path.config);
+                  path_get_config());
             RARCH_ERR("%s\n", msg);
          }
       }

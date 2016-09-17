@@ -1336,7 +1336,6 @@ static config_file_t *open_default_config_file(void)
    char conf_path[PATH_MAX_LENGTH]        = {0};
    char app_path[PATH_MAX_LENGTH]         = {0};
    config_file_t *conf                    = NULL;
-   global_t *global                       = NULL;
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
@@ -1501,10 +1500,8 @@ static config_file_t *open_default_config_file(void)
    if (!conf)
       return NULL;
 
-   global = global_get_ptr();
+   path_set_config(conf_path);
 
-   if (global)
-      strlcpy(global->path.config, conf_path, sizeof(global->path.config));
    return conf;
 }
 
@@ -1908,7 +1905,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->path.content_history,
-               global->path.config,
+               path_get_config(),
                file_path_str(FILE_PATH_CONTENT_HISTORY),
                sizeof(settings->path.content_history));
       }
@@ -1927,7 +1924,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->path.content_music_history,
-               global->path.config,
+               path_get_config(),
                file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
                sizeof(settings->path.content_music_history));
       }
@@ -1946,7 +1943,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->path.content_video_history,
-               global->path.config,
+               path_get_config(),
                file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
                sizeof(settings->path.content_video_history));
       }
@@ -1965,7 +1962,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->path.content_image_history,
-               global->path.config,
+               path_get_config(),
                file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
                sizeof(settings->path.content_image_history));
       }
@@ -2222,7 +2219,7 @@ bool config_load_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
-   if (!config_load_file(global->path.config, false, config_get_ptr()))
+   if (!config_load_file(path_get_config(), false, config_get_ptr()))
       return false;
 
    /* Restore the libretro_path we're using
@@ -2258,7 +2255,7 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
-   if (config_load_file(global->path.config, false, config_get_ptr()))
+   if (config_load_file(path_get_config(), false, config_get_ptr()))
    {
       RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
 
@@ -2510,26 +2507,23 @@ bool config_load_shader_preset(void)
 
 static void parse_config_file(void)
 {
-   global_t *global = global_get_ptr();
-   bool         ret = config_load_file((*global->path.config)
-         ? global->path.config : NULL, false, config_get_ptr());
+   bool         ret = config_load_file(path_get_config(), false, config_get_ptr());
 
-   if (!string_is_empty(global->path.config))
+   if (!path_is_config_empty())
    {
-      RARCH_LOG("Config: loading config from: %s.\n", global->path.config);
+      RARCH_LOG("Config: loading config from: %s.\n", path_get_config());
    }
    else
    {
       RARCH_LOG("Loading default config.\n");
-      if (!string_is_empty(global->path.config))
-         RARCH_LOG("Config: found default config: %s.\n", global->path.config);
+      if (!path_is_config_empty())
+         RARCH_LOG("Config: found default config: %s.\n", path_get_config());
    }
 
    if (ret)
       return;
 
-   RARCH_ERR("Config: couldn't find config at path: \"%s\"\n",
-         global->path.config);
+   RARCH_ERR("Config: couldn't find config at path: \"%s\"\n", path_get_config());
 }
 
 
@@ -3062,7 +3056,7 @@ bool config_save_overrides(int override_type)
       conf = config_file_new(NULL);
 
    /* Load the original config file in memory */
-   config_load_file(global->path.config, false, settings);
+   config_load_file(path_get_config(), false, settings);
 
    bool_settings_size =  populate_settings_bool(settings, &bool_settings);
    populate_settings_bool (overrides, &bool_overrides);
@@ -3187,20 +3181,19 @@ bool config_replace(char *path)
 {
    content_ctx_info_t content_info = {0};
    settings_t *settings            = config_get_ptr();
-   global_t     *global            = global_get_ptr();
 
-   if (!path || !global)
+   if (!path)
       return false;
 
    /* If config file to be replaced is the same as the
     * current config file, exit. */
-   if (string_is_equal(path, global->path.config))
+   if (string_is_equal(path, path_get_config()))
       return false;
 
-   if (settings->config_save_on_exit && !string_is_empty(global->path.config))
-      config_save_file(global->path.config);
+   if (settings->config_save_on_exit && !path_is_config_empty())
+      config_save_file(path_get_config());
 
-   strlcpy(global->path.config, path, sizeof(global->path.config));
+   path_set_config(path);
 
    rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 

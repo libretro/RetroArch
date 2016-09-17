@@ -38,6 +38,7 @@
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../performance_counters.h"
+#include "../../paths.h"
 #include "../../runloop.h"
 #include "../../intl/intl.h"
 
@@ -125,12 +126,11 @@ static void menu_action_setting_disp_set_label_configurations(
       const char *path,
       char *s2, size_t len2)
 {
-   global_t *global = global_get_ptr();
-
    *w = 19;
    strlcpy(s2, path, len2);
-   if (global && *global->path.config)
-      fill_pathname_base(s, global->path.config,
+
+   if (!path_is_config_empty())
+      fill_pathname_base(s, path_get_config(),
             len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT), len);

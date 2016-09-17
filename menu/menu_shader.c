@@ -222,7 +222,6 @@ bool menu_shader_manager_save_preset(
    config_file_t *conf                    = NULL;
    bool ret                               = false;
    struct video_shader *shader            = NULL;
-   global_t *global                       = global_get_ptr();
    settings_t *settings                   = config_get_ptr();
    menu_handle_t *menu                    = NULL;
 
@@ -296,10 +295,10 @@ bool menu_shader_manager_save_preset(
       strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
-   if (!string_is_empty(global->path.config))
+   if (!path_is_config_empty())
       fill_pathname_basedir(
             config_directory,
-            global->path.config,
+            path_get_config(),
             sizeof(config_directory));
 
    if (!fullpath)

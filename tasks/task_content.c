@@ -43,6 +43,7 @@
 #include "../defaults.h"
 #include "../configuration.h"
 #include "../frontend/frontend.h"
+#include "../paths.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
 
@@ -1604,8 +1605,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
    wrap_args->state_path       = NULL;
    wrap_args->content_path     = NULL;
 
-   if (!string_is_empty(global->path.config))
-      wrap_args->config_path   = global->path.config;
+   if (!path_is_config_empty())
+      wrap_args->config_path   = path_get_config();
    if (!string_is_empty(global->dir.savefile))
       wrap_args->sram_path     = global->dir.savefile;
    if (!string_is_empty(global->dir.savestate))
