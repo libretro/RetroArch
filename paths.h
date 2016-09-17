@@ -23,35 +23,43 @@ RETRO_BEGIN_DECLS
 
 void path_init_savefile(void);
 
-void path_set_names(const char *path);
-
 void path_fill_names(void);
 
 void path_set_redirect(void);
+
+void path_set_names(const char *path);
 
 void path_set_special(char **argv, unsigned num_content);
 
 void path_set_basename(const char *path);
 
-const char *path_get_current_savefile_dir(void);
-
-char *path_get_core_ptr(void);
-
-const char *path_get_core(void);
-
-bool path_is_core_empty(void);
-
-size_t path_get_core_size(void);
-
 void path_set_core(const char *path);
 
-void path_clear_core(void);
-
-const char *path_get_config(void);
+void path_set_core_options(const char *path);
 
 void path_set_config(const char *path);
 
+char *path_get_core_ptr(void);
+
+const char *path_get_current_savefile_dir(void);
+
+const char *path_get_core(void);
+
+const char *path_get_core_options(void);
+
+const char *path_get_config(void);
+
+size_t path_get_core_size(void);
+
+bool path_is_core_empty(void);
+
 bool path_is_config_empty(void);
+
+bool path_is_core_options_empty(void);
+
+void path_clear_core(void);
+
+void path_clear_core_options(void);
 
 enum rarch_content_type path_is_media_type(const char *path);
 

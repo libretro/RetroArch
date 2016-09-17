@@ -475,6 +475,44 @@ const char *path_get_config(void)
    return NULL;
 }
 
+bool path_is_core_options_empty(void)
+{
+   global_t   *global          = global_get_ptr();
+
+   if (global && string_is_empty(global->path.core_options_path))
+      return true;
+
+   return false;
+}
+
+void path_clear_core_options(void)
+{
+   global_t   *global = global_get_ptr();
+   if (!global)
+      return;
+   *global->path.core_options_path = '\0';
+}
+
+void path_set_core_options(const char *path)
+{
+   global_t   *global = global_get_ptr();
+   if (!global)
+      return;
+   strlcpy(global->path.core_options_path, path, sizeof(global->path.core_options_path));
+}
+
+const char *path_get_core_options(void)
+{
+   if (!path_is_core_options_empty())
+   {
+      global_t   *global = global_get_ptr();
+      if (global)
+         return global->path.core_options_path;
+   }
+
+   return NULL;
+}
+
 enum rarch_content_type path_is_media_type(const char *path)
 {
    char ext_lower[PATH_MAX_LENGTH] = {0};
