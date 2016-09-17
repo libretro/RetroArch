@@ -43,6 +43,7 @@
 #include "../../managers/cheat_manager.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
+#include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
@@ -2497,14 +2498,10 @@ static int action_ok_option_create(const char *path,
 
    if(config_file_write(conf, game_path))
    {
-      global_t                 *global  = global_get_ptr();
-
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
             1, 100, true);
-
-      strlcpy(global->path.core_options_path,
-            game_path, sizeof(global->path.core_options_path));
+      path_set_core_options(game_path);
    }
    config_file_free(conf);
 

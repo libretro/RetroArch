@@ -1124,17 +1124,16 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_CORE_OPTIONS_DEINIT:
          {
-            global_t *global                  = global_get_ptr();
             if (!runloop_core_options)
                return false;
 
             /* check if game options file was just created and flush
                to that file instead */
-            if(global && !string_is_empty(global->path.core_options_path))
+            if(!path_is_core_options_empty())
             {
                core_option_manager_flush_game_specific(runloop_core_options,
-                     global->path.core_options_path);
-               global->path.core_options_path[0] = '\0';
+                     path_get_core_options());
+               path_clear_core_options();
             }
             else
                core_option_manager_flush(runloop_core_options);
