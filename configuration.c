@@ -38,6 +38,7 @@
 #include "input/input_remapping.h"
 #include "defaults.h"
 #include "core.h"
+#include "paths.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "verbosity.h"
@@ -3215,48 +3216,6 @@ bool config_replace(char *path)
       return false;
 
    return true;
-}
-
-static char path_libretro[PATH_MAX_LENGTH];
-
-char *config_get_active_core_path_ptr(void)
-{
-   return path_libretro;
-}
-
-const char *config_get_active_core_path(void)
-{
-   return path_libretro;
-}
-
-bool config_active_core_path_is_empty(void)
-{
-   return !path_libretro[0];
-}
-
-size_t config_get_active_core_path_size(void)
-{
-   return sizeof(path_libretro);
-}
-
-void config_set_active_core_path(const char *path)
-{
-   strlcpy(path_libretro, path, sizeof(path_libretro));
-}
-
-void config_clear_active_core_path(void)
-{
-   *path_libretro = '\0';
-}
-
-const char *config_get_active_path(void)
-{
-   global_t   *global          = global_get_ptr();
-
-   if (!string_is_empty(global->path.config))
-      return global->path.config;
-
-   return NULL;
 }
 
 void config_free_state(void)

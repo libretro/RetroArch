@@ -29,6 +29,7 @@
 #include "menu_shader.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
+#include "../paths.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 

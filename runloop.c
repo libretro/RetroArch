@@ -61,6 +61,7 @@
 #include "configuration.h"
 #include "driver.h"
 #include "movie.h"
+#include "paths.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "file_path_special.h"

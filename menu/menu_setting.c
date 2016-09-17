@@ -56,7 +56,7 @@
 #include "../msg_hash.h"
 #include "../defaults.h"
 #include "../driver.h"
-#include "../core.h"
+#include "../paths.h"
 #include "../dynamic.h"
 #include "../runloop.h"
 #include "../verbosity.h"

@@ -85,6 +85,7 @@
 #include "../retroarch.h"
 #include "../file_path_special.h"
 #include "../core.h"
+#include "../paths.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_7ZIP

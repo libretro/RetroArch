@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <lists/string_list.h>
@@ -30,6 +31,7 @@
 #include "command.h"
 #include "content.h"
 #include "dynamic.h"
+#include "movie.h"
 #include "file_path_special.h"
 
 #include "core.h"
@@ -41,6 +43,7 @@
 #define MENU_VALUE_NO_CORE 0x7d5472cbU
 
 static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
+static char path_libretro[PATH_MAX_LENGTH]              = {0};
 
 void path_set_redirect(void)
 {
@@ -410,4 +413,44 @@ void path_fill_names(void)
       fill_pathname_noext(global->name.ips, global->name.base,
             file_path_str(FILE_PATH_IPS_EXTENSION),
             sizeof(global->name.ips));
+}
+
+char *config_get_active_core_path_ptr(void)
+{
+   return path_libretro;
+}
+
+const char *config_get_active_core_path(void)
+{
+   return path_libretro;
+}
+
+bool config_active_core_path_is_empty(void)
+{
+   return !path_libretro[0];
+}
+
+size_t config_get_active_core_path_size(void)
+{
+   return sizeof(path_libretro);
+}
+
+void config_set_active_core_path(const char *path)
+{
+   strlcpy(path_libretro, path, sizeof(path_libretro));
+}
+
+void config_clear_active_core_path(void)
+{
+   *path_libretro = '\0';
+}
+
+const char *config_get_active_path(void)
+{
+   global_t   *global          = global_get_ptr();
+
+   if (!string_is_empty(global->path.config))
+      return global->path.config;
+
+   return NULL;
 }
