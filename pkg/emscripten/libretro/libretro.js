@@ -121,6 +121,12 @@ function setupFileSystem(backend)
       var lsfs = new BrowserFS.FileSystem.LocalStorage()
       /* mount the filesystems onto mfs */
       mfs.mount('/home/web_user/retroarch/userdata', lsfs);
+
+      /* create a memory filesystem for content only 
+      var imfs = new BrowserFS.FileSystem.InMemory();*/
+
+      /* mount the filesystems onto mfs 
+      mfs.mount('/home/web_user/retroarch/userdata/content/', imfs);*/
    }
    else
    {

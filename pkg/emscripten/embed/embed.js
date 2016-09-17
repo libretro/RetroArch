@@ -3,10 +3,9 @@
  *
  * This provides the basic JavaScript for the RetroArch web player.
  */
-var dropbox = false;
 var client = new Dropbox.Client({ key: "--your-api-key--" });
-var XFS;
 var BrowserFS = browserfs;
+var afs;
 
 var showError = function(error) {
   switch (error.status) {
@@ -73,11 +72,8 @@ function dropboxSyncComplete()
   console.log("WEBPLAYER: Sync successful");
 
   setupFileSystem("dropbox");
-  setupFolderStructure();
   preLoadingComplete();
 }
-
-var afs;
 
 function dropboxSync(dropboxClient, cb)
 {
@@ -160,24 +156,6 @@ function getParam(name) {
   if (results) {
     return results[1] || null;
   }
-}
-
-function setupFolderStructure()
-{
-  FS.createPath('/', '/home/web_user', true, true);
-}
-
-function stat(path)
-{
-  try{
-     FS.stat(path);
-  }
-  catch(err)
-  {
-     console.log("WEBPLAYER: file " + path + " doesn't exist");
-     return false;
-  }
-  return true;
 }
 
 function startRetroArch()
@@ -357,7 +335,6 @@ $(function() {
          $('#lblLocal').addClass('active');
          preLoadingComplete();
          setupFileSystem("browser");
-         setupFolderStructure();
       }
    });
  });
