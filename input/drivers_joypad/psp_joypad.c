@@ -21,7 +21,7 @@
 #include "../../configuration.h"
 
 #if defined(SN_TARGET_PSP2) || defined(VITA)
-#define PSP_MAX_PADS 2
+#define PSP_MAX_PADS 4
 #else
 #define PSP_MAX_PADS 1
 #endif
