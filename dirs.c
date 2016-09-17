@@ -29,6 +29,24 @@
 
 #include "runloop.h"
 
+bool dir_is_savefile_empty(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return false;
+   return string_is_empty(global->dir.savefile);
+}
+
+bool dir_is_savestate_empty(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return false;
+   return string_is_empty(global->dir.savestate);
+}
+
 void dir_clear_savefile(void)
 {
    global_t *global = global_get_ptr();

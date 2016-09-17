@@ -21,6 +21,10 @@
 
 RETRO_BEGIN_DECLS
 
+bool dir_is_savefile_empty(void);
+
+bool dir_is_savestate_empty(void);
+
 void dir_clear_savefile(void);
 
 void dir_clear_savestate(void);
