@@ -15,7 +15,9 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
+#include <retro_assert.h>
 #include <retro_stat.h>
 
 #ifdef HAVE_CONFIG_H
@@ -30,6 +32,7 @@
 
 #include "core.h"
 #include "msg_hash.h"
+#include "retroarch.h"
 #include "runloop.h"
 #include "verbosity.h"
 
@@ -225,4 +228,40 @@ const char *path_get_current_savefile_dir(void)
       path_set_redirect();
 
    return ret;
+}
+
+void path_set_special(char **argv, unsigned num_content)
+{
+   unsigned i;
+   union string_list_elem_attr attr;
+   global_t   *global   = global_get_ptr();
+
+   /* First content file is the significant one. */
+   path_set_basename(argv[0]);
+
+   global->subsystem_fullpaths = string_list_new();
+   retro_assert(global->subsystem_fullpaths);
+
+   attr.i = 0;
+
+   for (i = 0; i < num_content; i++)
+      string_list_append(global->subsystem_fullpaths, argv[i], attr);
+
+   /* We defer SRAM path updates until we can resolve it.
+    * It is more complicated for special content types. */
+
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+      fill_pathname_noext(global->name.savestate, global->name.base,
+            file_path_str(FILE_PATH_STATE_EXTENSION),
+            sizeof(global->name.savestate));
+
+   if (path_is_directory(global->name.savestate))
+   {
+      fill_pathname_dir(global->name.savestate, global->name.base,
+            file_path_str(FILE_PATH_STATE_EXTENSION),
+            sizeof(global->name.savestate));
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+            global->name.savestate);
+   }
 }

@@ -51,6 +51,7 @@
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
 #include "content.h"
+#include "paths.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "configuration.h"
@@ -1049,7 +1050,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = retroarch_get_current_savefile_dir();
+         *(const char**)data = path_get_current_savefile_dir();
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:

@@ -338,42 +338,6 @@ static void retroarch_print_help(const char *arg0)
         "then exits.\n");
 }
 
-static void retroarch_set_special_paths(char **argv, unsigned num_content)
-{
-   unsigned i;
-   union string_list_elem_attr attr;
-   global_t   *global   = global_get_ptr();
-
-   /* First content file is the significant one. */
-   path_set_basename(argv[0]);
-
-   global->subsystem_fullpaths = string_list_new();
-   retro_assert(global->subsystem_fullpaths);
-
-   attr.i = 0;
-
-   for (i = 0; i < num_content; i++)
-      string_list_append(global->subsystem_fullpaths, argv[i], attr);
-
-   /* We defer SRAM path updates until we can resolve it.
-    * It is more complicated for special content types. */
-
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
-      fill_pathname_noext(global->name.savestate, global->name.base,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(global->name.savestate));
-
-   if (path_is_directory(global->name.savestate))
-   {
-      fill_pathname_dir(global->name.savestate, global->name.base,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(global->name.savestate));
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
-            global->name.savestate);
-   }
-}
-
 enum rarch_content_type retroarch_path_is_media_type(const char *path)
 {
    char ext_lower[PATH_MAX_LENGTH] = {0};
@@ -909,7 +873,7 @@ static void retroarch_parse_input(int argc, char *argv[])
    {
       /* We requested explicit ROM, so use PLAIN core type. */
       retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
-      retroarch_set_special_paths(argv + optind, argc - optind);
+      path_set_special(argv + optind, argc - optind);
    }
    else
       content_set_does_not_need_content();
