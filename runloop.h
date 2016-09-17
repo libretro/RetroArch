@@ -155,9 +155,6 @@ typedef struct rarch_path
 {
    /* Config associated with global "default" config. */
    char append_config[PATH_MAX_LENGTH];
-#ifdef HAVE_FILE_LOGGER
-   char default_log[PATH_MAX_LENGTH];
-#endif
 } rarch_path_t;
 
 typedef struct rarch_resolution
