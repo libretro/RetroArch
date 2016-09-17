@@ -445,12 +445,32 @@ void path_clear_core(void)
    *path_libretro = '\0';
 }
 
-const char *path_get_config(void)
+bool path_is_config_empty(void)
 {
    global_t   *global          = global_get_ptr();
 
-   if (!string_is_empty(global->path.config))
-      return global->path.config;
+   if (global && string_is_empty(global->path.config))
+      return true;
+
+   return false;
+}
+
+void path_set_config(const char *path)
+{
+   global_t   *global = global_get_ptr();
+   if (!global)
+      return;
+   strlcpy(global->path.config, path, sizeof(global->path.config));
+}
+
+const char *path_get_config(void)
+{
+   if (!path_is_config_empty())
+   {
+      global_t   *global = global_get_ptr();
+      if (global)
+         return global->path.config;
+   }
 
    return NULL;
 }

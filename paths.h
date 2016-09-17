@@ -49,6 +49,10 @@ void path_clear_core(void);
 
 const char *path_get_config(void);
 
+void path_set_config(const char *path);
+
+bool path_is_config_empty(void);
+
 enum rarch_content_type path_is_media_type(const char *path);
 
 RETRO_END_DECLS

@@ -563,8 +563,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'c':
-            strlcpy(global->path.config, optarg,
-                  sizeof(global->path.config));
+            path_set_config(optarg);
             break;
 
          case 'r':

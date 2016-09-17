@@ -1085,16 +1085,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             char *game_options_path           = NULL;
             bool ret                          = false;
             char buf[PATH_MAX_LENGTH]         = {0};
-            global_t *global                  = global_get_ptr();
             settings_t *settings              = config_get_ptr();
             const char *options_path          = settings->path.core_options;
             const struct retro_variable *vars =
                (const struct retro_variable*)data;
 
-            if (string_is_empty(options_path)
-                  && !string_is_empty(global->path.config))
+            if (string_is_empty(options_path) && !path_is_config_empty())
             {
-               fill_pathname_resolve_relative(buf, global->path.config,
+               fill_pathname_resolve_relative(buf, path_get_config(),
                      file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
                options_path = buf;
             }
