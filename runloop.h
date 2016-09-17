@@ -153,9 +153,6 @@ typedef struct rarch_dir
 
 typedef struct rarch_path
 {
-   char gb_rom[PATH_MAX_LENGTH];
-   char bsx_rom[PATH_MAX_LENGTH];
-   char sufami_rom[2][PATH_MAX_LENGTH];
    /* Config associated with global "default" config. */
    char append_config[PATH_MAX_LENGTH];
 #ifdef HAVE_FILE_LOGGER
