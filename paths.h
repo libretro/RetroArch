@@ -39,6 +39,8 @@ void path_set_core_options(const char *path);
 
 void path_set_config(const char *path);
 
+void path_set_config_append(const char *path);
+
 char *path_get_core_ptr(void);
 
 const char *path_get_current_savefile_dir(void);
@@ -49,6 +51,8 @@ const char *path_get_core_options(void);
 
 const char *path_get_config(void);
 
+const char *path_get_config_append(void);
+
 size_t path_get_core_size(void);
 
 bool path_is_core_empty(void);
@@ -57,11 +61,15 @@ bool path_is_config_empty(void);
 
 bool path_is_core_options_empty(void);
 
+bool path_is_config_append_empty(void);
+
 void path_clear_core(void);
 
 void path_clear_config(void);
 
 void path_clear_core_options(void);
+
+void path_clear_config_append(void);
 
 void path_clear_all(void);
 

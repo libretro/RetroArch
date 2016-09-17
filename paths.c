@@ -45,6 +45,7 @@
 static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};
+static char path_config_append_file[PATH_MAX_LENGTH]    = {0};
 /* Config file associated with per-core configs. */
 static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
 
@@ -418,6 +419,8 @@ void path_fill_names(void)
             sizeof(global->name.ips));
 }
 
+/* Core file path */
+
 char *path_get_core_ptr(void)
 {
    return path_libretro;
@@ -448,6 +451,8 @@ void path_clear_core(void)
    *path_libretro = '\0';
 }
 
+/* Config file path */
+
 bool path_is_config_empty(void)
 {
    if (string_is_empty(path_config_file))
@@ -473,6 +478,8 @@ void path_clear_config(void)
 {
    *path_config_file = '\0';
 }
+
+/* Core options file path */
 
 bool path_is_core_options_empty(void)
 {
@@ -500,11 +507,40 @@ const char *path_get_core_options(void)
    return NULL;
 }
 
+/* Append config file path */
+
+bool path_is_config_append_empty(void)
+{
+   if (string_is_empty(path_config_append_file))
+      return true;
+
+   return false;
+}
+
+void path_clear_config_append(void)
+{
+   *path_config_append_file = '\0';
+}
+
+void path_set_config_append(const char *path)
+{
+   strlcpy(path_config_append_file, path, sizeof(path_config_append_file));
+}
+
+const char *path_get_config_append(void)
+{
+   if (!path_is_config_append_empty())
+      return path_config_append_file;
+
+   return NULL;
+}
+
 void path_clear_all(void)
 {
    global_t   *global = global_get_ptr();
  
    path_clear_config();
+   path_clear_config_append();
    path_clear_core_options();
 
    if (global)
