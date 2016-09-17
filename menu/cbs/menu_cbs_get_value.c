@@ -1324,7 +1324,6 @@ static void menu_action_setting_disp_set_label_core_option_create(
       char *s2, size_t len2)
 {
    rarch_system_info_t *system = NULL;
-   global_t            *global = global_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    if (!system)
