@@ -1302,8 +1302,12 @@ static void config_set_defaults(void)
             sizeof(settings->directory.content_history));
 
    if (!string_is_empty(g_defaults.path.config))
-      fill_pathname_expand_special(global->path.config,
-            g_defaults.path.config, sizeof(global->path.config));
+   {
+      char temp_str[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(temp_str,
+            g_defaults.path.config, sizeof(temp_str));
+      path_set_config(temp_str);
+   }
 
    /* Avoid reloading config on every content load */
    if (default_block_config_read)
