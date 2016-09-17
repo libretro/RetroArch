@@ -41,6 +41,8 @@ char *dir_get_savestate_ptr(void);
 
 const char *dir_get_savestate(void);
 
+char *dir_get_system_ptr(void);
+
 const char *dir_get_system(void);
 
 void dir_set_savefile(const char *path);

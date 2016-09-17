@@ -81,6 +81,11 @@ char *dir_get_savefile_ptr(void)
    return dir_savefile;
 }
 
+char *dir_get_system_ptr(void)
+{
+   return dir_system;
+}
+
 const char *dir_get_system(void)
 {
    return dir_system;

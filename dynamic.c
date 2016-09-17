@@ -51,6 +51,7 @@
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
 #include "content.h"
+#include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
 #include "runloop.h"
@@ -1030,15 +1031,17 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath) &&
                   fullpath)
             {
+               char temp_path[PATH_MAX_LENGTH] = {0};
+
                RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                      fullpath);
-               fill_pathname_basedir(global->dir.systemdir, fullpath,
-                     sizeof(global->dir.systemdir));
+               fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
+               dir_set_system(temp_path);
             }
 
-            *(const char**)data = global->dir.systemdir;
+            *(const char**)data = dir_get_system_ptr();
             RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-                  global->dir.systemdir);
+                  dir_get_system());
          }
          else
          {

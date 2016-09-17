@@ -143,7 +143,6 @@ enum runloop_ctl_state
 typedef struct rarch_dir
 {
    /* Used on reentrancy to use a savestate dir. */
-   char systemdir[PATH_MAX_LENGTH];
 #ifdef HAVE_OVERLAY
    char osk_overlay[PATH_MAX_LENGTH];
 #endif
