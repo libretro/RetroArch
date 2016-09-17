@@ -47,6 +47,7 @@
 #include "../defaults.h"
 #include "../configuration.h"
 #include "../runloop.h"
+#include "../paths.h"
 #include "../msg_hash.h"
 
 #include "../gfx/video_driver.h"
@@ -281,8 +282,7 @@ static bool take_screenshot_choice(const char *global_name_base)
  **/
 bool take_screenshot(void)
 {
-   global_t *global           = global_get_ptr();
-   char *name_base            = strdup(global->name.base);
+   char *name_base            = strdup(path_get_basename());
    bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
    bool             ret       = take_screenshot_choice(name_base);
    const char *msg_screenshot = ret 

@@ -67,6 +67,8 @@ char *path_get_core_ptr(void);
 
 const char *path_get_current_savefile_dir(void);
 
+const char *path_get_basename(void);
+
 const char *path_get_core(void);
 
 const char *path_get_core_options(void);
@@ -76,6 +78,8 @@ const char *path_get_config(void);
 const char *path_get_config_append(void);
 
 /* clear functions */
+
+void path_clear_basename(void);
 
 void path_clear_core(void);
 

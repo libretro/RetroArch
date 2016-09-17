@@ -157,7 +157,6 @@ typedef struct global
    
    struct
    {
-      char base[PATH_MAX_LENGTH];
       char savefile[PATH_MAX_LENGTH];
       char savestate[PATH_MAX_LENGTH];
       char cheatfile[PATH_MAX_LENGTH];

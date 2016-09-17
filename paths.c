@@ -43,6 +43,8 @@
 
 #define MENU_VALUE_NO_CORE 0x7d5472cbU
 
+static char path_main_basename[PATH_MAX_LENGTH]              = {0}
+;
 static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};
@@ -152,7 +154,7 @@ void path_set_redirect(void)
    /* Set savefile directory if empty based on content directory */
    if (string_is_empty(current_savefile_dir))
    {
-      strlcpy(current_savefile_dir, global->name.base,
+      strlcpy(current_savefile_dir, path_main_basename,
             sizeof(current_savefile_dir));
       path_basedir(current_savefile_dir);
    }
@@ -167,7 +169,7 @@ void path_set_redirect(void)
 
    if (path_is_directory(global->name.savefile))
    {
-      fill_pathname_dir(global->name.savefile, global->name.base,
+      fill_pathname_dir(global->name.savefile, path_main_basename,
             file_path_str(FILE_PATH_SRM_EXTENSION),
             sizeof(global->name.savefile));
       RARCH_LOG("%s \"%s\".\n",
@@ -177,7 +179,7 @@ void path_set_redirect(void)
 
    if (path_is_directory(global->name.savestate))
    {
-      fill_pathname_dir(global->name.savestate, global->name.base,
+      fill_pathname_dir(global->name.savestate, path_main_basename,
             file_path_str(FILE_PATH_STATE_EXTENSION),
             sizeof(global->name.savestate));
       RARCH_LOG("%s \"%s\".\n",
@@ -187,7 +189,7 @@ void path_set_redirect(void)
 
    if (path_is_directory(global->name.cheatfile))
    {
-      fill_pathname_dir(global->name.cheatfile, global->name.base,
+      fill_pathname_dir(global->name.cheatfile, path_main_basename,
             file_path_str(FILE_PATH_STATE_EXTENSION),
             sizeof(global->name.cheatfile));
       RARCH_LOG("%s \"%s\".\n",
@@ -199,10 +201,9 @@ void path_set_redirect(void)
 void path_set_basename(const char *path)
 {
    char *dst          = NULL;
-   global_t *global   = global_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)path);
-   strlcpy(global->name.base,     path, sizeof(global->name.base));
+   strlcpy(path_main_basename,     path, sizeof(path_main_basename));
 
 #ifdef HAVE_COMPRESSION
    /* Removing extension is a bit tricky for compressed files.
@@ -224,11 +225,11 @@ void path_set_basename(const char *path)
     * directory then and the name of srm and states are meaningful.
     *
     */
-   path_basedir(global->name.base);
-   fill_pathname_dir(global->name.base, path, "", sizeof(global->name.base));
+   path_basedir(path_main_basename);
+   fill_pathname_dir(path_main_basename, path, "", sizeof(path_main_basename));
 #endif
 
-   if ((dst = strrchr(global->name.base, '.')))
+   if ((dst = strrchr(path_main_basename, '.')))
       *dst = '\0';
 }
 
@@ -265,13 +266,13 @@ void path_set_special(char **argv, unsigned num_content)
     * It is more complicated for special content types. */
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
-      fill_pathname_noext(global->name.savestate, global->name.base,
+      fill_pathname_noext(global->name.savestate, path_main_basename,
             file_path_str(FILE_PATH_STATE_EXTENSION),
             sizeof(global->name.savestate));
 
    if (path_is_directory(global->name.savestate))
    {
-      fill_pathname_dir(global->name.savestate, global->name.base,
+      fill_pathname_dir(global->name.savestate, path_main_basename,
             file_path_str(FILE_PATH_STATE_EXTENSION),
             sizeof(global->name.savestate));
       RARCH_LOG("%s \"%s\".\n",
@@ -345,14 +346,14 @@ void path_init_savefile(void)
       /* Let other relevant paths be inferred from the main SRAM location. */
       if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
          fill_pathname_noext(global->name.savefile,
-               global->name.base,
+               path_main_basename,
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
 
       if (path_is_directory(global->name.savefile))
       {
          fill_pathname_dir(global->name.savefile,
-               global->name.base,
+               path_main_basename,
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
          RARCH_LOG("%s \"%s\".\n",
@@ -385,14 +386,14 @@ void path_set_names(const char *path)
    path_set_basename(path);
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
-      fill_pathname_noext(global->name.savefile, global->name.base,
+      fill_pathname_noext(global->name.savefile, path_main_basename,
             file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
-      fill_pathname_noext(global->name.savestate, global->name.base,
+      fill_pathname_noext(global->name.savestate, path_main_basename,
             file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
 
-   fill_pathname_noext(global->name.cheatfile, global->name.base,
+   fill_pathname_noext(global->name.cheatfile, path_main_basename,
          file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(global->name.cheatfile));
 
    path_set_redirect();
@@ -405,26 +406,31 @@ void path_fill_names(void)
    path_init_savefile();
    bsv_movie_set_path(global->name.savefile);
 
-   if (string_is_empty(global->name.base))
+   if (string_is_empty(path_main_basename))
       return;
 
    if (string_is_empty(global->name.ups))
-      fill_pathname_noext(global->name.ups, global->name.base,
+      fill_pathname_noext(global->name.ups, path_main_basename,
             file_path_str(FILE_PATH_UPS_EXTENSION),
             sizeof(global->name.ups));
 
    if (string_is_empty(global->name.bps))
-      fill_pathname_noext(global->name.bps, global->name.base,
+      fill_pathname_noext(global->name.bps, path_main_basename,
             file_path_str(FILE_PATH_BPS_EXTENSION),
             sizeof(global->name.bps));
 
    if (string_is_empty(global->name.ips))
-      fill_pathname_noext(global->name.ips, global->name.base,
+      fill_pathname_noext(global->name.ips, path_main_basename,
             file_path_str(FILE_PATH_IPS_EXTENSION),
             sizeof(global->name.ips));
 }
 
 /* Core file path */
+
+const char *path_get_basename(void)
+{
+   return path_main_basename;
+}
 
 char *path_get_core_ptr(void)
 {
@@ -482,6 +488,11 @@ const char *path_get_config(void)
 void path_clear_config(void)
 {
    *path_config_file = '\0';
+}
+
+void path_clear_basename(void)
+{
+   *path_main_basename = '\0';
 }
 
 /* Core options file path */
@@ -545,6 +556,8 @@ void path_clear_all(void)
    path_clear_config();
    path_clear_config_append();
    path_clear_core_options();
+
+   path_clear_basename();
 }
 
 enum rarch_content_type path_is_media_type(const char *path)

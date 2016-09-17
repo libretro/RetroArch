@@ -2080,7 +2080,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          strlcpy(global->name.savefile, tmp_str,
                sizeof(global->name.savefile));
          fill_pathname_dir(global->name.savefile,
-               global->name.base,
+               path_get_basename(),
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
       }
@@ -2100,7 +2100,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          strlcpy(global->name.savestate, tmp_str,
                sizeof(global->name.savestate));
          fill_pathname_dir(global->name.savestate,
-               global->name.base,
+               path_get_basename(),
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
       }
@@ -2161,8 +2161,7 @@ bool config_load_override(void)
 
    if (system)
       core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
+   game_name = path_basename(path_get_basename());
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -2232,7 +2231,7 @@ bool config_load_override(void)
 
    /* Re-load the configuration with any overrides that might have been found */
 #ifdef HAVE_NETPLAY
-   if (global->netplay.enable)
+   if (global && global->netplay.enable)
    {
       RARCH_WARN("[overrides] can't use overrides in conjunction with netplay, disabling overrides.\n");
       return false;
@@ -2315,7 +2314,6 @@ bool config_load_remap(void)
    config_file_t *new_conf                 = NULL;
    const char *core_name                   = NULL;
    const char *game_name                   = NULL;
-   global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
 
@@ -2323,8 +2321,8 @@ bool config_load_remap(void)
 
    if (system)
       core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
+
+   game_name = path_basename(path_get_basename());
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -2438,7 +2436,6 @@ bool config_load_shader_preset(void)
    char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    const char *core_name                   = NULL;
    const char *game_name                   = NULL;
-   global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
 
@@ -2446,8 +2443,8 @@ bool config_load_shader_preset(void)
 
    if (system)
       core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
+
+   game_name = path_basename(path_get_basename());
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3029,7 +3026,6 @@ bool config_save_overrides(int override_type)
    const char *game_name                       = NULL;
    config_file_t *conf                         = NULL;
    settings_t *settings                        = NULL;
-   global_t   *global                          = global_get_ptr();
    settings_t *overrides                       = config_get_ptr();
    rarch_system_info_t *system                 = NULL;
    struct config_bool_setting *bool_settings   = NULL;
@@ -3047,8 +3043,8 @@ bool config_save_overrides(int override_type)
 
    if (system)
       core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
+
+   game_name = path_basename(path_get_basename());
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
