@@ -6546,7 +6546,7 @@ static bool setting_append_list(
          CONFIG_DIR(
                list, list_info,
                dir_get_savefile_ptr(),
-               sizeof(global->dir.savefile),
+               dir_get_savefile_size(),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVEFILE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY),
                "",
@@ -6561,7 +6561,7 @@ static bool setting_append_list(
          CONFIG_DIR(
                list, list_info,
                dir_get_savestate_ptr(),
-               sizeof(global->dir.savestate),
+               dir_get_savestate_size(),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY),
                "",
