@@ -537,14 +537,9 @@ const char *path_get_config_append(void)
 
 void path_clear_all(void)
 {
-   global_t   *global = global_get_ptr();
- 
    path_clear_config();
    path_clear_config_append();
    path_clear_core_options();
-
-   if (global)
-      memset(&global->path, 0, sizeof(struct rarch_path));
 }
 
 enum rarch_content_type path_is_media_type(const char *path)

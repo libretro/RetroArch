@@ -151,12 +151,6 @@ typedef struct rarch_dir
 #endif
 } rarch_dir_t;
 
-typedef struct rarch_path
-{
-   /* Config associated with global "default" config. */
-   char append_config[PATH_MAX_LENGTH];
-} rarch_path_t;
-
 typedef struct rarch_resolution
 {
    unsigned idx;
@@ -167,7 +161,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   rarch_path_t path;
    rarch_dir_t  dir;
 
    struct

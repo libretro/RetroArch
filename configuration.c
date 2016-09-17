@@ -1642,9 +1642,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    unsigned i;
    bool tmp_bool                                   = false;
    char *save                                      = NULL;
-   const char *extra_path                          = NULL;
    char tmp_str[PATH_MAX_LENGTH]                   = {0};
-   char tmp_append_path[PATH_MAX_LENGTH]           = {0}; /* Don't destroy append_config_path. */
    unsigned msg_color                              = 0;
    config_file_t *conf                             = NULL;
    struct config_int_setting       *int_settings   = NULL;
@@ -1678,20 +1676,29 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (set_defaults)
       config_set_defaults();
 
-   strlcpy(tmp_append_path, global->path.append_config,
-         sizeof(tmp_append_path));
-   extra_path = strtok_r(tmp_append_path, "|", &save);
-
-   while (extra_path)
+   if (!path_is_config_append_empty())
    {
-      bool ret = config_append_file(conf, extra_path);
+      /* Don't destroy append_config_path, store in temporary
+       * variable. */
+      char tmp_append_path[PATH_MAX_LENGTH] = {0};
+      const char *extra_path                = NULL;
 
-      RARCH_LOG("Config: appending config \"%s\"\n", extra_path);
+      strlcpy(tmp_append_path, path_get_config_append(),
+            sizeof(tmp_append_path));
+      extra_path = strtok_r(tmp_append_path, "|", &save);
 
-      if (!ret)
-         RARCH_ERR("Config: failed to append config \"%s\"\n", extra_path);
-      extra_path = strtok_r(NULL, "|", &save);
+      while (extra_path)
+      {
+         bool ret = config_append_file(conf, extra_path);
+
+         RARCH_LOG("Config: appending config \"%s\"\n", extra_path);
+
+         if (!ret)
+            RARCH_ERR("Config: failed to append config \"%s\"\n", extra_path);
+         extra_path = strtok_r(NULL, "|", &save);
+      }
    }
+
 #if 0
    if (verbosity_is_enabled())
    {
@@ -1719,6 +1726,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       if (config_get_bool(conf, bool_settings[i].ident, &tmp))
          *bool_settings[i].ptr = tmp;
    }
+
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
@@ -2171,10 +2179,10 @@ bool config_load_override(void)
    /* If a core override exists, add its location to append_config_path */
    if (new_conf)
    {
-      config_file_free(new_conf);
-
       RARCH_LOG("[overrides] core-specific overrides found at %s.\n", core_path);
-      strlcpy(global->path.append_config, core_path, sizeof(global->path.append_config));
+
+      config_file_free(new_conf);
+      path_set_config_append(core_path);
 
       should_append = true;
    }
@@ -2187,16 +2195,22 @@ bool config_load_override(void)
    /* If a game override exists, add it's location to append_config_path */
    if (new_conf)
    {
+      char temp_path[PATH_MAX_LENGTH] = {0};
+
       config_file_free(new_conf);
 
       RARCH_LOG("[overrides] game-specific overrides found at %s.\n", game_path);
+
       if (should_append)
       {
-         strlcat(global->path.append_config, "|", sizeof(global->path.append_config));
-         strlcat(global->path.append_config, game_path, sizeof(global->path.append_config));
+         strlcpy(temp_path, path_get_config_append(), sizeof(temp_path));
+         strlcat(temp_path, "|", sizeof(temp_path));
+         strlcat(temp_path, game_path, sizeof(temp_path));
       }
       else
-         strlcpy(global->path.append_config, game_path, sizeof(global->path.append_config));
+         strlcpy(temp_path, game_path, sizeof(temp_path));
+
+      path_set_config_append(temp_path);
 
       should_append = true;
    }
@@ -2234,7 +2248,9 @@ bool config_load_override(void)
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
-   global->path.append_config[0] = '\0';
+
+   path_clear_config_append();
+
    return true;
 }
 
@@ -2248,12 +2264,7 @@ bool config_load_override(void)
  */
 bool config_unload_override(void)
 {
-   global_t *global     = global_get_ptr();
-
-   if (!global)
-      return false;
-
-   *global->path.append_config = '\0';
+   path_clear_config_append();
 
    /* Toggle has_save_path to false so it resets */
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
