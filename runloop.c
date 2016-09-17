@@ -886,7 +886,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_FRAME_TIME_FREE:
-         memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
+         memset(&runloop_frame_time, 0,
+               sizeof(struct retro_frame_time_callback));
          runloop_frame_time_last           = 0;
          runloop_max_frames                = 0;
          break;
