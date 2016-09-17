@@ -57,11 +57,16 @@ void path_set_redirect(void)
    global_t                *global             = global_get_ptr();
    settings_t              *settings           = config_get_ptr();
    rarch_system_info_t      *info              = NULL;
+   const char *old_savefile_dir                = NULL;
+   const char *old_savestate_dir               = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (!global)
       return;
+
+   old_savefile_dir  = global->dir.savefile;
+   old_savestate_dir = global->dir.savestate;
 
    if (info->info.library_name &&
          !string_is_empty(info->info.library_name))
@@ -71,10 +76,10 @@ void path_set_redirect(void)
    /* Initialize current save directories
     * with the values from the config. */
    strlcpy(current_savefile_dir,
-         global->dir.savefile,
+         old_savefile_dir,
          sizeof(current_savefile_dir));
    strlcpy(current_savestate_dir,
-         global->dir.savestate,
+         old_savestate_dir,
          sizeof(current_savestate_dir));
 
    check_global_library_name_hash = (global_library_name_hash != 0);
@@ -87,13 +92,13 @@ void path_set_redirect(void)
    {
       /* per-core saves: append the library_name to the save location */
       if (settings->sort_savefiles_enable
-            && !string_is_empty(global->dir.savefile))
+            && !string_is_empty(old_savefile_dir))
       {
          fill_pathname_join(
                current_savefile_dir,
-               global->dir.savefile,
+               old_savefile_dir,
                info->info.library_name,
-               sizeof(global->dir.savefile));
+               sizeof(current_savefile_dir));
 
          /* If path doesn't exist, try to create it,
           * if everything fails revert to the original path. */
@@ -105,10 +110,10 @@ void path_set_redirect(void)
             {
                RARCH_LOG("%s %s\n",
                      msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
-                     global->dir.savefile);
+                     old_savefile_dir);
 
                strlcpy(current_savefile_dir,
-                     global->dir.savefile,
+                     old_savefile_dir,
                      sizeof(current_savefile_dir));
             }
          }
@@ -116,13 +121,13 @@ void path_set_redirect(void)
 
       /* per-core states: append the library_name to the save location */
       if (settings->sort_savestates_enable
-            && !string_is_empty(global->dir.savestate))
+            && !string_is_empty(old_savestate_dir))
       {
          fill_pathname_join(
                current_savestate_dir,
-               global->dir.savestate,
+               old_savestate_dir,
                info->info.library_name,
-               sizeof(global->dir.savestate));
+               sizeof(current_savestate_dir));
 
          /* If path doesn't exist, try to create it.
           * If everything fails, revert to the original path. */
@@ -134,9 +139,9 @@ void path_set_redirect(void)
             {
                RARCH_LOG("%s %s\n",
                      msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
-                     global->dir.savestate);
+                     old_savestate_dir);
                strlcpy(current_savestate_dir,
-                     global->dir.savestate,
+                     old_savestate_dir,
                      sizeof(current_savestate_dir));
             }
          }
