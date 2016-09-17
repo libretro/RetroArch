@@ -89,7 +89,7 @@
                       <button class="btn btn-warning disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()" disabled>
                          <span class="fa fa-plus" id="icnAdd"></span> Add Content
                       </button>
-                      <button class="btn btn-primary enabled" id="btnClean" onclick="cleanupStorage();" title="Cleanup" disabled>
+                      <button class="btn btn-warning enabled" id="btnClean" onclick="cleanupStorage();" title="Cleanup" disabled>
                         <span class="fa fa-trash-o" id="icnClean"></span> <span class="sr-only">Cleanup</span>
                       </button>
                       <input class="btn btn-warning disabled" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
@@ -152,7 +152,7 @@
    <script src="//rawgit.com/jeresig/jquery.hotkeys/master/jquery.hotkeys.js"></script>
    <script src="//cdnjs.cloudflare.com/ajax/libs/tether/1.3.4/js/tether.min.js"></script>
    <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha.3/js/bootstrap.min.js"></script>
-   <!--uncomment for dropbox support<script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>-->
+   <script src="//cdnjs.cloudflare.com/ajax/libs/dropbox.js/0.10.2/dropbox.min.js"></script>
    <script src="//wzrd.in/standalone/browserfs@0.6.1"></script>
    <script src="embed.js"></script>
 </body>
