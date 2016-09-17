@@ -21,6 +21,12 @@
 
 RETRO_BEGIN_DECLS
 
+void dir_set_savefile(const char *path);
+
+void dir_set_savestate(const char *path);
+
+void dir_clear_all(void);
+
 RETRO_END_DECLS
 
 #endif

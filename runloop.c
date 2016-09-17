@@ -61,6 +61,7 @@
 #include "configuration.h"
 #include "driver.h"
 #include "movie.h"
+#include "dirs.h"
 #include "paths.h"
 #include "retroarch.h"
 #include "runloop.h"
@@ -916,6 +917,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             global = global_get_ptr();
             path_clear_all();
+            dir_clear_all();
             memset(global, 0, sizeof(struct global));
             retroarch_override_setting_free_state();
             config_free_state();

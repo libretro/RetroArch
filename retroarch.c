@@ -64,6 +64,7 @@
 #include "driver.h"
 #include "msg_hash.h"
 #include "movie.h"
+#include "dirs.h"
 #include "paths.h"
 #include "file_path_special.h"
 #include "verbosity.h"
@@ -857,13 +858,11 @@ static void retroarch_parse_input(int argc, char *argv[])
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH) &&
          path_is_directory(global->name.savefile))
-      strlcpy(global->dir.savefile, global->name.savefile,
-            sizeof(global->dir.savefile));
+      dir_set_savefile(global->name.savefile);
 
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH) &&
          path_is_directory(global->name.savestate))
-      strlcpy(global->dir.savestate, global->name.savestate,
-            sizeof(global->dir.savestate));
+      dir_set_savestate(global->name.savestate);
 }
 
 static bool retroarch_init_state(void)

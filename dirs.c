@@ -26,3 +26,27 @@
 #endif
 
 #include "dirs.h"
+
+#include "runloop.h"
+
+void dir_set_savestate(const char *path)
+{
+   global_t *global = global_get_ptr();
+
+   if (global)
+      strlcpy(global->dir.savestate, global->name.savefile,
+            sizeof(global->dir.savestate));
+}
+
+void dir_set_savefile(const char *path)
+{
+   global_t *global = global_get_ptr();
+
+   if (global)
+      strlcpy(global->dir.savefile, global->name.savefile,
+            sizeof(global->dir.savefile));
+}
+
+void dir_clear_all(void)
+{
+}
