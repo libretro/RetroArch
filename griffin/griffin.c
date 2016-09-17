@@ -797,6 +797,7 @@ RETROARCH
 ============================================================ */
 #include "../core_impl.c"
 #include "../retroarch.c"
+#include "../paths.c"
 #include "../runloop.c"
 #include "../libretro-common/queues/task_queue.c"
 

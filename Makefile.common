@@ -132,6 +132,7 @@ OBJ += frontend/frontend.o \
        ui/drivers/null/ui_null_application.o \
        core_impl.o \
        retroarch.o \
+		 paths.o \
        input/input_keyboard.o \
        command.o \
        msg_hash.o \

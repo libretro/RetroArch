@@ -64,6 +64,7 @@
 #include "driver.h"
 #include "msg_hash.h"
 #include "movie.h"
+#include "paths.h"
 #include "file_path_special.h"
 #include "verbosity.h"
 
@@ -338,42 +339,6 @@ static void retroarch_print_help(const char *arg0)
         "then exits.\n");
 }
 
-static void retroarch_set_basename(const char *path)
-{
-   char *dst          = NULL;
-   global_t *global   = global_get_ptr();
-
-   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)path);
-   strlcpy(global->name.base,     path, sizeof(global->name.base));
-
-#ifdef HAVE_COMPRESSION
-   /* Removing extension is a bit tricky for compressed files.
-    * Basename means:
-    * /file/to/path/game.extension should be:
-    * /file/to/path/game
-    *
-    * Two things to consider here are: /file/to/path/ is expected
-    * to be a directory and "game" is a single file. This is used for
-    * states and srm default paths.
-    *
-    * For compressed files we have:
-    *
-    * /file/to/path/comp.7z#game.extension and
-    * /file/to/path/comp.7z#folder/game.extension
-    *
-    * The choice I take here is:
-    * /file/to/path/game as basename. We might end up in a writable
-    * directory then and the name of srm and states are meaningful.
-    *
-    */
-   path_basedir(global->name.base);
-   fill_pathname_dir(global->name.base, path, "", sizeof(global->name.base));
-#endif
-
-   if ((dst = strrchr(global->name.base, '.')))
-      *dst = '\0';
-}
-
 static void retroarch_set_special_paths(char **argv, unsigned num_content)
 {
    unsigned i;
@@ -381,7 +346,7 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
    global_t   *global   = global_get_ptr();
 
    /* First content file is the significant one. */
-   retroarch_set_basename(argv[0]);
+   path_set_basename(argv[0]);
 
    global->subsystem_fullpaths = string_list_new();
    retro_assert(global->subsystem_fullpaths);
@@ -1603,7 +1568,7 @@ void retroarch_set_pathnames(const char *path)
 {
    global_t *global = global_get_ptr();
 
-   retroarch_set_basename(path);
+   path_set_basename(path);
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
       fill_pathname_noext(global->name.savefile, global->name.base,
