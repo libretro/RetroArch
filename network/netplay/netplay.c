@@ -792,7 +792,7 @@ static int init_tcp_connection(const struct addrinfo *res,
 #if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
    {
       int flag = 1;
-      setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int));
+      setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(int));
    }
 #endif
 
