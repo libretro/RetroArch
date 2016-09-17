@@ -25,6 +25,10 @@ bool dir_is_savefile_empty(void);
 
 bool dir_is_savestate_empty(void);
 
+bool dir_is_system_empty(void);
+
+void dir_clear_system(void);
+
 void dir_clear_savefile(void);
 
 void dir_clear_savestate(void);
@@ -37,9 +41,15 @@ char *dir_get_savestate_ptr(void);
 
 const char *dir_get_savestate(void);
 
+const char *dir_get_system(void);
+
 void dir_set_savefile(const char *path);
 
 void dir_set_savestate(const char *path);
+
+void dir_set_system(const char *path);
+
+size_t dir_get_system_size(void);
 
 size_t dir_get_savestate_size(void);
 
