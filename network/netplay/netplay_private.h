@@ -167,8 +167,6 @@ struct netplay
    struct netplay_callbacks* net_cbs;
 };
 
-extern void *netplay_data;
-
 struct netplay_callbacks* netplay_get_cbs_net(void);
 
 struct netplay_callbacks* netplay_get_cbs_spectate(void);
