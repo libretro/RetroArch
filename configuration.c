@@ -652,7 +652,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #endif
 #ifdef HAVE_OVERLAY
    SETTING_PATH("osk_overlay_directory",
-         global->dir.osk_overlay, true, NULL, true);
+         dir_get_osk_overlay_ptr(), true, NULL, true);
 #endif
 #ifndef HAVE_DYNAMIC
    SETTING_PATH("libretro_path", 
@@ -1248,20 +1248,30 @@ static void config_set_defaults(void)
 
    if (!string_is_empty(g_defaults.dir.osk_overlay))
    {
-      fill_pathname_expand_special(global->dir.osk_overlay,
-            g_defaults.dir.osk_overlay, sizeof(global->dir.osk_overlay));
+      char temp_path[PATH_MAX_LENGTH] = {0};
+
+      fill_pathname_expand_special(temp_path,
+            g_defaults.dir.osk_overlay, sizeof(temp_path));
 #ifdef RARCH_MOBILE
       if (string_is_empty(settings->path.osk_overlay))
             fill_pathname_join(settings->path.osk_overlay,
-                  global->dir.osk_overlay,
+                  temp_path,
                   "keyboards/modular-keyboard/opaque/big.cfg",
                   sizeof(settings->path.osk_overlay));
 #endif
+
+      dir_set_osk_overlay(temp_path);
    }
    else
-      strlcpy(global->dir.osk_overlay,
+   {
+      char temp_path[PATH_MAX_LENGTH] = {0};
+
+      strlcpy(temp_path,
             settings->directory.overlay,
-            sizeof(global->dir.osk_overlay));
+            sizeof(temp_path));
+
+      dir_set_osk_overlay(temp_path);
+   }
 #endif
 #ifdef HAVE_MENU
    if (!string_is_empty(g_defaults.dir.menu_config))
@@ -2037,8 +2047,8 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->directory.overlay, "default"))
       *settings->directory.overlay = '\0';
-   if (string_is_equal(global->dir.osk_overlay, "default"))
-      *global->dir.osk_overlay = '\0';
+   if (string_is_equal(dir_get_osk_overlay(), "default"))
+      dir_clear_osk_overlay();
 #endif
    if (string_is_equal(settings->directory.system, "default"))
       *settings->directory.system = '\0';

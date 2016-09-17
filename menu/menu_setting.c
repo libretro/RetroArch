@@ -4760,7 +4760,7 @@ static bool setting_append_list(
                sizeof(settings->path.osk_overlay),
                msg_hash_to_str(MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET),
-               global->dir.osk_overlay,
+               dir_get_osk_overlay_ptr(),
                &group_info,
                &subgroup_info,
                parent_group,
@@ -6469,8 +6469,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               global->dir.osk_overlay,
-               sizeof(global->dir.osk_overlay),
+               dir_get_osk_overlay_ptr(),
+               dir_get_osk_overlay_size(),
                msg_hash_to_str(MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY),
                g_defaults.dir.osk_overlay,
