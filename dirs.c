@@ -29,6 +29,58 @@
 
 #include "runloop.h"
 
+void dir_clear_savefile(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (global)
+      *global->dir.savefile = '\0';
+}
+
+void dir_clear_savestate(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (global)
+      *global->dir.savestate = '\0';
+}
+
+char *dir_get_savefile_ptr(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return NULL;
+   return global->dir.savefile;
+}
+
+const char *dir_get_savefile(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return NULL;
+   return global->dir.savefile;
+}
+
+char *dir_get_savestate_ptr(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return NULL;
+   return global->dir.savestate;
+}
+
+const char *dir_get_savestate(void)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return NULL;
+   return global->dir.savestate;
+}
+
 void dir_set_savestate(const char *path)
 {
    global_t *global = global_get_ptr();

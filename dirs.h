@@ -21,6 +21,18 @@
 
 RETRO_BEGIN_DECLS
 
+void dir_clear_savefile(void);
+
+void dir_clear_savestate(void);
+
+char *dir_get_savefile_ptr(void);
+
+const char *dir_get_savefile(void);
+
+char *dir_get_savestate_ptr(void);
+
+const char *dir_get_savestate(void);
+
 void dir_set_savefile(const char *path);
 
 void dir_set_savestate(const char *path);

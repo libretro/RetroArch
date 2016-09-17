@@ -637,9 +637,9 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    SETTING_PATH("audio_filter_dir",
          settings->directory.audio_filter, true, NULL, true);
    SETTING_PATH("savefile_directory", 
-         global->dir.savefile, true, NULL, false);
+         dir_get_savefile_ptr(), true, NULL, false);
    SETTING_PATH("savestate_directory",
-         global->dir.savestate, true, NULL, false);
+         dir_get_savestate_ptr(), true, NULL, false);
 #ifdef HAVE_MENU
    SETTING_PATH("rgui_browser_directory",
          settings->directory.menu_content, true, NULL, true);
@@ -1119,9 +1119,9 @@ static void config_set_defaults(void)
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
-      *global->dir.savefile = '\0';
+      dir_clear_savefile();
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
-      *global->dir.savestate = '\0';
+      dir_clear_savestate();
 
    *settings->path.libretro_info = '\0';
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY))
