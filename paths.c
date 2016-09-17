@@ -518,7 +518,6 @@ void path_clear_all(void)
    global_t   *global = global_get_ptr();
  
    path_clear_config();
-   path_clear_core();
    path_clear_core_options();
 
    if (global)
