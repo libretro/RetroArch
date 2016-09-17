@@ -83,14 +83,6 @@ enum rarch_ctl_state
 
 };
 
-enum rarch_content_type
-{
-   RARCH_CONTENT_NONE = 0,
-   RARCH_CONTENT_MOVIE,
-   RARCH_CONTENT_MUSIC,
-   RARCH_CONTENT_IMAGE
-};
-
 enum rarch_capabilities
 {
    RARCH_CAPABILITIES_NONE = 0,
@@ -145,8 +137,6 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx);
 void retroarch_override_setting_free_state(void);
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx);
-
-enum rarch_content_type retroarch_path_is_media_type(const char *path);
 
 const char *retroarch_get_current_savefile_dir(void);
 

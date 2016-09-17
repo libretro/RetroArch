@@ -21,6 +21,14 @@
 
 RETRO_BEGIN_DECLS
 
+enum rarch_content_type
+{
+   RARCH_CONTENT_NONE = 0,
+   RARCH_CONTENT_MOVIE,
+   RARCH_CONTENT_MUSIC,
+   RARCH_CONTENT_IMAGE
+};
+
 void path_init_savefile(void);
 
 void path_fill_names(void);
