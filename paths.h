@@ -61,6 +61,8 @@ void path_clear_core(void);
 
 void path_clear_core_options(void);
 
+void path_clear_all(void);
+
 enum rarch_content_type path_is_media_type(const char *path);
 
 RETRO_END_DECLS

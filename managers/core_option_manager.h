@@ -90,7 +90,7 @@ bool core_option_manager_flush(core_option_manager_t *opt);
  * successfully saved to disk, otherwise false (0).
  **/
 bool core_option_manager_flush_game_specific(
-      core_option_manager_t *opt, char* path);
+      core_option_manager_t *opt, const char* path);
 
 /**
  * core_option_manager_free:

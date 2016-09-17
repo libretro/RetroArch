@@ -513,6 +513,17 @@ const char *path_get_core_options(void)
    return NULL;
 }
 
+void path_clear_all(void)
+{
+   global_t   *global = global_get_ptr();
+
+   path_clear_core();
+   path_clear_core_options();
+
+   if (global)
+      memset(&global->path, 0, sizeof(struct rarch_path));
+}
+
 enum rarch_content_type path_is_media_type(const char *path)
 {
    char ext_lower[PATH_MAX_LENGTH] = {0};
