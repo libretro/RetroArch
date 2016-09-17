@@ -1170,7 +1170,7 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
 /**
  * netplay_load_savestate
  * @netplay              : pointer to netplay object
- * @serial_info          : the savestate being loaded
+ * @serial_info          : the savestate being loaded, NULL means "load it yourself"
  * @save                 : whether to save the provided serial_info into the frame buffer
  *
  * Inform Netplay of a savestate load and send it to the other side
@@ -1178,17 +1178,30 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
 void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info, bool save)
 {
    uint32_t header[3];
+   retro_ctx_serialize_info_t tmp_serial_info;
 
    if (!netplay->has_connection)
       return;
 
    /* Record it in our own buffer */
-   if (save && netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
+   if ((save || !serial_info) && netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
    {
-      if (serial_info->size <= netplay->state_size)
+      if (!serial_info)
       {
-         memcpy(netplay->buffer[netplay->self_ptr].state,
-                serial_info->data_const, serial_info->size);
+         tmp_serial_info.size = netplay->state_size;
+         tmp_serial_info.data = netplay->buffer[netplay->self_ptr].state;
+         if (!core_serialize(&tmp_serial_info))
+            return;
+         tmp_serial_info.data_const = tmp_serial_info.data;
+         serial_info = &tmp_serial_info;
+      }
+      else
+      {
+         if (serial_info->size <= netplay->state_size)
+         {
+            memcpy(netplay->buffer[netplay->self_ptr].state,
+                  serial_info->data_const, serial_info->size);
+         }
       }
    }
 

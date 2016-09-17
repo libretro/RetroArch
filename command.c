@@ -1713,6 +1713,10 @@ static void command_event_load_state(const char *path, char *s, size_t len)
       return;
    }
 
+#ifdef HAVE_NETPLAY
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
+#endif
+
    if (settings->state_slot < 0)
       snprintf(s, len, "%s #-1 (auto).",
             msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
@@ -1739,6 +1743,10 @@ static void command_event_undo_load_state(char *s, size_t len)
             "RAM");
       return;
    }
+
+#ifdef HAVE_NETPLAY
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
+#endif
 
    strlcpy(s,
          msg_hash_to_str(MSG_UNDID_LOAD_STATE), len);
