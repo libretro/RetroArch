@@ -415,37 +415,37 @@ void path_fill_names(void)
             sizeof(global->name.ips));
 }
 
-char *config_get_active_core_path_ptr(void)
+char *path_get_core_ptr(void)
 {
    return path_libretro;
 }
 
-const char *config_get_active_core_path(void)
+const char *path_get_core(void)
 {
    return path_libretro;
 }
 
-bool config_active_core_path_is_empty(void)
+bool path_is_core_empty(void)
 {
    return !path_libretro[0];
 }
 
-size_t config_get_active_core_path_size(void)
+size_t path_get_core_size(void)
 {
    return sizeof(path_libretro);
 }
 
-void config_set_active_core_path(const char *path)
+void path_set_core(const char *path)
 {
    strlcpy(path_libretro, path, sizeof(path_libretro));
 }
 
-void config_clear_active_core_path(void)
+void path_clear_core(void)
 {
    *path_libretro = '\0';
 }
 
-const char *config_get_active_path(void)
+const char *path_get_config(void)
 {
    global_t   *global          = global_get_ptr();
 

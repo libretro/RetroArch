@@ -1497,8 +1497,7 @@ static bool command_event_save_core_config(void)
    }
 
    /* Infer file name based on libretro core. */
-   if (!string_is_empty(config_get_active_core_path())
-         && path_file_exists(config_get_active_core_path()))
+   if (!string_is_empty(path_get_core()) && path_file_exists(path_get_core()))
    {
       unsigned i;
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
@@ -1510,7 +1509,7 @@ static bool command_event_save_core_config(void)
 
          fill_pathname_base_noext(
                config_name,
-               config_get_active_core_path(),
+               path_get_core(),
                sizeof(config_name));
 
          fill_pathname_join(config_path, config_dir, config_name,
@@ -1601,7 +1600,7 @@ void command_event_save_current_config(int override_type)
             && !string_is_empty(global->path.config))
       {
          bool ret                = false;
-         const char *config_path = config_get_active_path();
+         const char *config_path = path_get_config();
 
          /* Save last core-specific config to the default config location,
           * needed on consoles for core switching and reusing last good
@@ -1883,14 +1882,14 @@ bool command_event(enum event_command cmd, void *data)
                core_info_ctx_find_t info_find;
 
 #if defined(HAVE_DYNAMIC)
-               if (string_is_empty(config_get_active_core_path()))
+               if (string_is_empty(path_get_core()))
                   return false;
 #endif
                libretro_get_system_info(
-                     config_get_active_core_path(),
+                     path_get_core(),
                      system,
                      ptr);
-               info_find.path = config_get_active_core_path();
+               info_find.path = path_get_core();
 
                if (!core_info_load(&info_find))
                {

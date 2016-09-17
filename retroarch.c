@@ -639,7 +639,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'L':
             if (path_is_directory(optarg))
             {
-               config_clear_active_core_path();
+               path_clear_core();
                strlcpy(settings->directory.libretro, optarg,
                      sizeof(settings->directory.libretro));
 

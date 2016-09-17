@@ -35,19 +35,19 @@ void path_set_basename(const char *path);
 
 const char *path_get_current_savefile_dir(void);
 
-const char *config_get_active_path(void);
+char *path_get_core_ptr(void);
 
-const char *config_get_active_core_path(void);
+const char *path_get_core(void);
 
-char *config_get_active_core_path_ptr(void);
+bool path_is_core_empty(void);
 
-void config_set_active_core_path(const char *path);
+size_t path_get_core_size(void);
 
-void config_clear_active_core_path(void);
+void path_set_core(const char *path);
 
-bool config_active_core_path_is_empty(void);
+void path_clear_core(void);
 
-size_t config_get_active_core_path_size(void);
+const char *path_get_config(void);
 
 RETRO_END_DECLS
 

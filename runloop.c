@@ -842,7 +842,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             const char *fullpath = (const char*)data;
             if (!fullpath)
                return false;
-            config_set_active_core_path(fullpath);
+            path_set_core(fullpath);
          }
          break;
       case RUNLOOP_CTL_CLEAR_CONTENT_PATH:

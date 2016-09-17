@@ -53,7 +53,7 @@ void menu_shader_manager_init(void)
    struct video_shader *shader = NULL;
    config_file_t *conf         = NULL;
    settings_t *settings        = config_get_ptr();
-   const char *config_path     = config_get_active_path();
+   const char *config_path     = path_get_config();
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);

@@ -655,7 +655,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #endif
 #ifndef HAVE_DYNAMIC
    SETTING_PATH("libretro_path", 
-         config_get_active_core_path_ptr(), false, NULL, false);
+         path_get_core_ptr(), false, NULL, false);
 #endif
    SETTING_PATH(
          "screenshot_directory", 
@@ -1868,7 +1868,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 #ifndef HAVE_DYNAMIC
    if (config_get_path(conf, "libretro_path", tmp_str, sizeof(tmp_str)))
-      config_set_active_core_path(tmp_str);
+      path_set_core(tmp_str);
 #endif
 
 #ifdef RARCH_CONSOLE
@@ -1991,12 +1991,12 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    /* Safe-guard against older behavior. */
-   if (path_is_directory(config_get_active_core_path()))
+   if (path_is_directory(path_get_core()))
    {
       RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
-      strlcpy(settings->directory.libretro, config_get_active_core_path(),
+      strlcpy(settings->directory.libretro, path_get_core(),
             sizeof(settings->directory.libretro));
-      config_clear_active_core_path();
+      path_clear_core();
    }
 
    if (string_is_equal(settings->path.menu_wallpaper, "default"))
@@ -2216,7 +2216,7 @@ bool config_load_override(void)
 
    /* Store the libretro_path we're using since it will be 
     * overwritten by the override when reloading. */
-   strlcpy(buf, config_get_active_core_path(), sizeof(buf));
+   strlcpy(buf, path_get_core(), sizeof(buf));
 
    /* Toggle has_save_path to false so it resets */
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
@@ -2227,7 +2227,7 @@ bool config_load_override(void)
 
    /* Restore the libretro_path we're using
     * since it will be overwritten by the override when reloading. */
-   config_set_active_core_path(buf);
+   path_set_core(buf);
    runloop_msg_queue_push("Configuration override loaded.", 1, 100, true);
 
    /* Reset save paths. */
@@ -3205,7 +3205,7 @@ bool config_replace(char *path)
    rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
    /* Load core in new config. */
-   config_clear_active_core_path();
+   path_clear_core();
 
    if (!task_push_content_load_default(
          NULL, NULL,

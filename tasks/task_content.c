@@ -1613,8 +1613,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
    if (fullpath && *fullpath)
       wrap_args->content_path  = fullpath;
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO))
-      wrap_args->libretro_path = string_is_empty(config_get_active_core_path()) ? NULL :
-         config_get_active_core_path();
+      wrap_args->libretro_path = string_is_empty(path_get_core()) ? NULL :
+         path_get_core();
 
 }
 #endif
@@ -1717,7 +1717,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
 #endif
                break;
             default:
-               core_path            = config_get_active_core_path();
+               core_path            = path_get_core();
                core_name            = info->library_name;
                break;
          }

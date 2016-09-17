@@ -2144,8 +2144,8 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
-               (*list)[list_info->index - 1].size         = config_get_active_core_path_size();
-               (*list)[list_info->index - 1].value.target.string = config_get_active_core_path_ptr();
+               (*list)[list_info->index - 1].size                = path_get_core_size();
+               (*list)[list_info->index - 1].value.target.string = path_get_core_ptr();
                (*list)[list_info->index - 1].values       = ext_name;
                menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_LOAD_CORE);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);

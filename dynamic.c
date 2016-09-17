@@ -221,7 +221,7 @@ static void load_dynamic_core(void)
       retroarch_fail(1, "init_libretro_sym()");
    }
 
-   if (string_is_empty(config_get_active_core_path()))
+   if (string_is_empty(path_get_core()))
    {
       RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
             "libretro_path is not set. Cannot continue.\n");
@@ -232,16 +232,16 @@ static void load_dynamic_core(void)
     * saved to content history, and a relative path would
     * break in that scenario. */
    path_resolve_realpath(
-         config_get_active_core_path_ptr(),
-         config_get_active_core_path_size());
+         path_get_core_ptr(),
+         path_get_core_size());
 
    RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
-         config_get_active_core_path());
-   lib_handle = dylib_load(config_get_active_core_path());
+         path_get_core());
+   lib_handle = dylib_load(path_get_core());
    if (!lib_handle)
    {
       RARCH_ERR("Failed to open libretro core: \"%s\"\n",
-            config_get_active_core_path());
+            path_get_core());
       RARCH_ERR("Error(s): %s\n", dylib_error());
       retroarch_fail(1, "load_dynamic()");
    }
@@ -1264,7 +1264,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const char **path = (const char**)data;
 #ifdef HAVE_DYNAMIC
-         *path = config_get_active_core_path();
+         *path = path_get_core();
 #else
          *path = NULL;
 #endif
