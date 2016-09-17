@@ -2094,7 +2094,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_pbo_readback(gl);
 #endif
 
-   if (!gl_check_error(error_string))
+   if (!gl_check_error(&error_string))
    {
       RARCH_ERR("%s\n", error_string);
       free(error_string);

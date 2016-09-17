@@ -202,7 +202,7 @@ enum gl_capability_enum
 
 RETRO_BEGIN_DECLS
 
-bool gl_check_error(char *error_string);
+bool gl_check_error(char **error_string);
 
 bool gl_query_core_context_in_use(void);
 
