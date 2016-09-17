@@ -1693,7 +1693,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
          const char *core_name            = NULL;
          playlist_t *playlist_tmp         = g_defaults.content_history;
 
-         switch (retroarch_path_is_media_type(tmp))
+         switch (path_is_media_type(tmp))
          {
             case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG

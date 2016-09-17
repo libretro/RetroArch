@@ -53,6 +53,7 @@
 #include "../defaults.h"
 #include "../managers/cheat_manager.h"
 #include "../managers/core_option_manager.h"
+#include "../paths.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../core.h"
@@ -3485,7 +3486,7 @@ static int menu_displaylist_parse_generic(
       if (settings->multimedia.builtin_mediaplayer_enable ||
             settings->multimedia.builtin_imageviewer_enable)
       {
-         switch (retroarch_path_is_media_type(path))
+         switch (path_is_media_type(path))
          {
             case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG
