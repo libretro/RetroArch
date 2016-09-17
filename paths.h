@@ -21,7 +21,11 @@
 
 RETRO_BEGIN_DECLS
 
+void path_set_redirect(void);
+
 void path_set_basename(const char *path);
+
+const char *path_get_current_savefile_dir(void);
 
 RETRO_END_DECLS
 
