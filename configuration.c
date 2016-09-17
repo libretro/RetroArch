@@ -2411,7 +2411,7 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
 bool config_load_shader_preset(void)
 {
    unsigned idx;
-   char shader_directory[PATH_MAX_LENGTH]   = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
+   char shader_directory[PATH_MAX_LENGTH]  = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
    char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
    char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    const char *core_name                   = NULL;
