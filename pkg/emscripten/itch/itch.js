@@ -45,12 +45,6 @@ var showError = function(error) {
   }
 };
 
-function reload()
-{
-   window.top.location.reload();
-   document.getElementById('btnClean').disabled = true;
-}
-
 function cleanupStorage()
 {
    localStorage.clear();
