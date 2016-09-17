@@ -151,7 +151,6 @@ void path_set_redirect(void)
    /* Set savefile directory if empty based on content directory */
    if (string_is_empty(current_savefile_dir))
    {
-      global_t *global = global_get_ptr();
       strlcpy(current_savefile_dir, global->name.base,
             sizeof(current_savefile_dir));
       path_basedir(current_savefile_dir);
