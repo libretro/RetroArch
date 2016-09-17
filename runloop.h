@@ -158,7 +158,6 @@ typedef struct rarch_path
    char sufami_rom[2][PATH_MAX_LENGTH];
    /* Config associated with global "default" config. */
    char append_config[PATH_MAX_LENGTH];
-   char input_config[PATH_MAX_LENGTH];
 #ifdef HAVE_FILE_LOGGER
    char default_log[PATH_MAX_LENGTH];
 #endif
