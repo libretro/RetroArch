@@ -3,6 +3,8 @@
  *
  * This provides the basic JavaScript for the RetroArch web player.
  */
+
+/* setup your key for dropbox support */
 var client = new Dropbox.Client({ key: "--your-api-key--" });
 var BrowserFS = browserfs;
 var afs;
@@ -44,6 +46,12 @@ var showError = function(error) {
   // Tell the user an error occurred, ask them to refresh the page.
   }
 };
+
+function cleanupStorage()
+{
+   localStorage.clear();
+   document.getElementById('btnClean').disabled = true;
+}
 
 function dropboxInit()
 {
@@ -106,6 +114,9 @@ function setupFileSystem(backend)
       mountpoint for browserfs */
    var mfs =  new BrowserFS.FileSystem.MountableFileSystem();
 
+   /* setup this if you setup your server to serve assets or core assets, 
+      you can find more information in the included README */
+
    /* create an XmlHttpRequest filesystem for the bundled data 
       uncomment this section if you want XMB assets, Overlays, Shaders, etc.
    var xfs1 =  new BrowserFS.FileSystem.XmlHttpRequest
@@ -126,11 +137,6 @@ function setupFileSystem(backend)
       /* mount the filesystems onto mfs */
       mfs.mount('/home/web_user/retroarch/userdata', lsfs);
 
-      /* create a memory filesystem for content only 
-      var imfs = new BrowserFS.FileSystem.InMemory();*/
-
-      /* mount the filesystems onto mfs 
-      mfs.mount('/home/web_user/retroarch/userdata/content/', imfs);*/
    }
    else
    {
@@ -138,6 +144,8 @@ function setupFileSystem(backend)
       mfs.mount('/home/web_user/retroarch/userdata', afs);
    }
 
+   /* setup this if you setup your server to serve assets or core assets, 
+      you can find more information in the included README */
    /*
    mfs.mount('/home/web_user/retroarch/bundle', xfs1);
    mfs.mount('/home/web_user/retroarch/userdata/content/', xfs2);
