@@ -56,9 +56,9 @@ function cleanupStorage()
 function dropboxInit()
 {
   document.getElementById('btnRun').disabled = true;
-  document.getElementById('btnDrop').disabled = true;
-  $('#icnDrop').removeClass('fa-dropbox');
-  $('#icnDrop').addClass('fa-spinner fa-spin');
+  //document.getElementById('btnDrop').disabled = true;
+  //$('#icnDrop').removeClass('fa-dropbox');
+  //$('#icnDrop').addClass('fa-spinner fa-spin');
   
 
   client.authDriver(new Dropbox.AuthDriver.Redirect());
@@ -75,8 +75,8 @@ function dropboxInit()
 function dropboxSyncComplete()
 {
   document.getElementById('btnRun').disabled = false;
-  $('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
-  $('#icnDrop').addClass('fa-check');
+  //$('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
+  //$('#icnDrop').addClass('fa-check');
   console.log("WEBPLAYER: Sync successful");
 
   setupFileSystem("dropbox");
@@ -170,7 +170,7 @@ function startRetroArch()
 {
    $('.webplayer').show();
    $('.webplayer-preview').hide();
-   document.getElementById('btnDrop').disabled = true;
+   //document.getElementById('btnDrop').disabled = true;
    document.getElementById('btnRun').disabled = true;
   
    $('#btnFullscreen').removeClass('disabled');
