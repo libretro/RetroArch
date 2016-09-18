@@ -48,12 +48,12 @@ static int file_decompressed_subdir(const char *name,
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
       goto next_file;
 
-   if (strstr(name, userdata->dec.subdir) != name)
+   if (strstr(name, userdata->dec->subdir) != name)
       return 1;
 
-   name += strlen(userdata->dec.subdir) + 1;
+   name += strlen(userdata->dec->subdir) + 1;
 
-   fill_pathname_join(path, userdata->dec.target_dir, name, sizeof(path));
+   fill_pathname_join(path, userdata->dec->target_dir, name, sizeof(path));
    fill_pathname_basedir(path_dir, path, sizeof(path_dir));
 
    /* Make directory */
@@ -70,8 +70,8 @@ next_file:
    return 1;
 
 error:
-   userdata->dec.callback_error = (char*)malloc(PATH_MAX_LENGTH);
-   snprintf(userdata->dec.callback_error,
+   userdata->dec->callback_error = (char*)malloc(PATH_MAX_LENGTH);
+   snprintf(userdata->dec->callback_error,
          PATH_MAX_LENGTH, "Failed to deflate %s.\n", path);
 
    return 0;
@@ -82,7 +82,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
    uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    char path[PATH_MAX_LENGTH] = {0};
-   decompress_state_t    *dec = &userdata->dec;
+   decompress_state_t    *dec = userdata->dec;
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
@@ -147,6 +147,9 @@ static void task_decompress_handler(retro_task_t *task)
    decompress_state_t *dec = (decompress_state_t*)task->state;
    struct archive_extract_userdata userdata = {0};
 
+   userdata.dec = dec;
+   userdata.archive_path = dec->source_file;
+
    int ret                 = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed, &userdata);
@@ -188,7 +191,7 @@ static void task_decompress_handler_subdir(retro_task_t *task)
    decompress_state_t *dec = (decompress_state_t*)task->state;
    struct archive_extract_userdata userdata = {0};
 
-   userdata.dec = *dec;
+   userdata.dec = dec;
 
    int ret = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,

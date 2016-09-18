@@ -99,7 +99,7 @@ struct archive_extract_userdata
    char archive_name[PATH_MAX_LENGTH];
    uint32_t crc;
    struct decomp_state_t decomp_state;
-   decompress_state_t dec;
+   decompress_state_t *dec;
 };
 
 /* Returns true when parsing should continue. False to stop. */
