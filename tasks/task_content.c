@@ -421,12 +421,14 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
       file_archive_get_file_backend(path);
 
    if (stream_backend)
+   {
       stream_info.crc = stream_backend->stream_crc_calculate(
             stream_info.a, stream_info.b, stream_info.c);
 
-   *content_crc_ptr = stream_info.crc;
+      *content_crc_ptr = stream_info.crc;
 
-   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
+      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
+   }
 #endif
    *buf = ret_buf;
 
