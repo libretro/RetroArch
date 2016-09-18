@@ -68,6 +68,7 @@ ARCHIVE FILE
 ENCODINGS
 ============================================================ */
 #include "../libretro-common/encodings/encoding_utf.c"
+#include "../libretro-common/encodings/encoding_crc32.c"
 
 /*============================================================
 PERFORMANCE
