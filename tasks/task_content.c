@@ -197,9 +197,9 @@ static bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
    return ret;
 }
 
-/* Extract the relative path (needle) from a 7z archive 
+/* Extract the relative path (needle) from a 7z archive
  * (path) and allocate a buf for it to write it in.
- * If optional_outfile is set, extract to that instead 
+ * If optional_outfile is set, extract to that instead
  * and don't allocate buffer.
  */
 static int content_7zip_file_read(
@@ -252,7 +252,7 @@ static int content_7zip_file_read(
          size_t outSizeProcessed      = 0;
          const CSzFileItem    *f      = db.db.Files + i;
 
-         /* We skip over everything which is not a directory. 
+         /* We skip over everything which is not a directory.
           * FIXME: Why continue then if f->IsDir is true?*/
          if (f->IsDir)
             continue;
@@ -275,7 +275,7 @@ static int content_7zip_file_read(
          SzArEx_GetFileNameUtf16(&db, i, temp);
          res = SZ_ERROR_FAIL;
          if (temp)
-            res = utf16_to_char_string(temp, infile, sizeof(infile)) 
+            res = utf16_to_char_string(temp, infile, sizeof(infile))
                ? SZ_OK : SZ_ERROR_FAIL;
 
          if (string_is_equal(infile, needle))
@@ -297,7 +297,7 @@ static int content_7zip_file_read(
                break; /* This goes to the error section. */
 
             outsize = outSizeProcessed;
-            
+
             if (optional_outfile != NULL)
             {
                const void *ptr = (const void*)(output + offset);
@@ -333,7 +333,7 @@ static int content_7zip_file_read(
       {
          /* Error handling */
          if (!file_found)
-            RARCH_ERR("%s: %s in %s.\n", 
+            RARCH_ERR("%s: %s in %s.\n",
                   msg_hash_to_str(MSG_FILE_NOT_FOUND),
                   needle, path);
 
@@ -359,8 +359,8 @@ static struct string_list *compressed_7zip_file_list_new(
    CSzArEx db;
    size_t temp_size             = 0;
    struct string_list     *list = NULL;
-   
-   /* These are the allocation routines - currently using 
+
+   /* These are the allocation routines - currently using
     * the non-standard 7zip choices. */
    allocImp.Alloc     = SzAlloc;
    allocImp.Free      = SzFree;
@@ -427,7 +427,7 @@ static struct string_list *compressed_7zip_file_list_new(
          res      = SZ_ERROR_FAIL;
 
          if (temp)
-            res      = utf16_to_char_string(temp, infile, sizeof(infile)) 
+            res      = utf16_to_char_string(temp, infile, sizeof(infile))
                ? SZ_OK : SZ_ERROR_FAIL;
 
          file_ext = path_get_extension(infile);
@@ -525,13 +525,16 @@ error:
    if (handle->data)
       free(handle->data);
 
+   handle->stream = NULL;
+   handle->data   = NULL;
+
    return false;
 }
 
-/* Extract the relative path (needle) from a 
- * ZIP archive (path) and allocate a buffer for it to write it in. 
+/* Extract the relative path (needle) from a
+ * ZIP archive (path) and allocate a buffer for it to write it in.
  *
- * optional_outfile if not NULL will be used to extract the file to. 
+ * optional_outfile if not NULL will be used to extract the file to.
  * buf will be 0 then.
  */
 
@@ -566,7 +569,7 @@ static int content_zip_file_decompressed(
 
             if (buf)
             {
-               RARCH_LOG("%s: %s\n", 
+               RARCH_LOG("%s: %s\n",
                      msg_hash_to_str(MSG_EXTRACTING_FILE),
                      st->opt_file);
                memcpy(buf, handle.data, size);
@@ -661,9 +664,9 @@ static int content_file_compressed_read(
    struct string_list *str_list       = filename_split_archive(path);
 
    /* Safety check.
-    * If optional_filename and optional_filename 
+    * If optional_filename and optional_filename
     * exists, we simply return 0,
-    * hoping that optional_filename is the 
+    * hoping that optional_filename is the
     * same as requested.
     */
    if (optional_filename && path_file_exists(optional_filename))
@@ -724,7 +727,7 @@ error:
  *                     file into. Needs to be freed manually.
  * @length           : Number of items read, -1 on error.
  *
- * Read the contents of a file into @buf. Will call content_file_compressed_read 
+ * Read the contents of a file into @buf. Will call content_file_compressed_read
  * if path contains a compressed file, otherwise will call filestream_read_file().
  *
  * Returns: 1 if file read, 0 on error.
@@ -939,7 +942,7 @@ static void content_load_init_wrap(
  * If no content file can be loaded, will start up RetroArch
  * as-is.
  *
- * Returns: false (0) if retroarch_main_init failed, 
+ * Returns: false (0) if retroarch_main_init failed,
  * otherwise true (1).
  **/
 static bool content_load(content_ctx_info_t *info)
@@ -1178,7 +1181,7 @@ static bool load_content_from_compressed_archive(
    }
 
    string_list_append(additional_path_allocs, new_path, attributes);
-   info[i].path = 
+   info[i].path =
       additional_path_allocs->elems[additional_path_allocs->size -1 ].data;
 
    if (!string_list_append(temporary_content, new_path, attributes))
@@ -1281,7 +1284,7 @@ static const struct retro_subsystem_info *init_content_file_subsystem(
       bool *ret, rarch_system_info_t *system)
 {
    global_t *global = global_get_ptr();
-   const struct retro_subsystem_info *special = 
+   const struct retro_subsystem_info *special =
       libretro_find_subsystem_info(system->subsystem.data,
          system->subsystem.size, global->subsystem);
 
@@ -1385,7 +1388,7 @@ static bool init_content_file_extract(
             return false;
       }
    }
-   
+
    return true;
 }
 #endif
@@ -1486,7 +1489,7 @@ static bool content_file_init(struct string_list *temporary_content)
    additional_path_allocs = string_list_new();
 
    ret = load_content(temporary_content,
-         info, content, special, additional_path_allocs); 
+         info, content, special, additional_path_allocs);
 
    for (i = 0; i < content->size; i++)
       free((void*)info[i].data);
@@ -1587,7 +1590,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
 {
    char *fullpath                    = NULL;
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
-    
+
    if (!wrap_args)
       return;
 
@@ -1628,7 +1631,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool task_load_content(content_ctx_info_t *content_info, 
+static bool task_load_content(content_ctx_info_t *content_info,
       bool launched_from_menu,
       enum content_mode_load mode)
 {
@@ -1652,7 +1655,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
       /** Show loading OSD message */
       if (!string_is_empty(fullpath))
       {
-         snprintf(msg, sizeof(msg), "%s %s ...", 
+         snprintf(msg, sizeof(msg), "%s %s ...",
                msg_hash_to_str(MSG_LOADING),
                name);
          runloop_msg_queue_push(msg, 2, 1, true);
@@ -1723,7 +1726,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
                break;
          }
 
-         if (content_push_to_history_playlist(playlist_tmp, tmp,  
+         if (content_push_to_history_playlist(playlist_tmp, tmp,
                   core_name, core_path))
             playlist_write_file(playlist_tmp);
       }
@@ -1905,7 +1908,7 @@ bool task_push_content_load_default(
          break;
    }
 
-   /* On targets that have no dynamic core loading support, we'd 
+   /* On targets that have no dynamic core loading support, we'd
     * execute the new core from this point. If this returns false,
     * we assume we can dynamically load the core. */
    switch (mode)
@@ -1952,7 +1955,7 @@ bool task_push_content_load_default(
    }
 #endif
 
-   /* Preliminary stuff that has to be done before we 
+   /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
    switch (mode)
    {
