@@ -112,7 +112,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
       glyph->draw_offset_x = slot->bitmap_left;
       glyph->draw_offset_y = -slot->bitmap_top;
 
-      if (buffer[i])
+      if (buffer[i] && slot->bitmap.buffer)
          memcpy(buffer[i], slot->bitmap.buffer,
                slot->bitmap.rows * pitches[i]);
       max_width  = MAX(max_width, (unsigned)slot->bitmap.width);
