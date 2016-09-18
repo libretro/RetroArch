@@ -390,6 +390,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 {
 #ifdef HAVE_COMPRESSION
    content_stream_t stream_info;
+   const struct file_archive_file_backend *stream_backend = NULL;
    uint32_t *content_crc_ptr = NULL;
 #endif
    uint8_t *ret_buf          = NULL;
@@ -413,12 +414,11 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 #ifdef HAVE_COMPRESSION
    content_get_crc(&content_crc_ptr);
 
-   stream_info.a = 0;
-   stream_info.b = ret_buf;
-   stream_info.c = *length;
+   stream_info.a  = 0;
+   stream_info.b  = ret_buf;
+   stream_info.c  = *length;
 
-   const struct file_archive_file_backend *stream_backend =
-      file_archive_get_file_backend(path);
+   stream_backend = file_archive_get_file_backend(path);
 
    if (stream_backend)
    {
