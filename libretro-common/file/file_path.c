@@ -194,12 +194,12 @@ bool path_is_compressed_file(const char* path)
    const char *ext = path_get_extension(path);
 
 #ifdef HAVE_ZLIB
-   if (strcasestr(ext, "zip"))
+   if (string_is_equal_noncase(ext, "zip"))
       return true;
 #endif
 
 #ifdef HAVE_7ZIP
-   if (strcasestr(ext, "7z"))
+   if (string_is_equal_noncase(ext, "7z"))
       return true;
 #endif
 

@@ -90,17 +90,9 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
-#ifdef HAVE_7ZIP
-#include "../deps/7zip/7z.h"
-#include "../deps/7zip/7zAlloc.h"
-#include "../deps/7zip/7zCrc.h"
-#include "../deps/7zip/7zFile.h"
-#endif
-
 #ifdef HAVE_CHEEVOS
 #include "../cheevos.h"
 #endif
-
 
 typedef struct content_stream
 {
@@ -116,607 +108,6 @@ static bool _content_is_inited                                = false;
 static bool core_does_not_need_content                        = false;
 static uint32_t content_crc                                   = 0;
 
-#ifdef HAVE_COMPRESSION
-/**
- * filename_split_archive:
- * @str              : filename to turn into a string list
- *
- * Creates a new string list based on filename @path, delimited by a hash (#).
- *
- * Returns: new string list if successful, otherwise NULL.
- */
-static struct string_list *filename_split_archive(const char *path)
-{
-   union string_list_elem_attr attr;
-   struct string_list *list = string_list_new();
-   const char *delim        = NULL;
-
-   memset(&attr, 0, sizeof(attr));
-
-   delim = path_get_archive_delim(path);
-
-   if (delim)
-   {
-      /* add archive path to list first */
-      if (!string_list_append_n(list, path, delim - path, attr))
-         goto error;
-
-      /* now add the path within the archive */
-      delim++;
-
-      if (*delim)
-      {
-         if (!string_list_append(list, delim, attr))
-            goto error;
-      }
-   }
-   else
-      if (!string_list_append(list, path, attr))
-         goto error;
-
-   return list;
-
-error:
-   string_list_free(list);
-   return NULL;
-}
-
-#ifdef HAVE_7ZIP
-static bool utf16_to_char(uint8_t **utf_data,
-      size_t *dest_len, const uint16_t *in)
-{
-   unsigned len    = 0;
-
-   while (in[len] != '\0')
-      len++;
-
-   utf16_conv_utf8(NULL, dest_len, in, len);
-   *dest_len  += 1;
-   *utf_data   = (uint8_t*)malloc(*dest_len);
-   if (*utf_data == 0)
-      return false;
-
-   return utf16_conv_utf8(*utf_data, dest_len, in, len);
-}
-
-static bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
-{
-   size_t     dest_len  = 0;
-   uint8_t *utf16_data  = NULL;
-   bool            ret  = utf16_to_char(&utf16_data, &dest_len, in);
-
-   if (ret)
-   {
-      utf16_data[dest_len] = 0;
-      strlcpy(s, (const char*)utf16_data, len);
-   }
-
-   free(utf16_data);
-   utf16_data = NULL;
-
-   return ret;
-}
-
-/* Extract the relative path (needle) from a 7z archive 
- * (path) and allocate a buf for it to write it in.
- * If optional_outfile is set, extract to that instead 
- * and don't allocate buffer.
- */
-static int content_7zip_file_read(
-      const char *path,
-      const char *needle, void **buf,
-      const char *optional_outfile)
-{
-   CFileInStream archiveStream;
-   CLookToRead lookStream;
-   ISzAlloc allocImp;
-   ISzAlloc allocTempImp;
-   CSzArEx db;
-   uint8_t *output      = 0;
-   long outsize         = -1;
-
-   /*These are the allocation routines.
-    * Currently using the non-standard 7zip choices. */
-   allocImp.Alloc       = SzAlloc;
-   allocImp.Free        = SzFree;
-   allocTempImp.Alloc   = SzAllocTemp;
-   allocTempImp.Free    = SzFreeTemp;
-
-   if (InFile_Open(&archiveStream.file, path))
-   {
-      RARCH_ERR("Could not open %s as 7z archive\n.", path);
-      return -1;
-   }
-
-   FileInStream_CreateVTable(&archiveStream);
-   LookToRead_CreateVTable(&lookStream, False);
-   lookStream.realStream = &archiveStream.s;
-   LookToRead_Init(&lookStream);
-   CrcGenerateTable();
-   SzArEx_Init(&db);
-
-   if (SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) == SZ_OK)
-   {
-      uint32_t i;
-      bool file_found      = false;
-      uint16_t *temp       = NULL;
-      size_t temp_size     = 0;
-      uint32_t block_index = 0xFFFFFFFF;
-      SRes res             = SZ_OK;
-
-      for (i = 0; i < db.db.NumFiles; i++)
-      {
-         size_t len;
-         char infile[PATH_MAX_LENGTH] = {0};
-         size_t offset                = 0;
-         size_t outSizeProcessed      = 0;
-         const CSzFileItem    *f      = db.db.Files + i;
-
-         /* We skip over everything which is not a directory. 
-          * FIXME: Why continue then if f->IsDir is true?*/
-         if (f->IsDir)
-            continue;
-
-         len = SzArEx_GetFileNameUtf16(&db, i, NULL);
-
-         if (len > temp_size)
-         {
-            free(temp);
-            temp_size = len;
-            temp = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
-
-            if (temp == 0)
-            {
-               res = SZ_ERROR_MEM;
-               break;
-            }
-         }
-
-         SzArEx_GetFileNameUtf16(&db, i, temp);
-         res = SZ_ERROR_FAIL;
-         if (temp)
-            res = utf16_to_char_string(temp, infile, sizeof(infile)) 
-               ? SZ_OK : SZ_ERROR_FAIL;
-
-         if (string_is_equal(infile, needle))
-         {
-            size_t output_size   = 0;
-
-            RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
-                  path, needle);
-
-            /* C LZMA SDK does not support chunked extraction - see here:
-             * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
-             * */
-            file_found = true;
-            res = SzArEx_Extract(&db, &lookStream.s, i, &block_index,
-                  &output, &output_size, &offset, &outSizeProcessed,
-                  &allocImp, &allocTempImp);
-
-            if (res != SZ_OK)
-               break; /* This goes to the error section. */
-
-            outsize = outSizeProcessed;
-            
-            if (optional_outfile != NULL)
-            {
-               const void *ptr = (const void*)(output + offset);
-
-               if (!filestream_write_file(optional_outfile, ptr, outsize))
-               {
-                  RARCH_ERR("Could not open outfilepath %s.\n",
-                        optional_outfile);
-                  res        = SZ_OK;
-                  file_found = true;
-                  outsize    = -1;
-               }
-            }
-            else
-            {
-               /*We could either use the 7Zip allocated buffer,
-                * or create our own and use it.
-                * We would however need to realloc anyways, because RetroArch
-                * expects a \0 at the end, therefore we allocate new,
-                * copy and free the old one. */
-               *buf = malloc(outsize + 1);
-               ((char*)(*buf))[outsize] = '\0';
-               memcpy(*buf,output + offset,outsize);
-            }
-            break;
-         }
-      }
-
-      free(temp);
-      IAlloc_Free(&allocImp, output);
-
-      if (!(file_found && res == SZ_OK))
-      {
-         /* Error handling */
-         if (!file_found)
-            RARCH_ERR("%s: %s in %s.\n", 
-                  msg_hash_to_str(MSG_FILE_NOT_FOUND),
-                  needle, path);
-
-         RARCH_ERR("Failed to open compressed file inside 7zip archive.\n");
-
-         outsize    = -1;
-      }
-   }
-
-   SzArEx_Free(&db, &allocImp);
-   File_Close(&archiveStream.file);
-
-   return outsize;
-}
-
-static struct string_list *compressed_7zip_file_list_new(
-      const char *path, const char* ext)
-{
-   CFileInStream archiveStream;
-   CLookToRead lookStream;
-   ISzAlloc allocImp;
-   ISzAlloc allocTempImp;
-   CSzArEx db;
-   size_t temp_size             = 0;
-   struct string_list     *list = NULL;
-   
-   /* These are the allocation routines - currently using 
-    * the non-standard 7zip choices. */
-   allocImp.Alloc     = SzAlloc;
-   allocImp.Free      = SzFree;
-   allocTempImp.Alloc = SzAllocTemp;
-   allocTempImp.Free  = SzFreeTemp;
-
-   if (InFile_Open(&archiveStream.file, path))
-   {
-      RARCH_ERR("Could not open as 7zip archive: %s.\n",path);
-      return NULL;
-   }
-
-   list = string_list_new();
-
-   if (!list)
-   {
-      File_Close(&archiveStream.file);
-      return NULL;
-   }
-
-   FileInStream_CreateVTable(&archiveStream);
-   LookToRead_CreateVTable(&lookStream, False);
-   lookStream.realStream = &archiveStream.s;
-   LookToRead_Init(&lookStream);
-   CrcGenerateTable();
-   SzArEx_Init(&db);
-
-   if (SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) == SZ_OK)
-   {
-      uint32_t i;
-      struct string_list *ext_list = ext ? string_split(ext, "|"): NULL;
-      SRes res                     = SZ_OK;
-      uint16_t *temp               = NULL;
-
-      for (i = 0; i < db.db.NumFiles; i++)
-      {
-         union string_list_elem_attr attr;
-         char infile[PATH_MAX_LENGTH] = {0};
-         const char *file_ext         = NULL;
-         size_t                   len = 0;
-         bool supported_by_core       = false;
-         const CSzFileItem         *f = db.db.Files + i;
-
-         /* we skip over everything, which is a directory. */
-         if (f->IsDir)
-            continue;
-
-         len = SzArEx_GetFileNameUtf16(&db, i, NULL);
-
-         if (len > temp_size)
-         {
-            free(temp);
-            temp_size = len;
-            temp      = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
-
-            if (temp == 0)
-            {
-               res = SZ_ERROR_MEM;
-               break;
-            }
-         }
-
-         SzArEx_GetFileNameUtf16(&db, i, temp);
-         res      = SZ_ERROR_FAIL;
-
-         if (temp)
-            res      = utf16_to_char_string(temp, infile, sizeof(infile)) 
-               ? SZ_OK : SZ_ERROR_FAIL;
-
-         file_ext = path_get_extension(infile);
-
-         if (string_list_find_elem_prefix(ext_list, ".", file_ext))
-            supported_by_core = true;
-
-         /*
-          * Currently we only support files without subdirs in the archives.
-          * Folders are not supported (differences between win and lin.
-          * Archives within archives should imho never be supported.
-          */
-
-         if (!supported_by_core)
-            continue;
-
-         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
-
-         if (!string_list_append(list, infile, attr))
-         {
-            res = SZ_ERROR_MEM;
-            break;
-         }
-      }
-
-      string_list_free(ext_list);
-      free(temp);
-
-      if (res != SZ_OK)
-      {
-         /* Error handling */
-         RARCH_ERR("Failed to open compressed_file: \"%s\"\n", path);
-
-         string_list_free(list);
-         list = NULL;
-      }
-   }
-
-   SzArEx_Free(&db, &allocImp);
-   File_Close(&archiveStream.file);
-
-   return list;
-}
-#endif
-
-#ifdef HAVE_ZLIB
-struct decomp_state
-{
-   char *opt_file;
-   char *needle;
-   void **buf;
-   size_t size;
-   bool found;
-};
-
-static bool content_zip_file_decompressed_handle(
-      file_archive_file_handle_t *handle,
-      const uint8_t *cdata, uint32_t csize,
-      uint32_t size, uint32_t crc32)
-{
-   int ret   = 0;
-
-   handle->backend = file_archive_get_default_file_backend();
-
-   if (!handle->backend)
-      goto error;
-
-   if (!handle->backend->stream_decompress_data_to_file_init(
-            handle, cdata, csize, size))
-      return false;
-
-   do{
-      ret = handle->backend->stream_decompress_data_to_file_iterate(
-            handle->stream);
-   }while(ret == 0);
-
-   handle->real_checksum = handle->backend->stream_crc_calculate(0,
-         handle->data, size);
-
-   if (handle->real_checksum != crc32)
-   {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32));
-      goto error;
-   }
-
-   if (handle->stream)
-      free(handle->stream);
-
-   return true;
-
-error:
-   if (handle->stream)
-      free(handle->stream);
-   if (handle->data)
-      free(handle->data);
-
-   return false;
-}
-
-/* Extract the relative path (needle) from a 
- * ZIP archive (path) and allocate a buffer for it to write it in. 
- *
- * optional_outfile if not NULL will be used to extract the file to. 
- * buf will be 0 then.
- */
-
-static int content_zip_file_decompressed(
-      const char *name, const char *valid_exts,
-      const uint8_t *cdata, unsigned cmode,
-      uint32_t csize, uint32_t size,
-      uint32_t crc32, void *userdata)
-{
-   struct decomp_state *st = (struct decomp_state*)userdata;
-
-   /* Ignore directories. */
-   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
-      return 1;
-
-   RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
-
-   if (strstr(name, st->needle))
-   {
-      bool goto_error = false;
-      file_archive_file_handle_t handle = {0};
-
-      st->found = true;
-
-      if (content_zip_file_decompressed_handle(&handle,
-               cdata, csize, size, crc32))
-      {
-         if (st->opt_file != 0)
-         {
-            /* Called in case core has need_fullpath enabled. */
-            char *buf       = (char*)malloc(size);
-
-            if (buf)
-            {
-               RARCH_LOG("%s: %s\n", 
-                     msg_hash_to_str(MSG_EXTRACTING_FILE),
-                     st->opt_file);
-               memcpy(buf, handle.data, size);
-
-               if (!filestream_write_file(st->opt_file, buf, size))
-                  goto_error = true;
-            }
-
-            free(buf);
-
-            st->size = 0;
-         }
-         else
-         {
-            /* Called in case core has need_fullpath disabled.
-             * Will copy decompressed content directly into
-             * RetroArch's ROM buffer. */
-            *st->buf = malloc(size);
-            memcpy(*st->buf, handle.data, size);
-
-            st->size = size;
-         }
-      }
-
-      if (handle.data)
-         free(handle.data);
-
-      if (goto_error)
-         return 0;
-   }
-
-   return 1;
-}
-
-static int content_zip_file_read(
-      const char *path,
-      const char *needle, void **buf,
-      const char* optional_outfile)
-{
-   file_archive_transfer_t zlib;
-   struct decomp_state st;
-   bool returnerr = true;
-   int ret        = 0;
-
-   zlib.type      = ZLIB_TRANSFER_INIT;
-
-   st.needle      = NULL;
-   st.opt_file    = NULL;
-   st.found       = false;
-   st.buf         = buf;
-
-   if (needle)
-      st.needle   = strdup(needle);
-   if (optional_outfile)
-      st.opt_file = strdup(optional_outfile);
-
-   do
-   {
-      ret = file_archive_parse_file_iterate(&zlib, &returnerr, path,
-            "", content_zip_file_decompressed, &st);
-      if (!returnerr)
-         break;
-   }while(ret == 0 && !st.found);
-
-   file_archive_parse_file_iterate_stop(&zlib);
-
-   if (st.opt_file)
-      free(st.opt_file);
-   if (st.needle)
-      free(st.needle);
-
-   if (!st.found)
-      return -1;
-
-   return st.size;
-}
-#endif
-
-#endif
-
-#ifdef HAVE_COMPRESSION
-/* Generic compressed file loader.
- * Extracts to buf, unless optional_filename != 0
- * Then extracts to optional_filename and leaves buf alone.
- */
-static int content_file_compressed_read(
-      const char * path, void **buf,
-      const char* optional_filename, ssize_t *length)
-{
-   int ret                            = 0;
-   const char* file_ext               = NULL;
-   struct string_list *str_list       = filename_split_archive(path);
-
-   /* Safety check.
-    * If optional_filename and optional_filename 
-    * exists, we simply return 0,
-    * hoping that optional_filename is the 
-    * same as requested.
-    */
-   if (optional_filename && path_file_exists(optional_filename))
-   {
-      *length = 0;
-      string_list_free(str_list);
-      return 1;
-   }
-
-   /* We assure that there is something after the '#' symbol.
-    *
-    * This error condition happens for example, when
-    * path = /path/to/file.7z, or
-    * path = /path/to/file.7z#
-    */
-   if (str_list->size <= 1)
-      goto error;
-
-#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
-   file_ext        = path_get_extension(str_list->elems[0].data);
-#endif
-
-#ifdef HAVE_7ZIP
-   if (string_is_equal_noncase(file_ext, "7z"))
-   {
-      *length = content_7zip_file_read(str_list->elems[0].data,
-            str_list->elems[1].data, buf, optional_filename);
-      if (*length != -1)
-         ret = 1;
-   }
-#endif
-#ifdef HAVE_ZLIB
-   if (string_is_equal_noncase(file_ext, "zip"))
-   {
-      *length        = content_zip_file_read(str_list->elems[0].data,
-            str_list->elems[1].data, buf, optional_filename);
-      if (*length != -1)
-         ret = 1;
-   }
-#endif
-
-   string_list_free(str_list);
-   return ret;
-
-error:
-   RARCH_ERR("Could not extract string and substring from "
-         ": %s.\n", path);
-   string_list_free(str_list);
-   *length = 0;
-   return 0;
-}
-#endif
-
 /**
  * content_file_read:
  * @path             : path to file.
@@ -724,7 +115,7 @@ error:
  *                     file into. Needs to be freed manually.
  * @length           : Number of items read, -1 on error.
  *
- * Read the contents of a file into @buf. Will call content_file_compressed_read 
+ * Read the contents of a file into @buf. Will call file_archive_compressed_read
  * if path contains a compressed file, otherwise will call filestream_read_file().
  *
  * Returns: 1 if file read, 0 on error.
@@ -734,29 +125,11 @@ static int content_file_read(const char *path, void **buf, ssize_t *length)
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
    {
-      if (content_file_compressed_read(path, buf, NULL, length))
+      if (file_archive_compressed_read(path, buf, NULL, length))
          return 1;
    }
 #endif
    return filestream_read_file(path, buf, length);
-}
-
-struct string_list *compressed_file_list_new(const char *path,
-      const char* ext)
-{
-#if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
-   const char* file_ext = path_get_extension(path);
-#endif
-
-#ifdef HAVE_7ZIP
-   if (string_is_equal_noncase(file_ext, "7z"))
-      return compressed_7zip_file_list_new(path,ext);
-#endif
-#ifdef HAVE_ZLIB
-   if (string_is_equal_noncase(file_ext, "zip"))
-      return file_archive_get_file_list(path, ext);
-#endif
-   return NULL;
 }
 
 static void check_defaults_dir_create_dir(const char *path)
@@ -939,7 +312,7 @@ static void content_load_init_wrap(
  * If no content file can be loaded, will start up RetroArch
  * as-is.
  *
- * Returns: false (0) if retroarch_main_init failed, 
+ * Returns: false (0) if retroarch_main_init failed,
  * otherwise true (1).
  **/
 static bool content_load(content_ctx_info_t *info)
@@ -1046,7 +419,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    stream_info.c = *length;
 
    if (!stream_backend)
-      stream_backend = file_archive_get_default_file_backend();
+      stream_backend = file_archive_get_zlib_file_backend();
    stream_info.crc = stream_backend->stream_crc_calculate(
          stream_info.a, stream_info.b, stream_info.c);
    *content_crc_ptr = stream_info.crc;
@@ -1167,7 +540,7 @@ static bool load_content_from_compressed_archive(
    fill_pathname_join(new_path, new_basedir,
          path_basename(path), sizeof(new_path));
 
-   ret = content_file_compressed_read(path, NULL, new_path, &new_path_len);
+   ret = file_archive_compressed_read(path, NULL, new_path, &new_path_len);
 
    if (!ret || new_path_len < 0)
    {
@@ -1178,7 +551,7 @@ static bool load_content_from_compressed_archive(
    }
 
    string_list_append(additional_path_allocs, new_path, attributes);
-   info[i].path = 
+   info[i].path =
       additional_path_allocs->elems[additional_path_allocs->size -1 ].data;
 
    if (!string_list_append(temporary_content, new_path, attributes))
@@ -1281,7 +654,7 @@ static const struct retro_subsystem_info *init_content_file_subsystem(
       bool *ret, rarch_system_info_t *system)
 {
    global_t *global = global_get_ptr();
-   const struct retro_subsystem_info *special = 
+   const struct retro_subsystem_info *special =
       libretro_find_subsystem_info(system->subsystem.data,
          system->subsystem.size, global->subsystem);
 
@@ -1326,7 +699,7 @@ error:
    return NULL;
 }
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
 static bool init_content_file_extract(
       struct string_list *temporary_content,
       struct string_list *content,
@@ -1340,52 +713,49 @@ static bool init_content_file_extract(
 
    for (i = 0; i < content->size; i++)
    {
-      const char *ext       = NULL;
+      bool compressed       = NULL;
       const char *valid_ext = system->info.valid_extensions;
 
       /* Block extract check. */
       if (content->elems[i].attr.i & 1)
          continue;
 
-      ext                   = path_get_extension(content->elems[i].data);
+      compressed            = path_contains_compressed_file(content->elems[i].data);
 
       if (special)
          valid_ext          = special->roms[i].valid_extensions;
 
-      if (!ext)
+      if (!compressed)
          continue;
 
-      if (string_is_equal_noncase(ext, "zip"))
+      char new_path[PATH_MAX_LENGTH]     = {0};
+      char temp_content[PATH_MAX_LENGTH] = {0};
+
+      strlcpy(temp_content, content->elems[i].data,
+            sizeof(temp_content));
+
+      if (!file_archive_extract_first_file(temp_content,
+               sizeof(temp_content), valid_ext,
+               *settings->directory.cache ?
+               settings->directory.cache : NULL,
+               new_path, sizeof(new_path)))
       {
-         char new_path[PATH_MAX_LENGTH]     = {0};
-         char temp_content[PATH_MAX_LENGTH] = {0};
-
-         strlcpy(temp_content, content->elems[i].data,
-               sizeof(temp_content));
-
-         if (!file_archive_extract_first_content_file(temp_content,
-                  sizeof(temp_content), valid_ext,
-                  *settings->directory.cache ?
-                  settings->directory.cache : NULL,
-                  new_path, sizeof(new_path)))
-         {
-            RARCH_ERR("%s: %s.\n",
-                  msg_hash_to_str(
-                     MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-                  temp_content);
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE)
-                  , 2, 180, true);
-            return false;
-         }
-
-         string_list_set(content, i, new_path);
-         if (!string_list_append(temporary_content,
-                  new_path, *attr))
-            return false;
+         RARCH_ERR("%s: %s.\n",
+               msg_hash_to_str(
+                  MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
+               temp_content);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE)
+               , 2, 180, true);
+         return false;
       }
+
+      string_list_set(content, i, new_path);
+      if (!string_list_append(temporary_content,
+               new_path, *attr))
+         return false;
    }
-   
+
    return true;
 }
 #endif
@@ -1435,7 +805,7 @@ static bool init_content_file_set_attribs(
       }
    }
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    /* Try to extract all content we're going to load if appropriate. */
    if (!init_content_file_extract(temporary_content,
             content, system, special, &attr))
@@ -1486,7 +856,7 @@ static bool content_file_init(struct string_list *temporary_content)
    additional_path_allocs = string_list_new();
 
    ret = load_content(temporary_content,
-         info, content, special, additional_path_allocs); 
+         info, content, special, additional_path_allocs);
 
    for (i = 0; i < content->size; i++)
       free((void*)info[i].data);
@@ -1580,7 +950,6 @@ error:
    return false;
 }
 
-
 #ifdef HAVE_MENU
 static void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
@@ -1628,7 +997,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool task_load_content(content_ctx_info_t *content_info, 
+static bool task_load_content(content_ctx_info_t *content_info,
       bool launched_from_menu,
       enum content_mode_load mode)
 {
@@ -1652,7 +1021,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
       /** Show loading OSD message */
       if (!string_is_empty(fullpath))
       {
-         snprintf(msg, sizeof(msg), "%s %s ...", 
+         snprintf(msg, sizeof(msg), "%s %s ...",
                msg_hash_to_str(MSG_LOADING),
                name);
          runloop_msg_queue_push(msg, 2, 1, true);
@@ -1723,7 +1092,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
                break;
          }
 
-         if (content_push_to_history_playlist(playlist_tmp, tmp,  
+         if (content_push_to_history_playlist(playlist_tmp, tmp,
                   core_name, core_path))
             playlist_write_file(playlist_tmp);
       }
@@ -1905,7 +1274,7 @@ bool task_push_content_load_default(
          break;
    }
 
-   /* On targets that have no dynamic core loading support, we'd 
+   /* On targets that have no dynamic core loading support, we'd
     * execute the new core from this point. If this returns false,
     * we assume we can dynamically load the core. */
    switch (mode)
@@ -1943,7 +1312,7 @@ bool task_push_content_load_default(
    /* Fork core? */
    switch (mode)
    {
-	  case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
+     case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          if (!frontend_driver_set_fork(FRONTEND_FORK_CORE))
             return false;
          break;
@@ -1952,7 +1321,7 @@ bool task_push_content_load_default(
    }
 #endif
 
-   /* Preliminary stuff that has to be done before we 
+   /* Preliminary stuff that has to be done before we
     * load the actual content. Can differ per mode. */
    switch (mode)
    {

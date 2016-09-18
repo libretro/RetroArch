@@ -989,14 +989,13 @@ ifeq ($(HAVE_7ZIP),1)
            deps/7zip/7zCrc.o \
            deps/7zip/Lzma2Dec.o \
    deps/7zip/7zBuf.o
-   OBJ += $(7ZOBJ)
+   OBJ += libretro-common/file/archive_file_7z.o \
+          $(7ZOBJ)
 endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += libretro-common/file/archive_file.o \
-          libretro-common/file/archive_file_zlib.o \
-          tasks/task_decompress.o
+   OBJ += libretro-common/file/archive_file_zlib.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
@@ -1147,6 +1146,8 @@ endif
 
 ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
+   OBJ += libretro-common/file/archive_file.o \
+          tasks/task_decompress.o
 endif
 
 #ifeq ($(HAVE_DIRECTX), 1)

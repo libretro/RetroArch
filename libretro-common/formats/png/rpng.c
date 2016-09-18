@@ -870,7 +870,7 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng, unsigned *width, uns
    if (!process)
       return NULL;
 
-   process->stream_backend = file_archive_get_default_file_backend();
+   process->stream_backend = file_archive_get_zlib_file_backend();
 
    png_pass_geom(&rpng->ihdr, rpng->ihdr.width,
          rpng->ihdr.height, NULL, NULL, &process->inflate_buf_size);
