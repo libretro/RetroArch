@@ -490,6 +490,64 @@ static bool load_content_from_compressed_archive(
 
    return true;
 }
+
+static bool init_content_file_extract(
+      struct string_list *temporary_content,
+      struct string_list *content,
+      rarch_system_info_t *system,
+      const struct retro_subsystem_info *special,
+      union string_list_elem_attr *attr
+      )
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+
+   for (i = 0; i < content->size; i++)
+   {
+      char temp_content[PATH_MAX_LENGTH] = {0};
+      char new_path[PATH_MAX_LENGTH]     = {0};
+      bool compressed                    = NULL;
+      const char *valid_ext              = system->info.valid_extensions;
+
+      /* Block extract check. */
+      if (content->elems[i].attr.i & 1)
+         continue;
+
+      compressed            = path_contains_compressed_file(content->elems[i].data);
+
+      if (special)
+         valid_ext          = special->roms[i].valid_extensions;
+
+      if (!compressed)
+         continue;
+
+      strlcpy(temp_content, content->elems[i].data,
+            sizeof(temp_content));
+
+      if (!file_archive_extract_first_file(temp_content,
+               sizeof(temp_content), valid_ext,
+               *settings->directory.cache ?
+               settings->directory.cache : NULL,
+               new_path, sizeof(new_path)))
+      {
+         RARCH_ERR("%s: %s.\n",
+               msg_hash_to_str(
+                  MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
+               temp_content);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE)
+               , 2, 180, true);
+         return false;
+      }
+
+      string_list_set(content, i, new_path);
+      if (!string_list_append(temporary_content,
+               new_path, *attr))
+         return false;
+   }
+
+   return true;
+}
 #endif
 
 /**
@@ -630,65 +688,6 @@ error:
    return NULL;
 }
 
-#ifdef HAVE_COMPRESSION
-static bool init_content_file_extract(
-      struct string_list *temporary_content,
-      struct string_list *content,
-      rarch_system_info_t *system,
-      const struct retro_subsystem_info *special,
-      union string_list_elem_attr *attr
-      )
-{
-   unsigned i;
-   settings_t *settings = config_get_ptr();
-
-   for (i = 0; i < content->size; i++)
-   {
-      char temp_content[PATH_MAX_LENGTH] = {0};
-      char new_path[PATH_MAX_LENGTH]     = {0};
-      bool compressed                    = NULL;
-      const char *valid_ext              = system->info.valid_extensions;
-
-      /* Block extract check. */
-      if (content->elems[i].attr.i & 1)
-         continue;
-
-      compressed            = path_contains_compressed_file(content->elems[i].data);
-
-      if (special)
-         valid_ext          = special->roms[i].valid_extensions;
-
-      if (!compressed)
-         continue;
-
-      strlcpy(temp_content, content->elems[i].data,
-            sizeof(temp_content));
-
-      if (!file_archive_extract_first_file(temp_content,
-               sizeof(temp_content), valid_ext,
-               *settings->directory.cache ?
-               settings->directory.cache : NULL,
-               new_path, sizeof(new_path)))
-      {
-         RARCH_ERR("%s: %s.\n",
-               msg_hash_to_str(
-                  MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-               temp_content);
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE)
-               , 2, 180, true);
-         return false;
-      }
-
-      string_list_set(content, i, new_path);
-      if (!string_list_append(temporary_content,
-               new_path, *attr))
-         return false;
-   }
-
-   return true;
-}
-#endif
 
 static bool init_content_file_set_attribs(
       struct string_list *temporary_content,
