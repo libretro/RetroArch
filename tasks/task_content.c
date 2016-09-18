@@ -104,7 +104,6 @@ typedef struct content_stream
    uint32_t crc;
 } content_stream_t;
 
-static const struct file_archive_file_backend *stream_backend = NULL;
 static struct string_list *temporary_content                  = NULL;
 static bool _content_is_inited                                = false;
 static bool core_does_not_need_content                        = false;
@@ -125,7 +124,7 @@ static uint32_t content_crc                                   = 0;
 static int content_file_read(const char *path, void **buf, ssize_t *length)
 {
 #ifdef HAVE_COMPRESSION
-   if (path_contains_compressed_file(path))
+   if (path_is_compressed_file(path))
    {
       if (file_archive_compressed_read(path, buf, NULL, length))
          return 1;
@@ -389,7 +388,7 @@ error:
 static bool read_content_file(unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    content_stream_t stream_info;
    uint32_t *content_crc_ptr = NULL;
 #endif
@@ -411,17 +410,20 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    if (!global->patch.block_patch)
       patch_content(&ret_buf, length);
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    content_get_crc(&content_crc_ptr);
 
    stream_info.a = 0;
    stream_info.b = ret_buf;
    stream_info.c = *length;
 
-   if (!stream_backend)
-      stream_backend = file_archive_get_zlib_file_backend();
-   stream_info.crc = stream_backend->stream_crc_calculate(
-         stream_info.a, stream_info.b, stream_info.c);
+   const struct file_archive_file_backend *stream_backend =
+      file_archive_get_file_backend(path);
+
+   if (stream_backend)
+      stream_info.crc = stream_backend->stream_crc_calculate(
+            stream_info.a, stream_info.b, stream_info.c);
+
    *content_crc_ptr = stream_info.crc;
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
