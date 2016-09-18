@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-static const uint32_t crc_table[256] = {
+static const uint32_t crc32_table[256] = {
   0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
   0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
   0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
@@ -78,7 +78,7 @@ static const uint32_t crc_table[256] = {
   0x2d02ef8dL
 };
 
-#define DO1_CRC32(buf) crc = crc_table[(crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
+#define DO1_CRC32(buf) crc = crc32_table[(crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
 #define DO2_CRC32(buf) DO1_CRC32(buf); DO1_CRC32(buf);
 #define DO4_CRC32(buf) DO2_CRC32(buf); DO2_CRC32(buf);
 #define DO8_CRC32(buf) DO4_CRC32(buf); DO4_CRC32(buf);
