@@ -621,7 +621,6 @@ int file_archive_compressed_read(
       const char* optional_filename, ssize_t *length)
 {
    int ret                            = 0;
-   const char* file_ext               = NULL;
    struct string_list *str_list       = file_archive_filename_split(path);
 
    /* Safety check.

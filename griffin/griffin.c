@@ -54,10 +54,14 @@ ALGORITHMS
 /*============================================================
 ARCHIVE FILE
 ============================================================ */
+#include "../libretro-common/file/archive_file.c"
 
 #ifdef HAVE_ZLIB
-#include "../libretro-common/file/archive_file.c"
 #include "../libretro-common/file/archive_file_zlib.c"
+#endif
+
+#ifdef HAVE_7ZIP
+#include "../libretro-common/file/archive_file_7z.c"
 #endif
 
 /*============================================================
