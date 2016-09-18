@@ -208,15 +208,6 @@ static uint32_t zlib_stream_crc32_calculate(uint32_t crc,
    return encoding_crc32(crc, data, length);
 }
 
-struct decomp_state
-{
-   char *opt_file;
-   char *needle;
-   void **buf;
-   size_t size;
-   bool found;
-};
-
 static bool zip_file_decompressed_handle(
       file_archive_file_handle_t *handle,
       const uint8_t *cdata, uint32_t csize,
@@ -270,10 +261,8 @@ static int zip_file_decompressed(
       const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode,
       uint32_t csize, uint32_t size,
-      uint32_t crc32, void *userdata)
+      uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   struct decomp_state *st = (struct decomp_state*)userdata;
-
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
       return 1;
@@ -282,17 +271,17 @@ static int zip_file_decompressed(
    RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
 #endif
 
-   if (strstr(name, st->needle))
+   if (strstr(name, userdata->decomp_state.needle))
    {
       bool goto_error = false;
       file_archive_file_handle_t handle = {0};
 
-      st->found = true;
+      userdata->decomp_state.found = true;
 
       if (zip_file_decompressed_handle(&handle,
                cdata, csize, size, crc32))
       {
-         if (st->opt_file != 0)
+         if (userdata->decomp_state.opt_file != 0)
          {
             /* Called in case core has need_fullpath enabled. */
             char *buf       = (char*)malloc(size);
@@ -301,26 +290,26 @@ static int zip_file_decompressed(
             {
                /*RARCH_LOG("%s: %s\n",
                      msg_hash_to_str(MSG_EXTRACTING_FILE),
-                     st->opt_file);*/
+                     userdata->decomp_state.opt_file);*/
                memcpy(buf, handle.data, size);
 
-               if (!filestream_write_file(st->opt_file, buf, size))
+               if (!filestream_write_file(userdata->decomp_state.opt_file, buf, size))
                   goto_error = true;
             }
 
             free(buf);
 
-            st->size = 0;
+            userdata->decomp_state.size = 0;
          }
          else
          {
             /* Called in case core has need_fullpath disabled.
              * Will copy decompressed content directly into
              * RetroArch's ROM buffer. */
-            *st->buf = malloc(size);
-            memcpy(*st->buf, handle.data, size);
+            *userdata->decomp_state.buf = malloc(size);
+            memcpy(*userdata->decomp_state.buf, handle.data, size);
 
-            st->size = size;
+            userdata->decomp_state.size = size;
          }
       }
 
@@ -340,41 +329,41 @@ static int zip_file_read(
       const char *optional_outfile)
 {
    file_archive_transfer_t zlib;
-   struct decomp_state st;
    bool returnerr = true;
    int ret        = 0;
+   struct archive_extract_userdata userdata = {0};
 
    zlib.type      = ARCHIVE_TRANSFER_INIT;
 
-   st.needle      = NULL;
-   st.opt_file    = NULL;
-   st.found       = false;
-   st.buf         = buf;
+   userdata.decomp_state.needle      = NULL;
+   userdata.decomp_state.opt_file    = NULL;
+   userdata.decomp_state.found       = false;
+   userdata.decomp_state.buf         = buf;
 
    if (needle)
-      st.needle   = strdup(needle);
+      userdata.decomp_state.needle   = strdup(needle);
    if (optional_outfile)
-      st.opt_file = strdup(optional_outfile);
+      userdata.decomp_state.opt_file = strdup(optional_outfile);
 
    do
    {
       ret = file_archive_parse_file_iterate(&zlib, &returnerr, path,
-            "", zip_file_decompressed, &st);
+            "", zip_file_decompressed, &userdata);
       if (!returnerr)
          break;
-   }while(ret == 0 && !st.found);
+   }while(ret == 0 && !userdata.decomp_state.found);
 
    file_archive_parse_file_iterate_stop(&zlib);
 
-   if (st.opt_file)
-      free(st.opt_file);
-   if (st.needle)
-      free(st.needle);
+   if (userdata.decomp_state.opt_file)
+      free(userdata.decomp_state.opt_file);
+   if (userdata.decomp_state.needle)
+      free(userdata.decomp_state.needle);
 
-   if (!st.found)
+   if (!userdata.decomp_state.found)
       return -1;
 
-   return st.size;
+   return userdata.decomp_state.size;
 }
 
 static int zip_parse_file_init(file_archive_transfer_t *state,
@@ -442,7 +431,7 @@ static int zip_parse_file_iterate_step_internal(
 }
 
 static int zip_parse_file_iterate_step(file_archive_transfer_t *state,
-      const char *valid_exts, void *userdata, file_archive_file_cb file_cb)
+      const char *valid_exts, struct archive_extract_userdata *userdata, file_archive_file_cb file_cb)
 {
    const uint8_t *cdata = NULL;
    uint32_t checksum    = 0;

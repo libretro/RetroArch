@@ -344,7 +344,7 @@ static int sevenzip_parse_file_iterate_step_internal(
 }
 
 static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
-      const char *valid_exts, void *userdata, file_archive_file_cb file_cb)
+      const char *valid_exts, struct archive_extract_userdata *userdata, file_archive_file_cb file_cb)
 {
    const uint8_t *cdata = NULL;
    uint32_t checksum    = 0;

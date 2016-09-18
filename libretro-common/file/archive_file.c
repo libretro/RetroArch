@@ -182,13 +182,11 @@ static int file_archive_get_file_list_cb(
       uint32_t csize,
       uint32_t size,
       uint32_t checksum,
-      void *userdata)
+      struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
    struct string_list *ext_list = NULL;
    const char *file_ext         = NULL;
-   struct archive_extract_userdata *data =
-         (struct archive_extract_userdata*)userdata;
    size_t pathLen = strlen(path);
 
    (void)cdata;
@@ -224,7 +222,7 @@ static int file_archive_get_file_list_cb(
       string_list_free(ext_list);
    }
 
-   return string_list_append(data->list, path, attr);
+   return string_list_append(userdata->list, path, attr);
 
 error:
    string_list_free(ext_list);
@@ -234,28 +232,26 @@ error:
 static int file_archive_extract_cb(const char *name, const char *valid_exts,
       const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size,
-      uint32_t checksum, void *userdata)
+      uint32_t checksum, struct archive_extract_userdata *userdata)
 {
    const char *ext                   = path_get_extension(name);
-   struct archive_extract_userdata *data = (struct archive_extract_userdata*)
-      userdata;
 
    /* Extract first file that matches our list. */
-   if (ext && string_list_find_elem(data->ext, ext))
+   if (ext && string_list_find_elem(userdata->ext, ext))
    {
       char new_path[PATH_MAX_LENGTH] = {0};
 
-      if (data->extraction_directory)
-         fill_pathname_join(new_path, data->extraction_directory,
+      if (userdata->extraction_directory)
+         fill_pathname_join(new_path, userdata->extraction_directory,
                path_basename(name), sizeof(new_path));
       else
-         fill_pathname_resolve_relative(new_path, data->archive_path,
+         fill_pathname_resolve_relative(new_path, userdata->archive_path,
                path_basename(name), sizeof(new_path));
 
-      data->first_extracted_file_path = strdup(new_path);
-      data->found_file                = file_archive_perform_mode(new_path,
+      userdata->first_extracted_file_path = strdup(new_path);
+      userdata->found_file                = file_archive_perform_mode(new_path,
             valid_exts, cdata, cmode, csize, size,
-            0, data);
+            0, userdata);
       return 0;
    }
 
@@ -361,7 +357,7 @@ int file_archive_parse_file_iterate(
       const char *file,
       const char *valid_exts,
       file_archive_file_cb file_cb,
-      void *userdata)
+      struct archive_extract_userdata *userdata)
 {
    if (!state)
       return -1;
@@ -373,10 +369,8 @@ int file_archive_parse_file_iterate(
       case ARCHIVE_TRANSFER_INIT:
          if (file_archive_parse_file_init(state, file) == 0)
          {
-            struct archive_extract_userdata *data =
-                  (struct archive_extract_userdata*)userdata;
-            if (data)
-               data->context = state->stream;
+            if (userdata)
+               userdata->context = state->stream;
             state->type = ARCHIVE_TRANSFER_ITERATE;
          }
          else
@@ -384,7 +378,7 @@ int file_archive_parse_file_iterate(
          break;
       case ARCHIVE_TRANSFER_ITERATE:
          {
-            const struct file_archive_file_backend *backend = 
+            const struct file_archive_file_backend *backend =
                file_archive_get_file_backend(file);
 
             if (backend)
@@ -413,8 +407,6 @@ int file_archive_parse_file_iterate(
          }
          if (state->stream && state->backend)
          {
-            struct archive_extract_userdata *data =
-                     (struct archive_extract_userdata*)userdata;
             state->backend->stream_free(state->stream);
 
             if (state->stream)
@@ -422,8 +414,8 @@ int file_archive_parse_file_iterate(
 
             state->stream = NULL;
 
-            if (data)
-               data->context = NULL;
+            if (userdata)
+               userdata->context = NULL;
          }
          break;
    }
@@ -449,7 +441,7 @@ int file_archive_parse_file_iterate(
  * Returns: true (1) on success, otherwise false (0).
  **/
 static bool file_archive_parse_file(const char *file, const char *valid_exts,
-      file_archive_file_cb file_cb, void *userdata)
+      file_archive_file_cb file_cb, struct archive_extract_userdata *userdata)
 {
    file_archive_transfer_t state = {0};
    bool returnerr        = true;
@@ -572,7 +564,7 @@ error:
 
 bool file_archive_perform_mode(const char *path, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
-      uint32_t crc32, void *userdata)
+      uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    switch (cmode)
    {
@@ -585,10 +577,9 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
          {
             int ret = 0;
             file_archive_file_handle_t handle = {0};
-            struct archive_extract_userdata *data = (struct archive_extract_userdata*)userdata;
 
-            handle.backend = file_archive_get_file_backend(data->archive_path);
-            handle.stream = data->context;
+            handle.backend = file_archive_get_file_backend(userdata->archive_path);
+            handle.stream = userdata->context;
 
             if (!handle.backend->stream_decompress_data_to_file_init(&handle,
                      cdata, csize, size))
