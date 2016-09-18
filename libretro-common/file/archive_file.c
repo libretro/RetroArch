@@ -237,7 +237,8 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       uint32_t checksum, void *userdata)
 {
    const char *ext                   = path_get_extension(name);
-   struct archive_extract_userdata *data = (struct archive_extract_userdata*)userdata;
+   struct archive_extract_userdata *data = (struct archive_extract_userdata*)
+      userdata;
 
    /* Extract first file that matches our list. */
    if (ext && string_list_find_elem(data->ext, ext))
@@ -382,7 +383,8 @@ int file_archive_parse_file_iterate(
          break;
       case ARCHIVE_TRANSFER_ITERATE:
          {
-            const struct file_archive_file_backend *backend = file_archive_get_file_backend(file);
+            const struct file_archive_file_backend *backend = 
+               file_archive_get_file_backend(file);
 
             if (backend)
             {
@@ -726,39 +728,48 @@ error:
    return NULL;
 }
 
-const struct file_archive_file_backend *file_archive_get_zlib_file_backend()
+const struct file_archive_file_backend *file_archive_get_zlib_file_backend(void)
 {
+#ifdef HAVE_ZLIB
    return &zlib_backend;
+#else
+   return NULL;
+#endif
 }
 
-const struct file_archive_file_backend *file_archive_get_7z_file_backend()
+const struct file_archive_file_backend *file_archive_get_7z_file_backend(void)
 {
+#ifdef HAVE_7ZIP
    return &sevenzip_backend;
+#else
+   return NULL;
+#endif
 }
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
-   const char *file_ext = NULL;
+   const char *file_ext          = NULL;
+   char *last                    = NULL;
    char newpath[PATH_MAX_LENGTH] = {0};
 
    strlcpy(newpath, path, sizeof(newpath));
 
-   char *last = (char*)path_get_archive_delim(newpath);
+   last = (char*)path_get_archive_delim(newpath);
 
    if (last)
       *last = '\0';
 
    file_ext = path_get_extension(newpath);
 
+#ifdef HAVE_7ZIP
    if (string_is_equal_noncase(file_ext, "7z"))
-   {
       return &sevenzip_backend;
-   }
+#endif
 
+#ifdef HAVE_ZLIB
    if (string_is_equal_noncase(file_ext, "zip"))
-   {
       return &zlib_backend;
-   }
+#endif
 
    return NULL;
 }
