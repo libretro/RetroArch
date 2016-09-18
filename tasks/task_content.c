@@ -94,6 +94,8 @@
 #include "../cheevos.h"
 #endif
 
+#define MAX_ARGS 32
+
 typedef struct content_stream
 {
    uint32_t a;
@@ -302,8 +304,6 @@ static void content_load_init_wrap(
       RARCH_LOG("arg #%d: %s\n", i, argv[i]);
 #endif
 }
-
-#define MAX_ARGS 32
 
 /**
  * content_load:
