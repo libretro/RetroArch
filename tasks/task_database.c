@@ -66,13 +66,9 @@ typedef struct db_handle
 #ifdef HAVE_COMPRESSION
 static int archive_compare_crc32(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
-      uint32_t crc32, void *userdata)
+      uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   database_state_handle_t *db_state = (database_state_handle_t*)userdata;
-
-   db_state->crc = crc32;
-
-   strlcpy(db_state->archive_name, name, sizeof(db_state->archive_name));
+   userdata->crc = crc32;
 
 #if 0
    RARCH_LOG("Going to compare CRC 0x%x for %s\n", crc32, name);
@@ -417,6 +413,10 @@ static int task_database_iterate_playlist_archive(
    if (db_state->crc != 0)
       return task_database_iterate_crc_lookup(
             db_state, db, db_state->archive_name);
+
+   strlcpy(userdata.archive_name, db_state->archive_name, sizeof(userdata.archive_name));
+
+   userdata.crc = db_state->crc;
 
    if (file_archive_parse_file_iterate(&db->state,
             &returnerr, name, NULL, archive_compare_crc32,

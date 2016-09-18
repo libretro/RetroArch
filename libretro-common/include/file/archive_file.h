@@ -25,8 +25,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
-
 #include <boolean.h>
+
+#include <retro_miscellaneous.h>
 
 enum file_archive_transfer_type
 {
@@ -63,6 +64,28 @@ enum file_archive_compression_mode
    ARCHIVE_MODE_COMPRESSED   = 8
 };
 
+struct decomp_state_t
+{
+   char *opt_file;
+   char *needle;
+   void **buf;
+   size_t size;
+   bool found;
+};
+
+typedef struct
+{
+   char *source_file;
+   char *subdir;
+   char *target_dir;
+   char *target_file;
+   char *valid_ext;
+
+   char *callback_error;
+
+   file_archive_transfer_t archive;
+} decompress_state_t;
+
 struct archive_extract_userdata
 {
    char *archive_path;
@@ -73,12 +96,16 @@ struct archive_extract_userdata
    struct string_list *list;
    bool found_file;
    void *context;
+   char archive_name[PATH_MAX_LENGTH];
+   uint32_t crc;
+   struct decomp_state_t decomp_state;
+   decompress_state_t dec;
 };
 
 /* Returns true when parsing should continue. False to stop. */
 typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
-      uint32_t crc32, void *userdata);
+      uint32_t crc32, struct archive_extract_userdata *userdata);
 
 struct file_archive_file_backend
 {
@@ -106,7 +133,7 @@ struct file_archive_file_backend
    int (*archive_parse_file_iterate_step)(
       file_archive_transfer_t *state,
       const char *valid_exts,
-      void *userdata,
+      struct archive_extract_userdata *userdata,
       file_archive_file_cb file_cb);
    const char *ident;
 };
@@ -117,7 +144,7 @@ int file_archive_parse_file_iterate(
       const char *file,
       const char *valid_exts,
       file_archive_file_cb file_cb,
-      void *userdata);
+      struct archive_extract_userdata *userdata);
 
 void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state);
 
@@ -151,7 +178,7 @@ struct string_list* file_archive_get_file_list(const char *path, const char *val
 
 bool file_archive_perform_mode(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
-      uint32_t crc32, void *userdata);
+      uint32_t crc32, struct archive_extract_userdata *userdata);
 
 void file_archive_deflate_init(void *data, int level);
 
