@@ -78,6 +78,10 @@ static const uint32_t crc32_table[256] = {
   0x2d02ef8dL
 };
 
+#undef  DO1_CRC32
+#undef  DO2_CRC32
+#undef  DO4_CRC32
+#undef  DO8_CRC32
 #define DO1_CRC32(buf) crc = crc32_table[(crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
 #define DO2_CRC32(buf) DO1_CRC32(buf); DO1_CRC32(buf);
 #define DO4_CRC32(buf) DO2_CRC32(buf); DO2_CRC32(buf);
