@@ -100,11 +100,9 @@ static int sevenzip_file_read(
    allocTempImp.Alloc   = SzAllocTemp;
    allocTempImp.Free    = SzFreeTemp;
 
+   /* Could not open 7zip archive? */
    if (InFile_Open(&archiveStream.file, path))
-   {
-      //RARCH_ERR("Could not open %s as 7z archive\n.", path);
       return -1;
-   }
 
    FileInStream_CreateVTable(&archiveStream);
    LookToRead_CreateVTable(&lookStream, False);
@@ -211,13 +209,10 @@ static int sevenzip_file_read(
 
       if (!(file_found && res == SZ_OK))
       {
-         /* Error handling */
-         /*if (!file_found)
-            RARCH_ERR("%s: %s in %s.\n",
-                  msg_hash_to_str(MSG_FILE_NOT_FOUND),
-                  needle, path);*/
-
-         //RARCH_ERR("Failed to open compressed file inside 7zip archive.\n");
+         /* Error handling
+          *
+          * Failed to open compressed file inside 7zip archive.
+          */
 
          outsize    = -1;
       }
@@ -270,19 +265,18 @@ static int sevenzip_stream_decompress_data_to_file_iterate(void *data)
 static int sevenzip_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
+   struct sevenzip_context_t *sevenzip_context = NULL;
    if (state->archive_size < SEVENZIP_MAGIC_LEN)
       return -1;
 
    if (memcmp(state->data, SEVENZIP_MAGIC, SEVENZIP_MAGIC_LEN) != 0)
       return -1;
 
-   struct sevenzip_context_t *sevenzip_context = sevenzip_stream_new();
+   sevenzip_context = sevenzip_stream_new();
 
+   /* could not open 7zip archive? */
    if (InFile_Open(&sevenzip_context->archiveStream.file, file))
-   {
-      //RARCH_ERR("Could not open as 7zip archive: %s.\n",path);
       return -1;
-   }
 
    FileInStream_CreateVTable(&sevenzip_context->archiveStream);
    LookToRead_CreateVTable(&sevenzip_context->lookStream, False);
@@ -291,7 +285,8 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    CrcGenerateTable();
    SzArEx_Init(&sevenzip_context->db);
 
-   SzArEx_Open(&sevenzip_context->db, &sevenzip_context->lookStream.s, &sevenzip_context->allocImp, &sevenzip_context->allocTempImp);
+   SzArEx_Open(&sevenzip_context->db, &sevenzip_context->lookStream.s,
+         &sevenzip_context->allocImp, &sevenzip_context->allocTempImp);
 
    state->stream = sevenzip_context;
 
@@ -314,15 +309,14 @@ static int sevenzip_parse_file_iterate_step_internal(
 
       if (len < PATH_MAX_LENGTH && !file->IsDir)
       {
+         SRes res                     = SZ_ERROR_FAIL;
          char infile[PATH_MAX_LENGTH] = {0};
-         uint16_t *temp = (uint16_t*)malloc(len * sizeof(uint16_t));
+         uint16_t *temp               = (uint16_t*)malloc(len * sizeof(uint16_t));
 
          if (!temp)
             return -1;
 
          SzArEx_GetFileNameUtf16(&sevenzip_context->db, sevenzip_context->index, temp);
-
-         SRes res = SZ_ERROR_FAIL;
 
          if (temp)
          {
@@ -357,6 +351,7 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
    uint32_t csize       = 0;
    unsigned cmode       = 0;
    unsigned payload     = 0;
+   struct sevenzip_context_t *sevenzip_context = NULL;
    char filename[PATH_MAX_LENGTH] = {0};
    int ret = sevenzip_parse_file_iterate_step_internal(state, filename,
          &cdata, &cmode, &size, &csize,
@@ -369,8 +364,7 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
             csize, size, checksum, userdata))
       return 0;
 
-   struct sevenzip_context_t *sevenzip_context =
-         (struct sevenzip_context_t*)state->stream;
+   sevenzip_context = (struct sevenzip_context_t*)state->stream;
 
    sevenzip_context->index += payload;
 

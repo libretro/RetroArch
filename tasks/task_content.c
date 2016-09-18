@@ -713,8 +713,10 @@ static bool init_content_file_extract(
 
    for (i = 0; i < content->size; i++)
    {
-      bool compressed       = NULL;
-      const char *valid_ext = system->info.valid_extensions;
+      char temp_content[PATH_MAX_LENGTH] = {0};
+      char new_path[PATH_MAX_LENGTH]     = {0};
+      bool compressed                    = NULL;
+      const char *valid_ext              = system->info.valid_extensions;
 
       /* Block extract check. */
       if (content->elems[i].attr.i & 1)
@@ -727,9 +729,6 @@ static bool init_content_file_extract(
 
       if (!compressed)
          continue;
-
-      char new_path[PATH_MAX_LENGTH]     = {0};
-      char temp_content[PATH_MAX_LENGTH] = {0};
 
       strlcpy(temp_content, content->elems[i].data,
             sizeof(temp_content));

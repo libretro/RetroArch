@@ -265,11 +265,12 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
 int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
+   char *last                 = NULL;
    char path[PATH_MAX_LENGTH] = {0};
 
    strlcpy(path, file, sizeof(path));
 
-   char *last = (char*)path_get_archive_delim(path);
+   last = (char*)path_get_archive_delim(path);
 
    if (last)
       *last = '\0';
@@ -395,7 +396,7 @@ int file_archive_parse_file_iterate(
                if (ret == -1)
                   state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
 
-               // early return to prevent deinit from never firing
+               /* early return to prevent deinit from never firing */
                return 0;
             }
             else
@@ -622,6 +623,7 @@ int file_archive_compressed_read(
       const char * path, void **buf,
       const char* optional_filename, ssize_t *length)
 {
+   const struct file_archive_file_backend *backend = NULL;
    int ret                            = 0;
    struct string_list *str_list       = file_archive_filename_split(path);
 
@@ -647,8 +649,7 @@ int file_archive_compressed_read(
    if (str_list->size <= 1)
       goto error;
 
-   const struct file_archive_file_backend *backend =
-         file_archive_get_file_backend(str_list->elems[0].data);
+   backend = file_archive_get_file_backend(str_list->elems[0].data);
 
    *length = backend->compressed_file_read(str_list->elems[0].data,
          str_list->elems[1].data, buf, optional_filename);
@@ -660,7 +661,7 @@ int file_archive_compressed_read(
    return ret;
 
 error:
-   //RARCH_ERR("Could not extract string and substring from: %s.\n", path);
+   /* could not extract string and substring. */
    string_list_free(str_list);
    *length = 0;
    return 0;
