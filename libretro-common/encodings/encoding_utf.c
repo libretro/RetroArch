@@ -224,7 +224,7 @@ uint32_t utf8_walk(const char **string)
    return ret | (first&7)<<6;
 }
 
-bool utf16_to_char(uint8_t **utf_data,
+static bool utf16_to_char(uint8_t **utf_data,
       size_t *dest_len, const uint16_t *in)
 {
    unsigned len    = 0;
