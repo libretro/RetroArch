@@ -58,7 +58,6 @@ void path_set_redirect(void)
    uint32_t global_library_name_hash           = 0;
    bool check_global_library_name_hash         = false;
    global_t                *global             = global_get_ptr();
-   settings_t              *settings           = config_get_ptr();
    rarch_system_info_t      *info              = NULL;
    const char *old_savefile_dir                = NULL;
    const char *old_savestate_dir               = NULL;
@@ -93,6 +92,8 @@ void path_set_redirect(void)
 
    if (check_global_library_name_hash)
    {
+      settings_t *settings = config_get_ptr();
+
       /* per-core saves: append the library_name to the save location */
       if (settings->sort_savefiles_enable
             && !string_is_empty(old_savefile_dir))
