@@ -140,7 +140,7 @@ static void task_decompress_handler_finished(retro_task_t *task,
       free(dec->source_file);
    else
    {
-      decompress_task_data_t *data = 
+      decompress_task_data_t *data =
          (decompress_task_data_t*)calloc(1, sizeof(*data));
 
       data->source_file = dec->source_file;
@@ -159,9 +159,11 @@ static void task_decompress_handler(retro_task_t *task)
 {
    bool retdec             = false;
    decompress_state_t *dec = (decompress_state_t*)task->state;
+   struct archive_extract_userdata userdata = {0};
+
    int ret                 = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
-         dec->valid_ext, file_decompressed, dec);
+         dec->valid_ext, file_decompressed, &userdata);
 
    task->progress = file_archive_parse_file_progress(&dec->archive);
 
@@ -197,9 +199,11 @@ static void task_decompress_handler_subdir(retro_task_t *task)
 {
    bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
+   struct archive_extract_userdata userdata = {0};
+
    int ret = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
-         dec->valid_ext, file_decompressed_subdir, dec);
+         dec->valid_ext, file_decompressed_subdir, &userdata);
 
    task->progress = file_archive_parse_file_progress(&dec->archive);
 
@@ -256,8 +260,8 @@ bool task_push_decompress(
    }
 
    /* ZIP or APK only */
-   if (!path_file_exists(source_file) || 
-         msg_hash_to_file_type(msg_hash_calculate(path_get_extension(source_file))) 
+   if (!path_file_exists(source_file) ||
+         msg_hash_to_file_type(msg_hash_calculate(path_get_extension(source_file)))
          != FILE_TYPE_COMPRESSED)
    {
       RARCH_WARN("[decompress] File '%s' does not exist or is not a compressed file.\n",
