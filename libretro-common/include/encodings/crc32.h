@@ -26,6 +26,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-unsigned long crc32(unsigned long crc, const unsigned char *buf, unsigned int len);
+unsigned long encoding_crc32(unsigned long crc, const unsigned char *buf, unsigned int len);
 
 #endif
