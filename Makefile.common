@@ -971,6 +971,8 @@ endif
 
 # Compression/Archive
 
+OBJ += libretro-common/file/archive_file.o
+
 ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I./deps/7zip
    HAVE_COMPRESSION = 1
@@ -1144,10 +1146,10 @@ ifeq ($(HAVE_FFMPEG), 1)
    DEFINES += -Wno-deprecated-declarations -DHAVE_FFMPEG -Iffmpeg
 endif
 
+
 ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
-   OBJ += libretro-common/file/archive_file.o \
-          tasks/task_decompress.o
+   OBJ += tasks/task_decompress.o
 endif
 
 #ifeq ($(HAVE_DIRECTX), 1)
