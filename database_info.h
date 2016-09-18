@@ -24,10 +24,6 @@
 #include <file/archive_file.h>
 #include <retro_common_api.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "libretro-db/libretrodb.h"
 
 RETRO_BEGIN_DECLS
@@ -58,9 +54,7 @@ typedef struct
    enum database_type type;
    size_t list_ptr;
    struct string_list *list;
-#ifdef HAVE_COMPRESSION
    file_archive_transfer_t state;
-#endif
 } database_info_handle_t;
 
 typedef struct
