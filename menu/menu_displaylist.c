@@ -3372,9 +3372,7 @@ static int menu_displaylist_parse_generic(
       filter_ext = true;
 
    if (path_is_compressed)
-   {
-      str_list = file_archive_file_list_new(info->path, info->exts);
-   }
+      str_list = compressed_file_list_new(info->path, info->exts);
    else
       str_list = dir_list_new(info->path,
             filter_ext ? info->exts : NULL,

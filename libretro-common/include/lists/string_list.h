@@ -44,7 +44,7 @@ struct string_list_elem
    union string_list_elem_attr attr;
 };
 
-struct __attribute__ ((aligned(1))) string_list
+struct string_list
 {
    struct string_list_elem *elems;
    size_t size;
@@ -138,7 +138,7 @@ void string_list_free(struct string_list *list);
  * @list             : pointer to string list.
  * @delim            : delimiter character for @list.
  *
- * A string list will be joined/concatenated as a
+ * A string list will be joined/concatenated as a 
  * string to @buffer, delimited by @delim.
  */
 void string_list_join_concat(char *buffer, size_t size,

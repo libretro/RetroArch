@@ -90,7 +90,7 @@ static uint8_t bps_read(struct bps_data *bps)
    uint8_t data = bps->modify_data[bps->modify_offset++];
 #ifdef HAVE_ZLIB
    const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_zlib_file_backend();
+      file_archive_get_default_file_backend();
    bps->modify_checksum = ~stream_backend->stream_crc_calculate(
          ~bps->modify_checksum, &data, 1);
 #endif
@@ -118,7 +118,7 @@ static void bps_write(struct bps_data *bps, uint8_t data)
 {
 #ifdef HAVE_ZLIB
    const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_zlib_file_backend();
+      file_archive_get_default_file_backend();
 #endif
    if (!bps)
       return;
@@ -142,7 +142,7 @@ static enum patch_error bps_apply_patch(
             modify_modify_checksum = 0, checksum;
 #ifdef HAVE_ZLIB
    const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_zlib_file_backend();
+      file_archive_get_default_file_backend();
 #endif
 
    if (modify_length < 19)
@@ -254,7 +254,7 @@ static uint8_t ups_patch_read(struct ups_data *data)
 {
 #ifdef HAVE_ZLIB
    const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_zlib_file_backend();
+      file_archive_get_default_file_backend();
 #endif
 
    if (data && data->patch_offset < data->patch_length) 
@@ -273,7 +273,7 @@ static uint8_t ups_source_read(struct ups_data *data)
 {
 #ifdef HAVE_ZLIB
    const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_zlib_file_backend();
+      file_archive_get_default_file_backend();
 #endif
 
    if (data && data->source_offset < data->source_length) 
@@ -292,7 +292,7 @@ static void ups_target_write(struct ups_data *data, uint8_t n)
 {
 #ifdef HAVE_ZLIB
    const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_zlib_file_backend();
+      file_archive_get_default_file_backend();
 #endif
 
    if (data && data->target_offset < data->target_length) 
