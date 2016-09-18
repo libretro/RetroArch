@@ -122,7 +122,7 @@ int rmsgpack_write_array_header(RFILE *fd, uint32_t size)
 
    if (filestream_write(fd, &MPF_ARRAY32, sizeof(MPF_ARRAY32)) == -1)
       goto error;
-   
+
    tmp_i32 = swap_if_little32(size);
 
    if (filestream_write(fd, (void *)(&tmp_i32), sizeof(uint32_t)) == -1)
@@ -247,7 +247,7 @@ int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
       if (filestream_write(fd, &tmp_i32, sizeof(uint32_t)) == -1)
          goto error;
    }
-    
+
    if (filestream_write(fd, s, len) == -1)
       goto error;
 
@@ -482,6 +482,7 @@ static int read_buff(RFILE *fd, size_t size, char **pbuff, uint64_t *len)
 
 error:
    free(*pbuff);
+   *pbuff = NULL;
    return -errno;
 }
 
