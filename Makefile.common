@@ -1150,7 +1150,9 @@ endif
 
 ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
-   OBJ += tasks/task_decompress.o
+   OBJ += libretro-common/file/archive_file.o \
+          libretro-common/encodings/encoding_crc32.o \
+          tasks/task_decompress.o
 endif
 
 #ifeq ($(HAVE_DIRECTX), 1)

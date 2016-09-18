@@ -63,8 +63,8 @@ typedef struct db_handle
 
 #ifdef HAVE_LIBRETRODB
 
-#ifdef HAVE_ZLIB
-static int zlib_compare_crc32(const char *name, const char *valid_exts,
+#ifdef HAVE_COMPRESSION
+static int archive_compare_crc32(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
@@ -166,17 +166,19 @@ static bool file_get_crc(database_state_handle_t *db_state,
    int read_from            = filestream_read_file(
          name, (void**)&db_state->buf, &ret);
 
-#ifdef HAVE_ZLIB
-   const struct file_archive_file_backend *stream_backend =
-      file_archive_get_zlib_file_backend();
-#endif
-
    if (read_from != 1 || ret <= 0)
       return 0;
 
-#ifdef HAVE_ZLIB
-   *crc = stream_backend->stream_crc_calculate(
-         0, db_state->buf, ret);
+#ifdef HAVE_COMPRESSION
+   if(!path_is_compressed_file(name))
+   {
+      const struct file_archive_file_backend *stream_backend =
+         file_archive_get_file_backend(name);
+
+      if (stream_backend)
+         *crc = stream_backend->stream_crc_calculate(
+               0, db_state->buf, ret);
+   }
 #endif
 
    return 1;
@@ -409,13 +411,13 @@ static int task_database_iterate_playlist_archive(
       database_info_handle_t *db, const char *name)
 {
    bool returnerr = true;
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    if (db_state->crc != 0)
       return task_database_iterate_crc_lookup(
             db_state, db, db_state->archive_name);
 
    if (file_archive_parse_file_iterate(&db->state,
-            &returnerr, name, NULL, zlib_compare_crc32,
+            &returnerr, name, NULL, archive_compare_crc32,
             (void*)db_state) != 0)
       return 0;
 

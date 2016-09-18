@@ -26,6 +26,7 @@
 #include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
+#include <encodings/crc32.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <file/file_path.h>
@@ -328,7 +329,7 @@ static int sevenzip_parse_file_iterate_step_internal(
          if (res != SZ_OK)
             return -1;
 
-         strlcpy(filename, infile, sizeof(infile));
+         strlcpy(filename, infile, PATH_MAX_LENGTH);
 
          *cmode = ARCHIVE_MODE_COMPRESSED;
          *checksum = file->Crc;
@@ -374,7 +375,7 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
 static uint32_t sevenzip_stream_crc32_calculate(uint32_t crc,
       const uint8_t *data, size_t length)
 {
-   return CrcUpdate(crc, data, length);
+   return encoding_crc32(crc, data, length);
 }
 
 const struct file_archive_file_backend sevenzip_backend = {

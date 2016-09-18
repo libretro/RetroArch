@@ -27,6 +27,7 @@
 #include <streams/file_stream.h>
 #include <string.h>
 #include <retro_miscellaneous.h>
+#include <encodings/crc32.h>
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
 #define CENTRAL_FILE_HEADER_SIGNATURE 0x02014b50
@@ -204,7 +205,7 @@ static void zlib_stream_compress_init(void *data, int level)
 static uint32_t zlib_stream_crc32_calculate(uint32_t crc,
       const uint8_t *data, size_t length)
 {
-   return crc32(crc, data, length);
+   return encoding_crc32(crc, data, length);
 }
 
 struct decomp_state
@@ -233,18 +234,19 @@ static bool zip_file_decompressed_handle(
       ret = handle->backend->stream_decompress_data_to_file_iterate(
             handle->stream);
    }while(ret == 0);
-
+#if 0
    handle->real_checksum = handle->backend->stream_crc_calculate(0,
          handle->data, size);
 
    if (handle->real_checksum != crc32)
       goto error;
+#endif
 
    if (handle->stream)
       free(handle->stream);
 
    return true;
-
+#if 0
 error:
    if (handle->stream)
       free(handle->stream);
@@ -253,8 +255,8 @@ error:
 
    handle->stream = NULL;
    handle->data   = NULL;
-
    return false;
+#endif
 }
 
 /* Extract the relative path (needle) from a

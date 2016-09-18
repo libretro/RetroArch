@@ -321,11 +321,11 @@ static int file_archive_decompress_data_to_file(
       goto end;
    }
 
-   handle->real_checksum = handle->backend->stream_crc_calculate(
-         0, handle->data, size);
    handle->backend->stream_free(handle->stream);
 
 #if 0
+   handle->real_checksum = handle->backend->stream_crc_calculate(
+         0, handle->data, size);
    if (handle->real_checksum != checksum)
    {
       /* File CRC difers from archive CRC. */
@@ -671,16 +671,10 @@ struct string_list *file_archive_file_list_new(const char *path,
       const char* ext)
 {
 #ifdef HAVE_COMPRESSION
-   const char* file_ext = path_get_extension(path);
+   bool compressed = path_is_compressed_file(path);
 
-#ifdef HAVE_7ZIP
-   if (string_is_equal_noncase(file_ext, "7z"))
+   if (compressed)
       return file_archive_get_file_list(path, ext);
-#endif
-#ifdef HAVE_ZLIB
-   if (string_is_equal_noncase(file_ext, "zip"))
-      return file_archive_get_file_list(path, ext);
-#endif
 #endif
    return NULL;
 }

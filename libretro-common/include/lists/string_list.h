@@ -44,7 +44,7 @@ struct string_list_elem
    union string_list_elem_attr attr;
 };
 
-struct __attribute__ ((aligned(1))) string_list
+struct string_list
 {
    struct string_list_elem *elems;
    size_t size;
