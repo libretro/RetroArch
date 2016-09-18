@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2013-2015 - Jason Fetters
- *
+ * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -46,7 +46,7 @@ enum database_type
 {
    DATABASE_TYPE_NONE = 0,
    DATABASE_TYPE_ITERATE,
-   DATABASE_TYPE_ITERATE_ARCHIVE,
+   DATABASE_TYPE_ITERATE_ZIP,
    DATABASE_TYPE_ITERATE_LUTRO,
    DATABASE_TYPE_SERIAL_LOOKUP,
    DATABASE_TYPE_CRC_LOOKUP
@@ -58,7 +58,7 @@ typedef struct
    enum database_type type;
    size_t list_ptr;
    struct string_list *list;
-#ifdef HAVE_COMPRESSION
+#ifdef HAVE_ZLIB
    file_archive_transfer_t state;
 #endif
 } database_info_handle_t;

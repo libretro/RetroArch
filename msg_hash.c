@@ -198,8 +198,6 @@ uint32_t msg_hash_calculate(const char *s)
 
 #define FILE_HASH_APK                                                          0x0b885e61U
 
-#define HASH_EXTENSION_7Z                                                      0x005971d6U
-#define HASH_EXTENSION_7Z_UPP                                                  0x005971b6U
 #define HASH_EXTENSION_ZIP                                                     0x0b88c7d8U
 #define HASH_EXTENSION_ZIP_UPP                                                 0x0b883b78U
 #define HASH_EXTENSION_CUE                                                     0x0b886782U
@@ -213,8 +211,6 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
    switch (hash)
    {
       case MENU_VALUE_COMP:
-      case HASH_EXTENSION_7Z:
-      case HASH_EXTENSION_7Z_UPP:
       case HASH_EXTENSION_ZIP:
       case HASH_EXTENSION_ZIP_UPP:
       case FILE_HASH_APK:

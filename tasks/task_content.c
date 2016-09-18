@@ -90,9 +90,17 @@
 #include "../paths.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_7ZIP
+#include "../deps/7zip/7z.h"
+#include "../deps/7zip/7zAlloc.h"
+#include "../deps/7zip/7zCrc.h"
+#include "../deps/7zip/7zFile.h"
+#endif
+
 #ifdef HAVE_CHEEVOS
 #include "../cheevos.h"
 #endif
+
 
 typedef struct content_stream
 {
@@ -719,7 +727,7 @@ error:
  *                     file into. Needs to be freed manually.
  * @length           : Number of items read, -1 on error.
  *
- * Read the contents of a file into @buf. Will call file_archive_compressed_read
+ * Read the contents of a file into @buf. Will call content_file_compressed_read
  * if path contains a compressed file, otherwise will call filestream_read_file().
  *
  * Returns: 1 if file read, 0 on error.
@@ -729,11 +737,29 @@ static int content_file_read(const char *path, void **buf, ssize_t *length)
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
    {
-      if (file_archive_compressed_read(path, buf, NULL, length))
+      if (content_file_compressed_read(path, buf, NULL, length))
          return 1;
    }
 #endif
    return filestream_read_file(path, buf, length);
+}
+
+struct string_list *compressed_file_list_new(const char *path,
+      const char* ext)
+{
+#if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
+   const char* file_ext = path_get_extension(path);
+#endif
+
+#ifdef HAVE_7ZIP
+   if (string_is_equal_noncase(file_ext, "7z"))
+      return compressed_7zip_file_list_new(path,ext);
+#endif
+#ifdef HAVE_ZLIB
+   if (string_is_equal_noncase(file_ext, "zip"))
+      return file_archive_get_file_list(path, ext);
+#endif
+   return NULL;
 }
 
 static void check_defaults_dir_create_dir(const char *path)
@@ -1023,7 +1049,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    stream_info.c = *length;
 
    if (!stream_backend)
-      stream_backend = file_archive_get_zlib_file_backend();
+      stream_backend = file_archive_get_default_file_backend();
    stream_info.crc = stream_backend->stream_crc_calculate(
          stream_info.a, stream_info.b, stream_info.c);
    *content_crc_ptr = stream_info.crc;
@@ -1144,7 +1170,7 @@ static bool load_content_from_compressed_archive(
    fill_pathname_join(new_path, new_basedir,
          path_basename(path), sizeof(new_path));
 
-   ret = file_archive_compressed_read(path, NULL, new_path, &new_path_len);
+   ret = content_file_compressed_read(path, NULL, new_path, &new_path_len);
 
    if (!ret || new_path_len < 0)
    {
@@ -1303,7 +1329,7 @@ error:
    return NULL;
 }
 
-#ifdef HAVE_COMPRESSION
+#ifdef HAVE_ZLIB
 static bool init_content_file_extract(
       struct string_list *temporary_content,
       struct string_list *content,
@@ -1317,47 +1343,50 @@ static bool init_content_file_extract(
 
    for (i = 0; i < content->size; i++)
    {
-      bool compressed       = NULL;
+      const char *ext       = NULL;
       const char *valid_ext = system->info.valid_extensions;
 
       /* Block extract check. */
       if (content->elems[i].attr.i & 1)
          continue;
 
-      compressed            = path_contains_compressed_file(content->elems[i].data);
+      ext                   = path_get_extension(content->elems[i].data);
 
       if (special)
          valid_ext          = special->roms[i].valid_extensions;
 
-      if (!compressed)
+      if (!ext)
          continue;
 
-      char new_path[PATH_MAX_LENGTH]     = {0};
-      char temp_content[PATH_MAX_LENGTH] = {0};
-
-      strlcpy(temp_content, content->elems[i].data,
-            sizeof(temp_content));
-
-      if (!file_archive_extract_first_file(temp_content,
-               sizeof(temp_content), valid_ext,
-               *settings->directory.cache ?
-               settings->directory.cache : NULL,
-               new_path, sizeof(new_path)))
+      if (string_is_equal_noncase(ext, "zip"))
       {
-         RARCH_ERR("%s: %s.\n",
-               msg_hash_to_str(
-                  MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-               temp_content);
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE)
-               , 2, 180, true);
-         return false;
-      }
+         char new_path[PATH_MAX_LENGTH]     = {0};
+         char temp_content[PATH_MAX_LENGTH] = {0};
 
-      string_list_set(content, i, new_path);
-      if (!string_list_append(temporary_content,
-               new_path, *attr))
-         return false;
+         strlcpy(temp_content, content->elems[i].data,
+               sizeof(temp_content));
+
+         if (!file_archive_extract_first_content_file(temp_content,
+                  sizeof(temp_content), valid_ext,
+                  *settings->directory.cache ?
+                  settings->directory.cache : NULL,
+                  new_path, sizeof(new_path)))
+         {
+            RARCH_ERR("%s: %s.\n",
+                  msg_hash_to_str(
+                     MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
+                  temp_content);
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE)
+                  , 2, 180, true);
+            return false;
+         }
+
+         string_list_set(content, i, new_path);
+         if (!string_list_append(temporary_content,
+                  new_path, *attr))
+            return false;
+      }
    }
 
    return true;
@@ -1409,7 +1438,7 @@ static bool init_content_file_set_attribs(
       }
    }
 
-#ifdef HAVE_COMPRESSION
+#ifdef HAVE_ZLIB
    /* Try to extract all content we're going to load if appropriate. */
    if (!init_content_file_extract(temporary_content,
             content, system, special, &attr))
@@ -1553,6 +1582,7 @@ error:
    content_deinit();
    return false;
 }
+
 
 #ifdef HAVE_MENU
 static void menu_content_environment_get(int *argc, char *argv[],
@@ -1916,7 +1946,7 @@ bool task_push_content_load_default(
    /* Fork core? */
    switch (mode)
    {
-     case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
+	  case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          if (!frontend_driver_set_fork(FRONTEND_FORK_CORE))
             return false;
          break;

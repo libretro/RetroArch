@@ -872,7 +872,7 @@ static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/
 
 /* User 1 */
 static const struct retro_keybind retro_keybinds_1[] = {
-    /*     | RetroPad button              | desc                           | keyboard key  | js btn   | js axis | */
+    /*     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   | */
    { true, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_LBL_JOYPAD_B,              RETROK_z,       NO_BTN, 0, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_Y,      RETRO_LBL_JOYPAD_Y,              RETROK_a,       NO_BTN, 0, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_LBL_JOYPAD_SELECT,         RETROK_RSHIFT,  NO_BTN, 0, AXIS_NONE },
@@ -936,7 +936,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
 
 /* Users 2 to MAX_USERS */
 static const struct retro_keybind retro_keybinds_rest[] = {
-    /*     | RetroPad button              | desc                           | keyboard key  | js btn   | js axis | */
+    /*     | RetroPad button            | desc                           | keyboard key  | js btn |     js axis   | */
    { true, RETRO_DEVICE_ID_JOYPAD_B,      RETRO_LBL_JOYPAD_B,              RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_Y,      RETRO_LBL_JOYPAD_Y,              RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
    { true, RETRO_DEVICE_ID_JOYPAD_SELECT, RETRO_LBL_JOYPAD_SELECT,         RETROK_UNKNOWN, NO_BTN, 0, AXIS_NONE },
