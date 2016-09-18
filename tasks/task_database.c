@@ -24,9 +24,7 @@
 
 #include "tasks_internal.h"
 
-#ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
-#endif
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -61,7 +59,6 @@ typedef struct db_handle
    unsigned status;
 } db_handle_t;
 
-#ifdef HAVE_LIBRETRODB
 
 #ifdef HAVE_COMPRESSION
 static int archive_compare_crc32(const char *name, const char *valid_exts,
@@ -670,6 +667,3 @@ error:
       free(db);
    return false;
 }
-
-#endif
-
