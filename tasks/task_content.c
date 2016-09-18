@@ -65,9 +65,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
-#ifdef HAVE_COMPRESSION
 #include <file/archive_file.h>
-#endif
 #include <string/stdstring.h>
 
 #include <retro_miscellaneous.h>
