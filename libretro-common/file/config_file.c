@@ -948,3 +948,12 @@ bool config_get_entry_list_next(struct config_file_entry *entry)
    return true;
 }
 
+bool config_file_exists(const char *path)
+{
+   config_file_t *config = config_file_new(path);
+   if (!config)
+      return false;
+
+   config_file_free(config);
+   return true;
+}
