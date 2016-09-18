@@ -85,6 +85,8 @@ void dir_set_savestate(const char *path);
 
 void dir_set_system(const char *path);
 
+void dir_check_defaults(void);
+
 RETRO_END_DECLS
 
 #endif

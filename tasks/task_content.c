@@ -131,77 +131,6 @@ static int content_file_read(const char *path, void **buf, ssize_t *length)
    return filestream_read_file(path, buf, length);
 }
 
-static void check_defaults_dir_create_dir(const char *path)
-{
-   char new_path[PATH_MAX_LENGTH] = {0};
-   fill_pathname_expand_special(new_path,
-         path, sizeof(new_path));
-
-   if (path_is_directory(new_path))
-      return;
-   path_mkdir(new_path);
-}
-
-static void check_default_dirs(void)
-{
-   /* early return for people with a custom folder setup
-      so it doesn't create unnecessary directories
-    */
-   if (path_file_exists("custom.ini"))
-      return;
-
-   if (!string_is_empty(g_defaults.dir.core_assets))
-      check_defaults_dir_create_dir(g_defaults.dir.core_assets);
-   if (!string_is_empty(g_defaults.dir.remap))
-      check_defaults_dir_create_dir(g_defaults.dir.remap);
-   if (!string_is_empty(g_defaults.dir.screenshot))
-      check_defaults_dir_create_dir(g_defaults.dir.screenshot);
-   if (!string_is_empty(g_defaults.dir.core))
-      check_defaults_dir_create_dir(g_defaults.dir.core);
-   if (!string_is_empty(g_defaults.dir.autoconfig))
-      check_defaults_dir_create_dir(g_defaults.dir.autoconfig);
-   if (!string_is_empty(g_defaults.dir.audio_filter))
-      check_defaults_dir_create_dir(g_defaults.dir.audio_filter);
-   if (!string_is_empty(g_defaults.dir.video_filter))
-      check_defaults_dir_create_dir(g_defaults.dir.video_filter);
-   if (!string_is_empty(g_defaults.dir.assets))
-      check_defaults_dir_create_dir(g_defaults.dir.assets);
-   if (!string_is_empty(g_defaults.dir.playlist))
-      check_defaults_dir_create_dir(g_defaults.dir.playlist);
-   if (!string_is_empty(g_defaults.dir.core))
-      check_defaults_dir_create_dir(g_defaults.dir.core);
-   if (!string_is_empty(g_defaults.dir.core_info))
-      check_defaults_dir_create_dir(g_defaults.dir.core_info);
-   if (!string_is_empty(g_defaults.dir.overlay))
-      check_defaults_dir_create_dir(g_defaults.dir.overlay);
-   if (!string_is_empty(g_defaults.dir.port))
-      check_defaults_dir_create_dir(g_defaults.dir.port);
-   if (!string_is_empty(g_defaults.dir.shader))
-      check_defaults_dir_create_dir(g_defaults.dir.shader);
-   if (!string_is_empty(g_defaults.dir.savestate))
-      check_defaults_dir_create_dir(g_defaults.dir.savestate);
-   if (!string_is_empty(g_defaults.dir.sram))
-      check_defaults_dir_create_dir(g_defaults.dir.sram);
-   if (!string_is_empty(g_defaults.dir.system))
-      check_defaults_dir_create_dir(g_defaults.dir.system);
-   if (!string_is_empty(g_defaults.dir.resampler))
-      check_defaults_dir_create_dir(g_defaults.dir.resampler);
-   if (!string_is_empty(g_defaults.dir.menu_config))
-      check_defaults_dir_create_dir(g_defaults.dir.menu_config);
-   if (!string_is_empty(g_defaults.dir.content_history))
-      check_defaults_dir_create_dir(g_defaults.dir.content_history);
-   if (!string_is_empty(g_defaults.dir.cache))
-      check_defaults_dir_create_dir(g_defaults.dir.cache);
-   if (!string_is_empty(g_defaults.dir.database))
-      check_defaults_dir_create_dir(g_defaults.dir.database);
-   if (!string_is_empty(g_defaults.dir.cursor))
-      check_defaults_dir_create_dir(g_defaults.dir.cursor);
-   if (!string_is_empty(g_defaults.dir.cheats))
-      check_defaults_dir_create_dir(g_defaults.dir.cheats);
-   if (!string_is_empty(g_defaults.dir.thumbnails))
-      check_defaults_dir_create_dir(g_defaults.dir.thumbnails);
-}
-
 bool content_push_to_history_playlist(
       void *data,
       const char *path,
@@ -359,7 +288,7 @@ static bool content_load(content_ctx_info_t *info)
    command_event(CMD_EVENT_RESUME, NULL);
    command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
-   check_default_dirs();
+   dir_check_defaults();
 
    frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
    frontend_driver_content_loaded();
