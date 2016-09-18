@@ -46,6 +46,7 @@ struct sevenzip_context_t {
    ISzAlloc allocTempImp;
    CSzArEx db;
    uint32_t index;
+   uint32_t packIndex;
    uint8_t *output;
    file_archive_file_handle_t *handle;
 };
@@ -61,6 +62,9 @@ static void* sevenzip_stream_new(void)
    sevenzip_context->allocImp.Free      = SzFree;
    sevenzip_context->allocTempImp.Alloc = SzAllocTemp;
    sevenzip_context->allocTempImp.Free  = SzFreeTemp;
+   sevenzip_context->index = 0;
+   sevenzip_context->packIndex = 0;
+   sevenzip_context->output = NULL;
 
    return sevenzip_context;
 }
@@ -306,7 +310,13 @@ static int sevenzip_parse_file_iterate_step_internal(
    if (sevenzip_context->index < sevenzip_context->db.db.NumFiles)
    {
       size_t len = SzArEx_GetFileNameUtf16(&sevenzip_context->db, sevenzip_context->index, NULL);
-      uint64_t compressed_size = sevenzip_context->db.db.PackSizes[sevenzip_context->index];
+      uint64_t compressed_size = 0;
+
+      if (sevenzip_context->packIndex < sevenzip_context->db.db.NumPackStreams)
+      {
+         compressed_size = sevenzip_context->db.db.PackSizes[sevenzip_context->packIndex];
+         sevenzip_context->packIndex++;
+      }
 
       if (len < PATH_MAX_LENGTH && !file->IsDir)
       {
