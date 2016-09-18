@@ -46,6 +46,7 @@ else
 	CFLAGS += -DHAVE_COMPRESSION
 	OBJS += libretro-common/file/archive_file.o
 	OBJS += libretro-common/file/archive_file_zlib.o
+	OBJS += libretro-common/file/archive_file_7z.o
 	OBJS += libretro-common/encodings/encoding_utf.o
 	OBJS += verbosity.o
 	OBJS += performance.o

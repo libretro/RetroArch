@@ -35,7 +35,7 @@ typedef struct
 
    char *callback_error;
 
-   file_archive_transfer_t zlib;
+   file_archive_transfer_t archive;
 } decompress_state_t;
 
 static int file_decompressed_target_file(const char *name,
@@ -159,16 +159,16 @@ static void task_decompress_handler(retro_task_t *task)
 {
    bool retdec             = false;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   int ret                 = file_archive_parse_file_iterate(&dec->zlib,
+   int ret                 = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed, dec);
 
-   task->progress = file_archive_parse_file_progress(&dec->zlib);
+   task->progress = file_archive_parse_file_progress(&dec->archive);
 
    if (task->cancelled || ret != 0)
    {
       task->error = dec->callback_error;
-      file_archive_parse_file_iterate_stop(&dec->zlib);
+      file_archive_parse_file_iterate_stop(&dec->archive);
 
       task_decompress_handler_finished(task, dec);
    }
@@ -178,16 +178,16 @@ static void task_decompress_handler_target_file(retro_task_t *task)
 {
    bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   int ret = file_archive_parse_file_iterate(&dec->zlib,
+   int ret = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_target_file, dec);
 
-   task->progress = file_archive_parse_file_progress(&dec->zlib);
+   task->progress = file_archive_parse_file_progress(&dec->archive);
 
    if (task->cancelled || ret != 0)
    {
       task->error = dec->callback_error;
-      file_archive_parse_file_iterate_stop(&dec->zlib);
+      file_archive_parse_file_iterate_stop(&dec->archive);
 
       task_decompress_handler_finished(task, dec);
    }
@@ -197,16 +197,16 @@ static void task_decompress_handler_subdir(retro_task_t *task)
 {
    bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   int ret = file_archive_parse_file_iterate(&dec->zlib,
+   int ret = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_subdir, dec);
 
-   task->progress = file_archive_parse_file_progress(&dec->zlib);
+   task->progress = file_archive_parse_file_progress(&dec->archive);
 
    if (task->cancelled || ret != 0)
    {
       task->error = dec->callback_error;
-      file_archive_parse_file_iterate_stop(&dec->zlib);
+      file_archive_parse_file_iterate_stop(&dec->archive);
 
       task_decompress_handler_finished(task, dec);
    }
@@ -286,7 +286,7 @@ bool task_push_decompress(
    s->target_dir  = strdup(target_dir);
 
    s->valid_ext   = valid_ext ? strdup(valid_ext) : NULL;
-   s->zlib.type   = ZLIB_TRANSFER_INIT;
+   s->archive.type   = ARCHIVE_TRANSFER_INIT;
 
    t              = (retro_task_t*)calloc(1, sizeof(*t));
 

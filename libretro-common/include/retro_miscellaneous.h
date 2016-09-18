@@ -33,7 +33,7 @@
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #include <unistd.h>
 #elif defined(PSP)
-#include <pspthreadman.h> 
+#include <pspthreadman.h>
 #elif defined(VITA)
 #include <psp2/kernel/threadmgr.h>
 #elif defined(_3DS)
@@ -157,6 +157,18 @@ static INLINE uint32_t prev_pow2(uint32_t v)
 static INLINE float db_to_gain(float db)
 {
    return powf(10.0f, db / 20.0f);
+}
+
+static INLINE uint32_t read_le(const uint8_t *data, unsigned size)
+{
+   unsigned i;
+   uint32_t val = 0;
+
+   size *= 8;
+   for (i = 0; i < size; i += 8)
+      val |= (uint32_t)*data++ << i;
+
+   return val;
 }
 
 /* Helper macros and struct to keep track of many booleans.
