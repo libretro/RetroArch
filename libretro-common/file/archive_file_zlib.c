@@ -239,11 +239,9 @@ static bool zip_file_decompressed_handle(
          handle->data, size);
 
    if (handle->real_checksum != crc32)
-   {
-      //RARCH_ERR("%s\n", msg_hash_to_str(MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32));
       goto error;
-   }
 #endif
+
    if (handle->stream)
       free(handle->stream);
 
@@ -257,8 +255,8 @@ error:
 
    handle->stream = NULL;
    handle->data   = NULL;
-#endif
    return false;
+#endif
 }
 
 /* Extract the relative path (needle) from a
@@ -280,7 +278,9 @@ static int zip_file_decompressed(
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
       return 1;
 
-   //RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
+#if 0
+   RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
+#endif
 
    if (strstr(name, st->needle))
    {
@@ -416,23 +416,23 @@ static int zip_parse_file_iterate_step_internal(
    if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
       return 0;
 
-   *cmode         = read_le(state->directory + 10, 2); // compression mode, 0 = store, 8 = deflate
-   *checksum      = read_le(state->directory + 16, 4); // CRC32
-   *csize         = read_le(state->directory + 20, 4); // compressed size
-   *size          = read_le(state->directory + 24, 4); // uncompressed size
+   *cmode         = read_le(state->directory + 10, 2); /* compression mode, 0 = store, 8 = deflate */
+   *checksum      = read_le(state->directory + 16, 4); /* CRC32 */
+   *csize         = read_le(state->directory + 20, 4); /* compressed size */
+   *size          = read_le(state->directory + 24, 4); /* uncompressed size */
 
-   namelength     = read_le(state->directory + 28, 2); // file name length
-   extralength    = read_le(state->directory + 30, 2); // extra field length
-   commentlength  = read_le(state->directory + 32, 2); // file comment length
+   namelength     = read_le(state->directory + 28, 2); /* file name length */
+   extralength    = read_le(state->directory + 30, 2); /* extra field length */
+   commentlength  = read_le(state->directory + 32, 2); /* file comment length */
 
    if (namelength >= PATH_MAX_LENGTH)
       return -1;
 
-   memcpy(filename, state->directory + 46, namelength); // file name
+   memcpy(filename, state->directory + 46, namelength); /* file name */
 
-   offset         = read_le(state->directory + 42, 4); // relative offset of local file header
-   offsetNL       = read_le(state->data + offset + 26, 2); // file name length
-   offsetEL       = read_le(state->data + offset + 28, 2); // extra field length
+   offset         = read_le(state->directory + 42, 4); /* relative offset of local file header */
+   offsetNL       = read_le(state->data + offset + 26, 2); /* file name length */
+   offsetEL       = read_le(state->data + offset + 28, 2); /* extra field length */
 
    *cdata         = state->data + offset + 30 + offsetNL + offsetEL;
 

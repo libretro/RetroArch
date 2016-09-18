@@ -237,7 +237,8 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       uint32_t checksum, void *userdata)
 {
    const char *ext                   = path_get_extension(name);
-   struct archive_extract_userdata *data = (struct archive_extract_userdata*)userdata;
+   struct archive_extract_userdata *data = (struct archive_extract_userdata*)
+      userdata;
 
    /* Extract first file that matches our list. */
    if (ext && string_list_find_elem(data->ext, ext))
@@ -264,11 +265,12 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
 int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
+   char *last                 = NULL;
    char path[PATH_MAX_LENGTH] = {0};
 
    strlcpy(path, file, sizeof(path));
 
-   char *last = (char*)path_get_archive_delim(path);
+   last = (char*)path_get_archive_delim(path);
 
    if (last)
       *last = '\0';
@@ -382,7 +384,8 @@ int file_archive_parse_file_iterate(
          break;
       case ARCHIVE_TRANSFER_ITERATE:
          {
-            const struct file_archive_file_backend *backend = file_archive_get_file_backend(file);
+            const struct file_archive_file_backend *backend = 
+               file_archive_get_file_backend(file);
 
             if (backend)
             {
@@ -393,7 +396,7 @@ int file_archive_parse_file_iterate(
                if (ret == -1)
                   state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
 
-               // early return to prevent deinit from never firing
+               /* early return to prevent deinit from never firing */
                return 0;
             }
             else
@@ -620,6 +623,7 @@ int file_archive_compressed_read(
       const char * path, void **buf,
       const char* optional_filename, ssize_t *length)
 {
+   const struct file_archive_file_backend *backend = NULL;
    int ret                            = 0;
    struct string_list *str_list       = file_archive_filename_split(path);
 
@@ -645,8 +649,7 @@ int file_archive_compressed_read(
    if (str_list->size <= 1)
       goto error;
 
-   const struct file_archive_file_backend *backend =
-         file_archive_get_file_backend(str_list->elems[0].data);
+   backend = file_archive_get_file_backend(str_list->elems[0].data);
 
    *length = backend->compressed_file_read(str_list->elems[0].data,
          str_list->elems[1].data, buf, optional_filename);
@@ -658,7 +661,7 @@ int file_archive_compressed_read(
    return ret;
 
 error:
-   //RARCH_ERR("Could not extract string and substring from: %s.\n", path);
+   /* could not extract string and substring. */
    string_list_free(str_list);
    *length = 0;
    return 0;
@@ -720,39 +723,48 @@ error:
    return NULL;
 }
 
-const struct file_archive_file_backend *file_archive_get_zlib_file_backend()
+const struct file_archive_file_backend *file_archive_get_zlib_file_backend(void)
 {
+#ifdef HAVE_ZLIB
    return &zlib_backend;
+#else
+   return NULL;
+#endif
 }
 
-const struct file_archive_file_backend *file_archive_get_7z_file_backend()
+const struct file_archive_file_backend *file_archive_get_7z_file_backend(void)
 {
+#ifdef HAVE_7ZIP
    return &sevenzip_backend;
+#else
+   return NULL;
+#endif
 }
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
-   const char *file_ext = NULL;
+   const char *file_ext          = NULL;
+   char *last                    = NULL;
    char newpath[PATH_MAX_LENGTH] = {0};
 
    strlcpy(newpath, path, sizeof(newpath));
 
-   char *last = (char*)path_get_archive_delim(newpath);
+   last = (char*)path_get_archive_delim(newpath);
 
    if (last)
       *last = '\0';
 
    file_ext = path_get_extension(newpath);
 
+#ifdef HAVE_7ZIP
    if (string_is_equal_noncase(file_ext, "7z"))
-   {
       return &sevenzip_backend;
-   }
+#endif
 
+#ifdef HAVE_ZLIB
    if (string_is_equal_noncase(file_ext, "zip"))
-   {
       return &zlib_backend;
-   }
+#endif
 
    return NULL;
 }
