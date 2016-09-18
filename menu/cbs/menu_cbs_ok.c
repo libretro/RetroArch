@@ -1590,8 +1590,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
          break;
       case ACTION_OK_SHADER_PRESET_SAVE_GAME:
          {
-            global_t *global      = global_get_ptr();
-            const char *game_name = path_basename(global->name.base);
+            const char *game_name = path_basename(path_get_basename());
             fill_pathname_join(file, directory, game_name, sizeof(file));
          }
          break;
@@ -1699,8 +1698,7 @@ static int generic_action_ok_remap_file_save(const char *path,
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
          {
-            global_t *global      = global_get_ptr();
-            const char *game_name = path_basename(global->name.base);
+            const char *game_name = path_basename(path_get_basename());
             fill_pathname_join(file, core_name, game_name, sizeof(file));
          }
          break;

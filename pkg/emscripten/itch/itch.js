@@ -45,9 +45,10 @@ var showError = function(error) {
   }
 };
 
-function reload()
+function cleanupStorage()
 {
-   window.top.location.reload();
+   localStorage.clear();
+   document.getElementById('btnClean').disabled = true;
 }
 
 function dropboxInit()

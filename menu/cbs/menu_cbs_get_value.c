@@ -1324,7 +1324,6 @@ static void menu_action_setting_disp_set_label_core_option_create(
       char *s2, size_t len2)
 {
    rarch_system_info_t *system = NULL;
-   global_t            *global = global_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    if (!system)
@@ -1335,8 +1334,8 @@ static void menu_action_setting_disp_set_label_core_option_create(
 
    strlcpy(s, "", len);
 
-   if (!string_is_empty(global->name.base))
-      strlcpy(s,  path_basename(global->name.base), len);
+   if (!string_is_empty(path_get_basename()))
+      strlcpy(s,  path_basename(path_get_basename()), len);
 
    strlcpy(s2, path, len2);
 }

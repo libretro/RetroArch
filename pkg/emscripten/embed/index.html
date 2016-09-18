@@ -17,18 +17,9 @@
 <body>   
    <!--Navbar-->
    <nav class="navbar navbar-dark bg-warning">
-
-       <!-- Collapse button-->
-       <button class="navbar-toggler hidden-sm-up" type="button" data-toggle="collapse" data-target="#collapseEx2">
-           <i class="fa fa-bars"></i>
-       </button>
-
        <div class="container">
-
            <!--Collapse content-->
            <div class="collapse navbar-toggleable-xs" id="collapseEx2">
-               <!--Navbar Brand-->
-               <a class="navbar-brand" href="#">RetroArch</a>
                <!--Links-->
                <ul class="nav navbar-nav">
                   <div class="dropdown">
@@ -89,6 +80,9 @@
                       <button class="btn btn-warning disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()" disabled>
                          <span class="fa fa-plus" id="icnAdd"></span> Add Content
                       </button>
+                      <button class="btn btn-warning" id="btnClean" onclick="cleanupStorage();" title="Cleanup">
+                        <span class="fa fa-trash-o" id="icnClean"></span> <span class="sr-only">Cleanup</span>
+                      </button>
                       <input class="btn btn-warning disabled" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
                       <button class="btn btn-warning disabled" id="btnFullscreen" onclick="Module.requestFullScreen()" title="Fullscreen" disabled>
                          <span class="fa fa-desktop" id="icnAdd"></span> <span class="sr-only">Fullscreen</span>
@@ -120,11 +114,12 @@
                      <span class="fa fa-chrome" id="icnLocal"></span> Browser
                   </input>
                  </label>
+               <!--uncomment for dropbox support
                <label class="btn btn-warning" id="lblDrop" onclick=switchStorage("dropbox")>
                   <input type="radio" name="options" id="btnDrop" autocomplete="off">
                      <span class="fa fa-dropbox" id="icnDrop"></span> Dropbox
                   </input>
-              </label>
+               </label>-->
             </div>
          </div>
       </div>

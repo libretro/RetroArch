@@ -161,6 +161,7 @@ RETRO_BEGIN_DECLS
 #define glClearBufferfi             rglClearBufferfi
 #define glWaitSync                  rglWaitSync
 #define glFenceSync                 rglFenceSync
+#define glDeleteSync                rglDeleteSync
 #define glBufferStorage             rglBufferStorage
 #define glFlushMappedBufferRange    rglFlushMappedBufferRange
 #define glClientWaitSync            rglClientWaitSync
@@ -400,6 +401,7 @@ void rglTexSubImage2D( 	GLenum target,
   	const GLvoid * pixels);
 void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays);
 void *rglFenceSync(GLenum condition, GLbitfield flags);
+void rglDeleteSync(GLsync sync);
 void rglWaitSync(void *sync, GLbitfield flags, uint64_t timeout);
 void rglBufferStorage(GLenum target, GLsizeiptr size, const GLvoid *data, GLbitfield flags);
 void rglFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length);

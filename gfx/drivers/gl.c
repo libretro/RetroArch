@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -104,7 +104,7 @@ static const GLfloat vertexes_flipped[] = {
 };
 
 /* Used when rendering to an FBO.
- * Texture coords have to be aligned 
+ * Texture coords have to be aligned
  * with vertex coordinates. */
 static const GLfloat vertexes[] = {
    0, 0,
@@ -341,8 +341,8 @@ void gl_set_viewport(void *data, unsigned viewport_width,
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
-            /* If the aspect ratios of screen and desired aspect 
-             * ratio are sufficiently equal (floating point stuff), 
+            /* If the aspect ratios of screen and desired aspect
+             * ratio are sufficiently equal (floating point stuff),
              * assume they are actually equal.
              */
          }
@@ -401,7 +401,7 @@ static bool gl_shader_init(gl_t *gl)
    video_shader_ctx_init_t init_data;
    enum rarch_shader_type type;
    settings_t *settings            = config_get_ptr();
-   const char *shader_path         = (settings->video.shader_enable 
+   const char *shader_path         = (settings->video.shader_enable
          && *settings->path.shader) ? settings->path.shader : NULL;
 
    if (!gl)
@@ -411,7 +411,7 @@ static bool gl_shader_init(gl_t *gl)
    }
 
    type = video_shader_parse_type(shader_path,
-         gl_query_core_context_in_use() 
+         gl_query_core_context_in_use()
          ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
    switch (type)
@@ -521,7 +521,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
    bool set_coords = false;
 
 
-   if ((width != gl->last_width[gl->tex_index] || 
+   if ((width != gl->last_width[gl->tex_index] ||
             height != gl->last_height[gl->tex_index]) && gl->empty_buf)
    {
       /* Resolution change. Need to clear out texture. */
@@ -547,12 +547,12 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
 
       set_coords = true;
    }
-   else if ((width != 
+   else if ((width !=
             gl->last_width[(gl->tex_index + gl->textures - 1) % gl->textures]) ||
-         (height != 
+         (height !=
           gl->last_height[(gl->tex_index + gl->textures - 1) % gl->textures]))
    {
-      /* We might have used different texture coordinates 
+      /* We might have used different texture coordinates
        * last frame. Edge case if resolution changes very rapidly. */
       set_coords = true;
    }
@@ -582,7 +582,7 @@ static void gl_init_textures_data(gl_t *gl)
       gl->prev_info[i].tex_size[0]   = gl->tex_w;
       gl->prev_info[i].input_size[1] = gl->tex_h;
       gl->prev_info[i].tex_size[1]   = gl->tex_h;
-      memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords)); 
+      memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords));
    }
 }
 
@@ -598,7 +598,7 @@ static void gl_init_textures_reference(gl_t *gl, unsigned i,
 
 #ifdef HAVE_PSGL
    glTextureReferenceSCE(GL_TEXTURE_2D, 1,
-         gl->tex_w, gl->tex_h, 0, 
+         gl->tex_w, gl->tex_h, 0,
          internal_fmt,
          gl->tex_w * gl->base_size,
          gl->tex_w * gl->tex_h * i * gl->base_size);
@@ -632,7 +632,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-         gl->tex_w * gl->tex_h * gl->base_size * gl->textures, 
+         gl->tex_w * gl->tex_h * gl->base_size * gl->textures,
          NULL, GL_STREAM_DRAW);
 #endif
 
@@ -684,7 +684,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
 #if defined(HAVE_PSGL)
    {
       unsigned h;
-      size_t buffer_addr        = gl->tex_w * gl->tex_h * 
+      size_t buffer_addr        = gl->tex_w * gl->tex_h *
          gl->tex_index * gl->base_size;
       size_t buffer_stride      = gl->tex_w * gl->base_size;
       const uint8_t *frame_copy = frame;
@@ -729,7 +729,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    {
       bool use_rgba = video_driver_supports_rgba();
 
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 
+      glPixelStorei(GL_UNPACK_ALIGNMENT,
             video_pixel_get_alignment(width * gl->base_size));
 
       /* Fallback for GLES devices without GL_BGRA_EXT. */
@@ -761,7 +761,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
 
          if (width != pitch_width)
          {
-            /* Slow path - conv_buffer is preallocated 
+            /* Slow path - conv_buffer is preallocated
              * just in case we hit this path. */
 
             unsigned h;
@@ -777,7 +777,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
 
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, width, height, gl->texture_type,
-               gl->texture_fmt, data_buf);         
+               gl->texture_fmt, data_buf);
       }
    }
 #else
@@ -790,7 +790,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
          /* Convert to 32-bit textures on desktop GL.
           *
           * It is *much* faster (order of magnitude on my setup)
-          * to use a custom SIMD-optimized conversion routine 
+          * to use a custom SIMD-optimized conversion routine
           * than letting GL do it. */
          video_frame_convert_rgb16_to_rgb32(
                &gl->scaler,
@@ -847,7 +847,7 @@ void gl_load_texture_data(
    glBindTexture(GL_TEXTURE_2D, id);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
-    
+
    if (!gl_check_capability(GL_CAPS_MIPMAP))
    {
       /* Assume no mipmapping support. */
@@ -1141,7 +1141,7 @@ static bool gl_frame(void *data, const void *frame,
       {
          gl_check_fbo_dimensions(gl);
 
-         /* Go back to what we're supposed to do, 
+         /* Go back to what we're supposed to do,
           * render to FBO #0. */
          gl_renderchain_start_render(gl);
       }
@@ -1156,7 +1156,7 @@ static bool gl_frame(void *data, const void *frame,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    /* Can be NULL for frame dupe / NULL render. */
-   if (frame) 
+   if (frame)
    {
 #ifdef HAVE_FBO
       if (!gl->hw_render_fbo_init)
@@ -1166,13 +1166,13 @@ static bool gl_frame(void *data, const void *frame,
          gl_copy_frame(gl, frame, frame_width, frame_height, pitch);
       }
 
-      /* No point regenerating mipmaps 
+      /* No point regenerating mipmaps
        * if there are no new frames. */
       if (gl->tex_mipmap && gl_check_capability(GL_CAPS_MIPMAP))
          glGenerateMipmap(GL_TEXTURE_2D);
    }
 
-   /* Have to reset rendering state which libretro core 
+   /* Have to reset rendering state which libretro core
     * could easily have overridden. */
 #ifdef HAVE_FBO
    if (gl->hw_render_fbo_init)
@@ -1345,7 +1345,7 @@ static bool gl_frame(void *data, const void *frame,
       performance_counter_init(&gl_fence, "gl_fence");
       performance_counter_start(&gl_fence);
       glClear(GL_COLOR_BUFFER_BIT);
-      gl->fences[gl->fence_count++] = 
+      gl->fences[gl->fence_count++] =
          glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
       while (gl->fence_count > settings->video.hard_sync_frames)
@@ -1491,7 +1491,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       video_driver_get_hw_context();
 
    gl_query_core_context_set(hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
-   
+
    if (gl_query_core_context_in_use())
    {
       RARCH_LOG("[GL]: Using Core GL context.\n");
@@ -1504,10 +1504,10 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    }
 
    /* GL_RGB565 internal format support.
-    * Even though ES2 support is claimed, the format 
+    * Even though ES2 support is claimed, the format
     * is not supported on older ATI catalyst drivers.
     *
-    * The speed gain from using GL_RGB565 is worth 
+    * The speed gain from using GL_RGB565 is worth
     * adding some workarounds for.
     */
    gl->have_es2_compat        = gl_check_capability(GL_CAPS_ES2_COMPAT);
@@ -1624,11 +1624,11 @@ static void gl_init_pbo_readback(gl_t *gl)
 #endif
 
    /* Only bother with this if we're doing GPU recording.
-    * Check recording_is_enabled() and not 
-    * driver.recording_data, because recording is 
+    * Check recording_is_enabled() and not
+    * driver.recording_data, because recording is
     * not initialized yet.
     */
-   gl->pbo_readback_enable = settings->video.gpu_record 
+   gl->pbo_readback_enable = settings->video.gpu_record
       && *recording_enabled;
 
    if (!gl->pbo_readback_enable)
@@ -1640,7 +1640,7 @@ static void gl_init_pbo_readback(gl_t *gl)
    for (i = 0; i < 4; i++)
    {
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
-      glBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width * 
+      glBufferData(GL_PIXEL_PACK_BUFFER, gl->vp.width *
             gl->vp.height * sizeof(uint32_t),
             NULL, GL_STREAM_READ);
    }
@@ -1693,7 +1693,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    api         = GFX_CTX_OPENGL_API;
    api_name    = "OpenGL";
 #endif
-    
+
    (void)api_name;
 
    gl_shared_context_use = settings->video.shared_context
@@ -1896,7 +1896,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       goto error;
 
    /* Clear out potential error flags in case we use cached context. */
-   glGetError(); 
+   glGetError();
 
    vendor   = (const char*)glGetString(GL_VENDOR);
    renderer = (const char*)glGetString(GL_RENDERER);
@@ -1934,7 +1934,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    temp_height    = mode.height;
    mode.width     = 0;
    mode.height    = 0;
-   
+
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
@@ -1946,7 +1946,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    hwr = video_driver_get_hw_context();
 
-   gl->vertex_ptr    = hwr->bottom_left_origin 
+   gl->vertex_ptr    = hwr->bottom_left_origin
       ? vertexes : vertexes_flipped;
 
    /* Better pipelining with GPU due to synchronous glSubTexImage.
@@ -2010,7 +2010,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
    gl->keep_aspect     = video->force_aspect;
 
-   /* Apparently need to set viewport for passes 
+   /* Apparently need to set viewport for passes
     * when we aren't using FBOs. */
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
@@ -2021,14 +2021,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    shader_filter.smooth = &force_smooth;
 
    if (video_shader_driver_filter_type(&shader_filter))
-      gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ? 
-            GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) 
+      gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ?
+            GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
    else
-      gl->tex_min_filter = gl->tex_mipmap ? 
-         (video->smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) 
+      gl->tex_min_filter = gl->tex_mipmap ?
+         (video->smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
          : (video->smooth ? GL_LINEAR : GL_NEAREST);
-   
+
    gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
 
    wrap_info.idx      = 1;
@@ -2055,7 +2055,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl->coords.lut_tex_coord  = tex_coords;
    gl->coords.vertices       = 4;
 
-   /* Empty buffer that we use to clear out 
+   /* Empty buffer that we use to clear out
     * the texture with on res change. */
    gl->empty_buf             = calloc(sizeof(uint32_t), gl->tex_w * gl->tex_h);
 
@@ -2072,7 +2072,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #ifdef HAVE_FBO
    gl_renderchain_init(gl, gl->tex_w, gl->tex_h);
 
-   if (gl->hw_render_use && 
+   if (gl->hw_render_use &&
          !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
       goto error;
 #endif
@@ -2081,10 +2081,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    inp.input_data = input_data;
 
    video_context_driver_input_driver(&inp);
-   
+
    if (settings->video.font_enable)
    {
-      if (!font_driver_init_first(NULL, NULL, gl, *settings->path.font 
+      if (!font_driver_init_first(NULL, NULL, gl, *settings->path.font
             ? settings->path.font : NULL, settings->video.font_size, false,
             FONT_DRIVER_RENDER_OPENGL_API))
          RARCH_ERR("[GL]: Failed to initialize font renderer.\n");
@@ -2094,7 +2094,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_init_pbo_readback(gl);
 #endif
 
-   if (!gl_check_error(error_string))
+   if (!gl_check_error(&error_string))
    {
       RARCH_ERR("%s\n", error_string);
       free(error_string);
@@ -2190,8 +2190,8 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    gl->tex_mipmap        = video_shader_driver_mipmap_input(&mip_level);
 
    gl->video_info.smooth = smooth;
-   new_filt = gl->tex_mipmap ? (smooth ? 
-         GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) 
+   new_filt = gl->tex_mipmap ? (smooth ?
+         GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
       : (smooth ? GL_LINEAR : GL_NEAREST);
 
    if (new_filt == gl->tex_min_filter && wrap_mode == gl->wrap_mode)
@@ -2366,7 +2366,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
       /* Don't readback if we're in menu mode.
        * We haven't buffered up enough frames yet, come back later. */
-      if (!gl->pbo_readback_valid[gl->pbo_readback_index]) 
+      if (!gl->pbo_readback_valid[gl->pbo_readback_index])
          goto error;
 
       gl->pbo_readback_valid[gl->pbo_readback_index] = false;
@@ -2404,15 +2404,15 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
       glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
-   else /* Use slow synchronous readbacks. Use this with plain screenshots 
+   else /* Use slow synchronous readbacks. Use this with plain screenshots
            as we don't really care about performance in this case. */
 #endif
    {
-      /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE 
+      /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE
        * readbacks so do just that.
-       * GLES2 also doesn't support reading back data 
-       * from front buffer, so render a cached frame 
-       * and have gl_frame() do the readback while it's 
+       * GLES2 also doesn't support reading back data
+       * from front buffer, so render a cached frame
+       * and have gl_frame() do the readback while it's
        * in the back buffer.
        *
        * Keep codepath similar for GLES and desktop GL.
@@ -2528,12 +2528,12 @@ bool gl_load_luts(const struct video_shader *shader,
 }
 
 #ifdef HAVE_OVERLAY
-static bool gl_overlay_load(void *data, 
+static bool gl_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, j;
    gl_t *gl = (gl_t*)data;
-   const struct texture_image *images = 
+   const struct texture_image *images =
       (const struct texture_image*)image_data;
 
    if (!gl)
@@ -2557,8 +2557,8 @@ static bool gl_overlay_load(void *data,
    gl->overlay_color_coord  = (GLfloat*)
       calloc(4 * 4 * num_images, sizeof(GLfloat));
 
-   if (     !gl->overlay_vertex_coord 
-         || !gl->overlay_tex_coord 
+   if (     !gl->overlay_vertex_coord
+         || !gl->overlay_tex_coord
          || !gl->overlay_color_coord)
       return false;
 
@@ -2567,7 +2567,7 @@ static bool gl_overlay_load(void *data,
 
    for (i = 0; i < num_images; i++)
    {
-      unsigned alignment = video_pixel_get_alignment(images[i].width 
+      unsigned alignment = video_pixel_get_alignment(images[i].width
             * sizeof(uint32_t));
 
       gl_load_texture_data(gl->overlay_tex[i],
@@ -2724,7 +2724,7 @@ static void video_texture_load_gl(
 {
    /* Generate the OpenGL texture object */
    glGenTextures(1, (GLuint*)id);
-   gl_load_texture_data((GLuint)*id, 
+   gl_load_texture_data((GLuint)*id,
          RARCH_WRAP_EDGE, filter_type,
          4 /* TODO/FIXME - dehardcode */,
          ti->width, ti->height, ti->pixels,

@@ -652,7 +652,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #endif
 #ifdef HAVE_OVERLAY
    SETTING_PATH("osk_overlay_directory",
-         global->dir.osk_overlay, true, NULL, true);
+         dir_get_osk_overlay_ptr(), true, NULL, true);
 #endif
 #ifndef HAVE_DYNAMIC
    SETTING_PATH("libretro_path", 
@@ -1248,20 +1248,30 @@ static void config_set_defaults(void)
 
    if (!string_is_empty(g_defaults.dir.osk_overlay))
    {
-      fill_pathname_expand_special(global->dir.osk_overlay,
-            g_defaults.dir.osk_overlay, sizeof(global->dir.osk_overlay));
+      char temp_path[PATH_MAX_LENGTH] = {0};
+
+      fill_pathname_expand_special(temp_path,
+            g_defaults.dir.osk_overlay, sizeof(temp_path));
 #ifdef RARCH_MOBILE
       if (string_is_empty(settings->path.osk_overlay))
             fill_pathname_join(settings->path.osk_overlay,
-                  global->dir.osk_overlay,
+                  temp_path,
                   "keyboards/modular-keyboard/opaque/big.cfg",
                   sizeof(settings->path.osk_overlay));
 #endif
+
+      dir_set_osk_overlay(temp_path);
    }
    else
-      strlcpy(global->dir.osk_overlay,
+   {
+      char temp_path[PATH_MAX_LENGTH] = {0};
+
+      strlcpy(temp_path,
             settings->directory.overlay,
-            sizeof(global->dir.osk_overlay));
+            sizeof(temp_path));
+
+      dir_set_osk_overlay(temp_path);
+   }
 #endif
 #ifdef HAVE_MENU
    if (!string_is_empty(g_defaults.dir.menu_config))
@@ -2037,8 +2047,8 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->directory.overlay, "default"))
       *settings->directory.overlay = '\0';
-   if (string_is_equal(global->dir.osk_overlay, "default"))
-      *global->dir.osk_overlay = '\0';
+   if (string_is_equal(dir_get_osk_overlay(), "default"))
+      dir_clear_osk_overlay();
 #endif
    if (string_is_equal(settings->directory.system, "default"))
       *settings->directory.system = '\0';
@@ -2070,7 +2080,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          strlcpy(global->name.savefile, tmp_str,
                sizeof(global->name.savefile));
          fill_pathname_dir(global->name.savefile,
-               global->name.base,
+               path_get_basename(),
                file_path_str(FILE_PATH_SRM_EXTENSION),
                sizeof(global->name.savefile));
       }
@@ -2090,7 +2100,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          strlcpy(global->name.savestate, tmp_str,
                sizeof(global->name.savestate));
          fill_pathname_dir(global->name.savestate,
-               global->name.base,
+               path_get_basename(),
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
       }
@@ -2145,14 +2155,15 @@ bool config_load_override(void)
    const char *game_name                  = NULL;
    bool should_append                     = false;
    rarch_system_info_t *system            = NULL;
+#ifdef HAVE_NETPLAY
    global_t *global                       = global_get_ptr();
+#endif
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
       core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
+   game_name = path_basename(path_get_basename());
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -2222,7 +2233,7 @@ bool config_load_override(void)
 
    /* Re-load the configuration with any overrides that might have been found */
 #ifdef HAVE_NETPLAY
-   if (global->netplay.enable)
+   if (global && global->netplay.enable)
    {
       RARCH_WARN("[overrides] can't use overrides in conjunction with netplay, disabling overrides.\n");
       return false;
@@ -2305,7 +2316,6 @@ bool config_load_remap(void)
    config_file_t *new_conf                 = NULL;
    const char *core_name                   = NULL;
    const char *game_name                   = NULL;
-   global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
 
@@ -2313,8 +2323,8 @@ bool config_load_remap(void)
 
    if (system)
       core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
+
+   game_name = path_basename(path_get_basename());
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -2428,7 +2438,6 @@ bool config_load_shader_preset(void)
    char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    const char *core_name                   = NULL;
    const char *game_name                   = NULL;
-   global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
 
@@ -2436,8 +2445,8 @@ bool config_load_shader_preset(void)
 
    if (system)
       core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
+
+   game_name = path_basename(path_get_basename());
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -3019,7 +3028,6 @@ bool config_save_overrides(int override_type)
    const char *game_name                       = NULL;
    config_file_t *conf                         = NULL;
    settings_t *settings                        = NULL;
-   global_t   *global                          = global_get_ptr();
    settings_t *overrides                       = config_get_ptr();
    rarch_system_info_t *system                 = NULL;
    struct config_bool_setting *bool_settings   = NULL;
@@ -3037,8 +3045,8 @@ bool config_save_overrides(int override_type)
 
    if (system)
       core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
+
+   game_name = path_basename(path_get_basename());
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;

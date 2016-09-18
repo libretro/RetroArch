@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -72,31 +72,29 @@ static bool gl_query_extension(const char *ext)
    return ret;
 }
 
-bool gl_check_error(char *error_string)
+bool gl_check_error(char **error_string)
 {
    int error = glGetError();
    switch (error)
    {
       case GL_INVALID_ENUM:
-         error_string = strdup("GL: Invalid enum.");
+         *error_string = strdup("GL: Invalid enum.");
          break;
       case GL_INVALID_VALUE:
-         error_string = strdup("GL: Invalid value.");
+         *error_string = strdup("GL: Invalid value.");
          break;
       case GL_INVALID_OPERATION:
-         error_string = strdup("GL: Invalid operation.");
+         *error_string = strdup("GL: Invalid operation.");
          break;
       case GL_OUT_OF_MEMORY:
-         error_string = strdup("GL: Out of memory.");
+         *error_string = strdup("GL: Out of memory.");
          break;
       case GL_NO_ERROR:
          return true;
       default:
-         error_string = strdup("Non specified GL error.");
+         *error_string = strdup("Non specified GL error.");
          break;
    }
-    
-   (void)error_string;
 
    return false;
 }
@@ -114,7 +112,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
    if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
 #endif
       major = minor = 0;
-    
+
    (void)vendor;
 
    switch (enum_idx)
@@ -167,15 +165,15 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
                && !gl_query_extension("EXT_framebuffer_object"))
             return false;
 
-         if (glGenFramebuffers 
-               && glBindFramebuffer 
-               && glFramebufferTexture2D 
-               && glCheckFramebufferStatus 
-               && glDeleteFramebuffers 
-               && glGenRenderbuffers 
-               && glBindRenderbuffer 
-               && glFramebufferRenderbuffer 
-               && glRenderbufferStorage 
+         if (glGenFramebuffers
+               && glBindFramebuffer
+               && glFramebufferTexture2D
+               && glCheckFramebufferStatus
+               && glDeleteFramebuffers
+               && glGenRenderbuffers
+               && glBindRenderbuffer
+               && glFramebufferRenderbuffer
+               && glRenderbufferStorage
                && glDeleteRenderbuffers)
             return true;
          break;
@@ -205,7 +203,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
                video_driver_get_hw_context();
             if (major >= 3)
                return true;
-            if (hwr->stencil 
+            if (hwr->stencil
                   && !gl_query_extension("OES_packed_depth_stencil")
                   && !gl_query_extension("EXT_packed_depth_stencil"))
                return false;
@@ -273,7 +271,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          if (major >= 3 || gl_query_extension("EXT_sRGB"))
             return true;
 #elif defined(HAVE_FBO)
-         if (gl_query_core_context_in_use() || 
+         if (gl_query_core_context_in_use() ||
                (gl_query_extension("EXT_texture_sRGB")
                 && gl_query_extension("ARB_framebuffer_sRGB")))
             return true;

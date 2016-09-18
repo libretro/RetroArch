@@ -882,14 +882,13 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
    rarch_system_info_t *system            = NULL;
-   global_t *global                       = global_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
       core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
+
+   game_name = path_basename(path_get_basename());
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;

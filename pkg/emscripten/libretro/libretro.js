@@ -45,6 +45,12 @@ var showError = function(error) {
   }
 };
 
+function cleanupStorage()
+{
+   localStorage.clear();
+   document.getElementById("btnClean").disabled = true;
+}
+
 function dropboxInit()
 {
   document.getElementById('btnRun').disabled = true;
