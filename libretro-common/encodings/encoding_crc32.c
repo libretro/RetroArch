@@ -82,19 +82,9 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *buf, size_t len)
 {
    crc = crc ^ 0xffffffff;
 
-   while (len >= 8)
+   while (len--)
    {
-      unsigned j;
-      for (j = 0; j < 8; j++)
-         crc = crc32_table[(crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
-      len -= 8;
-   }
-   if (len)
-   {
-      do
-      {
-         crc = crc32_table[(crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
-      } while (--len);
+      crc = crc32_table[(crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
    }
 
    return crc ^ 0xffffffff;
