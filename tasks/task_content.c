@@ -26,27 +26,6 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
-#ifdef HAVE_MENU
-#include "../menu/menu_driver.h"
-#include "../menu/menu_display.h"
-#include "../menu/menu_content.h"
-#endif
-
-#include "tasks_internal.h"
-
-#include "../command.h"
-#include "../content.h"
-#include "../defaults.h"
-#include "../configuration.h"
-#include "../frontend/frontend.h"
-#include "../paths.h"
-#include "../retroarch.h"
-#include "../verbosity.h"
-
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -57,6 +36,10 @@
 #include <fcntl.h>
 #include <windows.h>
 #endif
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
 #endif
 
 #include <boolean.h>
@@ -76,6 +59,28 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#include "../menu/menu_display.h"
+#include "../menu/menu_content.h"
+#endif
+
+#ifdef HAVE_CHEEVOS
+#include "../cheevos.h"
+#endif
+
+#include "tasks_internal.h"
+
+#include "../command.h"
+#include "../content.h"
+#include "../configuration.h"
+#include "../defaults.h"
+#include "../frontend/frontend.h"
+#include "../playlist.h"
+#include "../paths.h"
+#include "../retroarch.h"
+#include "../verbosity.h"
+
 #include "../msg_hash.h"
 #include "../content.h"
 #include "../dynamic.h"
@@ -87,10 +92,6 @@
 #include "../dirs.h"
 #include "../paths.h"
 #include "../verbosity.h"
-
-#ifdef HAVE_CHEEVOS
-#include "../cheevos.h"
-#endif
 
 #define MAX_ARGS 32
 
@@ -141,7 +142,7 @@ bool content_push_to_history_playlist(
    settings_t *settings   = config_get_ptr();
 
    /* If the history list is not enabled, early return. */
-   if (!settings->history_list_enable)
+   if (!settings || !settings->history_list_enable)
       return false;
    if (!playlist)
       return false;
