@@ -118,12 +118,9 @@ static void find_and_set_first_file(char *s, size_t len,
 static void salamander_init(char *s, size_t len)
 {
    /* normal executable loading path */
-   bool config_file_exists = false;
+   bool config_exists = config_file_exists(g_defaults.path.config);
 
-   if (path_file_exists(g_defaults.path.config))
-      config_file_exists = true;
-
-   if (config_file_exists)
+   if (config_exists)
    {
       char tmp_str[PATH_MAX_LENGTH];
       config_file_t * conf = (config_file_t*)config_file_new(g_defaults.path.config);
@@ -141,12 +138,12 @@ static void salamander_init(char *s, size_t len)
        * the file is there when it doesn't. */
       else 
       {
-         config_file_exists = false;
+         config_exists = false;
       }
 #endif
    }
 
-   if (!config_file_exists || string_is_equal(s, ""))
+   if (!config_exists || string_is_equal(s, ""))
    {
       char executable_name[PATH_MAX_LENGTH];
 
@@ -157,7 +154,7 @@ static void salamander_init(char *s, size_t len)
    else
       RARCH_LOG("Start [%s] found in retroarch.cfg.\n", s);
 
-   if (!config_file_exists)
+   if (!config_exists)
    {
       config_file_t *conf = (config_file_t*)config_file_new(NULL);
 

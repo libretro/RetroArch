@@ -507,17 +507,13 @@ static void runloop_check_shader_dir(
 static bool rarch_game_specific_options(char **output)
 {
    char game_path[PATH_MAX_LENGTH] = {0};
-   config_file_t *option_file      = NULL;
 
    if (!retroarch_validate_game_options(game_path,
             sizeof(game_path), false))
          return false;
 
-   option_file = config_file_new(game_path);
-   if (!option_file)
+   if (!config_file_exists(game_path))
       return false;
-
-   config_file_free(option_file);
 
    RARCH_LOG("%s %s\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
