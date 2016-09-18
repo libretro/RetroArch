@@ -281,102 +281,117 @@ void path_set_special(char **argv, unsigned num_content)
    }
 }
 
-void path_init_savefile(void)
+static bool path_init_subsystem(void)
 {
-   global_t            *global = global_get_ptr();
-   rarch_system_info_t *system = NULL;
+   unsigned i, j, num_content;
+   const struct retro_subsystem_info *info = NULL;
+   rarch_system_info_t             *system = NULL;
+   global_t                        *global = global_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   if (!system)
+      return false;
+
+   if (string_is_empty(global->subsystem))
+      return false;
+
+   /* For subsystems, we know exactly which RAM types are supported. */
+
+   info = libretro_find_subsystem_info(
+         system->subsystem.data,
+         system->subsystem.size,
+         global->subsystem);
+
+   /* We'll handle this error gracefully later. */
+   num_content = MIN(info ? info->num_roms : 0,
+         global->subsystem_fullpaths ?
+         global->subsystem_fullpaths->size : 0);
+
+
+   for (i = 0; i < num_content; i++)
+   {
+      for (j = 0; j < info->roms[i].num_memory; j++)
+      {
+         union string_list_elem_attr attr;
+         char path[PATH_MAX_LENGTH] = {0};
+         char ext[32] = {0};
+         const struct retro_subsystem_memory_info *mem =
+            (const struct retro_subsystem_memory_info*)
+            &info->roms[i].memory[j];
+
+         snprintf(ext, sizeof(ext), ".%s", mem->extension);
+
+         if (path_is_directory(dir_get_savefile()))
+         {
+            /* Use SRAM dir */
+            /* Redirect content fullpath to save directory. */
+            strlcpy(path, dir_get_savefile(), sizeof(path));
+            fill_pathname_dir(path,
+                  global->subsystem_fullpaths->elems[i].data, ext,
+                  sizeof(path));
+         }
+         else
+         {
+            fill_pathname(path, global->subsystem_fullpaths->elems[i].data,
+                  ext, sizeof(path));
+         }
+
+         attr.i = mem->type;
+         string_list_append(global->savefiles, path, attr);
+      }
+   }
+
+   /* Let other relevant paths be inferred from the main SRAM location. */
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+      fill_pathname_noext(global->name.savefile,
+            path_main_basename,
+            file_path_str(FILE_PATH_SRM_EXTENSION),
+            sizeof(global->name.savefile));
+
+   if (path_is_directory(global->name.savefile))
+   {
+      fill_pathname_dir(global->name.savefile,
+            path_main_basename,
+            file_path_str(FILE_PATH_SRM_EXTENSION),
+            sizeof(global->name.savefile));
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+            global->name.savefile);
+   }
+
+   return true;
+}
+
+static void path_init_savefile_rtc(void)
+{
+   union string_list_elem_attr attr;
+   char savefile_name_rtc[PATH_MAX_LENGTH] = {0};
+   global_t                        *global = global_get_ptr();
+
+   attr.i = RETRO_MEMORY_SAVE_RAM;
+   string_list_append(global->savefiles, global->name.savefile, attr);
+
+   /* Infer .rtc save path from save ram path. */
+   attr.i = RETRO_MEMORY_RTC;
+   fill_pathname(savefile_name_rtc,
+         global->name.savefile,
+         file_path_str(FILE_PATH_RTC_EXTENSION),
+         sizeof(savefile_name_rtc));
+   string_list_append(global->savefiles, savefile_name_rtc, attr);
+}
+
+static void path_init_savefile(void)
+{
+   global_t            *global = global_get_ptr();
 
    command_event(CMD_EVENT_SAVEFILES_DEINIT, NULL);
 
    global->savefiles = string_list_new();
    retro_assert(global->savefiles);
 
-   if (system && !string_is_empty(global->subsystem))
-   {
-      /* For subsystems, we know exactly which RAM types are supported. */
-
-      unsigned i, j;
-      const struct retro_subsystem_info *info =
-         libretro_find_subsystem_info(
-               system->subsystem.data,
-               system->subsystem.size,
-               global->subsystem);
-
-      /* We'll handle this error gracefully later. */
-      unsigned num_content = MIN(info ? info->num_roms : 0,
-            global->subsystem_fullpaths ?
-            global->subsystem_fullpaths->size : 0);
-
-      bool use_sram_dir = path_is_directory(dir_get_savefile());
-
-      for (i = 0; i < num_content; i++)
-      {
-         for (j = 0; j < info->roms[i].num_memory; j++)
-         {
-            union string_list_elem_attr attr;
-            char path[PATH_MAX_LENGTH] = {0};
-            char ext[32] = {0};
-            const struct retro_subsystem_memory_info *mem =
-               (const struct retro_subsystem_memory_info*)
-               &info->roms[i].memory[j];
-
-            snprintf(ext, sizeof(ext), ".%s", mem->extension);
-
-            if (use_sram_dir)
-            {
-               /* Redirect content fullpath to save directory. */
-               strlcpy(path, dir_get_savefile(), sizeof(path));
-               fill_pathname_dir(path,
-                     global->subsystem_fullpaths->elems[i].data, ext,
-                     sizeof(path));
-            }
-            else
-            {
-               fill_pathname(path, global->subsystem_fullpaths->elems[i].data,
-                     ext, sizeof(path));
-            }
-
-            attr.i = mem->type;
-            string_list_append(global->savefiles, path, attr);
-         }
-      }
-
-      /* Let other relevant paths be inferred from the main SRAM location. */
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
-         fill_pathname_noext(global->name.savefile,
-               path_main_basename,
-               file_path_str(FILE_PATH_SRM_EXTENSION),
-               sizeof(global->name.savefile));
-
-      if (path_is_directory(global->name.savefile))
-      {
-         fill_pathname_dir(global->name.savefile,
-               path_main_basename,
-               file_path_str(FILE_PATH_SRM_EXTENSION),
-               sizeof(global->name.savefile));
-         RARCH_LOG("%s \"%s\".\n",
-               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-               global->name.savefile);
-      }
-   }
-   else
-   {
-      union string_list_elem_attr attr;
-      char savefile_name_rtc[PATH_MAX_LENGTH] = {0};
-
-      attr.i = RETRO_MEMORY_SAVE_RAM;
-      string_list_append(global->savefiles, global->name.savefile, attr);
-
-      /* Infer .rtc save path from save ram path. */
-      attr.i = RETRO_MEMORY_RTC;
-      fill_pathname(savefile_name_rtc,
-            global->name.savefile,
-            file_path_str(FILE_PATH_RTC_EXTENSION),
-            sizeof(savefile_name_rtc));
-      string_list_append(global->savefiles, savefile_name_rtc, attr);
-   }
+   if (!path_init_subsystem())
+      path_init_savefile_rtc();
 }
 
 void path_set_names(const char *path)

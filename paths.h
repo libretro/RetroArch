@@ -29,10 +29,6 @@ enum rarch_content_type
    RARCH_CONTENT_IMAGE
 };
 
-/* init functions */
-
-void path_init_savefile(void);
-
 /* fill functions */
 
 void path_fill_names(void);
