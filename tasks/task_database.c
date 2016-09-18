@@ -412,13 +412,15 @@ static int task_database_iterate_playlist_archive(
 {
    bool returnerr = true;
 #ifdef HAVE_COMPRESSION
+   struct archive_extract_userdata userdata = {0};
+
    if (db_state->crc != 0)
       return task_database_iterate_crc_lookup(
             db_state, db, db_state->archive_name);
 
    if (file_archive_parse_file_iterate(&db->state,
             &returnerr, name, NULL, archive_compare_crc32,
-            (void*)db_state) != 0)
+            &userdata))
       return 0;
 
    if (db_state->crc)
