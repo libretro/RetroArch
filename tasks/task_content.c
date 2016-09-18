@@ -525,6 +525,9 @@ error:
    if (handle->data)
       free(handle->data);
 
+   handle->stream = NULL;
+   handle->data   = NULL;
+
    return false;
 }
 
