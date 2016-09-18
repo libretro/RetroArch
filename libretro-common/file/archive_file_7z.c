@@ -50,7 +50,7 @@ struct sevenzip_context_t {
    file_archive_file_handle_t *handle;
 };
 
-static void* sevenzip_stream_new()
+static void* sevenzip_stream_new(void)
 {
    struct sevenzip_context_t *sevenzip_context =
          (struct sevenzip_context_t*)calloc(1, sizeof(struct sevenzip_context_t));
