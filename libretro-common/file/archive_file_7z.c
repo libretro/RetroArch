@@ -272,7 +272,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    if (memcmp(state->data, SEVENZIP_MAGIC, SEVENZIP_MAGIC_LEN) != 0)
       return -1;
 
-   sevenzip_context = sevenzip_stream_new();
+   sevenzip_context = (struct sevenzip_context_t*)sevenzip_stream_new();
 
    /* could not open 7zip archive? */
    if (InFile_Open(&sevenzip_context->archiveStream.file, file))
