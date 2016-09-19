@@ -43,6 +43,8 @@
 
 /* TODO/FIXME - turn this into actual task */
 
+static struct string_list *task_save_files = NULL;
+
 typedef struct ram_type ram_type_t;
 
 struct ram_type
@@ -268,24 +270,23 @@ void autosave_init(void)
    unsigned i;
    autosave_t **list    = NULL;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
-   if (settings->autosave_interval < 1 || !global->savefiles)
+   if (settings->autosave_interval < 1 || !task_save_files)
       return;
 
-   list = (autosave_t**)calloc(global->savefiles->size,
+   list = (autosave_t**)calloc(task_save_files->size,
                sizeof(*autosave_state.list));
    if (!list)
       return;
 
    autosave_state.list = list;
-   autosave_state.num  = global->savefiles->size;
+   autosave_state.num  = task_save_files->size;
 
-   for (i = 0; i < global->savefiles->size; i++)
+   for (i = 0; i < task_save_files->size; i++)
    {
       retro_ctx_memory_info_t mem_info;
-      const char *path = global->savefiles->elems[i].data;
-      unsigned    type = global->savefiles->elems[i].attr.i;
+      const char *path = task_save_files->elems[i].data;
+      unsigned    type = task_save_files->elems[i].attr.i;
 
       mem_info.id = type;
 
@@ -324,23 +325,22 @@ static unsigned content_allocate_save_blocks(struct sram_block *blocks)
    unsigned i;
    unsigned num_blocks       = 0;
    settings_t *settings      = config_get_ptr();
-   global_t *global          = global_get_ptr();
 
    /* Checking of SRAM overwrite, the backing up of it and
       flushing. */
-   if (settings->block_sram_overwrite && global->savefiles
-         && global->savefiles->size)
+   if (settings->block_sram_overwrite && task_save_files
+         && task_save_files->size)
    {
       RARCH_LOG("%s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
       blocks = (struct sram_block*)
-         calloc(global->savefiles->size, sizeof(*blocks));
+         calloc(task_save_files->size, sizeof(*blocks));
 
       if (blocks)
       {
-         num_blocks = global->savefiles->size;
+         num_blocks = task_save_files->size;
          for (i = 0; i < num_blocks; i++)
-            blocks[i].type = global->savefiles->elems[i].attr.i;
+            blocks[i].type = task_save_files->elems[i].attr.i;
       }
    }
 
@@ -734,13 +734,8 @@ bool content_undo_save_buf_is_empty(void)
 static bool content_get_memory(retro_ctx_memory_info_t *mem_info,
       ram_type_t *ram, unsigned slot)
 {
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return false;
-
-   ram->type = global->savefiles->elems[slot].attr.i;
-   ram->path = global->savefiles->elems[slot].data;
+   ram->type = task_save_files->elems[slot].attr.i;
+   ram->path = task_save_files->elems[slot].data;
 
    mem_info->id  = ram->type;
 
@@ -844,10 +839,10 @@ bool event_save_files(void)
    unsigned i;
    global_t  *global         = global_get_ptr();
 
-   if (!global || !global->savefiles || !global->sram.use)
+   if (!global || !task_save_files || !global->sram.use)
       return false;
 
-   for (i = 0; i < global->savefiles->size; i++)
+   for (i = 0; i < task_save_files->size; i++)
       content_save_ram_file(i);
 
    return true;
@@ -860,10 +855,10 @@ bool event_load_save_files(void)
 
    if (!global)
       return false;
-   if (!global->savefiles || global->sram.load_disable)
+   if (!task_save_files || global->sram.load_disable)
       return false;
 
-   for (i = 0; i < global->savefiles->size; i++)
+   for (i = 0; i < task_save_files->size; i++)
       content_load_ram_file(i);
 
    return true;
@@ -876,7 +871,7 @@ void path_init_savefile_rtc(void)
    global_t                        *global = global_get_ptr();
 
    attr.i = RETRO_MEMORY_SAVE_RAM;
-   string_list_append(global->savefiles, global->name.savefile, attr);
+   string_list_append(task_save_files, global->name.savefile, attr);
 
    /* Infer .rtc save path from save ram path. */
    attr.i = RETRO_MEMORY_RTC;
@@ -884,33 +879,23 @@ void path_init_savefile_rtc(void)
          global->name.savefile,
          file_path_str(FILE_PATH_RTC_EXTENSION),
          sizeof(savefile_name_rtc));
-   string_list_append(global->savefiles, savefile_name_rtc, attr);
+   string_list_append(task_save_files, savefile_name_rtc, attr);
 }
 
 void path_deinit_savefile(void)
 {
-   global_t  *global         = global_get_ptr();
-
-   if (!global)
-      return;
-
-   if (global->savefiles)
-      string_list_free(global->savefiles);
-   global->savefiles = NULL;
+   if (task_save_files)
+      string_list_free(task_save_files);
+   task_save_files = NULL;
 }
 
 void path_init_savefile_new(void)
 {
-   global_t  *global         = global_get_ptr();
-
-   global->savefiles = string_list_new();
-   retro_assert(global->savefiles);
+   task_save_files = string_list_new();
+   retro_assert(task_save_files);
 }
 
 void *savefile_ptr_get(void)
 {
-   global_t  *global         = global_get_ptr();
-   if (!global)
-      return NULL;
-   return global->savefiles;
+   return task_save_files;
 }
