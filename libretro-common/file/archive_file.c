@@ -249,9 +249,22 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
                path_basename(name), sizeof(new_path));
 
       userdata->first_extracted_file_path = strdup(new_path);
-      userdata->found_file                = file_archive_perform_mode(new_path,
-            valid_exts, cdata, cmode, csize, size,
-            0, userdata);
+
+      char wanted_file[PATH_MAX_LENGTH] = {0};
+      const char *delim = path_get_archive_delim(userdata->archive_path);
+
+      if (delim)
+         strlcpy(wanted_file, delim + 1, strlen(delim) + 1);
+
+      if (!string_is_equal_noncase(userdata->extracted_file_path,
+                wanted_file))
+        return 1; // keep searching for the right file
+
+      if (file_archive_perform_mode(new_path,
+                valid_exts, cdata, cmode, csize, size,
+                0, userdata))
+         userdata->found_file = true;
+
       return 0;
    }
 
@@ -466,18 +479,19 @@ int file_archive_parse_file_progress(file_archive_transfer_t *state)
 }
 
 /**
- * file_archive_extract_first_file:
+ * file_archive_extract_file:
  * @archive_path                    : filename path to archive.
  * @archive_path_size               : size of archive.
  * @valid_exts                  : valid extensions for the file.
  * @extraction_directory        : the directory to extract temporary
  *                                file to.
  *
- * Extract first file from archive.
+ * Extract file from archive. If no file inside the archive is
+ * specified, the first file found will be used.
  *
  * Returns : true (1) on success, otherwise false (0).
  **/
-bool file_archive_extract_first_file(
+bool file_archive_extract_file(
       char *archive_path,
       size_t archive_path_size,
       const char *valid_exts,
@@ -506,6 +520,7 @@ bool file_archive_extract_first_file(
    userdata.ext                  = list;
    userdata.list                 = NULL;
    userdata.context              = NULL;
+   userdata.list_only            = false;
 
    if (!file_archive_parse_file(archive_path, valid_exts,
             file_archive_extract_cb, &userdata))
@@ -544,6 +559,7 @@ struct string_list *file_archive_get_file_list(const char *path,
       const char *valid_exts)
 {
    struct archive_extract_userdata userdata = {0};
+   userdata.list_only = true;
 
    userdata.list = string_list_new();
 

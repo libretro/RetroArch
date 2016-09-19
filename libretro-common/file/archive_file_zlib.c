@@ -447,6 +447,8 @@ static int zip_parse_file_iterate_step(file_archive_transfer_t *state,
    if (ret != 1)
       return ret;
 
+   userdata->extracted_file_path = filename;
+
    if (!file_cb(filename, valid_exts, cdata, cmode,
             csize, size, checksum, userdata))
       return 0;

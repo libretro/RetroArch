@@ -90,11 +90,13 @@ struct archive_extract_userdata
 {
    char *archive_path;
    char *first_extracted_file_path;
+   char *extracted_file_path;
    const char *extraction_directory;
    size_t archive_path_size;
    struct string_list *ext;
    struct string_list *list;
    bool found_file;
+   bool list_only;
    void *context;
    char archive_name[PATH_MAX_LENGTH];
    uint32_t crc;
@@ -151,18 +153,19 @@ void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state);
 int file_archive_parse_file_progress(file_archive_transfer_t *state);
 
 /**
- * file_archive_extract_first_file:
+ * file_archive_extract_file:
  * @zip_path                    : filename path to ZIP archive.
  * @zip_path_size               : size of ZIP archive.
  * @valid_exts                  : valid extensions for a file.
  * @extraction_directory        : the directory to extract temporary
  *                                unzipped file to.
  *
- * Extract first file from archive.
+ * Extract file from archive. If no file inside the archive is
+ * specified, the first file found will be used.
  *
  * Returns : true (1) on success, otherwise false (0).
  **/
-bool file_archive_extract_first_file(char *zip_path, size_t zip_path_size,
+bool file_archive_extract_file(char *zip_path, size_t zip_path_size,
       const char *valid_exts, const char *extraction_dir,
       char *out_path, size_t len);
 
