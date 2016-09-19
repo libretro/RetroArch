@@ -49,7 +49,7 @@
 #include <GL3/gl3ext.h>
 #elif defined(HAVE_OPENGLES3)
 #include <GLES3/gl3.h>
-#include <GLES2/gl2ext.h>
+#include <GLES3/gl3ext.h>
 #elif defined(HAVE_OPENGLES2)
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
