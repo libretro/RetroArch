@@ -560,6 +560,7 @@ struct string_list *file_archive_get_file_list(const char *path,
 {
    struct archive_extract_userdata userdata = {0};
    userdata.list_only = true;
+   userdata.archive_path = strdup(path);
 
    userdata.list = string_list_new();
 
@@ -570,9 +571,20 @@ struct string_list *file_archive_get_file_list(const char *path,
             file_archive_get_file_list_cb, &userdata))
       goto error;
 
+   if (userdata.archive_path)
+   {
+      free(userdata.archive_path);
+      userdata.archive_path = NULL;
+   }
+
    return userdata.list;
 
 error:
+   if (userdata.archive_path)
+   {
+      free(userdata.archive_path);
+      userdata.archive_path = NULL;
+   }
    if (userdata.list)
       string_list_free(userdata.list);
    return NULL;
@@ -769,7 +781,8 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
 #endif
 
 #ifdef HAVE_ZLIB
-   if (string_is_equal_noncase(file_ext, "zip"))
+   if (string_is_equal_noncase(file_ext, "zip") ||
+             string_is_equal_noncase(file_ext, "apk"))
       return &zlib_backend;
 #endif
 

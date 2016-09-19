@@ -345,7 +345,7 @@ static int database_info_list_iterate_next(
 static int task_database_iterate_crc_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db,
-      const char *zip_entry)
+      const char *archive_entry)
 {
 
    if (!db_state->list ||
@@ -378,7 +378,7 @@ static int task_database_iterate_crc_lookup(
                   db_state, db, NULL);
          if (db_state->crc == db_info_entry->crc32)
             return database_info_list_iterate_found_match(
-                  db_state, db, zip_entry);
+                  db_state, db, archive_entry);
       }
    }
 
