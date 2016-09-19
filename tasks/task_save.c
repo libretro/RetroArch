@@ -362,15 +362,17 @@ static unsigned content_allocate_save_blocks(struct sram_block *blocks)
       if (blocks[i].data)
       {
          retro_ctx_memory_info_t    mem_info;
-         const void *ptr = NULL;
+         void *dst       = NULL;
+         const void *src = NULL;
 
          mem_info.id = blocks[i].type;
 
          core_get_memory(&mem_info);
 
-         ptr = mem_info.data;
-         if (ptr)
-            memcpy(blocks[i].data, ptr, blocks[i].size);
+         src = mem_info.data;
+         dst = blocks[i].data;
+         if (src)
+            memcpy(dst, src, blocks[i].size);
       }
    }
 
@@ -388,15 +390,17 @@ static void content_flush_save_blocks(struct sram_block *blocks,
       if (blocks[i].data)
       {
          retro_ctx_memory_info_t    mem_info;
-         void *ptr = NULL;
+         const void *src = NULL;
+         void *dst       = NULL;
 
          mem_info.id = blocks[i].type;
 
          core_get_memory(&mem_info);
 
-         ptr = mem_info.data;
-         if (ptr)
-            memcpy(ptr, blocks[i].data, blocks[i].size);
+         src = blocks[i].data;
+         dst = mem_info.data;
+         if (dst)
+            memcpy(dst, src, blocks[i].size);
       }
    }
 
