@@ -393,8 +393,6 @@ void path_init_savefile(void)
 
 static void path_init_savefile_internal(void)
 {
-   global_t            *global = global_get_ptr();
-
    path_deinit_savefile();
 
    path_init_savefile_new();

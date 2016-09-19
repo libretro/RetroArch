@@ -425,7 +425,6 @@ bool content_undo_load_state(void)
    void* temp_data           = NULL;
    unsigned num_blocks       = 0;
    struct sram_block *blocks = NULL;
-   settings_t *settings      = config_get_ptr();
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
@@ -605,13 +604,11 @@ bool content_save_state(const char *path, bool save_to_disk)
  **/
 bool content_load_state(const char *path, bool load_to_backup_buffer)
 {
-   unsigned i;
    ssize_t size;
    retro_ctx_serialize_info_t serial_info;
    unsigned num_blocks       = 0;
    void *buf                 = NULL;
    struct sram_block *blocks = NULL;
-   settings_t *settings      = config_get_ptr();
    bool ret                  = filestream_read_file(path, &buf, &size);
 
    RARCH_LOG("%s: \"%s\".\n",
