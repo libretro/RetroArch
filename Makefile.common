@@ -1,3 +1,7 @@
+ROOT_DIR          := .
+DEPS_DIR          := $(ROOT_DIR)/deps
+LIBRETRO_COMM_DIR := $(ROOT_DIR)/libretro-common
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT=0
 
@@ -73,7 +77,7 @@ ifeq ($(HAVE_SHADERPIPELINE), 1)
    CFLAGS += -DHAVE_SHADERPIPELINE
 endif
 
-CFLAGS += -I./libretro-common/include
+CFLAGS += -I$(LIBRETRO_COMM_DIR)/include
 
 # Switches
 
@@ -139,31 +143,31 @@ OBJ += frontend/frontend.o \
        msg_hash.o \
        intl/msg_hash_us.o \
        runloop.o \
-       libretro-common/algorithms/mismatch.o \
-       libretro-common/queues/task_queue.o \
+       $(LIBRETRO_COMM_DIR)/algorithms/mismatch.o \
+       $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o \
        tasks/task_save.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
-       libretro-common/encodings/encoding_utf.o \
-       libretro-common/encodings/encoding_crc32.o \
-       libretro-common/lists/file_list.o \
-       libretro-common/lists/dir_list.o \
-       libretro-common/file/retro_dirent.o \
-       libretro-common/streams/file_stream.o \
-       libretro-common/streams/interface_stream.o \
-       libretro-common/streams/memory_stream.o \
-       libretro-common/file/retro_stat.o \
-       libretro-common/lists/string_list.o \
-       libretro-common/string/stdstring.o \
-       libretro-common/memmap/memalign.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
+       $(LIBRETRO_COMM_DIR)/lists/file_list.o \
+       $(LIBRETRO_COMM_DIR)/lists/dir_list.o \
+       $(LIBRETRO_COMM_DIR)/file/retro_dirent.o \
+       $(LIBRETRO_COMM_DIR)/streams/file_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
+       $(LIBRETRO_COMM_DIR)/file/retro_stat.o \
+       $(LIBRETRO_COMM_DIR)/lists/string_list.o \
+       $(LIBRETRO_COMM_DIR)/string/stdstring.o \
+       $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
 		 setting_list.o \
        list_special.o \
-       libretro-common/file/nbio/nbio_stdio.o \
-       libretro-common/file/file_path.o \
+       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o \
+       $(LIBRETRO_COMM_DIR)/file/file_path.o \
        file_path_special.o \
        file_path_str.o \
-       libretro-common/hash/rhash.o \
+       $(LIBRETRO_COMM_DIR)/hash/rhash.o \
        audio/audio_driver.o \
        input/input_driver.o \
        gfx/video_coord_array.o \
@@ -172,10 +176,10 @@ OBJ += frontend/frontend.o \
        location/location_driver.o \
        driver.o \
        configuration.o \
-       libretro-common/dynamic/dylib.o \
+       $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        dynamic.o \
        cores/dynamic_dummy.o \
-       libretro-common/queues/message_queue.o \
+       $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        input/input_autodetect.o \
@@ -186,22 +190,22 @@ OBJ += frontend/frontend.o \
        tasks/task_overlay.o \
        input/input_overlay.o \
        patch.o \
-       libretro-common/queues/fifo_queue.o \
+       $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
        managers/core_option_manager.o \
-       libretro-common/compat/compat_fnmatch.o \
-       libretro-common/compat/compat_posix_string.o \
+       $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
+       $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o \
        managers/cheat_manager.o \
        core_info.o \
-       libretro-common/file/config_file.o \
+       $(LIBRETRO_COMM_DIR)/file/config_file.o \
        config_file_userdata.o \
        tasks/task_screenshot.o \
-       libretro-common/gfx/scaler/scaler.o \
+       $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler.o \
        gfx/drivers_shader/shader_null.o \
        gfx/video_shader_driver.o \
        gfx/video_shader_parse.o \
-       libretro-common/gfx/scaler/pixconv.o \
-       libretro-common/gfx/scaler/scaler_int.o \
-       libretro-common/gfx/scaler/scaler_filter.o \
+       $(LIBRETRO_COMM_DIR)/gfx/scaler/pixconv.o \
+       $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_int.o \
+       $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.o \
        gfx/font_driver.o \
        gfx/video_filter.o \
        gfx/video_frame.o \
@@ -222,7 +226,7 @@ OBJ += frontend/frontend.o \
        movie.o \
        record/record_driver.o \
        record/drivers/record_null.o \
-       libretro-common/features/features_cpu.o \
+       $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        performance_counters.o \
        verbosity.o
 
@@ -244,18 +248,18 @@ OBJ += intl/msg_hash_de.o \
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
-OBJ += libretro-common/compat/compat_getopt.o
+OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_getopt.o
 endif
 
 ifneq ($(HAVE_STRCASESTR), 1)
-OBJ += libretro-common/compat/compat_strcasestr.o
+OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.o
 endif
 
 ifneq ($(HAVE_STRL), 1)
-OBJ += libretro-common/compat/compat_strl.o
+OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_strl.o
 endif
 
-OBJ += libretro-common/formats/image_texture.o
+OBJ += $(LIBRETRO_COMM_DIR)/formats/image_texture.o
 
 ifeq ($(HAVE_IMAGEVIEWER), 1)
 DEFINES += -DHAVE_IMAGEVIEWER
@@ -417,11 +421,12 @@ ifeq ($(HAVE_NEON),1)
    DEFINES += -DSINC_LOWER_QUALITY
 endif
 
-OBJ += libretro-common/conversion/s16_to_float.o \
-       libretro-common/conversion/float_to_s16.o
+OBJ += $(LIBRETRO_COMM_DIR)/conversion/s16_to_float.o \
+       $(LIBRETRO_COMM_DIR)/conversion/float_to_s16.o
+
 ifeq ($(HAVE_NEON),1)
-   OBJ += libretro-common/conversion/s16_to_float_neon.o \
-          libretro-common/conversion/float_to_s16_neon.o
+   OBJ += $(LIBRETRO_COMM_DIR)/conversion/s16_to_float_neon.o \
+          $(LIBRETRO_COMM_DIR)/conversion/float_to_s16_neon.o
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
@@ -553,8 +558,8 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += libretro-common/rthreads/rthreads.o \
-          libretro-common/rthreads/rsemaphore.o  \
+   OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
+          $(LIBRETRO_COMM_DIR)/rthreads/rsemaphore.o  \
           gfx/video_thread_wrapper.o \
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
@@ -688,11 +693,11 @@ endif
 OBJ += gfx/video_context_driver.o \
        gfx/drivers_context/gfx_null_ctx.o \
        gfx/video_state_tracker.o \
-       libretro-common/gfx/math/vector_2.o \
-       libretro-common/gfx/math/vector_3.o \
-       libretro-common/gfx/math/vector_4.o \
-       libretro-common/gfx/math/matrix_4x4.o \
-       libretro-common/gfx/math/matrix_3x3.o
+       $(LIBRETRO_COMM_DIR)/gfx/math/vector_2.o \
+       $(LIBRETRO_COMM_DIR)/gfx/math/vector_3.o \
+       $(LIBRETRO_COMM_DIR)/gfx/math/vector_4.o \
+       $(LIBRETRO_COMM_DIR)/gfx/math/matrix_4x4.o \
+       $(LIBRETRO_COMM_DIR)/gfx/math/matrix_3x3.o
 
 ifeq ($(HAVE_KMS), 1)
    HAVE_AND_WILL_USE_DRM = 1
@@ -714,7 +719,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 			 gfx/drivers/gl_renderchains/render_chain_gl_legacy.o \
           gfx/common/gl_common.o \
           gfx/drivers_font/gl_raster_font.o \
-          libretro-common/glsym/rglgen.o
+          $(LIBRETRO_COMM_DIR)/glsym/rglgen.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_gl.o
@@ -757,7 +762,7 @@ ifeq ($(HAVE_FFMPEG), 1)
 ifneq ($(C89_BUILD), 1)
 ifneq ($(HAVE_OPENGLES), 1)
    OBJ += cores/libretro-ffmpeg/fft/fft.o
-   DEFINES += -Ideps -DHAVE_GL_FFT
+   DEFINES += -I$(DEPS_DIR) -DHAVE_GL_FFT
    NEED_CXX_LINKER=1
 endif
 endif
@@ -771,10 +776,10 @@ endif
       else
          DEFINES += -DHAVE_OPENGLES2
       endif
-      OBJ += libretro-common/glsym/glsym_es2.o
+      OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es2.o
    else
       DEFINES += -DHAVE_GL_SYNC
-      OBJ += libretro-common/glsym/glsym_gl.o
+      OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.o
       GL_LIBS := -lGL
       ifeq ($(OSX), 1)
          GL_LIBS := -framework OpenGL
@@ -840,30 +845,30 @@ ifeq ($(HAVE_VULKAN), 1)
    endif
 
    GLSLANG_SOURCES := \
-      $(wildcard deps/glslang/*.cpp) \
-      $(wildcard deps/glslang/glslang/SPIRV/*.cpp) \
-      $(wildcard deps/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
-      $(wildcard deps/glslang/glslang/OGLCompilersDLL/*.cpp) \
-      $(wildcard deps/glslang/glslang/glslang/MachineIndependent/*.cpp) \
-      $(wildcard deps/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
-      $(wildcard deps/glslang/glslang/hlsl/*.cpp) \
-      $(wildcard deps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
+      $(wildcard $(DEPS_DIR)/glslang/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/SPIRV/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp) \
+      $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
-   SPIRV_CROSS_SOURCES := deps/SPIRV-Cross/spirv_cross.cpp
+   SPIRV_CROSS_SOURCES := $(DEPS_DIR)/SPIRV-Cross/spirv_cross.cpp
    ifneq ($(findstring Win32,$(OS)),)
       # Trivial temporary workaround for MinGW and glslang.
       CXXFLAGS += -fpermissive
    endif
 
    DEFINES += \
-           -Ideps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
-           -Ideps/glslang/glslang/OGLCompilersDLL \
-           -Ideps/glslang/glslang \
-           -Ideps/glslang/glslang/glslang/MachineIndependent \
-           -Ideps/glslang/glslang/glslang/Public \
-           -Ideps/glslang/glslang/SPIRV \
-           -Ideps/glslang \
-           -Ideps/SPIRV-Cross
+           -I$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
+           -I$(DEPS_DIR)/glslang/glslang/OGLCompilersDLL \
+           -I$(DEPS_DIR)/glslang/glslang \
+           -I$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
+           -I$(DEPS_DIR)/glslang/glslang/glslang/Public \
+           -I$(DEPS_DIR)/glslang/glslang/SPIRV \
+           -I$(DEPS_DIR)/glslang \
+           -I$(DEPS_DIR)/SPIRV-Cross
 
    CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses -Igfx/include
    CFLAGS  += -Igfx/include
@@ -873,7 +878,7 @@ ifeq ($(HAVE_VULKAN), 1)
 
    OBJ += gfx/drivers/vulkan.o \
           gfx/common/vulkan_common.o \
-          libretro-common/vulkan/vulkan_symbol_wrapper.o \
+          $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.o \
           gfx/drivers_font/vulkan_raster_font.o \
           gfx/drivers_shader/shader_vulkan.o \
           gfx/drivers_shader/glslang_util.o \
@@ -966,38 +971,38 @@ endif
    #LIBS += $(LIBXML2_LIBS)
    #DEFINES += $(LIBXML2_CFLAGS)
 #else
-   #OBJ += libretro-common/formats/xml/rxml.o
+   #OBJ += $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o
 #endif
 
 # Compression/Archive
 
-OBJ += libretro-common/file/archive_file.o
+OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o
 
 ifeq ($(HAVE_7ZIP),1)
-   CFLAGS  += -I./deps/7zip
+   CFLAGS  += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
    DEFINES += -DHAVE_7ZIP
-   7ZOBJ = deps/7zip/7zIn.o \
-           deps/7zip/7zAlloc.o \
-           deps/7zip/Bra86.o \
-           deps/7zip/7zFile.o \
-           deps/7zip/7zStream.o \
-           deps/7zip/7zBuf2.o \
-           deps/7zip/LzmaDec.o \
-           deps/7zip/7zCrcOpt.o \
-           deps/7zip/Bra.o \
-           deps/7zip/7zDec.o \
-           deps/7zip/Bcj2.o \
-           deps/7zip/7zCrc.o \
-           deps/7zip/Lzma2Dec.o \
-   deps/7zip/7zBuf.o
-   OBJ += libretro-common/file/archive_file_7z.o \
-          $(7ZOBJ)
+   7ZOBJ = $(DEPS_DIR)/7zip/7zIn.o \
+           $(DEPS_DIR)/7zip/7zAlloc.o \
+           $(DEPS_DIR)/7zip/Bra86.o \
+           $(DEPS_DIR)/7zip/7zFile.o \
+           $(DEPS_DIR)/7zip/7zStream.o \
+           $(DEPS_DIR)/7zip/7zBuf2.o \
+           $(DEPS_DIR)/7zip/LzmaDec.o \
+           $(DEPS_DIR)/7zip/7zCrcOpt.o \
+           $(DEPS_DIR)/7zip/Bra.o \
+           $(DEPS_DIR)/7zip/7zDec.o \
+           $(DEPS_DIR)/7zip/Bcj2.o \
+           $(DEPS_DIR)/7zip/7zCrc.o \
+           $(DEPS_DIR)/7zip/Lzma2Dec.o \
+			  $(DEPS_DIR)/7zip/7zBuf.o
+   OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_7z.o \
+			  $(7ZOBJ)
 endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += libretro-common/file/archive_file_zlib.o
+   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
@@ -1010,48 +1015,48 @@ endif
 
 ifeq ($(HAVE_RTGA), 1)
    DEFINES += -DHAVE_RTGA
-   OBJ += libretro-common/formats/tga/rtga.o
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/tga/rtga.o
 endif
 
 ifeq ($(HAVE_RPNG), 1)
    DEFINES += -DHAVE_RPNG
-   OBJ += libretro-common/formats/png/rpng.o \
-          libretro-common/formats/png/rpng_encode.o
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/png/rpng.o \
+          $(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.o
 endif
 
 ifeq ($(HAVE_RJPEG), 1)
    DEFINES += -DHAVE_RJPEG
-   OBJ += libretro-common/formats/jpeg/rjpeg.o
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/jpeg/rjpeg.o
 endif
 
 ifeq ($(HAVE_RBMP), 1)
    DEFINES += -DHAVE_RBMP
-   OBJ += libretro-common/formats/bmp/rbmp.o
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.o
 endif
 
-OBJ += libretro-common/formats/bmp/rbmp_encode.o \
-       libretro-common/formats/json/jsonsax.o \
-       libretro-common/formats/image_transfer.o
+OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
+       $(LIBRETRO_COMM_DIR)/formats/json/jsonsax.o \
+       $(LIBRETRO_COMM_DIR)/formats/image_transfer.o
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
 endif
 
 ifeq ($(HAVE_BUILTINZLIB),1)
-   OBJ += deps/zlib/adler32.o \
-          deps/zlib/compress.o \
-          deps/zlib/crc32.o \
-          deps/zlib/deflate.o \
-          deps/zlib/gzclose.o \
-          deps/zlib/gzlib.o \
-          deps/zlib/gzread.o \
-          deps/zlib/gzwrite.o \
-          deps/zlib/inffast.o \
-          deps/zlib/inflate.o \
-          deps/zlib/inftrees.o \
-          deps/zlib/trees.o \
-          deps/zlib/uncompr.o \
-          deps/zlib/zutil.o
+   OBJ += $(DEPS_DIR)/zlib/adler32.o \
+          $(DEPS_DIR)/zlib/compress.o \
+          $(DEPS_DIR)/zlib/crc32.o \
+          $(DEPS_DIR)/zlib/deflate.o \
+          $(DEPS_DIR)/zlib/gzclose.o \
+          $(DEPS_DIR)/zlib/gzlib.o \
+          $(DEPS_DIR)/zlib/gzread.o \
+          $(DEPS_DIR)/zlib/gzwrite.o \
+          $(DEPS_DIR)/zlib/inffast.o \
+          $(DEPS_DIR)/zlib/inflate.o \
+          $(DEPS_DIR)/zlib/inftrees.o \
+          $(DEPS_DIR)/zlib/trees.o \
+          $(DEPS_DIR)/zlib/uncompr.o \
+          $(DEPS_DIR)/zlib/zutil.o
 else
 ifeq ($(HAVE_ZLIB),1)
 OBJ += $(ZLIB_OBJS)
@@ -1074,19 +1079,19 @@ endif
 
 ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
-   OBJ += libretro-common/net/net_compat.o \
-          libretro-common/net/net_http.o \
-          libretro-common/net/net_socket.o \
+   OBJ += $(LIBRETRO_COMM_DIR)/net/net_compat.o \
+          $(LIBRETRO_COMM_DIR)/net/net_http.o \
+          $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           network/net_http_special.o \
           tasks/task_http.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
-   OBJ += libretro-common/net/net_ifinfo.o
+   OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
    endif
 
    ifeq ($(WANT_IFADDRS), 1)
    DEFINES += -DWANT_IFADDRS
-   OBJ += libretro-common/compat/compat_ifaddrs.o
+   OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_ifaddrs.o
    endif
 
    ifneq ($(findstring Win32,$(OS)),)
@@ -1108,7 +1113,8 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_CHEEVOS), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
-         OBJ += cheevos.o libretro-common/utils/md5.o
+         OBJ += cheevos.o \
+					 $(LIBRETRO_COMM_DIR)/utils/md5.o
       endif
    endif
 
@@ -1159,12 +1165,12 @@ endif
 ifeq ($(HAVE_COCOA),1)
    DEFINES += -DHAVE_MAIN
    OBJ += input/drivers/cocoa_input.o \
-               input/drivers_keyboard/keyboard_event_apple.o \
-               ui/drivers/ui_cocoa.o \
-               ui/drivers/cocoa/ui_cocoa_window.o \
-               ui/drivers/cocoa/ui_cocoa_browser_window.o \
-               ui/drivers/cocoa/ui_cocoa_msg_window.o \
-               ui/drivers/cocoa/ui_cocoa_application.o \
-               ui/drivers/cocoa/cocoa_common.o \
-               gfx/drivers_context/cocoa_gl_ctx.o
+			 input/drivers_keyboard/keyboard_event_apple.o \
+			 ui/drivers/ui_cocoa.o \
+			 ui/drivers/cocoa/ui_cocoa_window.o \
+			 ui/drivers/cocoa/ui_cocoa_browser_window.o \
+			 ui/drivers/cocoa/ui_cocoa_msg_window.o \
+			 ui/drivers/cocoa/ui_cocoa_application.o \
+			 ui/drivers/cocoa/cocoa_common.o \
+			 gfx/drivers_context/cocoa_gl_ctx.o
 endif
