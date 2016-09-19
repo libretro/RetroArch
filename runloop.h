@@ -166,9 +166,6 @@ typedef struct global
       char remapfile[PATH_MAX_LENGTH];
    } name;
 
-   /* A list of save types and associated paths for all content. */
-   struct string_list *savefiles;
-
    /* For --subsystem content. */
    char subsystem[PATH_MAX_LENGTH];
    struct string_list *subsystem_fullpaths;
