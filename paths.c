@@ -44,6 +44,7 @@
 #include "retroarch.h"
 #include "runloop.h"
 #include "verbosity.h"
+#include "tasks/tasks_internal.h"
 
 #define MENU_VALUE_NO_CORE 0x7d5472cbU
 
@@ -343,7 +344,7 @@ static bool path_init_subsystem(void)
          }
 
          attr.i = mem->type;
-         string_list_append(global->savefiles, path, attr);
+         string_list_append((struct string_list*)savefile_ptr_get(), path, attr);
       }
    }
 
@@ -366,36 +367,6 @@ static bool path_init_subsystem(void)
    }
 
    return true;
-}
-
-static void path_init_savefile_rtc(void)
-{
-   union string_list_elem_attr attr;
-   char savefile_name_rtc[PATH_MAX_LENGTH] = {0};
-   global_t                        *global = global_get_ptr();
-
-   attr.i = RETRO_MEMORY_SAVE_RAM;
-   string_list_append(global->savefiles, global->name.savefile, attr);
-
-   /* Infer .rtc save path from save ram path. */
-   attr.i = RETRO_MEMORY_RTC;
-   fill_pathname(savefile_name_rtc,
-         global->name.savefile,
-         file_path_str(FILE_PATH_RTC_EXTENSION),
-         sizeof(savefile_name_rtc));
-   string_list_append(global->savefiles, savefile_name_rtc, attr);
-}
-
-void path_deinit_savefile(void)
-{
-   global_t  *global         = global_get_ptr();
-
-   if (!global)
-      return;
-
-   if (global->savefiles)
-      string_list_free(global->savefiles);
-   global->savefiles = NULL;
 }
 
 void path_init_savefile(void)
@@ -426,8 +397,7 @@ static void path_init_savefile_internal(void)
 
    path_deinit_savefile();
 
-   global->savefiles = string_list_new();
-   retro_assert(global->savefiles);
+   path_init_savefile_new();
 
    if (!path_init_subsystem())
       path_init_savefile_rtc();

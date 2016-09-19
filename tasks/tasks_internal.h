@@ -150,6 +150,12 @@ bool event_load_save_files(void);
 
 bool event_save_files(void);
 
+void path_init_savefile_rtc(void);
+
+void *savefile_ptr_get(void);
+
+void path_init_savefile_new(void);
+
 RETRO_END_DECLS
 
 #endif

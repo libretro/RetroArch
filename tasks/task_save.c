@@ -27,12 +27,14 @@
 #include <errno.h>
 
 #include <compat/strl.h>
+#include <retro_assert.h>
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <rthreads/rthreads.h>
 #include <file/file_path.h>
 
 #include "../core.h"
+#include "../file_path_special.h"
 #include "../configuration.h"
 #include "../msg_hash.h"
 #include "../runloop.h"
@@ -865,4 +867,50 @@ bool event_load_save_files(void)
       content_load_ram_file(i);
 
    return true;
+}
+
+void path_init_savefile_rtc(void)
+{
+   union string_list_elem_attr attr;
+   char savefile_name_rtc[PATH_MAX_LENGTH] = {0};
+   global_t                        *global = global_get_ptr();
+
+   attr.i = RETRO_MEMORY_SAVE_RAM;
+   string_list_append(global->savefiles, global->name.savefile, attr);
+
+   /* Infer .rtc save path from save ram path. */
+   attr.i = RETRO_MEMORY_RTC;
+   fill_pathname(savefile_name_rtc,
+         global->name.savefile,
+         file_path_str(FILE_PATH_RTC_EXTENSION),
+         sizeof(savefile_name_rtc));
+   string_list_append(global->savefiles, savefile_name_rtc, attr);
+}
+
+void path_deinit_savefile(void)
+{
+   global_t  *global         = global_get_ptr();
+
+   if (!global)
+      return;
+
+   if (global->savefiles)
+      string_list_free(global->savefiles);
+   global->savefiles = NULL;
+}
+
+void path_init_savefile_new(void)
+{
+   global_t  *global         = global_get_ptr();
+
+   global->savefiles = string_list_new();
+   retro_assert(global->savefiles);
+}
+
+void *savefile_ptr_get(void)
+{
+   global_t  *global         = global_get_ptr();
+   if (!global)
+      return NULL;
+   return global->savefiles;
 }
