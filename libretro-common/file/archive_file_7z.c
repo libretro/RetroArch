@@ -58,8 +58,6 @@ static void* sevenzip_stream_new(void)
    struct sevenzip_context_t *sevenzip_context =
          (struct sevenzip_context_t*)calloc(1, sizeof(struct sevenzip_context_t));
 
-   fprintf(stderr, "7z: stream new\n");
-
    /* These are the allocation routines - currently using
     * the non-standard 7zip choices. */
    sevenzip_context->allocImp.Alloc     = SzAlloc;
@@ -78,8 +76,6 @@ static void* sevenzip_stream_new(void)
 static void sevenzip_stream_free(void *data)
 {
    struct sevenzip_context_t *sevenzip_context = (struct sevenzip_context_t*)data;
-
-   fprintf(stderr, "7z: stream free\n");
 
    if (!sevenzip_context)
       return;
@@ -279,8 +275,6 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    if (InFile_Open(&sevenzip_context->archiveStream.file, file))
       return -1;
 
-   fprintf(stderr, "7z: open archive %s\n", file);
-
    FileInStream_CreateVTable(&sevenzip_context->archiveStream);
    LookToRead_CreateVTable(&sevenzip_context->lookStream, False);
    sevenzip_context->lookStream.realStream = &sevenzip_context->archiveStream.s;
@@ -350,8 +344,6 @@ static int sevenzip_parse_file_iterate_step_internal(
                   &sevenzip_context->block_index, &sevenzip_context->output,
                   &output_size, &offset, &outSizeProcessed,
                   &sevenzip_context->allocImp, &sevenzip_context->allocTempImp);
-
-            fprintf(stderr, "extract: %d\n", res == SZ_OK);
          }
 
          if (res != SZ_OK)
@@ -388,8 +380,6 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
       return ret;
 
    userdata->extracted_file_path = filename;
-
-   fprintf(stderr, "set extracted path to %s\n", filename);
 
    if (!file_cb(filename, valid_exts, cdata, cmode,
             csize, size, checksum, userdata))
