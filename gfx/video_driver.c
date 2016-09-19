@@ -144,7 +144,7 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "3:2",           1.5f },
    { "3:4",           0.75f },
    { "4:1",           4.0f },
-   { "4:4",           1.0f },
+   { "9:16",          0.5625f },
    { "5:4",           1.25f },
    { "6:5",           1.2f },
    { "7:9",           0.7777f },
@@ -1469,7 +1469,7 @@ void video_driver_set_viewport_square_pixel(void)
 
    snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
          sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
-         "1:1 PAR (%u:%u DAR))", aspect_x, aspect_y);
+         "1:1 PAR (%u:%u DAR)", aspect_x, aspect_y);
 
    aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
 }
