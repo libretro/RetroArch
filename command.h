@@ -157,7 +157,6 @@ enum event_command
    CMD_EVENT_SHADER_DIR_DEINIT,
    /* Initializes controllers. */
    CMD_EVENT_CONTROLLERS_INIT,
-   CMD_EVENT_SAVEFILES,
    /* Initializes cheats. */
    CMD_EVENT_CHEATS_INIT,
    /* Deinitializes cheats. */

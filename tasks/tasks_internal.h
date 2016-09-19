@@ -148,6 +148,8 @@ bool dump_to_file_desperate(const void *data,
 
 bool event_load_save_files(void);
 
+bool event_save_files(void);
+
 RETRO_END_DECLS
 
 #endif

@@ -1149,7 +1149,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         command_event(CMD_EVENT_SAVEFILES, NULL);
+
+         event_save_files();
 
          command_event(CMD_EVENT_REWIND_DEINIT, NULL);
          command_event(CMD_EVENT_CHEATS_DEINIT, NULL);

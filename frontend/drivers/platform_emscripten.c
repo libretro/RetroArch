@@ -39,6 +39,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../command.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
 
 static void emscripten_mainloop(void)
@@ -57,7 +58,7 @@ static void emscripten_mainloop(void)
 
 void cmd_savefiles(void)
 {
-   command_event(CMD_EVENT_SAVEFILES, NULL);
+   event_save_files();
 }
 
 void cmd_save_state(void)

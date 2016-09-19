@@ -2419,16 +2419,6 @@ bool command_event(enum event_command cmd, void *data)
          if (!runloop_ctl(RUNLOOP_CTL_SHADER_DIR_INIT, NULL))
             return false;
          break;
-      case CMD_EVENT_SAVEFILES:
-         {
-            global_t  *global         = global_get_ptr();
-            if (!global->savefiles || !global->sram.use)
-               return false;
-
-            for (i = 0; i < global->savefiles->size; i++)
-               content_save_ram_file(i);
-         }
-         return true;
       case CMD_EVENT_BSV_MOVIE_DEINIT:
          bsv_movie_ctl(BSV_MOVIE_CTL_DEINIT, NULL);
          break;

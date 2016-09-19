@@ -837,6 +837,20 @@ bool content_save_ram_file(unsigned slot)
    return true;
 }
 
+bool event_save_files(void)
+{
+   unsigned i;
+   global_t  *global         = global_get_ptr();
+
+   if (!global || !global->savefiles || !global->sram.use)
+      return false;
+
+   for (i = 0; i < global->savefiles->size; i++)
+      content_save_ram_file(i);
+
+   return true;
+}
+
 bool event_load_save_files(void)
 {
    unsigned i;
