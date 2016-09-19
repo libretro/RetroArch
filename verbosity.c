@@ -98,9 +98,8 @@ static aslclient asl_client;
 #endif
 #else
    FILE *fp = NULL;
-#endif
-   
    (void)fp;
+#endif
 
    if (!verbosity_is_enabled())
       return;
