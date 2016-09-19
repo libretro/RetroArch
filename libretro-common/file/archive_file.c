@@ -47,6 +47,15 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
+struct file_archive_file_data
+{
+#ifdef HAVE_MMAP
+   int fd;
+#endif
+   void *data;
+   size_t size;
+};
+
 #ifdef HAVE_MMAP
 /* Closes, unmaps and frees. */
 void file_archive_free(file_archive_file_data_t *data)

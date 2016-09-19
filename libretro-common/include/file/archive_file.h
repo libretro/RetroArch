@@ -46,14 +46,7 @@ typedef struct file_archive_handle
    const struct file_archive_file_backend *backend;
 } file_archive_file_handle_t;
 
-typedef struct
-{
-#ifdef HAVE_MMAP
-   int fd;
-#endif
-   void *data;
-   size_t size;
-} file_archive_file_data_t;
+typedef struct file_archive_file_data file_archive_file_data_t;
 
 typedef struct file_archive_transfer
 {
