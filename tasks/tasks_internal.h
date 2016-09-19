@@ -146,6 +146,8 @@ bool take_screenshot(void);
 bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type);
 
+bool event_load_save_files(void);
+
 RETRO_END_DECLS
 
 #endif

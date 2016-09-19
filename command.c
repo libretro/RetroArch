@@ -1203,22 +1203,6 @@ static void command_event_init_cheats(void)
    /* TODO/FIXME - add some stuff here. */
 }
 
-static bool event_load_save_files(void)
-{
-   unsigned i;
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return false;
-   if (!global->savefiles || global->sram.load_disable)
-      return false;
-
-   for (i = 0; i < global->savefiles->size; i++)
-      content_load_ram_file(i);
-
-   return true;
-}
-
 static void command_event_load_auto_state(void)
 {
    bool ret;
