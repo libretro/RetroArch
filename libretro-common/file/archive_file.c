@@ -47,21 +47,10 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
-typedef struct
-{
-#ifdef HAVE_MMAP
-   int fd;
-#endif
-   void *data;
-   size_t size;
-} file_archive_file_data_t;
-
 #ifdef HAVE_MMAP
 /* Closes, unmaps and frees. */
-void file_archive_free(void *handle)
+void file_archive_free(file_archive_file_data_t *data)
 {
-   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
-
    if (!data)
       return;
 
@@ -72,23 +61,21 @@ void file_archive_free(void *handle)
    free(data);
 }
 
-const uint8_t *file_archive_data(void *handle)
+const uint8_t *file_archive_data(file_archive_file_data_t *data)
 {
-   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return NULL;
    return (const uint8_t*)data->data;
 }
 
-static size_t file_archive_size(void *handle)
+static size_t file_archive_size(file_archive_file_data_t *data)
 {
-   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return 0;
    return data->size;
 }
 
-static void *file_archive_open(const char *path)
+static file_archive_file_data_t* file_archive_open(const char *path)
 {
    file_archive_file_data_t *data = (file_archive_file_data_t*)calloc(1, sizeof(*data));
 
@@ -123,9 +110,8 @@ error:
 #else
 
 /* Closes, unmaps and frees. */
-void file_archive_free(void *handle)
+void file_archive_free(file_archive_file_data_t *data)
 {
-   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return;
    if(data->data)
@@ -133,23 +119,21 @@ void file_archive_free(void *handle)
    free(data);
 }
 
-const uint8_t *file_archive_data(void *handle)
+const uint8_t *file_archive_data(file_archive_file_data_t *data)
 {
-   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return NULL;
    return (const uint8_t*)data->data;
 }
 
-static size_t file_archive_size(void *handle)
+static size_t file_archive_size(file_archive_file_data_t *data)
 {
-   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return 0;
    return data->size;
 }
 
-static void *file_archive_open(const char *path)
+static file_archive_file_data_t* file_archive_open(const char *path)
 {
    ssize_t ret            = -1;
    bool read_from_file    = false;
@@ -475,7 +459,13 @@ static bool file_archive_parse_file(const char *file, const char *valid_exts,
 int file_archive_parse_file_progress(file_archive_transfer_t *state)
 {
    /* FIXME: this estimate is worse than before */
-   ptrdiff_t delta = state->directory - state->data;
+   ptrdiff_t delta = 0;
+
+   if (!state || state->archive_size == 0)
+      return 0;
+
+   delta = state->directory - state->data;
+
    return delta * 100 / state->archive_size;
 }
 

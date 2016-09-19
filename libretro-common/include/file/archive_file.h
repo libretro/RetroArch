@@ -46,9 +46,18 @@ typedef struct file_archive_handle
    const struct file_archive_file_backend *backend;
 } file_archive_file_handle_t;
 
+typedef struct
+{
+#ifdef HAVE_MMAP
+   int fd;
+#endif
+   void *data;
+   size_t size;
+} file_archive_file_data_t;
+
 typedef struct file_archive_transfer
 {
-   void *handle;
+   file_archive_file_data_t *handle;
    void *stream;
    const uint8_t *footer;
    const uint8_t *directory;
@@ -194,12 +203,12 @@ struct string_list* file_archive_file_list_new(const char *path,
 
 struct string_list* file_archive_filename_split(const char *path);
 
-const uint8_t* file_archive_data(void *handle);
+const uint8_t* file_archive_data(file_archive_file_data_t *data);
 
 int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file);
 
-void file_archive_free(void *handle);
+void file_archive_free(file_archive_file_data_t *data);
 
 const struct file_archive_file_backend* file_archive_get_zlib_file_backend(void);
 const struct file_archive_file_backend* file_archive_get_7z_file_backend(void);
