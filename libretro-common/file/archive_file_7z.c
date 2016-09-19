@@ -305,10 +305,8 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
    CrcGenerateTable();
    SzArEx_Init(&sevenzip_context->db);
 
-   SRes res = SzArEx_Open(&sevenzip_context->db, &sevenzip_context->lookStream.s,
-         &sevenzip_context->allocImp, &sevenzip_context->allocTempImp);
-
-   if (res != SZ_OK)
+   if (SzArEx_Open(&sevenzip_context->db, &sevenzip_context->lookStream.s,
+         &sevenzip_context->allocImp, &sevenzip_context->allocTempImp) != SZ_OK)
       return -1;
 
    return 0;

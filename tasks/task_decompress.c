@@ -143,14 +143,15 @@ static void task_decompress_handler_finished(retro_task_t *task,
 
 static void task_decompress_handler(retro_task_t *task)
 {
+   int ret;
    bool retdec             = false;
    decompress_state_t *dec = (decompress_state_t*)task->state;
    struct archive_extract_userdata userdata = {0};
 
-   userdata.dec = dec;
-   userdata.archive_path = dec->source_file;
+   userdata.dec            = dec;
+   userdata.archive_path   = dec->source_file;
 
-   int ret                 = file_archive_parse_file_iterate(&dec->archive,
+   ret                     = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed, &userdata);
 
@@ -187,17 +188,18 @@ static void task_decompress_handler_target_file(retro_task_t *task)
 
 static void task_decompress_handler_subdir(retro_task_t *task)
 {
+   int ret;
    bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
    struct archive_extract_userdata userdata = {0};
 
-   userdata.dec = dec;
+   userdata.dec            = dec;
 
-   int ret = file_archive_parse_file_iterate(&dec->archive,
+   ret                     = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_subdir, &userdata);
 
-   task->progress = file_archive_parse_file_progress(&dec->archive);
+   task->progress          = file_archive_parse_file_progress(&dec->archive);
 
    if (task->cancelled || ret != 0)
    {

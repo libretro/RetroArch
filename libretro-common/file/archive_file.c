@@ -252,7 +252,7 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
 
       if (!string_is_equal_noncase(userdata->extracted_file_path,
                 wanted_file))
-        return 1; // keep searching for the right file
+        return 1; /* keep searching for the right file */
 
       if (file_archive_perform_mode(new_path,
                 valid_exts, cdata, cmode, csize, size,
