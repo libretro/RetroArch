@@ -122,21 +122,24 @@ static enum patch_error bps_apply_patch(
       uint8_t *target_data, size_t *target_length)
 {
    size_t i;
-   size_t modify_source_size, modify_target_size,
-          modify_markup_size;
+   uint32_t checksum;
+   size_t modify_source_size;
+   size_t modify_target_size;
+   size_t modify_markup_size;
    struct bps_data bps = {0};
-   uint32_t modify_source_checksum = 0, modify_target_checksum = 0,
-            modify_modify_checksum = 0, checksum;
+   uint32_t modify_source_checksum = 0;
+   uint32_t modify_target_checksum = 0;
+   uint32_t modify_modify_checksum = 0;
 
    if (modify_length < 19)
       return PATCH_PATCH_TOO_SMALL;
 
-   bps.modify_data = modify_data;
-   bps.modify_length = modify_length;
-   bps.target_data = target_data;
-   bps.target_length = *target_length;
-   bps.source_data = source_data;
-   bps.source_length = source_length;
+   bps.modify_data     = modify_data;
+   bps.modify_length   = modify_length;
+   bps.target_data     = target_data;
+   bps.target_length   = *target_length;
+   bps.source_data     = source_data;
+   bps.source_length   = source_length;
    bps.modify_checksum = ~0;
    bps.target_checksum = ~0;
 
@@ -144,9 +147,9 @@ static enum patch_error bps_apply_patch(
          (bps_read(&bps) != 'S') || (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
-   modify_source_size = bps_decode(&bps);
-   modify_target_size = bps_decode(&bps);
-   modify_markup_size = bps_decode(&bps);
+   modify_source_size  = bps_decode(&bps);
+   modify_target_size  = bps_decode(&bps);
+   modify_markup_size  = bps_decode(&bps);
    for (i = 0; i < modify_markup_size; i++)
       bps_read(&bps);
 
@@ -218,8 +221,10 @@ static enum patch_error bps_apply_patch(
 
    if (bps.source_checksum != modify_source_checksum)
       return PATCH_SOURCE_CHECKSUM_INVALID;
+
    if (bps.target_checksum != modify_target_checksum)
       return PATCH_TARGET_CHECKSUM_INVALID;
+
    if (checksum != modify_modify_checksum)
       return PATCH_PATCH_CHECKSUM_INVALID;
 
@@ -288,10 +293,13 @@ static enum patch_error ups_apply_patch(
       uint8_t *targetdata, size_t *targetlength)
 {
    size_t i;
-   unsigned source_read_length, target_read_length;
-   uint32_t patch_read_checksum = 0, source_read_checksum = 0,
-            target_read_checksum = 0, patch_result_checksum;
-   struct ups_data data = {0};
+   unsigned source_read_length;
+   unsigned target_read_length;
+   uint32_t patch_result_checksum;
+   uint32_t patch_read_checksum  = 0;
+   uint32_t source_read_checksum = 0;
+   uint32_t target_read_checksum = 0;
+   struct ups_data data          = {0};
 
    data.patch_data      = patchdata;
    data.source_data     = sourcedata;
@@ -479,8 +487,10 @@ static bool apply_patch_content(uint8_t **buf,
    
    if (!path_is_valid(patch_path))
       return false;
+
    if (!filestream_read_file(patch_path, &patch_data, &patch_size))
       return false;
+
    if (patch_size < 0)
    {
       free(patch_data);
