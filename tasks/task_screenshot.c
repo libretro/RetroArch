@@ -16,6 +16,10 @@
 
 /* TODO/FIXME - turn this into actual task */
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #ifdef _XBOX1
 #include <xtl.h>
 #include <xgraphics.h>
@@ -53,9 +57,6 @@
 #include "../gfx/video_driver.h"
 #include "../gfx/video_frame.h"
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
 
 #include "tasks_internal.h"
 
