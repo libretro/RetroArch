@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <string/stdstring.h>
+
 #include "libretrodb.h"
 #include "rmsgpack_dom.h"
 
@@ -59,7 +61,7 @@ int main(int argc, char ** argv)
       printf("Could not open db file '%s': %s\n", path, strerror(-rv));
       goto error;
    }
-   else if (!strcmp(command, "list"))
+   else if (string_is_equal(command, "list"))
    {
       if ((rv = libretrodb_cursor_open(db, cur, NULL)) != 0)
       {
@@ -80,7 +82,7 @@ int main(int argc, char ** argv)
          rmsgpack_dom_value_free(&item);
       }
    }
-   else if (!strcmp(command, "find"))
+   else if (string_is_equal(command, "find"))
    {
       if (argc != 4)
       {
@@ -111,7 +113,7 @@ int main(int argc, char ** argv)
          rmsgpack_dom_value_free(&item);
       }
    }
-   else if (!strcmp(command, "create-index"))
+   else if (string_is_equal(command, "create-index"))
    {
       const char * index_name, * field_name;
 

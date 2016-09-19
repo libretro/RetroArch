@@ -1,7 +1,7 @@
 DEBUG                = 0
 LIBRETRODB_DIR      := .
-LIBRETRO_COMMON_DIR := ../libretro-common
-INCFLAGS             = -I. -I$(LIBRETRO_COMMON_DIR)/include
+LIBRETRO_COMM_DIR   := ../libretro-common
+INCFLAGS             = -I. -I$(LIBRETRO_COMM_DIR)/include
 
 TARGETS              = rmsgpack_test libretrodb_tool c_converter
 
@@ -12,7 +12,7 @@ CFLAGS               = -g -O2 -Wall -DNDEBUG
 endif
 
 LIBRETRO_COMMON_C = \
-			 $(LIBRETRO_COMMON_DIR)/streams/file_stream.c
+			 $(LIBRETRO_COMM_DIR)/streams/file_stream.c
 
 C_CONVERTER_C = \
 			 $(LIBRETRODB_DIR)/rmsgpack.c \
@@ -21,10 +21,11 @@ C_CONVERTER_C = \
 			 $(LIBRETRODB_DIR)/bintree.c \
 			 $(LIBRETRODB_DIR)/query.c \
 			 $(LIBRETRODB_DIR)/c_converter.c \
-			 $(LIBRETRO_COMMON_DIR)/hash/rhash.c \
-			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
+			 $(LIBRETRO_COMM_DIR)/hash/rhash.c \
+			 $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \
+			 $(LIBRETRO_COMM_DIR)/string/stdstring.c \
 			 $(LIBRETRO_COMMON_C) \
-			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
+			 $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
 C_CONVERTER_OBJS := $(C_CONVERTER_C:.c=.o)
 
@@ -35,9 +36,10 @@ RARCHDB_TOOL_C = \
 			 $(LIBRETRODB_DIR)/bintree.c \
 			 $(LIBRETRODB_DIR)/query.c \
 			 $(LIBRETRODB_DIR)/libretrodb.c \
-			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
+			 $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \
+			 $(LIBRETRO_COMM_DIR)/string/stdstring.c \
 			 $(LIBRETRO_COMMON_C) \
-			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
+			 $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
 RARCHDB_TOOL_OBJS := $(RARCHDB_TOOL_C:.c=.o)
 

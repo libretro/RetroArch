@@ -108,22 +108,23 @@ typedef struct video_pixel_scaler
  * could potentially make use of this. */
 static uintptr_t video_driver_display;
 static uintptr_t video_driver_window;
-static enum rarch_display_type video_driver_display_type;
-static char video_driver_title_buf[64];
-
-static uint64_t video_driver_frame_count;
-
-static void *video_driver_data       = NULL;
-static video_driver_t *current_video = NULL;
-
-/* Interface for "poking". */
-static const video_poke_interface_t *video_driver_poke = NULL;
 
 static video_driver_state_t video_driver_state;
 
+static enum rarch_display_type video_driver_display_type = RARCH_DISPLAY_NONE;
+static char video_driver_title_buf[64]                   = {0};
+
+static uint64_t video_driver_frame_count                 = 0;
+
+static void *video_driver_data                           = NULL;
+static video_driver_t *current_video                     = NULL;
+
+/* Interface for "poking". */
+static const video_poke_interface_t *video_driver_poke   = NULL;
+
 /* Used for 16-bit -> 16-bit conversions that take place before
  * being passed to video driver. */
-static video_pixel_scaler_t *video_driver_scaler_ptr = NULL;
+static video_pixel_scaler_t *video_driver_scaler_ptr     = NULL;
 
 char rotation_lut[4][32] =
 {
@@ -1711,8 +1712,7 @@ bool video_driver_is_alive(void)
 {
    if (current_video)
       return current_video->alive(video_driver_data);
-   else
-      return true;
+   return true;
 }
 
 bool video_driver_is_focused(void)
@@ -2152,9 +2152,7 @@ void video_driver_frame(const void *data, unsigned width,
             video_driver_data, data, width, height,
             video_driver_frame_count,
             pitch, video_driver_msg))
-   {
       video_driver_unset_active();
-   }
 
    video_driver_frame_count++;
 }

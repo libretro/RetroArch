@@ -375,6 +375,9 @@ static void udev_input_poll(void *data)
    struct epoll_event events[32];
    udev_input_t *udev = (udev_input_t*)data;
 
+   if (!udev)
+      return;
+
    udev->mouse_x   = udev->mouse_y   = 0;
    udev->mouse_wu  = udev->mouse_wd  = 0;
    udev->mouse_whu = udev->mouse_whd = 0;
@@ -457,9 +460,10 @@ static int16_t udev_lightgun_state(udev_input_t *udev, unsigned id)
 
 static int16_t udev_analog_pressed(const struct retro_keybind *binds, unsigned idx, unsigned id)
 {
-   unsigned id_minus = 0;
-   unsigned id_plus  = 0;
-   int16_t pressed_minus = 0, pressed_plus = 0;
+   unsigned id_minus     = 0;
+   unsigned id_plus      = 0;
+   int16_t pressed_minus = 0;
+   int16_t pressed_plus  = 0;
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
@@ -647,7 +651,7 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
 static void *udev_input_init(void)
 {
    settings_t *settings = config_get_ptr();
-   udev_input_t *udev = (udev_input_t*)calloc(1, sizeof(*udev));
+   udev_input_t *udev   = (udev_input_t*)calloc(1, sizeof(*udev));
 
    if (!udev)
       return NULL;

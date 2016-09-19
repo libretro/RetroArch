@@ -20,6 +20,10 @@
 #include <retro_stat.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_display.h"

@@ -29,9 +29,7 @@
 #include "../config.h"
 #endif
 
-#ifdef HAVE_LIBRETRODB
 #include "../database_info.h"
-#endif
 
 #include "tasks_internal.h"
 

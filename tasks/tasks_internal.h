@@ -59,14 +59,6 @@ enum nbio_status_enum
    NBIO_STATUS_TRANSFER_PARSE_FREE
 };
 
-#ifdef HAVE_NETWORKING
-typedef struct
-{
-    char *data;
-    size_t len;
-} http_transfer_data_t;
-#endif
-
 typedef struct nbio_handle
 {
    enum image_type_enum image_type;
@@ -81,6 +73,12 @@ typedef struct nbio_handle
 
 
 #ifdef HAVE_NETWORKING
+typedef struct
+{
+    char *data;
+    size_t len;
+} http_transfer_data_t;
+
 void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
@@ -147,6 +145,16 @@ bool content_push_to_history_playlist(
 bool take_screenshot(void);
 bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type);
+
+bool event_load_save_files(void);
+
+bool event_save_files(void);
+
+void path_init_savefile_rtc(void);
+
+void *savefile_ptr_get(void);
+
+void path_init_savefile_new(void);
 
 RETRO_END_DECLS
 

@@ -18,14 +18,18 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/xf86vmode.h>
 
-#ifdef HAVE_XINERAMA
-#include <X11/extensions/Xinerama.h>
-#endif
-
 #include <boolean.h>
 #include <retro_inline.h>
 #include <encodings/utf.h>
 #include <retro_miscellaneous.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
 
 #include "../input_keyboard.h"
 #include "../input_keymaps.h"

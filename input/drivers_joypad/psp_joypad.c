@@ -21,7 +21,7 @@
 #include "../../configuration.h"
 
 #if defined(SN_TARGET_PSP2) || defined(VITA)
-#define PSP_MAX_PADS 2
+#define PSP_MAX_PADS 4
 #else
 #define PSP_MAX_PADS 1
 #endif
@@ -148,7 +148,7 @@ static void psp_joypad_poll(void)
        * can be 0 or 1 to read the first controller on
        * a PSTV, but HAS to be 0 for a real VITA and 2 
        * for the 2nd controller on a PSTV */
-      unsigned p  = (player == 1) ? 2 : player;
+      unsigned p  = (player > 0) ? player+1 : player;
       int32_t ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
       pad_state[i] = 0;

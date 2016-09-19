@@ -22,7 +22,9 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
-#include "menu_input.h"
+#include "../../msg_hash.h"
+
+#include "../menu_input.h"
 
 RETRO_BEGIN_DECLS
 
@@ -92,7 +94,7 @@ void menu_entry_reset(uint32_t i);
 
 void menu_entry_get_rich_label(uint32_t i, char *s, size_t len);
 
-void menu_entry_get_value(uint32_t i, char *s, size_t len);
+void menu_entry_get_value(uint32_t i, void *data, char *s, size_t len);
 
 void menu_entry_set_value(uint32_t i, const char *s);
 

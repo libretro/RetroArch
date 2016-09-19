@@ -20,6 +20,10 @@
 #include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "input/input_defines.h"
 
 RETRO_BEGIN_DECLS
@@ -136,33 +140,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_HTTPSERVER_DESTROY
 };
 
-typedef struct rarch_dir
-{
-   /* Used on reentrancy to use a savestate dir. */
-   char savefile[PATH_MAX_LENGTH];
-   char savestate[PATH_MAX_LENGTH];
-   char systemdir[PATH_MAX_LENGTH];
-#ifdef HAVE_OVERLAY
-   char osk_overlay[PATH_MAX_LENGTH];
-#endif
-} rarch_dir_t;
-
-typedef struct rarch_path
-{
-   char gb_rom[PATH_MAX_LENGTH];
-   char bsx_rom[PATH_MAX_LENGTH];
-   char sufami_rom[2][PATH_MAX_LENGTH];
-   /* Config associated with global "default" config. */
-   char config[PATH_MAX_LENGTH];
-   char append_config[PATH_MAX_LENGTH];
-   char input_config[PATH_MAX_LENGTH];
-#ifdef HAVE_FILE_LOGGER
-   char default_log[PATH_MAX_LENGTH];
-#endif
-   /* Config file associated with per-core configs. */
-   char core_options_path[PATH_MAX_LENGTH];
-} rarch_path_t;
-
 typedef struct rarch_resolution
 {
    unsigned idx;
@@ -173,9 +150,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   rarch_path_t path;
-   rarch_dir_t  dir;
-
    struct
    {
       bool libretro_device[MAX_USERS];
@@ -183,7 +157,6 @@ typedef struct global
    
    struct
    {
-      char base[PATH_MAX_LENGTH];
       char savefile[PATH_MAX_LENGTH];
       char savestate[PATH_MAX_LENGTH];
       char cheatfile[PATH_MAX_LENGTH];
@@ -224,6 +197,7 @@ typedef struct global
       bool is_client;
       bool is_spectate;
       unsigned sync_frames;
+      unsigned check_frames;
       unsigned port;
    } netplay;
 #endif

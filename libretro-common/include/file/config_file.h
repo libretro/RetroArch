@@ -158,6 +158,8 @@ bool config_file_write(config_file_t *conf, const char *path);
  * Does not close the file. */
 void config_file_dump(config_file_t *conf, FILE *file);
 
+bool config_file_exists(const char *path);
+
 RETRO_END_DECLS
 
 #endif

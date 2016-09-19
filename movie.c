@@ -31,6 +31,9 @@
 #include "msg_hash.h"
 #include "verbosity.h"
 
+#include "command.h"
+#include "file_path_special.h"
+
 struct bsv_movie
 {
    FILE *file;
@@ -457,4 +460,95 @@ bool bsv_movie_init_handle(const char *path,
    if (!bsv_movie_state.movie)
       return false;
    return true;
+}
+
+/* Checks if movie is being played back. */
+static bool runloop_check_movie_playback(void)
+{
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
+      return false;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
+
+   command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
+
+   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
+   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
+
+   return true;
+}
+
+/* Checks if movie is being recorded. */
+static bool runloop_check_movie_record(void)
+{
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return false;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
+
+   command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
+
+   return true;
+}
+
+static bool runloop_check_movie_init(void)
+{
+   char msg[128]              = {0};
+   char path[PATH_MAX_LENGTH] = {0};
+   settings_t *settings       = config_get_ptr();
+
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return false;
+
+   settings->rewind_granularity = 1;
+
+   if (settings->state_slot > 0)
+      snprintf(path, sizeof(path), "%s%d",
+            bsv_movie_get_path(), settings->state_slot);
+   else
+      strlcpy(path, bsv_movie_get_path(), sizeof(path));
+
+   strlcat(path,
+         file_path_str(FILE_PATH_BSV_EXTENSION),
+         sizeof(path));
+
+   snprintf(msg, sizeof(msg), "%s \"%s\".",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+         path);
+
+   bsv_movie_init_handle(path, RARCH_MOVIE_RECORD);
+
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return false;
+
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+   {
+      runloop_msg_queue_push(msg, 2, 180, true);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            path);
+   }
+   else
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
+            2, 180, true);
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+   }
+
+   return true;
+}
+
+bool bsv_movie_check(void)
+{
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
+      return runloop_check_movie_playback();
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return runloop_check_movie_init();
+   return runloop_check_movie_record();
 }

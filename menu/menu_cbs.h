@@ -19,6 +19,13 @@
 #include <stdlib.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+RETRO_BEGIN_DECLS
 
 enum
 {
@@ -204,5 +211,7 @@ void menu_cbs_init(void *data,
       unsigned type, size_t idx);
 
 int menu_cbs_exit(void);
+
+RETRO_END_DECLS
 
 #endif

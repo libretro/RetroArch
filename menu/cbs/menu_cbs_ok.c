@@ -31,7 +31,8 @@
 #include "../menu_setting.h"
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
-#include "../widgets/menu_popup.h"
+#include "../widgets/menu_dialog.h"
+#include "../widgets/menu_input_dialog.h"
 #include "../menu_content.h"
 
 #include "../../core.h"
@@ -42,6 +43,7 @@
 #include "../../managers/cheat_manager.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
+#include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
@@ -245,7 +247,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_HELP:
          info_label             = label;
-         menu_popup_push_pending(true, (enum menu_popup_type)type);
+         menu_dialog_push_pending(true, (enum menu_dialog_type)type);
          dl_type                = DISPLAYLIST_HELP;
          break;
       case ACTION_OK_DL_RPL_ENTRY:
@@ -1446,7 +1448,7 @@ static int action_ok_shader_pass_load(const char *path,
 
 static int  generic_action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      enum msg_hash_enums id, enum menu_popup_type id2)
+      enum msg_hash_enums id, enum menu_dialog_type id2)
 {
    const char               *lbl  = msg_hash_to_str(id);
 
@@ -1461,7 +1463,21 @@ static int action_ok_cheevos(const char *path,
 
    return generic_action_ok_help(path, label, new_id, idx, entry_idx,
          MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
-         MENU_POPUP_HELP_CHEEVOS_DESCRIPTION);
+         MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION);
+}
+
+static void menu_input_st_cheat_cb(void *userdata, const char *str)
+{
+   (void)userdata;
+
+   if (str && *str)
+   {
+      unsigned cheat_index = menu_input_dialog_get_kb_type()
+         - MENU_SETTINGS_CHEAT_BEGIN;
+      cheat_manager_set_code(cheat_index, str);
+   }
+
+   menu_input_dialog_end();
 }
 
 static int action_ok_cheat(const char *path,
@@ -1475,7 +1491,7 @@ static int action_ok_cheat(const char *path,
    line.idx           = idx;
    line.cb            = menu_input_st_cheat_cb;
 
-   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+   if (!menu_input_dialog_start(&line))
       return -1;
    return 0;
 }
@@ -1485,11 +1501,9 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
 {
    if (str && *str)
    {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
-      bool                         ret = false;
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+      rarch_setting_t *setting = NULL;
+      bool                 ret = false;
+      const char        *label = menu_input_dialog_get_label_buffer();
 
       if (!string_is_empty(label))
          setting = menu_setting_find(label);
@@ -1512,7 +1526,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
                1, 100, true);
    }
 
-   menu_input_key_end_line();
+   menu_input_dialog_end();
 }
 
 static int action_ok_shader_preset_save_as(const char *path,
@@ -1526,7 +1540,7 @@ static int action_ok_shader_preset_save_as(const char *path,
    line.idx           = idx;
    line.cb            = menu_input_st_string_cb_save_preset;
 
-   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+   if (!menu_input_dialog_start(&line))
       return -1;
    return 0;
 }
@@ -1576,8 +1590,7 @@ static int generic_action_ok_shader_preset_save(const char *path,
          break;
       case ACTION_OK_SHADER_PRESET_SAVE_GAME:
          {
-            global_t *global      = global_get_ptr();
-            const char *game_name = path_basename(global->name.base);
+            const char *game_name = path_basename(path_get_basename());
             fill_pathname_join(file, directory, game_name, sizeof(file));
          }
          break;
@@ -1616,10 +1629,8 @@ static void menu_input_st_string_cb_cheat_file_save_as(
 {
    if (str && *str)
    {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+      rarch_setting_t *setting = NULL;
+      const char        *label = menu_input_dialog_get_label_buffer();
 
       if (!string_is_empty(label))
          setting = menu_setting_find(label);
@@ -1633,7 +1644,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
          cheat_manager_save(str);
    }
 
-   menu_input_key_end_line();
+   menu_input_dialog_end();
 }
 
 static int action_ok_cheat_file_save_as(const char *path,
@@ -1647,7 +1658,7 @@ static int action_ok_cheat_file_save_as(const char *path,
    line.idx           = idx;
    line.cb            = menu_input_st_string_cb_cheat_file_save_as;
 
-   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+   if (!menu_input_dialog_start(&line))
       return -1;
    return 0;
 }
@@ -1687,8 +1698,7 @@ static int generic_action_ok_remap_file_save(const char *path,
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
          {
-            global_t *global      = global_get_ptr();
-            const char *game_name = path_basename(global->name.base);
+            const char *game_name = path_basename(path_get_basename());
             fill_pathname_join(file, core_name, game_name, sizeof(file));
          }
          break;
@@ -2486,14 +2496,10 @@ static int action_ok_option_create(const char *path,
 
    if(config_file_write(conf, game_path))
    {
-      global_t                 *global  = global_get_ptr();
-
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
             1, 100, true);
-
-      strlcpy(global->path.core_options_path,
-            game_path, sizeof(global->path.core_options_path));
+      path_set_core_options(game_path);
    }
    config_file_free(conf);
 
@@ -3150,35 +3156,35 @@ static int action_ok_help_audio_video_troubleshooting(const char *path,
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
          MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
-         MENU_POPUP_HELP_AUDIO_VIDEO_TROUBLESHOOTING);
+         MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING);
 }
 
 static int action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP, MENU_POPUP_WELCOME);
+         MENU_ENUM_LABEL_HELP, MENU_DIALOG_WELCOME);
 }
 
 static int action_ok_help_controls(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_CONTROLS, MENU_POPUP_HELP_CONTROLS);
+         MENU_ENUM_LABEL_HELP_CONTROLS, MENU_DIALOG_HELP_CONTROLS);
 }
 
 static int action_ok_help_what_is_a_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE, MENU_POPUP_HELP_WHAT_IS_A_CORE);
+         MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE, MENU_DIALOG_HELP_WHAT_IS_A_CORE);
 }
 
 static int action_ok_help_scanning_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_SCANNING_CONTENT, MENU_POPUP_HELP_SCANNING_CONTENT);
+         MENU_ENUM_LABEL_HELP_SCANNING_CONTENT, MENU_DIALOG_HELP_SCANNING_CONTENT);
 }
 
 static int action_ok_help_change_virtual_gamepad(const char *path,
@@ -3186,14 +3192,14 @@ static int action_ok_help_change_virtual_gamepad(const char *path,
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
          MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,
-         MENU_POPUP_HELP_CHANGE_VIRTUAL_GAMEPAD);
+         MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD);
 }
 
 static int action_ok_help_load_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_ENUM_LABEL_HELP_LOADING_CONTENT, MENU_POPUP_HELP_LOADING_CONTENT);
+         MENU_ENUM_LABEL_HELP_LOADING_CONTENT, MENU_DIALOG_HELP_LOADING_CONTENT);
 }
 
 static int action_ok_video_resolution(const char *path,

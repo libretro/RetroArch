@@ -187,14 +187,16 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                   default:
                      {
                         int i;
-                        // +0/-0   =>   Left Stick Horizontal       => 48
-                        // +1/-1   =>   Left Stick Vertical         => 49
-                        // +2/-2   =>   Right Stick Horizontal      => 51
-                        // +3/-3   =>   Right Stick Vertical        => 52
-                        // +4/-4   =>   Left Trigger (if exists)    => 50
-                        // +5/-5   =>   Right Trigger (if exists)   => 53
                         static const uint32_t axis_use_ids[6] = 
                         { 48, 49, 51, 52, 50, 53 };
+
+                        /* +0/-0   =>   Left Stick Horizontal       => 48
+                         * +1/-1   =>   Left Stick Vertical         => 49
+                         * +2/-2   =>   Right Stick Horizontal      => 51
+                         * +3/-3   =>   Right Stick Vertical        => 52
+                         * +4/-4   =>   Left Trigger (if exists)    => 50
+                         * +5/-5   =>   Right Trigger (if exists)   => 53
+                         */
 
                         for (i = 0; i < 6; i ++)
                         {
@@ -262,13 +264,10 @@ static int32_t iohidmanager_hid_device_get_int_property(
    int32_t value;
    CFNumberRef ref = (CFNumberRef)IOHIDDeviceGetProperty(device, key);
 
-   if (ref)
+   if (ref && (CFGetTypeID(ref) == CFNumberGetTypeID()))
    {
-      if (CFGetTypeID(ref) == CFNumberGetTypeID())
-      {
-         CFNumberGetValue((CFNumberRef)ref, kCFNumberIntType, &value);
-         return value;
-      }
+      CFNumberGetValue((CFNumberRef)ref, kCFNumberIntType, &value);
+      return value;
    }
 
    return 0;
@@ -410,15 +409,13 @@ static int iohidmanager_hid_manager_init(iohidmanager_hid_t *hid)
 
    hid->ptr = IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone);
 
-   if (hid->ptr)
-   {
-      IOHIDManagerSetDeviceMatching(hid->ptr, NULL);
-      IOHIDManagerScheduleWithRunLoop(hid->ptr, CFRunLoopGetCurrent(),
-            kCFRunLoopDefaultMode);
-      return 0;
-   }
+   if (!hid->ptr)
+      return -1;
 
-   return -1;
+   IOHIDManagerSetDeviceMatching(hid->ptr, NULL);
+   IOHIDManagerScheduleWithRunLoop(hid->ptr, CFRunLoopGetCurrent(),
+         kCFRunLoopDefaultMode);
+   return 0;
 }
 
 
@@ -469,6 +466,7 @@ static void *iohidmanager_hid_init(void)
    if (!hid_apple)
       goto error;
    hid_apple->slots = pad_connection_init(MAX_USERS);
+
    if (!hid_apple->slots)
       goto error;
    if (iohidmanager_hid_manager_init(hid_apple) == -1)

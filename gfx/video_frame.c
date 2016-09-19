@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <gfx/scaler/scaler.h>
+
 #include <libretro.h>
 
 #include "../performance_counters.h"
@@ -21,12 +23,14 @@
 #include "video_frame.h"
 
 void video_frame_convert_rgb16_to_rgb32(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output,
       const void *input,
       int width, int height,
       int in_pitch)
 {
+   struct scaler_ctx *scaler = (struct scaler_ctx*)data;
+
    if (width != scaler->in_width || height != scaler->in_height)
    {
       scaler->in_width    = width;
@@ -46,7 +50,7 @@ void video_frame_convert_rgb16_to_rgb32(
 }
 
 void video_frame_scale(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output,
       const void *input,
       enum scaler_pix_fmt format,
@@ -57,6 +61,8 @@ void video_frame_scale(
       unsigned height,
       unsigned pitch)
 {
+   struct scaler_ctx *scaler = (struct scaler_ctx*)data;
+
    if (
             width  != (unsigned)scaler->in_width
          || height != (unsigned)scaler->in_height
@@ -80,7 +86,7 @@ void video_frame_scale(
 }
 
 void video_frame_record_scale(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output,
       const void *input,
       unsigned scaler_width,
@@ -91,6 +97,8 @@ void video_frame_record_scale(
       unsigned pitch,
       bool bilinear)
 {
+   struct scaler_ctx *scaler = (struct scaler_ctx*)data;
+
    if (
             width  != (unsigned)scaler->in_width
          || height != (unsigned)scaler->in_height
@@ -114,10 +122,12 @@ void video_frame_record_scale(
 }
 
 void video_frame_convert_argb8888_to_abgr8888(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output, const void *input,
       int width, int height, int in_pitch)
 {
+   struct scaler_ctx *scaler = (struct scaler_ctx*)data;
+
    if (width != scaler->in_width || height != scaler->in_height)
    {
       scaler->in_width    = width;
@@ -136,11 +146,13 @@ void video_frame_convert_argb8888_to_abgr8888(
 }
 
 void video_frame_convert_to_bgr24(
-      struct scaler_ctx *scaler,
+      void *data,
       void *output, const void *input,
       int width, int height, int in_pitch,
       bool bgr24)
 {
+   struct scaler_ctx *scaler = (struct scaler_ctx*)data;
+
    scaler->in_width    = width;
    scaler->in_height   = height;
    scaler->out_width   = width;
@@ -179,11 +191,12 @@ void video_frame_convert_rgba_to_bgr(
 }
 
 bool video_pixel_frame_scale(
-      struct scaler_ctx *scaler,
+      void *scaler_data,
       void *output, const void *data,
       unsigned width, unsigned height,
       size_t pitch)
 {
+   struct scaler_ctx *scaler = (struct scaler_ctx*)scaler_data;
    static struct retro_perf_counter video_frame_conv = {0};
 
    performance_counter_init(&video_frame_conv, "video_frame_conv");

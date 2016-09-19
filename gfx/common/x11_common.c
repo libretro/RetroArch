@@ -34,6 +34,15 @@
 #include "../../verbosity.h"
 #include "../../runloop.h"
 
+#ifdef HAVE_DBUS
+#include <dbus/dbus.h>
+static DBusConnection* dbus_connection      = NULL;
+static unsigned int dbus_screensaver_cookie = 0;
+#endif
+
+static bool xdg_screensaver_available = true;
+static bool xdg_screensaver_running = false;
+
 Colormap g_x11_cmap;
 Window   g_x11_win;
 Display *g_x11_dpy;
@@ -55,6 +64,133 @@ unsigned g_x11_screen;
 #define MOVERESIZE_GRAVITY_CENTER 5
 #define MOVERESIZE_X_SHIFT 8
 #define MOVERESIZE_Y_SHIFT 9
+
+#ifdef HAVE_DBUS
+static void dbus_ensure_connection(void)
+{
+    DBusError err;
+    int ret;
+    
+    dbus_error_init(&err);
+
+    dbus_connection = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
+
+    if (dbus_error_is_set(&err))
+    {
+        RARCH_LOG("[DBus]: Failed to get DBus connection. Screensaver will not be suspended via DBus.\n");
+        dbus_error_free(&err);
+    }
+
+    if (dbus_connection)
+        dbus_connection_set_exit_on_disconnect(dbus_connection, true);
+}
+
+static void dbus_close_connection(void)
+{
+   if (!dbus_connection)
+      return;
+
+   dbus_connection_close(dbus_connection);
+   dbus_connection_unref(dbus_connection);
+   dbus_connection = NULL;
+}
+
+static bool dbus_screensaver_inhibit(void)
+{
+   const char *app    = "RetroArch";
+   const char *reason = "Playing a game";
+   DBusMessage   *msg = NULL;
+   DBusMessage *reply = NULL;
+   bool ret           = false;
+
+   if (!dbus_connection)
+      return false; /* DBus connection was not obtained */
+
+   if (dbus_screensaver_cookie > 0)
+      return true; /* Already inhibited */
+
+   msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
+         "/org/freedesktop/ScreenSaver",
+         "org.freedesktop.ScreenSaver",
+         "Inhibit");
+
+   if (!msg)
+      return false;
+
+   if (!dbus_message_append_args(msg,
+            DBUS_TYPE_STRING, &app,
+            DBUS_TYPE_STRING, &reason,
+            DBUS_TYPE_INVALID))
+   {
+      dbus_message_unref(msg);
+      return false;
+   }
+
+   reply = dbus_connection_send_with_reply_and_block(dbus_connection,
+         msg, 300, NULL);
+
+   if (reply != NULL)
+   {
+      if (!dbus_message_get_args(reply, NULL,
+               DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
+               DBUS_TYPE_INVALID))
+         dbus_screensaver_cookie = 0;
+      else
+         ret = true;
+
+      dbus_message_unref(reply);
+   }
+
+   dbus_message_unref(msg);
+
+   if (dbus_screensaver_cookie == 0)
+   {
+      RARCH_ERR("[DBus]: Failed to suspend screensaver via DBus.\n");
+   }
+   else
+   {
+      RARCH_LOG("[DBus]: Suspended screensaver via DBus.\n");
+   }
+
+   return ret;
+}
+
+static void dbus_screensaver_uninhibit(void)
+{
+   DBusMessage *msg = NULL;
+
+   if (!dbus_connection)
+      return;
+
+   if (dbus_screensaver_cookie == 0)
+      return;
+
+   msg = dbus_message_new_method_call("org.freedesktop.ScreenSaver",
+         "/org/freedesktop/ScreenSaver",
+         "org.freedesktop.ScreenSaver",
+         "UnInhibit");
+   if (!msg)
+       return;
+
+   dbus_message_append_args(msg,
+         DBUS_TYPE_UINT32, &dbus_screensaver_cookie,
+         DBUS_TYPE_INVALID);
+
+   if (dbus_connection_send(dbus_connection, msg, NULL))
+      dbus_connection_flush(dbus_connection);
+   dbus_message_unref(msg);
+
+   dbus_screensaver_cookie = 0;
+}
+
+/* Returns false when fallback should be attempted */
+bool x11_suspend_screensaver_dbus(bool enable)
+{
+   if (enable) return dbus_screensaver_inhibit();
+   dbus_screensaver_uninhibit();
+   return false;
+}
+#endif
 
 static void x11_hide_mouse(Display *dpy, Window win)
 {
@@ -94,13 +230,13 @@ void x11_windowed_fullscreen(Display *dpy, Window win)
    XA_INIT(_NET_WM_STATE);
    XA_INIT(_NET_WM_STATE_FULLSCREEN);
 
-   xev.xclient.type = ClientMessage;
-   xev.xclient.send_event = True;
+   xev.xclient.type         = ClientMessage;
+   xev.xclient.send_event   = True;
    xev.xclient.message_type = XA_NET_WM_STATE;
-   xev.xclient.window = win;
-   xev.xclient.format = 32;
-   xev.xclient.data.l[0] = _NET_WM_STATE_ADD;
-   xev.xclient.data.l[1] = XA_NET_WM_STATE_FULLSCREEN;
+   xev.xclient.window       = win;
+   xev.xclient.format       = 32;
+   xev.xclient.data.l[0]    = _NET_WM_STATE_ADD;
+   xev.xclient.data.l[1]    = XA_NET_WM_STATE_FULLSCREEN;
 
    XSendEvent(dpy, DefaultRootWindow(dpy), False,
          SubstructureRedirectMask | SubstructureNotifyMask,
@@ -145,33 +281,81 @@ void x11_set_window_attr(Display *dpy, Window win)
    x11_set_window_class(dpy, win);
 }
 
-void x11_suspend_screensaver(Window wnd, bool enable)
+static void xdg_screensaver_inhibit(Window wnd)
 {
    int ret;
-   char cmd[64] = {0};
-   static bool screensaver_na = false;
+   char               cmd[64] = {0};
 
-   if (!enable)
-       return;
-
-   if (screensaver_na)
+   if (!xdg_screensaver_available)
       return;
 
-   RARCH_LOG("Suspending screensaver (X11).\n");
+   if (xdg_screensaver_running)
+      return;
+
+   RARCH_LOG("Suspending screensaver (X11, xdg-screensaver).\n");
 
    snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend 0x%x", (int)wnd);
 
    ret = system(cmd);
    if (ret == -1)
    {
-      screensaver_na = true;
+      xdg_screensaver_available = false;
       RARCH_WARN("Failed to launch xdg-screensaver.\n");
    }
    else if (WEXITSTATUS(ret))
    {
-      screensaver_na = true;
+      xdg_screensaver_available = false;
       RARCH_WARN("Could not suspend screen saver.\n");
    }
+   else
+   {
+      xdg_screensaver_running = true;
+   }
+}
+
+static void xdg_screensaver_uninhibit(Window wnd)
+{
+   int ret;
+   char               cmd[64] = {0};
+
+   if (!xdg_screensaver_available)
+      return;
+
+   if (!xdg_screensaver_running)
+      return;
+
+   RARCH_LOG("Resuming screensaver (X11, xdg-screensaver).\n");
+
+   snprintf(cmd, sizeof(cmd), "xdg-screensaver resume 0x%x", (int)wnd);
+
+   ret = system(cmd);
+
+   if (ret == -1)
+   {
+      xdg_screensaver_available = false;
+      RARCH_WARN("Failed to launch xdg-screensaver.\n");
+   }
+   else if (WEXITSTATUS(ret))
+   {
+      xdg_screensaver_available = false;
+      RARCH_WARN("Could not suspend screen saver.\n");
+   }
+}
+
+void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
+{
+   if (enable)
+      xdg_screensaver_inhibit(wnd);
+   xdg_screensaver_uninhibit(wnd);
+}
+
+void x11_suspend_screensaver(Window wnd, bool enable)
+{
+#ifdef HAVE_DBUS
+    if (x11_suspend_screensaver_dbus(enable))
+       return;
+#endif
+    x11_suspend_screensaver_xdg_screensaver(wnd, enable);
 }
 
 static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
@@ -293,11 +477,11 @@ bool x11_get_xinerama_coord(Display *dpy, int screen,
 unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
       int w, int h)
 {
-   int i, num_screens = 0;
-   unsigned monitor   = 0;
-   int largest_area   = 0;
-
+   int       i, num_screens = 0;
+   unsigned       monitor   = 0;
+   int       largest_area   = 0;
    XineramaScreenInfo *info = x11_query_screens(dpy, &num_screens);
+
    RARCH_LOG("[X11]: Xinerama screens: %d.\n", num_screens);
 
    for (i = 0; i < num_screens; i++)
@@ -308,8 +492,8 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
       int max_ty = MAX(y, info[i].y_org);
       int min_by = MIN(y + h, info[i].y_org + info[i].height);
 
-      int len_x = min_rx - max_lx;
-      int len_y = min_by - max_ty;
+      int len_x  = min_rx - max_lx;
+      int len_y  = min_by - max_ty;
 
       /* The whole window is outside the screen. */
       if (len_x < 0 || len_y < 0)
@@ -374,13 +558,12 @@ void x11_destroy_input_context(XIM *xim, XIC *xic)
 bool x11_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
-   int pixels_x, pixels_y, physical_width, physical_height;
    unsigned     screen_no  = 0;
    Display           *dpy  = (Display*)XOpenDisplay(NULL);
-   pixels_x                = DisplayWidth(dpy, screen_no);
-   pixels_y                = DisplayHeight(dpy, screen_no);
-   physical_width          = DisplayWidthMM(dpy, screen_no);
-   physical_height         = DisplayHeightMM(dpy, screen_no);
+   int pixels_x            = DisplayWidth(dpy, screen_no);
+   int pixels_y            = DisplayHeight(dpy, screen_no);
+   int physical_width      = DisplayWidthMM(dpy, screen_no);
+   int physical_height     = DisplayHeightMM(dpy, screen_no);
 
    (void)pixels_y;
 
@@ -533,6 +716,11 @@ bool x11_connect(void)
          return false;
    }
 
+#ifdef HAVE_DBUS
+   dbus_ensure_connection();
+#endif
+
+
    return true;
 }
 
@@ -573,6 +761,11 @@ void x11_window_destroy(bool fullscreen)
    if (!fullscreen)
       XDestroyWindow(g_x11_dpy, g_x11_win);
    g_x11_win = None;
+
+#ifdef HAVE_DBUS
+    dbus_screensaver_uninhibit();
+    dbus_close_connection();
+#endif
 }
 
 void x11_colormap_destroy(void)

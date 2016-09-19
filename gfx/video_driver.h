@@ -24,6 +24,14 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef HAVE_OVERLAY
+#include "../input/input_overlay.h"
+#endif
+
 #include "font_driver.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"

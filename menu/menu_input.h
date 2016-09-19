@@ -76,24 +76,28 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_IS_POINTER_DRAGGED,
    MENU_INPUT_CTL_SET_POINTER_DRAGGED,
    MENU_INPUT_CTL_UNSET_POINTER_DRAGGED,
-   MENU_INPUT_CTL_KEYBOARD_DISPLAY,
-   MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,
-   MENU_INPUT_CTL_KEYBOARD_BUFF_PTR,
-   MENU_INPUT_CTL_KEYBOARD_LABEL,
-   MENU_INPUT_CTL_SET_KEYBOARD_LABEL,
-   MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL,
-   MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING,
-   MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING,
-   MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING,
-   MENU_INPUT_CTL_SEARCH_START,
-   MENU_INPUT_CTL_DEINIT,
-   MENU_INPUT_CTL_BIND_NONE,
-   MENU_INPUT_CTL_BIND_SINGLE,
-   MENU_INPUT_CTL_BIND_ALL,
-   MENU_INPUT_CTL_BIND_ITERATE,
-   MENU_INPUT_CTL_BIND_SET_MIN_MAX,
-   MENU_INPUT_CTL_START_LINE
+   MENU_INPUT_CTL_DEINIT
 };
+
+typedef struct menu_input
+{
+   struct
+   {
+      unsigned ptr;
+   } mouse;
+
+   struct
+   {
+      int16_t x;
+      int16_t y;
+      int16_t dx;
+      int16_t dy;
+      float accel;
+      bool pressed[2];
+      bool back;
+      unsigned ptr;
+   } pointer;
+} menu_input_t;
 
 typedef struct menu_input_ctx_hitbox
 {
@@ -103,34 +107,6 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
-typedef struct menu_input_ctx_bind
-{
-   char *s;
-   size_t len;
-} menu_input_ctx_bind_t;
-
-typedef struct menu_input_ctx_line
-{
-   const char *label;
-   const char *label_setting;
-   unsigned type;
-   unsigned idx;
-   input_keyboard_line_complete_t cb;
-} menu_input_ctx_line_t;
-
-typedef struct menu_input_ctx_bind_limits
-{
-   unsigned min;
-   unsigned max;
-} menu_input_ctx_bind_limits_t;
-
-/* Keyboard input callbacks */
-void menu_input_st_uint_cb  (void *userdata, const char *str);
-void menu_input_st_hex_cb   (void *userdata, const char *str);
-void menu_input_st_cheat_cb (void *userdata, const char *str);
-
-unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_state);
-
 void menu_input_post_iterate(int *ret, unsigned action);
 
 int16_t menu_input_pointer_state(enum menu_input_pointer_state state);
@@ -139,9 +115,9 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
 bool menu_input_mouse_check_vector_inside_hitbox(menu_input_ctx_hitbox_t *hitbox);
 
-void menu_input_key_end_line(void);
-
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
+
+menu_input_t *menu_input_get_ptr(void);
 
 RETRO_END_DECLS
 

@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (encodings_utf.c).
+ * The following license statement only applies to this file (encoding_utf.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -21,6 +21,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -40,7 +41,7 @@ static INLINE unsigned leading_ones(uint8_t c)
    return ones;
 }
 
-/* Simple implementation. Assumes the sequence is 
+/* Simple implementation. Assumes the sequence is
  * properly synchronized and terminated. */
 
 size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
@@ -119,14 +120,14 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
          if (value < (((uint32_t)1) << (numAdds * 5 + 6)))
             break;
       if (out)
-         out[out_pos] = (char)(kUtf8Limits[numAdds - 1] 
+         out[out_pos] = (char)(kUtf8Limits[numAdds - 1]
                + (value >> (6 * numAdds)));
       out_pos++;
       do
       {
          numAdds--;
          if (out)
-            out[out_pos] = (char)(0x80 
+            out[out_pos] = (char)(0x80
                   + ((value >> (6 * numAdds)) & 0x3F));
          out_pos++;
       }while (numAdds != 0);
@@ -136,13 +137,13 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
    return false;
 }
 
-/* Acts mostly like strlcpy. 
+/* Acts mostly like strlcpy.
  *
- * Copies the given number of UTF-8 characters, 
+ * Copies the given number of UTF-8 characters,
  * but at most d_len bytes.
  *
- * Always NULL terminates. 
- * Does not copy half a character. 
+ * Always NULL terminates.
+ * Does not copy half a character.
  *
  * Returns number of bytes. 's' is assumed valid UTF-8.
  * Use only if 'chars' is considerably less than 'd_len'. */
@@ -205,20 +206,55 @@ uint32_t utf8_walk(const char **string)
 {
    uint8_t first = utf8_walkbyte(string);
    uint32_t ret;
-   
+
    if (first<128)
       return first;
-   
+
    ret = 0;
    ret = (ret<<6) | (utf8_walkbyte(string)    & 0x3F);
    if (first >= 0xE0)
       ret = (ret<<6) | (utf8_walkbyte(string) & 0x3F);
    if (first >= 0xF0)
       ret = (ret<<6) | (utf8_walkbyte(string) & 0x3F);
-   
+
    if (first >= 0xF0)
       return ret | (first&31)<<18;
    if (first >= 0xE0)
       return ret | (first&15)<<12;
    return ret | (first&7)<<6;
+}
+
+static bool utf16_to_char(uint8_t **utf_data,
+      size_t *dest_len, const uint16_t *in)
+{
+   unsigned len    = 0;
+
+   while (in[len] != '\0')
+      len++;
+
+   utf16_conv_utf8(NULL, dest_len, in, len);
+   *dest_len  += 1;
+   *utf_data   = (uint8_t*)malloc(*dest_len);
+   if (*utf_data == 0)
+      return false;
+
+   return utf16_conv_utf8(*utf_data, dest_len, in, len);
+}
+
+bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
+{
+   size_t     dest_len  = 0;
+   uint8_t *utf16_data  = NULL;
+   bool            ret  = utf16_to_char(&utf16_data, &dest_len, in);
+
+   if (ret)
+   {
+      utf16_data[dest_len] = 0;
+      strlcpy(s, (const char*)utf16_data, len);
+   }
+
+   free(utf16_data);
+   utf16_data = NULL;
+
+   return ret;
 }

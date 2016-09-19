@@ -33,23 +33,26 @@
 #include "../../config.h"
 #endif
 
+#ifndef HAVE_DYNAMIC
+#include "../../frontend/frontend_driver.h"
+#endif
+
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu_entry.h"
 #include "../menu_animation.h"
-#include "../menu_display.h"
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 
+#include "../widgets/menu_entry.h"
+#include "../widgets/menu_list.h"
+#include "../widgets/menu_input_dialog.h"
+
 #include "../menu_cbs.h"
 
-#include "../../frontend/frontend_driver.h"
-#include "../../core.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../file_path_special.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -92,6 +95,7 @@ enum
    XMB_TEXTURE_RESUME,
    XMB_TEXTURE_SAVESTATE,
    XMB_TEXTURE_LOADSTATE,
+   XMB_TEXTURE_UNDO,
    XMB_TEXTURE_CORE_INFO,
    XMB_TEXTURE_CORE_OPTIONS,
    XMB_TEXTURE_INPUT_REMAPPING_OPTIONS,
@@ -750,6 +754,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
          settings->directory.thumbnails,
          xmb->title_name,
          sizeof(xmb->thumbnail_file_path));
+
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
@@ -757,8 +762,9 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    if (tmp)
    {
-      fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
-            tmp, sizeof(xmb->thumbnail_file_path));
+      char tmp_new[PATH_MAX_LENGTH];
+      fill_pathname_join(tmp_new, xmb->thumbnail_file_path, tmp, sizeof(tmp_new));
+      strlcpy(xmb->thumbnail_file_path, tmp_new, sizeof(xmb->thumbnail_file_path));
       free(tmp);
    }
 
@@ -1623,6 +1629,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
       case MENU_ENUM_LABEL_LOAD_STATE:
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
+      case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
+      case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
+         return xmb->textures.list[XMB_TEXTURE_UNDO];
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          return xmb->textures.list[XMB_TEXTURE_SCREENSHOT];
       case MENU_ENUM_LABEL_DELETE_ENTRY:
@@ -1758,18 +1767,19 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
    for (; i < end; i++)
    {
-      menu_entry_t entry          = {{0}};
       float icon_x, icon_y;
       menu_animation_ctx_ticker_t ticker;
-      char ticker_str[PATH_MAX_LENGTH] = {0};
-      char name[PATH_MAX_LENGTH]  = {0};
-      char value[PATH_MAX_LENGTH] = {0};
-      const float half_size       = xmb->icon.size / 2.0f;
-      uintptr_t texture_switch    = 0;
-      xmb_node_t *   node         = (xmb_node_t*)
+      menu_entry_t entry                = {{0}};
+      char ticker_str[PATH_MAX_LENGTH]  = {0};
+      char name[PATH_MAX_LENGTH]        = {0};
+      char value[PATH_MAX_LENGTH]       = {0};
+      char entry_value[PATH_MAX_LENGTH] = {0};
+      const float half_size             = xmb->icon.size / 2.0f;
+      uintptr_t texture_switch          = 0;
+      xmb_node_t *   node               = (xmb_node_t*)
          menu_entries_get_userdata_at_offset(list, i);
-      bool do_draw_text           = false;
-      unsigned ticker_limit       = 35;
+      bool do_draw_text                 = false;
+      unsigned ticker_limit             = 35;
 
       if (!node)
          continue;
@@ -1795,17 +1805,18 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          fill_short_pathname_representation(entry.path, entry.path,
                sizeof(entry.path));
 
+      menu_entry_get_value(i, list, entry_value, sizeof(entry_value));
 
-      if (string_is_equal(entry.value, "disabled") ||
-            string_is_equal(entry.value, "off"))
+      if (string_is_equal(entry_value, "disabled") ||
+            string_is_equal(entry_value, "off"))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
          else
             do_draw_text = true;
       }
-      else if (string_is_equal(entry.value, "enabled") ||
-            string_is_equal(entry.value, "on"))
+      else if (string_is_equal(entry_value, "enabled") ||
+            string_is_equal(entry_value, "on"))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
@@ -1814,7 +1825,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       }
       else
       {
-         switch (msg_hash_to_file_type(msg_hash_calculate(entry.value)))
+         switch (msg_hash_to_file_type(msg_hash_calculate(entry_value)))
          {
             case FILE_TYPE_COMPRESSED:
             case FILE_TYPE_MORE:
@@ -1845,7 +1856,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          }
       }
 
-      if (string_is_empty(entry.value))
+      if (string_is_empty(entry_value))
       {
          if (!string_is_equal(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
             ticker_limit = 40;
@@ -1873,7 +1884,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       ticker.s        = value;
       ticker.len      = 35;
       ticker.idx      = *frame_count / 20;
-      ticker.str      = entry.value;
+      ticker.str      = entry_value;
       ticker.selected = (i == current);
 
       menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
@@ -2142,7 +2153,6 @@ static void xmb_frame(void *data)
    char msg[PATH_MAX_LENGTH]               = {0};
    char title_msg[256]                     = {0};
    char title_truncated[256]               = {0};
-   bool display_kb                         = false;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    file_list_t *menu_stack                 = NULL;
@@ -2355,17 +2365,11 @@ static void xmb_frame(void *data)
 
    menu_display_font_flush_block();
 
-   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
-
-   if (display_kb)
+   if (menu_input_dialog_get_display_kb())
    {
-      const char *str   = NULL;
-      const char *label = NULL;
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
+      const char *str   = menu_input_dialog_get_buffer();
+      const char *label = menu_input_dialog_get_label_buffer();
 
-      if (!str)
-         str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       render_background = true;
    }
@@ -2813,6 +2817,8 @@ static const char *xmb_texture_path(unsigned id)
          return "savestate.png";
       case XMB_TEXTURE_LOADSTATE:
          return "loadstate.png";
+      case XMB_TEXTURE_UNDO:
+         return "undo.png";
       case XMB_TEXTURE_CORE_INFO:
          return "core-infos.png";
       case XMB_TEXTURE_CORE_OPTIONS:

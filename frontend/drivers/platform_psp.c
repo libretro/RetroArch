@@ -18,6 +18,10 @@
 #include <stddef.h>
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef VITA
 #include <psp2/moduleinfo.h>
 #include <psp2/power.h>

@@ -181,20 +181,6 @@ const char *audio_resampler_driver_find_ident(int index);
 bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
       const char *ident, double bw_ratio);
 
-/* Convenience macros.
- * freep makes sure to set handles to NULL to avoid double-free 
- * in rarch_resampler_realloc. */
-#define rarch_resampler_freep(backend, handle) do { \
-   if (*(backend) && *(handle)) \
-      (*backend)->free(*handle); \
-   *backend = NULL; \
-   *handle = NULL; \
-} while(0)
-
-#define rarch_resampler_process(backend, handle, data) do { \
-   (backend)->process(handle, data); \
-} while(0)
-
 RETRO_END_DECLS
 
 #endif

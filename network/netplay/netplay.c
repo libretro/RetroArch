@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C)      2016 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -25,6 +26,7 @@
 #include <retro_assert.h>
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#include <features/features_cpu.h>
 #include <retro_endianness.h>
 
 #include "netplay_private.h"
@@ -43,7 +45,7 @@ enum
    CMD_OPT_REQUIRE_SYNC             = 0x10
 };
 
-void *netplay_data;
+static void *netplay_data = NULL;
 
 /**
  * warn_hangup:
@@ -56,19 +58,8 @@ static void warn_hangup(void)
    runloop_msg_queue_push("Netplay has disconnected. Will continue without connection.", 0, 480, false);
 }
 
-/**
- * check_netplay_synched:
- * @netplay: pointer to the netplay object.
- * Checks to see if the host and client have synchronized states. Returns true
- * on success and false on failure.
- */
-bool check_netplay_synched(netplay_t* netplay)
+static bool netplay_info_cb(netplay_t* netplay, unsigned frames)
 {
-   retro_assert(netplay);
-   return netplay->frame_count < (netplay->flip_frame + 2 * UDP_FRAME_PACKETS);
-}
-
-static bool netplay_info_cb(netplay_t* netplay, unsigned frames) {
    return netplay->net_cbs->info_cb(netplay, frames);
 }
 
@@ -96,39 +87,6 @@ static bool netplay_can_poll(netplay_t *netplay)
    return netplay->can_poll;
 }
 
-static bool send_chunk(netplay_t *netplay)
-{
-   const struct sockaddr *addr = NULL;
-
-   if (netplay->addr)
-      addr = netplay->addr->ai_addr;
-   else if (netplay->has_client_addr)
-      addr = (const struct sockaddr*)&netplay->their_addr;
-
-   if (addr)
-   {
-      ssize_t bytes_sent;
-
-#ifdef HAVE_IPV6
-      bytes_sent = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
-               sizeof(netplay->packet_buffer), 0, addr,
-               sizeof(struct sockaddr_in6)));
-#else
-      bytes_sent = (sendto(netplay->udp_fd, (const char*)netplay->packet_buffer,
-               sizeof(netplay->packet_buffer), 0, addr,
-               sizeof(struct sockaddr_in)));
-#endif
-
-      if (bytes_sent != sizeof(netplay->packet_buffer))
-      {
-         warn_hangup();
-         netplay->has_connection = false;
-         return false;
-      }
-   }
-   return true;
-}
-
 /**
  * get_self_input_state:
  * @netplay              : pointer to netplay object
@@ -139,10 +97,19 @@ static bool send_chunk(netplay_t *netplay)
  **/
 static bool get_self_input_state(netplay_t *netplay)
 {
-   uint32_t state[UDP_WORDS_PER_FRAME - 1] = {0};
-   struct delta_frame *ptr                 = &netplay->buffer[netplay->self_ptr];
+   uint32_t state[WORDS_PER_FRAME - 1] = {0, 0, 0};
+   struct delta_frame *ptr             = &netplay->buffer[netplay->self_ptr];
 
-   if (!input_driver_is_libretro_input_blocked() && netplay->frame_count > 0)
+   if (!netplay_delta_frame_ready(netplay, ptr, netplay->self_frame_count))
+      return false;
+
+   if (ptr->have_local)
+   {
+      /* We've already read this frame! */
+      return true;
+   }
+
+   if (!input_driver_is_libretro_input_blocked() && netplay->self_frame_count > 0)
    {
       unsigned i;
       settings_t *settings = config_get_ptr();
@@ -179,66 +146,143 @@ static bool get_self_input_state(netplay_t *netplay)
     * }
     *
     * payload {
-    *    ; To compat packet losses, send input in a sliding window
-    *    frame redundancy_frames[UDP_FRAME_PACKETS];
+    *    cmd (CMD_INPUT)
+    *    cmd_size (4 words)
+    *    frame
     * }
     */
-   memmove(netplay->packet_buffer, netplay->packet_buffer + UDP_WORDS_PER_FRAME,
-         sizeof (netplay->packet_buffer) - UDP_WORDS_PER_FRAME * sizeof(uint32_t));
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME] = htonl(netplay->frame_count); 
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME + 1] = htonl(state[0]);
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME + 2] = htonl(state[1]);
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME + 3] = htonl(state[2]);
+   netplay->packet_buffer[0] = htonl(NETPLAY_CMD_INPUT);
+   netplay->packet_buffer[1] = htonl(WORDS_PER_FRAME * sizeof(uint32_t));
+   netplay->packet_buffer[2] = htonl(netplay->self_frame_count);
+   netplay->packet_buffer[3] = htonl(state[0]);
+   netplay->packet_buffer[4] = htonl(state[1]);
+   netplay->packet_buffer[5] = htonl(state[2]);
 
-   if (!send_chunk(netplay))
+   if (!netplay->spectate.enabled) /* Spectate sends in its own way */
    {
-      warn_hangup();
-      netplay->has_connection = false;
-      return false;
+      if (!socket_send_all_blocking(netplay->fd,
+               netplay->packet_buffer, sizeof(netplay->packet_buffer), false))
+      {
+         warn_hangup();
+         netplay->has_connection = false;
+         return false;
+      }
    }
 
    memcpy(ptr->self_state, state, sizeof(state));
-   netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+   ptr->have_local = true;
    return true;
 }
 
-static bool netplay_cmd_ack(netplay_t *netplay)
+static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
+      const void *data, size_t size)
 {
-   uint32_t cmd = htonl(NETPLAY_CMD_ACK);
-   return socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd), false);
+   uint32_t cmdbuf[2];
+
+   cmdbuf[0] = htonl(cmd);
+   cmdbuf[1] = htonl(size);
+
+   if (!socket_send_all_blocking(netplay->fd, cmdbuf, sizeof(cmdbuf), false))
+      return false;
+
+   if (size > 0)
+      if (!socket_send_all_blocking(netplay->fd, data, size, false))
+         return false;
+
+   return true;
 }
 
 static bool netplay_cmd_nak(netplay_t *netplay)
 {
-   uint32_t cmd = htonl(NETPLAY_CMD_NAK);
-   return socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd), false);
+   return netplay_send_raw_cmd(netplay, NETPLAY_CMD_NAK, NULL, 0);
 }
 
-static bool netplay_get_response(netplay_t *netplay)
+bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta)
 {
-   uint32_t response;
-   if (!socket_receive_all_blocking(netplay->fd, &response, sizeof(response)))
-      return false;
+   uint32_t payload[2];
+   payload[0] = htonl(delta->frame);
+   payload[1] = htonl(delta->crc);
+   return netplay_send_raw_cmd(netplay, NETPLAY_CMD_CRC, payload, sizeof(payload));
+}
 
-   return ntohl(response) == NETPLAY_CMD_ACK;
+bool netplay_cmd_request_savestate(netplay_t *netplay)
+{
+   if (netplay->savestate_request_outstanding)
+      return true;
+   netplay->savestate_request_outstanding = true;
+   return netplay_send_raw_cmd(netplay, NETPLAY_CMD_REQUEST_SAVESTATE, NULL, 0);
 }
 
 static bool netplay_get_cmd(netplay_t *netplay)
 {
    uint32_t cmd;
    uint32_t flip_frame;
-   size_t cmd_size;
+   uint32_t cmd_size;
+
+   /* FIXME: This depends on delta_frame_ready */
+
+   netplay->timeout_cnt = 0;
 
    if (!socket_receive_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
       return false;
 
    cmd      = ntohl(cmd);
 
-   cmd_size = cmd & 0xffff;
-   cmd      = cmd >> 16;
+   if (!socket_receive_all_blocking(netplay->fd, &cmd_size, sizeof(cmd)))
+      return false;
+
+   cmd_size = ntohl(cmd_size);
 
    switch (cmd)
    {
+      case NETPLAY_CMD_ACK:
+         /* Why are we even bothering? */
+         return true;
+
+      case NETPLAY_CMD_NAK:
+         /* Disconnect now! */
+         return false;
+
+      case NETPLAY_CMD_INPUT:
+         {
+            uint32_t buffer[WORDS_PER_FRAME];
+            unsigned i;
+
+            if (cmd_size != WORDS_PER_FRAME * sizeof(uint32_t))
+            {
+               RARCH_ERR("NETPLAY_CMD_INPUT received an unexpected payload size.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            if (!socket_receive_all_blocking(netplay->fd, buffer, sizeof(buffer)))
+            {
+               RARCH_ERR("Failed to receive NETPLAY_CMD_INPUT input.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            for (i = 0; i < WORDS_PER_FRAME; i++)
+               buffer[i] = ntohl(buffer[i]);
+
+            if (buffer[0] < netplay->read_frame_count)
+            {
+               /* We already had this, so ignore the new transmission */
+               return true;
+            }
+            else if (buffer[0] > netplay->read_frame_count)
+            {
+               /* Out of order = out of luck */
+               return netplay_cmd_nak(netplay);
+            }
+
+            /* The data's good! */
+            netplay->buffer[netplay->read_ptr].have_remote = true;
+            memcpy(netplay->buffer[netplay->read_ptr].real_input_state,
+                  buffer + 1, sizeof(buffer) - sizeof(uint32_t));
+            netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
+            netplay->read_frame_count++;
+            return true;
+         }
+
       case NETPLAY_CMD_FLIP_PLAYERS:
          if (cmd_size != sizeof(uint32_t))
          {
@@ -255,7 +299,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
          flip_frame = ntohl(flip_frame);
 
-         if (flip_frame < netplay->flip_frame)
+         if (flip_frame < netplay->read_frame_count)
          {
             RARCH_ERR("Host asked us to flip users in the past. Not possible ...\n");
             return netplay_cmd_nak(netplay);
@@ -264,10 +308,16 @@ static bool netplay_get_cmd(netplay_t *netplay)
          netplay->flip ^= true;
          netplay->flip_frame = flip_frame;
 
+         /* Force a rewind to assure the flip happens: This just prevents us
+          * from skipping other past the flip because our prediction was
+          * correct */
+         if (flip_frame < netplay->self_frame_count)
+            netplay->force_rewind = true;
+
          RARCH_LOG("Netplay users are flipped.\n");
          runloop_msg_queue_push("Netplay users are flipped.", 1, 180, false);
 
-         return netplay_cmd_ack(netplay);
+         return true;
 
       case NETPLAY_CMD_SPECTATE:
          RARCH_ERR("NETPLAY_CMD_SPECTATE unimplemented.\n");
@@ -275,19 +325,142 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
       case NETPLAY_CMD_DISCONNECT:
          warn_hangup();
-         return netplay_cmd_ack(netplay);
+         return true;
+
+      case NETPLAY_CMD_CRC:
+         {
+            uint32_t buffer[2];
+            size_t tmp_ptr = netplay->self_ptr;
+            bool found = false;
+
+            if (cmd_size != sizeof(buffer))
+            {
+               RARCH_ERR("NETPLAY_CMD_CRC received unexpected payload size.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            if (!socket_receive_all_blocking(netplay->fd, buffer, sizeof(buffer)))
+            {
+               RARCH_ERR("NETPLAY_CMD_CRC failed to receive payload.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            buffer[0] = ntohl(buffer[0]);
+            buffer[1] = ntohl(buffer[1]);
+
+            /* Received a CRC for some frame. If we still have it, check if it
+             * matched. This approach could be improved with some quick modular
+             * arithmetic. */
+            do
+            {
+               if (netplay->buffer[tmp_ptr].frame == buffer[0])
+               {
+                  found = true;
+                  break;
+               }
+
+               tmp_ptr = PREV_PTR(tmp_ptr);
+            } while (tmp_ptr != netplay->self_ptr);
+
+            if (!found)
+            {
+               /* Oh well, we got rid of it! */
+               return true;
+            }
+
+            if (buffer[0] <= netplay->other_frame_count)
+            {
+               /* We've already replayed up to this frame, so we can check it
+                * directly */
+               uint32_t local_crc = netplay_delta_frame_crc(netplay, &netplay->buffer[tmp_ptr]);
+               if (buffer[1] != local_crc)
+               {
+                  /* Problem! */
+                  netplay_cmd_request_savestate(netplay);
+               }
+            }
+            else
+            {
+               /* We'll have to check it when we catch up */
+               netplay->buffer[tmp_ptr].crc = buffer[1];
+            }
+
+            return true;
+         }
+
+      case NETPLAY_CMD_REQUEST_SAVESTATE:
+         /* Delay until next frame so we don't send the savestate after the
+          * input */
+         netplay->force_send_savestate = true;
+         return true;
 
       case NETPLAY_CMD_LOAD_SAVESTATE:
-         RARCH_ERR("NETPLAY_CMD_LOAD_SAVESTATE unimplemented.\n");
-         return netplay_cmd_nak(netplay);
+         {
+            uint32_t frame;
+
+            /* There is a subtlty in whether the load comes before or after the
+             * current frame:
+             *
+             * If it comes before the current frame, then we need to force a
+             * rewind to that point.
+             *
+             * If it comes after the current frame, we need to jump ahead, then
+             * (strangely) force a rewind to the frame we're already on, so it
+             * gets loaded. This is just to avoid having reloading implemented in
+             * too many places. */
+            if (cmd_size > netplay->state_size + sizeof(uint32_t))
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected save state size.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            if (!socket_receive_all_blocking(netplay->fd, &frame, sizeof(frame)))
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate frame.\n");
+               return netplay_cmd_nak(netplay);
+            }
+            frame = ntohl(frame);
+
+            if (frame != netplay->read_frame_count)
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE loading a state out of order!\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            if (!socket_receive_all_blocking(netplay->fd,
+                  netplay->buffer[netplay->read_ptr].state, cmd_size - sizeof(uint32_t)))
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
+            /* Skip ahead if it's past where we are */
+            if (frame > netplay->self_frame_count)
+            {
+               /* This is squirrely: We need to assure that when we advance the
+                * frame in post_frame, THEN we're referring to the frame to
+                * load into. If we refer directly to read_ptr, then we'll end
+                * up never reading the input for read_frame_count itself, which
+                * will make the other side unhappy. */
+               netplay->self_ptr = PREV_PTR(netplay->read_ptr);
+               netplay->self_frame_count = frame - 1;
+            }
+
+            /* And force rewind to it */
+            netplay->force_rewind = true;
+            netplay->savestate_request_outstanding = false;
+            netplay->other_ptr = netplay->read_ptr;
+            netplay->other_frame_count = frame;
+            return true;
+         }
 
       case NETPLAY_CMD_PAUSE:
-         command_event(CMD_EVENT_PAUSE, NULL);
-         return netplay_cmd_ack(netplay);
+         netplay->remote_paused = true;
+         return true;
 
       case NETPLAY_CMD_RESUME:
-         command_event(CMD_EVENT_UNPAUSE, NULL);
-         return netplay_cmd_ack(netplay);
+         netplay->remote_paused = false;
+         return true;
 
       default: break;
    }
@@ -301,8 +474,8 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
 static int poll_input(netplay_t *netplay, bool block)
 {
-   int max_fd        = (netplay->fd > netplay->udp_fd ? 
-         netplay->fd : netplay->udp_fd) + 1;
+   bool had_input    = false;
+   int max_fd        = netplay->fd + 1;
    struct timeval tv = {0};
    tv.tv_sec         = 0;
    tv.tv_usec        = block ? (RETRY_MS * 1000) : 0;
@@ -314,11 +487,11 @@ static int poll_input(netplay_t *netplay, bool block)
        * Technically possible for select() to modify tmp_tv, so 
        * we go paranoia mode. */
       struct timeval tmp_tv = tv;
+      had_input = false;
 
       netplay->timeout_cnt++;
 
       FD_ZERO(&fds);
-      FD_SET(netplay->udp_fd, &fds);
       FD_SET(netplay->fd, &fds);
 
       if (socket_select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
@@ -326,82 +499,42 @@ static int poll_input(netplay_t *netplay, bool block)
 
       /* Somewhat hacky,
        * but we aren't using the TCP connection for anything useful atm. */
-      if (FD_ISSET(netplay->fd, &fds) && !netplay_get_cmd(netplay))
-         return -1; 
-
-      if (FD_ISSET(netplay->udp_fd, &fds))
-         return 1;
+      if (FD_ISSET(netplay->fd, &fds))
+      {
+         /* If we're not ready for input, wait until we are. Could fill the TCP buffer, stalling the other side. */
+         if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->read_ptr], netplay->read_frame_count))
+         {
+            had_input = true;
+            if (!netplay_get_cmd(netplay))
+               return -1;
+         }
+      }
 
       if (!block)
          continue;
 
-      if (!send_chunk(netplay))
-      {
-         warn_hangup();
-         netplay->has_connection = false;
+      RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
+            netplay->self_frame_count, netplay->timeout_cnt, MAX_RETRIES);
+
+      if (netplay->timeout_cnt >= MAX_RETRIES && !netplay->remote_paused)
          return -1;
-      }
+   } while (had_input || (block && (netplay->read_frame_count <= netplay->self_frame_count)));
 
-      RARCH_LOG("Network is stalling, resending packet... Count %u of %d ...\n",
-            netplay->timeout_cnt, MAX_RETRIES);
-   } while ((netplay->timeout_cnt < MAX_RETRIES) && block);
-
-   if (block)
-      return -1;
    return 0;
-}
-
-static bool receive_data(netplay_t *netplay, uint32_t *buffer, size_t size)
-{
-   socklen_t addrlen = sizeof(netplay->their_addr);
-
-   if (recvfrom(netplay->udp_fd, (char*)buffer, size, 0,
-            (struct sockaddr*)&netplay->their_addr, &addrlen) != (ssize_t)size)
-      return false;
-
-   netplay->has_client_addr = true;
-
-   return true;
-}
-
-static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
-{
-   unsigned i;
-
-   for (i = 0; i < size * UDP_WORDS_PER_FRAME; i++)
-      buffer[i] = ntohl(buffer[i]);
-
-   for (i = 0; i < size && netplay->read_frame_count <= netplay->frame_count; i++)
-   {
-      uint32_t frame = buffer[UDP_WORDS_PER_FRAME * i + 0];
-      const uint32_t *state = &buffer[UDP_WORDS_PER_FRAME * i + 1];
-
-      if (frame != netplay->read_frame_count)
-         continue;
-
-      netplay->buffer[netplay->read_ptr].is_simulated = false;
-      memcpy(netplay->buffer[netplay->read_ptr].real_input_state, state,
-            sizeof(netplay->buffer[netplay->read_ptr].real_input_state));
-
-      netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
-      netplay->read_frame_count++;
-      netplay->timeout_cnt = 0;
-   }
 }
 
 /* TODO: Somewhat better prediction. :P */
 static void simulate_input(netplay_t *netplay)
 {
-   size_t ptr  = PREV_PTR(netplay->self_ptr);
+   size_t ptr  = netplay->self_ptr;
    size_t prev = PREV_PTR(netplay->read_ptr);
 
    memcpy(netplay->buffer[ptr].simulated_input_state,
          netplay->buffer[prev].real_input_state,
          sizeof(netplay->buffer[prev].real_input_state));
-
-   netplay->buffer[ptr].is_simulated = true;
-   netplay->buffer[ptr].used_real = false;
 }
+
+#define MAX_STALL_TIME_USEC (10*1000*1000)
 
 /**
  * netplay_poll:
@@ -422,27 +555,15 @@ static bool netplay_poll(netplay_t *netplay)
 
    netplay->can_poll = false;
 
-   if (!get_self_input_state(netplay))
-      return false;
+   get_self_input_state(netplay);
 
-   /* We skip reading the first frame so the host has a chance to grab 
-    * our host info so we don't block forever :') */
-   if (netplay->frame_count == 0)
-   {
-      netplay->buffer[0].used_real        = true;
-      netplay->buffer[0].is_simulated     = false;
-
-      memset(netplay->buffer[0].real_input_state,
-            0, sizeof(netplay->buffer[0].real_input_state));
-
-      netplay->read_ptr                   = NEXT_PTR(netplay->read_ptr);
-      netplay->read_frame_count++;
+   /* No network side in spectate mode */
+   if (netplay_is_server(netplay) && netplay->spectate.enabled)
       return true;
-   }
 
-   /* We might have reached the end of the buffer, where we 
-    * simply have to block. */
-   res = poll_input(netplay, netplay->other_ptr == netplay->self_ptr);
+   /* Read Netplay input, block if we're configured to stall for input every
+    * frame */
+   res = poll_input(netplay, (netplay->stall_frames == 0) && (netplay->read_frame_count <= netplay->self_frame_count));
    if (res == -1)
    {
       netplay->has_connection = false;
@@ -450,38 +571,42 @@ static bool netplay_poll(netplay_t *netplay)
       return false;
    }
 
-   if (res == 1)
-   {
-      uint32_t first_read = netplay->read_frame_count;
-      do 
-      {
-         uint32_t buffer[UDP_FRAME_PACKETS * UDP_WORDS_PER_FRAME];
-         if (!receive_data(netplay, buffer, sizeof(buffer)))
-         {
-            warn_hangup();
-            netplay->has_connection = false;
-            return false;
-         }
-         parse_packet(netplay, buffer, UDP_FRAME_PACKETS);
+   /* Simulate the input if we don't have real input */
+   if (!netplay->buffer[netplay->self_ptr].have_remote)
+      simulate_input(netplay);
 
-      } while ((netplay->read_frame_count <= netplay->frame_count) && 
-            poll_input(netplay, (netplay->other_ptr == netplay->self_ptr) && 
-               (first_read == netplay->read_frame_count)) == 1);
+   /* Consider stalling */
+   switch (netplay->stall) {
+      case RARCH_NETPLAY_STALL_RUNNING_FAST:
+         if (netplay->read_frame_count >= netplay->self_frame_count)
+            netplay->stall = RARCH_NETPLAY_STALL_NONE;
+         break;
+
+      default: /* not stalling */
+         if (netplay->read_frame_count + netplay->stall_frames <= netplay->self_frame_count)
+         {
+            netplay->stall = RARCH_NETPLAY_STALL_RUNNING_FAST;
+            netplay->stall_time = cpu_features_get_time_usec();
+         }
    }
-   else
+
+   /* If we're stalling, consider disconnection */
+   if (netplay->stall)
    {
-      /* Cannot allow this. Should not happen though. */
-      if (netplay->self_ptr == netplay->other_ptr)
+      retro_time_t now = cpu_features_get_time_usec();
+      if (netplay->remote_paused)
       {
+         /* Don't stall out while they're paused */
+         netplay->stall_time = now;
+      }
+      else if (now - netplay->stall_time >= MAX_STALL_TIME_USEC)
+      {
+         /* Stalled out! */
+         netplay->has_connection = false;
          warn_hangup();
          return false;
       }
    }
-
-   if (netplay->read_ptr != netplay->self_ptr)
-      simulate_input(netplay);
-   else
-      netplay->buffer[PREV_PTR(netplay->self_ptr)].used_real = true;
 
    return true;
 }
@@ -504,14 +629,14 @@ void video_frame_net(const void *data, unsigned width,
 void audio_sample_net(int16_t left, int16_t right)
 {
    netplay_t *netplay = (netplay_t*)netplay_data;
-   if (!netplay_should_skip(netplay))
+   if (!netplay_should_skip(netplay) && !netplay->stall)
       netplay->cbs.sample_cb(left, right);
 }
 
 size_t audio_sample_batch_net(const int16_t *data, size_t frames)
 {
    netplay_t *netplay = (netplay_t*)netplay_data;
-   if (!netplay_should_skip(netplay))
+   if (!netplay_should_skip(netplay) && !netplay->stall)
       return netplay->cbs.sample_batch_cb(data, frames);
    return frames;
 }
@@ -533,13 +658,13 @@ static bool netplay_is_alive(netplay_t *netplay)
 
 static bool netplay_flip_port(netplay_t *netplay, bool port)
 {
-   size_t frame = netplay->frame_count;
+   size_t frame = netplay->self_frame_count;
 
    if (netplay->flip_frame == 0)
       return port;
 
    if (netplay->is_replay)
-      frame = netplay->tmp_frame_count;
+      frame = netplay->replay_frame_count;
 
    return port ^ netplay->flip ^ (frame < netplay->flip_frame);
 }
@@ -549,16 +674,21 @@ static int16_t netplay_input_state(netplay_t *netplay,
       unsigned idx, unsigned id)
 {
    size_t ptr = netplay->is_replay ? 
-      netplay->tmp_ptr : PREV_PTR(netplay->self_ptr);
+      netplay->replay_ptr : netplay->self_ptr;
 
    const uint32_t *curr_input_state = netplay->buffer[ptr].self_state;
 
    if (netplay->port == (netplay_flip_port(netplay, port) ? 1 : 0))
    {
-      if (netplay->buffer[ptr].is_simulated)
-         curr_input_state = netplay->buffer[ptr].simulated_input_state;
-      else
+      if (netplay->buffer[ptr].have_remote)
+      {
+         netplay->buffer[ptr].used_real = true;
          curr_input_state = netplay->buffer[ptr].real_input_state;
+      }
+      else
+      {
+         curr_input_state = netplay->buffer[ptr].simulated_input_state;
+      }
    }
 
    switch (device)
@@ -663,6 +793,13 @@ static int init_tcp_connection(const struct addrinfo *res,
    bool ret = true;
    int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
+#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
+   {
+      int flag = 1;
+      setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(int));
+   }
+#endif
+
    if (fd < 0)
    {
       ret = false;
@@ -762,37 +899,6 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    return ret;
 }
 
-static bool init_udp_socket(netplay_t *netplay, const char *server,
-      uint16_t port)
-{
-   int fd = socket_init((void**)&netplay->addr, port, server, SOCKET_TYPE_DATAGRAM);
-
-   if (fd < 0)
-      goto error;
-
-   netplay->udp_fd = fd;
-
-   if (!server)
-   {
-      /* Not sure if we have to do this for UDP, but hey :) */
-      if (!socket_bind(netplay->udp_fd, (void*)netplay->addr))
-      {
-         RARCH_ERR("Failed to bind socket.\n");
-         socket_close(netplay->udp_fd);
-         netplay->udp_fd = -1;
-      }
-
-      freeaddrinfo_retro(netplay->addr);
-      netplay->addr = NULL;
-   }
-
-   return true;
-
-error:
-   RARCH_ERR("Failed to initialize socket.\n");
-   return false;
-}
-
 static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 {
    if (!network_init())
@@ -800,8 +906,41 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 
    if (!init_tcp_socket(netplay, server, port, netplay->spectate.enabled))
       return false;
-   if (!netplay->spectate.enabled && !init_udp_socket(netplay, server, port))
+
+   return true;
+}
+
+static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
+{
+   unsigned i;
+   retro_ctx_size_info_t info;
+
+   if (!netplay)
       return false;
+
+   /* * 2 + 1 because:
+    * Self sits in the middle,
+    * Other is allowed to drift as much as 'frames' frames behind
+    * Read is allowed to drift as much as 'frames' frames ahead */
+   netplay->buffer_size = frames * 2 + 1;
+
+   netplay->buffer = (struct delta_frame*)calloc(netplay->buffer_size,
+         sizeof(*netplay->buffer));
+
+   if (!netplay->buffer)
+      return false;
+
+   core_serialize_size(&info);
+
+   netplay->state_size = info.size;
+
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      netplay->buffer[i].state = calloc(netplay->state_size, 1);
+
+      if (!netplay->buffer[i].state)
+         return false;
+   }
 
    return true;
 }
@@ -811,6 +950,7 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
  * @server               : IP address of server.
  * @port                 : Port of server.
  * @frames               : Amount of lag frames.
+ * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
  * @nick                 : Nickname of user.
@@ -821,26 +961,27 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
  * Returns: new netplay handle.
  **/
 netplay_t *netplay_new(const char *server, uint16_t port,
-      unsigned frames, const struct retro_callbacks *cb,
-      bool spectate,
-      const char *nick)
+      unsigned frames, unsigned check_frames, const struct retro_callbacks *cb,
+      bool spectate, const char *nick)
 {
-   netplay_t *netplay = NULL;
-
-   if (frames > UDP_FRAME_PACKETS)
-      frames = UDP_FRAME_PACKETS;
-
-   netplay = (netplay_t*)calloc(1, sizeof(*netplay));
+   netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
       return NULL;
 
    netplay->fd                = -1;
-   netplay->udp_fd            = -1;
    netplay->cbs               = *cb;
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
    netplay->is_server         = server == NULL;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
+   netplay->stall_frames = frames;
+   netplay->check_frames = check_frames;
+
+   if (!netplay_init_buffers(netplay, frames))
+   {
+      free(netplay);
+      return NULL;
+   }
 
    if(spectate)
       netplay->net_cbs = netplay_get_cbs_spectate();
@@ -861,26 +1002,9 @@ netplay_t *netplay_new(const char *server, uint16_t port,
 error:
    if (netplay->fd >= 0)
       socket_close(netplay->fd);
-   if (netplay->udp_fd >= 0)
-      socket_close(netplay->udp_fd);
 
    free(netplay);
    return NULL;
-}
-
-static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
-      const void *data, size_t size)
-{
-   cmd = (cmd << 16) | (size & 0xffff);
-   cmd = htonl(cmd);
-
-   if (!socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd), false))
-      return false;
-
-   if (!socket_send_all_blocking(netplay->fd, data, size, false))
-      return false;
-
-   return true;
 }
 
 /**
@@ -905,7 +1029,6 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
    const char* msg         = NULL;
    bool allowed_spectate   = !!(flags & CMD_OPT_ALLOWED_IN_SPECTATE_MODE);
    bool host_only          = !!(flags & CMD_OPT_HOST_ONLY);
-   bool require_sync       = !!(flags & CMD_OPT_REQUIRE_SYNC);
 
    retro_assert(netplay);
 
@@ -921,21 +1044,11 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
       goto error;
    }
 
-   if(require_sync && check_netplay_synched(netplay))
-   {
-      msg = "Cannot %s while host and client are not in sync.";
+   if (!netplay_send_raw_cmd(netplay, cmd, data, sz))
       goto error;
-   }
 
-   if(netplay_send_raw_cmd(netplay, cmd, data, sz)) {
-      if(netplay_get_response(netplay))
-         runloop_msg_queue_push(success_msg, 1, 180, false);
-      else
-      {
-         msg = "Failed to send command \"%s\"";
-         goto error;
-      }
-   }
+   runloop_msg_queue_push(success_msg, 1, 180, false);
+
    return true;
 
 error:
@@ -953,14 +1066,15 @@ error:
  **/
 static void netplay_flip_users(netplay_t *netplay)
 {
-   uint32_t flip_frame = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
+   /* Must be in the future because we may have already sent this frame's data */
+   uint32_t     flip_frame = netplay->self_frame_count + 1;
    uint32_t flip_frame_net = htonl(flip_frame);
-   bool command = netplay_command(
+   bool            command = netplay_command(
       netplay, NETPLAY_CMD_FLIP_PLAYERS,
       &flip_frame_net, sizeof flip_frame_net,
       CMD_OPT_HOST_ONLY | CMD_OPT_REQUIRE_SYNC,
       "flip users", "Successfully flipped users.\n");
-   
+
    if(command)
    {
       netplay->flip       ^= true;
@@ -990,8 +1104,6 @@ void netplay_free(netplay_t *netplay)
    }
    else
    {
-      socket_close(netplay->udp_fd);
-
       for (i = 0; i < netplay->buffer_size; i++)
          free(netplay->buffer[i].state);
 
@@ -1004,67 +1116,28 @@ void netplay_free(netplay_t *netplay)
    free(netplay);
 }
 
-
-static void netplay_set_spectate_input(netplay_t *netplay, int16_t input)
-{
-   if (netplay->spectate.input_ptr >= netplay->spectate.input_sz)
-   {
-      netplay->spectate.input_sz++;
-      netplay->spectate.input_sz *= 2;
-      netplay->spectate.input = (uint16_t*)realloc(netplay->spectate.input,
-            netplay->spectate.input_sz * sizeof(uint16_t));
-   }
-
-   netplay->spectate.input[netplay->spectate.input_ptr++] = swap_if_big16(input);
-}
-
-int16_t input_state_spectate(unsigned port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   netplay_t *netplay = (netplay_t*)netplay_data;
-   int16_t res        = netplay->cbs.state_cb(port, device, idx, id);
-
-   netplay_set_spectate_input(netplay, res);
-   return res;
-}
-
-static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
-      unsigned device, unsigned idx, unsigned id)
-{
-   int16_t inp;
-   retro_ctx_input_state_info_t input_info;
-
-   if (socket_receive_all_blocking(netplay->fd, (char*)&inp, sizeof(inp)))
-      return swap_if_big16(inp);
-
-   RARCH_ERR("Connection with host was cut.\n");
-   runloop_msg_queue_push("Connection with host was cut.", 1, 180, true);
-
-   input_info.cb = netplay->cbs.state_cb;
-
-   core_set_input_state(&input_info);
-
-   return netplay->cbs.state_cb(port, device, idx, id);
-}
-
-int16_t input_state_spectate_client(unsigned port, unsigned device,
-      unsigned idx, unsigned id)
-{
-   return netplay_get_spectate_input((netplay_t*)netplay_data, port,
-         device, idx, id);
-}
-
 /**
  * netplay_pre_frame:   
  * @netplay              : pointer to netplay object
  *
  * Pre-frame for Netplay.
  * Call this before running retro_run().
+ *
+ * Returns: true (1) if the frontend is cleared to emulate the frame, false (0)
+ * if we're stalled or paused
  **/
-void netplay_pre_frame(netplay_t *netplay)
+bool netplay_pre_frame(netplay_t *netplay)
 {
    retro_assert(netplay && netplay->net_cbs->pre_frame);
-   netplay->net_cbs->pre_frame(netplay);
+
+   /* FIXME: This is an ugly way to learn we're not paused anymore */
+   if (netplay->local_paused)
+      netplay_frontend_paused(netplay, false);
+
+   if (!netplay->net_cbs->pre_frame(netplay))
+      return false;
+
+   return (!netplay->has_connection || (!netplay->stall && !netplay->remote_paused));
 }
 
 /**
@@ -1079,6 +1152,99 @@ void netplay_post_frame(netplay_t *netplay)
 {
    retro_assert(netplay && netplay->net_cbs->post_frame);
    netplay->net_cbs->post_frame(netplay);
+}
+
+/**
+ * netplay_frontend_paused
+ * @netplay              : pointer to netplay object
+ * @paused               : true if frontend is paused
+ *
+ * Inform Netplay of the frontend's pause state (paused or otherwise)
+ **/
+void netplay_frontend_paused(netplay_t *netplay, bool paused)
+{
+   /* Nothing to do if we already knew this */
+   if (netplay->local_paused == paused)
+      return;
+
+   netplay->local_paused = paused;
+   if (netplay->has_connection && !netplay->spectate.enabled)
+      netplay_send_raw_cmd(netplay, paused 
+            ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
+}
+
+/**
+ * netplay_load_savestate
+ * @netplay              : pointer to netplay object
+ * @serial_info          : the savestate being loaded, NULL means "load it yourself"
+ * @save                 : whether to save the provided serial_info into the frame buffer
+ *
+ * Inform Netplay of a savestate load and send it to the other side
+ **/
+void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info, bool save)
+{
+   uint32_t header[3];
+   retro_ctx_serialize_info_t tmp_serial_info;
+
+   if (!netplay->has_connection)
+      return;
+
+   /* Record it in our own buffer */
+   if (save || !serial_info)
+   {
+      if (netplay_delta_frame_ready(netplay,
+               &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
+      {
+         if (!serial_info)
+         {
+            tmp_serial_info.size = netplay->state_size;
+            tmp_serial_info.data = netplay->buffer[netplay->self_ptr].state;
+            if (!core_serialize(&tmp_serial_info))
+               return;
+            tmp_serial_info.data_const = tmp_serial_info.data;
+            serial_info = &tmp_serial_info;
+         }
+         else
+         {
+            if (serial_info->size <= netplay->state_size)
+            {
+               memcpy(netplay->buffer[netplay->self_ptr].state,
+                     serial_info->data_const, serial_info->size);
+            }
+         }
+      }
+   }
+
+   /* We need to ignore any intervening data from the other side, and never rewind past this */
+   if (netplay->read_frame_count < netplay->self_frame_count)
+   {
+      netplay->read_ptr = netplay->self_ptr;
+      netplay->read_frame_count = netplay->self_frame_count;
+   }
+   if (netplay->other_frame_count < netplay->self_frame_count)
+   {
+      netplay->other_ptr = netplay->self_ptr;
+      netplay->other_frame_count = netplay->self_frame_count;
+   }
+
+   /* And send it to the peer (FIXME: this is an ugly way to do this) */
+   header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
+   header[1] = htonl(serial_info->size + sizeof(uint32_t));
+   header[2] = htonl(netplay->self_frame_count);
+
+   if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
+   {
+      warn_hangup();
+      netplay->has_connection = false;
+      return;
+   }
+
+   if (!socket_send_all_blocking(netplay->fd, serial_info->data_const, serial_info->size, false))
+   {
+      warn_hangup();
+      netplay->has_connection = false;
+      return;
+   }
 }
 
 void deinit_netplay(void)
@@ -1128,8 +1294,8 @@ bool init_netplay(void)
    netplay_data = (netplay_t*)netplay_new(
          global->netplay.is_client ? global->netplay.server : NULL,
          global->netplay.port ? global->netplay.port : RARCH_DEFAULT_PORT,
-         global->netplay.sync_frames, &cbs, global->netplay.is_spectate,
-         settings->username);
+         global->netplay.sync_frames, global->netplay.check_frames, &cbs,
+         global->netplay.is_spectate, settings->username);
 
    if (netplay_data)
       return true;
@@ -1146,7 +1312,12 @@ bool init_netplay(void)
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
    if (!netplay_data)
-      return false;
+   {
+      if (state == RARCH_NETPLAY_CTL_IS_DATA_INITED)
+         return false;
+      else
+         return true;
+   }
 
    switch (state)
    {
@@ -1156,8 +1327,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_post_frame((netplay_t*)netplay_data);
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
-         netplay_pre_frame((netplay_t*)netplay_data);
-         break;
+         return netplay_pre_frame((netplay_t*)netplay_data);
       case RARCH_NETPLAY_CTL_FLIP_PLAYERS:
          {
             bool *state = (bool*)data;
@@ -1171,6 +1341,15 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
             if (*state)
                command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
          }
+         break;
+      case RARCH_NETPLAY_CTL_PAUSE:
+         netplay_frontend_paused((netplay_t*)netplay_data, true);
+         break;
+      case RARCH_NETPLAY_CTL_UNPAUSE:
+         netplay_frontend_paused((netplay_t*)netplay_data, false);
+         break;
+      case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
+         netplay_load_savestate((netplay_t*)netplay_data, (retro_ctx_serialize_info_t*)data, true);
          break;
       default:
       case RARCH_NETPLAY_CTL_NONE:

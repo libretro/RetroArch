@@ -9,9 +9,8 @@ DEFINES := -DRARCH_INTERNAL -DHAVE_OVERLAY -DHAVE_MAIN
 DEFINES += -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL -DHAVE_OVERLAY -DHAVE_GLSL -DHAVE_FILTERS_BUILTIN 
 
 HAVE_EGL    = 1
-HAVE_OPENGL = 1
-HAVE_GLES = 1
-HAVE_RJPEG  = 1
+HAVE_OPENGLES = 1
+HAVE_RJPEG  = 0
 HAVE_RPNG   = 1
 HAVE_EMSCRIPTEN = 1
 HAVE_RGUI = 1
@@ -84,7 +83,7 @@ else
    CFLAGS += -O2
 endif
 
-CFLAGS += -DHAVE_RPNG -DHAVE_RJPEG -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
+CFLAGS += -DHAVE_RPNG -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
           -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
 all: $(TARGET)

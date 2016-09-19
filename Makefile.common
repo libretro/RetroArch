@@ -5,11 +5,11 @@ ifeq ($(HAVE_GL_CONTEXT),)
       HAVE_GL_CONTEXT=1
    endif
 
-   ifeq ($(HAVE_GLES), 1)
+   ifeq ($(HAVE_OPENGLES), 1)
       HAVE_GL_CONTEXT=1
    endif
 
-   ifeq ($(HAVE_GLES3), 1)
+   ifeq ($(HAVE_OPENGLES3), 1)
       HAVE_GL_CONTEXT=1
    endif
 endif
@@ -132,6 +132,8 @@ OBJ += frontend/frontend.o \
        ui/drivers/null/ui_null_application.o \
        core_impl.o \
        retroarch.o \
+		 dirs.o \
+		 paths.o \
        input/input_keyboard.o \
        command.o \
        msg_hash.o \
@@ -140,11 +142,11 @@ OBJ += frontend/frontend.o \
        libretro-common/algorithms/mismatch.o \
        libretro-common/queues/task_queue.o \
        tasks/task_content.o \
-       tasks/task_save_ram.o \
-       tasks/task_save_state.o \
+       tasks/task_save.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
        libretro-common/encodings/encoding_utf.o \
+       libretro-common/encodings/encoding_crc32.o \
        libretro-common/lists/file_list.o \
        libretro-common/lists/dir_list.o \
        libretro-common/file/retro_dirent.o \
@@ -505,12 +507,16 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_driver.o \
           menu/menu_content.o \
           menu/menu_input.o \
-          menu/menu_entry.o \
+          menu/menu_event.o \
           menu/menu_entries.o \
           menu/menu_navigation.o  \
           menu/menu_setting.o \
           menu/menu_shader.o \
-			 menu/widgets/menu_popup.o \
+			 menu/widgets/menu_dialog.o \
+			 menu/widgets/menu_input_dialog.o \
+			 menu/widgets/menu_input_bind_dialog.o \
+          menu/widgets/menu_entry.o \
+			 menu/widgets/menu_list.o \
           menu/menu_cbs.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
@@ -596,7 +602,7 @@ ifeq ($(HAVE_X11), 1)
 ifeq ($(HAVE_XCB),1)
    LIBS    += -lX11-xcb
 endif
-ifneq ($(HAVE_GLES), 1)
+ifneq ($(HAVE_OPENGLES), 1)
    OBJ += gfx/drivers_context/x_ctx.o
 endif
 endif
@@ -610,6 +616,11 @@ ifeq ($(HAVE_XKBCOMMON), 1)
    DEFINES += $(XKBCOMMON_CFLAGS)
    OBJ += input/drivers_keyboard/keyboard_event_xkb.o
    LIBS += $(XKBCOMMON_LIBS)
+endif
+
+ifeq ($(HAVE_DBUS), 1)
+	LIBS += $(DBUS_LIBS)
+	CFLAGS += $(DBUS_CFLAGS)
 endif
 
 ifeq ($(HAVE_UDEV), 1)
@@ -679,6 +690,7 @@ OBJ += gfx/video_context_driver.o \
        gfx/video_state_tracker.o \
        libretro-common/gfx/math/vector_2.o \
        libretro-common/gfx/math/vector_3.o \
+       libretro-common/gfx/math/vector_4.o \
        libretro-common/gfx/math/matrix_4x4.o \
        libretro-common/gfx/math/matrix_3x3.o
 
@@ -743,7 +755,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    endif
 ifeq ($(HAVE_FFMPEG), 1)
 ifneq ($(C89_BUILD), 1)
-ifneq ($(HAVE_GLES), 1)
+ifneq ($(HAVE_OPENGLES), 1)
    OBJ += cores/libretro-ffmpeg/fft/fft.o
    DEFINES += -Ideps -DHAVE_GL_FFT
    NEED_CXX_LINKER=1
@@ -751,10 +763,10 @@ endif
 endif
 endif
 
-   ifeq ($(HAVE_GLES), 1)
+   ifeq ($(HAVE_OPENGLES), 1)
       LIBS += $(GLES_LIBS)
       DEFINES += $(GLES_CFLAGS) -DHAVE_OPENGLES
-      ifeq ($(HAVE_GLES3), 1)
+      ifeq ($(HAVE_OPENGLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
       else
          DEFINES += -DHAVE_OPENGLES2
@@ -959,6 +971,8 @@ endif
 
 # Compression/Archive
 
+OBJ += libretro-common/file/archive_file.o
+
 ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I./deps/7zip
    HAVE_COMPRESSION = 1
@@ -977,14 +991,13 @@ ifeq ($(HAVE_7ZIP),1)
            deps/7zip/7zCrc.o \
            deps/7zip/Lzma2Dec.o \
    deps/7zip/7zBuf.o
-   OBJ += $(7ZOBJ)
+   OBJ += libretro-common/file/archive_file_7z.o \
+          $(7ZOBJ)
 endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += libretro-common/file/archive_file.o \
-          libretro-common/file/archive_file_zlib.o \
-          tasks/task_decompress.o
+   OBJ += libretro-common/file/archive_file_zlib.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
@@ -1133,8 +1146,10 @@ ifeq ($(HAVE_FFMPEG), 1)
    DEFINES += -Wno-deprecated-declarations -DHAVE_FFMPEG -Iffmpeg
 endif
 
+
 ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
+   OBJ     += tasks/task_decompress.o
 endif
 
 #ifeq ($(HAVE_DIRECTX), 1)

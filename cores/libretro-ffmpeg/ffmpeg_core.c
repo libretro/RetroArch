@@ -272,10 +272,10 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
    static const struct retro_variable vars[] = {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; enabled|disabled" },
-#endif
 #ifdef HAVE_GL_FFT
       { "ffmpeg_fft_resolution", "GLFFT Resolution; 1280x720|1920x1080|640x360|320x180" },
       { "ffmpeg_fft_multisample", "GLFFT Multisample; 1x|2x|4x" },
+#endif
 #endif
       { "ffmpeg_color_space", "Colorspace; auto|BT.709|BT.601|FCC|SMPTE240M" },
       { NULL, NULL },
@@ -343,7 +343,6 @@ static void check_variables(void)
       else if (!strcmp(var.value, "disabled"))
          temporal_interpolation = false;
    }
-#endif
 
 #ifdef HAVE_GL_FFT
    fft_var.key = "ffmpeg_fft_resolution";
@@ -365,6 +364,7 @@ static void check_variables(void)
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &fft_ms_var) && fft_ms_var.value)
       fft_multisample = strtoul(fft_ms_var.value, NULL, 0);
+#endif
 #endif
 
    color_var.key = "ffmpeg_color_space";
@@ -436,9 +436,9 @@ void CORE_PREFIX(retro_run)(void)
    double min_pts;
    int16_t audio_buffer[2048];
    bool left, right, up, down, l, r;
-   size_t to_read_frames = 0;
-   int seek_frames = 0;
-   bool updated = false;
+   size_t to_read_frames        = 0;
+   int seek_frames              = 0;
+   bool updated                 = false;
 #ifdef HAVE_GL_FFT
    unsigned old_fft_width       = fft_width;
    unsigned old_fft_height      = fft_height;
@@ -1172,12 +1172,10 @@ static void decode_thread(void *data)
    (void)data;
    
    if (video_stream >= 0)
-   {
       sws = sws_getCachedContext(NULL,
             media.width, media.height, vctx->pix_fmt,
             media.width, media.height, PIX_FMT_RGB32,
             SWS_POINT, NULL, NULL, NULL);
-   }
 
    for (i = 0; (int)i < audio_streams_num; i++)
    {

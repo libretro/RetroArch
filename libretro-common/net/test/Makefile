@@ -13,9 +13,10 @@ CFLAGS += -Wall -pedantic -std=gnu99
 
 HTTP_TEST_C = \
 				  $(LIBRETRO_COMM_DIR)/net/net_http.c \
-				  net_http_test.c \
 				  $(LIBRETRO_COMM_DIR)/net/net_compat.c \
-				  $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
+				  $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+				  $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+				  net_http_test.c
 
 HTTP_TEST_OBJS := $(HTTP_TEST_C:.c=.o)
 

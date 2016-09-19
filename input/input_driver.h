@@ -27,10 +27,6 @@
 #include "input_joypad_driver.h"
 #include "input_defines.h"
 
-#ifdef HAVE_OVERLAY
-#include "input_overlay.h"
-#endif
-
 RETRO_BEGIN_DECLS
 
 typedef struct retro_input

@@ -572,10 +572,9 @@ core_info_t *core_info_get(core_info_list_t *list, size_t i)
 void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       const char *path, const core_info_t **infos, size_t *num_infos)
 {
-#ifdef HAVE_ZLIB
+   size_t i;
    struct string_list *list = NULL;
-#endif
-   size_t supported = 0, i;
+   size_t supported         = 0;
 
    if (!core_info_list)
       return;
@@ -608,10 +607,8 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       break;
    }
 
-#ifdef HAVE_ZLIB
    if (list)
       string_list_free(list);
-#endif
 
    *infos     = core_info_list->list;
    *num_infos = supported;

@@ -87,9 +87,6 @@ void core_set_input_state(retro_ctx_input_state_info_t *info)
 static bool core_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
-#ifdef HAVE_NETPLAY
-   global_t            *global = global_get_ptr();
-#endif
 
    if (!cbs)
       return false;
@@ -109,20 +106,10 @@ static bool core_init_libretro_cbs(void *data)
    /* Force normal poll type for netplay. */
    core_poll_type = POLL_TYPE_NORMAL;
 
-   if (global->netplay.is_spectate)
-   {
-      core.retro_set_input_state(
-            (global->netplay.is_client ?
-             input_state_spectate_client : input_state_spectate)
-            );
-   }
-   else
-   {
-      core.retro_set_video_refresh(video_frame_net);
-      core.retro_set_audio_sample(audio_sample_net);
-      core.retro_set_audio_sample_batch(audio_sample_batch_net);
-      core.retro_set_input_state(input_state_net);
-   }
+   core.retro_set_video_refresh(video_frame_net);
+   core.retro_set_audio_sample(audio_sample_net);
+   core.retro_set_audio_sample_batch(audio_sample_batch_net);
+   core.retro_set_input_state(input_state_net);
 #endif
 
    return true;

@@ -32,7 +32,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
-#include "../menu_entry.h"
+#include "../widgets/menu_entry.h"
 #include "../menu_entries.h"
 #include "../menu_input.h"
 #include "../menu_navigation.h"
@@ -525,19 +525,14 @@ static void xui_set_list_text(int index, const wchar_t* leftText,
 
 static void xui_render(void *data)
 {
-   uint64_t *frame_count;
-   bool display_kb, msg_force;
-   unsigned fb_width;
 	size_t end, i, selection;
 	char title[PATH_MAX_LENGTH] = {0};
 	const char *dir             = NULL;
    const char *label           = NULL;
 	unsigned menu_type          = 0;
-
-   frame_count = video_driver_get_frame_count_ptr();
-
-   fb_width = menu_display_get_width();
-   msg_force = menu_display_get_msg_force();
+   uint64_t *frame_count       = video_driver_get_frame_count_ptr();
+   unsigned           fb_width = menu_display_get_width();
+   bool              msg_force = menu_display_get_msg_force();
 
    if (
          menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
@@ -577,28 +572,25 @@ static void xui_render(void *data)
       wchar_t msg_right[PATH_MAX_LENGTH]   = {0};
       wchar_t msg_left[PATH_MAX_LENGTH]    = {0};
 
-      menu_entry_get_value(i, entry_value, sizeof(entry_value));
+      menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
       mbstowcs(msg_left,  entry_path,  sizeof(msg_left)  / sizeof(wchar_t));
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
       xui_set_list_text(i, msg_left, msg_right);
    }
+
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
+
 	XuiListSetCurSelVisible(m_menulist, selection);
 
-   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
-
-   if (display_kb)
+   if (menu_input_dialog_get_display_kb())
 	{
-		char msg[1024]  = {0};
-      const char *str = NULL, *label = NULL;
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
+		char msg[1024]    = {0};
+      const char *str   = menu_input_dialog_get_buffer();
+      const char *label = menu_input_dialog_get_label_buffer();
 
-		if (!str)
-			str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
 		xui_render_messagebox(msg);			
 	}

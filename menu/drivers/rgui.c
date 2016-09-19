@@ -42,6 +42,8 @@
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 
+#include "../widgets/menu_input_dialog.h"
+
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../gfx/drivers_font_renderer/bitmap.h"
@@ -383,11 +385,11 @@ static void rgui_render(void *data)
 {
    menu_animation_ctx_ticker_t ticker;
    unsigned x, y;
-   bool display_kb, msg_force;
    uint16_t hover_color, normal_color;
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
    int bottom;
+   bool msg_force                 = false;
    uint64_t *frame_count          = NULL;
    char title[256]                = {0};
    char title_buf[256]            = {0};
@@ -580,7 +582,7 @@ static void rgui_render(void *data)
       entry_title_buf[0] = '\0';
       type_str_buf[0]    = '\0';
 
-      menu_entry_get_value(i, entry_value, sizeof(entry_value));
+      menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label(i, entry_path, sizeof(entry_path));
 
       ticker.s        = entry_title_buf;
@@ -609,17 +611,11 @@ static void rgui_render(void *data)
             entry_selected ? hover_color : normal_color);
    }
 
-   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
-
-   if (display_kb)
+   if (menu_input_dialog_get_display_kb())
    {
-      const char *str   = NULL;
-      const char *label = NULL;
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
+      const char *str   = menu_input_dialog_get_buffer();
+      const char *label = menu_input_dialog_get_label_buffer();
 
-      if (!str)
-         str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       rgui_render_messagebox(msg);
    }

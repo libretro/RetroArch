@@ -41,7 +41,7 @@
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
-#include "../menu_entry.h"
+#include "../widgets/menu_entry.h"
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 #include "../../retroarch.h"
@@ -166,43 +166,41 @@ struct zui_tabbed
 };
 
 
-static enum zarch_layout_type zarch_layout;
+static enum zarch_layout_type zarch_layout = LAY_HOME;
 
 static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
 {
    return font_driver_get_message_width(fb_buf, text, strlen(text), scale);
 }
 
-
 static int16_t zarch_zui_input_state(zui_t *zui, enum zarch_zui_input_state state)
 {
-    switch (state)
-    {
-        case MENU_ZARCH_MOUSE_X:
-            return menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-        case MENU_ZARCH_MOUSE_Y:
-            return menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-        case MENU_POINTER_ZARCH_X:
-            return menu_input_pointer_state(MENU_POINTER_X_AXIS);
-        case MENU_POINTER_ZARCH_Y:
-            return menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-        case MENU_ZARCH_PRESSED:
-            if (     menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) 
-                  || menu_input_pointer_state(MENU_POINTER_PRESSED))
-                return 1;
-            if (zui->action == MENU_ACTION_OK)
-               return 1;
-            break;
-    }
-    
-    return 0;
+   switch (state)
+   {
+      case MENU_ZARCH_MOUSE_X:
+         return menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      case MENU_ZARCH_MOUSE_Y:
+         return menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      case MENU_POINTER_ZARCH_X:
+         return menu_input_pointer_state(MENU_POINTER_X_AXIS);
+      case MENU_POINTER_ZARCH_Y:
+         return menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+      case MENU_ZARCH_PRESSED:
+         if (     menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) 
+               || menu_input_pointer_state(MENU_POINTER_PRESSED))
+            return 1;
+         if (zui->action == MENU_ACTION_OK)
+            return 1;
+         break;
+   }
+
+   return 0;
 }
 
 static bool zarch_zui_check_button_down(zui_t *zui,
       unsigned id, int x1, int y1, int x2, int y2)
 {
    menu_input_ctx_hitbox_t hitbox;
-   bool result = false;
 
    hitbox.x1   = x1;
    hitbox.x2   = x2;
@@ -215,11 +213,11 @@ static bool zarch_zui_check_button_down(zui_t *zui,
    if (     zui->item.hot == id 
          && zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
    {
-      result = true;
       zui->item.active = id;
+      return true;
    }
 
-   return result;
+   return false;
 }
 
 static bool zarch_zui_check_button_up(zui_t *zui,
@@ -328,9 +326,7 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
    frame_count           = video_driver_get_frame_count_ptr();
 
    if (tab->active_id != tab->prev_id)
-   {
       tab->prev_id         = tab->active_id;
-   }
 
    if (selected)
    {
@@ -398,9 +394,7 @@ static bool zarch_zui_tab(zui_t *zui, struct zui_tabbed *tab,
    if (zui->item.active == id || tab->active_id == ~0U || !tab->inited)
       tab->active_id    = id;
    else if (id > tab->active_id)
-   {
       tab->next_id            = id;
-   }
 
    if (!tab->inited)
       tab->inited = true;
@@ -518,15 +512,17 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, struct zui_tabbed *tabbe
 
       for (i = zui->recent_dlist_first; i < size; ++i)
       {
-         char rich_label[PATH_MAX_LENGTH] = {0};
-         menu_entry_t entry               = {{0}};
+         char rich_label[PATH_MAX_LENGTH]  = {0};
+         char entry_value[PATH_MAX_LENGTH] = {0};
+         menu_entry_t entry                = {{0}};
 
          menu_entry_get(&entry, 0, i, NULL, true);
          menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
+         menu_entry_get_value(i, NULL, entry_value,sizeof(entry_value));
 
          if (zarch_zui_list_item(zui, tabbed, 0, 
                   tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
-                  rich_label, i, entry.value, gamepad_index == (signed)i))
+                  rich_label, i, entry_value, gamepad_index == (signed)i))
          {
             if (menu_entry_action(&entry, i, MENU_ACTION_OK))
                return 1;
@@ -850,9 +846,7 @@ static void zarch_frame(void *data)
    menu_display_ctx_coord_draw_t coord_draw;
    settings_t *settings    = config_get_ptr();
    zui_t *zui              = (zui_t*)data;
-   video_coord_array_t *ca   = NULL;
-
-   ca = menu_display_get_coords_array();
+   video_coord_array_t *ca = menu_display_get_coords_array();
    
    if (!zui)
       return;
@@ -1127,8 +1121,8 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 static bool zarch_menu_init_list(void *data)
 {
    menu_displaylist_info_t info = {0};
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));

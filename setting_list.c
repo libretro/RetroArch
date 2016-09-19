@@ -25,6 +25,8 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/widgets/menu_input_dialog.h"
+#include "menu/widgets/menu_input_bind_dialog.h"
 #endif
 
 #include "configuration.h"
@@ -140,7 +142,7 @@ static int setting_bind_action_ok(void *data, bool wraparound)
 
 #ifdef HAVE_MENU
    /* TODO - get rid of menu dependency */
-   if (!menu_input_ctl(MENU_INPUT_CTL_BIND_SINGLE, data))
+   if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_SINGLE, data))
       return -1;
 #endif
    return 0;
@@ -1772,10 +1774,8 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+      rarch_setting_t *setting = NULL;
+      const char        *label = menu_input_dialog_get_label_buffer();
 
       if (!string_is_empty(label))
          setting = menu_setting_find(label);
@@ -1787,7 +1787,40 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
       }
    }
 
-   menu_input_key_end_line();
+   menu_input_dialog_end();
+}
+
+static void menu_input_st_uint_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      const char        *label = menu_input_dialog_get_label_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
+      setting_set_with_string_representation(setting, str);
+   }
+
+   menu_input_dialog_end();
+}
+
+static void menu_input_st_hex_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      const char        *label = menu_input_dialog_get_label_buffer();
+      rarch_setting_t *setting = menu_setting_find(label);
+
+      if (setting)
+      {
+         unsigned *ptr = (unsigned*)setting_get_ptr(setting);
+         if (str[0] == '#')
+            str++;
+         if (ptr)
+            *ptr = strtoul(str, NULL, 16);
+      }
+   }
+
+   menu_input_dialog_end();
 }
 
 static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
@@ -1824,7 +1857,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
    line.idx           = 0;
    line.cb            = cb;
 
-   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+   if (!menu_input_dialog_start(&line))
       return -1;
 
    return 0;

@@ -83,14 +83,6 @@ enum rarch_ctl_state
 
 };
 
-enum rarch_content_type
-{
-   RARCH_CONTENT_NONE = 0,
-   RARCH_CONTENT_MOVIE,
-   RARCH_CONTENT_MUSIC,
-   RARCH_CONTENT_IMAGE
-};
-
 enum rarch_capabilities
 {
    RARCH_CAPABILITIES_NONE = 0,
@@ -110,6 +102,7 @@ enum rarch_override_setting
    RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS,
    RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT,
    RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES,
+   RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES,
    RARCH_OVERRIDE_SETTING_UPS_PREF,
    RARCH_OVERRIDE_SETTING_BPS_PREF,
    RARCH_OVERRIDE_SETTING_IPS_PREF,
@@ -145,15 +138,9 @@ void retroarch_override_setting_free_state(void);
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx);
 
-enum rarch_content_type retroarch_path_is_media_type(const char *path);
-
 const char *retroarch_get_current_savefile_dir(void);
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
-
-void retroarch_set_pathnames(const char *path);
-
-void retroarch_fill_pathnames(void);
 
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
 

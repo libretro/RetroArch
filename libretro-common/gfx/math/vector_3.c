@@ -46,30 +46,38 @@ float vec3_length(const float *a)
 
 void vec3_add(float *dst, const float *src)
 {
-	dst[0] += src[0];
-	dst[1] += src[1];
-	dst[2] += src[2];
+   unsigned i;
+   unsigned n = 3;
+
+   for (i = 0; i < n; i++)
+      dst[i] += src[i];
 }
 
 void vec3_subtract(float *dst, const float *src)
 {
-	dst[0] -= src[0];
-	dst[1] -= src[1];
-	dst[2] -= src[2];
+   unsigned i;
+   unsigned n = 3;
+
+   for (i = 0; i < n; i++)
+      dst[i] -= src[i];
 }
 
 void vec3_scale(float *dst, const float scale)
 {
-	dst[0] *= scale;
-	dst[1] *= scale;
-	dst[2] *= scale;
+   unsigned i;
+   unsigned n = 3;
+
+   for (i = 0; i < n; i++)
+      dst[i] *= scale;
 }
 
 void vec3_copy(float *dst, const float *src)
 {
-	dst[0] = src[0];
-	dst[1] = src[1];
-	dst[2] = src[2];
+   unsigned i;
+   unsigned n = 3;
+
+   for (i = 0; i < n; i++)
+      dst[i] = src[i];
 }
 
 void vec3_normalize(float *dst)

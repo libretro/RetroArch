@@ -24,6 +24,10 @@
 #include <gccore.h>
 #include <ogcsys.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include <rthreads/rthreads.h>
 #include "../../memory/wii/mem2_manager.h"
@@ -61,6 +65,7 @@ static enum frontend_fork gx_fork_mode = FRONTEND_FORK_NONE;
 #endif
 
 #ifndef IS_SALAMANDER
+#include "../../paths.h"
 
 enum
 {
@@ -410,7 +415,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
     * active core path is set here. */
-   if (config_active_core_path_is_empty() && *argc >= 1 && strrchr(argv[0], '/'))
+   if (path_is_core_empty() && *argc >= 1 && strrchr(argv[0], '/'))
    {
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));

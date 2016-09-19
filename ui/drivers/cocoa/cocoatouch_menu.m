@@ -31,7 +31,7 @@
 #include "../../../runloop.h"
 
 #ifdef HAVE_MENU
-#include "../../../menu/menu_entry.h"
+#include "../../../menu/widgets/menu_entry.h"
 #include "../../../menu/menu_navigation.h"
 #include "../../../menu/drivers/menu_generic.h"
 #endif
@@ -121,7 +121,7 @@ static void RunActionSheet(const char* title, const struct string_list* items,
                                     reuseIdentifier:cell_id];
 
   menu_entry_get_path(self.i, label, sizeof(label));
-  menu_entry_get_value(self.i, buffer, sizeof(buffer));
+  menu_entry_get_value(self.i, NULL, buffer, sizeof(buffer));
 
   result.textLabel.text = BOXSTRING(label);
 
@@ -429,7 +429,7 @@ replacementString:(NSString *)string
    field          = [alertView textFieldAtIndex:0];
    field.delegate = self.formatter;
 
-   menu_entry_get_value(self.i, buffer, sizeof(buffer));
+   menu_entry_get_value(self.i, NULL, buffer, sizeof(buffer));
    if (string_is_empty(buffer))
       strlcpy(buffer,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),

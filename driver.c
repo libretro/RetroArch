@@ -167,15 +167,16 @@ static bool driver_find_first(const char *label, char *s, size_t len)
 static bool driver_find_prev(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
+
    if (i > 0)
-      find_driver_nonempty(label, i - 1, s, len);
-   else
    {
-      RARCH_WARN(
-            "Couldn't find any previous driver (current one: \"%s\").\n", s);
-      return false;
+      find_driver_nonempty(label, i - 1, s, len);
+      return true;
    }
-   return true;
+
+   RARCH_WARN(
+         "Couldn't find any previous driver (current one: \"%s\").\n", s);
+   return false;
 }
 
 /**
@@ -189,16 +190,17 @@ static bool driver_find_prev(const char *label, char *s, size_t len)
 bool driver_find_next(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
+
    if (i >= 0 && !string_is_equal(s, "null"))
-      find_driver_nonempty(label, i + 1, s, len);
-   else
    {
-      RARCH_WARN("%s (current one: \"%s\").\n",
-            msg_hash_to_str(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER),
-            s);
-      return false;
+      find_driver_nonempty(label, i + 1, s, len);
+      return true;
    }
-   return true;
+
+   RARCH_WARN("%s (current one: \"%s\").\n",
+         msg_hash_to_str(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER),
+         s);
+   return false;
 }
 
 static void driver_adjust_system_rates(void)

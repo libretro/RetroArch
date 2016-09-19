@@ -18,11 +18,10 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
-#include "menu_driver.h"
-#include "menu_display.h"
-#include "menu_navigation.h"
+#include "menu_input_dialog.h"
 
-#include "../setting_list.h"
+#include "../menu_driver.h"
+#include "../menu_navigation.h"
 
 /* This file provides an abstraction of the currently displayed
  * menu.
@@ -234,10 +233,12 @@ void menu_entry_reset(uint32_t i)
    menu_entry_action(&entry, i, MENU_ACTION_START);
 }
 
-void menu_entry_get_value(uint32_t i, char *s, size_t len)
+void menu_entry_get_value(uint32_t i, void *data, char *s, size_t len)
 {
+   file_list_t *list  = (file_list_t*)data;
    menu_entry_t entry = {{0}};
-   menu_entry_get(&entry, 0, i, NULL, true);
+
+   menu_entry_get(&entry, 0, i, list, true);
    strlcpy(s, entry.value, len);
 }
 
@@ -405,7 +406,7 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
                   entry->label, entry->type, i);
          break;
       case MENU_ACTION_SEARCH:
-         menu_input_ctl(MENU_INPUT_CTL_SEARCH_START, NULL);
+         menu_input_dialog_start_search();
          break;
 
       case MENU_ACTION_SCAN:

@@ -153,18 +153,18 @@ static GLuint fft_compile_program(glfft_t *fft,
 
 static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned height)
 {
-   /* Render scene. */
-   glBindFramebuffer(GL_FRAMEBUFFER, fft->ms_fbo ? fft->ms_fbo : backbuffer);
-   glViewport(0, 0, width, height);
-   glClearColor(0.1f, 0.15f, 0.1f, 1.0f);
-   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
    vec3 eye        = vec3(0, 80, -60);
    vec3 center     = eye + vec3(0.0f, 0.0f, 1.0f);
    vec3 up         = vec3(0.0f, 1.0f, 0.0f);
    mat4 mvp_persp  = perspective((float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
    mat4 mvp_lookat = lookAt(eye, center, up);
    mat4 mvp        = mvp_persp * mvp_lookat;
+
+   /* Render scene. */
+   glBindFramebuffer(GL_FRAMEBUFFER, fft->ms_fbo ? fft->ms_fbo : backbuffer);
+   glViewport(0, 0, width, height);
+   glClearColor(0.1f, 0.15f, 0.1f, 1.0f);
+   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
    glUseProgram(fft->block.prog);
    glUniformMatrix4fv(glGetUniformLocation(fft->block.prog, "uMVP"),
@@ -524,12 +524,12 @@ static void fft_init(glfft_t *fft)
 static void fft_init_block(glfft_t *fft)
 {
    unsigned x, y;
-   GLuint *bp;
-   GLushort *block_vertices;
-   GLuint   *block_indices;
    unsigned block_vertices_size;
    unsigned block_indices_size;
-   int pos    = 0;
+   int pos                      = 0;
+   GLuint *bp                   = NULL;
+   GLushort *block_vertices     = NULL;
+   GLuint   *block_indices      = NULL;
 
    fft->block.prog = fft_compile_program(fft,
          fft_vertex_program_heightmap, fft_fragment_program_heightmap);
@@ -605,13 +605,13 @@ static bool fft_context_reset(glfft_t *fft, unsigned fft_steps,
    fft->block_size  = fft->size / 4 + 1;
 
    fft->passes_size = fft_steps;
-   fft->passes = (Pass*)calloc(fft->passes_size, sizeof(Pass));
+   fft->passes      = (Pass*)calloc(fft->passes_size, sizeof(Pass));
 
    if (!fft->passes)
       return false;
 
    fft->sliding_size = 2 * fft->size;
-   fft->sliding = (GLshort*)calloc(fft->sliding_size, sizeof(GLshort));
+   fft->sliding      = (GLshort*)calloc(fft->sliding_size, sizeof(GLshort));
 
    if (!fft->sliding)
       return false;

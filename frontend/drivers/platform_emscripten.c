@@ -39,6 +39,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../command.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../file_path_special.h"
 
 static void emscripten_mainloop(void)
@@ -57,7 +58,7 @@ static void emscripten_mainloop(void)
 
 void cmd_savefiles(void)
 {
-   command_event(CMD_EVENT_SAVEFILES, NULL);
+   event_save_files();
 }
 
 void cmd_save_state(void)
@@ -126,7 +127,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.menu_content, user_path,
          "content", sizeof(g_defaults.dir.menu_content));
    fill_pathname_join(g_defaults.dir.core_assets, user_path,
-         "downloads", sizeof(g_defaults.dir.core_assets));
+         "content/downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.playlist, user_path,
          "playlists", sizeof(g_defaults.dir.playlist));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,

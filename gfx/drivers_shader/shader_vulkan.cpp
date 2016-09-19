@@ -44,7 +44,7 @@ static const uint32_t opaque_frag[] =
 
 static unsigned num_miplevels(unsigned width, unsigned height)
 {
-   unsigned size = std::max(width, height);
+   unsigned size   = std::max(width, height);
    unsigned levels = 0;
    while (size)
    {
@@ -60,7 +60,7 @@ static void image_layout_transition_levels(
       VkAccessFlags src_access, VkAccessFlags dst_access,
       VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages)
 {
-   VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+   VkImageMemoryBarrier barrier        = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 
    barrier.srcAccessMask               = src_access;
    barrier.dstAccessMask               = dst_access;
@@ -1218,8 +1218,7 @@ void *Buffer::map()
    {
       if (vkMapMemory(device, memory, 0, size, 0, &mapped) == VK_SUCCESS)
          return mapped;
-      else
-         return nullptr;
+      return nullptr;
    }
    return mapped;
 }
@@ -1614,7 +1613,7 @@ CommonResources::CommonResources(VkDevice device,
    memcpy(ptr, vbo_data, sizeof(vbo_data));
    vbo->unmap();
 
-   VkSamplerCreateInfo info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+   VkSamplerCreateInfo info     = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
    info.mipLodBias              = 0.0f;
    info.maxAnisotropy           = 1.0f;
    info.compareEnable           = false;
@@ -1739,6 +1738,10 @@ bool Pass::init_feedback()
 
 bool Pass::build()
 {
+   unordered_map<string, slang_semantic_map> semantic_map;
+   unsigned i;
+   unsigned j = 0;
+
    framebuffer.reset();
    framebuffer_feedback.reset();
 
@@ -1750,8 +1753,6 @@ bool Pass::build()
                pass_info.rt_format, pass_info.max_levels));
    }
 
-   unordered_map<string, slang_semantic_map> semantic_map;
-   unsigned j = 0;
    for (auto &param : parameters)
    {
       if (!set_unique_map(semantic_map, param.id,
@@ -1760,24 +1761,23 @@ bool Pass::build()
       j++;
    }
 
-   reflection = slang_reflection{};
-   reflection.pass_number = pass_number;
-   reflection.texture_semantic_map = &common->texture_semantic_map;
+   reflection                              = slang_reflection{};
+   reflection.pass_number                  = pass_number;
+   reflection.texture_semantic_map         = &common->texture_semantic_map;
    reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
-   reflection.semantic_map = &semantic_map;
+   reflection.semantic_map                 = &semantic_map;
 
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
 
    // Filter out parameters which we will never use anyways.
    filtered_parameters.clear();
-   for (unsigned i = 0; i < reflection.semantic_float_parameters.size(); i++)
+
+   for (i = 0; i < reflection.semantic_float_parameters.size(); i++)
    {
       if (reflection.semantic_float_parameters[i].uniform ||
           reflection.semantic_float_parameters[i].push_constant)
-      {
          filtered_parameters.push_back(parameters[i]);
-      }
    }
 
    if (!init_pipeline())
@@ -1837,9 +1837,7 @@ void Pass::set_semantic_texture_array(VkDescriptorSet set,
 {
    if (index < reflection.semantic_textures[semantic].size() &&
          reflection.semantic_textures[semantic][index].texture)
-   {
       set_texture(set, reflection.semantic_textures[semantic][index].binding, texture);
-   }
 }
 
 void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
@@ -1850,20 +1848,16 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       return;
 
    if (data && refl[index].uniform)
-   {
       build_vec4(
             reinterpret_cast<float *>(data + refl[index].ubo_offset),
             width,
             height);
-   }
 
    if (refl[index].push_constant)
-   {
       build_vec4(
             reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2)),
             width,
             height);
-   }
 }
 
 void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
@@ -1876,21 +1870,18 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       unsigned width, unsigned height)
 {
    auto &refl = reflection.semantics[semantic];
+
    if (data && refl.uniform)
-   {
       build_vec4(
             reinterpret_cast<float *>(data + refl.ubo_offset),
             width,
             height);
-   }
 
    if (refl.push_constant)
-   {
       build_vec4(
             reinterpret_cast<float *>(push.buffer.data() + (refl.push_constant_offset >> 2)),
             width,
             height);
-   }
 }
 
 void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)

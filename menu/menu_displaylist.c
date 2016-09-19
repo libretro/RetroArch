@@ -44,7 +44,8 @@
 #include "menu_content.h"
 #include "menu_driver.h"
 #include "menu_navigation.h"
-#include "widgets/menu_popup.h"
+#include "widgets/menu_dialog.h"
+#include "widgets/menu_list.h"
 #include "menu_cbs.h"
 
 #include "../configuration.h"
@@ -52,6 +53,7 @@
 #include "../defaults.h"
 #include "../managers/cheat_manager.h"
 #include "../managers/core_option_manager.h"
+#include "../paths.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../core.h"
@@ -461,7 +463,7 @@ static uint64_t bytes_to_gb(uint64_t bytes)
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
    int controller;
-#if defined(HAVE_OPENGL) || defined(HAVE_GLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    gfx_ctx_ident_t ident_info;
 #endif
    char tmp[PATH_MAX_LENGTH]             = {0};
@@ -797,7 +799,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       }
    }
 
-#if defined(HAVE_OPENGL) || defined(HAVE_GLES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    video_context_driver_get_ident(&ident_info);
    tmp_string = ident_info.ident;
 
@@ -2422,12 +2424,16 @@ loop:
       menu_settings_list_increment(&setting);
    }
 
-   if (count == 0 && add_empty_entry)
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-            MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
-            0, 0, 0);
+   if (count == 0)
+   {
+      if (add_empty_entry)
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+               MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+               0, 0, 0);
+      return -1;
+   }
 
    return 0;
 }
@@ -3366,7 +3372,9 @@ static int menu_displaylist_parse_generic(
       filter_ext = true;
 
    if (path_is_compressed)
-      str_list = compressed_file_list_new(info->path, info->exts);
+   {
+      str_list = file_archive_file_list_new(info->path, info->exts);
+   }
    else
       str_list = dir_list_new(info->path,
             filter_ext ? info->exts : NULL,
@@ -3480,7 +3488,7 @@ static int menu_displaylist_parse_generic(
       if (settings->multimedia.builtin_mediaplayer_enable ||
             settings->multimedia.builtin_imageviewer_enable)
       {
-         switch (retroarch_path_is_media_type(path))
+         switch (path_is_media_type(path))
          {
             case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG
@@ -4182,7 +4190,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_HELP:
          menu_entries_append_enum(info->list, info->path,
                info->label, MSG_UNKNOWN, info->type, info->directory_ptr, 0);
-         menu_popup_unset_pending_push();
+         menu_dialog_unset_pending_push();
          break;
       case DISPLAYLIST_SETTING_ENUM:
          {
@@ -4624,67 +4632,106 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
-               PARSE_ONLY_STRING, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
-               PARSE_ONLY_STRING, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-               PARSE_ONLY_BOOL, false);
+         {
+            unsigned count = 0;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                     MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
+                     PARSE_ONLY_STRING, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
+                  PARSE_ONLY_STRING, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                     MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                     0, 0, 0);
+         }
 
          info->need_refresh = true;
          info->need_push    = true;
          break;
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETPLAY_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
-               PARSE_ONLY_STRING, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETPLAY_MODE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETWORK_CMD_PORT,
-               PARSE_ONLY_UINT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_NETWORK_REMOTE_PORT,
-               PARSE_ONLY_UINT, false);
-
          {
             unsigned user;
+            unsigned count = 0;
+
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_ENABLE,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
+                  PARSE_ONLY_STRING, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_MODE,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES,
+                  PARSE_ONLY_UINT, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,
+                  PARSE_ONLY_UINT, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
+                  PARSE_ONLY_UINT, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETWORK_CMD_PORT,
+                  PARSE_ONLY_UINT, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETWORK_REMOTE_PORT,
+                  PARSE_ONLY_UINT, false) != -1)
+               count++;
+
             for(user = 0; user < settings->input.max_users; user++)
             {
-               menu_displaylist_parse_settings_enum(menu, info,
+               if (menu_displaylist_parse_settings_enum(menu, info,
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
-                     PARSE_ONLY_BOOL, false);
+                     PARSE_ONLY_BOOL, false) != -1)
+                  count++;
             }
-         }
 
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
-               PARSE_ONLY_BOOL, false);
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+
+            if (count == 0)
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                     MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                     0, 0, 0);
+         }
 
          info->need_refresh = true;
          info->need_push    = true;

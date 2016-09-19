@@ -35,12 +35,15 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE,
    RARCH_NETPLAY_CTL_POST_FRAME,
    RARCH_NETPLAY_CTL_PRE_FRAME,
-   RARCH_NETPLAY_CTL_IS_DATA_INITED
+   RARCH_NETPLAY_CTL_IS_DATA_INITED,
+   RARCH_NETPLAY_CTL_PAUSE,
+   RARCH_NETPLAY_CTL_UNPAUSE,
+   RARCH_NETPLAY_CTL_LOAD_SAVESTATE
 };
 
 enum netplay_cmd
 {
-   /* Miscellaneous commands */
+   /* Basic commands */
 
    /* Acknowlegement response */
    NETPLAY_CMD_ACK            = 0x0000, 
@@ -48,28 +51,40 @@ enum netplay_cmd
    /* Failed acknowlegement response */
    NETPLAY_CMD_NAK            = 0x0001, 
 
+   /* Input data */
+   NETPLAY_CMD_INPUT          = 0x0002,
+
+   /* Misc. commands */
+
    /* Swap inputs between player 1 and player 2 */
-   NETPLAY_CMD_FLIP_PLAYERS   = 0x0002,
+   NETPLAY_CMD_FLIP_PLAYERS   = 0x0003,
 
    /* Toggle spectate/join mode */
-   NETPLAY_CMD_SPECTATE       = 0x0003, 
+   NETPLAY_CMD_SPECTATE       = 0x0004, 
 
    /* Gracefully disconnects from host */
-   NETPLAY_CMD_DISCONNECT     = 0x0004, 
+   NETPLAY_CMD_DISCONNECT     = 0x0005, 
 
    /* Sends multiple config requests over, 
     * See enum netplay_cmd_cfg */
-   NETPLAY_CMD_CFG            = 0x0005, 
+   NETPLAY_CMD_CFG            = 0x0006, 
 
    /* CMD_CFG streamlines sending multiple
       configurations. This acknowledges
       each one individually */
-   NETPLAY_CMD_CFG_ACK        = 0x0006, 
+   NETPLAY_CMD_CFG_ACK        = 0x0007, 
 
    /* Loading and synchronization */
 
+   /* Send the CRC hash of a frame's state */
+   NETPLAY_CMD_CRC            = 0x0010,
+
+   /* Request a savestate */
+   NETPLAY_CMD_REQUEST_SAVESTATE = 0x0011,
+
    /* Send a savestate for the client to load */
    NETPLAY_CMD_LOAD_SAVESTATE = 0x0012, 
+
    /* Sends over cheats enabled on client */
    NETPLAY_CMD_CHEATS         = 0x0013, 
 
@@ -110,17 +125,12 @@ void audio_sample_net(int16_t left, int16_t right);
 
 size_t audio_sample_batch_net(const int16_t *data, size_t frames);
 
-int16_t input_state_spectate(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
-
-int16_t input_state_spectate_client(unsigned port, unsigned device,
-      unsigned idx, unsigned id);
-
 /**
  * netplay_new:
  * @server               : IP address of server.
  * @port                 : Port of server.
  * @frames               : Amount of lag frames.
+ * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
  * @nick                 : Nickname of user.
@@ -131,7 +141,7 @@ int16_t input_state_spectate_client(unsigned port, unsigned device,
  * Returns: new netplay handle.
  **/
 netplay_t *netplay_new(const char *server,
-      uint16_t port, unsigned frames,
+      uint16_t port, unsigned frames, unsigned check_frames,
       const struct retro_callbacks *cb, bool spectate,
       const char *nick);
 
@@ -149,8 +159,11 @@ void netplay_free(netplay_t *handle);
  *
  * Pre-frame for Netplay.
  * Call this before running retro_run().
+ *
+ * Returns: true (1) if the frontend is clear to emulate the frame, false (0)
+ * if we're stalled or paused
  **/
-void netplay_pre_frame(netplay_t *handle);
+bool netplay_pre_frame(netplay_t *handle);
 
 /**
  * netplay_post_frame:   
@@ -161,6 +174,25 @@ void netplay_pre_frame(netplay_t *handle);
  * Call this after running retro_run().
  **/
 void netplay_post_frame(netplay_t *handle);
+
+/**
+ * netplay_frontend_paused
+ * @netplay              : pointer to netplay object
+ * @paused               : true if frontend is paused
+ *
+ * Inform Netplay of the frontend's pause state (paused or otherwise)
+ **/
+void netplay_frontend_paused(netplay_t *netplay, bool paused);
+
+/**
+ * netplay_load_savestate
+ * @netplay              : pointer to netplay object
+ * @serial_info          : the savestate being loaded, NULL means "load it yourself"
+ * @save                 : whether to save the provided serial_info into the frame buffer
+ *
+ * Inform Netplay of a savestate load and send it to the other side
+ **/
+void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info, bool save);
 
 /**
  * init_netplay:

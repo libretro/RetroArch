@@ -23,10 +23,6 @@
 
 #include "core_type.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 RETRO_BEGIN_DECLS
 
 /**
@@ -49,7 +45,6 @@ RETRO_BEGIN_DECLS
 void libretro_get_environment_info(void (*)(retro_environment_t),
       bool *load_no_content);
 
-#ifdef HAVE_DYNAMIC
 /**
  * libretro_get_system_info:
  * @path                         : Path to libretro library.
@@ -64,21 +59,6 @@ void libretro_get_environment_info(void (*)(retro_environment_t),
  **/
 bool libretro_get_system_info(const char *path,
       struct retro_system_info *info, bool *load_no_content);
-#else
-/**
- * libretro_get_system_info_static:
- * @info                         : System info information.
- * @load_no_content              : If true, core should be able to auto-start
- *                                 without any content loaded.
- *
- * Gets system info from the current statically linked libretro library.
- * The struct returned must be freed as strings are allocated dynamically.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool libretro_get_system_info_static(struct retro_system_info *info,
-      bool *load_no_content);
-#endif
 
 /**
  * libretro_free_system_info:

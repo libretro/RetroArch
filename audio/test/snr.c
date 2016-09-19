@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
       data.input_frames = in_rate * 2;
       data.ratio        = ratio;
 
-      rarch_resampler_process(resampler, re, &data);
+      resampler->process(re, &data);
 
       /* We generate 2 seconds worth of audio, however, 
        * only the last second is considered so phase has stabilized. */
@@ -346,7 +346,10 @@ int main(int argc, char *argv[])
             res.alias_freq[2] / (float)in_rate, res.alias_power[2]);
    }
 
-   rarch_resampler_freep(&resampler, &re);
+   if (resampler && re)
+      resampler->free(re);
+   resampler      = NULL;
+   re = NULL;
 
    free(input);
    free(output);

@@ -34,6 +34,10 @@
 #include "../../config.h"
 #endif
 
+#ifndef HAVE_DYNAMIC
+#include "../../frontend/frontend_driver.h"
+#endif
+
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
@@ -41,10 +45,11 @@
 #include "../menu_navigation.h"
 #include "../menu_display.h"
 
+#include "../widgets/menu_input_dialog.h"
+
 #include "../../core_info.h"
 #include "../../core.h"
 #include "../../configuration.h"
-#include "../../frontend/frontend_driver.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
@@ -658,8 +663,8 @@ static void mui_render_menu_list(mui_handle_t *mui,
       int y;
       size_t selection;
       char rich_label[PATH_MAX_LENGTH] = {0};
+      char entry_value[PATH_MAX_LENGTH] = {0};
       bool entry_selected = false;
-      menu_entry_t entry  = {{0}};
 
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
@@ -670,7 +675,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
             || ((y + (int)mui->line_height) < 0))
          continue;
 
-      menu_entry_get(&entry, 0, i, NULL, true);
+      menu_entry_get_value(i, NULL, entry_value, sizeof(entry_value));
       menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
 
       entry_selected = selection == i;
@@ -684,7 +689,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
          entry_selected ? font_hover_color : font_normal_color, 
          entry_selected,
          rich_label, 
-         entry.value, 
+         entry_value, 
          menu_list_color
       ); 
    }
@@ -842,7 +847,6 @@ static void mui_frame(void *data)
    unsigned header_height          = 0;
    size_t selection                = 0;
    size_t title_margin             = 0;
-   bool display_kb                 = false;
    mui_handle_t *mui               = (mui_handle_t*)data;
    uint64_t *frame_count           = video_driver_get_frame_count_ptr();
    settings_t *settings            = config_get_ptr();
@@ -1201,16 +1205,11 @@ static void mui_frame(void *data)
 
    mui_draw_scrollbar(mui, width, height, &grey_bg[0]);
 
-   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
-
-   if (display_kb)
+   if (menu_input_dialog_get_display_kb())
    {
-      const char *str = NULL, *label = NULL;
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
+      const char *str   = menu_input_dialog_get_buffer();
+      const char *label = menu_input_dialog_get_label_buffer();
 
-      if (!str)
-         str = "";
       mui_render_quad(mui, 0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       mui_render_messagebox(mui, msg, &body_bg_color[0], font_hover_color);

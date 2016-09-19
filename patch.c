@@ -24,14 +24,11 @@
 
 #include <compat/msvc.h>
 #include <file/file_path.h>
-#include <file/archive_file.h>
 #include <streams/file_stream.h>
 #include <retro_stat.h>
 #include <string/stdstring.h>
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <encodings/crc32.h>
 
 #include "msg_hash.h"
 #include "patch.h"
@@ -88,12 +85,8 @@ typedef enum patch_error (*patch_func_t)(const uint8_t*, size_t,
 static uint8_t bps_read(struct bps_data *bps)
 {
    uint8_t data = bps->modify_data[bps->modify_offset++];
-#ifdef HAVE_ZLIB
-   const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_default_file_backend();
-   bps->modify_checksum = ~stream_backend->stream_crc_calculate(
-         ~bps->modify_checksum, &data, 1);
-#endif
+   bps->modify_checksum = ~(encoding_crc32(
+         ~bps->modify_checksum, &data, 1));
    return data;
 }
 
@@ -116,17 +109,11 @@ static uint64_t bps_decode(struct bps_data *bps)
 
 static void bps_write(struct bps_data *bps, uint8_t data)
 {
-#ifdef HAVE_ZLIB
-   const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_default_file_backend();
-#endif
    if (!bps)
       return;
 
    bps->target_data[bps->output_offset++] = data;
-#ifdef HAVE_ZLIB
-   bps->target_checksum = ~stream_backend->stream_crc_calculate(~bps->target_checksum, &data, 1);
-#endif
+   bps->target_checksum = ~(encoding_crc32(~bps->target_checksum, &data, 1));
 }
 
 static enum patch_error bps_apply_patch(
@@ -135,25 +122,24 @@ static enum patch_error bps_apply_patch(
       uint8_t *target_data, size_t *target_length)
 {
    size_t i;
-   size_t modify_source_size, modify_target_size,
-          modify_markup_size;
+   uint32_t checksum;
+   size_t modify_source_size;
+   size_t modify_target_size;
+   size_t modify_markup_size;
    struct bps_data bps = {0};
-   uint32_t modify_source_checksum = 0, modify_target_checksum = 0,
-            modify_modify_checksum = 0, checksum;
-#ifdef HAVE_ZLIB
-   const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_default_file_backend();
-#endif
+   uint32_t modify_source_checksum = 0;
+   uint32_t modify_target_checksum = 0;
+   uint32_t modify_modify_checksum = 0;
 
    if (modify_length < 19)
       return PATCH_PATCH_TOO_SMALL;
 
-   bps.modify_data = modify_data;
-   bps.modify_length = modify_length;
-   bps.target_data = target_data;
-   bps.target_length = *target_length;
-   bps.source_data = source_data;
-   bps.source_length = source_length;
+   bps.modify_data     = modify_data;
+   bps.modify_length   = modify_length;
+   bps.target_data     = target_data;
+   bps.target_length   = *target_length;
+   bps.source_data     = source_data;
+   bps.source_length   = source_length;
    bps.modify_checksum = ~0;
    bps.target_checksum = ~0;
 
@@ -161,9 +147,9 @@ static enum patch_error bps_apply_patch(
          (bps_read(&bps) != 'S') || (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
-   modify_source_size = bps_decode(&bps);
-   modify_target_size = bps_decode(&bps);
-   modify_markup_size = bps_decode(&bps);
+   modify_source_size  = bps_decode(&bps);
+   modify_target_size  = bps_decode(&bps);
+   modify_markup_size  = bps_decode(&bps);
    for (i = 0; i < modify_markup_size; i++)
       bps_read(&bps);
 
@@ -229,19 +215,16 @@ static enum patch_error bps_apply_patch(
    for (i = 0; i < 32; i += 8)
       modify_modify_checksum |= bps_read(&bps) << i;
 
-#ifdef HAVE_ZLIB
-   bps.source_checksum = stream_backend->stream_crc_calculate(0,
+   bps.source_checksum = encoding_crc32(0,
          bps.source_data, bps.source_length);
-#else
-   return PATCH_PATCH_CHECKSUM_INVALID;
-#endif
-
    bps.target_checksum = ~bps.target_checksum;
 
    if (bps.source_checksum != modify_source_checksum)
       return PATCH_SOURCE_CHECKSUM_INVALID;
+
    if (bps.target_checksum != modify_target_checksum)
       return PATCH_TARGET_CHECKSUM_INVALID;
+
    if (checksum != modify_modify_checksum)
       return PATCH_PATCH_CHECKSUM_INVALID;
 
@@ -252,18 +235,11 @@ static enum patch_error bps_apply_patch(
 
 static uint8_t ups_patch_read(struct ups_data *data) 
 {
-#ifdef HAVE_ZLIB
-   const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_default_file_backend();
-#endif
-
    if (data && data->patch_offset < data->patch_length) 
    {
       uint8_t n = data->patch_data[data->patch_offset++];
-#ifdef HAVE_ZLIB
       data->patch_checksum = 
-         ~stream_backend->stream_crc_calculate(~data->patch_checksum, &n, 1);
-#endif
+         ~(encoding_crc32(~data->patch_checksum, &n, 1));
       return n;
    }
    return 0x00;
@@ -271,18 +247,11 @@ static uint8_t ups_patch_read(struct ups_data *data)
 
 static uint8_t ups_source_read(struct ups_data *data) 
 {
-#ifdef HAVE_ZLIB
-   const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_default_file_backend();
-#endif
-
    if (data && data->source_offset < data->source_length) 
    {
       uint8_t n = data->source_data[data->source_offset++];
-#ifdef HAVE_ZLIB
-      data->source_checksum = 
-         ~stream_backend->stream_crc_calculate(~data->source_checksum, &n, 1);
-#endif
+      data->source_checksum =  
+         ~(encoding_crc32(~data->source_checksum, &n, 1));
       return n;
    }
    return 0x00;
@@ -290,18 +259,12 @@ static uint8_t ups_source_read(struct ups_data *data)
 
 static void ups_target_write(struct ups_data *data, uint8_t n) 
 {
-#ifdef HAVE_ZLIB
-   const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_default_file_backend();
-#endif
 
    if (data && data->target_offset < data->target_length) 
    {
       data->target_data[data->target_offset] = n;
-#ifdef HAVE_ZLIB
       data->target_checksum = 
-         ~stream_backend->stream_crc_calculate(~data->target_checksum, &n, 1);
-#endif
+         ~(encoding_crc32(~data->target_checksum, &n, 1));
    }
 
    if (data)
@@ -330,10 +293,13 @@ static enum patch_error ups_apply_patch(
       uint8_t *targetdata, size_t *targetlength)
 {
    size_t i;
-   unsigned source_read_length, target_read_length;
-   uint32_t patch_read_checksum = 0, source_read_checksum = 0,
-            target_read_checksum = 0, patch_result_checksum;
-   struct ups_data data = {0};
+   unsigned source_read_length;
+   unsigned target_read_length;
+   uint32_t patch_result_checksum;
+   uint32_t patch_read_checksum  = 0;
+   uint32_t source_read_checksum = 0;
+   uint32_t target_read_checksum = 0;
+   struct ups_data data          = {0};
 
    data.patch_data      = patchdata;
    data.source_data     = sourcedata;
@@ -521,8 +487,10 @@ static bool apply_patch_content(uint8_t **buf,
    
    if (!path_is_valid(patch_path))
       return false;
+
    if (!filestream_read_file(patch_path, &patch_data, &patch_size))
       return false;
+
    if (patch_size < 0)
    {
       free(patch_data);

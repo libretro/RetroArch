@@ -796,8 +796,10 @@ bool audio_driver_find_driver(void)
 
 void audio_driver_deinit_resampler(void)
 {
-   rarch_resampler_freep(&audio_driver_resampler,
-         &audio_driver_resampler_data);
+   if (audio_driver_resampler && audio_driver_resampler_data)
+      audio_driver_resampler->free(audio_driver_resampler_data);
+   audio_driver_resampler      = NULL;
+   audio_driver_resampler_data = NULL;
 }
 
 bool audio_driver_free_devices_list(void)
@@ -852,8 +854,8 @@ void audio_driver_process_resampler(void *data)
    struct resampler_data *resampler = (struct resampler_data*)data;
    performance_counter_init(&resampler_proc, "resampler_proc");
    performance_counter_start(&resampler_proc);
-   rarch_resampler_process(audio_driver_resampler, 
-         audio_driver_resampler_data, resampler);
+
+   audio_driver_resampler->process(audio_driver_resampler_data, resampler);
    performance_counter_stop(&resampler_proc);
 }
 

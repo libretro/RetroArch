@@ -1,0 +1,153 @@
+This is RetroArch's Netplay code. RetroArch Netplay allows a second player to
+be connected via the Internet, rather than local at the same computer. Netplay
+in RetroArch is guaranteed* to work with perfect synchronization given a few
+minor constraints:
+
+(1) The core is deterministic,
+(2) The only input devices the core interacts with are the joypad and analog sticks, and
+(3) Both the core and the loaded content are identical on host and client.
+
+Furthermore, if the core supports serialization (save states), Netplay allows
+for latency and clock drift, providing both host and client with a smooth
+experience.
+
+Note that this documentation is all for (the poorly-named) "net" mode, which is
+the normal mode, and not "spectator" mode, which has its own whole host of
+problems.
+
+Netplay in RetroArch works by expecting input to come delayed from the network,
+then rewinding and re-playing with the delayed input to get a consistent state.
+So long as both sides agree on which frame is which, it should be impossible
+for them to become de-synced, since each input event always happens at the
+correct frame.
+
+In terms of the implementation, Netplay is in effect a state buffer
+(implemented as a ring of buffers) and some pre- and post-frame behaviors.
+
+Within the state buffers, there are three locations: self, other and read. Each
+refers to a frame, and a state buffer corresponding to that frame. The state
+buffer contains the savestate for the frame, and the input from both the local
+and remote players.
+
+Self is where the emulator believes itself to be, which may be ahead or behind
+of what it's read from the peer. Generally speaking, self progresses at 1 frame
+per frame, except when the network stalls, described later.
+
+Other is where it was most recently in perfect sync: i.e., other-1 is the last
+frame from which both local and remote input have been actioned. As such, other
+is always less than or equal to both self and read. Since the state buffer is a
+ring, other is the first frame that it's unsafe to overwrite.
+
+Read is where it's read up to, which can be slightly ahead of other since it
+can't always immediately act upon new data.
+
+In general, other ≤ read and other ≤ self. In all likelihood, read ≤ self, but
+it is both possible and supported for the remote host to get ahead of the local
+host.
+
+Pre-frame, Netplay serializes the core's state, polls for local input, and
+polls for input from the other side. If the input from the other side is too
+far behind, it stalls to allow the other side to catch up. To assure that this
+stalling does not block the UI thread, it is implemented similarly to pausing,
+rather than by blocking on the socket.
+
+If input has not been received for the other side up to the current frame (the
+usual case), the remote input is simulated in a simplistic manner.  Each
+frame's local serialized state and simulated or real input goes into the frame
+buffers.
+
+During the frame of execution, when the core requests input, it receives the
+input from the state buffer, both local and real or simulated remote.
+
+Post-frame, it checks whether it's read more than it's actioned, i.e. if read >
+other self > other. If so, it first checks whether its simulated remote data
+was correct. If it was, it simply moves other up. If not, it rewinds to other
+(by loading the serialized state there) and runs the core in replay mode with
+the real data up to the least of self and read, then sets other to that.
+
+When in Netplay mode, the callback for receiving input is replaced by
+input_state_net. It is the role of input_state_net to combine the true local
+input (whether live or replay) with the remote input (whether true or
+simulated).
+
+Some thoughts about "frame counts": The frame counters act like indexes into a
+0-indexed array; i.e., they refer to the first unactioned frame. So, when
+read_frame_count is 23, we've read 23 frames, but the last frame we read is
+frame 22. With self_frame_count it's slightly more complicated, since there are
+two relevant actions: Reading the data and emulating with the data. The frame
+count is only incremented after the latter, so there is a period of time during
+which we've actually read self_frame_count+1 frames of local input.
+
+
+* Guarantee not actually a guarantee.
+
+
+Netplay's command format
+
+Netplay commands consist of a 32-bit command identifier, followed by a 32-bit
+payload size, both in network byte order, followed by a payload. The command
+identifiers are listed in netplay.h. The commands are described below. Unless
+specified otherwise, all payload values are in network byte order.
+
+Command: ACK
+Payload: None
+Description:
+    Acknowledgement. Not used.
+
+Command: NAK
+Payload: None
+Description:
+    Negative Acknowledgement. If received, the connection is terminated. Sent
+    whenever a command is malformed or otherwise not understood.
+
+Command: INPUT
+Payload:
+    {
+       frame number: uint32
+       joypad input: uint32
+       analog 1 input: uint32
+       analog 2 input: uint32
+       OPTIONAL state CRC: uint32
+    }
+Description:
+    Input state for each frame. Netplay must send an INPUT command for every
+    frame in order to function at all.
+
+Command: FLIP_PLAYERS
+Payload:
+    {
+       frame number: uint32
+    }
+Description:
+    Flip players at the requested frame.
+
+Command: DISCONNECT
+Payload: None
+Description:
+    Gracefully disconnect. Not used.
+
+Command: CRC
+Payload:
+    {
+       frame number: uint32
+       hash: uint32
+    }
+Description:
+    Informs the peer of the correct CRC hash for the specified frame. If the
+    receiver's hash doesn't match, they should send a REQUEST_SAVESTATE
+    command.
+
+Command: REQUEST_SAVESTATE
+Payload: None
+Description:
+    Requests that the peer send a savestate.
+
+Command: LOAD_SAVESTATE
+Payload:
+    {
+       frame number: uint32
+       serialized save state: blob (variable size)
+    }
+Description:
+    Cause the other side to load a savestate, notionally one which the sending
+    side has also loaded.

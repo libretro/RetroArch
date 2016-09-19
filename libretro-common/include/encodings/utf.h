@@ -42,4 +42,6 @@ const char *utf8skip(const char *str, size_t chars);
 
 uint32_t utf8_walk(const char **string);
 
+bool utf16_to_char_string(const uint16_t *in, char *s, size_t len);
+
 #endif

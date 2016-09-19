@@ -42,6 +42,8 @@
 
 #include "../frontend/frontend_driver.h"
 
+#include "widgets/menu_input_bind_dialog.h"
+
 #include "menu_setting.h"
 #include "menu_driver.h"
 #include "menu_animation.h"
@@ -54,7 +56,8 @@
 #include "../msg_hash.h"
 #include "../defaults.h"
 #include "../driver.h"
-#include "../core.h"
+#include "../dirs.h"
+#include "../paths.h"
 #include "../dynamic.h"
 #include "../runloop.h"
 #include "../verbosity.h"
@@ -1240,7 +1243,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 static int setting_action_ok_bind_all(void *data, bool wraparound)
 {
    (void)wraparound;
-   if (!menu_input_ctl(MENU_INPUT_CTL_BIND_ALL, data))
+   if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL, data))
       return -1;
    return 0;
 }
@@ -1294,7 +1297,7 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    lim.min = MENU_SETTINGS_BIND_BEGIN;
    lim.max = MENU_SETTINGS_BIND_LAST;
 
-   menu_input_ctl(MENU_INPUT_CTL_BIND_SET_MIN_MAX, &lim);
+   menu_input_key_bind_set_min_max(&lim);
 
    for (i = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
@@ -1673,6 +1676,17 @@ void general_write_handler(void *data)
          }
 #endif
          break;
+      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
+#ifdef HAVE_NETPLAY
+         {
+            bool val = (global->netplay.check_frames > 0);
+
+            if (val)
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+            else
+               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+         }
+#endif
       default:
          break;
    }
@@ -2131,8 +2145,8 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
-               (*list)[list_info->index - 1].size         = config_get_active_core_path_size();
-               (*list)[list_info->index - 1].value.target.string = config_get_active_core_path_ptr();
+               (*list)[list_info->index - 1].size                = path_get_core_size();
+               (*list)[list_info->index - 1].value.target.string = path_get_core_ptr();
                (*list)[list_info->index - 1].values       = ext_name;
                menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_LOAD_CORE);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
@@ -2427,7 +2441,7 @@ static bool setting_append_list(
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_SETTINGS);
 
-#if !defined(RARCH_CONSOLE)
+#if !defined(RARCH_CONSOLE) && !defined(HAVE_LAKKA)
          CONFIG_ACTION(
                list, list_info,
                msg_hash_to_str(MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS),
@@ -4746,7 +4760,7 @@ static bool setting_append_list(
                sizeof(settings->path.osk_overlay),
                msg_hash_to_str(MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET),
-               global->dir.osk_overlay,
+               dir_get_osk_overlay_ptr(),
                &group_info,
                &subgroup_info,
                parent_group,
@@ -5814,6 +5828,21 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
+                  &global->netplay.check_frames,
+                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES),
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 10, 1, true, false);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES);
+
+            CONFIG_UINT(
+                  list, list_info,
                   &global->netplay.port,
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT),
@@ -6440,8 +6469,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               global->dir.osk_overlay,
-               sizeof(global->dir.osk_overlay),
+               dir_get_osk_overlay_ptr(),
+               dir_get_osk_overlay_size(),
                msg_hash_to_str(MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY),
                g_defaults.dir.osk_overlay,
@@ -6516,8 +6545,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               global->dir.savefile,
-               sizeof(global->dir.savefile),
+               dir_get_savefile_ptr(),
+               dir_get_savefile_size(),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVEFILE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY),
                "",
@@ -6531,8 +6560,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               global->dir.savestate,
-               sizeof(global->dir.savestate),
+               dir_get_savestate_ptr(),
+               dir_get_savestate_size(),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY),
                "",

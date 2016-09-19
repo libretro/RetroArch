@@ -25,6 +25,7 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../driver.h"
+#include "../../paths.h"
 #include "../../runloop.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
@@ -41,7 +42,7 @@
 #include <commdlg.h>
 #include "../../retroarch.h"
 #include "../video_thread_wrapper.h"
-#include <Shellapi.h>
+#include <shellapi.h>
 #ifndef _MSC_VER
 extern "C" {
 #endif
@@ -287,7 +288,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 
       runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
 
-      if (!string_is_empty(config_get_active_core_path()))
+      if (!path_is_core_empty())
       {
          unsigned i;
          core_info_t *current_core = NULL;
@@ -301,7 +302,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
             if(!string_is_equal(info->systemname, current_core->systemname))
                break;
 
-            if(string_is_equal(config_get_active_core_path(), info->path))
+            if(string_is_equal(path_get_core(), info->path))
             {
                /* Our previous core supports the current rom */
                content_ctx_info_t content_info = {0};

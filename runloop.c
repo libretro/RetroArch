@@ -44,7 +44,8 @@
 #ifdef HAVE_MENU
 #include "menu/menu_display.h"
 #include "menu/menu_driver.h"
-#include "menu/widgets/menu_popup.h"
+#include "menu/menu_event.h"
+#include "menu/widgets/menu_dialog.h"
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -52,7 +53,7 @@
 #endif
 
 #if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
-#include "httpserver/httpserver.h"
+#include "network/httpserver/httpserver.h"
 #endif
 
 #include "autosave.h"
@@ -60,6 +61,8 @@
 #include "configuration.h"
 #include "driver.h"
 #include "movie.h"
+#include "dirs.h"
+#include "paths.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "file_path_special.h"
@@ -109,33 +112,33 @@ typedef struct event_cmd_state
 } event_cmd_state_t;
 
 static struct rarch_dir_list runloop_shader_dir;
-static char runloop_fullpath[PATH_MAX_LENGTH];
-static char runloop_default_shader_preset[PATH_MAX_LENGTH];
 static rarch_system_info_t runloop_system;
-static unsigned runloop_pending_windowed_scale;
 static struct retro_frame_time_callback runloop_frame_time;
-static retro_keyboard_event_t runloop_key_event          = NULL;
-static retro_keyboard_event_t runloop_frontend_key_event = NULL;
-static retro_usec_t runloop_frame_time_last      = 0;
-static unsigned runloop_max_frames               = false;
-static bool runloop_force_nonblock               = false;
-static bool runloop_frame_time_last_enable       = false;
-static bool runloop_set_frame_limit              = false;
-static bool runloop_paused                       = false;
-static bool runloop_idle                         = false;
-static bool runloop_exec                         = false;
-static bool runloop_quit_confirm                 = false;
-static bool runloop_slowmotion                   = false;
-static bool runloop_shutdown_initiated           = false;
-static bool runloop_core_shutdown_initiated      = false;
-static bool runloop_perfcnt_enable               = false;
-static bool runloop_overrides_active             = false;
-static bool runloop_game_options_active          = false;
-static core_option_manager_t *runloop_core_options = NULL;
+static char runloop_fullpath[PATH_MAX_LENGTH]              = {0};
+static char runloop_default_shader_preset[PATH_MAX_LENGTH] = {0};
+static retro_keyboard_event_t runloop_key_event            = NULL;
+static retro_keyboard_event_t runloop_frontend_key_event   = NULL;
+static core_option_manager_t *runloop_core_options         = NULL;
 #ifdef HAVE_THREADS
-static slock_t *_runloop_msg_queue_lock           = NULL;
+static slock_t *_runloop_msg_queue_lock                    = NULL;
 #endif
-static msg_queue_t *runloop_msg_queue            = NULL;
+static msg_queue_t *runloop_msg_queue                      = NULL;
+static unsigned runloop_pending_windowed_scale             = 0;
+static retro_usec_t runloop_frame_time_last                = 0;
+static unsigned runloop_max_frames                         = false;
+static bool runloop_force_nonblock                         = false;
+static bool runloop_frame_time_last_enable                 = false;
+static bool runloop_set_frame_limit                        = false;
+static bool runloop_paused                                 = false;
+static bool runloop_idle                                   = false;
+static bool runloop_exec                                   = false;
+static bool runloop_quit_confirm                           = false;
+static bool runloop_slowmotion                             = false;
+static bool runloop_shutdown_initiated                     = false;
+static bool runloop_core_shutdown_initiated                = false;
+static bool runloop_perfcnt_enable                         = false;
+static bool runloop_overrides_active                       = false;
+static bool runloop_game_options_active                    = false;
 
 global_t *global_get_ptr(void)
 {
@@ -204,97 +207,6 @@ char* runloop_msg_queue_pull(void)
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &msg_info);
 
    return strdup(msg_info.msg);
-}
-
-/* Checks if movie is being played back. */
-static bool runloop_check_movie_playback(void)
-{
-   if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
-      return false;
-
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 2, 180, false);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
-
-   command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
-
-   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
-   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
-
-   return true;
-}
-
-/* Checks if movie is being recorded. */
-static bool runloop_check_movie_record(void)
-{
-   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      return false;
-
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
-
-   command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
-
-   return true;
-}
-
-static bool runloop_check_movie_init(void)
-{
-   char msg[128]              = {0};
-   char path[PATH_MAX_LENGTH] = {0};
-   settings_t *settings       = config_get_ptr();
-
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      return false;
-
-   settings->rewind_granularity = 1;
-
-   if (settings->state_slot > 0)
-      snprintf(path, sizeof(path), "%s%d",
-            bsv_movie_get_path(), settings->state_slot);
-   else
-      strlcpy(path, bsv_movie_get_path(), sizeof(path));
-
-   strlcat(path,
-         file_path_str(FILE_PATH_BSV_EXTENSION),
-         sizeof(path));
-
-   snprintf(msg, sizeof(msg), "%s \"%s\".",
-         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-         path);
-
-   bsv_movie_init_handle(path, RARCH_MOVIE_RECORD);
-
-   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      return false;
-
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-   {
-      runloop_msg_queue_push(msg, 2, 180, true);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-            path);
-   }
-   else
-   {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
-            2, 180, true);
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
-   }
-
-   return true;
-}
-
-static bool runloop_check_movie(void)
-{
-   if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
-      return runloop_check_movie_playback();
-   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-      return runloop_check_movie_init();
-   return runloop_check_movie_record();
 }
 
 /* Checks if slowmotion toggle/hold was being pressed and/or held. */
@@ -595,17 +507,13 @@ static void runloop_check_shader_dir(
 static bool rarch_game_specific_options(char **output)
 {
    char game_path[PATH_MAX_LENGTH] = {0};
-   config_file_t *option_file      = NULL;
 
    if (!retroarch_validate_game_options(game_path,
             sizeof(game_path), false))
          return false;
 
-   option_file = config_file_new(game_path);
-   if (!option_file)
+   if (!config_file_exists(game_path))
       return false;
-
-   config_file_free(option_file);
 
    RARCH_LOG("%s %s\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
@@ -726,7 +634,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd,
    runloop_check_slowmotion(&tmp);
 
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
-      runloop_check_movie();
+      bsv_movie_check();
 
    if (runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT) ||
       runloop_cmd_triggered(cmd, RARCH_SHADER_PREV))
@@ -931,7 +839,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             const char *fullpath = (const char*)data;
             if (!fullpath)
                return false;
-            config_set_active_core_path(fullpath);
+            path_set_core(fullpath);
          }
          break;
       case RUNLOOP_CTL_CLEAR_CONTENT_PATH:
@@ -974,7 +882,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_FRAME_TIME_FREE:
-         memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
+         memset(&runloop_frame_time, 0,
+               sizeof(struct retro_frame_time_callback));
          runloop_frame_time_last           = 0;
          runloop_max_frames                = 0;
          break;
@@ -1003,6 +912,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             core_unset_input_descriptors();
 
             global = global_get_ptr();
+            path_clear_all();
+            dir_clear_all();
             memset(global, 0, sizeof(struct global));
             retroarch_override_setting_free_state();
             config_free_state();
@@ -1174,16 +1085,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             char *game_options_path           = NULL;
             bool ret                          = false;
             char buf[PATH_MAX_LENGTH]         = {0};
-            global_t *global                  = global_get_ptr();
             settings_t *settings              = config_get_ptr();
             const char *options_path          = settings->path.core_options;
             const struct retro_variable *vars =
                (const struct retro_variable*)data;
 
-            if (string_is_empty(options_path)
-                  && !string_is_empty(global->path.config))
+            if (string_is_empty(options_path) && !path_is_config_empty())
             {
-               fill_pathname_resolve_relative(buf, global->path.config,
+               fill_pathname_resolve_relative(buf, path_get_config(),
                      file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
                options_path = buf;
             }
@@ -1215,17 +1124,16 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_CORE_OPTIONS_DEINIT:
          {
-            global_t *global                  = global_get_ptr();
             if (!runloop_core_options)
                return false;
 
             /* check if game options file was just created and flush
                to that file instead */
-            if(global && !string_is_empty(global->path.core_options_path))
+            if(!path_is_core_options_empty())
             {
                core_option_manager_flush_game_specific(runloop_core_options,
-                     global->path.core_options_path);
-               global->path.core_options_path[0] = '\0';
+                     path_get_core_options());
+               path_clear_core_options();
             }
             else
                core_option_manager_flush(runloop_core_options);
@@ -1362,7 +1270,7 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    if (settings && settings->confirm_on_exit &&
           !runloop_quit_confirm)
    {
-      if (menu_popup_is_active())
+      if (menu_dialog_is_active())
          return 1;
 
       if (content_is_inited())
@@ -1372,7 +1280,7 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
          rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
       }
 
-      menu_popup_show_message(MENU_POPUP_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+      menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
       return 1;
    }
 #endif
@@ -1552,9 +1460,17 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
-      int ret = runloop_iterate_menu((enum menu_action)
-      menu_input_frame_retropad(cmd.state[0], cmd.state[2]),
-      sleep_ms);
+      int ret;
+
+      core_poll();
+      ret = runloop_iterate_menu((enum menu_action)
+            menu_event(cmd.state[0], cmd.state[2]),
+            sleep_ms);
+
+#ifdef HAVE_NETPLAY
+      /* FIXME: This is an ugly way to tell Netplay this... */
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
 
       if (ret == -1)
          goto end;
@@ -1567,6 +1483,10 @@ int runloop_iterate(unsigned *sleep_ms)
    {
       /* RetroArch has been paused. */
       core_poll();
+#ifdef HAVE_NETPLAY
+      /* FIXME: This is an ugly way to tell Netplay this... */
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
       *sleep_ms = 10;
       return 1;
    }
@@ -1576,7 +1496,12 @@ int runloop_iterate(unsigned *sleep_ms)
 #endif
 
 #ifdef HAVE_NETPLAY
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
+   {
+      /* Paused due to Netplay */
+      *sleep_ms = 10;
+      return 1;
+   }
 #endif
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))

@@ -26,6 +26,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "widgets/menu_entry.h"
+#include "menu_input.h"
 #include "menu_entries.h"
 
 #include "../gfx/video_shader_driver.h"
@@ -283,20 +285,6 @@ typedef struct menu_ctx_load_image
    void *data;
    enum menu_image_type type;
 } menu_ctx_load_image_t;
-
-typedef struct menu_ctx_list
-{
-   file_list_t *list;
-   size_t list_size;
-   const char *path;
-   const char *label;
-   size_t idx;
-   enum menu_list_type type;
-   unsigned action;
-   size_t selection;
-   size_t size;
-   void *entry;
-} menu_ctx_list_t;
 
 typedef struct menu_ctx_displaylist
 {

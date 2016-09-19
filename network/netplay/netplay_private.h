@@ -20,6 +20,7 @@
 #include "netplay.h"
 
 #include <net/net_compat.h>
+#include <features/features_cpu.h>
 #include <retro_endianness.h>
 
 #include "../../core.h"
@@ -30,30 +31,50 @@
 #define HAVE_IPV6
 #endif
 
-#define UDP_FRAME_PACKETS     16
-#define UDP_WORDS_PER_FRAME   4 /* Allows us to send 128 bits worth of state per frame. */
-#define MAX_SPECTATORS        16
-#define RARCH_DEFAULT_PORT    55435
+#define WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
+#define MAX_SPECTATORS 16
+#define RARCH_DEFAULT_PORT 55435
+
+#define NETPLAY_PROTOCOL_VERSION 1
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
 struct delta_frame
 {
+   bool used; /* a bit derpy, but this is how we know if the delta's been used at all */
+   uint32_t frame;
+
+   /* The serialized state of the core at this frame, before input */
    void *state;
 
-   uint32_t real_input_state[UDP_WORDS_PER_FRAME - 1];
-   uint32_t simulated_input_state[UDP_WORDS_PER_FRAME - 1];
-   uint32_t self_state[UDP_WORDS_PER_FRAME - 1];
+   /* The CRC-32 of the serialized state if we've calculated it, else 0 */
+   uint32_t crc;
 
-   bool is_simulated;
+   uint32_t real_input_state[WORDS_PER_FRAME - 1];
+   uint32_t simulated_input_state[WORDS_PER_FRAME - 1];
+   uint32_t self_state[WORDS_PER_FRAME - 1];
+
+   /* Have we read local input? */
+   bool have_local;
+
+   /* Have we read the real remote input? */
+   bool have_remote;
+
+   /* Is the current state as of self_frame_count using the real remote data? */
    bool used_real;
 };
 
 struct netplay_callbacks {
-   void (*pre_frame) (netplay_t *netplay);
+   bool (*pre_frame) (netplay_t *netplay);
    void (*post_frame)(netplay_t *netplay);
    bool (*info_cb)   (netplay_t *netplay, unsigned frames);
+};
+
+enum rarch_netplay_stall_reasons
+{
+    RARCH_NETPLAY_STALL_NONE = 0,
+    RARCH_NETPLAY_STALL_RUNNING_FAST
 };
 
 struct netplay
@@ -65,8 +86,6 @@ struct netplay
    struct retro_callbacks cbs;
    /* TCP connection for state sending, etc. Also used for commands */
    int fd;
-   /* UDP connection for game state updates. */
-   int udp_fd;
    /* Which port is governed by netplay (other user)? */
    unsigned port;
    bool has_connection;
@@ -81,23 +100,34 @@ struct netplay
    /* Pointer to where we are reading. 
     * Generally, other_ptr <= read_ptr <= self_ptr. */
    size_t read_ptr;
-   /* A temporary pointer used on replay. */
-   size_t tmp_ptr;
+   /* A pointer used temporarily for replay. */
+   size_t replay_ptr;
 
    size_t state_size;
 
    /* Are we replaying old frames? */
    bool is_replay;
+
    /* We don't want to poll several times on a frame. */
    bool can_poll;
 
-   /* To compat UDP packet loss we also send 
-    * old data along with the packets. */
-   uint32_t packet_buffer[UDP_FRAME_PACKETS * UDP_WORDS_PER_FRAME];
-   uint32_t frame_count;
+   /* Force a rewind to other_frame_count/other_ptr. This is for synchronized
+    * events, such as player flipping or savestate loading. */
+   bool force_rewind;
+
+   /* Force our state to be sent to the other side. Used when they request a
+    * savestate, to send at the next pre-frame. */
+   bool force_send_savestate;
+
+   /* Have we requested a savestate as a sync point? */
+   bool savestate_request_outstanding;
+
+   /* A buffer for outgoing input packets. */
+   uint32_t packet_buffer[2 + WORDS_PER_FRAME];
+   uint32_t self_frame_count;
    uint32_t read_frame_count;
    uint32_t other_frame_count;
-   uint32_t tmp_frame_count;
+   uint32_t replay_frame_count;
    struct addrinfo *addr;
    struct sockaddr_storage their_addr;
    bool has_client_addr;
@@ -108,28 +138,34 @@ struct netplay
    struct {
       bool enabled;
       int fds[MAX_SPECTATORS];
+      uint32_t frames[MAX_SPECTATORS];
       uint16_t *input;
       size_t input_ptr;
       size_t input_sz;
    } spectate;
    bool is_server;
+
    /* User flipping
-    * Flipping state. If ptr >= flip_frame, we apply the flip.
-    * If not, we apply the opposite, effectively creating a trigger point.
-    * To avoid collition we need to make sure our client/host is synced up 
-    * well after flip_frame before allowing another flip. */
+    * Flipping state. If frame >= flip_frame, we apply the flip.
+    * If not, we apply the opposite, effectively creating a trigger point. */
    bool flip;
    uint32_t flip_frame;
 
    /* Netplay pausing
     */
-   bool pause;
-   uint32_t pause_frame;
+   bool local_paused;
+   bool remote_paused;
+
+   /* And stalling */
+   uint32_t stall_frames;
+   int stall;
+   retro_time_t stall_time;
+
+   /* Frequency with which to check CRCs */
+   uint32_t check_frames;
 
    struct netplay_callbacks* net_cbs;
 };
-
-extern void *netplay_data;
 
 struct netplay_callbacks* netplay_get_cbs_net(void);
 
@@ -157,5 +193,13 @@ bool netplay_get_info(netplay_t *netplay);
 bool netplay_is_server(netplay_t* netplay);
 
 bool netplay_is_spectate(netplay_t* netplay);
+
+bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta, uint32_t frame);
+
+uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta);
+
+bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta);
+
+bool netplay_cmd_request_savestate(netplay_t *netplay);
 
 #endif

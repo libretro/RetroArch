@@ -20,6 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifndef __APPLE_COMPAT_H
+#define __APPLE_COMPAT_H
+
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
 #endif
@@ -32,6 +35,32 @@ typedef unsigned NSUInteger;
 typedef float CGFloat;
 #endif
 
+#ifndef __has_feature
+/* Compatibility with non-Clang compilers. */
+#define __has_feature(x) 0
+#endif
+
+#ifndef CF_RETURNS_RETAINED
+#if __has_feature(attribute_cf_returns_retained)
+#define CF_RETURNS_RETAINED __attribute__((cf_returns_retained))
+#else
+#define CF_RETURNS_RETAINED
+#endif
+#endif
+
+#ifndef NS_INLINE
+#define NS_INLINE inline
+#endif
+
+NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
+{
+#if __has_feature(objc_arc)
+   return (__bridge_retained CFTypeRef)X;
+#else
+   return X;
+#endif
+}
+
 #endif
 
 #ifdef IOS
@@ -43,7 +72,13 @@ typedef float CGFloat;
 #import <UIKit/UIKit.h>
 #import <GLKit/GLKit.h>
 #import <Foundation/Foundation.h>
+#endif
 
+#else
+
+#ifdef __OBJC__
 #include <objc/objc-runtime.h>
 #endif
+#endif
+
 #endif

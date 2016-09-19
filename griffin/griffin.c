@@ -54,16 +54,21 @@ ALGORITHMS
 /*============================================================
 ARCHIVE FILE
 ============================================================ */
+#include "../libretro-common/file/archive_file.c"
 
 #ifdef HAVE_ZLIB
-#include "../libretro-common/file/archive_file.c"
 #include "../libretro-common/file/archive_file_zlib.c"
+#endif
+
+#ifdef HAVE_7ZIP
+#include "../libretro-common/file/archive_file_7z.c"
 #endif
 
 /*============================================================
 ENCODINGS
 ============================================================ */
 #include "../libretro-common/encodings/encoding_utf.c"
+#include "../libretro-common/encodings/encoding_crc32.c"
 
 /*============================================================
 PERFORMANCE
@@ -268,6 +273,7 @@ VIDEO DRIVER
 #include "../libretro-common/gfx/math/matrix_3x3.c"
 #include "../libretro-common/gfx/math/vector_2.c"
 #include "../libretro-common/gfx/math/vector_3.c"
+#include "../libretro-common/gfx/math/vector_4.c"
 
 #if defined(GEKKO)
 #ifdef HW_RVL
@@ -796,6 +802,8 @@ RETROARCH
 ============================================================ */
 #include "../core_impl.c"
 #include "../retroarch.c"
+#include "../dirs.c"
+#include "../paths.c"
 #include "../runloop.c"
 #include "../libretro-common/queues/task_queue.c"
 
@@ -860,8 +868,7 @@ NETPLAY
 DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_content.c"
-#include "../tasks/task_save_ram.c"
-#include "../tasks/task_save_state.c"
+#include "../tasks/task_save.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #ifdef HAVE_ZLIB
@@ -888,12 +895,16 @@ MENU
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.c"
 #include "../menu/menu_input.c"
-#include "../menu/menu_entry.c"
+#include "../menu/menu_event.c"
 #include "../menu/menu_entries.c"
 #include "../menu/menu_setting.c"
 #include "../menu/menu_cbs.c"
 #include "../menu/menu_content.c"
-#include "../menu/widgets/menu_popup.c"
+#include "../menu/widgets/menu_entry.c"
+#include "../menu/widgets/menu_dialog.c"
+#include "../menu/widgets/menu_input_dialog.c"
+#include "../menu/widgets/menu_input_bind_dialog.c"
+#include "../menu/widgets/menu_list.c"
 #include "../menu/cbs/menu_cbs_ok.c"
 #include "../menu/cbs/menu_cbs_cancel.c"
 #include "../menu/cbs/menu_cbs_select.c"
@@ -1046,7 +1057,7 @@ HTTP SERVER
 ============================================================ */
 #if defined(HAVE_HTTPSERVER) && defined(HAVE_ZLIB)
 #include "../deps/civetweb/civetweb.c"
-#include "httpserver/httpserver.c"
+#include "network/httpserver/httpserver.c"
 #endif
 
 #ifdef __cplusplus
