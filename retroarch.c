@@ -1066,7 +1066,9 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_CONTROLLERS_INIT, NULL);
    command_event(CMD_EVENT_RECORD_INIT, NULL);
    command_event(CMD_EVENT_CHEATS_INIT, NULL);
-   command_event(CMD_EVENT_SAVEFILES_INIT, NULL);
+
+   path_init_savefile();
+
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
    rarch_ctl(RARCH_CTL_UNSET_ERROR_ON_INIT, NULL);
@@ -1157,7 +1159,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          command_event(CMD_EVENT_TEMPORARY_CONTENT_DEINIT, NULL);
          command_event(CMD_EVENT_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
-         command_event(CMD_EVENT_SAVEFILES_DEINIT, NULL);
+
+         path_deinit_savefile();
 
          rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
          break;

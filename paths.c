@@ -25,6 +25,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_NETPLAY
+#include "network/netplay/netplay.h"
+#endif
+
 #include "dirs.h"
 #include "paths.h"
 
@@ -382,11 +386,45 @@ static void path_init_savefile_rtc(void)
    string_list_append(global->savefiles, savefile_name_rtc, attr);
 }
 
-static void path_init_savefile(void)
+void path_deinit_savefile(void)
+{
+   global_t  *global         = global_get_ptr();
+
+   if (!global)
+      return;
+
+   if (global->savefiles)
+      string_list_free(global->savefiles);
+   global->savefiles = NULL;
+}
+
+void path_init_savefile(void)
+{
+   global_t  *global         = global_get_ptr();
+
+   if (!global)
+      return;
+
+   global->sram.use = global->sram.use && !global->sram.save_disable;
+#ifdef HAVE_NETPLAY
+   global->sram.use = global->sram.use &&
+      (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL)
+       || !global->netplay.is_client);
+#endif
+
+   if (!global->sram.use)
+      RARCH_LOG("%s\n",
+            msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
+
+   if (global->sram.use)
+      command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+}
+
+static void path_init_savefile_internal(void)
 {
    global_t            *global = global_get_ptr();
 
-   command_event(CMD_EVENT_SAVEFILES_DEINIT, NULL);
+   path_deinit_savefile();
 
    global->savefiles = string_list_new();
    retro_assert(global->savefiles);
@@ -419,7 +457,7 @@ void path_fill_names(void)
 {
    global_t *global = global_get_ptr();
 
-   path_init_savefile();
+   path_init_savefile_internal();
    bsv_movie_set_path(global->name.savefile);
 
    if (string_is_empty(path_main_basename))

@@ -158,10 +158,6 @@ enum event_command
    /* Initializes controllers. */
    CMD_EVENT_CONTROLLERS_INIT,
    CMD_EVENT_SAVEFILES,
-   /* Initializes savefiles. */
-   CMD_EVENT_SAVEFILES_INIT,
-   /* Deinitializes savefiles. */
-   CMD_EVENT_SAVEFILES_DEINIT,
    /* Initializes cheats. */
    CMD_EVENT_CHEATS_INIT,
    /* Deinitializes cheats. */

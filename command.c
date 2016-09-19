@@ -2445,35 +2445,6 @@ bool command_event(enum event_command cmd, void *data)
                content_save_ram_file(i);
          }
          return true;
-      case CMD_EVENT_SAVEFILES_DEINIT:
-         {
-            global_t  *global         = global_get_ptr();
-            if (!global)
-               break;
-
-            if (global->savefiles)
-               string_list_free(global->savefiles);
-            global->savefiles = NULL;
-         }
-         break;
-      case CMD_EVENT_SAVEFILES_INIT:
-         {
-            global_t  *global         = global_get_ptr();
-            global->sram.use = global->sram.use && !global->sram.save_disable;
-#ifdef HAVE_NETPLAY
-            global->sram.use = global->sram.use &&
-               (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL)
-                || !global->netplay.is_client);
-#endif
-
-            if (!global->sram.use)
-               RARCH_LOG("%s\n",
-                     msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
-
-            if (global->sram.use)
-               command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
-         }
-         break;
       case CMD_EVENT_BSV_MOVIE_DEINIT:
          bsv_movie_ctl(BSV_MOVIE_CTL_DEINIT, NULL);
          break;
