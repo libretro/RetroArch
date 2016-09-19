@@ -24,7 +24,6 @@
 
 #include <compat/msvc.h>
 #include <file/file_path.h>
-#include <file/archive_file.h>
 #include <streams/file_stream.h>
 #include <retro_stat.h>
 #include <string/stdstring.h>
