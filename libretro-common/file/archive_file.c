@@ -330,8 +330,6 @@ static int file_archive_decompress_data_to_file(
       goto end;
    }
 
-   handle->backend->stream_free(handle->stream);
-
 #if 0
    handle->real_checksum = handle->backend->stream_crc_calculate(
          0, handle->data, size);
@@ -350,6 +348,8 @@ static int file_archive_decompress_data_to_file(
    }
 
 end:
+   handle->backend->stream_free(handle->stream);
+
    if (handle && handle->data)
       free(handle->data);
    return ret;
