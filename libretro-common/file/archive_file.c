@@ -239,7 +239,9 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
    /* Extract first file that matches our list. */
    if (ext && string_list_find_elem(userdata->ext, ext))
    {
-      char new_path[PATH_MAX_LENGTH] = {0};
+      char new_path[PATH_MAX_LENGTH]    = {0};
+      char wanted_file[PATH_MAX_LENGTH] = {0};
+      const char *delim                 = NULL;
 
       if (userdata->extraction_directory)
          fill_pathname_join(new_path, userdata->extraction_directory,
@@ -250,11 +252,10 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
 
       userdata->first_extracted_file_path = strdup(new_path);
 
-      char wanted_file[PATH_MAX_LENGTH] = {0};
-      const char *delim = path_get_archive_delim(userdata->archive_path);
+      delim = path_get_archive_delim(userdata->archive_path);
 
       if (delim)
-         strlcpy(wanted_file, delim + 1, strlen(delim) + 1);
+         strlcpy(wanted_file, delim + 1, sizeof(wanted_file));
 
       if (!string_is_equal_noncase(userdata->extracted_file_path,
                 wanted_file))
