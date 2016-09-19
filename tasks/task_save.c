@@ -33,6 +33,10 @@
 #include <rthreads/rthreads.h>
 #include <file/file_path.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../core.h"
+#endif
+
 #include "../core.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
