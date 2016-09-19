@@ -15,6 +15,8 @@
 
 #include <string.h>
 
+#include <string/stdstring.h>
+
 #include "menu_list.h"
 
 #include "../menu_driver.h"
@@ -133,7 +135,7 @@ size_t menu_list_get_stack_size(menu_list_t *list, size_t idx)
 static int menu_list_flush_stack_type(const char *needle, const char *label,
       unsigned type, unsigned final_type)
 {
-   return needle ? strcmp(needle, label) : (type != final_type);
+   return needle ? !string_is_equal(needle, label) : (type != final_type);
 }
 
 void menu_list_flush_stack(menu_list_t *list,
