@@ -60,35 +60,15 @@ struct sram_block
    size_t size;
 };
 
-/**
- * undo_load_state:
- * Revert to the state before a state was loaded.
- *
- * Returns: true if successful, false otherwise.
- **/
-bool content_undo_load_state()
+static unsigned content_allocate_save_blocks(struct sram_block *blocks)
 {
    unsigned i;
-   retro_ctx_serialize_info_t serial_info;
-   size_t temp_data_size;
-   void* temp_data           = NULL;
    unsigned num_blocks       = 0;
-   struct sram_block *blocks = NULL;
    settings_t *settings      = config_get_ptr();
    global_t *global          = global_get_ptr();
 
-   RARCH_LOG("%s: \"%s\".\n",
-         msg_hash_to_str(MSG_LOADING_STATE),
-         undo_load_buf.path);
-
-   RARCH_LOG("%s: %u %s.\n",
-         msg_hash_to_str(MSG_STATE_SIZE),
-         undo_load_buf.size,
-         msg_hash_to_str(MSG_BYTES));
-
-
-   /* TODO/FIXME - This checking of SRAM overwrite, the backing up of it and
-   its flushing could all be in their own functions... */
+   /* Checking of SRAM overwrite, the backing up of it and
+      flushing. */
    if (settings->block_sram_overwrite && global->savefiles
          && global->savefiles->size)
    {
@@ -136,23 +116,14 @@ bool content_undo_load_state()
             memcpy(blocks[i].data, ptr, blocks[i].size);
       }
    }
-   
-   /* We need to make a temporary copy of the buffer, to allow the swap below */
-   temp_data              = malloc(undo_load_buf.size);
-   temp_data_size         = undo_load_buf.size;
-   memcpy(temp_data, undo_load_buf.data, undo_load_buf.size);
 
-   serial_info.data_const = temp_data;
-   serial_info.size       = temp_data_size;
+   return num_blocks;
+}
 
-   /* Swap the current state with the backup state. This way, we can undo
-   what we're undoing */
-   content_save_state("RAM", false);
-   bool ret               = core_unserialize(&serial_info);
-
-   /* Clean up the temporary copy */
-   free(temp_data);
-   temp_data              = NULL;
+static void content_flush_save_blocks(struct sram_block *blocks,
+      unsigned num_blocks)
+{
+   unsigned i;
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
@@ -175,6 +146,54 @@ bool content_undo_load_state()
    for (i = 0; i < num_blocks; i++)
       free(blocks[i].data);
    free(blocks);
+}
+
+/**
+ * undo_load_state:
+ * Revert to the state before a state was loaded.
+ *
+ * Returns: true if successful, false otherwise.
+ **/
+bool content_undo_load_state(void)
+{
+   retro_ctx_serialize_info_t serial_info;
+   size_t temp_data_size;
+   bool ret                  = false;
+   void* temp_data           = NULL;
+   unsigned num_blocks       = 0;
+   struct sram_block *blocks = NULL;
+   settings_t *settings      = config_get_ptr();
+
+   RARCH_LOG("%s: \"%s\".\n",
+         msg_hash_to_str(MSG_LOADING_STATE),
+         undo_load_buf.path);
+
+   RARCH_LOG("%s: %u %s.\n",
+         msg_hash_to_str(MSG_STATE_SIZE),
+         undo_load_buf.size,
+         msg_hash_to_str(MSG_BYTES));
+
+   num_blocks             = content_allocate_save_blocks(blocks);
+   
+   /* We need to make a temporary copy of the buffer, to allow the swap below */
+   temp_data              = malloc(undo_load_buf.size);
+   temp_data_size         = undo_load_buf.size;
+   memcpy(temp_data, undo_load_buf.data, undo_load_buf.size);
+
+   serial_info.data_const = temp_data;
+   serial_info.size       = temp_data_size;
+
+   /* Swap the current state with the backup state. This way, we can undo
+   what we're undoing */
+   content_save_state("RAM", false);
+
+   ret                    = core_unserialize(&serial_info);
+
+   /* Clean up the temporary copy */
+   free(temp_data);
+   temp_data              = NULL;
+
+   content_flush_save_blocks(blocks, num_blocks);
 
    if (!ret)
    {
@@ -194,7 +213,8 @@ bool content_undo_load_state()
  **/
 bool content_undo_save_state(void)
 {
-   bool ret = filestream_write_file(undo_save_buf.path, undo_save_buf.data, undo_save_buf.size);
+   bool ret = filestream_write_file(undo_save_buf.path,
+         undo_save_buf.data, undo_save_buf.size);
 
    /* Wipe the save file buffer as it's intended to be one use only */
    undo_save_buf.path[0] = '\0';
@@ -329,7 +349,6 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
    void *buf                 = NULL;
    struct sram_block *blocks = NULL;
    settings_t *settings      = config_get_ptr();
-   global_t *global          = global_get_ptr();
    bool ret                  = filestream_read_file(path, &buf, &size);
 
    RARCH_LOG("%s: \"%s\".\n",
@@ -367,83 +386,17 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
       return true;
    }
 
-   if (settings->block_sram_overwrite && global->savefiles
-         && global->savefiles->size)
-   {
-      RARCH_LOG("%s.\n",
-            msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
-      blocks = (struct sram_block*)
-         calloc(global->savefiles->size, sizeof(*blocks));
-
-      if (blocks)
-      {
-         num_blocks = global->savefiles->size;
-         for (i = 0; i < num_blocks; i++)
-            blocks[i].type = global->savefiles->elems[i].attr.i;
-      }
-   }
-
-
-   for (i = 0; i < num_blocks; i++)
-   {
-      retro_ctx_memory_info_t    mem_info;
-
-      mem_info.id = blocks[i].type;
-      core_get_memory(&mem_info);
-
-      blocks[i].size = mem_info.size;
-   }
-
-   for (i = 0; i < num_blocks; i++)
-      if (blocks[i].size)
-         blocks[i].data = malloc(blocks[i].size);
-
-   /* Backup current SRAM which is overwritten by unserialize. */
-   for (i = 0; i < num_blocks; i++)
-   {
-      if (blocks[i].data)
-      {
-         retro_ctx_memory_info_t    mem_info;
-         const void *ptr = NULL;
-
-         mem_info.id = blocks[i].type;
-
-         core_get_memory(&mem_info);
-
-         ptr = mem_info.data;
-         if (ptr)
-            memcpy(blocks[i].data, ptr, blocks[i].size);
-      }
-   }
+   num_blocks             = content_allocate_save_blocks(blocks);
 
    serial_info.data_const = buf;
    serial_info.size       = size;
    
    /* Backup the current state so we can undo this load */
    content_save_state("RAM", false);
+
    ret                    = core_unserialize(&serial_info);
 
-   /* Flush back. */
-   for (i = 0; i < num_blocks; i++)
-   {
-      if (blocks[i].data)
-      {
-         retro_ctx_memory_info_t    mem_info;
-         void *ptr = NULL;
-
-         mem_info.id = blocks[i].type;
-
-         core_get_memory(&mem_info);
-
-         ptr = mem_info.data;
-         if (ptr)
-            memcpy(ptr, blocks[i].data, blocks[i].size);
-      }
-   }
-
-   for (i = 0; i < num_blocks; i++)
-      free(blocks[i].data);
-   free(blocks);
+   content_flush_save_blocks(blocks, num_blocks);
    
    if (!ret)
       goto error;

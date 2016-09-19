@@ -291,6 +291,27 @@ void autosave_deinit(void)
 }
 #endif
 
+static bool content_get_memory(retro_ctx_memory_info_t *mem_info,
+      ram_type_t *ram, unsigned slot)
+{
+   global_t *global = global_get_ptr();
+
+   if (!global)
+      return false;
+
+   ram->type = global->savefiles->elems[slot].attr.i;
+   ram->path = global->savefiles->elems[slot].data;
+
+   mem_info->id  = ram->type;
+
+   core_get_memory(mem_info);
+
+   if (!mem_info->data || mem_info->size == 0)
+      return false;
+
+   return true;
+}
+
 /**
  * content_load_ram_file:
  * @path             : path of RAM state that will be loaded from.
@@ -303,17 +324,9 @@ bool content_load_ram_file(unsigned slot)
    ssize_t rc;
    ram_type_t ram;
    retro_ctx_memory_info_t mem_info;
-   global_t *global = global_get_ptr();
    void *buf        = NULL;
 
-   ram.path = global->savefiles->elems[slot].data;
-   ram.type = global->savefiles->elems[slot].attr.i;
-
-   mem_info.id  = ram.type;
-
-   core_get_memory(&mem_info);
-
-   if (mem_info.size == 0 || !mem_info.data)
+   if (!content_get_memory(&mem_info, &ram, slot))
       return false;
 
    if (!filestream_read_file(ram.path, &buf, &rc))
@@ -352,20 +365,10 @@ bool content_save_ram_file(unsigned slot)
 {
    ram_type_t ram;
    retro_ctx_memory_info_t mem_info;
-   global_t  *global         = global_get_ptr();
 
-   if (!global)
+   if (!content_get_memory(&mem_info, &ram, slot))
       return false;
 
-   ram.type                  = global->savefiles->elems[slot].attr.i;
-   ram.path                  = global->savefiles->elems[slot].data;
-
-   mem_info.id               = ram.type;
-
-   core_get_memory(&mem_info);
-
-   if (!mem_info.data || mem_info.size == 0)
-      return false;
 
    RARCH_LOG("%s #%u %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_RAM_TYPE),
