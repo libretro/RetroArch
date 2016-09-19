@@ -98,8 +98,10 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
 
 	 for (i = 0; i < msg_len; i++)
 	 {
+      const char *msg_tmp            = &msg[i];
+      unsigned code                  = utf8_walk(&msg_tmp);
 			const struct font_glyph *glyph =
-				 font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+				 font->font_driver->get_glyph(font->font_data, code);
 			if (!glyph) /* Do something smarter here ... */
 				 glyph = font->font_driver->get_glyph(font->font_data, '?');
 			if (!glyph)
