@@ -11,6 +11,7 @@ INCFLAGS    :=
 DEFINES     :=
 
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
+DEPS_DIR          := $(RARCH_DIR)/deps
 
 include $(CLEAR_VARS)
 ifeq ($(TARGET_ARCH),arm)
@@ -74,8 +75,6 @@ LOCAL_CFLAGS := $(subst -O3,-O2,$(LOCAL_CFLAGS))
 
 LOCAL_LDLIBS	:= -L$(SYSROOT)/usr/lib -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/
-
-DEPS_DIR         := $(RARCH_DIR)/deps
 
 ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
