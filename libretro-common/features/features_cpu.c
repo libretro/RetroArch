@@ -153,8 +153,10 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = __mftb();
 #elif defined(GEKKO)
    time_ticks = gettime();
-#elif defined(PSP) || defined(VITA)
+#elif defined(PSP) 
    sceRtcGetCurrentTick((uint64_t*)&time_ticks);
+#elif defined(VITA)
+   sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
 #elif defined(__mips__)
@@ -271,7 +273,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
 }
 #endif
 
-#if defined(__ARM_NEON__)  
+#if defined(__ARM_NEON__)
 static void arm_enable_runfast_mode(void)
 {
    /* RunFast mode. Enables flush-to-zero and some
