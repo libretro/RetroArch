@@ -21,6 +21,7 @@
 #include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <queues/message_queue.h>
+#include <encodings/crc32.h>
 
 #include "tasks_internal.h"
 
@@ -162,17 +163,8 @@ static bool file_get_crc(database_state_handle_t *db_state,
    if (read_from != 1 || ret <= 0)
       return 0;
 
-#ifdef HAVE_COMPRESSION
-   if(!path_is_compressed_file(name))
-   {
-      const struct file_archive_file_backend *stream_backend =
-         file_archive_get_file_backend(name);
-
-      if (stream_backend)
-         *crc = stream_backend->stream_crc_calculate(
-               0, db_state->buf, ret);
-   }
-#endif
+      *crc = encoding_crc32(
+            0, db_state->buf, ret);
 
    return 1;
 }
