@@ -45,6 +45,7 @@
 #include <boolean.h>
 
 #include <encodings/utf.h>
+#include <encodings/crc32.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
@@ -339,25 +340,19 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    if (!global->patch.block_patch)
       patch_content(&ret_buf, length);
 
-#ifdef HAVE_COMPRESSION
    content_get_crc(&content_crc_ptr);
 
    stream_info.a  = 0;
    stream_info.b  = ret_buf;
    stream_info.c  = *length;
 
-   stream_backend = file_archive_get_file_backend(path);
+   stream_info.crc = encoding_crc32(
+         stream_info.a, stream_info.b, stream_info.c);
 
-   if (stream_backend)
-   {
-      stream_info.crc = stream_backend->stream_crc_calculate(
-            stream_info.a, stream_info.b, stream_info.c);
+   *content_crc_ptr = stream_info.crc;
 
-      *content_crc_ptr = stream_info.crc;
+   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
 
-      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
-   }
-#endif
    *buf = ret_buf;
 
    return true;
