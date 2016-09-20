@@ -68,6 +68,8 @@ static int archive_compare_crc32(const char *name, const char *valid_exts,
 {
    userdata->crc = crc32;
 
+   strlcpy(userdata->archive_name, userdata->extracted_file_path, sizeof(userdata->archive_name));
+
 #if 0
    RARCH_LOG("Going to compare CRC 0x%x for %s\n", crc32, name);
 #endif
@@ -403,10 +405,13 @@ static int task_database_iterate_playlist_archive(
       return task_database_iterate_crc_lookup(
             db_state, db, db_state->archive_name);
 
-   strlcpy(userdata.archive_name, db_state->archive_name, sizeof(userdata.archive_name));
-
    userdata.crc = db_state->crc;
    userdata.archive_path = strdup(name);
+
+   if (db->state.type == ARCHIVE_TRANSFER_INIT)
+      file_archive_parse_file_iterate(&db->state,
+               &returnerr, name, NULL, NULL,
+               &userdata);
 
    if (file_archive_parse_file_iterate(&db->state,
             &returnerr, name, NULL, archive_compare_crc32,
@@ -417,8 +422,11 @@ static int task_database_iterate_playlist_archive(
       return 0;
    }
 
-   if (db_state->crc)
+   if (userdata.crc)
+   {
+      db_state->crc = userdata.crc;
       file_archive_parse_file_iterate_stop(&db->state);
+   }
 
    if (userdata.archive_path)
       free(userdata.archive_path);
