@@ -762,7 +762,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    if (tmp)
    {
-      char tmp_new[PATH_MAX_LENGTH];
+      char tmp_new[PATH_MAX_LENGTH] = {0};
       fill_pathname_join(tmp_new, xmb->thumbnail_file_path, tmp, sizeof(tmp_new));
       strlcpy(xmb->thumbnail_file_path, tmp_new, sizeof(xmb->thumbnail_file_path));
       free(tmp);
