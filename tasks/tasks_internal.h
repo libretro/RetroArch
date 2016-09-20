@@ -143,8 +143,6 @@ bool content_push_to_history_playlist(
 
 /* TODO/FIXME - turn this into actual task */
 bool take_screenshot(void);
-bool dump_to_file_desperate(const void *data,
-      size_t size, unsigned type);
 
 bool event_load_save_files(void);
 

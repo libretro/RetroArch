@@ -790,6 +790,41 @@ bool content_load_ram_file(unsigned slot)
 }
 
 /**
+ * dump_to_file_desperate:
+ * @data         : pointer to data buffer.
+ * @size         : size of @data.
+ * @type         : type of file to be saved.
+ *
+ * Attempt to save valuable RAM data somewhere.
+ **/
+static bool dump_to_file_desperate(const void *data,
+      size_t size, unsigned type)
+{
+   time_t time_;
+   char timebuf[256]                      = {0};
+   char application_data[PATH_MAX_LENGTH] = {0};
+   char path[PATH_MAX_LENGTH]             = {0};
+
+   if (!fill_pathname_application_data(application_data,
+            sizeof(application_data)))
+      return false;
+
+   snprintf(path, sizeof(path), "%s/RetroArch-recovery-%u",
+      application_data, type);
+
+   time(&time_);
+
+   strftime(timebuf, sizeof(timebuf), "%Y-%m-%d-%H-%M-%S", localtime(&time_));
+   strlcat(path, timebuf, sizeof(path));
+
+   if (!filestream_write_file(path, data, size))
+      return false;
+
+   RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
+   return true;
+}
+
+/**
  * content_save_ram_file:
  * @path             : path of RAM state that shall be written to.
  * @type             : type of memory
