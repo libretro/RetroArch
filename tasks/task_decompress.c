@@ -169,11 +169,13 @@ static void task_decompress_handler(retro_task_t *task)
 static void task_decompress_handler_target_file(retro_task_t *task)
 {
    bool retdec;
+   int ret;
    decompress_state_t *dec = (decompress_state_t*)task->state;
    struct archive_extract_userdata userdata = {0};
+
    userdata.archive_path = dec->source_file;
 
-   int ret = file_archive_parse_file_iterate(&dec->archive,
+   ret = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_target_file, &userdata);
 
