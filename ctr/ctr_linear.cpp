@@ -72,7 +72,6 @@ struct MemPool
 		nPrev = n;
 	}
 
-	//void CoalesceLeft(MemBlock* b);
 	void CoalesceRight(MemBlock* b);
 
 	bool Allocate(MemChunk& chunk, u32 size, int align);
@@ -146,7 +145,7 @@ extern u32 __linear_heap, __linear_heap_size;
 static MemPool sLinearPool;
 static u32 sLinearPool_maxaddr;
 
-static bool linearInit()
+static bool linearInit(void)
 {
 	auto blk = MemBlock::Create((u8*)__linear_heap, __linear_heap_size);
 	if (blk)
@@ -200,12 +199,14 @@ void* linearMemAlign(size_t size, size_t alignment)
 
 void* linearAlloc(size_t size)
 {
-//   extern PrintConsole* currentConsole;
-//   if(currentConsole->consoleInitialised)
-//   {
-//      printf("linearAlloc : 0x%08X\n", size);
-//      DEBUG_HOLD();
-//   }
+#if 0
+   extern PrintConsole* currentConsole;
+   if(currentConsole->consoleInitialised)
+   {
+      printf("linearAlloc : 0x%08X\n", size);
+      DEBUG_HOLD();
+   }
+#endif
 	return linearMemAlign(size, 0x80);
 }
 
@@ -258,10 +259,12 @@ extern "C" void ctr_linear_free_pages(u32 pages)
    __linear_heap_size -= size;
    u32 tmp;
    svcControlMemory(&tmp, __linear_heap + __linear_heap_size, 0x0, size,
-                     MEMOP_FREE, (MemPerm)(MEMPERM_READ | MEMPERM_WRITE));
+         MEMOP_FREE, (MemPerm)(MEMPERM_READ | MEMPERM_WRITE));
 
-//   printf("l:0x%08X-->0x%08X(-0x%08X) \n", sLinearPool.last->size + size, sLinearPool.last->size, size);
-//   DEBUG_HOLD();
+#if 0
+   printf("l:0x%08X-->0x%08X(-0x%08X) \n", sLinearPool.last->size + size, sLinearPool.last->size, size);
+   DEBUG_HOLD();
+#endif
 }
 
 extern "C" void ctr_linear_get_stats(void)
