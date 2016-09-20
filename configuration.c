@@ -1651,6 +1651,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings_t *settings)
 {
    unsigned i;
+   bool ret                                        = false;
    bool tmp_bool                                   = false;
    char *save                                      = NULL;
    char tmp_str[PATH_MAX_LENGTH]                   = {0};
@@ -1676,13 +1677,16 @@ static bool config_load_file(const char *path, bool set_defaults,
    {
       conf = config_file_new(path);
       if (!conf)
-         return false;
+         goto end;
    }
    else
       conf = open_default_config_file();
 
    if (!conf)
+   {
+      ret = true;
       goto end;
+   }
 
    if (set_defaults)
       config_set_defaults();
@@ -2110,6 +2114,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    config_read_keybinds_conf(conf);
 
+   ret = true;
 
 end:
    if (conf)
@@ -2124,7 +2129,7 @@ end:
       free(array_settings);
    if (path_settings)
       free(path_settings);
-   return true;
+   return ret;
 }
 
 /**
