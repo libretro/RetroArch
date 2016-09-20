@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -192,6 +192,14 @@ static const char *font_renderer_stb_get_default_font(void)
       "/system/fonts/DroidSansMono.ttf",
       "/system/fonts/CutiveMono.ttf",
       "/system/fonts/DroidSans.ttf",
+#elif defined(VITA)
+      "vs0:data/external/font/pvf/c041056ts.ttf",
+      "vs0:data/external/font/pvf/d013013ds.ttf",
+      "vs0:data/external/font/pvf/e046323ms.ttf",
+      "vs0:data/external/font/pvf/e046323ts.ttf",
+      "vs0:data/external/font/pvf/k006004ds.ttf",
+      "vs0:data/external/font/pvf/n023055ms.ttf",
+      "vs0:data/external/font/pvf/n023055ts.ttf",
 #else
       "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
       "/usr/share/fonts/TTF/DejaVuSans.ttf",

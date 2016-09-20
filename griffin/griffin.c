@@ -337,11 +337,6 @@ VIDEO DRIVER
 #include "../deps/libvita2d/source/vita2d_texture.c"
 #include "../deps/libvita2d/source/vita2d_draw.c"
 #include "../deps/libvita2d/source/utils.c"
-#include "../deps/libvita2d/source/vita2d_font.c"
-#include "../deps/libvita2d/source/vita2d_pgf.c"
-#include "../deps/libvita2d/source/bin_packing_2d.c"
-#include "../deps/libvita2d/source/texture_atlas.c"
-#include "../deps/libvita2d/source/int_htab.c"
 
 #include "../gfx/drivers/vita2d_gfx.c"
 #elif defined(_3DS)

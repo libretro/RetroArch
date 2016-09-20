@@ -210,13 +210,13 @@ else ifeq ($(platform), vita)
   EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
   MACHDEP := -DVITA
   WANT_ZLIB						:= 1
-  INCLUDE += -I$(VITASDK)/arm-vita-eabi/include/freetype2 -Ideps/libvita2d/include
+  INCLUDE += -Ideps/libvita2d/include
   INCLUDE += -Ideps/zlib
   PLATCFLAGS := -mthumb -mfloat-abi=hard -ffast-math -fsingle-precision-constant -mword-relocations
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lSceFiber_stub\
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
-			 -lSceMotion_stub -lSceAppMgr_stub -lfreetype -lpng -lm -lc
+			 -lSceMotion_stub -lSceAppMgr_stub -lpng -lm -lc
 
   PLATEXTRA := deps/libvita2d/shader/compiled/clear_v_gxp.o \
 				  deps/libvita2d/shader/compiled/clear_f_gxp.o \
@@ -247,6 +247,7 @@ else ifeq ($(platform), vita)
   HAVE_OVERLAY             := 1
   HAVE_MATERIALUI				:= 1
   HAVE_XMB						:= 1
+  HAVE_STB_FONT :=1
   RARCH_CONSOLE          = 1
   HAVE_THREADS     := 1
 endif
@@ -363,6 +364,10 @@ endif
 
 ifeq ($(HAVE_XMB), 1)
 CFLAGS += -DHAVE_XMB
+endif
+
+ifeq ($(HAVE_STB_FONT), 1)
+CFLAGS += -DHAVE_STB_FONT
 endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)

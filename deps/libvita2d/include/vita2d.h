@@ -101,25 +101,6 @@ void vita2d_draw_texture_tint_part_scale(const vita2d_texture *texture, float x,
 void vita2d_draw_texture_tint_scale_rotate_hotspot(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, float rad, float center_x, float center_y, unsigned int color);
 void vita2d_draw_texture_tint_scale_rotate(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, float rad, unsigned int color);
 
-vita2d_font *vita2d_load_font_file(const char *filename);
-vita2d_font *vita2d_load_font_mem(const void *buffer, unsigned int size);
-void vita2d_free_font(vita2d_font *font);
-int vita2d_font_draw_text(vita2d_font *font, int x, int y, unsigned int color, unsigned int size, const char *text);
-int vita2d_font_draw_textf(vita2d_font *font, int x, int y, unsigned int color, unsigned int size, const char *text, ...);
-void vita2d_font_text_dimensions(vita2d_font *font, unsigned int size, const char *text, int *width, int *height);
-int vita2d_font_text_width(vita2d_font *font, unsigned int size, const char *text);
-int vita2d_font_text_height(vita2d_font *font, unsigned int size, const char *text);
-
-/* PGF functions are weak imports at the moment, they have to be resolved manually */
-vita2d_pgf *vita2d_load_default_pgf();
-void vita2d_free_pgf(vita2d_pgf *font);
-int vita2d_pgf_draw_text(vita2d_pgf *font, int x, int y, unsigned int color, float scale, const char *text);
-int vita2d_pgf_draw_textf(vita2d_pgf *font, int x, int y, unsigned int color, float scale, const char *text, ...);
-void vita2d_pgf_text_dimensions(vita2d_pgf *font, float scale, const char *text, int *width, int *height);
-int vita2d_pgf_text_width(vita2d_pgf *font, float scale, const char *text);
-int vita2d_pgf_text_height(vita2d_pgf *font, float scale, const char *text);
-
-
 /** ADVANCED **/
 void vita2d_texture_set_wvp(float x, float y, float width, float height);
 void vita2d_texture_set_program();
