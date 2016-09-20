@@ -3195,8 +3195,6 @@ bool config_save_overrides(int override_type)
    if (path_overrides)
       free(path_overrides);
    free(settings);
-   if (conf)
-      config_file_free(conf);
 
    return ret;
 }
