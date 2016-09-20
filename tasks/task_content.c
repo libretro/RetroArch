@@ -317,11 +317,7 @@ error:
 static bool read_content_file(unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
-#ifdef HAVE_COMPRESSION
-   content_stream_t stream_info;
-   const struct file_archive_file_backend *stream_backend = NULL;
    uint32_t *content_crc_ptr = NULL;
-#endif
    uint8_t *ret_buf          = NULL;
    global_t *global          = global_get_ptr();
 
@@ -342,14 +338,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 
    content_get_crc(&content_crc_ptr);
 
-   stream_info.a  = 0;
-   stream_info.b  = ret_buf;
-   stream_info.c  = *length;
-
-   stream_info.crc = encoding_crc32(
-         stream_info.a, stream_info.b, stream_info.c);
-
-   *content_crc_ptr = stream_info.crc;
+   *content_crc_ptr = encoding_crc32(0, ret_buf, *length);
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
 
