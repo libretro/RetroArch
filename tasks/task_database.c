@@ -414,14 +414,22 @@ static int task_database_iterate_playlist_archive(
    strlcpy(userdata.archive_name, db_state->archive_name, sizeof(userdata.archive_name));
 
    userdata.crc = db_state->crc;
+   userdata.archive_path = strdup(name);
 
    if (file_archive_parse_file_iterate(&db->state,
             &returnerr, name, NULL, archive_compare_crc32,
             &userdata))
+   {
+      if (userdata.archive_path)
+         free(userdata.archive_path);
       return 0;
+   }
 
    if (db_state->crc)
       file_archive_parse_file_iterate_stop(&db->state);
+
+   if (userdata.archive_path)
+      free(userdata.archive_path);
 #endif
 
    return 1;

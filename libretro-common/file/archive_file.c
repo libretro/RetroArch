@@ -572,19 +572,13 @@ struct string_list *file_archive_get_file_list(const char *path,
       goto error;
 
    if (userdata.archive_path)
-   {
       free(userdata.archive_path);
-      userdata.archive_path = NULL;
-   }
 
    return userdata.list;
 
 error:
    if (userdata.archive_path)
-   {
       free(userdata.archive_path);
-      userdata.archive_path = NULL;
-   }
    if (userdata.list)
       string_list_free(userdata.list);
    return NULL;
