@@ -684,9 +684,7 @@ struct string_list *file_archive_file_list_new(const char *path,
       const char* ext)
 {
 #ifdef HAVE_COMPRESSION
-   bool compressed = path_is_compressed_file(path);
-
-   if (compressed)
+   if (path_is_compressed_file(path))
       return file_archive_get_file_list(path, ext);
 #endif
    return NULL;
