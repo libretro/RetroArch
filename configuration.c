@@ -1682,7 +1682,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       conf = open_default_config_file();
 
    if (!conf)
-      return true;
+      goto end;
 
    if (set_defaults)
       config_set_defaults();
@@ -2111,7 +2111,9 @@ static bool config_load_file(const char *path, bool set_defaults,
    config_read_keybinds_conf(conf);
 
 
-   config_file_free(conf);
+end:
+   if (conf)
+      config_file_free(conf);
    if (bool_settings)
       free(bool_settings);
    if (int_settings)
@@ -3193,6 +3195,8 @@ bool config_save_overrides(int override_type)
    if (path_overrides)
       free(path_overrides);
    free(settings);
+   if (conf)
+      config_file_free(conf);
 
    return ret;
 }
