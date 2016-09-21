@@ -732,29 +732,6 @@ error:
    return ret;
 }
 
-static bool content_file_free(struct string_list *temporary_content)
-{
-   unsigned i;
-
-   if (!temporary_content)
-      return false;
-
-   for (i = 0; i < temporary_content->size; i++)
-   {
-      const char *path = temporary_content->elems[i].data;
-
-      RARCH_LOG("%s: %s.\n",
-            msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
-      if (remove(path) < 0)
-         RARCH_ERR("%s: %s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
-               path);
-   }
-   string_list_free(temporary_content);
-
-   return true;
-}
-
 bool content_does_not_need_content(void)
 {
    return core_does_not_need_content;
@@ -785,7 +762,24 @@ bool content_is_inited(void)
 
 void content_deinit(void)
 {
-   content_file_free(temporary_content);
+   unsigned i;
+
+   if (temporary_content)
+   {
+      for (i = 0; i < temporary_content->size; i++)
+      {
+         const char *path = temporary_content->elems[i].data;
+
+         RARCH_LOG("%s: %s.\n",
+               msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
+         if (remove(path) < 0)
+            RARCH_ERR("%s: %s.\n",
+                  msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
+                  path);
+      }
+      string_list_free(temporary_content);
+   }
+
    temporary_content          = NULL;
    content_crc                = 0;
    _content_is_inited         = false;
