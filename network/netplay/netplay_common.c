@@ -20,7 +20,7 @@
 #include "netplay_private.h"
 #include <net/net_socket.h>
 
-#include "compat/zlib.h"
+#include <encodings/crc32.h>
 
 #include "../../movie.h"
 #include "../../msg_hash.h"
@@ -288,5 +288,5 @@ uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta)
 {
    if (!netplay->state_size)
       return 0;
-   return crc32(0L, (const unsigned char*)delta->state, netplay->state_size);
+   return encoding_crc32(0L, (const unsigned char*)delta->state, netplay->state_size);
 }
