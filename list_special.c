@@ -32,6 +32,10 @@
 #include "camera/camera_driver.h"
 #endif
 
+#ifdef HAVE_WIFI
+#include "wifi/wifi_driver.h"
+#endif
+
 #ifdef HAVE_LOCATION
 #include "location/location_driver.h"
 #endif
@@ -175,6 +179,17 @@ struct string_list *string_list_new_special(enum string_list_type type,
          for (i = 0; camera_driver_find_handle(i); i++)
          {
             const char *opt  = camera_driver_find_ident(i);
+            *len            += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
+#endif
+      case STRING_LIST_WIFI_DRIVERS:
+#ifdef HAVE_WIFI
+         for (i = 0; wifi_driver_find_handle(i); i++)
+         {
+            const char *opt  = wifi_driver_find_ident(i);
             *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);

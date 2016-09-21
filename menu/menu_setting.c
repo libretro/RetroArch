@@ -62,6 +62,7 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 #include "../camera/camera_driver.h"
+#include "../wifi/wifi_driver.h"
 #include "../location/location_driver.h"
 #include "../record/record_driver.h"
 #include "../audio/audio_driver.h"
@@ -2657,6 +2658,24 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CAMERA_DRIVER);
+
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->wifi.driver,
+               sizeof(settings->wifi.driver),
+               msg_hash_to_str(MENU_ENUM_LABEL_WIFI_DRIVER),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER),
+               config_get_default_camera(),
+               config_get_camera_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_WIFI_DRIVER);
 
          CONFIG_STRING_OPTIONS(
                list, list_info,

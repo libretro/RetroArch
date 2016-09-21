@@ -220,6 +220,12 @@ typedef struct settings
    {
       char driver[32];
       bool allow;
+   } wifi;
+
+   struct
+   {
+      char driver[32];
+      bool allow;
       int update_interval_ms;
       int update_interval_distance;
    } location;

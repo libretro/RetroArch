@@ -33,7 +33,8 @@ RETRO_BEGIN_DECLS
       | DRIVER_CAMERA \
       | DRIVER_LOCATION \
       | DRIVER_MENU \
-      | DRIVERS_VIDEO_INPUT )
+      | DRIVERS_VIDEO_INPUT \
+      | DRIVER_WIFI )
 
 enum
 {
@@ -43,7 +44,8 @@ enum
    DRIVER_CAMERA       = 1 << 3,
    DRIVER_LOCATION     = 1 << 4,
    DRIVER_MENU         = 1 << 5,
-   DRIVERS_VIDEO_INPUT = 1 << 6
+   DRIVERS_VIDEO_INPUT = 1 << 6,
+   DRIVER_WIFI         = 1 << 7
 };
 
 enum driver_ctl_state

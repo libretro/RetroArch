@@ -173,6 +173,7 @@ OBJ += frontend/frontend.o \
        gfx/video_coord_array.o \
        gfx/video_driver.o \
        camera/camera_driver.o \
+       wifi/wifi_driver.o \
        location/location_driver.o \
        driver.o \
        configuration.o \
@@ -217,6 +218,7 @@ OBJ += frontend/frontend.o \
        audio/drivers_resampler/cc_resampler.o \
        location/drivers/nulllocation.o \
        camera/drivers/nullcamera.o \
+       wifi/drivers/nullwifi.o \
        gfx/drivers/nullgfx.o \
        audio/drivers/nullaudio.o \
        input/drivers/nullinput.o \
@@ -322,6 +324,10 @@ OBJ += frontend/drivers/platform_emscripten.o \
        input/drivers/rwebinput_input.o \
        audio/drivers/rwebaudio.o \
        camera/drivers/rwebcam.o
+endif
+
+ifeq ($(HAVE_LAKKA), 1)
+OBJ += wifi/drivers/connmanctl.o
 endif
 
 # Audio

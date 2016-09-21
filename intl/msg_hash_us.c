@@ -2886,6 +2886,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "menu_driver";
       case MENU_ENUM_LABEL_CAMERA_DRIVER:
          return "camera_driver";
+      case MENU_ENUM_LABEL_WIFI_DRIVER:
+         return "wifi_driver";
       case MENU_ENUM_LABEL_LOCATION_DRIVER:
          return "location_driver";
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
@@ -4163,6 +4165,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Menu Driver";
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
          return "Camera Driver";
+      case MENU_ENUM_LABEL_VALUE_WIFI_DRIVER:
+         return "WiFi Driver";
       case MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER:
          return "Location Driver";
       case MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
