@@ -2170,6 +2170,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "deferred_retro_achievements_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST:
          return "deferred_updater_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST:
+         return "deferred_wifi_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST:
          return "deferred_network_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST:
@@ -2230,6 +2232,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "updater_settings";
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
          return "network_settings";
+      case MENU_ENUM_LABEL_WIFI_SETTINGS:
+         return "wifi_settings";
       case MENU_ENUM_LABEL_USER_SETTINGS:
          return "user_settings";
       case MENU_ENUM_LABEL_LAKKA_SERVICES:
@@ -4467,6 +4471,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Updater";
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
          return "Network";
+      case MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS:
+         return "WiFi";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
          return "Lakka Services";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:

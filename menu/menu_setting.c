@@ -2482,6 +2482,15 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_WIFI_SETTINGS),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_WIFI_SETTINGS);
+
+         CONFIG_ACTION(
+               list, list_info,
                msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
                &group_info,
