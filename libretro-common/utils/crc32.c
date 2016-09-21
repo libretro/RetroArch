@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include <compat/zlib.h>
+#include <encodings/crc32.h>
 
 int main(int argc, const char* argv[])
 {
@@ -18,7 +18,7 @@ int main(int argc, const char* argv[])
 
    if (file)
    {
-      uLong crc = crc32(0L, Z_NULL, 0 );
+      uLong crc = encoding_crc32(0L, Z_NULL, 0 );
 
       for (;;)
       {
@@ -27,7 +27,7 @@ int main(int argc, const char* argv[])
          int numread = fread((void*)buffer, 1, sizeof(buffer), file);
 
          if (numread > 0)
-            crc = crc32( crc, buffer, numread );
+            crc = encoding_crc32( crc, buffer, numread );
          else
             break;
       }

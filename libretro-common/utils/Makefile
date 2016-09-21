@@ -59,7 +59,7 @@ CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler))
 flags   := -fPIC $(extra_flags) -I../../libretro-common/include
 asflags := -fPIC  $(extra_flags)
-LDFLAGS := -lz
+LDFLAGS := 
 flags   += -std=c99 -DMD5_BUILD_UTILITY
 
 
