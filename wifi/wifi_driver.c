@@ -98,10 +98,7 @@ bool driver_wifi_start(void)
 
 void driver_wifi_scan(struct string_list *list)
 {
-   if (wifi_driver && wifi_data && wifi_driver->scan)
-   {
-      wifi_driver->scan(list);
-   }
+   wifi_driver->scan(list);
 }
 
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)

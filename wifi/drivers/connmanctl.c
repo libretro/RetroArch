@@ -43,9 +43,13 @@ static void connmanctl_scan(struct string_list *list)
 {
    union string_list_elem_attr attr;
    attr.i = RARCH_FILETYPE_UNSET;
+   char ssid[512];
 
-   string_list_append(list, "LALA", attr);
-   string_list_append(list, "LOLO", attr);
+   FILE* file = popen("connmanctl services", "r");
+   while (fgets (ssid, 512, file) != NULL)
+      string_list_append(list, ssid, attr);
+
+   pclose(file);
 }
 
 wifi_driver_t wifi_connmanctl = {

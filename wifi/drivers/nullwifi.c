@@ -38,7 +38,7 @@ static void nullwifi_stop(void *data)
    (void)data;
 }
 
-static void nullwifi_scan(struct string_list **list)
+static void nullwifi_scan(struct string_list *list)
 {
 }
 
