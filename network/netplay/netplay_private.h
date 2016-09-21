@@ -74,7 +74,8 @@ struct netplay_callbacks {
 enum rarch_netplay_stall_reasons
 {
     RARCH_NETPLAY_STALL_NONE = 0,
-    RARCH_NETPLAY_STALL_RUNNING_FAST
+    RARCH_NETPLAY_STALL_RUNNING_FAST,
+    RARCH_NETPLAY_STALL_NO_CONNECTION
 };
 
 struct netplay
@@ -114,6 +115,9 @@ struct netplay
    /* Force a rewind to other_frame_count/other_ptr. This is for synchronized
     * events, such as player flipping or savestate loading. */
    bool force_rewind;
+
+   /* Does the core support savestates? */
+   bool savestates_work;
 
    /* Force our state to be sent to the other side. Used when they request a
     * savestate, to send at the next pre-frame. */

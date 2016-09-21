@@ -185,6 +185,7 @@ bool netplay_get_info(netplay_t *netplay)
    retro_ctx_memory_info_t mem_info;
    uint32_t *content_crc_ptr = NULL;
    const void *sram          = NULL;
+   size_t i;
 
    if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
@@ -241,6 +242,20 @@ bool netplay_get_info(netplay_t *netplay)
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT));
       return false;
+   }
+
+   /* Reset our frame count so it's consistent with the client */
+   netplay->self_frame_count = netplay->read_frame_count = netplay->other_frame_count = 0;
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      if (i == netplay->self_ptr)
+      {
+         netplay->buffer[i].frame = 0;
+      }
+      else
+      {
+         netplay->buffer[i].used = false;
+      }
    }
 
 #ifndef HAVE_SOCKET_LEGACY

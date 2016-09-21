@@ -18,6 +18,9 @@
 #include <compat/strl.h>
 #include <stdio.h>
 
+#include <net/net_compat.h>
+#include <net/net_socket.h>
+
 #include "netplay_private.h"
 
 #include "retro_assert.h"
@@ -76,15 +79,80 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       {
          /* If the core can't serialize properly, we must stall for the
           * remote input on EVERY frame, because we can't recover */
+         netplay->savestates_work = false;
          netplay->stall_frames = 0;
+         if (!netplay->has_connection)
+            netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
+      }
+   }
+
+   if (netplay->is_server && !netplay->has_connection)
+   {
+      fd_set fds;
+      struct timeval tmp_tv = {0};
+      int new_fd, idx, i;
+      struct sockaddr_storage their_addr;
+      socklen_t addr_size;
+
+      /* Check for a connection */
+      FD_ZERO(&fds);
+      FD_SET(netplay->fd, &fds);
+      if (socket_select(netplay->fd + 1, &fds, NULL, NULL, &tmp_tv) > 0 &&
+          FD_ISSET(netplay->fd, &fds))
+      {
+         addr_size = sizeof(their_addr);
+         new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
+         if (new_fd < 0)
+         {
+            RARCH_ERR("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
+            return true;
+         }
+
+         socket_close(netplay->fd);
+         netplay->fd = new_fd;
+
+#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
+         {
+            int flag = 1;
+            setsockopt(netplay->fd, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(int));
+         }
+#endif
+
+         /* Connection header */
+         if (netplay_get_info(netplay))
+         {
+            netplay->has_connection = true;
+
+            /* If we're not at frame 0, send them the savestate */
+            if (netplay->self_frame_count != 0 && netplay->savestates_work)
+            {
+               serial_info.size = netplay->state_size;
+               serial_info.data_const = netplay->buffer[netplay->self_ptr].state;
+               netplay_load_savestate(netplay, &serial_info, false);
+            }
+
+            /* And expect the current frame from the other side */
+            netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
+            netplay->read_ptr = netplay->other_ptr = netplay->read_ptr;
+
+            /* Unstall if we were waiting for this */
+            if (netplay->stall == RARCH_NETPLAY_STALL_NO_CONNECTION)
+               netplay->stall = 0;
+
+         }
+         else
+         {
+            socket_close(netplay->fd);
+            /* FIXME: Get in a state to accept another client */
+
+         }
       }
    }
 
    netplay->can_poll = true;
-
    input_poll_net();
 
-   return true;
+   return (netplay->stall != RARCH_NETPLAY_STALL_NO_CONNECTION);
 }
 
 /**
@@ -195,18 +263,12 @@ static void netplay_net_post_frame(netplay_t *netplay)
 
 static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
 {
-   if (netplay_is_server(netplay))
+   if (!netplay_is_server(netplay))
    {
       if (!netplay_send_info(netplay))
          return false;
+      netplay->has_connection = true;
    }
-   else
-   {
-      if (!netplay_get_info(netplay))
-         return false;
-   }
-
-   netplay->has_connection = true;
 
    return true;
 }
