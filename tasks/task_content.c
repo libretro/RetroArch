@@ -303,7 +303,7 @@ error:
 }
 
 /**
- * read_content_file:
+ * load_content_into_memory:
  * @path         : buffer of the content file.
  * @buf          : size   of the content file.
  * @length       : size of the content file that has been read from.
@@ -314,7 +314,7 @@ error:
  *
  * Returns: true if successful, false on error.
  **/
-static bool read_content_file(unsigned i, const char *path, void **buf,
+static bool load_content_into_memory(unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
    uint32_t *content_crc_ptr = NULL;
@@ -348,30 +348,6 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    *buf = ret_buf;
 
    return true;
-}
-
-
-/* Load the content into memory. */
-static bool load_content_into_memory(
-      struct retro_game_info *info,
-      unsigned i,
-      const char *path)
-{
-   ssize_t len = 0;
-   bool ret    = read_content_file(i, path, (void**)&info->data, &len);
-
-   if (!ret)
-      goto error;
-
-   info->size = len;
-
-   return true;
-
-error:
-   RARCH_ERR("%s \"%s\".\n",
-         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-         path);
-   return false;
 }
 
 #ifdef HAVE_COMPRESSION
@@ -539,8 +515,19 @@ static bool load_content(
 
       if (!need_fullpath && !string_is_empty(path))
       {
-         if (!load_content_into_memory(&info[i], i, path))
+         /* Load the content into memory. */
+
+         ssize_t len = 0;
+         
+         if (!load_content_into_memory(i, path, (void**)&info[i].data, &len))
+         {
+            RARCH_ERR("%s \"%s\".\n",
+                  msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                  path);
             return false;
+         }
+
+         info[i].size = len;
       }
       else
       {
