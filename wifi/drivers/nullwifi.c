@@ -38,9 +38,8 @@ static void nullwifi_stop(void *data)
    (void)data;
 }
 
-static void nullwifi_scan(void *data, struct string_list *list)
+static void nullwifi_scan(struct string_list **list)
 {
-   (void)data;
 }
 
 wifi_driver_t wifi_null = {

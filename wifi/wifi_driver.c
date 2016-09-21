@@ -100,7 +100,7 @@ void driver_wifi_scan(struct string_list *list)
 {
    if (wifi_driver && wifi_data && wifi_driver->scan)
    {
-      return wifi_driver->scan(wifi_data, list);
+      wifi_driver->scan(list);
    }
 }
 

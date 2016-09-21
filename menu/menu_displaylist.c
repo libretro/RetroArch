@@ -66,6 +66,7 @@
 #include "../list_special.h"
 #include "../performance_counters.h"
 #include "../core_info.h"
+#include "../wifi/wifi_driver.h"
 
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
@@ -4012,6 +4013,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
       case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
+      case DISPLAYLIST_WIFI_SETTINGS_LIST:
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
       case DISPLAYLIST_LAKKA_SERVICES_LIST:
       case DISPLAYLIST_USER_SETTINGS_LIST:
@@ -4661,7 +4663,28 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_WIFI_SETTINGS_LIST:
+         {
+            unsigned i;
+            struct string_list *ssid_list = string_list_new();
+            driver_wifi_scan(ssid_list);
+
+            for (i = 0; i < ssid_list->size; i++)
+            {
+               const char *ssid = ssid_list->elems[i].data;
+               menu_entries_append_enum(info->list,
+                     "Test",
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT),
+                     MENU_ENUM_LABEL_LOAD_CONTENT,
+                     MENU_SETTING_ACTION, 0, 0);
+            }
+         }
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
+
          {
             unsigned user;
             unsigned count = 0;

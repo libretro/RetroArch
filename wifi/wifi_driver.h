@@ -53,7 +53,7 @@ typedef struct wifi_driver
    bool (*start)(void *data);
    void (*stop)(void *data);
 
-   void (*scan)(void *data, struct string_list *list);
+   void (*scan)(struct string_list *list);
 
    const char *ident;
 } wifi_driver_t;

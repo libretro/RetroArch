@@ -39,14 +39,13 @@ static void connmanctl_stop(void *data)
    (void)data;
 }
 
-static void connmanctl_scan(void *data, struct string_list *list)
+static void connmanctl_scan(struct string_list *list)
 {
-   (void)data;
-
    union string_list_elem_attr attr;
    attr.i = RARCH_FILETYPE_UNSET;
 
    string_list_append(list, "LALA", attr);
+   string_list_append(list, "LOLO", attr);
 }
 
 wifi_driver_t wifi_connmanctl = {
