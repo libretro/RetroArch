@@ -769,8 +769,8 @@ endif
 endif
 
    ifeq ($(HAVE_OPENGLES), 1)
-      LIBS += $(GLES_LIBS)
-      DEFINES += $(GLES_CFLAGS) -DHAVE_OPENGLES
+      LIBS += $(OPENGLES_LIBS)
+      DEFINES += $(OPENGLES_CFLAGS) -DHAVE_OPENGLES
       ifeq ($(HAVE_OPENGLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
       else
