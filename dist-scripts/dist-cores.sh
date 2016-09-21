@@ -137,6 +137,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    lto=0
    whole_archive=
    big_stack=
+   async=0
    if [ $name = "nxengine" ] ; then
       echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
@@ -144,6 +145,10 @@ for f in `ls -v *_${platform}.${EXT}`; do
       echo "Applying big stack..."
       lto=0
       big_stack="BIG_STACK=1"
+   elif [ $name = "mupen64plus" ] ; then
+      async=1
+   elif [ $name = "glupen64" ] ; then
+      async=1
    fi
    echo "-- Building core: $name --"
    if [ $PLATFORM = "unix" ]; then
@@ -157,7 +162,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
-         make -C ../ -f Makefile.emscripten LTO=$lto -j7 clean || exit 1
+         make -C ../ -f Makefile.emscripten ASYNC=$async LTO=$lto -j7 clean || exit 1
       elif [ $PLATFORM = "unix" ]; then
          make -C ../ -f Makefile LINK=g++ LTO=$lto -j7 clean || exit 1
       else
@@ -169,7 +174,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $MAKEFILE_GRIFFIN = "yes" ]; then
       make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
-       make -C ../ -f Makefile.emscripten LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
+       make -C ../ -f Makefile.emscripten ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
    elif [ $PLATFORM = "unix" ]; then
       make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ctr" ]; then
@@ -274,7 +279,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
-         make -C ../ -f Makefile.emscripten LTO=$lto -j7 clean || exit 1
+         make -C ../ -f Makefile.emscripten ASYNC=$async LTO=$lto -j7 clean || exit 1
       elif [ $PLATFORM = "unix" ]; then
          make -C ../ -f Makefile LTO=$lto -j7 clean || exit 1
       else
