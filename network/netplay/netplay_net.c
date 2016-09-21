@@ -111,6 +111,13 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
          socket_close(netplay->fd);
          netplay->fd = new_fd;
 
+#if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
+         {
+            int flag = 1;
+            setsockopt(netplay->fd, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(int));
+         }
+#endif
+
          /* Connection header */
          if (netplay_get_info(netplay))
          {
