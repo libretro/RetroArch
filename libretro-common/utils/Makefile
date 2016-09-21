@@ -79,7 +79,7 @@ md5$(DYLIB): md5.o
 
 sha1$(DYLIB): sha1.o
 
-crc32$(DYLIB): crc32.o
+crc32$(DYLIB): crc32.o ../encodings/encoding_crc32.o
 
 %.o: %.S
 	$(CC) -c -o $@ $(asflags) $(LDFLAGS)  $(ASMFLAGS)  $<

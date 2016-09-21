@@ -18,11 +18,11 @@ int main(int argc, const char* argv[])
 
    if (file)
    {
-      uLong crc = encoding_crc32(0L, Z_NULL, 0 );
+      uint32_t crc = encoding_crc32(0L, NULL, 0 );
 
       for (;;)
       {
-         Bytef buffer[16384];
+         uint8_t buffer[16384];
 
          int numread = fread((void*)buffer, 1, sizeof(buffer), file);
 
