@@ -165,8 +165,7 @@ static bool file_get_crc(database_state_handle_t *db_state,
    if (read_from != 1 || ret <= 0)
       return 0;
 
-      *crc = encoding_crc32(
-            0, db_state->buf, ret);
+   *crc = encoding_crc32(0, db_state->buf, ret);
 
    return 1;
 }
