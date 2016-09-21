@@ -473,6 +473,15 @@ typedef struct settings
 const char *config_get_default_camera(void);
 
 /**
+ * config_get_default_wifi:
+ *
+ * Gets default wifi driver.
+ *
+ * Returns: Default wifi driver.
+ **/
+const char *config_get_default_wifi(void);
+
+/**
  * config_get_default_location:
  *
  * Gets default location driver.

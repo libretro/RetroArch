@@ -437,6 +437,26 @@ const char *config_get_default_camera(void)
 }
 
 /**
+ * config_get_default_wifi:
+ *
+ * Gets default wifi driver.
+ *
+ * Returns: Default wifi driver.
+ **/
+const char *config_get_default_wifi(void)
+{
+   switch (WIFI_DEFAULT_DRIVER)
+   {
+      case WIFI_CONNMANCTL:
+         return "connmanctl";
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+/**
  * config_get_default_location:
  *
  * Gets default location driver.
@@ -523,6 +543,7 @@ static int populate_settings_array(settings_t *settings, struct config_array_set
    SETTING_ARRAY("video_driver",             settings->video.driver,   false, NULL, true);
    SETTING_ARRAY("record_driver",            settings->record.driver,  false, NULL, true);
    SETTING_ARRAY("camera_driver",            settings->camera.driver,  false, NULL, true);
+   SETTING_ARRAY("wifi_driver",            settings->wifi.driver,  false, NULL, true);
    SETTING_ARRAY("location_driver",          settings->location.driver,false, NULL, true);
 #ifdef HAVE_MENU
    SETTING_ARRAY("menu_driver",              settings->menu.driver,    false, NULL, true);
@@ -946,6 +967,7 @@ static void config_set_defaults(void)
    const char *def_menu            = config_get_default_menu();
 #endif
    const char *def_camera          = config_get_default_camera();
+   const char *def_wifi            = config_get_default_wifi();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
    struct config_bool_setting       *bool_settings  = NULL;
@@ -979,6 +1001,9 @@ static void config_set_defaults(void)
    if (def_camera)
       strlcpy(settings->camera.driver,
             def_camera, sizeof(settings->camera.driver));
+   if (def_wifi)
+      strlcpy(settings->wifi.driver,
+            def_wifi, sizeof(settings->wifi.driver));
    if (def_location)
       strlcpy(settings->location.driver,
             def_location, sizeof(settings->location.driver));
