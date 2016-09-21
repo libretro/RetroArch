@@ -164,7 +164,7 @@ int socket_send_all_blocking(int fd, const void *data_, size_t size,
             no_signal ? MSG_NOSIGNAL : 0);
       if (ret <= 0)
       {
-         if (!isagain(ret))
+         if (isagain(ret))
             continue;
 
          return false;
