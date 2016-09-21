@@ -29,6 +29,11 @@
 #include "../list_special.h"
 #include "../verbosity.h"
 
+static const wifi_driver_t *wifi_driver   = NULL;
+static void *wifi_data                      = NULL;
+static bool wifi_driver_active              = false;
+static bool wifi_driver_data_own            = false;
+
 static const wifi_driver_t *wifi_drivers[] = {
 #ifdef HAVE_LAKKA
    &wifi_connmanctl,
@@ -91,13 +96,17 @@ bool driver_wifi_start(void)
    return wifi_driver_ctl(RARCH_WIFI_CTL_START, NULL);
 }
 
+void driver_wifi_scan(struct string_list *list)
+{
+   if (wifi_driver && wifi_data && wifi_driver->scan)
+   {
+      return wifi_driver->scan(wifi_data, list);
+   }
+}
+
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 {
    settings_t        *settings = config_get_ptr();
-   static const wifi_driver_t *wifi_driver   = NULL;
-   static void *wifi_data                      = NULL;
-   static bool wifi_driver_active              = false;
-   static bool wifi_driver_data_own            = false;
 
    switch (state)
    {

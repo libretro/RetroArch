@@ -94,6 +94,8 @@ void driver_wifi_stop(void);
 
 bool driver_wifi_start(void);
 
+void driver_wifi_scan(struct string_list *list);
+
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data);
 
 RETRO_END_DECLS
