@@ -14,6 +14,7 @@
  */
 
 #include "../wifi_driver.h"
+#include <file/file_path.h>
 
 static void *connmanctl_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)
@@ -38,10 +39,21 @@ static void connmanctl_stop(void *data)
    (void)data;
 }
 
+static void connmanctl_scan(void *data, struct string_list *list)
+{
+   (void)data;
+
+   union string_list_elem_attr attr;
+   attr.i = RARCH_FILETYPE_UNSET;
+
+   string_list_append(list, "LALA", attr);
+}
+
 wifi_driver_t wifi_connmanctl = {
    connmanctl_init,
    connmanctl_free,
    connmanctl_start,
    connmanctl_stop,
+   connmanctl_scan,
    "connmanctl",
 };

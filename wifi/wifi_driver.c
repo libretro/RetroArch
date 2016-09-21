@@ -175,9 +175,6 @@ bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
         {
            if (settings->wifi.allow)
               return wifi_driver->start(wifi_data);
-
-           runloop_msg_queue_push(
-                 "Camera is explicitly disabled.\n", 1, 180, false);
         }
         return false;
       case RARCH_WIFI_CTL_SET_CB:

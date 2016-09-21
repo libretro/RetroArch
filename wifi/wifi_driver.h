@@ -22,6 +22,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <libretro.h>
+#include <lists/string_list.h>
 
 RETRO_BEGIN_DECLS
 
@@ -51,6 +52,8 @@ typedef struct wifi_driver
 
    bool (*start)(void *data);
    void (*stop)(void *data);
+
+   void (*scan)(void *data, struct string_list *list);
 
    const char *ident;
 } wifi_driver_t;
