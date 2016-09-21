@@ -27,6 +27,12 @@
 #include <stddef.h>
 #include <boolean.h>
 
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
+
 #include <retro_miscellaneous.h>
 
 enum file_archive_transfer_type
