@@ -823,18 +823,6 @@ static int init_tcp_connection(const struct addrinfo *res,
          goto end;
       }
 
-      if (!spectate)
-      {
-         int new_fd = accept(fd, other_addr, &addr_size);
-         if (new_fd < 0)
-         {
-            ret = false;
-            goto end;
-         }
-
-         socket_close(fd);
-         fd = new_fd;
-      }
    }
 
 end:
@@ -973,6 +961,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
    netplay->is_server         = server == NULL;
+   netplay->savestates_work   = true;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
    netplay->stall_frames = frames;
    netplay->check_frames = check_frames;
@@ -1289,7 +1278,12 @@ bool init_netplay(void)
       global->netplay.is_client = true;
    }
    else
+   {
       RARCH_LOG("Waiting for client...\n");
+      runloop_msg_queue_push(
+         "Waiting for client...",
+         0, 180, false);
+   }
 
    netplay_data = (netplay_t*)netplay_new(
          global->netplay.is_client ? global->netplay.server : NULL,
