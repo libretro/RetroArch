@@ -319,7 +319,6 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 {
    uint32_t *content_crc_ptr = NULL;
    uint8_t *ret_buf          = NULL;
-   global_t *global          = global_get_ptr();
 
    RARCH_LOG("%s: %s.\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
@@ -329,18 +328,22 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    if (*length < 0)
       return false;
 
-   if (i != 0)
-      return true;
+   if (i == 0)
+   {
+      global_t *global          = global_get_ptr();
+      /* First content file is significant, attempt to do patching,
+       * CRC checking, etc. */
 
-   /* Attempt to apply a patch. */
-   if (!global->patch.block_patch)
-      patch_content(&ret_buf, length);
+      /* Attempt to apply a patch. */
+      if (!global->patch.block_patch)
+         patch_content(&ret_buf, length);
 
-   content_get_crc(&content_crc_ptr);
+      content_get_crc(&content_crc_ptr);
 
-   *content_crc_ptr = encoding_crc32(0, ret_buf, *length);
+      *content_crc_ptr = encoding_crc32(0, ret_buf, *length);
 
-   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
+      RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
+   }
 
    *buf = ret_buf;
 
@@ -354,19 +357,10 @@ static bool load_content_into_memory(
       unsigned i,
       const char *path)
 {
-   ssize_t len;
-   bool ret = false;
+   ssize_t len = 0;
+   bool ret    = read_content_file(i, path, (void**)&info->data, &len);
 
-   if (i == 0)
-   {
-      /* First content file is significant, attempt to do patching,
-       * CRC checking, etc. */
-      ret = read_content_file(i, path, (void**)&info->data, &len);
-   }
-   else
-      ret = content_file_read(path, (void**)&info->data, &len);
-
-   if (!ret || len < 0)
+   if (!ret)
       goto error;
 
    info->size = len;
