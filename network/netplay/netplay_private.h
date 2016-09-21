@@ -180,10 +180,6 @@ bool netplay_send_nickname(netplay_t *netplay, int fd);
 
 bool netplay_send_info(netplay_t *netplay);
 
-uint32_t *netplay_bsv_header_generate(size_t *size, uint32_t magic);
-
-bool netplay_bsv_parse_header(const uint32_t *header, uint32_t magic);
-
 uint32_t netplay_impl_magic(void);
 
 bool netplay_send_info(netplay_t *netplay);
