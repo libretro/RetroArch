@@ -390,8 +390,6 @@ static int remove_adapter(void *data, struct libusb_device *dev)
       return 0;
    }
 
-   adapter = adapter->next;
-
    return -1;
 }
 
