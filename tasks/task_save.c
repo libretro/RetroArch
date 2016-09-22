@@ -324,7 +324,7 @@ void autosave_deinit(void)
 }
 #endif
 
-static unsigned content_allocate_save_blocks(struct sram_block *blocks)
+static unsigned content_allocate_save_blocks(struct sram_block **blocks)
 {
    unsigned i;
    unsigned num_blocks       = 0;
@@ -337,55 +337,63 @@ static unsigned content_allocate_save_blocks(struct sram_block *blocks)
    {
       RARCH_LOG("%s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
-      blocks = (struct sram_block*)
+      *blocks = (struct sram_block*)
          calloc(task_save_files->size, sizeof(*blocks));
 
-      if (blocks)
+      if (*blocks)
       {
          num_blocks = task_save_files->size;
          for (i = 0; i < num_blocks; i++)
-            blocks[i].type = task_save_files->elems[i].attr.i;
+         {
+            struct sram_block *block = (struct sram_block*)&blocks[i];
+            block->type = task_save_files->elems[i].attr.i;
+         }
       }
    }
 
    for (i = 0; i < num_blocks; i++)
    {
       retro_ctx_memory_info_t    mem_info;
+      struct sram_block *block = (struct sram_block*)&blocks[i];
 
-      mem_info.id = blocks[i].type;
+      mem_info.id = block->type;
       core_get_memory(&mem_info);
 
-      blocks[i].size = mem_info.size;
+      block->size = mem_info.size;
    }
 
    for (i = 0; i < num_blocks; i++)
-      if (blocks[i].size)
-         blocks[i].data = malloc(blocks[i].size);
+   {
+      struct sram_block *block = (struct sram_block*)&blocks[i];
+      if (block->size)
+         block->data = malloc(block->size);
+   }
 
    /* Backup current SRAM which is overwritten by unserialize. */
    for (i = 0; i < num_blocks; i++)
    {
-      if (blocks[i].data)
-      {
-         retro_ctx_memory_info_t    mem_info;
-         void *dst       = NULL;
-         const void *src = NULL;
+      retro_ctx_memory_info_t    mem_info;
+      void *dst       = NULL;
+      const void *src = NULL;
+      struct sram_block *block = (struct sram_block*)&blocks[i];
 
-         mem_info.id = blocks[i].type;
+      if (!block->data)
+         continue;
 
-         core_get_memory(&mem_info);
+      mem_info.id = block->type;
 
-         src = mem_info.data;
-         dst = blocks[i].data;
-         if (src)
-            memcpy(dst, src, blocks[i].size);
-      }
+      core_get_memory(&mem_info);
+
+      src = mem_info.data;
+      dst = block->data;
+      if (src)
+         memcpy(dst, src, block->size);
    }
 
    return num_blocks;
 }
 
-static void content_flush_save_blocks(struct sram_block *blocks,
+static void content_flush_save_blocks(struct sram_block **blocks,
       unsigned num_blocks)
 {
    unsigned i;
@@ -393,26 +401,30 @@ static void content_flush_save_blocks(struct sram_block *blocks,
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
    {
-      if (blocks[i].data)
+      struct sram_block *block = (struct sram_block*)&blocks[i];
+
+      if (block->data)
       {
          retro_ctx_memory_info_t    mem_info;
          const void *src = NULL;
          void *dst       = NULL;
 
-         mem_info.id = blocks[i].type;
+         mem_info.id = block->type;
 
          core_get_memory(&mem_info);
 
-         src = blocks[i].data;
+         src = block->data;
          dst = mem_info.data;
          if (dst)
-            memcpy(dst, src, blocks[i].size);
+            memcpy(dst, src, block->size);
       }
    }
 
    for (i = 0; i < num_blocks; i++)
-      free(blocks[i].data);
-   free(blocks);
+   {
+      struct sram_block *block = (struct sram_block*)&blocks[i];
+      free(block->data);
+   }
 }
 
 /**
@@ -439,7 +451,7 @@ bool content_undo_load_state(void)
          undo_load_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
-   num_blocks             = content_allocate_save_blocks(blocks);
+   num_blocks             = content_allocate_save_blocks(&blocks);
    
    /* We need to make a temporary copy of the buffer, to allow the swap below */
    temp_data              = malloc(undo_load_buf.size);
@@ -459,7 +471,8 @@ bool content_undo_load_state(void)
    free(temp_data);
    temp_data              = NULL;
 
-   content_flush_save_blocks(blocks, num_blocks);
+   content_flush_save_blocks(&blocks, num_blocks);
+   free(blocks);
 
    if (!ret)
    {
@@ -650,7 +663,7 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
       return true;
    }
 
-   num_blocks             = content_allocate_save_blocks(blocks);
+   num_blocks             = content_allocate_save_blocks(&blocks);
 
    serial_info.data_const = buf;
    serial_info.size       = size;
@@ -660,7 +673,8 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
 
    ret                    = core_unserialize(&serial_info);
 
-   content_flush_save_blocks(blocks, num_blocks);
+   content_flush_save_blocks(&blocks, num_blocks);
+   free(blocks);
    
    if (!ret)
       goto error;
