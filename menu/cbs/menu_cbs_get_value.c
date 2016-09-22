@@ -41,6 +41,7 @@
 #include "../../paths.h"
 #include "../../runloop.h"
 #include "../../intl/intl.h"
+#include "../../wifi/wifi_driver.h"
 
 #ifndef BIND_ACTION_GET_VALUE
 #define BIND_ACTION_GET_VALUE(cbs, name) \
@@ -705,6 +706,22 @@ static void menu_action_setting_disp_set_label_xmb_theme(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM), len);
          break;
    }
+}
+
+static void menu_action_setting_disp_set_label_wifi_is_online(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   strlcpy(s2, path, len2);
+   *w = 19;
+
+   if (driver_wifi_ssid_is_online(i))
+      strlcpy(s, "Online", len);
 }
 
 static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
@@ -1514,6 +1531,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_XMB_THEME:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_xmb_theme);
+            break;
+         case MENU_ENUM_LABEL_CONNECT_WIFI:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_wifi_is_online);
             break;
          case MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME:
             BIND_ACTION_GET_VALUE(cbs,

@@ -17,6 +17,8 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
+static struct string_list* lines;
+
 static void *connmanctl_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)
 {
@@ -40,22 +42,46 @@ static void connmanctl_stop(void *data)
    (void)data;
 }
 
-static void connmanctl_scan(struct string_list *list)
+static void connmanctl_scan()
 {
    union string_list_elem_attr attr;
    attr.i = RARCH_FILETYPE_UNSET;
    char line[512];
+   if (lines)
+      free(lines);
+   lines = string_list_new();
 
    pclose(popen("connmanctl scan wifi", "r"));
 
    FILE* serv_file = popen("connmanctl services", "r");
    while (fgets (line, 512, serv_file) != NULL)
    {
-      char ssid[20];
-      strlcpy(ssid, line+4, sizeof(ssid));
-      string_list_append(list, ssid, attr);
+      //char ssid[20];
+      //strlcpy(ssid, line+4, sizeof(ssid));
+      string_list_append(lines, line, attr);
    }
    pclose(serv_file);
+}
+
+static void connmanctl_get_ssids(struct string_list* ssids)
+{
+   unsigned i;
+   union string_list_elem_attr attr;
+   attr.i = RARCH_FILETYPE_UNSET;
+
+   for (i = 0; i < lines->size; i++)
+   {
+      const char *line = lines->elems[i].data;
+      char ssid[20];
+      strlcpy(ssid, line+4, sizeof(ssid));
+      string_list_append(ssids, ssid, attr);
+   }
+}
+
+static bool connmanctl_ssid_is_online(unsigned i)
+{
+   const char *line = lines->elems[i].data;
+   return line[2] == 'O';
 }
 
 wifi_driver_t wifi_connmanctl = {
@@ -64,5 +90,7 @@ wifi_driver_t wifi_connmanctl = {
    connmanctl_start,
    connmanctl_stop,
    connmanctl_scan,
+   connmanctl_get_ssids,
+   connmanctl_ssid_is_online,
    "connmanctl",
 };

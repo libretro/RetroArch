@@ -53,7 +53,9 @@ typedef struct wifi_driver
    bool (*start)(void *data);
    void (*stop)(void *data);
 
-   void (*scan)(struct string_list *list);
+   void (*scan)();
+   void (*get_ssids)(struct string_list *list);
+   bool (*ssid_is_online)(unsigned i);
 
    const char *ident;
 } wifi_driver_t;
@@ -94,7 +96,11 @@ void driver_wifi_stop(void);
 
 bool driver_wifi_start(void);
 
-void driver_wifi_scan(struct string_list *list);
+void driver_wifi_scan();
+
+void driver_wifi_get_ssids(struct string_list *list);
+
+bool driver_wifi_ssid_is_online(unsigned i);
 
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data);
 

@@ -38,8 +38,17 @@ static void nullwifi_stop(void *data)
    (void)data;
 }
 
-static void nullwifi_scan(struct string_list *list)
+static void nullwifi_scan()
 {
+}
+
+static void nullwifi_get_ssids(struct string_list* ssids)
+{
+}
+
+static bool nullwifi_ssid_is_online(unsigned i)
+{
+   return false;
 }
 
 wifi_driver_t wifi_null = {
@@ -48,5 +57,7 @@ wifi_driver_t wifi_null = {
    nullwifi_start,
    nullwifi_stop,
    nullwifi_scan,
+   nullwifi_get_ssids,
+   nullwifi_ssid_is_online,
    "null",
 };

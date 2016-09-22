@@ -4674,7 +4674,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             unsigned i;
             struct string_list *ssid_list = string_list_new();
-            driver_wifi_scan(ssid_list);
+            driver_wifi_scan();
+            driver_wifi_get_ssids(ssid_list);
 
             for (i = 0; i < ssid_list->size; i++)
             {

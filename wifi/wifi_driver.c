@@ -96,9 +96,19 @@ bool driver_wifi_start(void)
    return wifi_driver_ctl(RARCH_WIFI_CTL_START, NULL);
 }
 
-void driver_wifi_scan(struct string_list *list)
+void driver_wifi_scan()
 {
-   wifi_driver->scan(list);
+   wifi_driver->scan();
+}
+
+void driver_wifi_get_ssids(struct string_list* ssids)
+{
+   wifi_driver->get_ssids(ssids);
+}
+
+bool driver_wifi_ssid_is_online(unsigned i)
+{
+   return wifi_driver->ssid_is_online(i);
 }
 
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
