@@ -15,10 +15,8 @@
 
 #include "../wifi_driver.h"
 
-static void *nullwifi_init(const char *device, uint64_t caps,
-      unsigned width, unsigned height)
+static void *nullwifi_init(void)
 {
-   (void)device;
    return (void*)-1;
 }
 
@@ -38,7 +36,7 @@ static void nullwifi_stop(void *data)
    (void)data;
 }
 
-static void nullwifi_scan()
+static void nullwifi_scan(void)
 {
 }
 

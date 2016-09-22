@@ -21,7 +21,6 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
-#include <libretro.h>
 #include <lists/string_list.h>
 
 RETRO_BEGIN_DECLS
@@ -46,14 +45,14 @@ enum rarch_wifi_ctl_state
 
 typedef struct wifi_driver
 {
-   void *(*init)();
+   void *(*init)(void);
 
    void (*free)(void *data);
 
    bool (*start)(void *data);
    void (*stop)(void *data);
 
-   void (*scan)();
+   void (*scan)(void);
    void (*get_ssids)(struct string_list *list);
    bool (*ssid_is_online)(unsigned i);
    bool (*connect_ssid)(unsigned i);

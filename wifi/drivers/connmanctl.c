@@ -13,17 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
+#include <file/file_path.h>
+
 #include "../wifi_driver.h"
 #include "../../runloop.h"
-#include <file/file_path.h>
-#include <compat/strl.h>
 
 static struct string_list* lines;
 
-static void *connmanctl_init(const char *device, uint64_t caps,
-      unsigned width, unsigned height)
+static void *connmanctl_init(void)
 {
-   (void)device;
    return (void*)-1;
 }
 
@@ -43,24 +42,25 @@ static void connmanctl_stop(void *data)
    (void)data;
 }
 
-static void connmanctl_scan()
+static void connmanctl_scan(void)
 {
-   union string_list_elem_attr attr;
-   attr.i = RARCH_FILETYPE_UNSET;
    char line[512];
+   union string_list_elem_attr attr;
+   FILE *serv_file                  = NULL;
+
+   attr.i = RARCH_FILETYPE_UNSET;
    if (lines)
       free(lines);
    lines = string_list_new();
 
    pclose(popen("connmanctl scan wifi", "r"));
 
-   FILE* serv_file = popen("connmanctl services", "r");
+   serv_file = popen("connmanctl services", "r");
    while (fgets (line, 512, serv_file) != NULL)
    {
       size_t len = strlen(line);
-         if (len > 0 && line[len-1] == '\n') {
+      if (len > 0 && line[len-1] == '\n')
          line[--len] = '\0';
-      }
 
       string_list_append(lines, line, attr);
    }
@@ -75,8 +75,9 @@ static void connmanctl_get_ssids(struct string_list* ssids)
 
    for (i = 0; i < lines->size; i++)
    {
-      const char *line = lines->elems[i].data;
       char ssid[20];
+      const char *line = lines->elems[i].data;
+
       strlcpy(ssid, line+4, sizeof(ssid));
       string_list_append(ssids, ssid, attr);
    }
@@ -85,15 +86,19 @@ static void connmanctl_get_ssids(struct string_list* ssids)
 static bool connmanctl_ssid_is_online(unsigned i)
 {
    const char *line = lines->elems[i].data;
+   if (!line)
+      return false;
    return line[2] == 'O';
 }
 
 static bool connmanctl_connect_ssid(unsigned i)
 {
-   const char *line = lines->elems[i].data;
+   char ln[512];
    char service[128];
    char command[256];
-   char ln[512];
+   FILE *file       = NULL;
+   const char *line = lines->elems[i].data;
+
    strlcpy(service, line+25, sizeof(service));
 
    strlcat(command, "connmanctl connect ", sizeof(command));
@@ -102,7 +107,8 @@ static bool connmanctl_connect_ssid(unsigned i)
 
    printf("%s\n", command);
 
-   FILE* file = popen(command, "r");
+   file = popen(command, "r");
+
    while (fgets (ln, 512, file) != NULL)
    {
       printf("%s\n", ln);
