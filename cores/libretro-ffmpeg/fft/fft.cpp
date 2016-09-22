@@ -17,7 +17,6 @@
 #include <glm/gtc/type_ptr.hpp>
 using namespace glm;
 
-#undef GL_DEBUG
 #if GL_DEBUG
 #define GL_CHECK_ERROR() do { \
    if (glGetError() != GL_NO_ERROR) \
