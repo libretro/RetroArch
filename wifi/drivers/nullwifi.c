@@ -51,6 +51,11 @@ static bool nullwifi_ssid_is_online(unsigned i)
    return false;
 }
 
+static bool nullwifi_connect_ssid(unsigned i)
+{
+   return false;
+}
+
 wifi_driver_t wifi_null = {
    nullwifi_init,
    nullwifi_free,
@@ -59,5 +64,6 @@ wifi_driver_t wifi_null = {
    nullwifi_scan,
    nullwifi_get_ssids,
    nullwifi_ssid_is_online,
+   nullwifi_connect_ssid,
    "null",
 };

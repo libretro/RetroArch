@@ -111,6 +111,11 @@ bool driver_wifi_ssid_is_online(unsigned i)
    return wifi_driver->ssid_is_online(i);
 }
 
+bool driver_wifi_connect_ssid(unsigned i)
+{
+   return wifi_driver->connect_ssid(i);
+}
+
 bool wifi_driver_ctl(enum rarch_wifi_ctl_state state, void *data)
 {
    settings_t        *settings = config_get_ptr();

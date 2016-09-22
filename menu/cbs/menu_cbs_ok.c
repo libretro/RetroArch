@@ -48,6 +48,7 @@
 #include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
+#include "../../wifi/wifi_driver.h"
 
 typedef struct
 {
@@ -2858,6 +2859,13 @@ static int action_ok_rdb_entry(const char *path,
          entry_idx, ACTION_OK_DL_RDB_ENTRY);
 }
 
+static int action_ok_wifi(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   driver_wifi_connect_ssid(idx);
+   return 0;
+}
+
 static int action_ok_content_collection_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3890,6 +3898,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_RDB_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_rdb_entry);
+            break;
+         case MENU_WIFI:
+            BIND_ACTION_OK(cbs, action_ok_wifi);
             break;
          case FILE_TYPE_CURSOR:
             switch (menu_label_hash)

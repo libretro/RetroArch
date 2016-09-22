@@ -14,6 +14,7 @@
  */
 
 #include "../wifi_driver.h"
+#include "../../runloop.h"
 #include <file/file_path.h>
 #include <compat/strl.h>
 
@@ -56,8 +57,11 @@ static void connmanctl_scan()
    FILE* serv_file = popen("connmanctl services", "r");
    while (fgets (line, 512, serv_file) != NULL)
    {
-      //char ssid[20];
-      //strlcpy(ssid, line+4, sizeof(ssid));
+      size_t len = strlen(line);
+         if (len > 0 && line[len-1] == '\n') {
+         line[--len] = '\0';
+      }
+
       string_list_append(lines, line, attr);
    }
    pclose(serv_file);
@@ -84,6 +88,31 @@ static bool connmanctl_ssid_is_online(unsigned i)
    return line[2] == 'O';
 }
 
+static bool connmanctl_connect_ssid(unsigned i)
+{
+   const char *line = lines->elems[i].data;
+   char service[128];
+   char command[256];
+   char ln[512];
+   strlcpy(service, line+25, sizeof(service));
+
+   strlcat(command, "connmanctl connect ", sizeof(command));
+   strlcat(command, service, sizeof(command));
+   strlcat(command, " 2>&1", sizeof(command));
+
+   printf("%s\n", command);
+
+   FILE* file = popen(command, "r");
+   while (fgets (ln, 512, file) != NULL)
+   {
+      printf("%s\n", ln);
+      runloop_msg_queue_push(ln, 1, 180, true);
+   }
+   pclose(file);
+   
+   return true;
+}
+
 wifi_driver_t wifi_connmanctl = {
    connmanctl_init,
    connmanctl_free,
@@ -92,5 +121,6 @@ wifi_driver_t wifi_connmanctl = {
    connmanctl_scan,
    connmanctl_get_ssids,
    connmanctl_ssid_is_online,
+   connmanctl_connect_ssid,
    "connmanctl",
 };
