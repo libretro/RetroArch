@@ -4683,7 +4683,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      ssid,
                      msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
                      MENU_ENUM_LABEL_CONNECT_WIFI,
-                     0, 0, 0);
+                     MENU_WIFI, 0, 0);
             }
          }
 

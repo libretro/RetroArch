@@ -97,6 +97,7 @@ enum
    XMB_TEXTURE_LOADSTATE,
    XMB_TEXTURE_UNDO,
    XMB_TEXTURE_CORE_INFO,
+   XMB_TEXTURE_WIFI,
    XMB_TEXTURE_CORE_OPTIONS,
    XMB_TEXTURE_INPUT_REMAPPING_OPTIONS,
    XMB_TEXTURE_CHEAT_OPTIONS,
@@ -1722,6 +1723,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_INFO_MESSAGE:
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
+      case MENU_WIFI:
+         return xmb->textures.list[XMB_TEXTURE_WIFI];
    }
 
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
@@ -2821,6 +2824,8 @@ static const char *xmb_texture_path(unsigned id)
          return "undo.png";
       case XMB_TEXTURE_CORE_INFO:
          return "core-infos.png";
+      case XMB_TEXTURE_WIFI:
+         return "wifi.png";
       case XMB_TEXTURE_CORE_OPTIONS:
          return "core-options.png";
       case XMB_TEXTURE_INPUT_REMAPPING_OPTIONS:
