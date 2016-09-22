@@ -138,8 +138,6 @@ void retroarch_override_setting_free_state(void);
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx);
 
-const char *retroarch_get_current_savefile_dir(void);
-
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
 
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
