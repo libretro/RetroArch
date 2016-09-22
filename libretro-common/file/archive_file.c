@@ -388,26 +388,21 @@ int file_archive_parse_file_iterate(
             state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
          break;
       case ARCHIVE_TRANSFER_ITERATE:
+         if (file_archive_get_file_backend(file))
          {
             const struct file_archive_file_backend *backend =
                file_archive_get_file_backend(file);
+            int ret = backend->archive_parse_file_iterate_step(state,
+                  valid_exts, userdata, file_cb);
+            if (ret != 1)
+               state->type = ARCHIVE_TRANSFER_DEINIT;
+            if (ret == -1)
+               state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
 
-            if (backend)
-            {
-               int ret = backend->archive_parse_file_iterate_step(state,
-                     valid_exts, userdata, file_cb);
-               if (ret != 1)
-                  state->type = ARCHIVE_TRANSFER_DEINIT;
-               if (ret == -1)
-                  state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
-
-               /* early return to prevent deinit from never firing */
-               return 0;
-            }
-            else
-               return -1;
+            /* early return to prevent deinit from never firing */
+            return 0;
          }
-         break;
+         return -1;
       case ARCHIVE_TRANSFER_DEINIT_ERROR:
          *returnerr = false;
       case ARCHIVE_TRANSFER_DEINIT:
