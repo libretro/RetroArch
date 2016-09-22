@@ -90,7 +90,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
    {
       fd_set fds;
       struct timeval tmp_tv = {0};
-      int new_fd, idx, i;
+      int new_fd;
       struct sockaddr_storage their_addr;
       socklen_t addr_size;
 
