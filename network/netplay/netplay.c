@@ -1041,7 +1041,8 @@ bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
    return true;
 
 error:
-   snprintf(m, sizeof(m), msg, command_str);
+   if (msg)
+      snprintf(m, sizeof(m), msg, command_str);
    RARCH_WARN("%s\n", m);
    runloop_msg_queue_push(m, 1, 180, false);
    return false;
