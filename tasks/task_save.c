@@ -401,23 +401,22 @@ static void content_flush_save_blocks(struct sram_block **blocks,
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
    {
+      retro_ctx_memory_info_t    mem_info;
+      const void *src = NULL;
+      void *dst       = NULL;
       struct sram_block *block = (struct sram_block*)&blocks[i];
 
-      if (block->data)
-      {
-         retro_ctx_memory_info_t    mem_info;
-         const void *src = NULL;
-         void *dst       = NULL;
+      if (!block->data)
+         continue;
 
-         mem_info.id = block->type;
+      mem_info.id = block->type;
 
-         core_get_memory(&mem_info);
+      core_get_memory(&mem_info);
 
-         src = block->data;
-         dst = mem_info.data;
-         if (dst)
-            memcpy(dst, src, block->size);
-      }
+      src = block->data;
+      dst = mem_info.data;
+      if (dst)
+         memcpy(dst, src, block->size);
    }
 
    for (i = 0; i < num_blocks; i++)
