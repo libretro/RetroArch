@@ -531,10 +531,9 @@ static void udev_joypad_poll(void)
 static bool udev_joypad_init(void *data)
 {
    unsigned i;
-   struct udev_list_entry *devs = NULL;
-   struct udev_list_entry *item = NULL;
+   struct udev_list_entry *devs     = NULL;
+   struct udev_list_entry *item     = NULL;
    struct udev_enumerate *enumerate = NULL;
-   settings_t *settings = config_get_ptr();
 
    (void)data;
 
