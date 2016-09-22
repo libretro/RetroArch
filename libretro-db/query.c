@@ -973,45 +973,44 @@ void libretrodb_query_free(void *q)
 }
 
 void *libretrodb_query_compile(libretrodb_t *db,
-      const char *query, size_t buff_len, const char **error)
+      const char *query, size_t buff_len, const char **error_string)
 {
    struct buffer buff;
    struct query *q = (struct query*)calloc(1, sizeof(*q));
 
    if (!q)
-      goto clean;
+      goto error;
 
-   q->ref_count = 1;
-   buff.data    = query;
-   buff.len     = buff_len;
-   buff.offset  = 0;
-   *error       = NULL;
+   q->ref_count  = 1;
+   buff.data     = query;
+   buff.len      = buff_len;
+   buff.offset   = 0;
+   *error_string = NULL;
 
    buff         = query_chomp(buff);
 
    if (query_peek(buff, "{"))
    {
-      buff = query_parse_table(buff, &q->root, error);
-      if (*error)
-         goto clean;
+      buff = query_parse_table(buff, &q->root, error_string);
+      if (*error_string)
+         goto error;
    }
    else if (isalpha((int)buff.data[buff.offset]))
-      buff = query_parse_method_call(buff, &q->root, error);
+      buff = query_parse_method_call(buff, &q->root, error_string);
 
-   buff = query_expect_eof(buff, error);
-   if (*error)
-      goto clean;
+   buff = query_expect_eof(buff, error_string);
+   if (*error_string)
+      goto error;
 
    if (!q->root.func)
    {
-      query_raise_unexpected_eof(buff.offset, error);
-      libretrodb_query_free(q);
-      return NULL;
+      query_raise_unexpected_eof(buff.offset, error_string);
+      goto error;
    }
 
    return q;
 
-clean:
+error:
    if (q)
       libretrodb_query_free(q);
    return NULL;
