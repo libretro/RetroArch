@@ -76,14 +76,14 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(__APPLE__) && !defined(TARGET_IPHONE_SIMULATOR) && !defined(TARGET_OS_IPHONE)
    &gfx_ctx_cgl,
 #endif
+#ifdef EMSCRIPTEN
+   &gfx_ctx_emscripten,
+#endif
 #if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && defined(HAVE_OPENGL)
    &gfx_ctx_sdl_gl,
 #endif
 #ifdef HAVE_OSMESA
    &gfx_ctx_osmesa,
-#endif
-#ifdef EMSCRIPTEN
-   &gfx_ctx_emscripten,
 #endif
 #if defined(HAVE_VULKAN) && defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,
