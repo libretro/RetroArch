@@ -175,6 +175,9 @@ core_option_manager_t *core_option_manager_new(const char *conf_path,
    for (var = vars; var->key && var->value; var++)
       size++;
 
+   if (size == 0)
+      goto error;
+
    opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts));
    if (!opt->opts)
       goto error;
