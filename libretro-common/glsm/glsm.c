@@ -1848,6 +1848,8 @@ void *rglFenceSync(GLenum condition, GLbitfield flags)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    return (GLsync)glFenceSync(condition, flags);
+#else
+   return NULL;
 #endif
 }
 
