@@ -40,7 +40,6 @@ typedef struct linuxraw_input
 
 static void *linuxraw_input_init(void)
 {
-   struct sigaction sa         = {{0}};
    linuxraw_input_t *linuxraw  = NULL;
    settings_t *settings        = config_get_ptr();
 
