@@ -365,7 +365,6 @@ static void *gfx_ctx_drm_init(void *video_driver)
    if (!drm)
       return NULL;
 
-   fd   = -1;
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, true, false, false);
 
 nextgpu:
