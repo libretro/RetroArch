@@ -2312,6 +2312,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "scan_directory";
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
          return "add_content";
+      case MENU_ENUM_LABEL_CONNECT_WIFI:
+         return "connect_wifi";
       case MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
          return "overlay_autoload_preferred";
       case MENU_ENUM_LABEL_INFORMATION:

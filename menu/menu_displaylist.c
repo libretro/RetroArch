@@ -4681,9 +4681,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                const char *ssid = ssid_list->elems[i].data;
                menu_entries_append_enum(info->list,
                      ssid,
-                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT),
-                     MENU_ENUM_LABEL_LOAD_CONTENT,
-                     MENU_SETTING_ACTION, 0, 0);
+                     msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+                     MENU_ENUM_LABEL_CONNECT_WIFI,
+                     0, 0, 0);
             }
          }
 

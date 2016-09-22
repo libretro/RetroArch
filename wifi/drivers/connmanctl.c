@@ -15,6 +15,7 @@
 
 #include "../wifi_driver.h"
 #include <file/file_path.h>
+#include <compat/strl.h>
 
 static void *connmanctl_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)
@@ -43,13 +44,18 @@ static void connmanctl_scan(struct string_list *list)
 {
    union string_list_elem_attr attr;
    attr.i = RARCH_FILETYPE_UNSET;
-   char ssid[512];
+   char line[512];
 
-   FILE* file = popen("connmanctl services", "r");
-   while (fgets (ssid, 512, file) != NULL)
+   pclose(popen("connmanctl scan wifi", "r"));
+
+   FILE* serv_file = popen("connmanctl services", "r");
+   while (fgets (line, 512, serv_file) != NULL)
+   {
+      char ssid[20];
+      strlcpy(ssid, line+4, sizeof(ssid));
       string_list_append(list, ssid, attr);
-
-   pclose(file);
+   }
+   pclose(serv_file);
 }
 
 wifi_driver_t wifi_connmanctl = {
