@@ -1775,7 +1775,7 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
    if (str && *str)
    {
       rarch_setting_t *setting = NULL;
-      const char        *label = menu_input_dialog_get_label_buffer();
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
 
       if (!string_is_empty(label))
          setting = menu_setting_find(label);
@@ -1794,7 +1794,7 @@ static void menu_input_st_uint_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      const char        *label = menu_input_dialog_get_label_buffer();
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
       rarch_setting_t *setting = menu_setting_find(label);
 
       setting_set_with_string_representation(setting, str);
@@ -1807,7 +1807,7 @@ static void menu_input_st_hex_cb(void *userdata, const char *str)
 {
    if (str && *str)
    {
-      const char        *label = menu_input_dialog_get_label_buffer();
+      const char        *label = menu_input_dialog_get_label_setting_buffer();
       rarch_setting_t *setting = menu_setting_find(label);
 
       if (setting)
