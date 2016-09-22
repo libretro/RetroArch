@@ -228,6 +228,8 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    return jd;
 
 error:
+   for (i = 0; i < parsed; i++)
+      free(dest_ports[i]);
    if (jports != NULL)
       jack_free(jports);
    free(jd);
