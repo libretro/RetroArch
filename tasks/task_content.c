@@ -124,7 +124,7 @@ static uint32_t content_crc                                   = 0;
 static int content_file_read(const char *path, void **buf, ssize_t *length)
 {
 #ifdef HAVE_COMPRESSION
-   if (path_is_compressed_file(path))
+   if (path_contains_compressed_file(path))
    {
       if (file_archive_compressed_read(path, buf, NULL, length))
          return 1;
