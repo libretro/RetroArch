@@ -144,6 +144,32 @@ bool netplay_send_info(netplay_t *netplay)
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
       return false;
 
+   if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
+   {
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT));
+      return false;
+   }
+
+   if (*content_crc_ptr != ntohl(header[0]))
+   {
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER));
+      return false;
+   }
+
+   if (netplay_impl_magic() != ntohl(header[1]))
+   {
+      RARCH_ERR("Implementations differ, make sure you're using exact same "
+            "libretro implementations and RetroArch version.\n");
+      return false;
+   }
+
+   if (mem_info.size != ntohl(header[2]))
+   {
+      RARCH_ERR("Content SRAM sizes do not correspond.\n");
+      return false;
+   }
+
    if (!netplay_send_nickname(netplay, netplay->fd))
    {
       RARCH_ERR("%s\n",
@@ -187,14 +213,24 @@ bool netplay_get_info(netplay_t *netplay)
    const void *sram          = NULL;
    size_t i;
 
+   mem_info.id = RETRO_MEMORY_SAVE_RAM;
+
+   core_get_memory(&mem_info);
+   content_get_crc(&content_crc_ptr);
+
+   header[0] = htonl(*content_crc_ptr);
+   header[1] = htonl(netplay_impl_magic());
+   header[2] = htonl(mem_info.size);
+
+   if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
+      return false;
+
    if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT));
       return false;
    }
-
-   content_get_crc(&content_crc_ptr);
 
    if (*content_crc_ptr != ntohl(header[0]))
    {
@@ -208,10 +244,6 @@ bool netplay_get_info(netplay_t *netplay)
             "libretro implementations and RetroArch version.\n");
       return false;
    }
-
-   mem_info.id = RETRO_MEMORY_SAVE_RAM;
-
-   core_get_memory(&mem_info);
 
    if (mem_info.size != ntohl(header[2]))
    {
