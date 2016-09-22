@@ -760,7 +760,6 @@ static void check_proc_acpi_sysfs_battery(const char *node,
 {
    unsigned capacity;
    char path[1024]   = {0};
-   char info[1024]   = {0};
    const char *base  = proc_acpi_sysfs_battery_path;
    char        *buf  = NULL;
    char         *ptr = NULL;
