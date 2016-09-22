@@ -422,6 +422,10 @@ static void content_flush_save_blocks(struct sram_block **blocks,
    for (i = 0; i < num_blocks; i++)
    {
       struct sram_block *block = (struct sram_block*)&blocks[i];
+
+      if (!block || !block->data)
+         continue;
+
       free(block->data);
    }
 }
