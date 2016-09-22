@@ -548,6 +548,8 @@ error:
    *buf = ret_buf;
    *size = ret_size;
    free(patch_data);
+   if (patched_content)
+      free(patched_content);
 
    return false;
 }
