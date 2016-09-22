@@ -542,6 +542,7 @@ static bool apply_patch_content(uint8_t **buf,
    }
 
    free(patch_data);
+   free(patched_content);
    return true;
 
 error:
