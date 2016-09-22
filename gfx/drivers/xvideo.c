@@ -413,7 +413,6 @@ static void *xv_init(const video_info_t *video,
    unsigned i;
    XWindowAttributes target;
    char buf[128]                          = {0};
-   char buf_fps[128]                      = {0};
    XSetWindowAttributes attributes        = {0};
    XVisualInfo visualtemplate             = {0};
    unsigned width                         = 0;
