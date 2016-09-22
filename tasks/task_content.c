@@ -427,20 +427,28 @@ static bool init_content_file_extract(
    {
       char temp_content[PATH_MAX_LENGTH] = {0};
       char new_path[PATH_MAX_LENGTH]     = {0};
-      bool compressed                    = NULL;
+      bool contains_compressed           = NULL;
+      bool block_extract                 = content->elems[i].attr.i & 1;
       const char *valid_ext              = system->info.valid_extensions;
 
       /* Block extract check. */
-      if (content->elems[i].attr.i & 1)
+      if (block_extract)
          continue;
 
-      compressed            = path_contains_compressed_file(content->elems[i].data);
+      contains_compressed   = path_contains_compressed_file(content->elems[i].data);
 
       if (special)
          valid_ext          = special->roms[i].valid_extensions;
 
-      if (!compressed)
-         continue;
+      if (!contains_compressed)
+      {
+         if (path_is_compressed_file(content->elems[i].data))
+         {
+            /* just use the first file in the archive */
+         }
+         else
+            continue;
+      }
 
       strlcpy(temp_content, content->elems[i].data,
             sizeof(temp_content));
@@ -518,7 +526,7 @@ static bool load_content(
          /* Load the content into memory. */
 
          ssize_t len = 0;
-         
+
          if (!load_content_into_memory(i, path, (void**)&info[i].data, &len))
          {
             RARCH_ERR("%s \"%s\".\n",

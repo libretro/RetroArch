@@ -248,11 +248,15 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       delim = path_get_archive_delim(userdata->archive_path);
 
       if (delim)
+      {
          strlcpy(wanted_file, delim + 1, sizeof(wanted_file));
 
-      if (!string_is_equal_noncase(userdata->extracted_file_path,
-                wanted_file))
-        return 1; /* keep searching for the right file */
+         if (!string_is_equal_noncase(userdata->extracted_file_path,
+                   wanted_file))
+           return 1; /* keep searching for the right file */
+      }
+      else
+         strlcpy(wanted_file, userdata->archive_path, sizeof(wanted_file));
 
       if (file_archive_perform_mode(new_path,
                 valid_exts, cdata, cmode, csize, size,
