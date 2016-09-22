@@ -87,6 +87,8 @@ struct netplay
    struct retro_callbacks cbs;
    /* TCP connection for state sending, etc. Also used for commands */
    int fd;
+   /* TCP port (if serving) */
+   uint16_t tcp_port;
    /* Which port is governed by netplay (other user)? */
    unsigned port;
    bool has_connection;

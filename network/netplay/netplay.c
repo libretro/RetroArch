@@ -47,15 +47,39 @@ enum
 
 static void *netplay_data = NULL;
 
+static bool init_socket(netplay_t *netplay, const char *server, uint16_t port);
+
 /**
- * warn_hangup:
+ * hangup:
  *
- * Warns that netplay has disconnected.
+ * Disconnects an active Netplay connection due to an error
  **/
-static void warn_hangup(void)
+static void hangup(netplay_t *netplay)
 {
-   RARCH_WARN("Netplay has disconnected. Will continue without connection ...\n");
-   runloop_msg_queue_push("Netplay has disconnected. Will continue without connection.", 0, 480, false);
+   if (netplay && netplay->has_connection)
+   {
+      RARCH_WARN("Netplay has disconnected. Will continue without connection ...\n");
+      runloop_msg_queue_push("Netplay has disconnected. Will continue without connection.", 0, 480, false);
+
+      socket_close(netplay->fd);
+      netplay->fd = -1;
+
+      if (netplay->is_server && !netplay->spectate.enabled)
+      {
+         /* In server mode, make the socket listen for a new connection */
+         if (!init_socket(netplay, NULL, netplay->tcp_port))
+         {
+            RARCH_WARN("Failed to reinitialize Netplay.\n");
+            runloop_msg_queue_push("Failed to reinitialize Netplay.", 0, 480, false);
+
+         }
+
+      }
+
+      netplay->has_connection = false;
+      netplay->remote_paused = false;
+
+   }
 }
 
 static bool netplay_info_cb(netplay_t* netplay, unsigned frames)
@@ -163,8 +187,7 @@ static bool get_self_input_state(netplay_t *netplay)
       if (!socket_send_all_blocking(netplay->fd,
                netplay->packet_buffer, sizeof(netplay->packet_buffer), false))
       {
-         warn_hangup();
-         netplay->has_connection = false;
+         hangup(netplay);
          return false;
       }
    }
@@ -324,7 +347,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
          return netplay_cmd_nak(netplay);
 
       case NETPLAY_CMD_DISCONNECT:
-         warn_hangup();
+         hangup(netplay);
          return true;
 
       case NETPLAY_CMD_CRC:
@@ -566,8 +589,7 @@ static bool netplay_poll(netplay_t *netplay)
    res = poll_input(netplay, (netplay->stall_frames == 0) && (netplay->read_frame_count <= netplay->self_frame_count));
    if (res == -1)
    {
-      netplay->has_connection = false;
-      warn_hangup();
+      hangup(netplay);
       return false;
    }
 
@@ -602,8 +624,7 @@ static bool netplay_poll(netplay_t *netplay)
       else if (now - netplay->stall_time >= MAX_STALL_TIME_USEC)
       {
          /* Stalled out! */
-         netplay->has_connection = false;
-         warn_hangup();
+         hangup(netplay);
          return false;
       }
    }
@@ -823,6 +844,11 @@ static int init_tcp_connection(const struct addrinfo *res,
          goto end;
       }
 
+#if defined(F_SETFD) && defined(FD_CLOEXEC)
+      /* Don't let any inherited processes keep open our port */
+      fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
+
    }
 
 end:
@@ -957,6 +983,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       return NULL;
 
    netplay->fd                = -1;
+   netplay->tcp_port          = server ? 0 : port;
    netplay->cbs               = *cb;
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
@@ -1082,7 +1109,8 @@ void netplay_free(netplay_t *netplay)
 {
    unsigned i;
 
-   socket_close(netplay->fd);
+   if (netplay->fd >= 0)
+      socket_close(netplay->fd);
 
    if (netplay->spectate.enabled)
    {
@@ -1224,15 +1252,13 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
    {
-      warn_hangup();
-      netplay->has_connection = false;
+      hangup(netplay);
       return;
    }
 
    if (!socket_send_all_blocking(netplay->fd, serial_info->data_const, serial_info->size, false))
    {
-      warn_hangup();
-      netplay->has_connection = false;
+      hangup(netplay);
       return;
    }
 }
