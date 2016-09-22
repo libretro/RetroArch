@@ -1984,6 +1984,8 @@ static unsigned cheevos_find_game_id_nes(
       {
          if (file)
             filestream_close(file);
+         if (data)
+            free(data);
          return 0;
       }
 
