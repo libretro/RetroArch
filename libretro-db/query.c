@@ -1008,12 +1008,13 @@ void *libretrodb_query_compile(libretrodb_t *db,
       libretrodb_query_free(q);
       return NULL;
    }
-   goto success;
+
+   return q;
+
 clean:
    if (q)
       libretrodb_query_free(q);
-success:
-   return q;
+   return NULL;
 }
 
 void libretrodb_query_inc_ref(libretrodb_query_t *q)
