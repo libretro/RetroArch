@@ -825,6 +825,17 @@ RETROARCH
 #include "../intl/msg_hash_us.c"
 
 /*============================================================
+WIFI
+============================================================ */
+#include "../wifi/wifi_driver.c"
+
+#include "../wifi/drivers/nullwifi.c"
+
+#ifdef HAVE_LAKKA
+#include "../wifi/drivers/connmanctl.c"
+#endif
+
+/*============================================================
 RECORDING
 ============================================================ */
 #include "../movie.c"
