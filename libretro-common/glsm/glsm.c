@@ -1859,9 +1859,10 @@ void *rglFenceSync(GLenum condition, GLbitfield flags)
  * OpenGL    : 3.2
  * OpenGLES  : 3.0
  */
-void rglDeleteSync(GLsync sync) {
+void rglDeleteSync(void * sync)
+{
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-  glDeleteSync(sync);
+  glDeleteSync((GLsync)sync);
 #endif
 }
 
