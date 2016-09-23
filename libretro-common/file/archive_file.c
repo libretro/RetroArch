@@ -346,10 +346,16 @@ static int file_archive_decompress_data_to_file(
    }
 
 end:
-   handle->backend->stream_free(handle->stream);
 
-   if (handle && handle->data)
-      free(handle->data);
+   if (handle)
+   {
+      if (handle->backend)
+         handle->backend->stream_free(handle->stream);
+
+      if (handle->data)
+         free(handle->data);
+   }
+
    return ret;
 }
 
