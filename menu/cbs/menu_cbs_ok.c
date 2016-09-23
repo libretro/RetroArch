@@ -1489,6 +1489,15 @@ static void menu_input_st_cheat_cb(void *userdata, const char *str)
    menu_input_dialog_end();
 }
 
+static void menu_input_wifi_cb(void *userdata, const char *passphrase)
+{
+   (void)userdata;
+
+   driver_wifi_connect_ssid(0, passphrase);
+
+   menu_input_dialog_end();
+}
+
 static int action_ok_cheat(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2861,7 +2870,17 @@ static int action_ok_rdb_entry(const char *path,
 static int action_ok_wifi(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   driver_wifi_connect_ssid(idx);
+
+   menu_input_ctx_line_t line;
+
+   line.label         = "Passphrase";
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = idx;
+   line.cb            = menu_input_wifi_cb;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
    return 0;
 }
 
