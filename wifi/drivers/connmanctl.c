@@ -55,6 +55,8 @@ static void connmanctl_scan(void)
       free(lines);
    lines = string_list_new();
 
+   pclose(popen("connmanctl enable wifi", "r"));
+
    pclose(popen("connmanctl scan wifi", "r"));
 
    runloop_msg_queue_push("Wi-Fi scan complete.", 1, 180, true);
@@ -92,7 +94,7 @@ static bool connmanctl_ssid_is_online(unsigned i)
    const char *line = lines->elems[i].data;
    if (!line)
       return false;
-   return line[2] == 'O';
+   return line[2] == 'O' || line[2] == 'R';
 }
 
 static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
@@ -105,6 +107,8 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    char settings_path[PATH_MAX_LENGTH] = {0};
    FILE *command_file = NULL;
    FILE *settings_file = NULL;
+   FILE *serv_file = NULL;
+   union string_list_elem_attr attr;
    const char *line = lines->elems[i].data;
 
    strlcpy(name, line+4, sizeof(name));
@@ -134,6 +138,8 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    fprintf(settings_file, "Passphrase=%s\n", passphrase);
    fprintf(settings_file, "IPv4.method=%s\n", "dhcp");
    fclose(settings_file);
+
+   pclose(popen("systemctl restart connman", "r"));
 
    strlcat(command, "connmanctl connect ", sizeof(command));
    strlcat(command, service, sizeof(command));
