@@ -49,8 +49,6 @@
 
 static struct string_list *task_save_files = NULL;
 
-typedef struct ram_type ram_type_t;
-
 struct ram_type
 {
    const char *path;
@@ -781,7 +779,7 @@ bool content_undo_save_buf_is_empty(void)
 }
 
 static bool content_get_memory(retro_ctx_memory_info_t *mem_info,
-      ram_type_t *ram, unsigned slot)
+      struct ram_type *ram, unsigned slot)
 {
    ram->type = task_save_files->elems[slot].attr.i;
    ram->path = task_save_files->elems[slot].data;
@@ -806,7 +804,7 @@ static bool content_get_memory(retro_ctx_memory_info_t *mem_info,
 bool content_load_ram_file(unsigned slot)
 {
    ssize_t rc;
-   ram_type_t ram;
+   struct ram_type ram;
    retro_ctx_memory_info_t mem_info;
    void *buf        = NULL;
 
@@ -882,7 +880,7 @@ static bool dump_to_file_desperate(const void *data,
  */
 bool content_save_ram_file(unsigned slot)
 {
-   ram_type_t ram;
+   struct ram_type ram;
    retro_ctx_memory_info_t mem_info;
 
    if (!content_get_memory(&mem_info, &ram, slot))
