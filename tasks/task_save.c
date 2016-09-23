@@ -62,6 +62,13 @@ struct save_state_buf
    size_t size;
 };
 
+struct sram_block
+{
+   unsigned type;
+   void *data;
+   size_t size;
+};
+
 /* Holds the previous saved state
  * Can be restored to disk with undo_save_state(). */
 static struct save_state_buf undo_save_buf;
@@ -69,13 +76,6 @@ static struct save_state_buf undo_save_buf;
 /* Holds the data from before a load_state() operation
  * Can be restored with undo_load_state(). */
 static struct save_state_buf undo_load_buf;
-
-struct sram_block
-{
-   unsigned type;
-   void *data;
-   size_t size;
-};
 
 #ifdef HAVE_THREADS
 typedef struct autosave autosave_t;
