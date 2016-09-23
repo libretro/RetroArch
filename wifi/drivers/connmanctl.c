@@ -15,9 +15,11 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "../wifi_driver.h"
 #include "../../runloop.h"
+#include "../../lakka.h"
 
 static struct string_list* lines;
 
@@ -54,6 +56,8 @@ static void connmanctl_scan(void)
    lines = string_list_new();
 
    pclose(popen("connmanctl scan wifi", "r"));
+
+   runloop_msg_queue_push("Wi-Fi scan complete.", 1, 180, true);
 
    serv_file = popen("connmanctl services", "r");
    while (fgets (line, 512, serv_file) != NULL)
@@ -93,29 +97,55 @@ static bool connmanctl_ssid_is_online(unsigned i)
 
 static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 {
-   char ln[512];
-   char service[128];
-   char command[256];
-   FILE *file       = NULL;
+   char ln[512] = {0};
+   char name[20] = {0};
+   char service[128] = {0};
+   char command[256] = {0};
+   char settings_dir[PATH_MAX_LENGTH] = {0};
+   char settings_path[PATH_MAX_LENGTH] = {0};
+   FILE *command_file = NULL;
+   FILE *settings_file = NULL;
    const char *line = lines->elems[i].data;
+
+   strlcpy(name, line+4, sizeof(name));
+   strlcpy(name, string_trim_whitespace(name), sizeof(name));
 
    strlcpy(service, line+25, sizeof(service));
 
-   command[0] = '\0';
+   strlcat(settings_dir, LAKKA_CONNMAN_DIR, sizeof(settings_dir));
+   strlcat(settings_dir, service, sizeof(settings_dir));
+
+   path_mkdir(settings_dir);
+
+   strlcat(settings_path, settings_dir, sizeof(settings_path));
+   strlcat(settings_path, "/settings", sizeof(settings_path));
+
+   settings_file = fopen(settings_path, "w");
+   fprintf(settings_file, "[%s]\n", service);
+   fprintf(settings_file, "Name=%s\n", name);
+   fprintf(settings_file, "SSID=");
+
+   for (int i=0; i < strlen(name); i++)
+      fprintf(settings_file, "%02x", (unsigned int) name[i]);
+   fprintf(settings_file, "\n");
+
+   fprintf(settings_file, "Favorite=%s\n", "true");
+   fprintf(settings_file, "AutoConnect=%s\n", "true");
+   fprintf(settings_file, "Passphrase=%s\n", passphrase);
+   fprintf(settings_file, "IPv4.method=%s\n", "dhcp");
+   fclose(settings_file);
+
    strlcat(command, "connmanctl connect ", sizeof(command));
    strlcat(command, service, sizeof(command));
    strlcat(command, " 2>&1", sizeof(command));
 
-   printf("%s\n", command);
+   command_file = popen(command, "r");
 
-   file = popen(command, "r");
-
-   while (fgets (ln, 512, file) != NULL)
+   while (fgets (ln, 512, command_file) != NULL)
    {
-      printf("%s\n", ln);
       runloop_msg_queue_push(ln, 1, 180, true);
    }
-   pclose(file);
+   pclose(command_file);
    
    return true;
 }
