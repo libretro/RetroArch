@@ -707,7 +707,7 @@ static bool content_file_init(struct string_list *temporary_content)
    const struct retro_subsystem_info *special = NULL;
    global_t *global                           = global_get_ptr();
 
-   if (!string_is_empty(global->subsystem))
+   if (global && !string_is_empty(global->subsystem))
    {
       special = init_content_file_subsystem(&ret);
       if (!ret)
