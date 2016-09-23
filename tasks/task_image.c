@@ -199,19 +199,20 @@ static void task_image_load_free_internal(nbio_handle_t *nbio)
 {
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
-   if (image) {
-      image_transfer_free(image->handle, nbio->image_type);
+   if (!image)
+      return;
 
-      image->handle                 = NULL;
-      image->cb                     = NULL;
+   image_transfer_free(image->handle, nbio->image_type);
 
-      free(image);
-   }
+   image->handle                 = NULL;
+   image->cb                     = NULL;
+
+   free(image);
 }
 
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 {
-   void *ptr                  = NULL;
+   void      *ptr                  = NULL;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
    if (!image || !image->handle)
@@ -320,7 +321,7 @@ bool task_push_image_load(const char *fullpath,
    nbio_handle_t             *nbio   = NULL;
    retro_task_t             *t       = NULL;
    struct nbio_t             *handle = NULL;
-   struct nbio_image_handle        *image = NULL;
+   struct nbio_image_handle   *image = NULL;
 
    if (enum_idx == MSG_UNKNOWN)
       goto error_msg;
