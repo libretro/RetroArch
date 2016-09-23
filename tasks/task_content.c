@@ -580,9 +580,15 @@ static bool load_content(
 
 static const struct retro_subsystem_info *init_content_file_subsystem(bool *ret)
 {
-   global_t *global = global_get_ptr();
    const struct retro_subsystem_info *special = NULL;
    rarch_system_info_t *system                = NULL;
+   global_t *global                           = global_get_ptr();
+
+   if (global && string_is_empty(global->subsystem))
+   {
+      *ret = true;
+      return NULL;
+   }
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -703,20 +709,10 @@ static bool content_file_init(struct string_list *temporary_content)
    struct retro_game_info               *info = NULL;
    bool ret                                   = false;
    struct string_list* additional_path_allocs = NULL;
-   struct string_list *content                = NULL;
-   const struct retro_subsystem_info *special = NULL;
-   global_t *global                           = global_get_ptr();
+   const struct retro_subsystem_info *special = init_content_file_subsystem(&ret);
+   struct string_list *content                = string_list_new();
 
-   if (global && !string_is_empty(global->subsystem))
-   {
-      special = init_content_file_subsystem(&ret);
-      if (!ret)
-         goto error;
-   }
-
-   content = string_list_new();
-
-   if (!content)
+   if (!ret || !content)
       goto error;
 
    if (!init_content_file_set_attribs(temporary_content,
