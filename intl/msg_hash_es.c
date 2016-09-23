@@ -193,7 +193,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                break;
          }
          break;
-      case MENU_ENUM_LABEL_LOAD_CONTENT:
+      case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
          snprintf(s, len,
                "Cargar contenido. \n"
                "Buscar contenido. \n"
