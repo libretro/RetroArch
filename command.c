@@ -1301,10 +1301,6 @@ static void command_event_set_savestate_auto_index(void)
 
 static bool event_init_content(void)
 {
-#ifdef HAVE_NETPLAY
-   global_t   *global               = global_get_ptr();
-#endif
-
    rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
 
    /* No content to be loaded for dummy core,
@@ -1321,6 +1317,7 @@ static bool event_init_content(void)
    if (content_does_not_need_content())
    {
 #ifdef HAVE_NETPLAY
+      global_t   *global = global_get_ptr();
       if (global->netplay.enable)
          RARCH_ERR("sorry, unimplemented: cores that don't demand content cannot participate in netplay\n");
 #endif
@@ -1391,12 +1388,13 @@ static bool command_event_init_core(enum rarch_core_type *data)
 
 static void command_event_disable_overrides(void)
 {
-   /* auto overrides: reload the original config */
-   if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
-   {
-      config_unload_override();
-      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
-   }
+   if (!runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+      return;
+
+   /* reload the original config */
+
+   config_unload_override();
+   runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
 }
 
 static void command_event_restore_default_shader_preset(void)
@@ -1404,14 +1402,17 @@ static void command_event_restore_default_shader_preset(void)
    /* auto shader preset: reload the original shader */
 
    char *preset = NULL;
-   settings_t *settings = config_get_ptr();
+
    if (runloop_ctl(RUNLOOP_CTL_GET_DEFAULT_SHADER_PRESET, &preset) &&
          !string_is_empty(preset))
    {
+      settings_t *settings = config_get_ptr();
+
       RARCH_LOG("Shaders: restoring default shader preset to %s\n",
             preset);
       strlcpy(settings->path.shader, preset, sizeof(settings->path.shader));
    }
+
    runloop_ctl(RUNLOOP_CTL_CLEAR_DEFAULT_SHADER_PRESET,  NULL);
 }
 
@@ -1782,10 +1783,10 @@ static void command_event_main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
-void handle_quit_event()
+void handle_quit_event(void)
 {
-   settings_t *settings      = config_get_ptr();
 #ifdef HAVE_MENU
+   settings_t *settings      = config_get_ptr();
    if (settings && settings->confirm_on_exit &&
          menu_dialog_is_active())
       return;
