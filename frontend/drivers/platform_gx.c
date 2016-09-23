@@ -386,7 +386,7 @@ static void frontend_gx_exitspawn(char *s, size_t len)
             {
                fill_pathname_join(new_path, g_defaults.dir.core,
                      salamander_name, sizeof(new_path));
-               runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
+               path_set_content(new_path);
             }
          }
          break;

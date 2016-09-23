@@ -142,7 +142,7 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
             unsigned i;
             /* Add items to list.  */
 
-            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+            path_get_content(&fullpath);
             core_info_get_list(&core_info_list);
             core_info_list_get_supported_cores(core_info_list,
                   (const char*)fullpath, &core_info, &list_size);
@@ -175,7 +175,7 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
                         {
                            int lbItem;
                            const core_info_t *info = NULL;
-                           runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+                           path_get_content(&fullpath);
                            HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
                            lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
                            core_info_get_list(&core_info_list);
@@ -286,7 +286,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       if (!list_size)
          return 0;
 
-      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
+      path_set_content(szFilename);
 
       if (!path_is_core_empty())
       {

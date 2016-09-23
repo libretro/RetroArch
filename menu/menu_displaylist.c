@@ -2665,7 +2665,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+   path_get_content(&fullpath);
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath))

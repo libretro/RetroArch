@@ -682,7 +682,7 @@ static bool init_content_file_set_attribs(
       attr.i              |= system->info.need_fullpath << 1;
       attr.i              |= (!content_does_not_need_content())  << 2;
 
-      if (!runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath)
+      if (!path_get_content(&fullpath)
             && content_does_not_need_content()
             && settings->set_supports_no_game_enable)
          string_list_append(content, "", attr);
@@ -826,7 +826,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
    if (!wrap_args)
       return;
 
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+   path_get_content(&fullpath);
 
    wrap_args->no_content       = menu_driver_ctl(
          RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
@@ -871,7 +871,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
    char msg[PATH_MAX_LENGTH]                  = {0};
    char *fullpath                             = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+   path_get_content(&fullpath);
 
    if (launched_from_menu)
    {
@@ -999,13 +999,13 @@ static bool command_event_cmd_exec(const char *data,
 #endif
 #endif
 
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+   path_get_content(&fullpath);
 
    if (fullpath != (void*)data)
    {
-      runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+      path_clear_content();
       if (!string_is_empty(data))
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)data);
+         path_set_content(data);
    }
 
 #if defined(HAVE_DYNAMIC)
@@ -1091,7 +1091,7 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+         path_clear_content();
          break;
       default:
          break;
@@ -1106,7 +1106,7 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
+         path_set_content(fullpath);
          break;
       default:
          break;
@@ -1245,7 +1245,7 @@ bool task_push_content_load_default(
          {
             char *fullpath       = NULL;
 
-            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+            path_get_content(&fullpath);
             command_event_cmd_exec(fullpath, mode);
             command_event(CMD_EVENT_QUIT, NULL);
          }

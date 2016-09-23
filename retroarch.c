@@ -947,7 +947,7 @@ static void retroarch_main_init_media(void)
       )
       return;
 
-   if (!runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
+   if (!path_get_content(&fullpath))
       return;
 
    if (string_is_empty(fullpath))

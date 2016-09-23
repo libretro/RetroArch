@@ -138,7 +138,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
 #else
       char *fullpath = NULL;
 
-      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+      path_get_content(&fullpath);
       strlcpy(game_path, fullpath, sizeof(game_path));
 #endif
    }

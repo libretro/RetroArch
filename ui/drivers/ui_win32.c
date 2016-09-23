@@ -580,7 +580,8 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                case ID_M_LOAD_CONTENT:
                   {
                      content_ctx_info_t content_info = {0};
-                     runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, win32_file);
+
+                     path_set_content(win32_file);
 
                      do_wm_close = true;
                      task_push_content_load_default(

@@ -289,7 +289,7 @@ static char** waiting_argv;
                NULL, NULL);
       }
       else
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
+         path_set_content(__core.UTF8String);
 
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -328,7 +328,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
                       && settings->set_supports_no_game_enable)
     {
         content_ctx_info_t content_info = {0};
-        runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+        path_clear_content();
         task_push_content_load_default(
                 NULL, NULL,
                 &content_info,
@@ -355,7 +355,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
     if (system)
         core_name = system->library_name;
                 
-    runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)state->result);
+    path_set_content(state->result);
                 
     if (core_name)
     {

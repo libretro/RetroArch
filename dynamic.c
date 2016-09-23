@@ -1027,8 +1027,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (string_is_empty(settings->directory.system))
          {
             char *fullpath = NULL;
-            if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath) &&
-                  fullpath)
+            if (path_get_content(&fullpath) && fullpath)
             {
                char temp_path[PATH_MAX_LENGTH] = {0};
 

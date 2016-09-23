@@ -336,7 +336,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    args = strlen(argp) + 1;
 
 #ifndef IS_SALAMANDER
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+   path_get_content(&fullpath);
 
    if (should_load_game && !string_is_empty(fullpath))
    {

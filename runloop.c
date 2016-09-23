@@ -106,7 +106,6 @@ typedef struct event_cmd_state
 
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
-static char runloop_fullpath[PATH_MAX_LENGTH]              = {0};
 static char runloop_default_shader_preset[PATH_MAX_LENGTH] = {0};
 static retro_keyboard_event_t runloop_key_event            = NULL;
 static retro_keyboard_event_t runloop_frontend_key_event   = NULL;
@@ -717,25 +716,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             path_set_core(fullpath);
          }
          break;
-      case RUNLOOP_CTL_CLEAR_CONTENT_PATH:
-         *runloop_fullpath = '\0';
-         break;
-      case RUNLOOP_CTL_GET_CONTENT_PATH:
-         {
-            char **fullpath = (char**)data;
-            if (!fullpath)
-               return false;
-            *fullpath       = (char*)runloop_fullpath;
-         }
-         break;
-      case RUNLOOP_CTL_SET_CONTENT_PATH:
-         {
-            const char *fullpath = (const char*)data;
-            if (!fullpath)
-               return false;
-            strlcpy(runloop_fullpath, fullpath, sizeof(runloop_fullpath));
-         }
-         break;
       case RUNLOOP_CTL_CLEAR_DEFAULT_SHADER_PRESET:
          *runloop_default_shader_preset = '\0';
          break;
@@ -781,7 +761,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
             rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-            runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH,  NULL);
+            path_clear_content();
             runloop_overrides_active   = false;
 
             core_unset_input_descriptors();

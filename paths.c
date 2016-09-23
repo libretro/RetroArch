@@ -50,6 +50,7 @@
 
 static char path_main_basename[PATH_MAX_LENGTH]              = {0}
 ;
+static char path_content[PATH_MAX_LENGTH]               = {0};
 static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};
@@ -208,7 +209,8 @@ void path_set_basename(const char *path)
 {
    char *dst          = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)path);
+   path_set_content(path);
+
    strlcpy(path_main_basename,     path, sizeof(path_main_basename));
 
 #ifdef HAVE_COMPRESSION
@@ -560,9 +562,31 @@ void path_clear_config_append(void)
    *path_config_append_file = '\0';
 }
 
+void path_clear_content(void)
+{
+   *path_content = '\0';
+}
+
+bool path_set_content(const char *path)
+{
+   if (!path)
+      return false;
+   strlcpy(path_content, path, sizeof(path_content));
+   return true;
+}
+
 void path_set_config_append(const char *path)
 {
    strlcpy(path_config_append_file, path, sizeof(path_config_append_file));
+}
+
+bool path_get_content(char **fullpath)
+{
+   if (!fullpath)
+      return false;
+   *fullpath       = (char*)path_content;
+
+   return true;
 }
 
 const char *path_get_config_append(void)

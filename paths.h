@@ -41,6 +41,8 @@ void path_fill_names(void);
 
 void path_set_redirect(void);
 
+bool path_set_content(const char *path);
+
 void path_set_names(const char *path);
 
 void path_set_special(char **argv, unsigned num_content);
@@ -65,6 +67,8 @@ char *path_get_core_ptr(void);
 
 /* get functions */
 
+bool path_get_content(char **fullpath);
+
 const char *path_get_current_savefile_dir(void);
 
 const char *path_get_basename(void);
@@ -80,6 +84,8 @@ const char *path_get_config_append(void);
 /* clear functions */
 
 void path_clear_basename(void);
+
+void path_clear_content(void);
 
 void path_clear_core(void);
 
