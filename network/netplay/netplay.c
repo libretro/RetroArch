@@ -846,7 +846,8 @@ static int init_tcp_connection(const struct addrinfo *res,
 
 #if defined(F_SETFD) && defined(FD_CLOEXEC)
       /* Don't let any inherited processes keep open our port */
-      fcntl(fd, F_SETFD, FD_CLOEXEC);
+      if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+         RARCH_WARN("Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
 #endif
 
    }
