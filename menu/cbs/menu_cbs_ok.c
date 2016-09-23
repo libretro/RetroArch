@@ -1706,10 +1706,9 @@ static int generic_action_ok_remap_file_save(const char *path,
          fill_pathname_join(file, core_name, core_name, sizeof(file));
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
-         {
-            const char *game_name = path_basename(path_get_basename());
-            fill_pathname_join(file, core_name, game_name, sizeof(file));
-         }
+         if (core_name)
+            fill_pathname_join(file, core_name,
+                  path_basename(path_get_basename()), sizeof(file));
          break;
    }
 
