@@ -49,7 +49,7 @@ static bool nullwifi_ssid_is_online(unsigned i)
    return false;
 }
 
-static bool nullwifi_connect_ssid(unsigned i)
+static bool nullwifi_connect_ssid(unsigned i, const char* passphrase)
 {
    return false;
 }

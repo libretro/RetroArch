@@ -4172,7 +4172,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
          return "Camera Driver";
       case MENU_ENUM_LABEL_VALUE_WIFI_DRIVER:
-         return "WiFi Driver";
+         return "Wi-Fi Driver";
       case MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER:
          return "Location Driver";
       case MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
@@ -4474,7 +4474,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
          return "Network";
       case MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS:
-         return "WiFi";
+         return "Wi-Fi";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
          return "Lakka Services";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:

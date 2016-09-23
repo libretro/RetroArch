@@ -91,7 +91,7 @@ static bool connmanctl_ssid_is_online(unsigned i)
    return line[2] == 'O';
 }
 
-static bool connmanctl_connect_ssid(unsigned i)
+static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
 {
    char ln[512];
    char service[128];
@@ -101,6 +101,7 @@ static bool connmanctl_connect_ssid(unsigned i)
 
    strlcpy(service, line+25, sizeof(service));
 
+   command[0] = '\0';
    strlcat(command, "connmanctl connect ", sizeof(command));
    strlcat(command, service, sizeof(command));
    strlcat(command, " 2>&1", sizeof(command));
