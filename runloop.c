@@ -22,7 +22,6 @@
 #include <compat/strl.h>
 #include <retro_inline.h>
 #include <retro_assert.h>
-#include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
