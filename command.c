@@ -2411,12 +2411,12 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_SHADER_DIR_DEINIT:
-         runloop_ctl(RUNLOOP_CTL_SHADER_DIR_DEINIT, NULL);
+         dir_free_shader();
          break;
       case CMD_EVENT_SHADER_DIR_INIT:
          command_event(CMD_EVENT_SHADER_DIR_DEINIT, NULL);
 
-         if (!runloop_ctl(RUNLOOP_CTL_SHADER_DIR_INIT, NULL))
+         if (!dir_init_shader())
             return false;
          break;
       case CMD_EVENT_BSV_MOVIE_DEINIT:

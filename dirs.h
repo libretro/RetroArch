@@ -21,6 +21,18 @@
 
 RETRO_BEGIN_DECLS
 
+/* init functions */
+
+bool dir_init_shader(void);
+
+/* free functions */
+
+bool dir_free_shader(void);
+
+/* check functions */
+
+void dir_check_shader(bool pressed_next, bool pressed_prev);
+
 /* empty functions */
 
 bool dir_is_savefile_empty(void);

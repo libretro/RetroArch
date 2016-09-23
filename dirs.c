@@ -16,18 +16,158 @@
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <lists/dir_list.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <retro_assert.h>
 #include <retro_stat.h>
 
 #include "dirs.h"
+#include "configuration.h"
+#include "command.h"
 #include "defaults.h"
+#include "list_special.h"
+#include "file_path_special.h"
+#include "msg_hash.h"
+#include "runloop.h"
+#include "verbosity.h"
+
+struct rarch_dir_list
+{
+   struct string_list *list;
+   size_t ptr;
+};
+
+static struct rarch_dir_list dir_shader_list;
 
 static char dir_osk_overlay[PATH_MAX_LENGTH] = {0};
 static char dir_system[PATH_MAX_LENGTH]      = {0};
 static char dir_savefile[PATH_MAX_LENGTH]    = {0};
 static char dir_savestate[PATH_MAX_LENGTH]   = {0};
+
+static bool shader_dir_init(struct rarch_dir_list *dir_list)
+{
+   unsigned i;
+   settings_t *settings  = config_get_ptr();
+
+   if (!*settings->directory.video_shader)
+      return false;
+
+   dir_list->list = dir_list_new_special(
+         settings->directory.video_shader, DIR_LIST_SHADERS, NULL);
+
+   if (!dir_list->list || dir_list->list->size == 0)
+   {
+      command_event(CMD_EVENT_SHADER_DIR_DEINIT, NULL);
+      return false;
+   }
+
+   dir_list->ptr  = 0;
+   dir_list_sort(dir_list->list, false);
+
+   for (i = 0; i < dir_list->list->size; i++)
+      RARCH_LOG("%s \"%s\"\n",
+            msg_hash_to_str(MSG_FOUND_SHADER),
+            dir_list->list->elems[i].data);
+   return true;
+}
+
+/* init functions */
+
+bool dir_init_shader(void)
+{
+   return shader_dir_init(&dir_shader_list);
+}
+
+/* free functions */
+
+bool dir_free_shader(void)
+{
+   struct rarch_dir_list *dir_list = 
+      (struct rarch_dir_list*)&dir_shader_list;
+
+   if (!dir_list)
+      return false;
+
+   dir_list_free(dir_list->list);
+   dir_list->list = NULL;
+   dir_list->ptr  = 0;
+
+   return true;
+}
+
+/* check functions */
+
+/**
+ * dir_check_shader:
+ * @pressed_next         : was next shader key pressed?
+ * @pressed_previous     : was previous shader key pressed?
+ *
+ * Checks if any one of the shader keys has been pressed for this frame:
+ * a) Next shader index.
+ * b) Previous shader index.
+ *
+ * Will also immediately apply the shader.
+ **/
+void dir_check_shader(bool pressed_next, bool pressed_prev)
+{
+
+   char msg[128]                   = {0};
+   const char *shader              = NULL;
+   enum rarch_shader_type type     = RARCH_SHADER_NONE;
+   struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
+
+   if (!dir_list || !dir_list->list)
+      return;
+
+   if (pressed_next)
+   {
+      dir_list->ptr = (dir_list->ptr + 1) %
+         dir_list->list->size;
+   }
+   else if (pressed_prev)
+   {
+      if (dir_list->ptr == 0)
+         dir_list->ptr = dir_list->list->size - 1;
+      else
+         dir_list->ptr--;
+   }
+   else
+      return;
+
+   shader   = dir_list->list->elems[dir_list->ptr].data;
+
+   switch (msg_hash_to_file_type(msg_hash_calculate(
+               path_get_extension(shader))))
+   {
+      case FILE_TYPE_SHADER_GLSL:
+      case FILE_TYPE_SHADER_PRESET_GLSLP:
+         type = RARCH_SHADER_GLSL;
+         break;
+      case FILE_TYPE_SHADER_SLANG:
+      case FILE_TYPE_SHADER_PRESET_SLANGP:
+         type = RARCH_SHADER_SLANG;
+         break;
+      case FILE_TYPE_SHADER_CG:
+      case FILE_TYPE_SHADER_PRESET_CGP:
+         type = RARCH_SHADER_CG;
+         break;
+      default:
+         return;
+   }
+
+   snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
+         msg_hash_to_str(MSG_SHADER),
+         (unsigned)dir_list->ptr, shader);
+   runloop_msg_queue_push(msg, 2, 120, true);
+
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_APPLYING_SHADER),
+         shader);
+
+   if (!video_driver_set_shader(type, shader))
+      RARCH_WARN("%s\n", msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER));
+}
 
 /* empty functions */
 
