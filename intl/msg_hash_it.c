@@ -1110,7 +1110,27 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
 {
    switch (msg)
    {
-      case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
+      case MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY:
+         return "Nessuna voce da mostrare.";
+      case MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY:
+         return "Nessun obiettivo da mostrare.";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
+         return "Obiettivi sbloccati:";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
+         return "Obiettivi bloccati:";
+      case MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR:
+         return "Avvia processore video";
+      case MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD:
+         return "Avvia Retropad remoto";
+      case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
+         return "Aggiorna miniature";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
+         return "Modalità Hardcore";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
+         return "Prova non ufficiali";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
+         return "Retro Obiettivi";
+	  case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
          return "Directory precedente";
 	  case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Abilita mappatura gamepad tastiera";
@@ -1184,6 +1204,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Indietro quando il menù a comparsa è abilitato";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "Combo gamepad per il menù a comparsa";
+	  case MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU:
+         return "Menù di controllo per tutti gli utenti";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
          return "Nascondi overlay nel menù";
       case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
@@ -1191,7 +1213,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
          return "Autocarica overlay preferito";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
-         return "Aggiorna i files info dei core";
+         return "Aggiorna le info dei core";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
          return "Scarica contenuto";
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
@@ -1401,6 +1423,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Abilita Rete";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Mostra fotogrammi in rete";
+	  case MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES:
+         return "Controlla fotogrammi in rete";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_MODE:
          return "Abilita Client di rete";
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
@@ -1601,6 +1625,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Ciclo dati";
       case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD:
          return "Modalità Turbo";
+	  case MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT:
+         return "Cambia Timeout";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Soglia Input Axis";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
@@ -1630,7 +1656,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Seleziona il file ed intercetta il core";
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return "Scarica directories";
+         return "Scarica su directories";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Carica Recenti";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
@@ -2059,6 +2085,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
 		 return "Aggiorna";
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
          return "Rete";
+	  case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
+         return "Servizi Lakka";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
          return "Playlist";
       case MENU_ENUM_LABEL_VALUE_USER_SETTINGS:
@@ -2070,7 +2098,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
          return "Nessuna informazione disponibile.";
       case MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS:
-         return "Assegna Ingresso Utente %u";
+         return "Modifica Input Utente %u";
       case MENU_ENUM_LABEL_VALUE_LANG_ENGLISH:
          return "Inglese";
       case MENU_ENUM_LABEL_VALUE_LANG_JAPANESE:
@@ -2117,6 +2145,72 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Tipo di ritardo";
 	  case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
          return "Opacità dello sfondo";
+	  case MSG_LOADING_HISTORY_FILE:
+         return "Loading history file";
+      case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED:
+         return "Nastro (semplificato)";
+      case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON:
+         return "Nastro";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY:
+         return "Opacità testo fondo pagina";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY:
+         return "Opacità testo inizio pagina";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE:
+         return "Blu";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY:
+         return "Blu Grigio";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED:
+         return "Rosso";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW:
+         return "Giallo";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD:
+         return "Shield";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN:
+         return "Verde";
+      case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE:
+         return "Blu ";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN:
+         return "Piatto";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED:
+         return "Rosso Legacy";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE:
+         return "Viola scuro";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE:
+         return "Blu mezzanotte";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN:
+         return "Oro";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE:
+         return "Blu elettrico";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN:
+         return "Verde mela";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA:
+         return "Fondale marino";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED:
+         return "Rosso vulcanico";
+      case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK:
+         return "Scuro";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY:
+         return "Sbloccato";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
+         return "Bloccato";
+      case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE:
+         return "Tardi";
+      case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL:
+         return "Normale";
+      case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY:
+         return "Presto";
+      case MSG_INTERNAL_MEMORY:
+         return "Memoria interna";
+      case MSG_EXTERNAL_APPLICATION_DIR:
+         return "Directory app esterna";
+      case MSG_APPLICATION_DIR:
+         return "Directory app";
+      case MSG_PROGRAM:
+         return "RetroArch";
+      case MSG_LIBRETRO_FRONTEND:
+         return "Frontend per libretro";
+      case MSG_LOADING:
+         return "Caricando";
       default:
          break;
    }
