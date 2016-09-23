@@ -491,15 +491,15 @@ static bool load_content(
       struct string_list *temporary_content,
       struct retro_game_info *info,
       const struct string_list *content,
-      const struct retro_subsystem_info *special,
-      struct string_list* additional_path_allocs
+      const struct retro_subsystem_info *special
       )
 {
    unsigned i;
    retro_ctx_load_content_info_t load_info;
+   struct string_list *additional_path_allocs = string_list_new();
 
    if (!info || !additional_path_allocs)
-      return false;
+      goto error;
 
    for (i = 0; i < content->size; i++)
    {
@@ -512,7 +512,7 @@ static bool load_content(
       {
          RARCH_LOG("%s\n",
                msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT));
-         return false;
+         goto error;
       }
 
       info[i].path = NULL;
@@ -531,7 +531,7 @@ static bool load_content(
             RARCH_ERR("%s \"%s\".\n",
                   msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                   path);
-            return false;
+            goto error;
          }
 
          info[i].size = len;
@@ -547,7 +547,7 @@ static bool load_content(
                   temporary_content,
                   &info[i], i,
                   additional_path_allocs, need_fullpath, path))
-            return false;
+            goto error;
 #endif
       }
    }
@@ -559,7 +559,7 @@ static bool load_content(
    if (!core_load_game(&load_info))
    {
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
-      return false;
+      goto error;
    }
 
 #ifdef HAVE_CHEEVOS
@@ -575,7 +575,15 @@ static bool load_content(
    }
 #endif
 
+   string_list_free(additional_path_allocs);
+
    return true;
+
+error:
+   if (additional_path_allocs)
+      string_list_free(additional_path_allocs);
+   
+   return false;
 }
 
 static const struct retro_subsystem_info *init_content_file_subsystem(bool *ret)
@@ -708,7 +716,6 @@ static bool content_file_init(struct string_list *temporary_content)
    unsigned i;
    struct retro_game_info               *info = NULL;
    bool ret                                   = false;
-   struct string_list* additional_path_allocs = NULL;
    const struct retro_subsystem_info *special = init_content_file_subsystem(&ret);
    struct string_list *content                = string_list_new();
 
@@ -721,15 +728,13 @@ static bool content_file_init(struct string_list *temporary_content)
 
    info                   = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
-   additional_path_allocs = string_list_new();
 
    ret = load_content(temporary_content,
-         info, content, special, additional_path_allocs);
+         info, content, special);
 
    for (i = 0; i < content->size; i++)
       free((void*)info[i].data);
 
-   string_list_free(additional_path_allocs);
    if (info)
       free(info);
 
@@ -863,9 +868,9 @@ static bool task_load_content(content_ctx_info_t *content_info,
       bool launched_from_menu,
       enum content_mode_load mode)
 {
-   char name[PATH_MAX_LENGTH] = {0};
-   char msg[PATH_MAX_LENGTH]  = {0};
-   char *fullpath             = NULL;
+   char name[PATH_MAX_LENGTH]                 = {0};
+   char msg[PATH_MAX_LENGTH]                  = {0};
+   char *fullpath                             = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
