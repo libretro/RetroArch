@@ -678,8 +678,11 @@ static bool init_content_file_set_attribs(
 
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-      attr.i               = system->info.block_extract;
-      attr.i              |= system->info.need_fullpath << 1;
+      if (system)
+      {
+         attr.i               = system->info.block_extract;
+         attr.i              |= system->info.need_fullpath << 1;
+      }
       attr.i              |= (!content_does_not_need_content())  << 2;
 
       if (!path_get_content(&fullpath)

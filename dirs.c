@@ -86,9 +86,6 @@ bool dir_free_shader(void)
    struct rarch_dir_list *dir_list = 
       (struct rarch_dir_list*)&dir_shader_list;
 
-   if (!dir_list)
-      return false;
-
    dir_list_free(dir_list->list);
    dir_list->list = NULL;
    dir_list->ptr  = 0;
