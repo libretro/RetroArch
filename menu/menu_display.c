@@ -846,7 +846,9 @@ void menu_display_reset_textures_list(const char *texture_path, const char *icon
    if (string_is_empty(path) || !path_file_exists(path))
       return;
 
-   image_texture_load(&ti, path);
+   if (!image_texture_load(&ti, path))
+      return;
+
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_MIPMAP_LINEAR, item);
    image_texture_free(&ti);
