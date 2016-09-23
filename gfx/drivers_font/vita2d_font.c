@@ -100,6 +100,11 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
 	 {
       const char *msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
+      unsigned skip                  = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+         
 			const struct font_glyph *glyph =
 				 font->font_driver->get_glyph(font->font_data, code);
 			if (!glyph) /* Do something smarter here ... */
@@ -145,6 +150,11 @@ static void vita2d_font_render_line(
       int off_x, off_y, tex_x, tex_y, width, height;
       const char *msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
+      unsigned skip                  = msg_tmp - &msg[i];
+
+      if (skip > 1)
+         i += skip - 1;
+         
       const struct font_glyph *glyph =
          font->font_driver->get_glyph(font->font_data, code);
 
