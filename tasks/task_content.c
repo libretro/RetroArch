@@ -44,7 +44,6 @@
 
 #include <boolean.h>
 
-#include <encodings/utf.h>
 #include <encodings/crc32.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
