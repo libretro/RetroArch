@@ -81,6 +81,11 @@ unsigned menu_input_dialog_get_kb_type(void)
    return menu_input_dialog_keyboard_type;
 }
 
+unsigned menu_input_dialog_get_kb_idx(void)
+{
+   return menu_input_dialog_keyboard_idx;
+}
+
 bool menu_input_dialog_get_display_kb(void)
 {
    return menu_input_dialog_keyboard_display; 

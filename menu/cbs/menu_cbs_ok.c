@@ -1493,7 +1493,9 @@ static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
    (void)userdata;
 
-   driver_wifi_connect_ssid(0, passphrase);
+   unsigned idx = menu_input_dialog_get_kb_idx();
+
+   driver_wifi_connect_ssid(idx, passphrase);
 
    menu_input_dialog_end();
 }
