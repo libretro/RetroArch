@@ -77,7 +77,11 @@ static void hangup(netplay_t *netplay)
       }
 
       netplay->has_connection = false;
+
+      /* Reset things that will behave oddly if we get a new connection */
       netplay->remote_paused = false;
+      netplay->flip = false;
+      netplay->flip_frame = 0;
 
    }
 }
