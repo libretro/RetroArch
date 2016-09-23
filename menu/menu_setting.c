@@ -5935,7 +5935,7 @@ static bool setting_append_list(
                   &settings->network_remote_enable,
                   msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE),
-                  "", /* todo: add default */
+                  false,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
                   &group_info,
@@ -5975,7 +5975,7 @@ static bool setting_append_list(
                      /* todo: figure out this value, it's working fine but I don't think this is correct */
                      strdup(s1),
                      strdup(s2),
-                     "", /* todo: add default */
+                     false,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
                      &group_info,
