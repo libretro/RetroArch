@@ -115,7 +115,8 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
 #if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
          {
             int flag = 1;
-            setsockopt(netplay->fd, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(int));
+            if (setsockopt(netplay->fd, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(int)) < 0)
+               RARCH_WARN("Could not set netplay TCP socket to nodelay. Expect jitter.\n");
          }
 #endif
 
