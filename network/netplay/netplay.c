@@ -82,6 +82,7 @@ static void hangup(netplay_t *netplay)
       netplay->remote_paused = false;
       netplay->flip = false;
       netplay->flip_frame = 0;
+      netplay->stall = 0;
 
    }
 }
