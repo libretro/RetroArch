@@ -214,9 +214,14 @@ static void netplay_net_post_frame(netplay_t *netplay)
          serial_info.size       = netplay->state_size;
          serial_info.data_const = NULL;
 
+         /* Remember the current state */
          core_serialize(&serial_info);
+         if (netplay->replay_frame_count < netplay->read_frame_count)
+            netplay_handle_frame_hash(netplay, ptr);
 
-         netplay_handle_frame_hash(netplay, ptr);
+         /* Simulate this frame's input */
+         if (netplay->replay_frame_count >= netplay->read_frame_count)
+            netplay_simulate_input(netplay, netplay->replay_ptr);
 
 #if defined(HAVE_THREADS)
          autosave_lock();
