@@ -99,20 +99,22 @@ uint32_t netplay_impl_magic(void)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
-   if (info)
-      lib = info->info.library_name;
-
    res |= api;
 
-   len = strlen(lib);
-   for (i = 0; i < len; i++)
-      res ^= lib[i] << (i & 0xf);
+   if (info)
+   {
+      lib = info->info.library_name;
 
-   lib = info->info.library_version;
-   len = strlen(lib);
+      len = strlen(lib);
+      for (i = 0; i < len; i++)
+         res ^= lib[i] << (i & 0xf);
 
-   for (i = 0; i < len; i++)
-      res ^= lib[i] << (i & 0xf);
+      lib = info->info.library_version;
+      len = strlen(lib);
+
+      for (i = 0; i < len; i++)
+         res ^= lib[i] << (i & 0xf);
+   }
 
    len = strlen(ver);
    for (i = 0; i < len; i++)
