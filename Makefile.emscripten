@@ -20,7 +20,7 @@ HAVE_SDL2 = 1
 HAVE_ZLIB = 1
 HAVE_FBO = 1
 WANT_ZLIB = 1
-MEMORY = 268435456
+MEMORY = 536870912
 LTO = 0
 ASYNC = 0
 # XXX: setting this to 1/2 currently crashes Firefox nightly

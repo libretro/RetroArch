@@ -132,10 +132,10 @@ function setupFileSystem(backend)
       console.log("WEBPLAYER: Initializing LocalStorage");
 
       /* create a local filesystem */
-      var lsfs = new BrowserFS.FileSystem.LocalStorage();
+      var imfs = new BrowserFS.FileSystem.InMemoryFileSystem();
 
       /* mount the filesystems onto mfs */
-      mfs.mount('/home/web_user/retroarch/userdata', lsfs);
+      mfs.mount('/home/web_user/retroarch/userdata', imfs);
 
    }
    else
