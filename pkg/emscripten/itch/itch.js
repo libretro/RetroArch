@@ -106,21 +106,21 @@ function preLoadingComplete()
   });
 }
 
-function idbfsSync()
+function idbfsInit()
 {
    var imfs = new BrowserFS.FileSystem.InMemory();
    if (BrowserFS.FileSystem.IndexedDB.isAvailable()) 
    {
-      var idbfs = BrowserFS.FileSystem.IndexedDB;
       afs = new BrowserFS.FileSystem.AsyncMirror(imfs, 
          new BrowserFS.FileSystem.IndexedDB(function(e, fs) 
       {
          if (e)
          {
             //fallback to imfs
-            afs = imfs;
-            setupFileSystem("browser")
-            console.log("WEBPLAYER: error: " + e + "falling back to in-memory filesystem");
+            afs = new BrowserFS.FileSystem.InMemory();
+            setupFileSystem("browser");
+            preLoadingComplete();
+            console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
          } 
          else 
          {
@@ -129,13 +129,16 @@ function idbfsSync()
             {
                if (e) 
                {
-                  afs = imfs;
-                  console.log("WEBPLAYER: error: " + e + "falling back to in-memory filesystem");
+                  afs = new BrowserFS.FileSystem.InMemory();
+                  setupFileSystem("browser");
+                  preLoadingComplete();
+                  console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
                }
                else 
                {
                   console.log("WEBPLAYER: idbfs setup successful");
-                  setupFileSystem("browser")
+                  setupFileSystem("browser");
+                  preLoadingComplete();
                }
             });
          }
@@ -358,7 +361,7 @@ $(function() {
       {
          //$('#icnDrop').addClass('fa-globe');
          //$('#icnDrop').removeClass('fa-dropbox');
-         idbfsSync();
+         idbfsInit();
       }
    });
  });
