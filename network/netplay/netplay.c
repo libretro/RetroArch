@@ -380,7 +380,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
              * arithmetic. */
             do
             {
-               if (netplay->buffer[tmp_ptr].frame == buffer[0])
+               if (netplay->buffer[tmp_ptr].used && netplay->buffer[tmp_ptr].frame == buffer[0])
                {
                   found = true;
                   break;
