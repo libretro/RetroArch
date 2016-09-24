@@ -402,7 +402,7 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
    ssize_t len;
-   int nitems = false;
+   int nitems = 0;
 
    if (!pass)
       return false;
