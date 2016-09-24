@@ -525,8 +525,6 @@ static int poll_input(netplay_t *netplay, bool block)
       if (socket_select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
          return -1;
 
-      /* Somewhat hacky,
-       * but we aren't using the TCP connection for anything useful atm. */
       if (FD_ISSET(netplay->fd, &fds))
       {
          /* If we're not ready for input, wait until we are. Could fill the TCP buffer, stalling the other side. */
@@ -538,7 +536,12 @@ static int poll_input(netplay_t *netplay, bool block)
          }
       }
 
-      if (!block)
+      /* If we were blocked for input, pass if we have this frame's input */
+      if (block && netplay->read_frame_count > netplay->self_frame_count)
+         break;
+
+      /* If we had input, we might have more */
+      if (had_input || !block)
          continue;
 
       RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
@@ -546,7 +549,7 @@ static int poll_input(netplay_t *netplay, bool block)
 
       if (netplay->timeout_cnt >= MAX_RETRIES && !netplay->remote_paused)
          return -1;
-   } while (had_input || (block && (netplay->read_frame_count <= netplay->self_frame_count)));
+   } while (had_input || block);
 
    return 0;
 }
