@@ -228,19 +228,22 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
 static void gfx_ctx_emscripten_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
-   void *rwebinput = NULL;
-
    (void)data;
 
-   *input = NULL;
+   *input      = NULL;
+   *input_data = NULL;
 
-   rwebinput = input_rwebinput.init();
+#ifndef HAVE_SDL2
+   {
+      void *rwebinput = input_rwebinput.init();
 
-   if (!rwebinput)
-      return;
+      if (!rwebinput)
+         return;
 
-   *input      = &input_rwebinput;
-   *input_data = rwebinput;
+      *input      = &input_rwebinput;
+      *input_data = rwebinput;
+   }
+#endif
 }
 
 static bool gfx_ctx_emscripten_has_focus(void *data)
