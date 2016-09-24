@@ -82,6 +82,7 @@ static void hangup(netplay_t *netplay)
       netplay->remote_paused = false;
       netplay->flip = false;
       netplay->flip_frame = 0;
+      netplay->stall = 0;
 
    }
 }
@@ -380,7 +381,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
              * arithmetic. */
             do
             {
-               if (netplay->buffer[tmp_ptr].frame == buffer[0])
+               if (netplay->buffer[tmp_ptr].used && netplay->buffer[tmp_ptr].frame == buffer[0])
                {
                   found = true;
                   break;

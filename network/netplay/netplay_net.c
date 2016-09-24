@@ -124,17 +124,15 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
          {
             netplay->has_connection = true;
 
-            /* If we're not at frame 0, send them the savestate */
-            if (netplay->self_frame_count != 0 && netplay->savestates_work)
+            /* Send them the savestate */
+            if (netplay->savestates_work)
             {
-               serial_info.size = netplay->state_size;
-               serial_info.data_const = netplay->buffer[netplay->self_ptr].state;
-               netplay_load_savestate(netplay, &serial_info, false);
+               netplay_load_savestate(netplay, NULL, true);
             }
 
             /* And expect the current frame from the other side */
             netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
-            netplay->read_ptr = netplay->other_ptr = netplay->read_ptr;
+            netplay->read_ptr = netplay->other_ptr = netplay->self_ptr;
 
             /* Unstall if we were waiting for this */
             if (netplay->stall == RARCH_NETPLAY_STALL_NO_CONNECTION)

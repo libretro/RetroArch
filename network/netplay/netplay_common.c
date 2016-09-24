@@ -280,9 +280,10 @@ bool netplay_get_info(netplay_t *netplay)
    netplay->self_frame_count = netplay->read_frame_count = netplay->other_frame_count = 0;
    for (i = 0; i < netplay->buffer_size; i++)
    {
+      netplay->buffer[i].used = false;
       if (i == netplay->self_ptr)
       {
-         netplay->buffer[i].frame = 0;
+         netplay_delta_frame_ready(netplay, &netplay->buffer[i], 0);
       }
       else
       {
