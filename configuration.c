@@ -1839,7 +1839,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES))
       CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_delay_frames");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES))
-      CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_check_frames");
+      CONFIG_GET_INT_BASE(conf, global, netplay.check_frames, "netplay_check_frames");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT))
       CONFIG_GET_INT_BASE(conf, global, netplay.port, "netplay_ip_port");
 #endif
