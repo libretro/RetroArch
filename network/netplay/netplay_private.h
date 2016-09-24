@@ -177,6 +177,8 @@ struct netplay_callbacks* netplay_get_cbs_net(void);
 
 struct netplay_callbacks* netplay_get_cbs_spectate(void);
 
+void netplay_simulate_input(netplay_t *netplay, uint32_t sim_ptr);
+
 void   netplay_log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick);
 

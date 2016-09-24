@@ -554,13 +554,17 @@ static int poll_input(netplay_t *netplay, bool block)
    return 0;
 }
 
-/* TODO: Somewhat better prediction. :P */
-static void simulate_input(netplay_t *netplay)
+/**
+ * netplay_simulate_input:
+ * @netplay             : pointer to netplay object
+ * @sim_ptr             : frame index for which to simulate input
+ *
+ * "Simulate" input by assuming it hasn't changed since the last read input.
+ */
+void netplay_simulate_input(netplay_t *netplay, uint32_t sim_ptr)
 {
-   size_t ptr  = netplay->self_ptr;
    size_t prev = PREV_PTR(netplay->read_ptr);
-
-   memcpy(netplay->buffer[ptr].simulated_input_state,
+   memcpy(netplay->buffer[sim_ptr].simulated_input_state,
          netplay->buffer[prev].real_input_state,
          sizeof(netplay->buffer[prev].real_input_state));
 }
@@ -603,7 +607,7 @@ static bool netplay_poll(netplay_t *netplay)
 
    /* Simulate the input if we don't have real input */
    if (!netplay->buffer[netplay->self_ptr].have_remote)
-      simulate_input(netplay);
+      netplay_simulate_input(netplay, netplay->self_ptr);
 
    /* Consider stalling */
    switch (netplay->stall) {
