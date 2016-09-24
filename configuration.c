@@ -3190,27 +3190,27 @@ bool config_save_overrides(int override_type)
                   path_overrides[i].ptr);
          }
       }
+
+      ret = false;
+
+      switch (override_type)
+      {
+         case OVERRIDE_CORE:
+            /* Create a new config file from core_path */
+            RARCH_LOG ("[overrides] path %s\n", core_path);
+            ret = config_file_write(conf, core_path);
+            break;
+         case OVERRIDE_GAME:
+            /* Create a new config file from core_path */
+            RARCH_LOG ("[overrides] path %s\n", game_path);
+            ret = config_file_write(conf, game_path);
+            break;
+         default:
+            break;
+      }
+
+      config_file_free(conf);
    }
-
-   ret = false;
-
-   switch (override_type)
-   {
-      case OVERRIDE_CORE:
-         /* Create a new config file from core_path */
-         RARCH_LOG ("[overrides] path %s\n", core_path);
-         ret = config_file_write(conf, core_path);
-         break;
-      case OVERRIDE_GAME:
-         /* Create a new config file from core_path */
-         RARCH_LOG ("[overrides] path %s\n", game_path);
-         ret = config_file_write(conf, game_path);
-         break;
-      default:
-         break;
-   }
-
-   config_file_free(conf);
 
    if (bool_settings)
       free(bool_settings);
