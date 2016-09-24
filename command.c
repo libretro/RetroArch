@@ -1575,7 +1575,7 @@ static bool command_event_save_core_config(void)
  * Saves current configuration file to disk, and (optionally)
  * autosave state.
  **/
-void command_event_save_current_config(int override_type)
+static void command_event_save_current_config(int override_type)
 {
    char msg[128]           = {0};
 
