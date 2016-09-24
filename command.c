@@ -1608,16 +1608,13 @@ void command_event_save_current_config(int override_type)
 
       if (settings->config_save_on_exit && !path_is_config_empty())
       {
-         bool ret                = false;
-         const char *config_path = path_get_config();
-
          /* Save last core-specific config to the default config location,
           * needed on consoles for core switching and reusing last good
           * config for new cores.
           */
 
          /* Flush out the core specific config. */
-         command_event_save_config(config_path, msg, sizeof(msg));
+         command_event_save_config(path_get_config(), msg, sizeof(msg));
       }
    }
 
