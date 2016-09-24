@@ -402,9 +402,15 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
    ssize_t len;
-   bool ret = filestream_read_file(path,
+   int nitems = false;
+
+   if (!pass)
+      return false;
+
+   nitems = filestream_read_file(path,
          (void**)&pass->source.string.vertex, &len);
-   if (!ret || len <= 0)
+
+   if (nitems <= 0 || len <= 0)
       return false;
 
    gl_glsl_strip_parameter_pragmas(pass->source.string.vertex);
