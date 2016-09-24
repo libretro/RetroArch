@@ -27,6 +27,7 @@
 #endif
 
 #include "frontend.h"
+#include "../configuration.h"
 #include "../ui/ui_companion_driver.h"
 #include "../tasks/tasks_internal.h"
 
@@ -45,7 +46,10 @@
  **/
 void main_exit(void *args)
 {
-   command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+   settings_t *settings = config_get_ptr();
+
+   if (settings->config_save_on_exit)
+      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */

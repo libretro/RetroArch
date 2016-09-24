@@ -1596,17 +1596,8 @@ void command_event_save_current_config(int override_type)
          RARCH_ERR("[overrides] %s\n", msg);
       }
    }
-   else
-   {
-      settings_t *settings = config_get_ptr();
-
-      /* Save last core-specific config to the default config location,
-       * needed on consoles for core switching and reusing last good
-       * config for new cores.
-       */
-      if (settings->config_save_on_exit && !path_is_config_empty())
-         command_event_save_config(path_get_config(), msg, sizeof(msg));
-   }
+   else if (!path_is_config_empty())
+      command_event_save_config(path_get_config(), msg, sizeof(msg));
 
    if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true);
