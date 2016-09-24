@@ -72,17 +72,6 @@ function dropboxInit()
   });
 }
 
-function dropboxSyncComplete()
-{
-  document.getElementById('btnRun').disabled = false;
-  //$('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
-  //$('#icnDrop').addClass('fa-check');
-  console.log("WEBPLAYER: Sync successful");
-
-  setupFileSystem("dropbox");
-  preLoadingComplete();
-}
-
 function dropboxSync(dropboxClient, cb)
 {
   var dbfs = new BrowserFS.FileSystem.Dropbox(dropboxClient);
@@ -98,6 +87,17 @@ function dropboxSync(dropboxClient, cb)
   });
 }
 
+function dropboxSyncComplete()
+{
+  document.getElementById('btnRun').disabled = false;
+  //$('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
+  //$('#icnDrop').addClass('fa-check');
+  console.log("WEBPLAYER: Dropbox sync successful");
+
+  setupFileSystem("dropbox");
+  preLoadingComplete();
+}
+
 function preLoadingComplete()
 {
    /* Make the Preview image clickable to start RetroArch. */
@@ -107,6 +107,45 @@ function preLoadingComplete()
   });
 }
 
+function idbfsSync()
+{
+   var imfs = new BrowserFS.FileSystem.InMemory();
+   if (BrowserFS.FileSystem.IndexedDB.isAvailable()) 
+   {
+      var idbfs = BrowserFS.FileSystem.IndexedDB;
+      afs = new BrowserFS.FileSystem.AsyncMirror(imfs, 
+         new BrowserFS.FileSystem.IndexedDB(function(e, fs) 
+      {
+         if (e)
+         {
+            //fallback to imfs
+            afs = imfs;
+            setupFileSystem("browser");
+            preLoadingComplete();
+            console.log("WEBPLAYER: error: " + e + "falling back to in-memory filesystem");
+         } 
+         else 
+         {
+            // initialize afs by copying files from async storage to sync storage.
+            afs.initialize(function (e) 
+            {
+               if (e) 
+               {
+                  afs = imfs;
+                  console.log("WEBPLAYER: error: " + e + "falling back to in-memory filesystem");
+               }
+               else 
+               {
+                  console.log("WEBPLAYER: idbfs setup successful");
+                  setupFileSystem("browser");
+                  preLoadingComplete();
+               }
+            });
+         }
+      },
+      "RetroArch"));
+   }
+}
 
 function setupFileSystem(backend)
 {
@@ -126,23 +165,8 @@ function setupFileSystem(backend)
    var xfs2 =  new BrowserFS.FileSystem.XmlHttpRequest
       ("--your-content-index-file-name--", "--your-index-url--");*/
 
-   console.log("WEBPLAYER: Initializing Filesystem");
-   if(backend == "browser")
-   {
-      console.log("WEBPLAYER: Initializing LocalStorage");
-
-      /* create a local filesystem */
-      var imfs = new BrowserFS.FileSystem.InMemory()();
-
-      /* mount the filesystems onto mfs */
-      mfs.mount('/home/web_user/retroarch/userdata', imfs);
-
-   }
-   else
-   {
-      /* mount the filesystems onto mfs */
-      mfs.mount('/home/web_user/retroarch/userdata', afs);
-   }
+   console.log("WEBPLAYER: initializing filesystem: " + backend);
+   mfs.mount('/home/web_user/retroarch/userdata', afs);
 
    /* setup this if you setup your server to serve assets or core assets, 
       you can find more information in the included README */
@@ -153,7 +177,7 @@ function setupFileSystem(backend)
    BrowserFS.initialize(mfs);
    var BFS = new BrowserFS.EmscriptenFS();
    FS.mount(BFS, {root: '/home'}, '/home');
-   console.log("WEBPLAYER: " + backend + " filesystem initialized");
+   console.log("WEBPLAYER: " + backend + " filesystem initialization successful");
 }
 
 /**
@@ -202,7 +226,7 @@ function selectFiles(files)
       filereader.onload = function(){uploadData(this.result, this.file_name)};
       filereader.onloadend = function(evt) 
       {
-         console.log("WEBPLAYER: File: " + this.file_name + " Upload Complete");
+         console.log("WEBPLAYER: file: " + this.file_name + " upload complete");
          if (evt.target.readyState == FileReader.DONE)
          {
             $('#btnAdd').removeClass('disabled');
@@ -341,8 +365,7 @@ $(function() {
       {
          $('#lblDrop').removeClass('active');
          $('#lblLocal').addClass('active');
-         preLoadingComplete();
-         setupFileSystem("browser");
+         idbfsSync();
       }
    });
  });
