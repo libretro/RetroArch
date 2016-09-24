@@ -431,6 +431,9 @@ static bool gl_glsl_compile_programs(
       struct video_shader_pass *pass = (struct video_shader_pass*)
          &glsl->shader->pass[i];
 
+      if (!pass)
+         continue;
+
       /* If we load from GLSLP (CGP),
        * load the file here, and pretend
        * we were really using XML all along.
