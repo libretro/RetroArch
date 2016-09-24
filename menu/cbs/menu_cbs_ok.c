@@ -1606,7 +1606,8 @@ static int generic_action_ok_shader_preset_save(const char *path,
    switch (action_type)
    {
       case ACTION_OK_SHADER_PRESET_SAVE_CORE:
-         fill_pathname_join(file, directory, core_name, sizeof(file));
+         if (!string_is_empty(core_name))
+            fill_pathname_join(file, directory, core_name, sizeof(file));
          break;
       case ACTION_OK_SHADER_PRESET_SAVE_GAME:
          {
@@ -1615,8 +1616,6 @@ static int generic_action_ok_shader_preset_save(const char *path,
          }
          break;
    }
-
-
 
    if(menu_shader_manager_save_preset(file, false, true))
       runloop_msg_queue_push(
