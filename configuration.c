@@ -2523,7 +2523,8 @@ bool config_load_shader_preset(void)
 
       /* Game shader preset exists, load it. */
       RARCH_LOG("Shaders: game-specific shader preset found at %s.\n", game_path);
-      runloop_ctl(RUNLOOP_CTL_SET_DEFAULT_SHADER_PRESET, settings->path.shader);
+
+      path_set_default_shader_preset(settings->path.shader);
       strlcpy(settings->path.shader, game_path, sizeof(settings->path.shader));
       config_file_free(new_conf);
       return true;
@@ -2553,7 +2554,7 @@ bool config_load_shader_preset(void)
 
       /* Core shader preset exists, load it. */
       RARCH_LOG("Shaders: core-specific shader preset found at %s.\n", core_path);
-      runloop_ctl(RUNLOOP_CTL_SET_DEFAULT_SHADER_PRESET, settings->path.shader);
+      path_set_default_shader_preset(settings->path.shader);
       strlcpy(settings->path.shader, core_path, sizeof(settings->path.shader));
       config_file_free(new_conf);
       return true;

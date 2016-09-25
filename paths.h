@@ -57,6 +57,8 @@ void path_set_config(const char *path);
 
 void path_set_config_append(const char *path);
 
+bool path_set_default_shader_preset(const char *preset);
+
 /* get size functions */
 
 size_t path_get_core_size(void);
@@ -81,7 +83,11 @@ const char *path_get_config(void);
 
 const char *path_get_config_append(void);
 
+bool path_get_default_shader_preset(char **preset);
+
 /* clear functions */
+
+void path_clear_default_shader_preset(void);
 
 void path_clear_basename(void);
 

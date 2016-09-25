@@ -106,7 +106,6 @@ typedef struct event_cmd_state
 
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
-static char runloop_default_shader_preset[PATH_MAX_LENGTH] = {0};
 static retro_keyboard_event_t runloop_key_event            = NULL;
 static retro_keyboard_event_t runloop_frontend_key_event   = NULL;
 static core_option_manager_t *runloop_core_options         = NULL;
@@ -714,26 +713,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!fullpath)
                return false;
             path_set_core(fullpath);
-         }
-         break;
-      case RUNLOOP_CTL_CLEAR_DEFAULT_SHADER_PRESET:
-         *runloop_default_shader_preset = '\0';
-         break;
-      case RUNLOOP_CTL_GET_DEFAULT_SHADER_PRESET:
-         {
-            char **preset = (char**)data;
-            if (!preset)
-               return false;
-            *preset       = (char*)runloop_default_shader_preset;
-         }
-         break;
-      case RUNLOOP_CTL_SET_DEFAULT_SHADER_PRESET:
-         {
-            const char *preset = (const char*)data;
-            if (!preset)
-               return false;
-            strlcpy(runloop_default_shader_preset, preset,
-               sizeof(runloop_default_shader_preset));
          }
          break;
       case RUNLOOP_CTL_FRAME_TIME_FREE:

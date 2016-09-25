@@ -1403,8 +1403,7 @@ static void command_event_restore_default_shader_preset(void)
 
    char *preset = NULL;
 
-   if (runloop_ctl(RUNLOOP_CTL_GET_DEFAULT_SHADER_PRESET, &preset) &&
-         !string_is_empty(preset))
+   if (path_get_default_shader_preset(&preset) && !string_is_empty(preset))
    {
       settings_t *settings = config_get_ptr();
 
@@ -1413,7 +1412,7 @@ static void command_event_restore_default_shader_preset(void)
       strlcpy(settings->path.shader, preset, sizeof(settings->path.shader));
    }
 
-   runloop_ctl(RUNLOOP_CTL_CLEAR_DEFAULT_SHADER_PRESET,  NULL);
+   path_clear_default_shader_preset();
 }
 
 static bool command_event_save_auto_state(void)
