@@ -382,7 +382,6 @@ static int task_database_iterate_playlist_archive(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
-   bool returnerr = true;
 #ifdef HAVE_COMPRESSION
    if (db_state->crc != 0)
       return task_database_iterate_crc_lookup(
