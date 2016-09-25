@@ -1488,8 +1488,6 @@ static void menu_input_st_cheat_cb(void *userdata, const char *str)
 
 static void menu_input_wifi_cb(void *userdata, const char *passphrase)
 {
-   (void)userdata;
-
    unsigned idx = menu_input_dialog_get_kb_idx();
 
    driver_wifi_connect_ssid(idx, passphrase);
