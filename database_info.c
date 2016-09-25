@@ -492,6 +492,7 @@ database_info_list_t *database_info_list_new(
          if (!new_ptr)
          {
             database_info_list_free(database_info_list);
+            free(database_info);
             free(database_info_list);
             database_info_list = NULL;
             goto end;
