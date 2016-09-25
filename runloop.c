@@ -406,7 +406,7 @@ static bool rarch_game_specific_options(char **output)
 static bool runloop_is_focused(void)
 {
    settings_t *settings      = config_get_ptr();
-   if (settings->pause_nonactive)
+   if (settings && settings->pause_nonactive)
       return video_driver_is_focused();
    return true;
 }
@@ -920,7 +920,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             bool ret                          = false;
             char buf[PATH_MAX_LENGTH]         = {0};
             settings_t *settings              = config_get_ptr();
-            const char *options_path          = settings->path.core_options;
+            const char *options_path          = settings ? settings->path.core_options : NULL;
             const struct retro_variable *vars =
                (const struct retro_variable*)data;
 
@@ -931,8 +931,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                options_path = buf;
             }
 
-
-            if (settings->game_specific_options)
+            if (settings && settings->game_specific_options)
                ret = rarch_game_specific_options(&game_options_path);
 
             if(ret)
@@ -1089,7 +1088,6 @@ void runloop_set_quit_confirm(bool on)
  */
 static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 {
-   settings_t *settings = config_get_ptr();
    bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
    time_to_exit                  = time_to_exit || quit_key_pressed;
    time_to_exit                  = time_to_exit || !video_driver_is_alive();
@@ -1101,21 +1099,25 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
       return 1;
 
 #ifdef HAVE_MENU
-   if (settings && settings->confirm_on_exit &&
-          !runloop_quit_confirm)
+   if (!runloop_is_quit_confirm())
    {
-      if (menu_dialog_is_active())
-         return 1;
+      settings_t *settings = config_get_ptr();
 
-      if (content_is_inited())
+      if (settings && settings->confirm_on_exit)
       {
-         if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
-            menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
-         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      }
+         if (menu_dialog_is_active())
+            return 1;
 
-      menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
-      return 1;
+         if (content_is_inited())
+         {
+            if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
+               menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
+            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+         }
+
+         menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+         return 1;
+      }
    }
 #endif
 
