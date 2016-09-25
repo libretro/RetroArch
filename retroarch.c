@@ -468,7 +468,7 @@ static void retroarch_parse_input(int argc, char *argv[])
    if (!current_core_explicitly_set)
       retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
 
-   *global->subsystem                    = '\0';
+   path_clear_subsystem();
 
    retroarch_override_setting_free_state();
 
@@ -789,7 +789,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_SUBSYSTEM:
-            strlcpy(global->subsystem, optarg, sizeof(global->subsystem));
+            path_set_subsystem(optarg);
             break;
 
          case RA_OPT_FEATURES:
@@ -840,13 +840,13 @@ static void retroarch_parse_input(int argc, char *argv[])
 #endif
    }
 
-   if (string_is_empty(global->subsystem) && optind < argc)
+   if (path_is_subsystem_empty() && optind < argc)
    {
       /* We requested explicit ROM, so use PLAIN core type. */
       retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
       path_set_names((const char*)argv[optind]);
    }
-   else if (!string_is_empty(global->subsystem) && optind < argc)
+   else if (!path_is_subsystem_empty() && optind < argc)
    {
       /* We requested explicit ROM, so use PLAIN core type. */
       retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
@@ -1159,8 +1159,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          command_event(CMD_EVENT_CORE_DEINIT, NULL);
 
          command_event(CMD_EVENT_TEMPORARY_CONTENT_DEINIT, NULL);
-         command_event(CMD_EVENT_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
 
+         path_deinit_subsystem();
          path_deinit_savefile();
 
          rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);

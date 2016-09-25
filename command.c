@@ -953,7 +953,6 @@ static bool command_event_disk_control_append_image(const char *path)
    unsigned new_idx;
    char msg[128]                                      = {0};
    struct retro_game_info info                        = {0};
-   global_t                                  *global  = global_get_ptr();
    const struct retro_disk_control_callback *control  = NULL;
    rarch_system_info_t                       *sysinfo = NULL;
 
@@ -985,7 +984,7 @@ static bool command_event_disk_control_append_image(const char *path)
    command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 
    /* TODO: Need to figure out what to do with subsystems case. */
-   if (string_is_empty(global->subsystem))
+   if (path_is_subsystem_empty())
    {
       /* Update paths for our new image.
        * If we actually use append_image, we assume that we
@@ -2452,17 +2451,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_TEMPORARY_CONTENT_DEINIT:
          content_deinit();
-         break;
-      case CMD_EVENT_SUBSYSTEM_FULLPATHS_DEINIT:
-         {
-            global_t  *global         = global_get_ptr();
-            if (!global)
-               break;
-
-            if (global->subsystem_fullpaths)
-               string_list_free(global->subsystem_fullpaths);
-            global->subsystem_fullpaths = NULL;
-         }
          break;
       case CMD_EVENT_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();

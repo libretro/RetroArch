@@ -154,10 +154,6 @@ typedef struct global
       char remapfile[PATH_MAX_LENGTH];
    } name;
 
-   /* For --subsystem content. */
-   char subsystem[PATH_MAX_LENGTH];
-   struct string_list *subsystem_fullpaths;
-
    struct
    {
       bool block_patch;

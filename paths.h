@@ -19,6 +19,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include <lists/string_list.h>
+
 RETRO_BEGIN_DECLS
 
 enum rarch_content_type
@@ -29,6 +31,8 @@ enum rarch_content_type
    RARCH_CONTENT_IMAGE
 };
 
+void path_deinit_subsystem(void);
+
 void path_deinit_savefile(void);
 
 void path_init_savefile(void);
@@ -38,6 +42,8 @@ void path_init_savefile(void);
 void path_fill_names(void);
 
 /* set functions */
+
+void path_set_subsystem(const char *path);
 
 void path_set_redirect(void);
 
@@ -67,7 +73,13 @@ size_t path_get_core_size(void);
 
 char *path_get_core_ptr(void);
 
+/* get list functions */
+
+struct string_list *path_get_subsystem_list(void);
+
 /* get functions */
+
+const char *path_get_subsystem(void);
 
 bool path_get_content(char **fullpath);
 
@@ -87,6 +99,8 @@ bool path_get_default_shader_preset(char **preset);
 
 /* clear functions */
 
+void path_clear_subsystem(void);
+
 void path_clear_default_shader_preset(void);
 
 void path_clear_basename(void);
@@ -104,6 +118,8 @@ void path_clear_config_append(void);
 void path_clear_all(void);
 
 /* is functions */
+
+bool path_is_subsystem_empty(void);
 
 bool path_is_core_empty(void);
 

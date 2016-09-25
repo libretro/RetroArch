@@ -48,8 +48,13 @@
 
 #define MENU_VALUE_NO_CORE 0x7d5472cbU
 
+/* For --subsystem content. */
+static struct string_list *subsystem_fullpaths          = NULL;
+
+char subsystem_path[PATH_MAX_LENGTH]                    = {0};
+
 static char path_default_shader_preset[PATH_MAX_LENGTH] = {0};
-static char path_main_basename[PATH_MAX_LENGTH]              = {0}
+static char path_main_basename[PATH_MAX_LENGTH]         = {0}
 ;
 static char path_content[PATH_MAX_LENGTH]               = {0};
 static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
@@ -242,6 +247,11 @@ void path_set_basename(const char *path)
       *dst = '\0';
 }
 
+struct string_list *path_get_subsystem_list(void)
+{
+   return subsystem_fullpaths;
+}
+
 const char *path_get_current_savefile_dir(void)
 {
    char *ret = current_savefile_dir;
@@ -263,13 +273,13 @@ void path_set_special(char **argv, unsigned num_content)
    /* First content file is the significant one. */
    path_set_basename(argv[0]);
 
-   global->subsystem_fullpaths = string_list_new();
-   retro_assert(global->subsystem_fullpaths);
+   subsystem_fullpaths = string_list_new();
+   retro_assert(subsystem_fullpaths);
 
    attr.i = 0;
 
    for (i = 0; i < num_content; i++)
-      string_list_append(global->subsystem_fullpaths, argv[i], attr);
+      string_list_append(subsystem_fullpaths, argv[i], attr);
 
    /* We defer SRAM path updates until we can resolve it.
     * It is more complicated for special content types. */
@@ -302,7 +312,7 @@ static bool path_init_subsystem(void)
    if (!system)
       return false;
 
-   if (string_is_empty(global->subsystem))
+   if (path_is_subsystem_empty())
       return false;
 
    /* For subsystems, we know exactly which RAM types are supported. */
@@ -310,12 +320,12 @@ static bool path_init_subsystem(void)
    info = libretro_find_subsystem_info(
          system->subsystem.data,
          system->subsystem.size,
-         global->subsystem);
+         path_get_subsystem());
 
    /* We'll handle this error gracefully later. */
    num_content = MIN(info ? info->num_roms : 0,
-         global->subsystem_fullpaths ?
-         global->subsystem_fullpaths->size : 0);
+         path_is_subsystem_empty() ?
+         0 : subsystem_fullpaths->size);
 
 
    for (i = 0; i < num_content; i++)
@@ -337,12 +347,12 @@ static bool path_init_subsystem(void)
             /* Redirect content fullpath to save directory. */
             strlcpy(path, dir_get_savefile(), sizeof(path));
             fill_pathname_dir(path,
-                  global->subsystem_fullpaths->elems[i].data, ext,
+                  subsystem_fullpaths->elems[i].data, ext,
                   sizeof(path));
          }
          else
          {
-            fill_pathname(path, global->subsystem_fullpaths->elems[i].data,
+            fill_pathname(path, subsystem_fullpaths->elems[i].data,
                   ext, sizeof(path));
          }
 
@@ -452,6 +462,11 @@ void path_fill_names(void)
 
 /* Core file path */
 
+const char *path_get_subsystem(void)
+{
+   return subsystem_path;
+}
+
 const char *path_get_basename(void)
 {
    return path_main_basename;
@@ -482,6 +497,16 @@ void path_set_core(const char *path)
    strlcpy(path_libretro, path, sizeof(path_libretro));
 }
 
+void path_set_subsystem(const char *path)
+{
+   strlcpy(subsystem_path, path, sizeof(subsystem_path));
+}
+
+void path_clear_subsystem(void)
+{
+   *subsystem_path = '\0';
+}
+
 void path_clear_core(void)
 {
    *path_libretro = '\0';
@@ -493,6 +518,14 @@ void path_clear_default_shader_preset(void)
 }
 
 /* Config file path */
+
+bool path_is_subsystem_empty(void)
+{
+   if (string_is_empty(subsystem_path))
+      return true;
+
+   return false;
+}
 
 bool path_is_config_empty(void)
 {
@@ -684,4 +717,11 @@ enum rarch_content_type path_is_media_type(const char *path)
    }
 
    return RARCH_CONTENT_NONE;
+}
+
+void path_deinit_subsystem(void)
+{
+   if (subsystem_fullpaths)
+      string_list_free(subsystem_fullpaths);
+   subsystem_fullpaths = NULL;
 }

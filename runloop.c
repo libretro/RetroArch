@@ -735,7 +735,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          {
             global_t *global = NULL;
             command_event(CMD_EVENT_TEMPORARY_CONTENT_DEINIT, NULL);
-            command_event(CMD_EVENT_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
+
+            path_deinit_subsystem();
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
             command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 

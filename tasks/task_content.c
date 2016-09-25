@@ -589,9 +589,9 @@ static const struct retro_subsystem_info *init_content_file_subsystem(bool *ret)
 {
    const struct retro_subsystem_info *special = NULL;
    rarch_system_info_t *system                = NULL;
-   global_t *global                           = global_get_ptr();
+   struct string_list *subsystem              = path_get_subsystem_list();
 
-   if (global && string_is_empty(global->subsystem))
+   if (path_is_subsystem_empty())
    {
       *ret = true;
       return NULL;
@@ -602,40 +602,36 @@ static const struct retro_subsystem_info *init_content_file_subsystem(bool *ret)
    if (system)
       special =
          libretro_find_subsystem_info(system->subsystem.data,
-               system->subsystem.size, global->subsystem);
+               system->subsystem.size, path_get_subsystem());
 
    if (!special)
    {
       RARCH_ERR(
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
-            global->subsystem);
+            path_get_subsystem());
       goto error;
    }
 
-   if (special->num_roms && !global->subsystem_fullpaths)
+   if (special->num_roms && !subsystem)
    {
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
       goto error;
    }
-   else if ((global 
-         && special->num_roms)
-         && (special->num_roms
-         != global->subsystem_fullpaths->size))
+   else if (special->num_roms && (special->num_roms != subsystem->size))
    {
       RARCH_ERR("Libretro core requires %u content files for "
             "subsystem \"%s\", but %u content files were provided.\n",
             special->num_roms, special->desc,
-            (unsigned)global->subsystem_fullpaths->size);
+            (unsigned)subsystem->size);
       goto error;
    }
-   else if (!special->num_roms && global->subsystem_fullpaths
-         && global->subsystem_fullpaths->size)
+   else if (!special->num_roms && subsystem && subsystem->size)
    {
       RARCH_ERR("Libretro core takes no content for subsystem \"%s\", "
             "but %u content files were provided.\n",
             special->desc,
-            (unsigned)global->subsystem_fullpaths->size);
+            (unsigned)subsystem->size);
       goto error;
    }
 
@@ -654,22 +650,21 @@ static bool init_content_file_set_attribs(
       const struct retro_subsystem_info *special)
 {
    union string_list_elem_attr attr;
-   global_t *global        = global_get_ptr();
+   struct string_list *subsystem    = path_get_subsystem_list();
 
-   attr.i                  = 0;
+   attr.i                           = 0;
 
-   if (!string_is_empty(global->subsystem) && special)
+   if (!path_is_subsystem_empty() && special)
    {
       unsigned i;
 
-      for (i = 0; i < global->subsystem_fullpaths->size; i++)
+      for (i = 0; i < subsystem->size; i++)
       {
          attr.i            = special->roms[i].block_extract;
          attr.i           |= special->roms[i].need_fullpath << 1;
          attr.i           |= special->roms[i].required      << 2;
 
-         string_list_append(content,
-               global->subsystem_fullpaths->elems[i].data, attr);
+         string_list_append(content, subsystem->elems[i].data, attr);
       }
    }
    else
