@@ -53,8 +53,7 @@ function cleanupStorage()
 
 function dropboxInit()
 {
-  document.getElementById('btnRun').disabled = true;
-  //document.getElementById('btnDrop').disabled = true;
+  //document.getElementById("btnDrop").disabled = true;
   //$('#icnDrop').removeClass('fa-dropbox');
   //$('#icnDrop').addClass('fa-spinner fa-spin');
   
@@ -87,7 +86,6 @@ function dropboxSync(dropboxClient, cb)
 
 function dropboxSyncComplete()
 {
-  document.getElementById('btnRun').disabled = false;
   //$('#icnDrop').removeClass('fa-spinner').removeClass('fa-spin');
   //$('#icnDrop').addClass('fa-check');
   console.log("WEBPLAYER: Dropbox sync successful");
@@ -96,17 +94,11 @@ function dropboxSyncComplete()
   preLoadingComplete();
 }
 
-function preLoadingComplete()
-{
-   /* Make the Preview image clickable to start RetroArch. */
-   $('.webplayer-preview').addClass('loaded').click(function () {
-      startRetroArch();
-      return false;
-  });
-}
-
 function idbfsInit()
 {
+   document.getElementById("btnLocal").disabled = true;
+   $('#icnLocal').removeClass('fa-globe');
+   $('#icnLocal').addClass('fa-spinner fa-spin');
    var imfs = new BrowserFS.FileSystem.InMemory();
    if (BrowserFS.FileSystem.IndexedDB.isAvailable()) 
    {
@@ -117,9 +109,9 @@ function idbfsInit()
          {
             //fallback to imfs
             afs = new BrowserFS.FileSystem.InMemory();
+            console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
             setupFileSystem("browser");
             preLoadingComplete();
-            console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
          } 
          else 
          {
@@ -129,21 +121,40 @@ function idbfsInit()
                if (e) 
                {
                   afs = new BrowserFS.FileSystem.InMemory();
+                  console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
                   setupFileSystem("browser");
                   preLoadingComplete();
-                  console.log("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
                }
                else 
                {
-                  console.log("WEBPLAYER: idbfs setup successful");
-                  setupFileSystem("browser");
-                  preLoadingComplete();
+                  idbfsSyncComplete();
                }
             });
          }
       },
       "RetroArch"));
    }
+}
+
+function idbfsSyncComplete()
+{
+   $('#icnLocal').removeClass('fa-spinner').removeClass('fa-spin');
+   $('#icnLocal').addClass('fa-check');
+   console.log("WEBPLAYER: idbfs setup successful");
+
+   setupFileSystem("browser");
+   preLoadingComplete();
+}
+
+function preLoadingComplete()
+{
+   /* Make the Preview image clickable to start RetroArch. */
+   $('.webplayer-preview').addClass('loaded').click(function () {
+      startRetroArch();
+      return false;
+  });
+  document.getElementById("btnRun").disabled = false;
+  $('#btnRun').removeClass('disabled');
 }
 
 function setupFileSystem(backend)
@@ -193,8 +204,8 @@ function startRetroArch()
 {
    $('.webplayer').show();
    $('.webplayer-preview').hide();
-   //document.getElementById('btnDrop').disabled = true;
-   document.getElementById('btnRun').disabled = true;
+   //document.getElementById("btnDrop").disabled = true;
+   document.getElementById("btnRun").disabled = true;
   
    $('#btnFullscreen').removeClass('disabled');
    $('#btnMenu').removeClass('disabled');
@@ -347,12 +358,8 @@ $(function() {
    // Load the Core's related JavaScript.
    $.getScript(core + '_libretro.js', function () 
    {
-      // Activate the Start RetroArch button.
-      $('#btnRun').removeClass('disabled');
       $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
       $('#icnRun').addClass('fa-play');
-
-      document.getElementById("btnRun").disabled = false;
 
       if (localStorage.getItem("backend") == "dropbox")
       {
