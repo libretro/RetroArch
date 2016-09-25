@@ -175,19 +175,20 @@ int generic_action_ok_displaylist_push(const char *path,
       unsigned action_type)
 {
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
-   char tmp[PATH_MAX_LENGTH]         = {0};
-   char parent_dir[PATH_MAX_LENGTH]  = {0};
-   char action_path[PATH_MAX_LENGTH] = {0};
-   menu_displaylist_info_t      info = {0};
-   const char           *menu_label  = NULL;
-   const char            *menu_path  = NULL;
-   const char          *content_path = NULL;
-   const char          *info_label   = NULL;
-   const char          *info_path    = NULL;
-   menu_handle_t            *menu    = NULL;
-   enum msg_hash_enums enum_idx      = MSG_UNKNOWN;
-   settings_t            *settings   = config_get_ptr();
-   file_list_t           *menu_stack = menu_entries_get_menu_stack_ptr(0);
+   char new_path_tmp[PATH_MAX_LENGTH]      = {0};
+   char tmp[PATH_MAX_LENGTH]               = {0};
+   char parent_dir[PATH_MAX_LENGTH]        = {0};
+   char action_path[PATH_MAX_LENGTH]       = {0};
+   menu_displaylist_info_t      info       = {0};
+   const char           *menu_label        = NULL;
+   const char            *menu_path        = NULL;
+   const char          *content_path       = NULL;
+   const char          *info_label         = NULL;
+   const char          *info_path          = NULL;
+   menu_handle_t            *menu          = NULL;
+   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
+   settings_t            *settings         = config_get_ptr();
+   file_list_t           *menu_stack       = menu_entries_get_menu_stack_ptr(0);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -509,19 +510,15 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST:
-         {
-            char new_path[PATH_MAX_LENGTH] = {0};
-
-            fill_pathname_join_delim(new_path, path, label, ';',
-                  sizeof(new_path));
-            info.type          = type;
-            info.directory_ptr = idx;
-            info_path          = new_path;
-            info_label         = msg_hash_to_str(
-                  MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST);
-            info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
-            dl_type            = DISPLAYLIST_GENERIC;
-         }
+         fill_pathname_join_delim(new_path_tmp, path, label, ';',
+               sizeof(new_path_tmp));
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = new_path_tmp;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_CORE_CONTENT_DIRS_LIST:
          info.type          = type;
