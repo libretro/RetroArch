@@ -73,7 +73,7 @@ static int psp_thread_wrap(SceSize args, void *argp)
 static INLINE int pthread_create(pthread_t *thread,
       const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
 {
-   sprintf(name_buffer, "0x%08X", (unsigned int) thread);
+   snprintf(name_buffer, sizeof(name_buffer), "0x%08X", (unsigned int) thread);
 
 #ifdef VITA
    *thread = sceKernelCreateThread(name_buffer, psp_thread_wrap,
@@ -93,7 +93,7 @@ static INLINE int pthread_create(pthread_t *thread,
 static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
       const pthread_mutexattr_t *attr)
 {
-   sprintf(name_buffer, "0x%08X", (unsigned int) mutex);
+   snprintf(name_buffer, sizeof(name_buffer), "0x%08X", (unsigned int) mutex);
 
 #ifdef VITA
    *mutex = sceKernelCreateMutex(name_buffer, 0, 0, 0);
@@ -220,22 +220,23 @@ static INLINE int pthread_cond_init(pthread_cond_t *cond,
 {
 #ifdef VITA
 
-	pthread_mutex_init(&cond->mutex,NULL);
-  if(cond->mutex<0){
-    return cond->mutex;
-	}
-  sprintf(name_buffer, "0x%08X", (unsigned int) cond);
-  //cond->sema = sceKernelCreateCond(name_buffer, 0, cond->mutex, 0);
-	cond->sema = sceKernelCreateSema(name_buffer, 0, 0, 1, 0);
-	if(cond->sema<0){
-		pthread_mutex_destroy(&cond->mutex);
-  	return cond->sema;
-	}
+   pthread_mutex_init(&cond->mutex,NULL);
 
-	cond->waiting = 0;
+   if(cond->mutex<0)
+      return cond->mutex;
 
+   snprintf(name_buffer, sizeof(name_buffer), "0x%08X", (unsigned int) cond);
+   cond->sema = sceKernelCreateSema(name_buffer, 0, 0, 1, 0);
 
-	return 0;
+   if(cond->sema < 0)
+   {
+      pthread_mutex_destroy(&cond->mutex);
+      return cond->sema;
+   }
+
+   cond->waiting = 0;
+
+   return 0;
 
 
 #else
