@@ -997,7 +997,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
       return NULL;
 
    netplay->fd                = -1;
-   netplay->tcp_port          = server ? 0 : port;
+   netplay->tcp_port          = port;
    netplay->cbs               = *cb;
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
@@ -1277,6 +1277,42 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
    }
 }
 
+/**
+ * netplay_reconnect
+ * @netplay              : pointer to netplay object
+ *
+ * Reconnect netplay. Only does anything as a client, and only if netplay isn't
+ * currently connected.
+ *
+ * Returns: true (1) if successful, false (0) if unsuccessful, false (0) if not
+ * client or already connected.
+ **/
+bool netplay_reconnect(netplay_t *netplay)
+{
+   /* FIXME: This function has some things remembered in netplay, some things
+    * brought back from global */
+   global_t *global     = global_get_ptr();
+
+   if (!netplay || netplay->has_connection || netplay->is_server)
+   {
+      return false;
+   }
+
+   if (!init_socket(netplay, global->netplay.server, netplay->tcp_port))
+   {
+      RARCH_WARN("Failed to reconnect Netplay.\n");
+      runloop_msg_queue_push("Failed to reconnect Netplay.", 0, 480, false);
+   }
+
+   /* FIXME: Connection info is weirdly conflated into info_cb */
+   if (!netplay_info_cb(netplay, netplay->stall_frames))
+   {
+      return false;
+   }
+
+   return true;
+}
+
 void deinit_netplay(void)
 {
    netplay_t *netplay = (netplay_t*)netplay_data;
@@ -1386,6 +1422,8 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_LOAD_SAVESTATE:
          netplay_load_savestate((netplay_t*)netplay_data, (retro_ctx_serialize_info_t*)data, true);
          break;
+      case RARCH_NETPLAY_CTL_RECONNECT:
+         return netplay_reconnect((netplay_t*)netplay_data);
       default:
       case RARCH_NETPLAY_CTL_NONE:
          break;
