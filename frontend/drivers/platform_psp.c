@@ -28,6 +28,11 @@
 #include <psp2/sysmodule.h>
 #include <psp2/appmgr.h>
 #include <pthread.h>
+
+int _newlib_heap_size_user = 192 * 1024 * 1024;
+
+#include "../../bootstrap/vita/sbrk.c"
+
 #else
 #include <pspkernel.h>
 #include <pspdebug.h>
@@ -56,7 +61,6 @@
 
 #ifdef VITA
 PSP2_MODULE_INFO(0, 0, "RetroArch");
-int _newlib_heap_size_user = 192 * 1024 * 1024;
 #else
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
