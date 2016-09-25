@@ -2564,8 +2564,6 @@ bool config_load_shader_preset(void)
 
 static void parse_config_file(void)
 {
-   bool         ret = config_load_file(path_get_config(), false, config_get_ptr());
-
    if (!path_is_config_empty())
    {
       RARCH_LOG("Config: loading config from: %s.\n", path_get_config());
@@ -2577,7 +2575,7 @@ static void parse_config_file(void)
          RARCH_LOG("Config: found default config: %s.\n", path_get_config());
    }
 
-   if (ret)
+   if (config_load_file(path_get_config(), false, config_get_ptr()))
       return;
 
    RARCH_ERR("Config: couldn't find config at path: \"%s\"\n", path_get_config());
