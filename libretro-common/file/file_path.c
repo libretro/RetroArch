@@ -94,7 +94,7 @@ end:
  * after a compression extension is considered.
  *
  * Returns: pointer to the delimiter in the path if it contains
- * a compressed file, otherwise NULL.
+ * a path inside a compressed file, otherwise NULL.
  */
 const char *path_get_archive_delim(const char *path)
 {
@@ -663,7 +663,7 @@ void fill_pathname_join_special_ext(char *out_path,
 }
 
 void fill_pathname_join_concat(char *out_path,
-      const char *dir, const char *path, 
+      const char *dir, const char *path,
       const char *concat,
       size_t size)
 {

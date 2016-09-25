@@ -60,24 +60,6 @@ typedef struct db_handle
    unsigned status;
 } db_handle_t;
 
-
-#ifdef HAVE_COMPRESSION
-static int archive_compare_crc32(const char *name, const char *valid_exts,
-      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
-      uint32_t crc32, struct archive_extract_userdata *userdata)
-{
-   userdata->crc = crc32;
-
-   strlcpy(userdata->archive_name, userdata->extracted_file_path, sizeof(userdata->archive_name));
-
-#if 0
-   RARCH_LOG("Going to compare CRC 0x%x for %s\n", crc32, name);
-#endif
-
-   return 1;
-}
-#endif
-
 static int task_database_iterate_start(database_info_handle_t *db,
       const char *name)
 {
@@ -182,10 +164,8 @@ static int task_database_iterate_playlist(
    {
       case FILE_TYPE_COMPRESSED:
 #ifdef HAVE_COMPRESSION
-         db->type = DATABASE_TYPE_ITERATE_ARCHIVE;
-         memset(&db->state, 0, sizeof(file_archive_transfer_t));
-         db_state->archive_name[0] = '\0';
-         db->state.type = ARCHIVE_TRANSFER_INIT;
+         db->type = DATABASE_TYPE_CRC_LOOKUP;
+         /* first check crc of archive itself */
          return file_get_crc(db_state, name, &db_state->archive_crc);
 #else
          break;
@@ -404,37 +384,11 @@ static int task_database_iterate_playlist_archive(
 {
    bool returnerr = true;
 #ifdef HAVE_COMPRESSION
-   struct archive_extract_userdata userdata = {0};
-
    if (db_state->crc != 0)
       return task_database_iterate_crc_lookup(
             db_state, db, db_state->archive_name);
 
-   userdata.crc = db_state->crc;
-   userdata.archive_path = strdup(name);
-
-   if (db->state.type == ARCHIVE_TRANSFER_INIT)
-      file_archive_parse_file_iterate(&db->state,
-               &returnerr, name, NULL, NULL,
-               &userdata);
-
-   if (file_archive_parse_file_iterate(&db->state,
-            &returnerr, name, NULL, archive_compare_crc32,
-            &userdata))
-   {
-      if (userdata.archive_path)
-         free(userdata.archive_path);
-      return 0;
-   }
-
-   if (userdata.crc)
-   {
-      db_state->crc = userdata.crc;
-      file_archive_parse_file_iterate_stop(&db->state);
-   }
-
-   if (userdata.archive_path)
-      free(userdata.archive_path);
+   db_state->crc = file_archive_get_file_crc32(name);
 #endif
 
    return 1;
@@ -546,6 +500,10 @@ static int task_database_iterate(database_state_handle_t *db_state,
 
    if (!name)
       return 0;
+
+   if (db->type == DATABASE_TYPE_ITERATE)
+      if (path_contains_compressed_file(name))
+         db->type = DATABASE_TYPE_ITERATE_ARCHIVE;
 
    switch (db->type)
    {

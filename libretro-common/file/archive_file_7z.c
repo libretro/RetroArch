@@ -393,8 +393,9 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
       return ret;
 
    userdata->extracted_file_path = filename;
+   userdata->crc = checksum;
 
-   if (!file_cb(filename, valid_exts, cdata, cmode,
+   if (file_cb && !file_cb(filename, valid_exts, cdata, cmode,
             csize, size, checksum, userdata))
       return 0;
 

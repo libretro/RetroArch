@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2013-2015 - Jason Fetters
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -20,6 +20,8 @@
 
 #include <compat/strl.h>
 #include <retro_endianness.h>
+#include <file/file_path.h>
+#include <file/archive_file.h>
 
 #include "list_special.h"
 #include "database_info.h"
@@ -212,7 +214,7 @@ char *bin_to_hex_alloc(const uint8_t *data, size_t len)
 
    if (len && !ret)
       return NULL;
-   
+
    for (i = 0; i < len; i++)
       snprintf(ret+i * 2, 3, "%02X", data[i]);
    return ret;
@@ -363,10 +365,10 @@ static int database_cursor_open(libretrodb_t *db,
    if ((libretrodb_open(path, db)) != 0)
       return -1;
 
-   if (query) 
+   if (query)
       q = (libretrodb_query_t*)libretrodb_query_compile(db, query,
       strlen(query), &error);
-    
+
    if (error)
       goto error;
    if ((libretrodb_cursor_open(db, cur, q)) != 0)
@@ -398,6 +400,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 {
    database_info_handle_t     *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
+   int i = 0;
 
    if (!db)
       return NULL;
@@ -410,6 +413,47 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    db->list_ptr       = 0;
    db->status         = DATABASE_STATUS_ITERATE;
    db->type           = type;
+
+   if (db->list->size > 0)
+   {
+      for (i = 0; i < db->list->size; i++)
+      {
+         const char *path = db->list->elems[i].data;
+
+         if (path_is_compressed_file(path))
+         {
+            struct string_list *archive_list =
+                  file_archive_get_file_list(path, NULL);
+
+            if (archive_list && archive_list->size > 0)
+            {
+               int i = 0;
+
+               for (i = 0; i < archive_list->size; i++)
+               {
+                  char new_path[PATH_MAX_LENGTH] = {0};
+                  size_t path_len = strlen(path);
+
+                  strlcpy(new_path, path, sizeof(new_path));
+
+                  if (path_len + strlen(archive_list->elems[i].data)
+                         + 1 < PATH_MAX_LENGTH)
+                  {
+                     new_path[path_len] = '#';
+                     strlcpy(new_path + path_len + 1,
+                                archive_list->elems[i].data,
+                                sizeof(new_path) - path_len);
+                  }
+
+                  string_list_append(db->list, new_path,
+                                        archive_list->elems[i].attr);
+               }
+
+               string_list_free(archive_list);
+            }
+         }
+      }
+   }
 
    return db;
 
@@ -435,6 +479,39 @@ database_info_handle_t *database_info_file_init(const char *path,
       goto error;
 
    string_list_append(db->list, path, attr);
+
+   if (path_is_compressed_file(path))
+   {
+      struct string_list *archive_list =
+            file_archive_get_file_list(path, NULL);
+
+      if (archive_list && archive_list->size > 0)
+      {
+         int i = 0;
+
+         for (i = 0; i < archive_list->size; i++)
+         {
+            char new_path[PATH_MAX_LENGTH] = {0};
+            size_t path_len = strlen(path);
+
+            strlcpy(new_path, path, sizeof(new_path));
+
+            if (path_len + strlen(archive_list->elems[i].data)
+                   + 1 < PATH_MAX_LENGTH)
+            {
+               new_path[path_len] = '#';
+               strlcpy(new_path + path_len + 1,
+                          archive_list->elems[i].data,
+                          sizeof(new_path) - path_len);
+            }
+
+            string_list_append(db->list, new_path,
+                                  archive_list->elems[i].attr);
+         }
+
+         string_list_free(archive_list);
+      }
+   }
 
    db->list_ptr       = 0;
    db->status         = DATABASE_STATUS_ITERATE;
@@ -505,7 +582,7 @@ database_info_list_t *database_info_list_new(
 
          k++;
       }
-   } 
+   }
 
    database_info_list->list  = database_info;
    database_info_list->count = k;

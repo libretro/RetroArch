@@ -20,6 +20,7 @@
 #include <file/archive_file.h>
 #include <retro_miscellaneous.h>
 #include <retro_stat.h>
+#include <compat/strl.h>
 
 #include "tasks_internal.h"
 #include "../verbosity.h"
@@ -146,10 +147,10 @@ static void task_decompress_handler(retro_task_t *task)
    int ret;
    bool retdec             = false;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   struct archive_extract_userdata userdata = {0};
+   struct archive_extract_userdata userdata = {{0}};
 
    userdata.dec            = dec;
-   userdata.archive_path   = dec->source_file;
+   strlcpy(userdata.archive_path, dec->source_file, sizeof(userdata.archive_path));
 
    ret                     = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
@@ -171,9 +172,9 @@ static void task_decompress_handler_target_file(retro_task_t *task)
    bool retdec;
    int ret;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   struct archive_extract_userdata userdata = {0};
+   struct archive_extract_userdata userdata = {{0}};
 
-   userdata.archive_path = dec->source_file;
+   strlcpy(userdata.archive_path, dec->source_file, sizeof(userdata.archive_path));
 
    ret = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,
@@ -195,10 +196,10 @@ static void task_decompress_handler_subdir(retro_task_t *task)
    int ret;
    bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   struct archive_extract_userdata userdata = {0};
+   struct archive_extract_userdata userdata = {{0}};
 
    userdata.dec            = dec;
-   userdata.archive_path   = dec->source_file;
+   strlcpy(userdata.archive_path, dec->source_file, sizeof(userdata.archive_path));
 
    ret                     = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,

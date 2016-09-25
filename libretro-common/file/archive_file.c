@@ -58,7 +58,7 @@ struct file_archive_file_data
 
 #ifdef HAVE_MMAP
 /* Closes, unmaps and frees. */
-void file_archive_free(file_archive_file_data_t *data)
+static void file_archive_free(file_archive_file_data_t *data)
 {
    if (!data)
       return;
@@ -70,7 +70,7 @@ void file_archive_free(file_archive_file_data_t *data)
    free(data);
 }
 
-const uint8_t *file_archive_data(file_archive_file_data_t *data)
+static const uint8_t *file_archive_data(file_archive_file_data_t *data)
 {
    if (!data)
       return NULL;
@@ -119,7 +119,7 @@ error:
 #else
 
 /* Closes, unmaps and frees. */
-void file_archive_free(file_archive_file_data_t *data)
+static void file_archive_free(file_archive_file_data_t *data)
 {
    if (!data)
       return;
@@ -128,7 +128,7 @@ void file_archive_free(file_archive_file_data_t *data)
    free(data);
 }
 
-const uint8_t *file_archive_data(file_archive_file_data_t *data)
+static const uint8_t *file_archive_data(file_archive_file_data_t *data)
 {
    if (!data)
       return NULL;
@@ -269,7 +269,7 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
    return 1;
 }
 
-int file_archive_parse_file_init(file_archive_transfer_t *state,
+static int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
    char *last                 = NULL;
@@ -387,7 +387,10 @@ int file_archive_parse_file_iterate(
          if (file_archive_parse_file_init(state, file) == 0)
          {
             if (userdata)
+            {
                userdata->context = state->stream;
+               strlcpy(userdata->archive_path, file, sizeof(userdata->archive_path));
+            }
             state->type = ARCHIVE_TRANSFER_ITERATE;
          }
          else
@@ -440,7 +443,7 @@ int file_archive_parse_file_iterate(
 }
 
 /**
- * file_archive_parse_file:
+ * file_archive_walk:
  * @file                        : filename path of archive
  * @valid_exts                  : Valid extensions of archive to be parsed.
  *                                If NULL, allow all.
@@ -452,7 +455,7 @@ int file_archive_parse_file_iterate(
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-static bool file_archive_parse_file(const char *file, const char *valid_exts,
+static bool file_archive_walk(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, struct archive_extract_userdata *userdata)
 {
    file_archive_transfer_t state = {0};
@@ -505,7 +508,7 @@ bool file_archive_extract_file(
 {
    struct string_list *list             = NULL;
    bool ret                             = true;
-   struct archive_extract_userdata userdata = {0};
+   struct archive_extract_userdata userdata = {{0}};
 
    /* We cannot extract if the libretro
     * implementation does not have any valid extensions. */
@@ -519,7 +522,6 @@ bool file_archive_extract_file(
       goto end;
    }
 
-   userdata.archive_path         = archive_path;
    userdata.archive_path_size    = archive_path_size;
    userdata.extraction_directory = extraction_directory;
    userdata.ext                  = list;
@@ -527,7 +529,7 @@ bool file_archive_extract_file(
    userdata.context              = NULL;
    userdata.list_only            = false;
 
-   if (!file_archive_parse_file(archive_path, valid_exts,
+   if (!file_archive_walk(archive_path, valid_exts,
             file_archive_extract_cb, &userdata))
    {
       /* Parsing file archive failed. */
@@ -563,27 +565,30 @@ end:
 struct string_list *file_archive_get_file_list(const char *path,
       const char *valid_exts)
 {
-   struct archive_extract_userdata userdata = {0};
+   struct archive_extract_userdata userdata = {{0}};
+
+#ifdef HAVE_COMPRESSION
+   if (!path_is_compressed_file(path))
+      return NULL;
+#else
+   return NULL;
+#endif
+
    userdata.list_only = true;
-   userdata.archive_path = strdup(path);
+   strlcpy(userdata.archive_path, path, sizeof(userdata.archive_path));
 
    userdata.list = string_list_new();
 
    if (!userdata.list)
       goto error;
 
-   if (!file_archive_parse_file(path, valid_exts,
+   if (!file_archive_walk(path, valid_exts,
             file_archive_get_file_list_cb, &userdata))
       goto error;
-
-   if (userdata.archive_path)
-      free(userdata.archive_path);
 
    return userdata.list;
 
 error:
-   if (userdata.archive_path)
-      free(userdata.archive_path);
    if (userdata.list)
       string_list_free(userdata.list);
    return NULL;
@@ -608,7 +613,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
             handle.backend = file_archive_get_file_backend(userdata->archive_path);
             handle.stream = userdata->context;
 
-            if (!handle.backend->stream_decompress_data_to_file_init(&handle,
+            if (!handle.backend || !handle.backend->stream_decompress_data_to_file_init(&handle,
                      cdata, csize, size))
                goto error;
 
@@ -631,6 +636,50 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
 
 error:
    return false;
+}
+
+/**
+ * file_archive_filename_split:
+ * @str              : filename to turn into a string list
+ *
+ * Creates a new string list based on filename @path, delimited by a hash (#).
+ *
+ * Returns: new string list if successful, otherwise NULL.
+ */
+static struct string_list *file_archive_filename_split(const char *path)
+{
+   union string_list_elem_attr attr;
+   struct string_list *list = string_list_new();
+   const char *delim        = NULL;
+
+   memset(&attr, 0, sizeof(attr));
+
+   delim = path_get_archive_delim(path);
+
+   if (delim)
+   {
+      /* add archive path to list first */
+      if (!string_list_append_n(list, path, delim - path, attr))
+         goto error;
+
+      /* now add the path within the archive */
+      delim++;
+
+      if (*delim)
+      {
+         if (!string_list_append(list, delim, attr))
+            goto error;
+      }
+   }
+   else
+      if (!string_list_append(list, path, attr))
+         goto error;
+
+   return list;
+
+error:
+   string_list_free(list);
+   return NULL;
 }
 
 /* Generic compressed file loader.
@@ -685,60 +734,6 @@ error:
    return 0;
 }
 
-struct string_list *file_archive_file_list_new(const char *path,
-      const char* ext)
-{
-#ifdef HAVE_COMPRESSION
-   if (path_is_compressed_file(path))
-      return file_archive_get_file_list(path, ext);
-#endif
-   return NULL;
-}
-
-/**
- * file_archive_filename_split:
- * @str              : filename to turn into a string list
- *
- * Creates a new string list based on filename @path, delimited by a hash (#).
- *
- * Returns: new string list if successful, otherwise NULL.
- */
-struct string_list *file_archive_filename_split(const char *path)
-{
-   union string_list_elem_attr attr;
-   struct string_list *list = string_list_new();
-   const char *delim        = NULL;
-
-   memset(&attr, 0, sizeof(attr));
-
-   delim = path_get_archive_delim(path);
-
-   if (delim)
-   {
-      /* add archive path to list first */
-      if (!string_list_append_n(list, path, delim - path, attr))
-         goto error;
-
-      /* now add the path within the archive */
-      delim++;
-
-      if (*delim)
-      {
-         if (!string_list_append(list, delim, attr))
-            goto error;
-      }
-   }
-   else
-      if (!string_list_append(list, path, attr))
-         goto error;
-
-   return list;
-
-error:
-   string_list_free(list);
-   return NULL;
-}
-
 const struct file_archive_file_backend *file_archive_get_zlib_file_backend(void)
 {
 #ifdef HAVE_ZLIB
@@ -784,4 +779,75 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
 #endif
 
    return NULL;
+}
+
+/**
+ * file_archive_get_file_crc32:
+ * @path                         : filename path of archive
+ *
+ * Returns: CRC32 of the specified file in the archive, otherwise 0.
+ * If no path within the archive is specified, the first
+ * file found inside is used.
+ **/
+uint32_t file_archive_get_file_crc32(const char *path)
+{
+   const struct file_archive_file_backend *backend = file_archive_get_file_backend(path);
+   file_archive_transfer_t state = {0};
+   struct archive_extract_userdata userdata = {{0}};
+   bool returnerr = false;
+   bool contains_compressed = false;
+   const char *archive_path = NULL;
+
+   if (!backend)
+      return 0;
+
+   contains_compressed = path_contains_compressed_file(path);
+
+   if (contains_compressed)
+   {
+      archive_path = path_get_archive_delim(path);
+
+      /* move pointer right after the delimiter to give us the path */
+      if (archive_path)
+         archive_path += 1;
+   }
+
+   state.type = ARCHIVE_TRANSFER_INIT;
+
+   /* Initialize and open archive first.
+      Sets next state type to ITERATE. */
+   file_archive_parse_file_iterate(&state,
+            &returnerr, path, NULL, NULL,
+            &userdata);
+
+   for (;;)
+   {
+      /* Now find the first file in the archive. */
+      if (state.type == ARCHIVE_TRANSFER_ITERATE)
+         file_archive_parse_file_iterate(&state,
+                  &returnerr, path, NULL, NULL,
+                  &userdata);
+
+      /* If no path specified within archive, stop after
+       * finding the first file.
+       */
+      if (!contains_compressed)
+         break;
+
+      /* Stop when the right file in the archive is found. */
+      if (archive_path)
+      {
+         if (string_is_equal(userdata.extracted_file_path, archive_path))
+            break;
+      }
+      else
+         break;
+   }
+
+   file_archive_parse_file_iterate_stop(&state);
+
+   if (userdata.crc)
+      return userdata.crc;
+
+   return 0;
 }

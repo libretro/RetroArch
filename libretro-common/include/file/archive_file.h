@@ -96,7 +96,7 @@ typedef struct
 
 struct archive_extract_userdata
 {
-   char *archive_path;
+   char archive_path[PATH_MAX_LENGTH];
    char *first_extracted_file_path;
    char *extracted_file_path;
    const char *extraction_directory;
@@ -191,28 +191,24 @@ bool file_archive_perform_mode(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata);
 
-void file_archive_deflate_init(void *data, int level);
-
 int file_archive_compressed_read(
       const char* path, void **buf,
       const char* optional_filename, ssize_t *length);
-
-struct string_list* file_archive_file_list_new(const char *path,
-      const char *ext);
-
-struct string_list* file_archive_filename_split(const char *path);
-
-const uint8_t* file_archive_data(file_archive_file_data_t *data);
-
-int file_archive_parse_file_init(file_archive_transfer_t *state,
-      const char *file);
-
-void file_archive_free(file_archive_file_data_t *data);
 
 const struct file_archive_file_backend* file_archive_get_zlib_file_backend(void);
 const struct file_archive_file_backend* file_archive_get_7z_file_backend(void);
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path);
+
+/**
+ * file_archive_get_file_crc32:
+ * @path                         : filename path of archive
+ *
+ * Returns: CRC32 of the specified file in the archive, otherwise 0.
+ * If no path within the archive is specified, the first
+ * file found inside is used.
+ **/
+uint32_t file_archive_get_file_crc32(const char *path);
 
 extern const struct file_archive_file_backend zlib_backend;
 extern const struct file_archive_file_backend sevenzip_backend;
