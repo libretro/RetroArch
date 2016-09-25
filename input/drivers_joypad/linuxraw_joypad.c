@@ -95,7 +95,8 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    {
       settings_t *settings = config_get_ptr();
 
-      if (ioctl(pad->fd, JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
+      if (ioctl(pad->fd,
+               JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
       {
          RARCH_LOG("[Device]: Found pad: %s on %s.\n", pad->ident, path);
 
@@ -103,7 +104,8 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
          {
             char msg[512] = {0};
 
-            snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", (unsigned)(pad - linuxraw_pads), pad->ident);
+            snprintf(msg, sizeof(msg), "Device #%u (%s) connected.",
+                  (unsigned)(pad - linuxraw_pads), pad->ident);
             runloop_msg_queue_push(msg, 0, 60, false);
          }
       }
@@ -204,8 +206,11 @@ retry:
 
    for (i = 0; i < ret; i++)
    {
-      if (events[i].data.ptr)
-         linuxraw_poll_pad((struct linuxraw_joypad*)events[i].data.ptr);
+      struct linuxraw_joypad *ptr = (struct linuxraw_joypad*)
+         events[i].data.ptr;
+
+      if (ptr)
+         linuxraw_poll_pad(ptr);
       else
          handle_plugged_pad();
    }
@@ -214,22 +219,20 @@ retry:
 static bool linuxraw_joypad_init(void *data)
 {
    unsigned i;
-   settings_t *settings = config_get_ptr();
 
    if (!epoll_new(true))
       return false;
-
-   (void)data;
 
    for (i = 0; i < MAX_USERS; i++)
    {
       char path[PATH_MAX_LENGTH]  = {0};
       autoconfig_params_t params  = {{0}};
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
+      settings_t *settings        = config_get_ptr();
 
-      params.idx = i;
-      pad->fd    = -1;
-      pad->ident = settings->input.device_names[i];
+      params.idx                  = i;
+      pad->fd                     = -1;
+      pad->ident                  = settings->input.device_names[i];
       
       snprintf(path, sizeof(path), "/dev/input/js%u", i);
 
@@ -286,13 +289,17 @@ static void linuxraw_joypad_destroy(void)
 
 static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
-   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
+   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
+      &linuxraw_pads[port];
+
    return joykey < NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 
 static uint64_t linuxraw_joypad_get_buttons(unsigned port)
 {
-   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
+   const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)
+      &linuxraw_pads[port];
+
    return pad->buttons;
 }
 
