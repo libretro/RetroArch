@@ -855,7 +855,6 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
 static bool next_string(char **_ptr, char **_str)
 {
    char *ptr = *_ptr;
-   char *str = *_str;
 
    while (*ptr == ' ')       /* skip any spaces... */
       ptr++;
@@ -863,14 +862,12 @@ static bool next_string(char **_ptr, char **_str)
    if (*ptr == '\0')
       return false;
 
-   str = ptr;
    while ((*ptr != ' ') && (*ptr != '\n') && (*ptr != '\0'))
       ptr++;
 
    if (*ptr != '\0')
       *(ptr++) = '\0';
 
-   *_str = str;
    *_ptr = ptr;
    return true;
 }

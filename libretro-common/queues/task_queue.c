@@ -260,6 +260,9 @@ static void retro_task_regular_retrieve(task_retriever_data_t *data)
          tail = data->list;
       }
    }
+
+   if (tail)
+      free(tail);
 }
 
 static struct retro_task_impl impl_regular = {

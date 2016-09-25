@@ -2002,12 +2002,16 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
    playlist_free(playlist);
    database_info_list_free(db_info);
+   free(db_info);
 
    return 0;
 
 error:
    if (db_info)
+   {
       database_info_list_free(db_info);
+      free(db_info);
+   }
    playlist_free(playlist);
 
    return -1;
@@ -2034,6 +2038,7 @@ static int menu_database_parse_query(file_list_t *list, const char *path,
    }
 
    database_info_list_free(db_list);
+   free(db_list);
 #endif
 
    return 0;

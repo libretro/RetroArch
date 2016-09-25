@@ -243,7 +243,10 @@ static int database_info_list_iterate_new(database_state_handle_t *db_state,
          (unsigned)db_state->list->size, new_database);
 #endif
    if (db_state->info)
+   {
       database_info_list_free(db_state->info);
+      free(db_state->info);
+   }
    db_state->info = database_info_list_new(new_database, query);
    return 0;
 }
@@ -313,6 +316,7 @@ static int database_info_list_iterate_found_match(
    playlist_free(playlist);
 
    database_info_list_free(db_state->info);
+   free(db_state->info);
 
    db_state->info = NULL;
    db_state->crc  = 0;
@@ -330,6 +334,7 @@ static int database_info_list_iterate_next(
    db_state->entry_index = 0;
 
    database_info_list_free(db_state->info);
+   free(db_state->info);
    db_state->info        = NULL;
 
    return 1;
@@ -389,6 +394,7 @@ static int task_database_iterate_crc_lookup(
       return 1;
 
    database_info_list_free(db_state->info);
+   free(db_state->info);
    return 0;
 }
 
@@ -526,6 +532,7 @@ static int task_database_iterate_serial_lookup(
       return 1;
 
    database_info_list_free(db_state->info);
+   free(db_state->info);
    return 0;
 }
 

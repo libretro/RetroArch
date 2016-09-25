@@ -118,7 +118,6 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
    int datadir          = 1; /* read */
    bool set_control     = false;
    int mode             = IEEE1284_MODE_BYTE;
-   settings_t *settings = config_get_ptr();
 
    if (pad->fd >= 0)
       return false;
@@ -131,6 +130,8 @@ static bool parport_joypad_init_pad(const char *path, struct parport_joypad *pad
 
    if (pad->fd >= 0)
    {
+      settings_t *settings = config_get_ptr();
+
       RARCH_LOG("[Joypad]: Found parallel port: %s\n", path);
 
       /* Parport driver does not log failures with RARCH_ERR because they could be

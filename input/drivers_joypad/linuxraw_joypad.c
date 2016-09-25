@@ -79,8 +79,6 @@ static void linuxraw_poll_pad(struct linuxraw_joypad *pad)
 
 static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *pad)
 {
-   settings_t *settings = config_get_ptr();
-
    if (pad->fd >= 0)
       return false;
 
@@ -92,8 +90,11 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
    pad->fd = open(path, O_RDONLY | O_NONBLOCK);
 
    *pad->ident = '\0';
+
    if (pad->fd >= 0)
    {
+      settings_t *settings = config_get_ptr();
+
       if (ioctl(pad->fd, JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
       {
          RARCH_LOG("[Device]: Found pad: %s on %s.\n", pad->ident, path);
