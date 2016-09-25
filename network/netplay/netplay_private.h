@@ -103,6 +103,14 @@ struct delta_frame
    bool used_real;
 };
 
+struct socket_buffer
+{
+   unsigned char *data;
+   size_t bufsz;
+   size_t start, end;
+   size_t read;
+};
+
 struct netplay_callbacks {
    bool (*pre_frame) (netplay_t *netplay);
    void (*post_frame)(netplay_t *netplay);
@@ -180,11 +188,18 @@ struct netplay
    bool savestate_request_outstanding;
 
    /* A buffer for outgoing input packets. */
-   uint32_t packet_buffer[2 + WORDS_PER_FRAME];
+   uint32_t input_packet_buffer[2 + WORDS_PER_FRAME];
+
+   /* And buffers for sending and receiving our actual data */
+   struct socket_buffer send_packet_buffer, recv_packet_buffer;
+
+   /* All of our frame counts */
    uint32_t self_frame_count;
    uint32_t read_frame_count;
    uint32_t other_frame_count;
    uint32_t replay_frame_count;
+
+   /* And socket info */
    struct addrinfo *addr;
    struct sockaddr_storage their_addr;
    bool has_client_addr;
@@ -262,5 +277,21 @@ bool netplay_cmd_request_savestate(netplay_t *netplay);
 /* DISCOVERY: */
 
 bool netplay_lan_ad_server(netplay_t *netplay);
+
+bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size);
+
+void netplay_deinit_socket_buffer(struct socket_buffer *sbuf);
+
+void netplay_clear_socket_buffer(struct socket_buffer *sbuf);
+
+bool netplay_send(struct socket_buffer *sbuf, int sockfd, const void *buf, size_t len);
+
+bool netplay_send_flush(struct socket_buffer *sbuf, int sockfd, bool block);
+
+ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf, size_t len, bool block);
+
+void netplay_recv_reset(struct socket_buffer *sbuf);
+
+void netplay_recv_flush(struct socket_buffer *sbuf);
 
 #endif

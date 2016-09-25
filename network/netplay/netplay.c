@@ -263,6 +263,9 @@ static bool init_socket(netplay_t *netplay, void *direct_host, const char *serve
    if (!init_tcp_socket(netplay, direct_host, server, port, netplay->spectate.enabled))
       return false;
 
+   netplay_clear_socket_buffer(&netplay->send_packet_buffer);
+   netplay_clear_socket_buffer(&netplay->recv_packet_buffer);
+
    if (netplay->is_server && netplay->nat_traversal)
       init_nat_traversal(netplay);
 
@@ -399,17 +402,17 @@ static bool get_self_input_state(netplay_t *netplay)
     *    frame
     * }
     */
-   netplay->packet_buffer[0] = htonl(NETPLAY_CMD_INPUT);
-   netplay->packet_buffer[1] = htonl(WORDS_PER_FRAME * sizeof(uint32_t));
-   netplay->packet_buffer[2] = htonl(netplay->self_frame_count);
-   netplay->packet_buffer[3] = htonl(state[0]);
-   netplay->packet_buffer[4] = htonl(state[1]);
-   netplay->packet_buffer[5] = htonl(state[2]);
+   netplay->input_packet_buffer[0] = htonl(NETPLAY_CMD_INPUT);
+   netplay->input_packet_buffer[1] = htonl(WORDS_PER_FRAME * sizeof(uint32_t));
+   netplay->input_packet_buffer[2] = htonl(netplay->self_frame_count);
+   netplay->input_packet_buffer[3] = htonl(state[0]);
+   netplay->input_packet_buffer[4] = htonl(state[1]);
+   netplay->input_packet_buffer[5] = htonl(state[2]);
 
    if (!netplay->spectate.enabled) /* Spectate sends in its own way */
    {
-      if (!socket_send_all_blocking(netplay->fd,
-               netplay->packet_buffer, sizeof(netplay->packet_buffer), false))
+      if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, cmdbuf,
+            sizeof(cmdbuf)))
       {
          hangup(netplay);
          return false;
@@ -429,11 +432,12 @@ static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
    cmdbuf[0] = htonl(cmd);
    cmdbuf[1] = htonl(size);
 
-   if (!socket_send_all_blocking(netplay->fd, cmdbuf, sizeof(cmdbuf), false))
+   if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, cmdbuf,
+         sizeof(cmdbuf)))
       return false;
 
    if (size > 0)
-      if (!socket_send_all_blocking(netplay->fd, data, size, false))
+      if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, data, size))
          return false;
 
    return true;
@@ -460,31 +464,46 @@ bool netplay_cmd_request_savestate(netplay_t *netplay)
    return netplay_send_raw_cmd(netplay, NETPLAY_CMD_REQUEST_SAVESTATE, NULL, 0);
 }
 
+static ssize_t netplay_recva(netplay_t *netplay, void *buf, size_t len)
+{
+   return netplay_recv(&netplay->read_packet_buffer, netplay->fd, buf, len, false);
+}
+
 static bool netplay_get_cmd(netplay_t *netplay)
 {
    uint32_t cmd;
    uint32_t flip_frame;
    uint32_t cmd_size;
+   ssize_t recvd;
 
    /* FIXME: This depends on delta_frame_ready */
 
-   netplay->timeout_cnt = 0;
+#define RECV(buf, sz) \
+   recvd = netplay_recva(netplay, (buf), (sz)); \
+   if (recvd >= 0 && recvd < (sz)) goto shrt; \
+   else if (recvd < 0)
 
-   if (!socket_receive_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
+   /* Keep receiving commands until there's no input left */
+   while (true)
+   {
+
+   RECV(&cmd, sizeof(cmd))
       return false;
 
    cmd      = ntohl(cmd);
 
-   if (!socket_receive_all_blocking(netplay->fd, &cmd_size, sizeof(cmd)))
+   RECV(&cmd_size, sizeof(cmd_size));
       return false;
 
    cmd_size = ntohl(cmd_size);
+
+   netplay->timeout_cnt = 0;
 
    switch (cmd)
    {
       case NETPLAY_CMD_ACK:
          /* Why are we even bothering? */
-         return true;
+         break;
 
       case NETPLAY_CMD_NAK:
          /* Disconnect now! */
@@ -501,7 +520,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
                return netplay_cmd_nak(netplay);
             }
 
-            if (!socket_receive_all_blocking(netplay->fd, buffer, sizeof(buffer)))
+            RECV(buffer, sizeof(buffer))
             {
                RARCH_ERR("Failed to receive NETPLAY_CMD_INPUT input.\n");
                return netplay_cmd_nak(netplay);
@@ -513,7 +532,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
             if (buffer[0] < netplay->read_frame_count)
             {
                /* We already had this, so ignore the new transmission */
-               return true;
+               break;
             }
             else if (buffer[0] > netplay->read_frame_count)
             {
@@ -527,7 +546,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
                   buffer + 1, sizeof(buffer) - sizeof(uint32_t));
             netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
             netplay->read_frame_count++;
-            return true;
+            break;
          }
 
       case NETPLAY_CMD_FLIP_PLAYERS:
@@ -537,8 +556,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
             return netplay_cmd_nak(netplay);
          }
 
-         if (!socket_receive_all_blocking(
-                  netplay->fd, &flip_frame, sizeof(flip_frame)))
+         RECV(&flip_frame, sizeof(flip_frame))
          {
             RARCH_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");
             return netplay_cmd_nak(netplay);
@@ -565,7 +583,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_NETPLAY_USERS_HAS_FLIPPED), 1, 180, false);
 
-         return true;
+         break;
 
       case NETPLAY_CMD_SPECTATE:
          RARCH_ERR("NETPLAY_CMD_SPECTATE unimplemented.\n");
@@ -587,7 +605,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
                return netplay_cmd_nak(netplay);
             }
 
-            if (!socket_receive_all_blocking(netplay->fd, buffer, sizeof(buffer)))
+            RECV(buffer, sizeof(buffer))
             {
                RARCH_ERR("NETPLAY_CMD_CRC failed to receive payload.\n");
                return netplay_cmd_nak(netplay);
@@ -614,7 +632,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
             if (!found)
             {
                /* Oh well, we got rid of it! */
-               return true;
+               break;
             }
 
             if (buffer[0] <= netplay->other_frame_count)
@@ -636,14 +654,14 @@ static bool netplay_get_cmd(netplay_t *netplay)
                netplay->buffer[tmp_ptr].crc = buffer[1];
             }
 
-            return true;
+            break;
          }
 
       case NETPLAY_CMD_REQUEST_SAVESTATE:
          /* Delay until next frame so we don't send the savestate after the
           * input */
          netplay->force_send_savestate = true;
-         return true;
+         break;
 
       case NETPLAY_CMD_LOAD_SAVESTATE:
          {
@@ -684,7 +702,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
                return netplay_cmd_nak(netplay);
             }
 
-            if (!socket_receive_all_blocking(netplay->fd, &frame, sizeof(frame)))
+            RECV(&frame, sizeof(frame))
             {
                RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate frame.\n");
                return netplay_cmd_nak(netplay);
@@ -697,7 +715,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
                return netplay_cmd_nak(netplay);
             }
 
-            if (!socket_receive_all_blocking(netplay->fd, &isize, sizeof(isize)))
+            RECV(&isize, sizeof(isize))
             {
                RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive inflated size.\n");
                return netplay_cmd_nak(netplay);
@@ -710,8 +728,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
                return netplay_cmd_nak(netplay);
             }
 
-            if (!socket_receive_all_blocking(netplay->fd,
-                     netplay->zbuffer, cmd_size - 2*sizeof(uint32_t)))
+            RECV(netplay->zbuffer, cmd_size - 2*sizeof(uint32_t))
             {
                RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate.\n");
                return netplay_cmd_nak(netplay);
@@ -742,23 +759,30 @@ static bool netplay_get_cmd(netplay_t *netplay)
             netplay->savestate_request_outstanding = false;
             netplay->other_ptr                     = netplay->read_ptr;
             netplay->other_frame_count             = frame;
-            return true;
+            break;
          }
 
       case NETPLAY_CMD_PAUSE:
          netplay->remote_paused = true;
-         return true;
+         break;
 
       case NETPLAY_CMD_RESUME:
          netplay->remote_paused = false;
-         return true;
+         break;
 
       default:
-         break;
+         RARCH_ERR("%s.\n", msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));
+         return netplay_cmd_nak(netplay);
    }
 
-   RARCH_ERR("%s.\n", msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));
-   return netplay_cmd_nak(netplay);
+   netplay_recv_flush(&netplay->recv_packet_buffer);
+
+   }
+
+shrt:
+   /* No more data, reset and try again */
+   netplay_recv_reset(&netplay->recv_packet_buffer);
+   return true;
 }
 
 static int poll_input(netplay_t *netplay, bool block)
@@ -1262,6 +1286,8 @@ bool netplay_init_serialization(netplay_t *netplay)
 
 static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
 {
+   size_t packet_buffer_size;
+
    if (!netplay)
       return false;
 
@@ -1279,6 +1305,15 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
 
    if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
       netplay_init_serialization(netplay);
+
+   /* Make our packet buffer big enough for a save state and frames-many frames
+    * of input data, plus the headers for each of them */ 
+   packet_buffer_size = netplay->state_size + frames * WORDS_PER_FRAME + (frames+1)*3;
+
+   if (!netplay_init_socket_buffer(&netplay->send_packet_buffer, packet_buffer_size))
+      return false;
+   if (!netplay_init_socket_buffer(&netplay->recv_packet_buffer, packet_buffer_size))
+      return false;
 
    return true;
 }
@@ -1341,6 +1376,10 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    }
 
    if(!netplay_info_cb(netplay, delay_frames))
+      goto error;
+
+   /* FIXME: Our initial connection should also be nonblocking */
+   if (!socket_nonblock(netplay->fd))
       goto error;
 
    return netplay;
@@ -1464,6 +1503,9 @@ void netplay_free(netplay_t *netplay)
       free(netplay->buffer);
    }
 
+   netplay_deinit_socket_buffer(&netplay->send_packet_buffer);
+   netplay_deinit_socket_buffer(&netplay->recv_packet_buffer);
+
    if (netplay->zbuffer)
       free(netplay->zbuffer);
 
@@ -1542,6 +1584,8 @@ void netplay_post_frame(netplay_t *netplay)
 {
    retro_assert(netplay && netplay->net_cbs->post_frame);
    netplay->net_cbs->post_frame(netplay);
+   if (!netplay_send_flush(&netplay->send_packet_buffer, netplay->fd, false))
+      hangup(netplay);
 }
 
 /**
@@ -1559,8 +1603,13 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
 
    netplay->local_paused = paused;
    if (netplay->has_connection && !netplay->spectate.enabled)
+   {
       netplay_send_raw_cmd(netplay, paused 
             ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
+
+      /* We're not going to be polled, so we need to flush this command now */
+      netplay_send_flush(&netplay->send_packet_buffer, netplay->fd, true);
+   }
 }
 
 /**
@@ -1651,14 +1700,15 @@ void netplay_load_savestate(netplay_t *netplay,
    header[2] = htonl(netplay->self_frame_count);
    header[3] = htonl(serial_info->size);
 
-   if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
+   if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, header,
+         sizeof(header)))
    {
       hangup(netplay);
       return;
    }
 
-   if (!socket_send_all_blocking(netplay->fd,
-            netplay->zbuffer, wn, false))
+   if (!netplay_send(&netplay->send_packet_buffer, netplay->fd,
+         netplay->zbuffer, wn))
    {
       hangup(netplay);
       return;

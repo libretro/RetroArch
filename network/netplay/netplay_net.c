@@ -157,10 +157,21 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
             RARCH_WARN("Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
 #endif
 
+         netplay_clear_socket_buffer(&netplay->send_packet_buffer);
+         netplay_clear_socket_buffer(&netplay->recv_packet_buffer);
+
          /* Establish the connection */
          if (netplay_handshake(netplay))
          {
             netplay->has_connection = true;
+
+            /* FIXME: Not the best place for this, needs to happen after initial
+             * connection in get_info */
+            if (!socket_nonblock(netplay->fd))
+            {
+               free(netplay);
+               return NULL;
+            }
 
             /* Send them the savestate */
             if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))

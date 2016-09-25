@@ -54,8 +54,8 @@ static bool netplay_spectate_pre_frame(netplay_t *netplay)
       {
          if (netplay->spectate.fds[i] >= 0)
          {
-            netplay->packet_buffer[2] = htonl(netplay->self_frame_count - netplay->spectate.frames[i]);
-            if (!socket_send_all_blocking(netplay->spectate.fds[i], netplay->packet_buffer, sizeof(netplay->packet_buffer), false))
+            netplay->input_packet_buffer[2] = htonl(netplay->self_frame_count - netplay->spectate.frames[i]);
+            if (!socket_send_all_blocking(netplay->spectate.fds[i], netplay->input_packet_buffer, sizeof(netplay->input_packet_buffer), false))
             {
                socket_close(netplay->spectate.fds[i]);
                netplay->spectate.fds[i] = -1;
@@ -146,8 +146,8 @@ static bool netplay_spectate_pre_frame(netplay_t *netplay)
       }
 
       /* And send them this frame's input */
-      netplay->packet_buffer[2] = htonl(0);
-      if (!socket_send_all_blocking(new_fd, netplay->packet_buffer, sizeof(netplay->packet_buffer), false))
+      netplay->input_packet_buffer[2] = htonl(0);
+      if (!socket_send_all_blocking(new_fd, netplay->input_packet_buffer, sizeof(netplay->input_packet_buffer), false))
       {
          socket_close(new_fd);
          return true;
