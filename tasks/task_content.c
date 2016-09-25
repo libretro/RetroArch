@@ -618,8 +618,10 @@ static const struct retro_subsystem_info *init_content_file_subsystem(bool *ret)
             msg_hash_to_str(MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT));
       goto error;
    }
-   else if (special->num_roms && special->num_roms
-         != global->subsystem_fullpaths->size)
+   else if ((global 
+         && special->num_roms)
+         && (special->num_roms
+         != global->subsystem_fullpaths->size))
    {
       RARCH_ERR("Libretro core requires %u content files for "
             "subsystem \"%s\", but %u content files were provided.\n",

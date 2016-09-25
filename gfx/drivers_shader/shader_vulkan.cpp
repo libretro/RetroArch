@@ -2800,18 +2800,18 @@ static bool vulkan_filter_chain_load_luts(
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
    VkSubmitInfo submit_info                      = {
       VK_STRUCTURE_TYPE_SUBMIT_INFO };
-   VkCommandBuffer cmd = VK_NULL_HANDLE;
-   VkCommandBufferAllocateInfo cmd_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-   bool recording = false;
+   VkCommandBuffer cmd                           = VK_NULL_HANDLE;
+   VkCommandBufferAllocateInfo cmd_info          = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+   bool recording                                = false;
 
    cmd_info.commandPool        = info->command_pool;
    cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
    cmd_info.commandBufferCount = 1;
 
    vkAllocateCommandBuffers(info->device, &cmd_info, &cmd);
-   begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    vkBeginCommandBuffer(cmd, &begin_info);
-   recording = true;
+   recording                   = true;
 
    for (unsigned i = 0; i < shader->luts; i++)
    {
@@ -2826,9 +2826,8 @@ static bool vulkan_filter_chain_load_luts(
    }
 
    vkEndCommandBuffer(cmd);
-   recording = false;
    submit_info.commandBufferCount = 1;
-   submit_info.pCommandBuffers = &cmd;
+   submit_info.pCommandBuffers    = &cmd;
    vkQueueSubmit(info->queue, 1, &submit_info, VK_NULL_HANDLE);
    vkQueueWaitIdle(info->queue);
    vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);

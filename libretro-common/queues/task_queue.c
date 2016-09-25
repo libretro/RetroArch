@@ -250,19 +250,17 @@ static void retro_task_regular_retrieve(task_retriever_data_t *data)
          if (tail)
          {
             tail->next = info;
-            tail = tail->next;
+            tail       = tail->next;
          }
-         else tail = info;
+         else
+            tail       = info;
       }
       else
       {
-         data->list = info;
-         tail = data->list;
+         data->list    = info;
+         tail          = data->list;
       }
    }
-
-   if (tail)
-      free(tail);
 }
 
 static struct retro_task_impl impl_regular = {
