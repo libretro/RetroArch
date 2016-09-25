@@ -133,6 +133,7 @@ bool netplay_send_info(netplay_t *netplay)
    uint32_t *content_crc_ptr = NULL;
    void *sram                = NULL;
    uint32_t header[3]        = {0};
+   size_t i;
 
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
 
@@ -197,6 +198,22 @@ bool netplay_send_info(netplay_t *netplay)
       return false;
    }
 
+   /* Reset our frame count so it's consistent with the server */
+   netplay->self_frame_count = netplay->read_frame_count = netplay->other_frame_count = 0;
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      netplay->buffer[i].used = false;
+      if (i == netplay->self_ptr)
+      {
+         netplay_delta_frame_ready(netplay, &netplay->buffer[i], 0);
+         netplay->read_ptr = netplay->other_ptr = i;
+      }
+      else
+      {
+         netplay->buffer[i].used = false;
+      }
+   }
+
    snprintf(msg, sizeof(msg), "%s: \"%s\"",
          msg_hash_to_str(MSG_CONNECTED_TO),
          netplay->other_nick);
@@ -214,6 +231,9 @@ bool netplay_get_info(netplay_t *netplay)
    uint32_t *content_crc_ptr = NULL;
    const void *sram          = NULL;
    size_t i;
+
+   /* FIXME: There's a huge amount of duplication between send_info and
+    * get_info */
 
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
 
@@ -286,6 +306,7 @@ bool netplay_get_info(netplay_t *netplay)
       if (i == netplay->self_ptr)
       {
          netplay_delta_frame_ready(netplay, &netplay->buffer[i], 0);
+         netplay->read_ptr = netplay->other_ptr = i;
       }
       else
       {

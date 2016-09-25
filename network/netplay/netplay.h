@@ -38,7 +38,8 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_IS_DATA_INITED,
    RARCH_NETPLAY_CTL_PAUSE,
    RARCH_NETPLAY_CTL_UNPAUSE,
-   RARCH_NETPLAY_CTL_LOAD_SAVESTATE
+   RARCH_NETPLAY_CTL_LOAD_SAVESTATE,
+   RARCH_NETPLAY_CTL_RECONNECT
 };
 
 enum netplay_cmd
@@ -193,6 +194,18 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused);
  * Inform Netplay of a savestate load and send it to the other side
  **/
 void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info, bool save);
+
+/**
+ * netplay_reconnect
+ * @netplay              : pointer to netplay object
+ *
+ * Reconnect netplay. Only does anything as a client, and only if netplay isn't
+ * currently connected.
+ *
+ * Returns: true (1) if successful, false (0) if unsuccessful, false (0) if not
+ * client or already connected.
+ **/
+bool netplay_reconnect(netplay_t *netplay);
 
 /**
  * init_netplay:
