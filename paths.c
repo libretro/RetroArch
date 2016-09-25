@@ -48,7 +48,7 @@
 
 #define MENU_VALUE_NO_CORE 0x7d5472cbU
 
-static char runloop_default_shader_preset[PATH_MAX_LENGTH] = {0};
+static char path_default_shader_preset[PATH_MAX_LENGTH] = {0};
 static char path_main_basename[PATH_MAX_LENGTH]              = {0}
 ;
 static char path_content[PATH_MAX_LENGTH]               = {0};
@@ -489,7 +489,7 @@ void path_clear_core(void)
 
 void path_clear_default_shader_preset(void)
 {
-   *runloop_default_shader_preset = '\0';
+   *path_default_shader_preset = '\0';
 }
 
 /* Config file path */
@@ -519,7 +519,7 @@ bool path_get_default_shader_preset(char **preset)
 {
    if (!preset)
       return false;
-   *preset       = (char*)runloop_default_shader_preset;
+   *preset       = (char*)path_default_shader_preset;
    return true;
 }
 
@@ -552,8 +552,8 @@ bool path_set_default_shader_preset(const char *preset)
 {
    if (!preset)
       return false;
-   strlcpy(runloop_default_shader_preset, preset,
-         sizeof(runloop_default_shader_preset));
+   strlcpy(path_default_shader_preset, preset,
+         sizeof(path_default_shader_preset));
    return true;
 }
 
