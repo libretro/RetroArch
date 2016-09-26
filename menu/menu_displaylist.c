@@ -3417,142 +3417,138 @@ static int menu_displaylist_parse_generic(
 
    if (list_size == 0)
    {
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
-            MENU_ENUM_LABEL_NO_ITEMS,
-            MENU_SETTING_NO_ITEM, 0, 0);
-
       string_list_free(str_list);
-
-      return 0;
+      str_list = NULL;
    }
-
-   for (i = 0; i < list_size; i++)
+   else
    {
-      bool is_dir;
-      char label[PATH_MAX_LENGTH]   = {0};
-      const char *path              = NULL;
-      enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-      enum msg_file_type file_type  = FILE_TYPE_NONE;
-
-      switch (str_list->elems[i].attr.i)
+      for (i = 0; i < list_size; i++)
       {
-         case RARCH_DIRECTORY:
-            file_type = FILE_TYPE_DIRECTORY;
-            break;
-         case RARCH_COMPRESSED_ARCHIVE:
-            file_type = FILE_TYPE_CARCHIVE;
-            break;
-         case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
-            file_type = FILE_TYPE_IN_CARCHIVE;
-            break;
-         case RARCH_PLAIN_FILE:
-         default:
-            file_type = (enum msg_file_type)info->type_default;
-            switch (type)
+         bool is_dir;
+         char label[PATH_MAX_LENGTH]   = {0};
+         const char *path              = NULL;
+         enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+         enum msg_file_type file_type  = FILE_TYPE_NONE;
+
+         switch (str_list->elems[i].attr.i)
+         {
+            case RARCH_DIRECTORY:
+               file_type = FILE_TYPE_DIRECTORY;
+               break;
+            case RARCH_COMPRESSED_ARCHIVE:
+               file_type = FILE_TYPE_CARCHIVE;
+               break;
+            case RARCH_COMPRESSED_FILE_IN_ARCHIVE:
+               file_type = FILE_TYPE_IN_CARCHIVE;
+               break;
+            case RARCH_PLAIN_FILE:
+            default:
+               file_type = (enum msg_file_type)info->type_default;
+               switch (type)
+               {
+                  case DISPLAYLIST_CORES_DETECTED:
+                     /* in case of deferred_core_list we have to interpret
+                      * every archive as an archive to disallow instant loading
+                      */
+                     if (path_is_compressed_file(str_list->elems[i].data))
+                        file_type = FILE_TYPE_CARCHIVE;
+                     break;
+                  default:
+                     break;
+               }
+               break;
+         }
+
+         is_dir = (file_type == FILE_TYPE_DIRECTORY);
+
+         if (!is_dir)
+         {
+            if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
+               continue;
+            if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
+               continue;
+         }
+
+         /* Need to preserve slash first time. */
+         path = str_list->elems[i].data;
+
+         if (*info->path && !path_is_compressed)
+            path = path_basename(path);
+
+         if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION))
+         {
+            if (is_dir)
+               file_type = FILE_TYPE_DIRECTORY;
+            else
+               file_type = FILE_TYPE_PLAYLIST_COLLECTION;
+         }
+
+         if (settings->multimedia.builtin_mediaplayer_enable ||
+               settings->multimedia.builtin_imageviewer_enable)
+         {
+            switch (path_is_media_type(path))
             {
-               case DISPLAYLIST_CORES_DETECTED:
-                  /* in case of deferred_core_list we have to interpret
-                   * every archive as an archive to disallow instant loading
-                   */
-                  if (path_is_compressed_file(str_list->elems[i].data))
-                     file_type = FILE_TYPE_CARCHIVE;
+               case RARCH_CONTENT_MOVIE:
+   #ifdef HAVE_FFMPEG
+                  if (settings->multimedia.builtin_mediaplayer_enable)
+                     file_type = FILE_TYPE_MOVIE;
+   #endif
+                  break;
+               case RARCH_CONTENT_MUSIC:
+   #ifdef HAVE_FFMPEG
+                  if (settings->multimedia.builtin_mediaplayer_enable)
+                     file_type = FILE_TYPE_MUSIC;
+   #endif
+                  break;
+               case RARCH_CONTENT_IMAGE:
+   #ifdef HAVE_IMAGEVIEWER
+                  if (settings->multimedia.builtin_imageviewer_enable
+                        && type != DISPLAYLIST_IMAGES)
+                     file_type = FILE_TYPE_IMAGEVIEWER;
+                  else
+                     file_type = FILE_TYPE_IMAGE;
+   #endif
                   break;
                default:
                   break;
             }
-            break;
-      }
+         }
 
-      is_dir = (file_type == FILE_TYPE_DIRECTORY);
-
-      if (!is_dir)
-      {
-         if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_DIR))
-            continue;
-         if (BIT32_GET(filebrowser_types, FILEBROWSER_SCAN_DIR))
-            continue;
-      }
-
-      /* Need to preserve slash first time. */
-      path = str_list->elems[i].data;
-
-      if (*info->path && !path_is_compressed)
-         path = path_basename(path);
-
-      if (BIT32_GET(filebrowser_types, FILEBROWSER_SELECT_COLLECTION))
-      {
-         if (is_dir)
-            file_type = FILE_TYPE_DIRECTORY;
-         else
-            file_type = FILE_TYPE_PLAYLIST_COLLECTION;
-      }
-
-      if (settings->multimedia.builtin_mediaplayer_enable ||
-            settings->multimedia.builtin_imageviewer_enable)
-      {
-         switch (path_is_media_type(path))
+         switch (file_type)
          {
-            case RARCH_CONTENT_MOVIE:
-#ifdef HAVE_FFMPEG
-               if (settings->multimedia.builtin_mediaplayer_enable)
-                  file_type = FILE_TYPE_MOVIE;
-#endif
+            case FILE_TYPE_PLAIN:
+   #if 0
+               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE;
+   #endif
                break;
-            case RARCH_CONTENT_MUSIC:
-#ifdef HAVE_FFMPEG
-               if (settings->multimedia.builtin_mediaplayer_enable)
-                  file_type = FILE_TYPE_MUSIC;
-#endif
+            case FILE_TYPE_MOVIE:
+               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN;
                break;
-            case RARCH_CONTENT_IMAGE:
-#ifdef HAVE_IMAGEVIEWER
-               if (settings->multimedia.builtin_imageviewer_enable
-                     && type != DISPLAYLIST_IMAGES)
-                  file_type = FILE_TYPE_IMAGEVIEWER;
-               else
-                  file_type = FILE_TYPE_IMAGE;
-#endif
+            case FILE_TYPE_MUSIC:
+               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN;
+               break;
+            case FILE_TYPE_IMAGE:
+               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE;
+               break;
+            case FILE_TYPE_IMAGEVIEWER:
+               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER;
+               break;
+            case FILE_TYPE_DIRECTORY:
+               enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
                break;
             default:
                break;
          }
-      }
 
-      switch (file_type)
-      {
-         case FILE_TYPE_PLAIN:
-#if 0
-            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE;
-#endif
-            break;
-         case FILE_TYPE_MOVIE:
-            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN;
-            break;
-         case FILE_TYPE_MUSIC:
-            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN;
-            break;
-         case FILE_TYPE_IMAGE:
-            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE;
-            break;
-         case FILE_TYPE_IMAGEVIEWER:
-            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER;
-            break;
-         case FILE_TYPE_DIRECTORY:
-            enum_idx = MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
-            break;
-         default:
-            break;
+         items_found++;
+         menu_entries_append_enum(info->list, path, label,
+               enum_idx,
+               file_type, 0, 0);
       }
-
-      items_found++;
-      menu_entries_append_enum(info->list, path, label,
-            enum_idx,
-            file_type, 0, 0);
    }
 
-   string_list_free(str_list);
+   if (str_list && str_list->size > 0)
+      string_list_free(str_list);
 
    if (items_found == 0)
    {
@@ -3561,8 +3557,6 @@ static int menu_displaylist_parse_generic(
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0);
-
-      goto end;
    }
 
    /* We don't want to show 'filter by extension' for this. */
