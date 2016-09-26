@@ -213,7 +213,7 @@ else ifeq ($(platform), vita)
   INCLUDE += -Ideps/libvita2d/include
   INCLUDE += -Ideps/zlib
   PLATCFLAGS := -mthumb -mfloat-abi=hard -fsingle-precision-constant \
-       -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -funroll-loops
+       -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -fno-optimize-sibling-calls
   LIBS += -lSceKernel_stub -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lSceFiber_stub\
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
@@ -402,7 +402,7 @@ ifeq ($(DEBUG), 1)
 else ifeq ($(platform), psp1)
    CFLAGS += -O2
 else ifeq ($(platform), vita)
-   CFLAGS += -O1
+   CFLAGS += -O3
 else
    CFLAGS += -O3
 endif
