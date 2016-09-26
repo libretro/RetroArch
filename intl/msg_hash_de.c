@@ -1278,6 +1278,16 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
          return "Passwort";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST:
          return "Konten";
+      case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
+         return "Zum Beenden Nachfragen";
+	   case MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU:
+         return "Jeder nutze kann Menü Steuern";
+	   case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
+         return "Zeige Versteckte Ordner und Dateien";
+	   case MENU_ENUM_LABEL_VALUE_WIFI_DRIVER:
+         return "Wlan-Treiber";
+	   case MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS:
+         return "Wlan";
       default:
          break;
    }
