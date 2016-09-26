@@ -120,6 +120,12 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
          }
 #endif
 
+#if defined(F_SETFD) && defined(FD_CLOEXEC)
+         /* Don't let any inherited processes keep open our port */
+         if (fcntl(netplay->fd, F_SETFD, FD_CLOEXEC) < 0)
+            RARCH_WARN("Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
+#endif
+
          /* Connection header */
          if (netplay_get_info(netplay))
          {

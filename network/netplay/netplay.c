@@ -826,6 +826,12 @@ static int init_tcp_connection(const struct addrinfo *res,
    bool ret = true;
    int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
+   if (fd < 0)
+   {
+      ret = false;
+      goto end;
+   }
+
 #if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
    {
       int flag = 1;
@@ -834,11 +840,11 @@ static int init_tcp_connection(const struct addrinfo *res,
    }
 #endif
 
-   if (fd < 0)
-   {
-      ret = false;
-      goto end;
-   }
+#if defined(F_SETFD) && defined(FD_CLOEXEC)
+   /* Don't let any inherited processes keep open our port */
+   if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+      RARCH_WARN("Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
+#endif
 
    if (server)
    {
@@ -856,13 +862,6 @@ static int init_tcp_connection(const struct addrinfo *res,
          ret = false;
          goto end;
       }
-
-#if defined(F_SETFD) && defined(FD_CLOEXEC)
-      /* Don't let any inherited processes keep open our port */
-      if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
-         RARCH_WARN("Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
-#endif
-
    }
 
 end:
