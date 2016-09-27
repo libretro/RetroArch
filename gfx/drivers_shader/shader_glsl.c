@@ -1256,6 +1256,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
 static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
 {
+   static float current_mat_data[GFX_MAX_SHADERS];
    static unsigned current_idx;
    int loc;
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
@@ -1267,9 +1268,10 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
 
    loc = glsl->uniforms[glsl->active_idx].mvp;
    if (loc >= 0) {
-      if (current_idx != glsl->active_idx) {
+      if (current_idx != glsl->active_idx || *mat->data != current_mat_data[loc]) {
          glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
          current_idx = glsl->active_idx;
+         current_mat_data[loc] = *mat->data;
       }
    }
    return true;
