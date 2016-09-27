@@ -1256,6 +1256,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
 static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
 {
+   static unsigned current_idx;
    int loc;
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
 
@@ -1265,9 +1266,12 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
       goto fallback;
 
    loc = glsl->uniforms[glsl->active_idx].mvp;
-   if (loc >= 0)
-      glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
-
+   if (loc >= 0) {
+      if (current_idx != glsl->active_idx) {
+         glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
+         current_idx = glsl->active_idx;
+      }
+   }
    return true;
 
 fallback:
