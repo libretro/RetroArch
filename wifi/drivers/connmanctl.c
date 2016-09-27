@@ -21,6 +21,8 @@
 #include "../../runloop.h"
 #include "../../lakka.h"
 
+static bool connman_cache[256] = {0};
+static unsigned connman_counter = 0;
 static struct string_list* lines;
 
 static void *connmanctl_init(void)
@@ -91,10 +93,38 @@ static void connmanctl_get_ssids(struct string_list* ssids)
 
 static bool connmanctl_ssid_is_online(unsigned i)
 {
+   char ln[512] = {0};
+   char service[128] = {0};
+   char command[256] = {0};
    const char *line = lines->elems[i].data;
-   if (!line)
-      return false;
-   return line[2] == 'O' || line[2] == 'R';
+   FILE *command_file = NULL;
+
+   if (connman_counter == 60)
+   {
+      connman_counter = 0;
+      strlcpy(service, line+25, sizeof(service));
+
+      strlcat(command, "connmanctl services ", sizeof(command));
+      strlcat(command, service, sizeof(command));
+      strlcat(command, " | grep 'State = \\(online\\|ready\\)'", sizeof(command));
+
+      command_file = popen(command, "r");
+
+      while (fgets (ln, 512, command_file) != NULL)
+      {
+         connman_cache[i] = true;
+         return true;
+      }
+      pclose(command_file);
+      connman_cache[i] = false;
+   }
+   else
+   {
+      connman_counter++;
+      return connman_cache[i];
+   }
+
+   return false;
 }
 
 static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
