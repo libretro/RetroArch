@@ -15,6 +15,7 @@
 
 #include <3ds.h>
 #include <string.h>
+#include <malloc.h>
 
 #include "../audio_driver.h"
 #include "../../configuration.h"

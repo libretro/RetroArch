@@ -26,6 +26,7 @@
 #include <retro_assert.h>
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
+#include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

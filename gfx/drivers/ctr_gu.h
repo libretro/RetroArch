@@ -61,7 +61,6 @@ void wait_for_input(void);
 #endif
 
 
-extern Handle gspEvents[GSPGPU_EVENT_MAX];
 extern u32* gpuCmdBuf;
 extern u32 gpuCmdBufOffset;
 extern u32 __linear_heap_size;

@@ -25,6 +25,7 @@
 #include "../../config.h"
 #endif
 
+#include "../../ctr/gpu_old.h"
 #include "ctr_gu.h"
 
 #include "../../configuration.h"
@@ -463,7 +464,10 @@ static void* ctr_init(const video_info_t* video,
                             sizeof(ctr_vertex_t));
    GPUCMD_Finalize();
    ctrGuFlushAndRun(true);
-   gspWaitForEvent(GSPGPU_EVENT_P3D, false);
+
+   ctrGuDisplayTransfer(true, CTR_TOP_FRAMEBUFFER, 240, 400, CTRGU_RGBA8,
+                        gfxTopLeftFramebuffers[ctr->current_buffer_top],
+                        240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
    if (input && input_data)
    {
@@ -550,17 +554,13 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->lcd_buttom_on = !ctr->lcd_buttom_on;
    }
 
-   svcWaitSynchronization(gspEvents[GSPGPU_EVENT_P3D], 20000000);
-   svcClearEvent(gspEvents[GSPGPU_EVENT_P3D]);
-   svcWaitSynchronization(gspEvents[GSPGPU_EVENT_PPF], 20000000);
-   svcClearEvent(gspEvents[GSPGPU_EVENT_PPF]);
+   gspWaitForEvent(GSPGPU_EVENT_P3D, false);
+   gspWaitForEvent(GSPGPU_EVENT_PPF, false);
 
    frames++;
 
    if (ctr->vsync)
-      svcWaitSynchronization(gspEvents[GSPGPU_EVENT_VBlank0], U64_MAX);
-
-   svcClearEvent(gspEvents[GSPGPU_EVENT_VBlank0]);
+      gspWaitForEvent(GSPGPU_EVENT_VBlank0, false);
 
    currentTick = svcGetSystemTick();
    diff        = currentTick - lastTick;
@@ -806,7 +806,6 @@ static bool ctr_frame(void* data, const void* frame,
 
 
    // Swap buffers :
-   ctr->current_buffer_top ^= 1;
    extern GSPGPU_FramebufferInfo topFramebufferInfo;
    extern u8* gfxSharedMemory;
    extern u8 gfxThreadID;
@@ -834,6 +833,8 @@ static bool ctr_frame(void* data, const void* frame,
 	framebufferInfoHeader[0x0] ^= 1;
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
 	framebufferInfoHeader[0x1]=1;
+
+   ctr->current_buffer_top ^= 1;
 
    performance_counter_stop(&ctrframe_f);
 

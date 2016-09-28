@@ -73,6 +73,11 @@
 #include <ogc/lwp_watchdog.h>
 #endif
 
+#if defined(_3DS)
+#include <3ds/svc.h>
+#include <3ds/os.h>
+#endif
+
 /* iOS/OSX specific. Lacks clock_gettime(), so implement it. */
 #ifdef __MACH__
 #include <sys/time.h>
