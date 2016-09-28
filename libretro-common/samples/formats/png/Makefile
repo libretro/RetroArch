@@ -1,6 +1,7 @@
 TARGET := rpng
 
-LIBRETRO_PNG_DIR  := ..
+CORE_DIR          := .
+LIBRETRO_PNG_DIR  := ../../../formats/png
 LIBRETRO_COMM_DIR := ../../..
 
 HAVE_IMLIB2=1
@@ -13,9 +14,11 @@ LDFLAGS += -lImlib2
 endif
 
 SOURCES_C := 	\
-	rpng_test.c \
+	$(CORE_DIR)/rpng_test.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
