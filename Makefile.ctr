@@ -30,10 +30,11 @@ OBJ += gfx/drivers/ctr_shaders/ctr_sprite.o
 OBJ += ctr/ctr_system.o
 OBJ += ctr/ctr_memory.o
 OBJ += ctr/ctr_linear.o
+OBJ += ctr/gpu_old.o
 
 ifeq ($(APP_BIG_TEXT_SECTION), 1)
 	APP_USE_SVCHAX = 1
-    LDFLAGS  += -Wl,--defsym,__ctr_patch_services=__service_ptr
+	LDFLAGS  += -Wl,--defsym,__ctr_patch_services=__service_ptr
 endif
 
 ifeq ($(APP_USE_SVCHAX), 1)
@@ -90,18 +91,13 @@ else
 endif
 
 
-ifeq ($(strip $(DEVKITARM)),)
-$(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
 endif
 
 ifeq ($(strip $(CTRULIB)),)
-$(error "Please set CTRULIB in your environment. export CTRULIB=<path to>ctrulib")
+	CTRULIB = $(DEVKITPRO)/ctrulib
 endif
-
-ifeq ($(strip $(AEMSTRO)),)
-$(error "Please set AEMSTRO in your environment. export AEMSTRO=<path to>aemstro")
-endif
-
 
 APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)
 APP_DESCRIPTION   := $(shell echo "$(APP_DESCRIPTION)" | cut -c1-256)
@@ -176,7 +172,7 @@ $(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
 $(TARGET).elf: $(OBJ) libretro_ctr.a
 
-PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
+PREFIX		:=	$(DEVKITPRO)/devkitARM/bin/arm-none-eabi-
 
 CC      := $(PREFIX)gcc
 CXX     := $(PREFIX)g++
@@ -199,13 +195,13 @@ else
 endif
 
 %.o: %.vsh %.gsh
-	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
-	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITPRO)/devkitARM/bin/picasso $^ -o $*.shbin
+	$(DEVKITPRO)/devkitARM/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.vsh
-	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
-	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	$(DEVKITPRO)/devkitARM/bin/picasso $^ -o $*.shbin
+	$(DEVKITPRO)/devkitARM/bin/bin2s $*.shbin | $(PREFIX)as -o $@
 	rm $*.shbin
 
 %.o: %.cpp
@@ -266,4 +262,5 @@ clean:
 	rm -f ctr/3dsx_custom_crt0.o
 
 .PHONY: clean
+
 
