@@ -127,7 +127,7 @@ uint32_t netplay_impl_magic(void)
 
 bool netplay_send_info(netplay_t *netplay)
 {
-   unsigned sram_size;
+   unsigned sram_size, remote_sram_size;
    retro_ctx_memory_info_t mem_info;
    char msg[512]             = {0};
    uint32_t *content_crc_ptr = NULL;
@@ -167,10 +167,13 @@ bool netplay_send_info(netplay_t *netplay)
       return false;
    }
 
-   if (mem_info.size != ntohl(header[2]))
+   /* Some cores only report the correct sram size late, so we can't actually
+    * error out if the sram size seems wrong. */
+   sram_size = mem_info.size;
+   remote_sram_size = ntohl(header[2]);
+   if (sram_size != 0 && remote_sram_size != 0 && sram_size != remote_sram_size)
    {
-      RARCH_ERR("Content SRAM sizes do not correspond.\n");
-      return false;
+      RARCH_WARN("Content SRAM sizes do not correspond.\n");
    }
 
    if (!netplay_send_nickname(netplay, netplay->fd))
@@ -181,14 +184,36 @@ bool netplay_send_info(netplay_t *netplay)
    }
 
    /* Get SRAM data from User 1. */
-   sram      = mem_info.data;
-   sram_size = mem_info.size;
-
-   if (!socket_receive_all_blocking(netplay->fd, sram, sram_size))
+   if (sram_size != 0 && sram_size == remote_sram_size)
    {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
-      return false;
+      sram      = mem_info.data;
+
+      if (!socket_receive_all_blocking(netplay->fd, sram, sram_size))
+      {
+         RARCH_ERR("%s\n",
+               msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+         return false;
+      }
+
+   }
+   else if (remote_sram_size != 0)
+   {
+      /* We can't load this, but we still need to get rid of the data */
+      uint32_t quickbuf;
+      while (remote_sram_size > 0)
+      {
+         if (!socket_receive_all_blocking(netplay->fd, &quickbuf, (remote_sram_size > sizeof(uint32_t)) ? sizeof(uint32_t) : remote_sram_size))
+         {
+            RARCH_ERR("%s\n",
+                  msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+            return false;
+         }
+         if (remote_sram_size > sizeof(uint32_t))
+            remote_sram_size -= sizeof(uint32_t);
+         else
+            remote_sram_size = 0;
+      }
+
    }
 
    if (!netplay_get_nickname(netplay, netplay->fd))
@@ -225,7 +250,7 @@ bool netplay_send_info(netplay_t *netplay)
 
 bool netplay_get_info(netplay_t *netplay)
 {
-   unsigned sram_size;
+   unsigned sram_size, remote_sram_size;
    uint32_t header[3];
    retro_ctx_memory_info_t mem_info;
    uint32_t *content_crc_ptr = NULL;
@@ -267,10 +292,11 @@ bool netplay_get_info(netplay_t *netplay)
       return false;
    }
 
-   if (mem_info.size != ntohl(header[2]))
+   sram_size = mem_info.size;
+   remote_sram_size = ntohl(header[2]);
+   if (sram_size != 0 && remote_sram_size != 0 && sram_size != remote_sram_size)
    {
-      RARCH_ERR("Content SRAM sizes do not correspond.\n");
-      return false;
+      RARCH_WARN("Content SRAM sizes do not correspond.\n");
    }
 
    if (!netplay_get_nickname(netplay, netplay->fd))
@@ -282,7 +308,6 @@ bool netplay_get_info(netplay_t *netplay)
 
    /* Send SRAM data to our User 2. */
    sram      = mem_info.data;
-   sram_size = mem_info.size;
 
    if (!socket_send_all_blocking(netplay->fd, sram, sram_size, false))
    {
