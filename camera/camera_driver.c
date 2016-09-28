@@ -194,7 +194,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
            runloop_msg_queue_push(
                  "Camera is explicitly disabled.\n", 1, 180, false);
         }
-        return false;
+        break;
       case RARCH_CAMERA_CTL_POLL:
         if (!camera_cb.caps)
            return false;
@@ -218,6 +218,9 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
 
         camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);
 
+        if (!camera_driver)
+           return false;
+
         camera_data = camera_driver->init(
               *settings->camera.device ? settings->camera.device : NULL,
               camera_cb.caps,
@@ -239,5 +242,5 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
          break;
    }
    
-   return false;
+   return true;
 }
