@@ -35,87 +35,7 @@
 #include "../../retroarch.h"
 #include "../../performance_counters.h"
 
-#define CTR_TOP_FRAMEBUFFER_WIDTH   400
-#define CTR_TOP_FRAMEBUFFER_HEIGHT  240
-#define CTR_TOP_FRAMEBUFFER_SIZE    (CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 4)
-
-#define CTR_VRAM_START              0x1F000000
-#define CTR_TOP_FRAMEBUFFER         ((void*)CTR_VRAM_START)
-#define CTR_TOP_FRAMEBUFFER_LEFT    ((void*)CTR_TOP_FRAMEBUFFER)
-#define CTR_TOP_FRAMEBUFFER_RIGHT   ((void*)((u32)CTR_TOP_FRAMEBUFFER_LEFT + CTR_TOP_FRAMEBUFFER_SIZE))
-
-#define CTR_GPU_DEPTHBUFFER         ((void*)(CTR_TOP_FRAMEBUFFER_RIGHT + CTR_TOP_FRAMEBUFFER_SIZE))
-
-
-extern const u8 ctr_sprite_shbin[];
-extern const u32 ctr_sprite_shbin_size;
-
-typedef struct
-{
-   float v;
-   float u;
-   float y;
-   float x;
-} ctr_scale_vector_t;
-
-typedef struct
-{
-   s16 x0, y0, x1, y1;
-   s16 u0, v0, u1, v1;
-} ctr_vertex_t;
-
-typedef enum
-{
-   CTR_VIDEO_MODE_NORMAL,
-   CTR_VIDEO_MODE_800x240,
-   CTR_VIDEO_MODE_400x240,
-   CTR_VIDEO_MODE_3D
-}ctr_video_mode_enum;
-
-typedef struct ctr_video
-{
-   struct
-   {
-      uint32_t* display_list;
-      int display_list_size;
-      void* texture_linear;
-      void* texture_swizzled;
-      int texture_width;
-      int texture_height;
-      ctr_scale_vector_t scale_vector;
-      ctr_vertex_t* frame_coords;
-   }menu;
-
-   uint32_t* display_list;
-   int display_list_size;
-   void* texture_linear;
-   void* texture_swizzled;
-   int texture_width;
-   int texture_height;
-
-   ctr_scale_vector_t scale_vector;
-   ctr_vertex_t* frame_coords;
-
-   DVLB_s*         dvlb;
-   shaderProgram_s shader;
-
-   video_viewport_t vp;
-
-   bool rgb32;
-   bool vsync;
-   bool smooth;
-   bool menu_texture_enable;
-   unsigned rotation;
-   bool keep_aspect;
-   bool should_resize;
-   bool lcd_buttom_on;
-
-   void* empty_framebuffer;
-
-   aptHookCookie lcd_aptHook;
-   ctr_video_mode_enum video_mode;
-   int current_buffer_top;
-} ctr_video_t;
+#include "../common/ctr_common.h"
 
 static INLINE void ctr_check_3D_slider(ctr_video_t* ctr)
 {
@@ -294,8 +214,8 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       GPUCMD_SetBufferOffset(0);
       shaderProgramUse(&ctr->shader);
 
-      GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
-                      VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER),
+      GPU_SetViewport(NULL,
+                      VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                       0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT, CTR_TOP_FRAMEBUFFER_WIDTH);
 
       GPU_DepthMap(-1.0f, 0.0f);
@@ -303,7 +223,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       GPU_SetStencilTest(false, GPU_ALWAYS, 0x00, 0xFF, 0x00);
       GPU_SetStencilOp(GPU_STENCIL_KEEP, GPU_STENCIL_KEEP, GPU_STENCIL_KEEP);
       GPU_SetBlendingColor(0, 0, 0, 0);
-      GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_ALL);
+      GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_COLOR);
       GPUCMD_AddMaskedWrite(GPUREG_EARLYDEPTH_TEST1, 0x1, 0);
       GPUCMD_AddWrite(GPUREG_EARLYDEPTH_TEST2, 0);
       GPU_SetAlphaBlending(GPU_BLEND_ADD, GPU_BLEND_ADD,
@@ -373,6 +293,8 @@ static void* ctr_init(const video_info_t* video,
    ctr->vp.full_width       = CTR_TOP_FRAMEBUFFER_WIDTH;
    ctr->vp.full_height      = CTR_TOP_FRAMEBUFFER_HEIGHT;
 
+   ctr->drawbuffers.top.left = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
+   ctr->drawbuffers.top.right = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
 
    ctr->display_list_size = 0x400;
    ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
@@ -427,8 +349,8 @@ static void* ctr_init(const video_info_t* video,
    ctrGuSetVshGsh(&ctr->shader, ctr->dvlb, 2, 2);
    shaderProgramUse(&ctr->shader);
 
-   GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
-                   VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER),
+   GPU_SetViewport(NULL,
+                   VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                    0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT, CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DepthMap(-1.0f, 0.0f);
@@ -437,7 +359,7 @@ static void* ctr_init(const video_info_t* video,
    GPU_SetStencilOp(GPU_STENCIL_KEEP, GPU_STENCIL_KEEP, GPU_STENCIL_KEEP);
    GPU_SetBlendingColor(0, 0, 0, 0);
 //      GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
-   GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_ALL);
+   GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_COLOR);
    //   GPU_SetDepthTestAndWriteMask(true, GPU_ALWAYS, GPU_WRITE_ALL);
 
    GPUCMD_AddMaskedWrite(GPUREG_EARLYDEPTH_TEST1, 0x1, 0);
@@ -465,7 +387,7 @@ static void* ctr_init(const video_info_t* video,
    GPUCMD_Finalize();
    ctrGuFlushAndRun(true);
 
-   ctrGuDisplayTransfer(true, CTR_TOP_FRAMEBUFFER, 240, 400, CTRGU_RGBA8,
+   ctrGuDisplayTransfer(true, ctr->drawbuffers.top.left, 240, 400, CTRGU_RGBA8,
                         gfxTopLeftFramebuffers[ctr->current_buffer_top],
                         240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
@@ -629,10 +551,10 @@ static bool ctr_frame(void* data, const void* frame,
    if (ctr->should_resize)
       ctr_update_viewport(ctr);
 
-   ctrGuSetMemoryFill(true, (u32*)CTR_TOP_FRAMEBUFFER, 0x00000000,
-                    (u32*)(CTR_TOP_FRAMEBUFFER + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
-                    0x201, (u32*)CTR_GPU_DEPTHBUFFER, 0x00000000,
-                    (u32*)(CTR_GPU_DEPTHBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
+   ctrGuSetMemoryFill(true, (u32*)ctr->drawbuffers.top.left, 0x00000000,
+                    (u32*)ctr->drawbuffers.top.left + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT,
+                    0x201, NULL, 0x00000000,
+                    0,
                     0x201);
 
    GPUCMD_SetBufferOffset(0);
@@ -717,8 +639,8 @@ static bool ctr_frame(void* data, const void* frame,
                     0xFF0000);
    }
 
-   GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
-                   VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER),
+   GPU_SetViewport(NULL,
+                   VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                    0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
                    ctr->video_mode == CTR_VIDEO_MODE_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
@@ -735,8 +657,8 @@ static bool ctr_frame(void* data, const void* frame,
          ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
          GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
       }
-      GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
-                      VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER_RIGHT),
+      GPU_SetViewport(NULL,
+                      VIRT_TO_PHYS(ctr->drawbuffers.top.right),
                       0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
                       CTR_TOP_FRAMEBUFFER_WIDTH);
    }
@@ -768,8 +690,8 @@ static bool ctr_frame(void* data, const void* frame,
                      GPU_RGBA4);
 
       ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->menu.scale_vector, 1);
-      GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
-                      VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER),
+      GPU_SetViewport(NULL,
+                      VIRT_TO_PHYS(ctr->drawbuffers.top.left),
                       0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
                       ctr->video_mode == CTR_VIDEO_MODE_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
@@ -778,8 +700,8 @@ static bool ctr_frame(void* data, const void* frame,
 
       if (ctr->video_mode == CTR_VIDEO_MODE_3D)
       {
-         GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
-                         VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER_RIGHT),
+         GPU_SetViewport(NULL,
+                         VIRT_TO_PHYS(ctr->drawbuffers.top.right),
                          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
                          CTR_TOP_FRAMEBUFFER_WIDTH);
          GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
@@ -790,7 +712,7 @@ static bool ctr_frame(void* data, const void* frame,
    GPUCMD_Finalize();
    ctrGuFlushAndRun(true);
 
-   ctrGuDisplayTransfer(true, CTR_TOP_FRAMEBUFFER,
+   ctrGuDisplayTransfer(true, ctr->drawbuffers.top.left,
                         240,
                         ctr->video_mode == CTR_VIDEO_MODE_800x240 ? 800 : 400,
                         CTRGU_RGBA8,
@@ -798,7 +720,7 @@ static bool ctr_frame(void* data, const void* frame,
 
 
    if ((ctr->video_mode == CTR_VIDEO_MODE_400x240) || (ctr->video_mode == CTR_VIDEO_MODE_3D))
-      ctrGuDisplayTransfer(true, CTR_TOP_FRAMEBUFFER_RIGHT,
+      ctrGuDisplayTransfer(true, ctr->drawbuffers.top.right,
                            240,
                            400,
                            CTRGU_RGBA8,
@@ -884,6 +806,7 @@ static void ctr_free(void* data)
    aptUnhook(&ctr->lcd_aptHook);
    shaderProgramFree(&ctr->shader);
    DVLB_Free(ctr->dvlb);
+   vramFree(ctr->drawbuffers.top.left);
    linearFree(ctr->display_list);
    linearFree(ctr->texture_linear);
    linearFree(ctr->texture_swizzled);
