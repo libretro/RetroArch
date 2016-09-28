@@ -36,6 +36,7 @@
 #include "../../verbosity.h"
 #include "../../defaults.h"
 #include "retroarch.h"
+#include "file_path_special.h"
 #include "audio/audio_driver.h"
 
 #include "ctr/ctr_debug.h"
