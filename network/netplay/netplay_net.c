@@ -27,6 +27,8 @@
 
 #include "../../autosave.h"
 
+#define TOO_EARLY_TO_SAVE 60
+
 static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *delta)
 {
    if (netplay_is_server(netplay))
@@ -66,7 +68,12 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       serial_info.data = netplay->buffer[netplay->self_ptr].state;
       serial_info.size = netplay->state_size;
 
-      if (core_serialize(&serial_info))
+      if (!netplay->has_connection && netplay->self_frame_count < TOO_EARLY_TO_SAVE)
+      {
+         /* WORKAROUND: Some cores don't like being save/loadstated too early.
+          * If we're not even connected yet, just don't bother. */
+      }
+      else if (netplay->savestates_work && core_serialize(&serial_info))
       {
          if (netplay->force_send_savestate)
          {
@@ -173,6 +180,30 @@ static void netplay_net_post_frame(netplay_t *netplay)
    netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
    netplay->self_frame_count++;
 
+   /* WORKAROUND: We initialize the buffer states late to work around cores
+    * that can't even core_serialize_size early. */
+   if (netplay->self_frame_count == 1 && netplay->state_size == 0)
+   {
+      int i;
+      retro_ctx_size_info_t info;
+
+      core_serialize_size(&info);
+
+      netplay->state_size = info.size;
+
+      for (i = 0; i < netplay->buffer_size; i++)
+      {
+         netplay->buffer[i].state = calloc(netplay->state_size, 1);
+
+         if (!netplay->buffer[i].state)
+         {
+            netplay->savestates_work = false;
+            netplay->stall_frames = 0;
+         }
+      }
+   }
+
+
    /* Only relevant if we're connected */
    if (!netplay->has_connection)
       return;
@@ -207,6 +238,24 @@ static void netplay_net_post_frame(netplay_t *netplay)
       netplay->is_replay = true;
       netplay->replay_ptr = netplay->other_ptr;
       netplay->replay_frame_count = netplay->other_frame_count;
+
+      /* WORKAROUND: Some cores cannot serialize or unserialize too early in
+       * execution. We avoid the problem by forcing some phantom frames to
+       * pass. */
+      if (netplay->self_frame_count < TOO_EARLY_TO_SAVE)
+      {
+         int frameskip;
+         for (frameskip = 0; frameskip < TOO_EARLY_TO_SAVE; frameskip++)
+         {
+#if defined(HAVE_THREADS)
+            autosave_lock();
+#endif
+            core_run();
+#if defined(HAVE_THREADS)
+            autosave_unlock();
+#endif
+         }
+      }
 
       serial_info.data       = NULL;
       serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
