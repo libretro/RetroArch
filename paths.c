@@ -69,20 +69,14 @@ void path_set_redirect(void)
    char current_savestate_dir[PATH_MAX_LENGTH] = {0};
    uint32_t global_library_name_hash           = 0;
    bool check_global_library_name_hash         = false;
-   global_t                *global             = global_get_ptr();
    rarch_system_info_t      *info              = NULL;
-   const char *old_savefile_dir                = NULL;
-   const char *old_savestate_dir               = NULL;
+   global_t                *global             = global_get_ptr();
+   const char *old_savefile_dir                = dir_get_savefile();
+   const char *old_savestate_dir               = dir_get_savestate();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
-   if (!global)
-      return;
-
-   old_savefile_dir  = dir_get_savefile();
-   old_savestate_dir = dir_get_savestate();
-
-   if (info->info.library_name &&
+   if (info && info->info.library_name &&
          !string_is_empty(info->info.library_name))
       global_library_name_hash =
          msg_hash_calculate(info->info.library_name);
@@ -172,42 +166,45 @@ void path_set_redirect(void)
       path_basedir(current_savefile_dir);
    }
 
-   if(path_is_directory(current_savefile_dir))
-      strlcpy(global->name.savefile, current_savefile_dir,
-            sizeof(global->name.savefile));
-
-   if(path_is_directory(current_savestate_dir))
-      strlcpy(global->name.savestate, current_savestate_dir,
-            sizeof(global->name.savestate));
-
-   if (path_is_directory(global->name.savefile))
+   if (global)
    {
-      fill_pathname_dir(global->name.savefile, path_main_basename,
-            file_path_str(FILE_PATH_SRM_EXTENSION),
-            sizeof(global->name.savefile));
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-            global->name.savefile);
-   }
+      if(path_is_directory(current_savefile_dir))
+         strlcpy(global->name.savefile, current_savefile_dir,
+               sizeof(global->name.savefile));
 
-   if (path_is_directory(global->name.savestate))
-   {
-      fill_pathname_dir(global->name.savestate, path_main_basename,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(global->name.savestate));
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
-            global->name.savestate);
-   }
+      if(path_is_directory(current_savestate_dir))
+         strlcpy(global->name.savestate, current_savestate_dir,
+               sizeof(global->name.savestate));
 
-   if (path_is_directory(global->name.cheatfile))
-   {
-      fill_pathname_dir(global->name.cheatfile, path_main_basename,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(global->name.cheatfile));
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
-            global->name.cheatfile);
+      if (path_is_directory(global->name.savefile))
+      {
+         fill_pathname_dir(global->name.savefile, path_main_basename,
+               file_path_str(FILE_PATH_SRM_EXTENSION),
+               sizeof(global->name.savefile));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+               global->name.savefile);
+      }
+
+      if (path_is_directory(global->name.savestate))
+      {
+         fill_pathname_dir(global->name.savestate, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION),
+               sizeof(global->name.savestate));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+               global->name.savestate);
+      }
+
+      if (path_is_directory(global->name.cheatfile))
+      {
+         fill_pathname_dir(global->name.cheatfile, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION),
+               sizeof(global->name.cheatfile));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
+               global->name.cheatfile);
+      }
    }
 }
 
@@ -302,7 +299,7 @@ void path_set_special(char **argv, unsigned num_content)
 
 static bool path_init_subsystem(void)
 {
-   unsigned i, j, num_content;
+   unsigned i, j;
    const struct retro_subsystem_info *info = NULL;
    rarch_system_info_t             *system = NULL;
    global_t                        *global = global_get_ptr();
@@ -323,41 +320,44 @@ static bool path_init_subsystem(void)
          path_get_subsystem());
 
    /* We'll handle this error gracefully later. */
-   num_content = MIN(info ? info->num_roms : 0,
-         path_is_subsystem_empty() ?
-         0 : subsystem_fullpaths->size);
 
-
-   for (i = 0; i < num_content; i++)
+   if (info)
    {
-      for (j = 0; j < info->roms[i].num_memory; j++)
+      unsigned num_content = MIN(info->num_roms,
+            path_is_subsystem_empty() ?
+            0 : subsystem_fullpaths->size);
+
+      for (i = 0; i < num_content; i++)
       {
-         union string_list_elem_attr attr;
-         char path[PATH_MAX_LENGTH] = {0};
-         char ext[32] = {0};
-         const struct retro_subsystem_memory_info *mem =
-            (const struct retro_subsystem_memory_info*)
-            &info->roms[i].memory[j];
-
-         snprintf(ext, sizeof(ext), ".%s", mem->extension);
-
-         if (path_is_directory(dir_get_savefile()))
+         for (j = 0; j < info->roms[i].num_memory; j++)
          {
-            /* Use SRAM dir */
-            /* Redirect content fullpath to save directory. */
-            strlcpy(path, dir_get_savefile(), sizeof(path));
-            fill_pathname_dir(path,
-                  subsystem_fullpaths->elems[i].data, ext,
-                  sizeof(path));
-         }
-         else
-         {
-            fill_pathname(path, subsystem_fullpaths->elems[i].data,
-                  ext, sizeof(path));
-         }
+            union string_list_elem_attr attr;
+            char path[PATH_MAX_LENGTH] = {0};
+            char ext[32] = {0};
+            const struct retro_subsystem_memory_info *mem =
+               (const struct retro_subsystem_memory_info*)
+               &info->roms[i].memory[j];
 
-         attr.i = mem->type;
-         string_list_append((struct string_list*)savefile_ptr_get(), path, attr);
+            snprintf(ext, sizeof(ext), ".%s", mem->extension);
+
+            if (path_is_directory(dir_get_savefile()))
+            {
+               /* Use SRAM dir */
+               /* Redirect content fullpath to save directory. */
+               strlcpy(path, dir_get_savefile(), sizeof(path));
+               fill_pathname_dir(path,
+                     subsystem_fullpaths->elems[i].data, ext,
+                     sizeof(path));
+            }
+            else
+            {
+               fill_pathname(path, subsystem_fullpaths->elems[i].data,
+                     ext, sizeof(path));
+            }
+
+            attr.i = mem->type;
+            string_list_append((struct string_list*)savefile_ptr_get(), path, attr);
+         }
       }
    }
 
