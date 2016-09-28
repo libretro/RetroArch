@@ -166,7 +166,6 @@ typedef struct global
    {
       bool load_disable;
       bool save_disable;
-      bool use;
    } sram;
 
 #ifdef HAVE_NETPLAY

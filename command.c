@@ -2053,12 +2053,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUTOSAVE_DEINIT:
 #ifdef HAVE_THREADS
-         {
-            global_t  *global         = global_get_ptr();
-            if (!global->sram.use)
-               return false;
-            autosave_deinit();
-         }
+         if (!rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
+            return false;
+         autosave_deinit();
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_INIT:

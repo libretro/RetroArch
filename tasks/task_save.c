@@ -41,6 +41,7 @@
 #include "../file_path_special.h"
 #include "../configuration.h"
 #include "../msg_hash.h"
+#include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
@@ -919,9 +920,8 @@ bool content_save_ram_file(unsigned slot)
 bool event_save_files(void)
 {
    unsigned i;
-   global_t  *global         = global_get_ptr();
 
-   if (!global || !task_save_files || !global->sram.use)
+   if (!task_save_files || !rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
       return false;
 
    for (i = 0; i < task_save_files->size; i++)

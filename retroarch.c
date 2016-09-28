@@ -1085,6 +1085,7 @@ error:
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
+   static bool rarch_use_sram              = false;
    settings_t *settings                    = config_get_ptr();
 
    switch(state)
@@ -1181,14 +1182,17 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             return false;
          path_set_redirect();
          break;
+      case RARCH_CTL_IS_SRAM_USED:
+         return rarch_use_sram;
       case RARCH_CTL_SET_SRAM_ENABLE:
-         {
-            global_t *global                        = global_get_ptr();
-
-            if (global)
-               global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
-                  && !content_does_not_need_content();
-         }
+         rarch_use_sram = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
+            && !content_does_not_need_content();
+         break;
+      case RARCH_CTL_SET_SRAM_ENABLE_FORCE:
+         rarch_use_sram = true;
+         break;
+      case RARCH_CTL_UNSET_SRAM_ENABLE:
+         rarch_use_sram = false;
          break;
       case RARCH_CTL_SET_ERROR_ON_INIT:
          rarch_error_on_init = true;

@@ -384,24 +384,32 @@ static bool path_init_subsystem(void)
 
 void path_init_savefile(void)
 {
+   bool should_sram_be_used  = false;
    global_t  *global         = global_get_ptr();
 
    if (!global)
       return;
 
-   global->sram.use = global->sram.use && !global->sram.save_disable;
+   should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL) && !global->sram.save_disable;
 #ifdef HAVE_NETPLAY
-   global->sram.use = global->sram.use &&
+   should_sram_be_used = should_sram_be_used &&
       (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL)
        || !global->netplay.is_client);
 #endif
 
-   if (!global->sram.use)
-      RARCH_LOG("%s\n",
-            msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
+   if (should_sram_be_used)
+      rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE_FORCE, NULL);
+   else
+      rarch_ctl(RARCH_CTL_UNSET_SRAM_ENABLE, NULL);
 
-   if (global->sram.use)
+   if (rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
+   {
       command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+      return;
+   }
+
+   RARCH_LOG("%s\n",
+         msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
 }
 
 static void path_init_savefile_internal(void)
