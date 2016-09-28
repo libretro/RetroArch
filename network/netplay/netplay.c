@@ -944,8 +944,6 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 
 static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
 {
-   unsigned i;
-
    if (!netplay)
       return false;
 
