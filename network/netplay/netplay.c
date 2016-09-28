@@ -598,7 +598,7 @@ static bool netplay_poll(netplay_t *netplay)
 
    /* WORKAROUND: The only reason poll_input is ignored in the first frame is
     * that some cores can't report state size until after the first frame. */
-   if (netplay->self_frame_count > 0)
+   if (netplay->self_frame_count > 0 || netplay->stall)
    {
       /* Read Netplay input, block if we're configured to stall for input every
        * frame */

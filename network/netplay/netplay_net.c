@@ -261,7 +261,10 @@ static void netplay_net_post_frame(netplay_t *netplay)
       serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
       serial_info.size       = netplay->state_size;
 
-      core_unserialize(&serial_info);
+      if (!core_unserialize(&serial_info))
+      {
+         RARCH_ERR("Netplay savestate loading failed: Prepare for desync!\n");
+      }
 
       while (netplay->replay_frame_count < netplay->self_frame_count)
       {
