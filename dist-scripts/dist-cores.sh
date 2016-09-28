@@ -148,6 +148,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
       big_stack="BIG_STACK=1"
    elif [ $name = "mupen64plus" ] ; then
       async=1
+   elif [ $name = "dosbox" ] ; then
+      async=1
    fi
    echo "-- Building core: $name --"
    if [ $PLATFORM = "unix" ]; then
