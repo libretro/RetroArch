@@ -806,7 +806,6 @@ static bool ctr_frame(void* data, const void* frame,
 
 
    // Swap buffers :
-   ctr->current_buffer_top ^= 1;
    extern GSPGPU_FramebufferInfo topFramebufferInfo;
    extern u8* gfxSharedMemory;
    extern u8 gfxThreadID;
@@ -834,6 +833,8 @@ static bool ctr_frame(void* data, const void* frame,
 	framebufferInfoHeader[0x0] ^= 1;
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
 	framebufferInfoHeader[0x1]=1;
+
+   ctr->current_buffer_top ^= 1;
 
    performance_counter_stop(&ctrframe_f);
 
