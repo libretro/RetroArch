@@ -920,20 +920,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_CORE_OPTIONS_INIT:
          {
+            settings_t *settings              = config_get_ptr();
             char *game_options_path           = NULL;
             bool ret                          = false;
-            char buf[PATH_MAX_LENGTH]         = {0};
-            settings_t *settings              = config_get_ptr();
-            const char *options_path          = settings ? settings->path.core_options : NULL;
             const struct retro_variable *vars =
                (const struct retro_variable*)data;
-
-            if (string_is_empty(options_path) && !path_is_config_empty())
-            {
-               fill_pathname_resolve_relative(buf, path_get_config(),
-                     file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
-               options_path = buf;
-            }
 
             if (settings && settings->game_specific_options)
                ret = rarch_game_specific_options(&game_options_path);
@@ -947,6 +938,19 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             }
             else
             {
+               char buf[PATH_MAX_LENGTH]         = {0};
+               const char *options_path          = NULL;
+
+               if (settings)
+                  options_path = settings->path.core_options;
+
+               if (options_path && string_is_empty(options_path) && !path_is_config_empty())
+               {
+                  fill_pathname_resolve_relative(buf, path_get_config(),
+                        file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
+                  options_path = buf;
+               }
+
                runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
                runloop_core_options =
                   core_option_manager_new(options_path, vars);
