@@ -79,7 +79,7 @@ static void vita2d_font_free_font(void *data)
 	 if (font->font_driver && font->font_data)
 			font->font_driver->free(font->font_data);
 
-	 vita2d_wait_rendering_done();
+	 //vita2d_wait_rendering_done();
    vita2d_free_texture(font->texture);
 
 	 free(font);
