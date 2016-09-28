@@ -384,14 +384,11 @@ static bool path_init_subsystem(void)
 
 void path_init_savefile(void)
 {
-   bool should_sram_be_used  = false;
-   global_t  *global         = global_get_ptr();
-
-   if (!global)
-      return;
-
-   should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL) && !global->sram.save_disable;
+   bool should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL) 
+      && !rarch_ctl(RARCH_CTL_IS_SRAM_SAVE_DISABLED, NULL);
 #ifdef HAVE_NETPLAY
+   global_t *global         = global_get_ptr();
+
    should_sram_be_used = should_sram_be_used &&
       (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL)
        || !global->netplay.is_client);

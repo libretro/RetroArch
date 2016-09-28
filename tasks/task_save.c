@@ -933,11 +933,8 @@ bool event_save_files(void)
 bool event_load_save_files(void)
 {
    unsigned i;
-   global_t *global = global_get_ptr();
 
-   if (!global)
-      return false;
-   if (!task_save_files || global->sram.load_disable)
+   if (!task_save_files || rarch_ctl(RARCH_CTL_IS_SRAM_LOAD_DISABLED, NULL))
       return false;
 
    for (i = 0; i < task_save_files->size; i++)

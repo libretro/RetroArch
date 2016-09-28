@@ -162,12 +162,6 @@ typedef struct global
       bool ips_pref;
    } patch;
 
-   struct
-   {
-      bool load_disable;
-      bool save_disable;
-   } sram;
-
 #ifdef HAVE_NETPLAY
    /* Netplay. */
    struct

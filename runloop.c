@@ -741,6 +741,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 
             rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+            rarch_ctl(RARCH_CTL_UNSET_SRAM_LOAD_DISABLED, NULL);
+            rarch_ctl(RARCH_CTL_UNSET_SRAM_SAVE_DISABLED, NULL);
             rarch_ctl(RARCH_CTL_UNSET_SRAM_ENABLE, NULL);
             path_clear_content();
             runloop_overrides_active   = false;
