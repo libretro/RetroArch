@@ -601,13 +601,13 @@ static const struct retro_subsystem_info *init_content_file_subsystem(bool *ret)
    if (system)
       special =
          libretro_find_subsystem_info(system->subsystem.data,
-               system->subsystem.size, path_get_subsystem());
+               system->subsystem.size, path_get(RARCH_PATH_SUBSYSTEM));
 
    if (!special)
    {
       RARCH_ERR(
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
-            path_get_subsystem());
+            path_get(RARCH_PATH_SUBSYSTEM));
       goto error;
    }
 
@@ -848,8 +848,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
    if (fullpath && *fullpath)
       wrap_args->content_path  = fullpath;
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO))
-      wrap_args->libretro_path = string_is_empty(path_get_core()) ? NULL :
-         path_get_core();
+      wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE)) ? NULL :
+         path_get(RARCH_PATH_CORE);
 
 }
 #endif
@@ -952,7 +952,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
 #endif
                break;
             default:
-               core_path            = path_get_core();
+               core_path            = path_get(RARCH_PATH_CORE);
                core_name            = info->library_name;
                break;
          }

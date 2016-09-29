@@ -55,6 +55,7 @@ void path_fill_names(void);
 
 /* set functions */
 
+
 bool path_set(enum rarch_path_type type, const char *path);
 
 void path_set_redirect(void);
@@ -79,15 +80,13 @@ struct string_list *path_get_subsystem_list(void);
 
 /* get functions */
 
-const char *path_get_subsystem(void);
+const char *path_get(enum rarch_path_type type);
 
 bool path_get_content(char **fullpath);
 
 const char *path_get_current_savefile_dir(void);
 
 const char *path_get_basename(void);
-
-const char *path_get_core(void);
 
 const char *path_get_core_options(void);
 

@@ -302,7 +302,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
             if(!string_is_equal(info->systemname, current_core->systemname))
                break;
 
-            if(string_is_equal(path_get_core(), info->path))
+            if(string_is_equal(path_get(RARCH_PATH_CORE), info->path))
             {
                /* Our previous core supports the current rom */
                content_ctx_info_t content_info = {0};

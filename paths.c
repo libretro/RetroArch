@@ -318,7 +318,7 @@ static bool path_init_subsystem(void)
    info = libretro_find_subsystem_info(
          system->subsystem.data,
          system->subsystem.size,
-         path_get_subsystem());
+         path_get(RARCH_PATH_SUBSYSTEM));
 
    /* We'll handle this error gracefully later. */
 
@@ -468,11 +468,6 @@ void path_fill_names(void)
 
 /* Core file path */
 
-const char *path_get_subsystem(void)
-{
-   return subsystem_path;
-}
-
 const char *path_get_basename(void)
 {
    return path_main_basename;
@@ -483,9 +478,20 @@ char *path_get_core_ptr(void)
    return path_libretro;
 }
 
-const char *path_get_core(void)
+const char *path_get(enum rarch_path_type type)
 {
-   return path_libretro;
+   switch (type)
+   {
+      case RARCH_PATH_SUBSYSTEM:
+         return subsystem_path;
+      case RARCH_PATH_CORE:
+         return path_libretro;
+      default:
+      case RARCH_PATH_NONE:
+         break;
+   }
+
+   return NULL;
 }
 
 bool path_is_core_empty(void)

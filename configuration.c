@@ -2049,10 +2049,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
    /* Safe-guard against older behavior. */
-   if (path_is_directory(path_get_core()))
+   if (path_is_directory(path_get(RARCH_PATH_CORE)))
    {
       RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
-      strlcpy(settings->directory.libretro, path_get_core(),
+      strlcpy(settings->directory.libretro, path_get(RARCH_PATH_CORE),
             sizeof(settings->directory.libretro));
       path_clear_core();
    }
@@ -2283,7 +2283,7 @@ bool config_load_override(void)
 
    /* Store the libretro_path we're using since it will be 
     * overwritten by the override when reloading. */
-   strlcpy(buf, path_get_core(), sizeof(buf));
+   strlcpy(buf, path_get(RARCH_PATH_CORE), sizeof(buf));
 
    /* Toggle has_save_path to false so it resets */
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);

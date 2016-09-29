@@ -1499,7 +1499,7 @@ static bool command_event_save_core_config(void)
    }
 
    /* Infer file name based on libretro core. */
-   if (!string_is_empty(path_get_core()) && path_file_exists(path_get_core()))
+   if (!string_is_empty(path_get(RARCH_PATH_CORE)) && path_file_exists(path_get(RARCH_PATH_CORE)))
    {
       unsigned i;
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
@@ -1511,7 +1511,7 @@ static bool command_event_save_core_config(void)
 
          fill_pathname_base_noext(
                config_name,
-               path_get_core(),
+               path_get(RARCH_PATH_CORE),
                sizeof(config_name));
 
          fill_pathname_join(config_path, config_dir, config_name,
@@ -1842,14 +1842,14 @@ bool command_event(enum event_command cmd, void *data)
                core_info_ctx_find_t info_find;
 
 #if defined(HAVE_DYNAMIC)
-               if (string_is_empty(path_get_core()))
+               if (string_is_empty(path_get(RARCH_PATH_CORE)))
                   return false;
 #endif
                libretro_get_system_info(
-                     path_get_core(),
+                     path_get(RARCH_PATH_CORE),
                      system,
                      ptr);
-               info_find.path = path_get_core();
+               info_find.path = path_get(RARCH_PATH_CORE);
 
                if (!core_info_load(&info_find))
                {
