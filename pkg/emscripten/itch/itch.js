@@ -4,7 +4,7 @@
  * This provides the basic JavaScript for the RetroArch web player.
  */
 var client = new Dropbox.Client({ key: "il6e10mfd7pgf8r" });
-var BrowserFS = browserfs;
+var BrowserFS = BrowserFS;
 var afs;
 
 var showError = function(error) {
