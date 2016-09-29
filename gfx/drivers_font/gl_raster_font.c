@@ -326,7 +326,12 @@ static void gl_raster_font_render_line(
          unsigned skip                  = msg_tmp - &msg[i];
 
          if (skip > 1)
+         {
             i += skip - 1;
+
+            if (i >= msg_len)
+               break;
+         }
 
          glyph = font->font_driver->get_glyph(font->font_data, code);
 
