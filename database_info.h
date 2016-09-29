@@ -22,6 +22,7 @@
 #include <stddef.h>
 
 #include <file/archive_file.h>
+#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
