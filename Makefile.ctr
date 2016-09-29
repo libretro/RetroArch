@@ -44,7 +44,7 @@ endif
 DEFINES :=
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
-	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI
+	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_MATERIALUI
 	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_BUILTIN_AUTOCONFIG
 else
 	HAVE_MENU_COMMON = 1
@@ -65,6 +65,8 @@ else
 	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
 
 	OBJ += gfx/drivers/ctr_gfx.o
+	OBJ += gfx/drivers_font/ctr_font.o
+	OBJ += menu/drivers_display/menu_display_ctr.o
 	OBJ += input/drivers/ctr_input.o
 	OBJ += input/drivers_joypad/ctr_joypad.o
 	OBJ += audio/drivers/ctr_csnd_audio.o

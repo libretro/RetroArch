@@ -381,6 +381,11 @@ FONTS
 #include "../gfx/drivers_font/vita2d_font.c"
 #endif
 
+#if defined(_3DS)
+#include "../gfx/drivers_font/ctr_font.c"
+#endif
+
+
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_font/vulkan_raster_font.c"
 #endif
@@ -950,6 +955,10 @@ MENU
 #include "../menu/drivers_display/menu_display_vita2d.c"
 #endif
 
+#ifdef _3DS
+#include "../menu/drivers_display/menu_display_ctr.c"
+#endif
+
 #endif
 
 
@@ -957,7 +966,7 @@ MENU
 #include "../menu/drivers/rgui.c"
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D)
+#if defined(HAVE_OPENGL) || defined(HAVE_VITA2D) || defined(_3DS)
 #ifdef HAVE_XMB
 #include "../menu/drivers/xmb.c"
 #endif

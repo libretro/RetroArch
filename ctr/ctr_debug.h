@@ -21,5 +21,6 @@ void dump_result_value(Result val);
 #define DEBUG_ERROR(X) do{if(X)dump_result_value(X)}while(0)
 #define PRINTFPOS(X,Y) "\x1b["#X";"#Y"H"
 #define PRINTFPOS_STR(X,Y) "\x1b["X";"Y"H"
+#define PRINTF_LINE(X) "\x1b["X";0H"
 
 #endif //_CTR_DEBUG_H__

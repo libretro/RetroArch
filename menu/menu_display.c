@@ -62,6 +62,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_VITA2D
    &menu_display_ctx_vita2d,
 #endif
+#ifdef _3DS
+   &menu_display_ctx_ctr,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -111,6 +114,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_VITA2D:
          if (string_is_equal(video_driver, "vita2d"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_CTR:
+         if (string_is_equal(video_driver, "ctr"))
             return true;
          break;
    }

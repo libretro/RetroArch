@@ -201,6 +201,34 @@ static bool vita2d_font_init_first(
 }
 #endif
 
+#ifdef _3DS
+static const font_renderer_t *ctr_font_backends[] = {
+   &ctr_font
+};
+
+static bool ctr_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size)
+{
+   unsigned i;
+
+   for (i = 0; ctr_font_backends[i]; i++)
+   {
+      void *data = ctr_font_backends[i]->init(
+            video_data, font_path, font_size);
+
+      if (!data)
+         continue;
+
+      *font_driver = ctr_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 static bool font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
@@ -229,6 +257,11 @@ static bool font_init_first(
 #ifdef HAVE_VITA2D
       case FONT_DRIVER_RENDER_VITA2D:
          return vita2d_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size);
+#endif
+#ifdef _3DS
+      case FONT_DRIVER_RENDER_CTR:
+         return ctr_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size);
 #endif
       case FONT_DRIVER_RENDER_DONT_CARE:
