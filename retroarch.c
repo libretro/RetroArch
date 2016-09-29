@@ -1088,10 +1088,46 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    static bool rarch_is_sram_load_disabled = false;
    static bool rarch_is_sram_save_disabled = false;
    static bool rarch_use_sram              = false;
+   static bool rarch_ups_pref              = false;
+   static bool rarch_bps_pref              = false;
+   static bool rarch_ips_pref              = false;
+   static bool rarch_patch_blocked         = false;
    settings_t *settings                    = config_get_ptr();
 
    switch(state)
    {
+      case RARCH_CTL_IS_PATCH_BLOCKED:
+         return rarch_patch_blocked;
+      case RARCH_CTL_SET_PATCH_BLOCKED:
+         rarch_patch_blocked = true;
+         break;
+      case RARCH_CTL_UNSET_PATCH_BLOCKED:
+         rarch_patch_blocked = false;
+         break;
+      case RARCH_CTL_IS_BPS_PREF:
+         return rarch_bps_pref;
+      case RARCH_CTL_SET_BPS_PREF:
+         rarch_bps_pref = true;
+         break;
+      case RARCH_CTL_UNSET_BPS_PREF:
+         rarch_bps_pref = false;
+         break;
+      case RARCH_CTL_IS_UPS_PREF:
+         return rarch_ups_pref;
+      case RARCH_CTL_SET_UPS_PREF:
+         rarch_ups_pref = true;
+         break;
+      case RARCH_CTL_UNSET_UPS_PREF:
+         rarch_ups_pref = false;
+         break;
+      case RARCH_CTL_IS_IPS_PREF:
+         return rarch_ips_pref;
+      case RARCH_CTL_SET_IPS_PREF:
+         rarch_ips_pref = true;
+         break;
+      case RARCH_CTL_UNSET_IPS_PREF:
+         rarch_ips_pref = false;
+         break;
       case RARCH_CTL_IS_PLAIN_CORE:
          return (current_core_type == CORE_TYPE_PLAIN);
       case RARCH_CTL_IS_DUMMY_CORE:
