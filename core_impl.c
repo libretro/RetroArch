@@ -257,7 +257,8 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
    if (load_info && load_info->special)
-      core_game_loaded = core.retro_load_game_special(load_info->special->id, load_info->info, load_info->content->size);
+      core_game_loaded = core.retro_load_game_special(
+            load_info->special->id, load_info->info, load_info->content->size);
    else if (load_info && *load_info->content->elems[0].data)
       core_game_loaded = core.retro_load_game(load_info->info);
    else
@@ -373,7 +374,10 @@ bool core_run(void)
       case POLL_TYPE_LATE:
          core_input_polled = false;
          break;
+      default:
+         break;
    }
+
    if (core.retro_run)
       core.retro_run();
    if (core_poll_type == POLL_TYPE_LATE && !core_input_polled)
@@ -384,6 +388,7 @@ bool core_run(void)
 bool core_load(void)
 {
    settings_t *settings = config_get_ptr();
+
    core_poll_type = settings->input.poll_type_behavior;
 
    if (!core_verify_api_version())

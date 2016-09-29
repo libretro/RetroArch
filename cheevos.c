@@ -72,22 +72,22 @@
 
 enum
 {
-   CHEEVOS_CONSOLE_MEGA_DRIVE      = 1,
-   CHEEVOS_CONSOLE_NINTENDO_64     = 2,
-   CHEEVOS_CONSOLE_SUPER_NINTENDO  = 3,
-   CHEEVOS_CONSOLE_GAMEBOY         = 4,
-   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE = 5,
-   CHEEVOS_CONSOLE_GAMEBOY_COLOR   = 6,
-   CHEEVOS_CONSOLE_NINTENDO        = 7,
-   CHEEVOS_CONSOLE_PC_ENGINE       = 8,
-   CHEEVOS_CONSOLE_SEGA_CD         = 9,
-   CHEEVOS_CONSOLE_SEGA_32X        = 10,
-   CHEEVOS_CONSOLE_MASTER_SYSTEM   = 11
+   CHEEVOS_CONSOLE_MEGA_DRIVE = 1,
+   CHEEVOS_CONSOLE_NINTENDO_64,
+   CHEEVOS_CONSOLE_SUPER_NINTENDO,
+   CHEEVOS_CONSOLE_GAMEBOY,
+   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE,
+   CHEEVOS_CONSOLE_GAMEBOY_COLOR,
+   CHEEVOS_CONSOLE_NINTENDO,
+   CHEEVOS_CONSOLE_PC_ENGINE,
+   CHEEVOS_CONSOLE_SEGA_CD,
+   CHEEVOS_CONSOLE_SEGA_32X,
+   CHEEVOS_CONSOLE_MASTER_SYSTEM
 };
 
 enum
 {
-   CHEEVOS_VAR_SIZE_BIT_0,
+   CHEEVOS_VAR_SIZE_BIT_0 = 0,
    CHEEVOS_VAR_SIZE_BIT_1,
    CHEEVOS_VAR_SIZE_BIT_2,
    CHEEVOS_VAR_SIZE_BIT_3,
@@ -108,7 +108,7 @@ enum
 enum
 {
    /* compare to the value of a live address in RAM */
-   CHEEVOS_VAR_TYPE_ADDRESS,
+   CHEEVOS_VAR_TYPE_ADDRESS = 0,
 
    /* a number. assume 32 bit */
    CHEEVOS_VAR_TYPE_VALUE_COMP,  
@@ -124,7 +124,7 @@ enum
 
 enum
 {
-   CHEEVOS_COND_OP_EQUALS,
+   CHEEVOS_COND_OP_EQUALS = 0,
    CHEEVOS_COND_OP_LESS_THAN,
    CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL,
    CHEEVOS_COND_OP_GREATER_THAN,
@@ -136,7 +136,7 @@ enum
 
 enum
 {
-   CHEEVOS_COND_TYPE_STANDARD,
+   CHEEVOS_COND_TYPE_STANDARD = 0,
    CHEEVOS_COND_TYPE_PAUSE_IF,
    CHEEVOS_COND_TYPE_RESET_IF,
 
@@ -441,12 +441,11 @@ static int cheevos_count__json_key(void *userdata,
 static int cheevos_count__json_number(void *userdata,
       const char *number, size_t length)
 {
-   long flags;
    cheevos_countud_t* ud = (cheevos_countud_t*)userdata;
 
    if (ud->in_cheevos && ud->field_hash == JSON_KEY_FLAGS)
    {
-      flags = strtol(number, NULL, 10);
+      long flags = strtol(number, NULL, 10);
 
       switch (flags)
       {
@@ -841,13 +840,9 @@ static INLINE const char *cheevos_dupstr(const cheevos_field_t *field)
 
 static int cheevos_new_cheevo(cheevos_readud_t *ud)
 {
-   unsigned set;
-   const cheevos_condset_t *end = NULL;
-   cheevos_condset_t *condset   = NULL;
    cheevo_t *cheevo             = NULL;
-   int flags                    = strtol(ud->flags.string, NULL, 10);
 
-   if (flags == 3)
+   if (strtol(ud->flags.string, NULL, 10) == 3)
       cheevo = cheevos_locals.core.cheevos + ud->core_count++;
    else
       cheevo = cheevos_locals.unofficial.cheevos + ud->unofficial_count++;
@@ -859,58 +854,57 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
    cheevo->badge       = cheevos_dupstr(&ud->badge);
    cheevo->points      = strtol(ud->points.string, NULL, 10);
    cheevo->dirty       = 0;
-   cheevo->active      = 1; /* flags == 3; */
+   cheevo->active      = 1;
    cheevo->modified    = 0;
 
    if (!cheevo->title || !cheevo->description || !cheevo->author || !cheevo->badge)
-   {
-      free((void*)cheevo->title);
-      free((void*)cheevo->description);
-      free((void*)cheevo->author);
-      free((void*)cheevo->badge);
-      return -1;
-   }
+      goto error;
 
    cheevo->count = cheevos_count_cond_sets(ud->memaddr.string);
 
    if (cheevo->count)
    {
-      cheevo->condsets = (cheevos_condset_t*)
-         malloc(cheevo->count * sizeof(cheevos_condset_t));
+      unsigned set                 = 0;
+      const cheevos_condset_t *end = NULL;
+      cheevos_condset_t *condset   = NULL;
+      cheevos_condset_t *conds     = (cheevos_condset_t*)
+         calloc(cheevo->count, sizeof(cheevos_condset_t));
 
-      if (!cheevo->condsets)
+      if (!conds)
          return -1;
 
-      memset((void*)cheevo->condsets, 0, 
-            cheevo->count * sizeof(cheevos_condset_t));
-      end = cheevo->condsets + cheevo->count;
-      set = 0;
+      cheevo->condsets = conds;
+      end              = cheevo->condsets + cheevo->count;
 
       for (condset = cheevo->condsets; condset < end; condset++)
       {
          condset->count = 
             cheevos_count_conds_in_set(ud->memaddr.string, set++);
+         condset->conds = NULL;
 
          if (condset->count)
          {
-            condset->conds = (cheevos_cond_t*)
-               malloc(condset->count * sizeof(cheevos_cond_t));
+            cheevos_cond_t *conds = (cheevos_cond_t*)
+               calloc(condset->count, sizeof(cheevos_cond_t));
 
-            if (!condset->conds)
+            if (!conds)
                return -1;
 
-            memset((void*)condset->conds, 0,
-                  condset->count * sizeof(cheevos_cond_t));
-
+            condset->conds      = conds;
             condset->expression = cheevos_dupstr(&ud->memaddr);
             cheevos_parse_memaddr(condset->conds, ud->memaddr.string);
          }
-         else
-            condset->conds = NULL;
       }
    }
 
    return 0;
+
+error:
+   free((void*)cheevo->title);
+   free((void*)cheevo->description);
+   free((void*)cheevo->author);
+   free((void*)cheevo->badge);
+   return -1;
 }
 
 static int cheevos_read__json_key( void *userdata,
@@ -921,45 +915,56 @@ static int cheevos_read__json_key( void *userdata,
 
    ud->field = NULL;
 
-   if (hash == JSON_KEY_ACHIEVEMENTS)
-      ud->in_cheevos = 1;
-   else if (hash == JSON_KEY_CONSOLE_ID)
-      ud->is_console_id = 1;
-   else if (ud->in_cheevos)
+   switch (hash)
    {
-      switch ( hash )
-      {
-         case JSON_KEY_ID:
+      case JSON_KEY_ACHIEVEMENTS:
+         ud->in_cheevos    = 1;
+         break;
+      case JSON_KEY_CONSOLE_ID:
+         ud->is_console_id = 1;
+         break;
+      case JSON_KEY_ID:
+         if (ud->in_cheevos)
             ud->field = &ud->id;
-            break;
-         case JSON_KEY_MEMADDR:
+         break;
+      case JSON_KEY_MEMADDR:
+         if (ud->in_cheevos)
             ud->field = &ud->memaddr;
-            break;
-         case JSON_KEY_TITLE:
+         break;
+      case JSON_KEY_TITLE:
+         if (ud->in_cheevos)
             ud->field = &ud->title;
-            break;
-         case JSON_KEY_DESCRIPTION:
+         break;
+      case JSON_KEY_DESCRIPTION:
+         if (ud->in_cheevos)
             ud->field = &ud->desc;
-            break;
-         case JSON_KEY_POINTS:
+         break;
+      case JSON_KEY_POINTS:
+         if (ud->in_cheevos)
             ud->field = &ud->points;
-            break;
-         case JSON_KEY_AUTHOR:
+         break;
+      case JSON_KEY_AUTHOR:
+         if (ud->in_cheevos)
             ud->field = &ud->author;
-            break;
-         case JSON_KEY_MODIFIED:
+         break;
+      case JSON_KEY_MODIFIED:
+         if (ud->in_cheevos)
             ud->field = &ud->modified;
-            break;
-         case JSON_KEY_CREATED:
+         break;
+      case JSON_KEY_CREATED:
+         if (ud->in_cheevos)
             ud->field = &ud->created;
-            break;
-         case JSON_KEY_BADGENAME:
+         break;
+      case JSON_KEY_BADGENAME:
+         if (ud->in_cheevos)
             ud->field = &ud->badge;
-            break;
-         case JSON_KEY_FLAGS:
+         break;
+      case JSON_KEY_FLAGS:
+         if (ud->in_cheevos)
             ud->field = &ud->flags;
-            break;
-      }
+         break;
+      default:
+         break;
    }
 
    return 0;
