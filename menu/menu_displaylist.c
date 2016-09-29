@@ -3483,8 +3483,8 @@ static int menu_displaylist_parse_generic(
                file_type = FILE_TYPE_PLAYLIST_COLLECTION;
          }
 
-         if (settings->multimedia.builtin_mediaplayer_enable ||
-               settings->multimedia.builtin_imageviewer_enable)
+         if (!is_dir && (settings->multimedia.builtin_mediaplayer_enable ||
+               settings->multimedia.builtin_imageviewer_enable))
          {
             switch (path_is_media_type(path))
             {
