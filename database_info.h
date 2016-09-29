@@ -97,6 +97,19 @@ typedef struct
    size_t count;
 } database_info_list_t;
 
+typedef struct database_state_handle
+{
+   database_info_list_t *info;
+   struct string_list *list;
+   size_t list_index;
+   size_t entry_index;
+   uint32_t crc;
+   uint32_t archive_crc;
+   uint8_t *buf;
+   char archive_name[PATH_MAX_LENGTH];
+   char serial[4096];
+} database_state_handle_t;
+
 database_info_list_t *database_info_list_new(const char *rdb_path,
       const char *query);
 
@@ -111,6 +124,8 @@ database_info_handle_t *database_info_file_init(const char *path,
 void database_info_set_type(database_info_handle_t *handle, enum database_type type);
 
 const char *database_info_get_current_element_name(database_info_handle_t *handle);
+
+const char *database_info_get_current_name(database_state_handle_t *handle);
 
 enum database_type database_info_get_type(database_info_handle_t *handle);
 

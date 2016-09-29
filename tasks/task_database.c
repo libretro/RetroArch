@@ -40,19 +40,6 @@
 #define COLLECTION_SIZE                99999
 #endif
 
-typedef struct database_state_handle
-{
-   database_info_list_t *info;
-   struct string_list *list;
-   size_t list_index;
-   size_t entry_index;
-   uint32_t crc;
-   uint32_t archive_crc;
-   uint8_t *buf;
-   char archive_name[PATH_MAX_LENGTH];
-   char serial[4096];
-} database_state_handle_t;
-
 typedef struct db_handle
 {
    database_state_handle_t state;
@@ -218,7 +205,7 @@ static int task_database_iterate_next(database_info_handle_t *db)
 static int database_info_list_iterate_new(database_state_handle_t *db_state,
       const char *query)
 {
-   const char *new_database = db_state->list->elems[db_state->list_index].data;
+   const char *new_database = database_info_get_current_name(db_state);
 #if 0
    RARCH_LOG("Check database [%d/%d] : %s\n", (unsigned)db_state->list_index,
          (unsigned)db_state->list->size, new_database);
@@ -244,8 +231,8 @@ static int database_info_list_iterate_found_match(
    char entry_path_str[PATH_MAX_LENGTH]        = {0};
    playlist_t   *playlist                      = NULL;
    settings_t           *settings              = config_get_ptr();
-   const char            *db_path              =
-      db_state->list->elems[db_state->list_index].data;
+   const char         *db_path                 = 
+      database_info_get_current_name(db_state);
    const char         *entry_path              = 
       database_info_get_current_element_name(db);
    database_info_t *db_info_entry              =
