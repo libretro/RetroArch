@@ -36,6 +36,29 @@
  **/
 static bool netplay_spectate_pre_frame(netplay_t *netplay)
 {
+   /* WORKAROUND: We initialize the buffer states here as part of a workaround
+    * for cores that can't even core_serialize_size early. */
+   if (netplay->self_frame_count == 0 && netplay->state_size == 0)
+   {
+      int i;
+      retro_ctx_size_info_t info;
+
+      core_serialize_size(&info);
+
+      netplay->state_size = info.size;
+
+      for (i = 0; i < netplay->buffer_size; i++)
+      {
+         netplay->buffer[i].state = calloc(netplay->state_size, 1);
+
+         if (!netplay->buffer[i].state)
+         {
+            netplay->savestates_work = false;
+            netplay->stall_frames = 0;
+         }
+      }
+   }
+
    if (netplay_is_server(netplay))
    {
       fd_set fds;

@@ -721,7 +721,7 @@ static bool netplay_poll(void)
 
    /* WORKAROUND: The only reason poll_input is ignored in the first frame is
     * that some cores can't report state size until after the first frame. */
-   if (netplay_data->self_frame_count > 0 || netplay_data->stall)
+   if (netplay_data->self_frame_count > 0 || netplay_data->stall || netplay_data->spectate.enabled)
    {
       /* Read Netplay input, block if we're configured to stall for input every
        * frame */
