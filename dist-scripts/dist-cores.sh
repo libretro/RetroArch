@@ -150,7 +150,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $name = "mupen64plus" ] ; then
       async=1
    elif [ $name = "dosbox" ] ; then
-      async=1
+      async=0
    fi
    echo "-- Building core: $name --"
    if [ $PLATFORM = "unix" ]; then
