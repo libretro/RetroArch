@@ -90,10 +90,6 @@ const char *path_get_basename(void);
 
 const char *path_get_core_options(void);
 
-const char *path_get_config(void);
-
-const char *path_get_config_append(void);
-
 bool path_get_default_shader_preset(char **preset);
 
 /* clear functions */

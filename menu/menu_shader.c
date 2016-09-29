@@ -53,7 +53,7 @@ void menu_shader_manager_init(void)
    struct video_shader *shader = NULL;
    config_file_t *conf         = NULL;
    settings_t *settings        = config_get_ptr();
-   const char *config_path     = path_get_config();
+   const char *config_path     = path_get(RARCH_PATH_CONFIG);
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);
@@ -298,7 +298,7 @@ bool menu_shader_manager_save_preset(
    if (!path_is_config_empty())
       fill_pathname_basedir(
             config_directory,
-            path_get_config(),
+            path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
 
    if (!fullpath)

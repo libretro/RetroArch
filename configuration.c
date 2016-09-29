@@ -1723,7 +1723,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       char tmp_append_path[PATH_MAX_LENGTH] = {0};
       const char *extra_path                = NULL;
 
-      strlcpy(tmp_append_path, path_get_config_append(),
+      strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_APPEND),
             sizeof(tmp_append_path));
       extra_path = strtok_r(tmp_append_path, "|", &save);
 
@@ -1966,7 +1966,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->path.content_history,
-               path_get_config(),
+               path_get(RARCH_PATH_CONFIG),
                file_path_str(FILE_PATH_CONTENT_HISTORY),
                sizeof(settings->path.content_history));
       }
@@ -1985,7 +1985,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->path.content_music_history,
-               path_get_config(),
+               path_get(RARCH_PATH_CONFIG),
                file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY),
                sizeof(settings->path.content_music_history));
       }
@@ -2004,7 +2004,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->path.content_video_history,
-               path_get_config(),
+               path_get(RARCH_PATH_CONFIG),
                file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY),
                sizeof(settings->path.content_video_history));
       }
@@ -2023,7 +2023,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       {
          fill_pathname_resolve_relative(
                settings->path.content_image_history,
-               path_get_config(),
+               path_get(RARCH_PATH_CONFIG),
                file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY),
                sizeof(settings->path.content_image_history));
       }
@@ -2255,7 +2255,7 @@ bool config_load_override(void)
 
       if (should_append)
       {
-         strlcpy(temp_path, path_get_config_append(), sizeof(temp_path));
+         strlcpy(temp_path, path_get(RARCH_PATH_CONFIG_APPEND), sizeof(temp_path));
          strlcat(temp_path, "|", sizeof(temp_path));
          strlcat(temp_path, game_path, sizeof(temp_path));
       }
@@ -2289,7 +2289,7 @@ bool config_load_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
-   if (!config_load_file(path_get_config(), false, config_get_ptr()))
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
       return false;
 
    /* Restore the libretro_path we're using
@@ -2322,7 +2322,7 @@ bool config_unload_override(void)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
-   if (config_load_file(path_get_config(), false, config_get_ptr()))
+   if (config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
    {
       RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
 
@@ -2575,19 +2575,19 @@ static void parse_config_file(void)
 {
    if (!path_is_config_empty())
    {
-      RARCH_LOG("Config: loading config from: %s.\n", path_get_config());
+      RARCH_LOG("Config: loading config from: %s.\n", path_get(RARCH_PATH_CONFIG));
    }
    else
    {
       RARCH_LOG("Loading default config.\n");
       if (!path_is_config_empty())
-         RARCH_LOG("Config: found default config: %s.\n", path_get_config());
+         RARCH_LOG("Config: found default config: %s.\n", path_get(RARCH_PATH_CONFIG));
    }
 
-   if (config_load_file(path_get_config(), false, config_get_ptr()))
+   if (config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
       return;
 
-   RARCH_ERR("Config: couldn't find config at path: \"%s\"\n", path_get_config());
+   RARCH_ERR("Config: couldn't find config at path: \"%s\"\n", path_get(RARCH_PATH_CONFIG));
 }
 
 
@@ -3118,7 +3118,7 @@ bool config_save_overrides(int override_type)
       conf = config_file_new(NULL);
 
    /* Load the original config file in memory */
-   config_load_file(path_get_config(), false, settings);
+   config_load_file(path_get(RARCH_PATH_CONFIG), false, settings);
 
    bool_settings_size =  populate_settings_bool(settings, &bool_settings);
    populate_settings_bool (overrides, &bool_overrides);
@@ -3257,11 +3257,11 @@ bool config_replace(char *path)
 
    /* If config file to be replaced is the same as the
     * current config file, exit. */
-   if (string_is_equal(path, path_get_config()))
+   if (string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
       return false;
 
    if (settings->config_save_on_exit && !path_is_config_empty())
-      config_save_file(path_get_config());
+      config_save_file(path_get(RARCH_PATH_CONFIG));
 
    path_set(RARCH_PATH_CONFIG, path);
 

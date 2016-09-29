@@ -840,7 +840,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
    wrap_args->content_path     = NULL;
 
    if (!path_is_config_empty())
-      wrap_args->config_path   = path_get_config();
+      wrap_args->config_path   = path_get(RARCH_PATH_CONFIG);
    if (!dir_is_savefile_empty())
       wrap_args->sram_path     = dir_get_savefile();
    if (!dir_is_savestate_empty())

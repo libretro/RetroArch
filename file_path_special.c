@@ -291,7 +291,7 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
             if (!string_is_empty(settings->directory.menu_config))
                strlcpy(s, settings->directory.menu_config, len);
             else if (!path_is_config_empty())
-               fill_pathname_basedir(s, path_get_config(), len);
+               fill_pathname_basedir(s, path_get(RARCH_PATH_CONFIG), len);
          }
          break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_ICONS:

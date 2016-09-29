@@ -484,6 +484,14 @@ const char *path_get(enum rarch_path_type type)
    {
       case RARCH_PATH_SUBSYSTEM:
          return subsystem_path;
+      case RARCH_PATH_CONFIG:
+         if (!path_is_config_empty())
+            return path_config_file;
+         break;
+      case RARCH_PATH_CONFIG_APPEND:
+         if (!path_is_config_append_empty())
+            return path_config_append_file;
+         break;
       case RARCH_PATH_CORE:
          return path_libretro;
       default:
@@ -581,13 +589,6 @@ bool path_is_config_empty(void)
 }
 
 
-const char *path_get_config(void)
-{
-   if (!path_is_config_empty())
-      return path_config_file;
-
-   return NULL;
-}
 
 bool path_get_default_shader_preset(char **preset)
 {
@@ -662,13 +663,6 @@ bool path_get_content(char **fullpath)
    return true;
 }
 
-const char *path_get_config_append(void)
-{
-   if (!path_is_config_append_empty())
-      return path_config_append_file;
-
-   return NULL;
-}
 
 void path_clear_all(void)
 {

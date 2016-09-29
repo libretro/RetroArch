@@ -131,7 +131,7 @@ static void menu_action_setting_disp_set_label_configurations(
    strlcpy(s2, path, len2);
 
    if (!path_is_config_empty())
-      fill_pathname_base(s, path_get_config(),
+      fill_pathname_base(s, path_get(RARCH_PATH_CONFIG),
             len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT), len);

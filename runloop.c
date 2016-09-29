@@ -944,7 +944,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
                if (options_path && string_is_empty(options_path) && !path_is_config_empty())
                {
-                  fill_pathname_resolve_relative(buf, path_get_config(),
+                  fill_pathname_resolve_relative(buf, path_get(RARCH_PATH_CONFIG),
                         file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
                   options_path = buf;
                }

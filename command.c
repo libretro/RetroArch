@@ -1453,14 +1453,14 @@ static bool command_event_save_config(const char *config_path,
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
-            path_get_config());
+            path_get(RARCH_PATH_CONFIG));
       RARCH_LOG("%s\n", s);
       return true;
    }
 
    snprintf(s, len, "%s \"%s\".",
          msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
-         path_get_config());
+         path_get(RARCH_PATH_CONFIG));
    RARCH_ERR("%s\n", s);
 
    return false;
@@ -1489,7 +1489,7 @@ static bool command_event_save_core_config(void)
       strlcpy(config_dir, settings->directory.menu_config,
             sizeof(config_dir));
    else if (!path_is_config_empty()) /* Fallback */
-      fill_pathname_basedir(config_dir, path_get_config(),
+      fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
             sizeof(config_dir));
    else
    {
@@ -1595,7 +1595,7 @@ static void command_event_save_current_config(int override_type)
       }
    }
    else if (!path_is_config_empty())
-      command_event_save_config(path_get_config(), msg, sizeof(msg));
+      command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
 
    if (!string_is_empty(msg))
       runloop_msg_queue_push(msg, 1, 180, true);
