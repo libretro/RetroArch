@@ -14,6 +14,7 @@ CFLAGS += -Wall -pedantic -std=gnu99
 HTTP_TEST_C = \
 				  $(LIBRETRO_COMM_DIR)/net/net_http.c \
 				  $(LIBRETRO_COMM_DIR)/net/net_compat.c \
+				  $(LIBRETRO_COMM_DIR)/net/net_socket.c \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 				  $(LIBRETRO_COMM_DIR)/string/stdstring.c \
 				  net_http_test.c
