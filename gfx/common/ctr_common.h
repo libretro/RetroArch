@@ -1,6 +1,9 @@
 #ifndef CTR_COMMON_H__
 #define CTR_COMMON_H__
 
+
+#define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
+
 #define CTR_TOP_FRAMEBUFFER_WIDTH   400
 #define CTR_TOP_FRAMEBUFFER_HEIGHT  240
 
@@ -76,12 +79,40 @@ typedef struct ctr_video
    bool keep_aspect;
    bool should_resize;
    bool lcd_buttom_on;
+   bool msg_rendering_enabled;
 
    void* empty_framebuffer;
 
    aptHookCookie lcd_aptHook;
    ctr_video_mode_enum video_mode;
    int current_buffer_top;
+
+   struct
+   {
+      ctr_vertex_t* buffer;
+      ctr_vertex_t* current;
+      int size;
+   }vertex_cache;
+
 } ctr_video_t;
+
+typedef struct ctr_texture
+{
+   int width;
+   int height;
+   enum texture_filter_type type;
+   void* data;
+} ctr_texture_t;
+
+static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
+      int viewport_width, int viewport_height,
+      int texture_width, int texture_height)
+{
+   vec->x = -2.0 / viewport_width;
+   vec->y = -2.0 / viewport_height;
+   vec->u =  1.0 / texture_width;
+   vec->v = -1.0 / texture_height;
+}
+
 
 #endif // CTR_COMMON_H__

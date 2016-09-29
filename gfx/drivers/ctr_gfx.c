@@ -20,6 +20,7 @@
 #include <3ds.h>
 
 #include <retro_inline.h>
+#include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -28,11 +29,14 @@
 #include "../../ctr/gpu_old.h"
 #include "ctr_gu.h"
 
+#include "../../menu/menu_driver.h"
+
 #include "../../configuration.h"
 #include "../../command.h"
 #include "../../driver.h"
 
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../performance_counters.h"
 
 #include "../common/ctr_common.h"
@@ -78,16 +82,6 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr)
          break;
       }
    }
-}
-
-static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
-      int viewport_width, int viewport_height,
-      int texture_width, int texture_height)
-{
-   vec->x = -2.0 / viewport_width;
-   vec->y = -2.0 / viewport_height;
-   vec->u =  1.0 / texture_width;
-   vec->v = -1.0 / texture_height;
 }
 
 static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
@@ -279,6 +273,7 @@ static void* ctr_init(const video_info_t* video,
    float refresh_rate;
    void* ctrinput   = NULL;
    ctr_video_t* ctr = (ctr_video_t*)linearAlloc(sizeof(ctr_video_t));
+   settings_t *settings = config_get_ptr();
 
    if (!ctr)
       return NULL;
@@ -292,13 +287,18 @@ static void* ctr_init(const video_info_t* video,
    ctr->vp.height           = CTR_TOP_FRAMEBUFFER_HEIGHT;
    ctr->vp.full_width       = CTR_TOP_FRAMEBUFFER_WIDTH;
    ctr->vp.full_height      = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   video_driver_set_size(&ctr->vp.width, &ctr->vp.height);
 
    ctr->drawbuffers.top.left = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
    ctr->drawbuffers.top.right = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
 
-   ctr->display_list_size = 0x400;
+   ctr->display_list_size = 0x10000;
    ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
    GPU_Reset(NULL, ctr->display_list, ctr->display_list_size);
+
+   ctr->vertex_cache.size = 0x1000;
+   ctr->vertex_cache.buffer = linearAlloc(ctr->vertex_cache.size * sizeof(ctr_vertex_t));
+   ctr->vertex_cache.current = ctr->vertex_cache.buffer;
 
    ctr->rgb32 = video->rgb32;
    ctr->texture_width = video->input_scale * RARCH_SCALE_BASE;
@@ -413,11 +413,23 @@ static void* ctr_init(const video_info_t* video,
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
+   if (!font_driver_init_first(NULL, NULL, ctr, *settings->path.font
+          ? settings->path.font : NULL, settings->video.font_size, false,
+          FONT_DRIVER_RENDER_CTR))
+   {
+      RARCH_ERR("Font: Failed to initialize font renderer.\n");
+        return false;
+   }
+
+   ctr->msg_rendering_enabled = false;
+
+//   DEBUG_HOLD();
+
    return ctr;
 }
 
 static bool ctr_frame(void* data, const void* frame,
-      unsigned width, unsigned height, 
+      unsigned width, unsigned height,
       uint64_t frame_count,
       unsigned pitch, const char* msg)
 {
@@ -677,7 +689,6 @@ static bool ctr_frame(void* data, const void* frame,
 
    if (ctr->menu_texture_enable)
    {
-
       GSPGPU_FlushDataCache(ctr->menu.texture_linear,
                             ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t));
 
@@ -706,7 +717,19 @@ static bool ctr_frame(void* data, const void* frame,
                          CTR_TOP_FRAMEBUFFER_WIDTH);
          GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
       }
+
+      ctr->msg_rendering_enabled = true;
+      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+      ctr->msg_rendering_enabled = false;
+
    }
+
+   if (font_driver_has_render_msg() && msg)
+      font_driver_render_msg(NULL, msg, NULL);
+
+//   font_driver_render_msg(NULL, "TEST: 123 ABC àüî", NULL);
+
+
 
    GPU_FinishDrawing();
    GPUCMD_Finalize();
@@ -815,7 +838,9 @@ static void ctr_free(void* data)
    linearFree(ctr->menu.texture_swizzled);
    linearFree(ctr->menu.frame_coords);
    linearFree(ctr->empty_framebuffer);
+   linearFree(ctr->vertex_cache.buffer);
    linearFree(ctr);
+//   DEBUG_HOLD();
    //   gfxExit();
 }
 
@@ -929,9 +954,87 @@ static void ctr_viewport_info(void* data, struct video_viewport* vp)
       *vp = ctr->vp;
 }
 
+static uintptr_t ctr_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   struct texture_image *image = (struct texture_image*)data;
+
+   ctr_texture_t* texture = calloc(1, sizeof(ctr_texture_t));
+   uint32_t texsize = image->width * image->height * sizeof(uint32_t);
+   void* tmpdata;
+//   texture->data = vramAlloc(image->width * image->height * sizeof(uint32_t));
+//   if(!texture->data)
+      texture->data = linearAlloc(image->width * image->height * sizeof(uint32_t));
+   texture->type = filter_type;
+   texture->width = image->width;
+   texture->height = image->height;
+
+
+   if ((!texture->data))
+   {
+      free(texture);
+      return 0;
+   }
+   if ((texture->width == 1) && (texture->height == 1))
+   {
+      *(uint32_t*)texture->data = *image->pixels;
+   }
+   else
+   {
+      tmpdata = linearAlloc(image->width * image->height * sizeof(uint32_t));
+   //   memcpy(tmpdata, image->pixels, image->width * image->height * sizeof(uint32_t));
+      int i;
+      uint32_t* src = (uint32_t*)image->pixels;
+      uint32_t* dst = (uint32_t*)tmpdata;
+      for (i = 0; i < image->width * image->height; i++)
+      {
+         *dst = ((*src >> 8) & 0x00FF00) | ((*src >> 24) & 0xFF)| ((*src << 8) & 0xFF0000)| ((*src << 24) & 0xFF000000);
+         dst++;
+         src++;
+      }
+
+
+      GSPGPU_FlushDataCache(tmpdata, image->width  * image->height * sizeof(uint32_t));
+   //   printf("ctrGuCopyImage 0x%08X, %i, %i, 0x%08X, %i\n", tmpdata, image->width, image->height, texture->data, texture->width);
+      ctrGuCopyImage(true, tmpdata, image->width, image->height, CTRGU_RGBA8, false,
+                     texture->data, texture->width, CTRGU_RGBA8,  true);
+
+   //   gspWaitForEvent(GSPGPU_EVENT_PPF, false);
+      linearFree(tmpdata);
+   }
+
+   return (uintptr_t)texture;
+}
+
+static void ctr_unload_texture(void *data, uintptr_t handle)
+{
+   struct ctr_texture *texture   = (struct ctr_texture*)handle;
+   if (!texture)
+      return;
+
+   if (texture->data)
+   {
+      if(((u32)texture->data & 0xFF000000) == 0x1F000000)
+         vramFree(texture->data);
+      else
+         linearFree(texture->data);
+   }
+   free(texture);
+}
+
+static void ctr_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
+{
+   ctr_video_t* ctr = (ctr_video_t*)data;
+
+   if (ctr->msg_rendering_enabled)
+      font_driver_render_msg(font, msg, params);
+}
+
+
 static const video_poke_interface_t ctr_poke_interface = {
-   NULL,
-   NULL,
+   ctr_load_texture,
+   ctr_unload_texture,
    NULL,
    ctr_set_filtering,
    NULL, /* get_video_output_size */
@@ -944,6 +1047,7 @@ static const video_poke_interface_t ctr_poke_interface = {
 #ifdef HAVE_MENU
    ctr_set_texture_frame,
    ctr_set_texture_enable,
+   ctr_set_osd_msg,
 #endif
    NULL,
    NULL,
