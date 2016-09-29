@@ -872,15 +872,13 @@ bool audio_driver_set_callback(const void *data)
    const struct retro_audio_callback *cb = (const struct retro_audio_callback*)data;
 #ifdef HAVE_NETPLAY
    global_t *global = global_get_ptr();
+   if (global->netplay.enable)
+      return false;
 #endif
 
    if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
       return false;
 
-#ifdef HAVE_NETPLAY
-   if (global->netplay.enable)
-      return false;
-#endif
    if (cb)
       audio_callback = *cb;
 
