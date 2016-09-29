@@ -1082,12 +1082,14 @@ static int cheevos_parse(const char *json)
    ud.unofficial_count = 0;
 
    if (jsonsax_parse(json, &handlers, (void*)&ud) != JSONSAX_OK)
-   {
-      cheevos_unload();
-      return -1;
-   }
+      goto error;
    
    return 0;
+
+error:
+   cheevos_unload();
+   
+   return -1;
 }
 
 /*****************************************************************************
@@ -1112,10 +1114,6 @@ uint8_t *cheevos_get_memory(const cheevos_var_t *var)
 
 static unsigned cheevos_get_var_value(cheevos_var_t *var)
 {
-   unsigned previous     = var->previous;
-   unsigned live_val     = 0;
-   const uint8_t *memory = NULL;
-
    if (var->type == CHEEVOS_VAR_TYPE_VALUE_COMP)
       return var->value;
 
@@ -1123,7 +1121,8 @@ static unsigned cheevos_get_var_value(cheevos_var_t *var)
          || var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
    {
       /* TODO Check with Scott if the bank id is needed */
-      memory = cheevos_get_memory(var);
+      const uint8_t *memory = cheevos_get_memory(var);
+      unsigned live_val     = 0;
       
       if (memory)
       {
@@ -1156,12 +1155,11 @@ static unsigned cheevos_get_var_value(cheevos_var_t *var)
             }
          }
       }
-      else
-         live_val = 0;
       
       if (var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
       {
-         var->previous = live_val;
+         unsigned previous = var->previous;
+         var->previous     = live_val;
          return previous;
       }
 
@@ -1835,8 +1833,6 @@ static void cheevos_fill_md5(size_t size, size_t total, MD5_CTX *ctx)
    char buffer[4096] = {0};
    ssize_t fill      = total - size;
    
-   memset((void*)buffer, 0, sizeof(buffer));
-
    while (fill > 0)
    {
       ssize_t len = sizeof(buffer);
