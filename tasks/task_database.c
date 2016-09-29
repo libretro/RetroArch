@@ -480,12 +480,7 @@ static int task_database_iterate_serial_lookup(
 static int task_database_iterate(database_state_handle_t *db_state,
       database_info_handle_t *db)
 {
-   const char *name = NULL;
-   
-   if (!db)
-      return -1;
-
-   name = database_info_get_current_element_name(db);
+   const char *name = database_info_get_current_element_name(db);
 
    if (!name)
       return 0;
@@ -549,12 +544,12 @@ static void task_database_handler(retro_task_t *task)
    switch (dbinfo->status)
    {
       case DATABASE_STATUS_ITERATE_BEGIN:
+         if (dbstate && !dbstate->list)
          {
             settings_t *settings = config_get_ptr();
-            if (dbstate && !dbstate->list)
-               dbstate->list = dir_list_new_special(
-                     settings->path.content_database,
-                     DIR_LIST_DATABASES, NULL);
+            dbstate->list        = dir_list_new_special(
+                  settings->path.content_database,
+                  DIR_LIST_DATABASES, NULL);
          }
          dbinfo->status = DATABASE_STATUS_ITERATE_START;
          break;
@@ -566,7 +561,7 @@ static void task_database_handler(retro_task_t *task)
          task_database_iterate_start(dbinfo, name);
          break;
       case DATABASE_STATUS_ITERATE:
-         if (task_database_iterate(&db->state, dbinfo) == 0)
+         if (dbstate && task_database_iterate(dbstate, dbinfo) == 0)
          {
             dbinfo->status = DATABASE_STATUS_ITERATE_NEXT;
             dbinfo->type   = DATABASE_TYPE_ITERATE;
