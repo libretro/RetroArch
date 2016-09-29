@@ -165,7 +165,7 @@ static int task_database_iterate_playlist(
    {
       case FILE_TYPE_COMPRESSED:
 #ifdef HAVE_COMPRESSION
-         db->type = DATABASE_TYPE_CRC_LOOKUP;
+         database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
          /* first check crc of archive itself */
          return file_get_crc(db_state, name, &db_state->archive_crc);
 #else
@@ -174,18 +174,18 @@ static int task_database_iterate_playlist(
       case FILE_TYPE_CUE:
          db_state->serial[0] = '\0';
          cue_get_serial(db_state, db, name, db_state->serial);
-         db->type = DATABASE_TYPE_SERIAL_LOOKUP;
+         database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
          break;
       case FILE_TYPE_ISO:
          db_state->serial[0] = '\0';
          iso_get_serial(db_state, db, name, db_state->serial);
-         db->type = DATABASE_TYPE_SERIAL_LOOKUP;
+         database_info_set_type(db, DATABASE_TYPE_SERIAL_LOOKUP);
          break;
       case FILE_TYPE_LUTRO:
-         db->type = DATABASE_TYPE_ITERATE_LUTRO;
+         database_info_set_type(db, DATABASE_TYPE_ITERATE_LUTRO);
          break;
       default:
-         db->type = DATABASE_TYPE_CRC_LOOKUP;
+         database_info_set_type(db, DATABASE_TYPE_CRC_LOOKUP);
          return file_get_crc(db_state, name, &db_state->crc);
    }
 
@@ -503,7 +503,7 @@ static int task_database_iterate(database_state_handle_t *db_state,
 
    if (database_info_get_type(db) == DATABASE_TYPE_ITERATE)
       if (path_contains_compressed_file(name))
-         db->type = DATABASE_TYPE_ITERATE_ARCHIVE;
+         database_info_set_type(db, DATABASE_TYPE_ITERATE_ARCHIVE);
 
    switch (database_info_get_type(db))
    {

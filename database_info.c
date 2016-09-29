@@ -655,6 +655,13 @@ void database_info_list_free(database_info_list_t *database_info_list)
    free(database_info_list->list);
 }
 
+void database_info_set_type(database_info_handle_t *handle, enum database_type type)
+{
+   if (!handle)
+      return;
+   handle->type = type;
+}
+
 enum database_type database_info_get_type(database_info_handle_t *handle)
 {
    if (!handle)
