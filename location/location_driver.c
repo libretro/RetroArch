@@ -281,5 +281,5 @@ bool location_driver_ctl(enum rarch_location_ctl_state state, void *data)
          break;
    }
    
-   return false;
+   return true;
 }
