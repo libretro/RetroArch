@@ -184,9 +184,8 @@ void playlist_update(playlist_t *playlist, size_t idx,
       const char *db_name)
 {
    struct playlist_entry *entry = NULL;
-   if (!playlist)
-      return;
-   if (idx > playlist->size)
+
+   if (!playlist || idx > playlist->size)
       return;
 
    entry            = &playlist->entries[idx];
@@ -245,9 +244,6 @@ bool playlist_push(playlist_t *playlist,
 {
    size_t i;
 
-   if (!playlist)
-      return false;
-
    if (string_is_empty(core_path) || string_is_empty(core_name))
    {
       if (string_is_empty(core_name) && !string_is_empty(core_path))
@@ -270,6 +266,9 @@ bool playlist_push(playlist_t *playlist,
 
    if (string_is_empty(path))
       path = NULL;
+
+   if (!playlist)
+      return false;
 
    for (i = 0; i < playlist->size; i++)
    {
@@ -439,11 +438,9 @@ size_t playlist_size(playlist_t *playlist)
 static bool playlist_read_file(
       playlist_t *playlist, const char *path)
 {
-   unsigned i;
    char buf[PLAYLIST_ENTRIES][1024] = {{0}};
-   struct playlist_entry *entry     = NULL;
-   char *last                       = NULL;
-   RFILE *file                      = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
+   RFILE *file                      = filestream_open(
+         path, RFILE_MODE_READ_TEXT, -1);
 
    /* If playlist file does not exist,
     * create an empty playlist instead.
@@ -453,9 +450,12 @@ static bool playlist_read_file(
 
    for (playlist->size = 0; playlist->size < playlist->cap; )
    {
+      unsigned i;
+      struct playlist_entry *entry     = NULL;
       for (i = 0; i < PLAYLIST_ENTRIES; i++)
       {
-         *buf[i] = '\0';
+         char *last  = NULL;
+         *buf[i]     = '\0';
 
          if (!filestream_gets(file, buf[i], sizeof(buf[i])))
             goto end;
