@@ -65,10 +65,6 @@ void path_set_special(char **argv, unsigned num_content);
 
 void path_set_basename(const char *path);
 
-void path_set_config_append(const char *path);
-
-bool path_set_default_shader_preset(const char *preset);
-
 /* get size functions */
 
 size_t path_get_core_size(void);
