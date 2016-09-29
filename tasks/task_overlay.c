@@ -46,8 +46,6 @@ typedef struct {
 
 } overlay_loader_t;
 
-static void task_overlay_resolve_iterate(retro_task_t *task);
-
 static void task_overlay_image_done(struct overlay *overlay)
 {
    overlay->pos = 0;
@@ -300,6 +298,88 @@ end:
    return ret;
 }
 
+static ssize_t task_overlay_find_index(const struct overlay *ol,
+      const char *name, size_t size)
+{
+   size_t i;
+
+   if (!ol)
+      return -1;
+
+   for (i = 0; i < size; i++)
+   {
+      if (string_is_equal(ol[i].name, name))
+         return i;
+   }
+
+   return -1;
+}
+
+static bool task_overlay_resolve_targets(struct overlay *ol,
+      size_t idx, size_t size)
+{
+   unsigned i;
+   struct overlay *current = (struct overlay*)&ol[idx];
+
+   for (i = 0; i < current->size; i++)
+   {
+      ssize_t next_idx  = 0;
+      const char *next = current->descs[i].next_index_name;
+
+      if (!string_is_empty(next))
+      {
+         next_idx = task_overlay_find_index(ol, next, size);
+
+         if (next_idx < 0)
+         {
+            RARCH_ERR("[Overlay]: Couldn't find overlay called: \"%s\".\n",
+                  next);
+            return false;
+         }
+      }
+      else
+         next_idx = (idx + 1) & size;
+
+      current->descs[i].next_index = next_idx;
+   }
+
+   return true;
+}
+
+static void task_overlay_resolve_iterate(retro_task_t *task)
+{
+   overlay_loader_t *loader  = (overlay_loader_t*)task->state;
+   bool             not_done = loader->resolve_pos < loader->size;
+
+   if (!not_done)
+   {
+      loader->state = OVERLAY_STATUS_DEFERRED_DONE;
+      return;
+   }
+
+   if (!task_overlay_resolve_targets(loader->overlays,
+            loader->resolve_pos, loader->size))
+   {
+      RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
+      task->cancelled = true;
+      loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
+      return;
+   }
+
+   if (loader->resolve_pos == 0)
+   {
+      loader->active = &loader->overlays[0];
+
+#if 0
+      /* TODO: MOVE TO MAIN THREAD / CALLBACK */
+      input_overlay_load_active(loader->deferred.opacity);
+      input_overlay_enable(loader->deferred.enable);
+#endif
+   }
+
+   loader->resolve_pos += 1;
+}
+
 static void task_overlay_deferred_loading(retro_task_t *task)
 {
    size_t i                  = 0;
@@ -547,88 +627,6 @@ error:
    loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
 }
 
-static ssize_t task_overlay_find_index(const struct overlay *ol,
-      const char *name, size_t size)
-{
-   size_t i;
-
-   if (!ol)
-      return -1;
-
-   for (i = 0; i < size; i++)
-   {
-      if (string_is_equal(ol[i].name, name))
-         return i;
-   }
-
-   return -1;
-}
-
-static bool task_overlay_resolve_targets(struct overlay *ol,
-      size_t idx, size_t size)
-{
-   unsigned i;
-   struct overlay *current = (struct overlay*)&ol[idx];
-
-   for (i = 0; i < current->size; i++)
-   {
-      ssize_t next_idx  = 0;
-      const char *next = current->descs[i].next_index_name;
-
-      if (!string_is_empty(next))
-      {
-         next_idx = task_overlay_find_index(ol, next, size);
-
-         if (next_idx < 0)
-         {
-            RARCH_ERR("[Overlay]: Couldn't find overlay called: \"%s\".\n",
-                  next);
-            return false;
-         }
-      }
-      else
-         next_idx = (idx + 1) & size;
-
-      current->descs[i].next_index = next_idx;
-   }
-
-   return true;
-}
-
-static void task_overlay_resolve_iterate(retro_task_t *task)
-{
-   overlay_loader_t *loader  = (overlay_loader_t*)task->state;
-   bool             not_done = loader->resolve_pos < loader->size;
-
-   if (!not_done)
-   {
-      loader->state = OVERLAY_STATUS_DEFERRED_DONE;
-      return;
-   }
-
-   if (!task_overlay_resolve_targets(loader->overlays,
-            loader->resolve_pos, loader->size))
-   {
-      RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
-      task->cancelled = true;
-      loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
-      return;
-   }
-
-   if (loader->resolve_pos == 0)
-   {
-      loader->active = &loader->overlays[0];
-
-#if 0
-      /* TODO: MOVE TO MAIN THREAD / CALLBACK */
-      input_overlay_load_active(loader->deferred.opacity);
-      input_overlay_enable(loader->deferred.enable);
-#endif
-   }
-
-   loader->resolve_pos += 1;
-}
-
 static void task_overlay_free(retro_task_t *task)
 {
    unsigned i;
@@ -637,7 +635,6 @@ static void task_overlay_free(retro_task_t *task)
 
    if (loader->overlay_path)
       free(loader->overlay_path);
-
 
    if (task->cancelled)
    {
