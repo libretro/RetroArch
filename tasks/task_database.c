@@ -501,11 +501,11 @@ static int task_database_iterate(database_state_handle_t *db_state,
    if (!name)
       return 0;
 
-   if (db->type == DATABASE_TYPE_ITERATE)
+   if (database_info_get_type(db) == DATABASE_TYPE_ITERATE)
       if (path_contains_compressed_file(name))
          db->type = DATABASE_TYPE_ITERATE_ARCHIVE;
 
-   switch (db->type)
+   switch (database_info_get_type(db))
    {
       case DATABASE_TYPE_ITERATE:
          return task_database_iterate_playlist(db_state, db, name);
