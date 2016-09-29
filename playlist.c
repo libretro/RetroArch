@@ -302,7 +302,10 @@ bool playlist_push(playlist_t *playlist,
 
    if (playlist->size == playlist->cap)
    {
-      playlist_free_entry(&playlist->entries[playlist->cap - 1]);
+      struct playlist_entry *entry = &playlist->entries[playlist->cap - 1];
+
+      if (entry)
+         playlist_free_entry(entry);
       playlist->size--;
    }
 
@@ -383,7 +386,12 @@ void playlist_free(playlist_t *playlist)
    playlist->conf_path = NULL;
 
    for (i = 0; i < playlist->cap; i++)
-      playlist_free_entry(&playlist->entries[i]);
+   {
+      struct playlist_entry *entry = &playlist->entries[i];
+
+      if (entry)
+         playlist_free_entry(entry);
+   }
 
    free(playlist->entries);
    playlist->entries = NULL;
@@ -404,7 +412,12 @@ void playlist_clear(playlist_t *playlist)
       return;
 
    for (i = 0; i < playlist->cap; i++)
-      playlist_free_entry(&playlist->entries[i]);
+   {
+      struct playlist_entry *entry = &playlist->entries[i];
+
+      if (entry)
+         playlist_free_entry(entry);
+   }
    playlist->size = 0;
 }
 
