@@ -287,6 +287,11 @@ static int deferred_push_options(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_OPTIONS);
 }
 
+static int deferred_push_netplay(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_NETPLAY);
+}
+
 static int deferred_push_content_settings(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_CONTENT_SETTINGS);
@@ -905,6 +910,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_ONLINE_UPDATER:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_options);
                break;
+            case MENU_ENUM_LABEL_NETPLAY:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay);
+               break;
             case MENU_ENUM_LABEL_CONTENT_SETTINGS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);
                break;
@@ -1155,6 +1163,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_ONLINE_UPDATER:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_options);
+               break;
+            case MENU_LABEL_NETPLAY:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_netplay);
                break;
             case MENU_LABEL_CONTENT_SETTINGS:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_settings);

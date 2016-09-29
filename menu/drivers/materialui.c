@@ -1652,6 +1652,10 @@ static int mui_list_push(void *data, void *userdata,
          entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
+#if defined(HAVE_NETPLAY)
+         entry.enum_idx      = MENU_ENUM_LABEL_NETPLAY;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
+#endif
          entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #ifndef HAVE_DYNAMIC

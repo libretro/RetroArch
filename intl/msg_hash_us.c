@@ -2858,6 +2858,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "network_information";
       case MENU_ENUM_LABEL_ONLINE_UPDATER:
          return "online_updater";
+      case MENU_ENUM_LABEL_NETPLAY:
+         return "netplay";
       case MENU_ENUM_LABEL_CORE_INFORMATION:
          return "core_information";
       case MENU_ENUM_LABEL_CORE_LIST:
@@ -4129,6 +4131,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Achievement List";
       case MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER:
          return "Online Updater";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY:
+         return "Netplay";
       case MENU_ENUM_LABEL_VALUE_CORE_INFORMATION:
          return "Core Information";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND:

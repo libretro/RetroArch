@@ -2198,6 +2198,17 @@ static bool setting_append_list(
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ONLINE_UPDATER);
 #endif
 
+#if defined(HAVE_NETPLAY)
+         CONFIG_ACTION(
+               list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY);
+#endif
+
          CONFIG_ACTION(
                list, list_info,
                msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS),

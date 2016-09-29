@@ -155,6 +155,8 @@ bool core_set_default_callbacks(void *data);
 
 bool core_set_rewind_callbacks(void);
 
+bool core_set_netplay_callbacks(void);
+
 bool core_set_poll_type(unsigned *type);
 
 /* Runs the core for one frame. */

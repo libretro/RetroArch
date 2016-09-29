@@ -959,6 +959,12 @@ enum msg_hash_enums
 
 
 
+   /* Netplay */
+   MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+   MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
+   MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
+
+
 
    MENU_ENUM_LABEL_COLLAPSE_SUBGROUPS_ENABLE,
    MENU_ENUM_LABEL_VALUE_COLLAPSE_SUBGROUPS_ENABLE,
@@ -1428,6 +1434,8 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
    MENU_ENUM_LABEL_ONLINE_UPDATER,
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   MENU_ENUM_LABEL_NETPLAY,
+   MENU_ENUM_LABEL_VALUE_NETPLAY,
    MENU_ENUM_LABEL_SETTINGS,
    MENU_ENUM_LABEL_FRONTEND_COUNTERS,
    MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
@@ -2075,6 +2083,7 @@ enum msg_hash_enums
 #define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
 #define MENU_LABEL_ADD_CONTENT_LIST                                            0x046f4668U
 #define MENU_LABEL_ONLINE_UPDATER                                              0xcac0025eU
+#define MENU_LABEL_NETPLAY                                                     0x0b511d22U
 #define MENU_LABEL_SETTINGS                                                    0x1304dc16U
 #define MENU_LABEL_HELP                                                        0x7c97d2eeU
 #define MENU_VALUE_HORIZONTAL_MENU                                             0x35761704U
