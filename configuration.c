@@ -2902,7 +2902,6 @@ bool config_save_file(const char *path)
    struct config_path_setting     *path_settings     = NULL;
    config_file_t                              *conf  = config_file_new(path);
    settings_t                              *settings = config_get_ptr();
-   global_t                                *global   = global_get_ptr();
 
    if (!conf)
       conf = config_file_new(NULL);
