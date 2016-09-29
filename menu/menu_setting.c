@@ -1644,7 +1644,7 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          {
             bool val = (!string_is_empty(setting->value.target.string));
             if (val)
@@ -1655,20 +1655,20 @@ void general_write_handler(void *data)
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_MODE:
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          if (!global->netplay.is_client)
             *global->netplay.server = '\0';
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          if (global->netplay.is_spectate)
             *global->netplay.server = '\0';
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          {
             bool val = (global->netplay.sync_frames > 0);
             
@@ -1680,7 +1680,7 @@ void general_write_handler(void *data)
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          {
             bool val = (global->netplay.check_frames > 0);
 
@@ -2113,7 +2113,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_START_VIDEO_PROCESSOR);
 #endif
 
-#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
          CONFIG_ACTION(
                list, list_info,
                msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
@@ -2187,7 +2187,7 @@ static bool setting_append_list(
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ADD_CONTENT_LIST);
 
-#if defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING)
          CONFIG_ACTION(
                list, list_info,
                msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY),
@@ -5771,7 +5771,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Netplay", &group_info, &subgroup_info, parent_group);
 
          {
-#ifdef HAVE_NETPLAY
+#if defined(HAVE_NETWORKING)
 #if defined(HAVE_NETWORK_CMD)
             unsigned user;
 #endif

@@ -25,7 +25,7 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #endif
 
@@ -390,7 +390,7 @@ void path_init_savefile(void)
 {
    bool should_sram_be_used = rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL) 
       && !rarch_ctl(RARCH_CTL_IS_SRAM_SAVE_DISABLED, NULL);
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    global_t *global         = global_get_ptr();
 
    should_sram_be_used = should_sram_be_used &&

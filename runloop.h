@@ -153,7 +153,7 @@ typedef struct global
       char remapfile[PATH_MAX_LENGTH];
    } name;
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    /* Netplay. */
    struct
    {

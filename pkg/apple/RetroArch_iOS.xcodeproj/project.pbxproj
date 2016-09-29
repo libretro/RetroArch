@@ -515,7 +515,6 @@
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -593,7 +592,6 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -642,7 +640,6 @@
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -720,7 +717,6 @@
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -794,7 +790,6 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -840,7 +835,6 @@
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -918,7 +912,6 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -986,7 +979,6 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -1055,7 +1047,6 @@
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -1132,7 +1123,6 @@
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",
@@ -1181,7 +1171,6 @@
 				"OTHER_CFLAGS[arch=*]" = (
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
-					"-DHAVE_NETPLAY",
                "-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_CORETEXT",
 					"-DHAVE_HID",

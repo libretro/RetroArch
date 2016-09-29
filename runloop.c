@@ -47,7 +47,7 @@
 #include "menu/widgets/menu_dialog.h"
 #endif
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #endif
 
@@ -482,7 +482,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
    else if (runloop_cmd_press(cmd, RARCH_VOLUME_DOWN))
       command_event(CMD_EVENT_VOLUME_DOWN, NULL);
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    tmp = runloop_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
    tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
@@ -681,7 +681,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          {
             const struct retro_frame_time_callback *info =
                (const struct retro_frame_time_callback*)data;
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
             global_t *global = global_get_ptr();
 
             /* retro_run() will be called in very strange and
@@ -1307,7 +1307,7 @@ int runloop_iterate(unsigned *sleep_ms)
             menu_event(cmd.state[0], cmd.state[2]),
             sleep_ms);
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
       /* FIXME: This is an ugly way to tell Netplay this... */
       netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
@@ -1323,7 +1323,7 @@ int runloop_iterate(unsigned *sleep_ms)
    {
       /* RetroArch has been paused. */
       core_poll();
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
       /* FIXME: This is an ugly way to tell Netplay this... */
       netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
@@ -1335,7 +1335,7 @@ int runloop_iterate(unsigned *sleep_ms)
    autosave_lock();
 #endif
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
    {
       /* Paused due to Netplay */
@@ -1384,7 +1384,7 @@ int runloop_iterate(unsigned *sleep_ms)
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_END, NULL);
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_POST_FRAME, NULL);
 #endif
 

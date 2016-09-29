@@ -414,7 +414,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    return 0;
 }
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #ifndef HAVE_SOCKET_LEGACY
 #include <net/net_ifinfo.h>
 
@@ -1503,7 +1503,7 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_netplay(
       menu_displaylist_info_t *info)
 {
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
@@ -2753,7 +2753,7 @@ static int menu_displaylist_parse_information_list(
          MENU_ENUM_LABEL_CORE_INFORMATION,
          MENU_SETTING_ACTION, 0, 0);
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #ifndef HAVE_SOCKET_LEGACY
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION),
@@ -4275,7 +4275,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_ADD_CONTENT_LIST,
                   PARSE_ACTION, false);
-#if defined(HAVE_NETPLAY)
+#ifdef HAVE_NETWORKING
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY,
                   PARSE_ACTION, false);
@@ -5582,7 +5582,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_NETWORK_INFO:
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #ifndef HAVE_SOCKET_LEGACY
          menu_displaylist_parse_network_info(info);
 #endif

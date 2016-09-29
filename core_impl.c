@@ -30,7 +30,7 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #include "network/netplay/netplay.h"
 #endif
 
@@ -99,7 +99,7 @@ static bool core_init_libretro_cbs(void *data)
 
    core_set_default_callbacks(cbs);
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       return true;
 

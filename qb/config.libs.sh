@@ -174,12 +174,9 @@ if [ "$HAVE_NETWORKING" = 'yes' ]; then
    fi
    HAVE_NETWORK_CMD=yes
    HAVE_NETWORKGAMEPAD=yes
-
-   [ "$HAVE_NETPLAY" != 'no' ] && HAVE_NETPLAY='yes'
 else
    echo "Warning: All networking features have been disabled."
    HAVE_NETWORK_CMD='no'
-   HAVE_NETPLAY='no'
    HAVE_NETWORKGAMEPAD='no'
 fi
 

@@ -870,7 +870,7 @@ bool audio_driver_deinit(void)
 bool audio_driver_set_callback(const void *data)
 {
    const struct retro_audio_callback *cb = (const struct retro_audio_callback*)data;
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    global_t *global = global_get_ptr();
    if (global->netplay.enable)
       return false;

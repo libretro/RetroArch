@@ -272,7 +272,7 @@ static const bool _freetype_supp = true;
 static const bool _freetype_supp = false;
 #endif
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 static const bool _netplay_supp = true;
 #else
 static const bool _netplay_supp = false;

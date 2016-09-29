@@ -327,7 +327,7 @@ static void retroarch_print_help(const char *arg0)
         "                        Note: 'noload-save' implies that "
         "save files *WILL BE OVERWRITTEN*.");
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    puts("  -H, --host            Host netplay as user 1.");
    puts("  -C, --connect=HOST    Connect to netplay server as user 2.");
    puts("      --port=PORT       Port used to netplay. Default is 55435.");
@@ -338,7 +338,7 @@ static void retroarch_print_help(const char *arg0)
 #endif
    puts("      --nick=NICK       Picks a username (for use with netplay). "
          "Not mandatory.");
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
    puts("      --command         Sends a command over UDP to an already "
          "running program process.");
    puts("      Available commands are listed if command is invalid.");
@@ -371,7 +371,7 @@ static void retroarch_print_help(const char *arg0)
 #define DYNAMIC_ARG
 #endif
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #define NETPLAY_ARG "HC:F:"
 #else
 #define NETPLAY_ARG
@@ -415,18 +415,18 @@ static void retroarch_parse_input(int argc, char *argv[])
       { "bsvplay",      1, NULL, 'P' },
       { "bsvrecord",    1, NULL, 'R' },
       { "sram-mode",    1, NULL, 'M' },
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
       { "host",         0, NULL, 'H' },
       { "connect",      1, NULL, 'C' },
       { "frames",       1, NULL, 'F' },
       { "check-frames", 1, NULL, RA_OPT_CHECK_FRAMES },
       { "port",         1, NULL, RA_OPT_PORT },
       { "spectate",     0, NULL, RA_OPT_SPECTATE },
-#endif
-      { "nick",         1, NULL, RA_OPT_NICK },
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORK_CMD)
       { "command",      1, NULL, RA_OPT_COMMAND },
 #endif
+#endif
+      { "nick",         1, NULL, RA_OPT_NICK },
       { "ups",          1, NULL, 'U' },
       { "bps",          1, NULL, RA_OPT_BPS },
       { "ips",          1, NULL, RA_OPT_IPS },
@@ -666,7 +666,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             }
             break;
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          case 'H':
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
@@ -724,7 +724,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             explicit_menu = true;
             break;
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          case RA_OPT_CHECK_FRAMES:
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
@@ -743,14 +743,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             global->netplay.is_spectate = true;
             break;
 
-#endif
-         case RA_OPT_NICK:
-            rarch_ctl(RARCH_CTL_USERNAME_SET, NULL);
-            strlcpy(settings->username, optarg,
-                  sizeof(settings->username));
-            break;
-
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORK_CMD)
          case RA_OPT_COMMAND:
             if (command_network_send((const char*)optarg))
                exit(0);
@@ -758,6 +751,13 @@ static void retroarch_parse_input(int argc, char *argv[])
                retroarch_fail(1, "network_cmd_send()");
             break;
 #endif
+
+#endif
+         case RA_OPT_NICK:
+            rarch_ctl(RARCH_CTL_USERNAME_SET, NULL);
+            strlcpy(settings->username, optarg,
+                  sizeof(settings->username));
+            break;
 
          case RA_OPT_APPENDCONFIG:
             path_set(RARCH_PATH_CONFIG_APPEND, optarg);

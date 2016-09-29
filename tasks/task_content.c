@@ -1049,7 +1049,7 @@ bool task_push_content_load_default(
 #if defined(HAVE_VIDEO_PROCESSOR)
       case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
 #endif
-#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #endif
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
@@ -1209,7 +1209,7 @@ bool task_push_content_load_default(
          retroarch_set_current_core_type(type, true);
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
          retroarch_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
          break;
 #endif
@@ -1227,7 +1227,7 @@ bool task_push_content_load_default(
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
       case CONTENT_MODE_LOAD_FROM_CLI:
-#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #endif
 #ifdef HAVE_VIDEO_PROCESSOR

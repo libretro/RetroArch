@@ -244,7 +244,6 @@ else ifeq ($(platform), vita)
   HAVE_7ZIP                := 1
   HAVE_VITA2D              := 1
   HAVE_NETWORKING          := 1
-  HAVE_NETPLAY             := 1
   HAVE_OVERLAY             := 1
   HAVE_MATERIALUI				:= 1
   HAVE_XMB						:= 1
@@ -343,10 +342,6 @@ endif
 
 ifeq ($(HAVE_NETWORKING), 1)
 CFLAGS      += -DHAVE_NETWORKING
-endif
-
-ifeq ($(HAVE_NETPLAY), 1)
-CFLAGS      += -DHAVE_NETPLAY
 endif
 
 ifeq ($(RARCH_CONSOLE), 1)

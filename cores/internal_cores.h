@@ -21,6 +21,10 @@
 #include <boolean.h>
 #include <libretro.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 void libretro_dummy_retro_init(void);
 
 void libretro_dummy_retro_deinit(void);
@@ -184,7 +188,7 @@ size_t libretro_imageviewer_retro_get_memory_size(unsigned id);
 
 #endif
 
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETWORKING)
 /* Internal networked retropad core. */
 
 void libretro_netretropad_retro_init(void);

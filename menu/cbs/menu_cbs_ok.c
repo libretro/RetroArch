@@ -50,7 +50,7 @@
 #include "../../lakka.h"
 #include "../../wifi/wifi_driver.h"
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
 #endif
 
@@ -3273,7 +3273,7 @@ static int action_ok_video_resolution(const char *path,
 static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    bool netplay_was_on = false;
    global_t *global  = global_get_ptr();
 
@@ -3327,7 +3327,7 @@ static int action_ok_netplay_enable_host(const char *path,
 static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    bool netplay_was_on = false;
    global_t *global  = global_get_ptr();
 
@@ -3380,7 +3380,7 @@ static int action_ok_netplay_enable_client(const char *path,
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 

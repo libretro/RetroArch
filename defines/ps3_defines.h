@@ -564,7 +564,7 @@ extern int audioAddData(uint32_t portNum, float *data, uint32_t frames, float vo
 	NET PROTOTYPES
 ============================================================ */
 
-#if defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING)
 #ifdef __PSL1GHT__
 #include <net/net.h>
 

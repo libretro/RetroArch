@@ -214,7 +214,7 @@ enum event_command
 };
 
 #ifdef HAVE_COMMAND
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 bool command_network_send(const char *cmd_);
 #endif
 #endif

@@ -27,7 +27,6 @@ HAVE_DYLIB=auto            # Dynamic loading support
 HAVE_NETWORKING=auto       # Networking features (recommended)
 HAVE_NETWORKGAMEPAD=auto   # Networked game pad (plus baked-in core)
 C89_NETWORKGAMEPAD=no
-HAVE_NETPLAY=auto          # Netplay support (requires networking)
 HAVE_D3D9=yes              # Direct3D 9 support
 HAVE_OPENGL=auto           # OpenGL support
 HAVE_MALI_FBDEV=no         # Mali fbdev context support

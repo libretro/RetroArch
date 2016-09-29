@@ -58,7 +58,7 @@ struct remote_message
 struct input_remote
 {
 
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    int net_fd[MAX_USERS];
 #endif
 
@@ -80,7 +80,7 @@ static input_remote_state_t *input_remote_get_state_ptr(void)
    return &remote_st_ptr;
 }
 
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static bool input_remote_init_network(input_remote_t *handle,
       uint16_t port, unsigned user)
 {
@@ -124,7 +124,7 @@ error:
 input_remote_t *input_remote_new(uint16_t port)
 {
    unsigned user;
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    settings_t   *settings = config_get_ptr();
 #endif
    input_remote_t *handle = (input_remote_t*)
@@ -135,7 +135,7 @@ input_remote_t *input_remote_new(uint16_t port)
 
    (void)port;
 
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    for(user = 0; user < settings->input.max_users; user ++)
    {
       handle->net_fd[user] = -1;
@@ -147,7 +147,7 @@ input_remote_t *input_remote_new(uint16_t port)
 
    return handle;
 
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 error:
    input_remote_free(handle);
    return NULL;
@@ -157,7 +157,7 @@ error:
 void input_remote_free(input_remote_t *handle)
 {
    unsigned user;
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    settings_t *settings = config_get_ptr();
 
    for(user = 0; user < settings->input.max_users; user ++)
@@ -167,7 +167,7 @@ void input_remote_free(input_remote_t *handle)
    free(handle);
 }
 
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static void input_remote_parse_packet(struct remote_message *msg, unsigned user)
 {
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
@@ -240,7 +240,7 @@ void input_remote_poll(input_remote_t *handle)
    {
       if (settings->network_remote_enable_user[user])
       {
-#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
          struct remote_message msg;
          ssize_t ret;
          fd_set fds;

@@ -51,12 +51,9 @@
 #include "menu/widgets/menu_dialog.h"
 #endif
 
-#ifdef HAVE_NETPLAY
-#include "network/netplay/netplay.h"
-#endif
-
 #ifdef HAVE_NETWORKING
 #include <net/net_compat.h>
+#include "network/netplay/netplay.h"
 #endif
 
 #include "command.h"
@@ -102,7 +99,7 @@ struct command
    size_t stdin_buf_ptr;
 #endif
 
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
    int net_fd;
 #endif
 
@@ -116,17 +113,17 @@ enum cmd_source_t
    CMD_NETWORK
 };
 
-#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
 static enum cmd_source_t lastcmd_source;
 #endif
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 static int lastcmd_net_fd;
 static struct sockaddr_storage lastcmd_net_source;
 static socklen_t lastcmd_net_source_len;
 #endif
 
 #ifdef HAVE_CHEEVOS
-#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
 static bool command_reply(const char * data, size_t len)
 {
 #ifdef HAVE_STDIN_CMD
@@ -136,7 +133,7 @@ static bool command_reply(const char * data, size_t len)
       return true;
    }
 #endif
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
    if (lastcmd_source == CMD_NETWORK)
    {
       sendto(lastcmd_net_fd, data, len, 0,
@@ -384,7 +381,7 @@ static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t so
    lastcmd_source = CMD_NONE;
 }
 
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
 static bool command_network_init(command_t *handle, uint16_t port)
 {
    int fd;
@@ -579,7 +576,7 @@ static void command_network_poll(command_t *handle)
 static bool command_stdin_init(command_t *handle)
 {
 #ifndef _WIN32
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    if (!socket_nonblock(STDIN_FILENO))
       return false;
 #endif
@@ -610,7 +607,7 @@ bool command_network_new(
    if (!handle)
       return false;
 
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
    handle->net_fd = -1;
    if (network_enable && !command_network_init(handle, port))
       goto error;
@@ -624,7 +621,7 @@ bool command_network_new(
 
    return true;
 
-#if (defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)) || defined(HAVE_STDIN_CMD)
+#if (defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)) || defined(HAVE_STDIN_CMD)
 error:
    command_free(handle);
    return false;
@@ -792,7 +789,7 @@ bool command_poll(command_t *handle)
 {
    memset(handle->state, 0, sizeof(handle->state));
 
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
    command_network_poll(handle);
 #endif
 
@@ -824,7 +821,7 @@ bool command_set(command_handle_t *handle)
 
 bool command_free(command_t *handle)
 {
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD)
    if (handle && handle->net_fd >= 0)
       socket_close(handle->net_fd);
 #endif
@@ -1191,7 +1188,7 @@ static void command_event_deinit_core(bool reinit)
 static void command_event_init_cheats(void)
 {
    bool allow_cheats = true;
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    allow_cheats &= !netplay_driver_ctl(
          RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
 #endif
@@ -1211,7 +1208,7 @@ static void command_event_load_auto_state(void)
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    if (global->netplay.enable && !global->netplay.is_spectate)
       return;
 #endif
@@ -1315,7 +1312,7 @@ static bool event_init_content(void)
 
    if (content_does_not_need_content())
    {
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
       global_t   *global = global_get_ptr();
       if (global->netplay.enable)
          RARCH_ERR("sorry, unimplemented: cores that don't demand content cannot participate in netplay\n");
@@ -1670,7 +1667,7 @@ static void command_event_load_state(const char *path, char *s, size_t len)
       return;
    }
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
 
@@ -1701,7 +1698,7 @@ static void command_event_undo_load_state(char *s, size_t len)
       return;
    }
 
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
 
@@ -2024,7 +2021,7 @@ bool command_event(enum event_command cmd, void *data)
          cheat_manager_apply_cheats();
          break;
       case CMD_EVENT_REWIND_DEINIT:
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
             return false;
 #endif
@@ -2040,7 +2037,7 @@ bool command_event(enum event_command cmd, void *data)
          if (settings->cheevos.hardcore_mode_enable)
             return false;
 #endif
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
 #endif
             state_manager_event_init();
@@ -2397,7 +2394,7 @@ bool command_event(enum event_command cmd, void *data)
          bsv_movie_ctl(BSV_MOVIE_CTL_INIT, NULL);
          break;
       case CMD_EVENT_NETPLAY_DEINIT:
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          deinit_netplay();
 #endif
          break;
@@ -2413,13 +2410,13 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_NETPLAY_INIT:
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          if (!init_netplay())
             return false;
 #endif
          break;
       case CMD_EVENT_NETPLAY_FLIP_PLAYERS:
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, NULL);
 #endif
          break;

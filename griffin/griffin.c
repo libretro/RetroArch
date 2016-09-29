@@ -119,7 +119,7 @@ CONFIG FILE
 ACHIEVEMENTS
 ============================================================ */
 #if defined(HAVE_CHEEVOS) && defined(HAVE_THREADS)
-#if !defined(HAVE_NETPLAY)
+#if !defined(HAVE_NETWORKING)
 #include "../libretro-common/net/net_http.c"
 #endif
 
@@ -856,7 +856,7 @@ THREAD
 /*============================================================
 NETPLAY
 ============================================================ */
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
 #include "../network/netplay/netplay_net.c"
 #include "../network/netplay/netplay_spectate.c"
 #include "../network/netplay/netplay_common.c"
