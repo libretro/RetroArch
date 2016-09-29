@@ -3288,6 +3288,11 @@ static int action_ok_netplay_enable_host(const char *path,
          /* Kill it! */
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
       }
+      else
+      {
+         /* We were already hosting! */
+         return generic_action_ok_command(CMD_EVENT_RESUME);
+      }
    }
 
    global->netplay.is_client = false;
@@ -3305,19 +3310,52 @@ static int action_ok_netplay_enable_host(const char *path,
    if (!netplay_was_on && !core_set_netplay_callbacks())
       return -1;
 
-   return 0;
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return 0;
+   bool netplay_was_on = false;
+   global_t *global  = global_get_ptr();
+
+   global->netplay.enable = true;
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+   {
+      netplay_was_on = true;
+
+      /* Kill it! */
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   }
+
+   global->netplay.is_client = true;
+   /* FIXME global->netplay.server[0] = '\0'; */
+
+   /* FIXME: We can't do anything without a host specified */
+   if (!global->netplay.server[0])
+      strcpy(global->netplay.server, "127.0.0.1");
+
+   /* If we haven't yet started, this will load on its own */
+   if (!content_is_inited())
+      return 0;
+
+   /* Enable Netplay itself */
+   if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+      return -1;
+
+   /* Then make sure we use Netplay's callbacks */
+   if (!netplay_was_on && !core_set_netplay_callbacks())
+      return -1;
+
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return 0;
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int is_rdb_entry(enum msg_hash_enums enum_idx)

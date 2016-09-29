@@ -4275,14 +4275,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_ADD_CONTENT_LIST,
                   PARSE_ACTION, false);
-#if defined(HAVE_NETWORKING)
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_ONLINE_UPDATER,
-                  PARSE_ACTION, false);
-#endif
 #if defined(HAVE_NETPLAY)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY,
+                  PARSE_ACTION, false);
+#endif
+#if defined(HAVE_NETWORKING)
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_ONLINE_UPDATER,
                   PARSE_ACTION, false);
 #endif
             menu_displaylist_parse_settings_enum(menu, info,

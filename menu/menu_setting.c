@@ -2187,17 +2187,6 @@ static bool setting_append_list(
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ADD_CONTENT_LIST);
 
-#if defined(HAVE_NETWORKING)
-         CONFIG_ACTION(
-               list, list_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ONLINE_UPDATER);
-#endif
-
 #if defined(HAVE_NETPLAY)
          CONFIG_ACTION(
                list, list_info,
@@ -2207,6 +2196,17 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY);
+#endif
+
+#if defined(HAVE_NETWORKING)
+         CONFIG_ACTION(
+               list, list_info,
+               msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ONLINE_UPDATER);
 #endif
 
          CONFIG_ACTION(
