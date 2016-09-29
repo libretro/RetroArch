@@ -2512,7 +2512,7 @@ static int action_ok_option_create(const char *path,
       runloop_msg_queue_push(
             msg_hash_to_str(MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY),
             1, 100, true);
-      path_set_core_options(game_path);
+      path_set(RARCH_PATH_CORE_OPTIONS, game_path);
    }
    config_file_free(conf);
 

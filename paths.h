@@ -34,6 +34,8 @@ enum rarch_content_type
 enum rarch_path_type
 {
    RARCH_PATH_NONE = 0,
+   RARCH_PATH_CONTENT,
+   RARCH_PATH_CORE_OPTIONS,
    RARCH_PATH_SUBSYSTEM
 };
 
@@ -49,11 +51,9 @@ void path_fill_names(void);
 
 /* set functions */
 
-void path_set(enum rarch_path_type type, const char *path);
+bool path_set(enum rarch_path_type type, const char *path);
 
 void path_set_redirect(void);
-
-bool path_set_content(const char *path);
 
 void path_set_names(const char *path);
 

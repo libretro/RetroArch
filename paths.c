@@ -212,7 +212,7 @@ void path_set_basename(const char *path)
 {
    char *dst          = NULL;
 
-   path_set_content(path);
+   path_set(RARCH_PATH_CONTENT, path);
 
    strlcpy(path_main_basename,     path, sizeof(path_main_basename));
 
@@ -502,17 +502,28 @@ void path_set_core(const char *path)
    strlcpy(path_libretro, path, sizeof(path_libretro));
 }
 
-void path_set(enum rarch_path_type type, const char *path)
+bool path_set(enum rarch_path_type type, const char *path)
 {
+   if (!path)
+      return false;
+
    switch (type)
    {
       case RARCH_PATH_SUBSYSTEM:
          strlcpy(subsystem_path, path, sizeof(subsystem_path));
          break;
+      case RARCH_PATH_CORE_OPTIONS:
+         strlcpy(path_core_options_file, path, sizeof(path_core_options_file));
+         break;
+      case RARCH_PATH_CONTENT:
+         strlcpy(path_content, path, sizeof(path_content));
+         break;
       default:
       case RARCH_PATH_NONE:
          break;
    }
+
+   return true;
 }
 
 void path_clear_subsystem(void)
@@ -603,10 +614,6 @@ bool path_set_default_shader_preset(const char *preset)
    return true;
 }
 
-void path_set_core_options(const char *path)
-{
-   strlcpy(path_core_options_file, path, sizeof(path_core_options_file));
-}
 
 const char *path_get_core_options(void)
 {
@@ -636,13 +643,6 @@ void path_clear_content(void)
    *path_content = '\0';
 }
 
-bool path_set_content(const char *path)
-{
-   if (!path)
-      return false;
-   strlcpy(path_content, path, sizeof(path_content));
-   return true;
-}
 
 void path_set_config_append(const char *path)
 {

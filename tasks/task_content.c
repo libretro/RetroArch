@@ -1004,7 +1004,7 @@ static bool command_event_cmd_exec(const char *data,
    {
       path_clear_content();
       if (!string_is_empty(data))
-         path_set_content(data);
+         path_set(RARCH_PATH_CONTENT, data);
    }
 
 #if defined(HAVE_DYNAMIC)
@@ -1105,7 +1105,7 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-         path_set_content(fullpath);
+         path_set(RARCH_PATH_CONTENT, fullpath);
          break;
       default:
          break;
