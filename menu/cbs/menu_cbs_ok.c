@@ -3273,6 +3273,7 @@ static int action_ok_video_resolution(const char *path,
 static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#ifdef HAVE_NETPLAY
    bool netplay_was_on = false;
    global_t *global  = global_get_ptr();
 
@@ -3300,7 +3301,12 @@ static int action_ok_netplay_enable_host(const char *path,
 
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())
+   {
+      runloop_msg_queue_push(
+            "Netplay will start when content is loaded.",
+            1, 480, true);
       return 0;
+   }
 
    /* Enable Netplay itself */
    if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
@@ -3311,11 +3317,17 @@ static int action_ok_netplay_enable_host(const char *path,
       return -1;
 
    return generic_action_ok_command(CMD_EVENT_RESUME);
+
+#else
+   return -1;
+
+#endif
 }
 
 static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#ifdef HAVE_NETPLAY
    bool netplay_was_on = false;
    global_t *global  = global_get_ptr();
 
@@ -3330,15 +3342,24 @@ static int action_ok_netplay_enable_client(const char *path,
    }
 
    global->netplay.is_client = true;
-   /* FIXME global->netplay.server[0] = '\0'; */
 
-   /* FIXME: We can't do anything without a host specified */
+   /* We can't do anything without a host specified */
    if (!global->netplay.server[0])
-      strcpy(global->netplay.server, "127.0.0.1");
+   {
+      runloop_msg_queue_push(
+            "Please specify the Netplay server's IP address or hostname.",
+            1, 480, true);
+      return -1;
+   }
 
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())
+   {
+      runloop_msg_queue_push(
+            "Netplay will start when content is loaded.",
+            1, 480, true);
       return 0;
+   }
 
    /* Enable Netplay itself */
    if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
@@ -3349,13 +3370,24 @@ static int action_ok_netplay_enable_client(const char *path,
       return -1;
 
    return generic_action_ok_command(CMD_EVENT_RESUME);
+
+#else
+   return -1;
+
+#endif
 }
 
 static int action_ok_netplay_disconnect(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#ifdef HAVE_NETPLAY
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
+
+#else
+   return -1;
+
+#endif
 }
 
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
