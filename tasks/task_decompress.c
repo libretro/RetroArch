@@ -145,9 +145,9 @@ static void task_decompress_handler_finished(retro_task_t *task,
 static void task_decompress_handler(retro_task_t *task)
 {
    int ret;
-   bool retdec             = false;
-   decompress_state_t *dec = (decompress_state_t*)task->state;
+   bool retdec                              = false;
    struct archive_extract_userdata userdata = {{0}};
+   decompress_state_t *dec                  = task ? (decompress_state_t*)task->state : NULL;
 
    userdata.dec            = dec;
    strlcpy(userdata.archive_path, dec->source_file, sizeof(userdata.archive_path));
@@ -171,10 +171,12 @@ static void task_decompress_handler_target_file(retro_task_t *task)
 {
    bool retdec;
    int ret;
-   decompress_state_t *dec = (decompress_state_t*)task->state;
    struct archive_extract_userdata userdata = {{0}};
+   decompress_state_t *dec                  = task ? 
+      (decompress_state_t*)task->state : NULL;
 
-   strlcpy(userdata.archive_path, dec->source_file, sizeof(userdata.archive_path));
+   strlcpy(userdata.archive_path,
+         dec->source_file, sizeof(userdata.archive_path));
 
    ret = file_archive_parse_file_iterate(&dec->archive,
          &retdec, dec->source_file,

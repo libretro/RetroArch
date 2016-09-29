@@ -496,8 +496,8 @@ static bool load_content(
    retro_ctx_load_content_info_t load_info;
    struct string_list *additional_path_allocs = string_list_new();
 
-   if (!info || !additional_path_allocs)
-      goto error;
+   if (!additional_path_allocs)
+      return false;
 
    for (i = 0; i < content->size; i++)
    {
@@ -727,8 +727,8 @@ static bool content_file_init(struct string_list *temporary_content)
    info                   = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
 
-   ret = load_content(temporary_content,
-         info, content, special);
+   if (info)
+      ret = load_content(temporary_content, info, content, special);
 
    for (i = 0; i < content->size; i++)
       free((void*)info[i].data);
