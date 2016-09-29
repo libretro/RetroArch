@@ -337,8 +337,7 @@ void NETRETROPAD_CORE_PREFIX(retro_reset)(void)
 void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 {
    int i;
-   unsigned rle, runs;
-   uint16_t *pixel      = NULL;
+   unsigned rle;
    unsigned input_state = 0;
 
    /* Update input states and send them if needed */
@@ -352,11 +351,11 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          input_state |= 1 << i;
    }
 
-   pixel = frame_buf + 49 * 320 + 32;
-
    for (rle = 0; rle < sizeof(retropad_buttons); )
    {
-      char paint = 0;
+      unsigned runs;
+      char      paint = 0;
+      uint16_t *pixel = frame_buf + 49 * 320 + 32;
 
       for (runs = retropad_buttons[rle++]; runs > 0; runs--)
       {
