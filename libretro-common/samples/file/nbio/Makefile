@@ -4,7 +4,7 @@ LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := \
 	nbio_test.c \
-	../nbio_stdio.c
+	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.c
 
 OBJS := $(SOURCES:.c=.o)
 
