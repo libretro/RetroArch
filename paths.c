@@ -279,20 +279,22 @@ void path_set_special(char **argv, unsigned num_content)
 
    /* We defer SRAM path updates until we can resolve it.
     * It is more complicated for special content types. */
-
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
-      fill_pathname_noext(global->name.savestate, path_main_basename,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(global->name.savestate));
-
-   if (path_is_directory(global->name.savestate))
+   if (global)
    {
-      fill_pathname_dir(global->name.savestate, path_main_basename,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(global->name.savestate));
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
-            global->name.savestate);
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+         fill_pathname_noext(global->name.savestate, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION),
+               sizeof(global->name.savestate));
+
+      if (path_is_directory(global->name.savestate))
+      {
+         fill_pathname_dir(global->name.savestate, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION),
+               sizeof(global->name.savestate));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+               global->name.savestate);
+      }
    }
 }
 
