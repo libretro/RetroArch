@@ -1505,20 +1505,20 @@ static int menu_displaylist_parse_netplay(
 {
 #ifdef HAVE_NETPLAY
    menu_entries_append_enum(info->list,
-         "Start hosting" /* FIXME */,
-         "enable_netplay_host" /* FIXME */,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
          MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(info->list,
-         "Connect to Netplay host" /* FIXME */,
-         "enable_netplay_client" /* FIXME */,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
          MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(info->list,
-         "Disconnect" /* FIXME */,
-         "disconnect_netplay" /* FIXME */,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
          MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
          MENU_SETTING_ACTION, 0, 0);
 
