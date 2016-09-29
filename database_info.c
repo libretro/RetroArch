@@ -668,3 +668,10 @@ enum database_type database_info_get_type(database_info_handle_t *handle)
       return DATABASE_TYPE_NONE;
    return handle->type;
 }
+
+const char *database_info_get_current_element_name(database_info_handle_t *handle)
+{
+   if (!handle || !handle->list)
+      return NULL;
+   return handle->list->elems[handle->list_ptr].data;
+}

@@ -110,6 +110,8 @@ database_info_handle_t *database_info_file_init(const char *path,
 
 void database_info_set_type(database_info_handle_t *handle, enum database_type type);
 
+const char *database_info_get_current_element_name(database_info_handle_t *handle);
+
 enum database_type database_info_get_type(database_info_handle_t *handle);
 
 void database_info_free(database_info_handle_t *handle);

@@ -246,8 +246,8 @@ static int database_info_list_iterate_found_match(
    settings_t           *settings              = config_get_ptr();
    const char            *db_path              =
       db_state->list->elems[db_state->list_index].data;
-   const char         *entry_path              = db ?
-      db->list->elems[db->list_ptr].data : NULL;
+   const char         *entry_path              = 
+      database_info_get_current_element_name(db);
    database_info_t *db_info_entry              =
       &db_state->info->list[db_state->entry_index];
 
@@ -495,10 +495,10 @@ static int task_database_iterate(database_state_handle_t *db_state,
 {
    const char *name = NULL;
    
-   if (!db || !db->list)
+   if (!db)
       return -1;
 
-   name = db->list->elems[db->list_ptr].data;
+   name = database_info_get_current_element_name(db);
 
    if (!name)
       return 0;
@@ -572,7 +572,7 @@ static void task_database_handler(retro_task_t *task)
          dbinfo->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
-         name = dbinfo->list->elems[dbinfo->list_ptr].data;
+         name = database_info_get_current_element_name(dbinfo);
          task_database_cleanup_state(dbstate);
          dbstate->list_index  = 0;
          dbstate->entry_index = 0;
