@@ -1844,12 +1844,14 @@ struct retro_hw_render_callback *video_driver_get_hw_context(void)
    return &hw_render;
 }
 
-const struct retro_hw_render_context_negotiation_interface *video_driver_get_context_negotiation_interface(void)
+const struct retro_hw_render_context_negotiation_interface *
+   video_driver_get_context_negotiation_interface(void)
 {
    return hw_render_context_negotiation;
 }
 
-void video_driver_set_context_negotiation_interface(const struct retro_hw_render_context_negotiation_interface *iface)
+void video_driver_set_context_negotiation_interface(
+      const struct retro_hw_render_context_negotiation_interface *iface)
 {
    hw_render_context_negotiation = iface;
 }
@@ -1936,14 +1938,16 @@ bool video_driver_get_current_software_framebuffer(struct retro_framebuffer *fb)
    return true;
 }
 
-bool video_driver_get_hw_render_interface(const struct retro_hw_render_interface **iface)
+bool video_driver_get_hw_render_interface(
+      const struct retro_hw_render_interface **iface)
 {
    if (
          !video_driver_poke || 
          !video_driver_poke->get_hw_render_interface)
       return false;
 
-   if (!video_driver_poke->get_hw_render_interface(video_driver_data, iface))
+   if (!video_driver_poke->get_hw_render_interface(
+            video_driver_data, iface))
       return false;
 
    return true;
