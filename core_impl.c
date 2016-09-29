@@ -103,13 +103,7 @@ static bool core_init_libretro_cbs(void *data)
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       return true;
 
-   /* Force normal poll type for netplay. */
-   core_poll_type = POLL_TYPE_NORMAL;
-
-   core.retro_set_video_refresh(video_frame_net);
-   core.retro_set_audio_sample(audio_sample_net);
-   core.retro_set_audio_sample_batch(audio_sample_batch_net);
-   core.retro_set_input_state(input_state_net);
+   core_set_netplay_callbacks();
 #endif
 
    return true;
@@ -179,6 +173,26 @@ bool core_set_rewind_callbacks(void)
       core.retro_set_audio_sample(audio_driver_sample);
       core.retro_set_audio_sample_batch(audio_driver_sample_batch);
    }
+   return true;
+}
+
+/**
+ * core_set_netplay_callbacks:
+ *
+ * Set the I/O callbacks to use netplay's interceding callback system. Should
+ * only be called once.
+ **/
+bool core_set_netplay_callbacks(void)
+{
+   /* Force normal poll type for netplay. */
+   core_poll_type = POLL_TYPE_NORMAL;
+
+   /* And use netplay's interceding callbacks */
+   core.retro_set_video_refresh(video_frame_net);
+   core.retro_set_audio_sample(audio_sample_net);
+   core.retro_set_audio_sample_batch(audio_sample_batch_net);
+   core.retro_set_input_state(input_state_net);
+
    return true;
 }
 

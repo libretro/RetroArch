@@ -1600,6 +1600,18 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Shows current core inside menu.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
+         snprintf(s, len,
+               "Enables Netplay in host (server) mode.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
+         snprintf(s, len,
+               "Enables Netplay in client mode.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
+         snprintf(s, len,
+               "Disconnects an active Netplay connection.");
+         break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
                "Dynamically load a new wallpaper \n"
@@ -2470,6 +2482,12 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "menu_pointer_enable";
       case MENU_ENUM_LABEL_CORE_ENABLE:
          return "menu_core_enable";
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
+         return "menu_netplay_enable_host";
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
+         return "menu_netplay_enable_client";
+      case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
+         return "menu_netplay_disconnect";
       case MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE:
          return "dpi_override_enable";
       case MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE:
@@ -2858,6 +2876,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "network_information";
       case MENU_ENUM_LABEL_ONLINE_UPDATER:
          return "online_updater";
+      case MENU_ENUM_LABEL_NETPLAY:
+         return "netplay";
       case MENU_ENUM_LABEL_CORE_INFORMATION:
          return "core_information";
       case MENU_ENUM_LABEL_CORE_LIST:
@@ -3797,6 +3817,12 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Touch Support";
       case MENU_ENUM_LABEL_VALUE_CORE_ENABLE:
          return "Display core name";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST:
+         return "Start hosting";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT:
+         return "Connect to Netplay host";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT:
+         return "Disconnect";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
          return "DPI Override Enable";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
@@ -4129,6 +4155,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Achievement List";
       case MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER:
          return "Online Updater";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY:
+         return "Netplay";
       case MENU_ENUM_LABEL_VALUE_CORE_INFORMATION:
          return "Core Information";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND:

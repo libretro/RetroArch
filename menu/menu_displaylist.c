@@ -1500,6 +1500,39 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_netplay(
+      menu_displaylist_info_t *info)
+{
+#ifdef HAVE_NETPLAY
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
+         MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
+         MENU_SETTING_ACTION, 0, 0);
+
+#else
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
+         MENU_ENUM_LABEL_NO_ITEMS,
+         MENU_SETTING_NO_ITEM, 0, 0);
+#endif
+
+   return 0;
+}
+
 #ifdef HAVE_LIBRETRODB
 static int create_string_list_rdb_entry_string(
       enum msg_hash_enums enum_idx,
@@ -3971,6 +4004,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_DATABASE_ENTRY:
       case DISPLAYLIST_DATABASE_QUERY:
       case DISPLAYLIST_OPTIONS_SHADERS:
+      case DISPLAYLIST_NETPLAY:
       case DISPLAYLIST_CORE_CONTENT:
       case DISPLAYLIST_CORE_CONTENT_DIRS:
       case DISPLAYLIST_PLAYLIST_COLLECTION:
@@ -4241,6 +4275,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_ADD_CONTENT_LIST,
                   PARSE_ACTION, false);
+#if defined(HAVE_NETPLAY)
+            menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY,
+                  PARSE_ACTION, false);
+#endif
 #if defined(HAVE_NETWORKING)
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_ONLINE_UPDATER,
@@ -5343,6 +5382,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_OPTIONS_SHADERS:
          ret = menu_displaylist_parse_shader_options(info);
+
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_NETPLAY:
+         ret = menu_displaylist_parse_netplay(info);
 
          info->need_push    = true;
          break;

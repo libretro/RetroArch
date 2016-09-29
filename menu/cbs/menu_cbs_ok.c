@@ -50,6 +50,10 @@
 #include "../../lakka.h"
 #include "../../wifi/wifi_driver.h"
 
+#ifdef HAVE_NETPLAY
+#include "../../network/netplay/netplay.h"
+#endif
+
 typedef struct
 {
    enum msg_hash_enums enum_idx;
@@ -3266,6 +3270,126 @@ static int action_ok_video_resolution(const char *path,
    return 0;
 }
 
+static int action_ok_netplay_enable_host(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETPLAY
+   bool netplay_was_on = false;
+   global_t *global  = global_get_ptr();
+
+   global->netplay.enable = true;
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+   {
+      netplay_was_on = true;
+
+      /* Netplay is already on. Are we in the wrong mode? */
+      if (global->netplay.is_client)
+      {
+         /* Kill it! */
+         command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+      }
+      else
+      {
+         /* We were already hosting! */
+         return generic_action_ok_command(CMD_EVENT_RESUME);
+      }
+   }
+
+   global->netplay.is_client = false;
+   global->netplay.server[0] = '\0';
+
+   /* If we haven't yet started, this will load on its own */
+   if (!content_is_inited())
+   {
+      runloop_msg_queue_push(
+            "Netplay will start when content is loaded.",
+            1, 480, true);
+      return 0;
+   }
+
+   /* Enable Netplay itself */
+   if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+      return -1;
+
+   /* Then make sure we use Netplay's callbacks */
+   if (!netplay_was_on && !core_set_netplay_callbacks())
+      return -1;
+
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+
+#else
+   return -1;
+
+#endif
+}
+
+static int action_ok_netplay_enable_client(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETPLAY
+   bool netplay_was_on = false;
+   global_t *global  = global_get_ptr();
+
+   global->netplay.enable = true;
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+   {
+      netplay_was_on = true;
+
+      /* Kill it! */
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   }
+
+   global->netplay.is_client = true;
+
+   /* We can't do anything without a host specified */
+   if (!global->netplay.server[0])
+   {
+      runloop_msg_queue_push(
+            "Please specify the Netplay server's IP address or hostname.",
+            1, 480, true);
+      return -1;
+   }
+
+   /* If we haven't yet started, this will load on its own */
+   if (!content_is_inited())
+   {
+      runloop_msg_queue_push(
+            "Netplay will start when content is loaded.",
+            1, 480, true);
+      return 0;
+   }
+
+   /* Enable Netplay itself */
+   if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+      return -1;
+
+   /* Then make sure we use Netplay's callbacks */
+   if (!netplay_was_on && !core_set_netplay_callbacks())
+      return -1;
+
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+
+#else
+   return -1;
+
+#endif
+}
+
+static int action_ok_netplay_disconnect(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+#ifdef HAVE_NETPLAY
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+
+#else
+   return -1;
+
+#endif
+}
+
 static int is_rdb_entry(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
@@ -3501,6 +3625,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_COUNTERS:
          case MENU_ENUM_LABEL_MANAGEMENT:
          case MENU_ENUM_LABEL_ONLINE_UPDATER:
+         case MENU_ENUM_LABEL_NETPLAY:
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
          case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
          case MENU_ENUM_LABEL_HELP_LIST:
@@ -3640,6 +3765,15 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
             BIND_ACTION_OK(cbs, action_ok_update_autoconfig_profiles);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
+            BIND_ACTION_OK(cbs, action_ok_netplay_enable_host);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
+            BIND_ACTION_OK(cbs, action_ok_netplay_enable_client);
+            break;
+         case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
+            BIND_ACTION_OK(cbs, action_ok_netplay_disconnect);
             break;
          default:
             return -1;
