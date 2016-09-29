@@ -22,6 +22,7 @@
 #include <file/file_path.h>
 #include <queues/message_queue.h>
 #include <encodings/crc32.h>
+#include <streams/file_stream.h>
 
 #include "tasks_internal.h"
 

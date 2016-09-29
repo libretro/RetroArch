@@ -24,8 +24,6 @@
 #include <file/archive_file.h>
 #include <retro_common_api.h>
 
-#include "libretro-db/libretrodb.h"
-
 RETRO_BEGIN_DECLS
 
 enum database_status

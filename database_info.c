@@ -23,6 +23,8 @@
 #include <file/file_path.h>
 #include <file/archive_file.h>
 
+#include "libretro-db/libretrodb.h"
+
 #include "list_special.h"
 #include "database_info.h"
 #include "msg_hash.h"
