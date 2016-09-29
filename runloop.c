@@ -685,7 +685,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             /* retro_run() will be called in very strange and
              * mysterious ways, have to disable it. */
-            if (global->netplay.enable)
+            if (global && global->netplay.enable)
                return false;
 #endif
             runloop_frame_time = *info;
