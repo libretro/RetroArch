@@ -335,14 +335,15 @@ static void retroarch_print_help(const char *arg0)
    puts("      --check-frames=NUMBER\n"
         "                        Check frames when using netplay.");
    puts("      --spectate        Connect to netplay server as spectator.");
-#endif
-   puts("      --nick=NICK       Picks a username (for use with netplay). "
-         "Not mandatory.");
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETWORKING)
+#if defined(HAVE_NETWORK_CMD)
    puts("      --command         Sends a command over UDP to an already "
          "running program process.");
    puts("      Available commands are listed if command is invalid.");
 #endif
+
+#endif
+   puts("      --nick=NICK       Picks a username (for use with netplay). "
+         "Not mandatory.");
 
    puts("  -r, --record=FILE     Path to record video file.\n        "
          "Using .mkv extension is recommended.");
@@ -687,6 +688,34 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
             break;
+
+         case RA_OPT_CHECK_FRAMES:
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+            global->netplay.check_frames = strtoul(optarg, NULL, 0);
+            break;
+
+         case RA_OPT_PORT:
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
+            global->netplay.port = strtoul(optarg, NULL, 0);
+            break;
+
+         case RA_OPT_SPECTATE:
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
+            global->netplay.is_spectate = true;
+            break;
+
+#if defined(HAVE_NETWORK_CMD)
+         case RA_OPT_COMMAND:
+            if (command_network_send((const char*)optarg))
+               exit(0);
+            else
+               retroarch_fail(1, "network_cmd_send()");
+            break;
+#endif
+
 #endif
 
          case RA_OPT_BPS:
@@ -724,35 +753,6 @@ static void retroarch_parse_input(int argc, char *argv[])
             explicit_menu = true;
             break;
 
-#ifdef HAVE_NETWORKING
-         case RA_OPT_CHECK_FRAMES:
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
-            global->netplay.check_frames = strtoul(optarg, NULL, 0);
-            break;
-
-         case RA_OPT_PORT:
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
-            global->netplay.port = strtoul(optarg, NULL, 0);
-            break;
-
-         case RA_OPT_SPECTATE:
-            retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
-            global->netplay.is_spectate = true;
-            break;
-
-#if defined(HAVE_NETWORK_CMD)
-         case RA_OPT_COMMAND:
-            if (command_network_send((const char*)optarg))
-               exit(0);
-            else
-               retroarch_fail(1, "network_cmd_send()");
-            break;
-#endif
-
-#endif
          case RA_OPT_NICK:
             rarch_ctl(RARCH_CTL_USERNAME_SET, NULL);
             strlcpy(settings->username, optarg,
