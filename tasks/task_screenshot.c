@@ -62,7 +62,7 @@
 
 /* Take frame bottom-up. */
 static bool screenshot_dump(
-      const char *global_name_base,
+      const char *name_base,
       const char *folder,
       const void *frame,
       unsigned width,
@@ -80,12 +80,12 @@ static bool screenshot_dump(
 
    if (settings->auto_screenshot_filename)
    {
-      fill_str_dated_filename(shotname, path_basename(global_name_base),
+      fill_str_dated_filename(shotname, path_basename(name_base),
             IMG_EXT, sizeof(shotname));
    }
    else
    {
-      snprintf(shotname, sizeof(shotname),"%s.png", path_basename(global_name_base));
+      snprintf(shotname, sizeof(shotname),"%s.png", path_basename(name_base));
    }
    fill_pathname_join(filename, folder, shotname, sizeof(filename));
 
@@ -149,7 +149,7 @@ static bool screenshot_dump(
 }
 
 #if !defined(VITA)
-static bool take_screenshot_viewport(const char *global_name_base)
+static bool take_screenshot_viewport(const char *name_base)
 {
    char screenshot_path[PATH_MAX_LENGTH] = {0};
    const char *screenshot_dir            = NULL;
@@ -174,13 +174,13 @@ static bool take_screenshot_viewport(const char *global_name_base)
 
    if (string_is_empty(screenshot_dir))
    {
-      fill_pathname_basedir(screenshot_path, global_name_base,
+      fill_pathname_basedir(screenshot_path, name_base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
-   if (!screenshot_dump(global_name_base, screenshot_dir, buffer, vp.width, vp.height,
+   if (!screenshot_dump(name_base, screenshot_dir, buffer, vp.width, vp.height,
             vp.width * 3, true))
       goto done;
 
@@ -193,7 +193,7 @@ done:
 }
 #endif
 
-static bool take_screenshot_raw(const char *global_name_base)
+static bool take_screenshot_raw(const char *name_base)
 {
    unsigned width, height;
    size_t pitch;
@@ -206,7 +206,7 @@ static bool take_screenshot_raw(const char *global_name_base)
 
    if (string_is_empty(settings->directory.screenshot))
    {
-      fill_pathname_basedir(screenshot_path, global_name_base,
+      fill_pathname_basedir(screenshot_path, name_base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -214,7 +214,7 @@ static bool take_screenshot_raw(const char *global_name_base)
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
-   if (!screenshot_dump(global_name_base, screenshot_dir,
+   if (!screenshot_dump(name_base, screenshot_dir,
          (const uint8_t*)data + (height - 1) * pitch,
          width, height, -pitch, false))
       return false;
@@ -222,12 +222,12 @@ static bool take_screenshot_raw(const char *global_name_base)
    return true;
 }
 
-static bool take_screenshot_choice(const char *global_name_base)
+static bool take_screenshot_choice(const char *name_base)
 {
    settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
-   if (string_is_empty(settings->directory.screenshot) && (!*global_name_base))
+   if (string_is_empty(settings->directory.screenshot) && (!*name_base))
       return false;
 
    if (video_driver_supports_viewport_read())
@@ -236,14 +236,14 @@ static bool take_screenshot_choice(const char *global_name_base)
       video_driver_set_texture_enable(false, false);
       video_driver_cached_frame_render();
 #if defined(VITA)
-      return take_screenshot_raw(global_name_base);
+      return take_screenshot_raw(name_base);
 #else
-      return take_screenshot_viewport(global_name_base);
+      return take_screenshot_viewport(name_base);
 #endif
    }
 
    if (!video_driver_cached_frame_has_valid_framebuffer())
-      return take_screenshot_raw(global_name_base);
+      return take_screenshot_raw(name_base);
 
    if (video_driver_supports_read_frame_raw())
    {
@@ -265,7 +265,7 @@ static bool take_screenshot_choice(const char *global_name_base)
       if (frame_data)
       {
          video_driver_set_cached_frame_ptr(frame_data);
-         if (take_screenshot_raw(global_name_base))
+         if (take_screenshot_raw(name_base))
             ret = true;
          free(frame_data);
       }
