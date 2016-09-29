@@ -134,11 +134,12 @@ COUNTER=0
 #for f in *_${platform}.${EXT} ; do
 for f in `ls -v *_${platform}.${EXT}`; do
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
+   async=0
+   pthread=0
    lto=0
    whole_archive=
    big_stack=
-   async=0
-   pthread=0
+   
    if [ $name = "nxengine" ] ; then
       echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
@@ -157,6 +158,9 @@ for f in `ls -v *_${platform}.${EXT}`; do
    else
       cp -f "$f" ../libretro_${platform}.${EXT}
    fi
+   echo NAME: $name
+   echo ASYNC: $async
+   echo LTO: $lto
 
    # Do cleanup if this is a big stack core
    if [ "$big_stack" = "BIG_STACK=1" ] ; then
