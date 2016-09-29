@@ -111,26 +111,23 @@ static struct descriptor *descriptors[] = {
 
 void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 {
-   struct descriptor *desc;
-   int size;
    int i;
 
    frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
 
    if (frame_buf)
    {
+      unsigned rle, runs, count;
       uint16_t *pixel = frame_buf + 49 * 320 + 32;
 
-      for (unsigned rle = 0; rle < sizeof(body); )
+      for (rle = 0; rle < sizeof(body); )
       {
          uint16_t color = 0;
 
-         for (unsigned runs = body[rle++]; runs > 0; runs--)
+         for (runs = body[rle++]; runs > 0; runs--)
          {
-            for (unsigned count = body[rle++]; count > 0; count--)
-            {
+            for (count = body[rle++]; count > 0; count--)
                *pixel++ = color;
-            }
 
             color = 0x4208 - color;
          }
@@ -140,10 +137,11 @@ void NETRETROPAD_CORE_PREFIX(retro_init)(void)
    }
 
    /* Allocate descriptor values */
-   for (i = 0; i < ARRAY_SIZE(descriptors); i++) {
-      desc = descriptors[i];
-      size = DESC_NUM_PORTS(desc) * DESC_NUM_INDICES(desc) * DESC_NUM_IDS(desc);
-      descriptors[i]->value = (uint16_t*)calloc(size, sizeof(uint16_t));
+   for (i = 0; i < ARRAY_SIZE(descriptors); i++)
+   {
+      struct descriptor *desc = descriptors[i];
+      int                size = DESC_NUM_PORTS(desc) * DESC_NUM_INDICES(desc) * DESC_NUM_IDS(desc);
+      descriptors[i]->value   = (uint16_t*)calloc(size, sizeof(uint16_t));
    }
 
    NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Initialising sockets...\n");
@@ -159,7 +157,8 @@ void NETRETROPAD_CORE_PREFIX(retro_deinit)(void)
    frame_buf = NULL;
 
    /* Free descriptor values */
-   for (i = 0; i < ARRAY_SIZE(descriptors); i++) {
+   for (i = 0; i < ARRAY_SIZE(descriptors); i++)
+   {
       free(descriptors[i]->value);
       descriptors[i]->value = NULL;
    }
@@ -202,40 +201,43 @@ void NETRETROPAD_CORE_PREFIX(retro_get_system_av_info)(
 
 static void retropad_update_input(void)
 {
-   struct descriptor *desc;
-   struct remote_joypad_message msg;
-   uint16_t state;
-   uint16_t old;
-   int offset;
-   int port;
-   int index;
-   int id;
    int i;
 
    /* Poll input */
    NETRETROPAD_CORE_PREFIX(input_poll_cb)();
 
    /* Parse descriptors */
-   for (i = 0; i < ARRAY_SIZE(descriptors); i++) {
+   for (i = 0; i < ARRAY_SIZE(descriptors); i++)
+   {
+      int port;
       /* Get current descriptor */
-      desc = descriptors[i];
+      struct descriptor *desc = descriptors[i];
 
       /* Go through range of ports/indices/IDs */
       for (port = desc->port_min; port <= desc->port_max; port++)
+      {
+         int index;
+
          for (index = desc->index_min; index <= desc->index_max; index++)
-            for (id = desc->id_min; id <= desc->id_max; id++) {
+         {
+            int id;
+
+            for (id = desc->id_min; id <= desc->id_max; id++)
+            {
+               struct remote_joypad_message msg;
+
                /* Compute offset into array */
-               offset = DESC_OFFSET(desc, port, index, id);
+               int offset     = DESC_OFFSET(desc, port, index, id);
 
                /* Get old state */
-               old = desc->value[offset];
+               uint16_t old   = desc->value[offset];
 
                /* Get new state */
-               state = NETRETROPAD_CORE_PREFIX(input_state_cb)(
-                  port,
-                  desc->device,
-                  index,
-                  id);
+               uint16_t state = NETRETROPAD_CORE_PREFIX(input_state_cb)(
+                     port,
+                     desc->device,
+                     index,
+                     id);
 
                /* Continue if state is unchanged */
                if (state == old)
@@ -245,14 +247,17 @@ static void retropad_update_input(void)
                desc->value[offset] = state;
 
                /* Attempt to send updated state */
-               msg.port = port;
-               msg.device = desc->device;
-               msg.index = index;
-               msg.id = id;
-               msg.state = state;
+               msg.port            = port;
+               msg.device          = desc->device;
+               msg.index           = index;
+               msg.id              = id;
+               msg.state           = state;
+
                if (sendto(s, (char*)&msg, sizeof(msg), 0, (struct sockaddr *)&si_other, sizeof(si_other)) == -1)
                   NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Error sending data!\n");
             }
+         }
+      }
    }
 }
 
