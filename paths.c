@@ -67,8 +67,8 @@ static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
 void path_set_redirect(void)
 {
    char current_savestate_dir[PATH_MAX_LENGTH] = {0};
-   uint32_t global_library_name_hash           = 0;
-   bool check_global_library_name_hash         = false;
+   uint32_t library_name_hash                  = 0;
+   bool check_library_name_hash                = false;
    rarch_system_info_t      *info              = NULL;
    global_t                *global             = global_get_ptr();
    const char *old_savefile_dir                = dir_get_savefile();
@@ -78,7 +78,7 @@ void path_set_redirect(void)
 
    if (info && info->info.library_name &&
          !string_is_empty(info->info.library_name))
-      global_library_name_hash =
+      library_name_hash =
          msg_hash_calculate(info->info.library_name);
 
    /* Initialize current save directories
@@ -90,13 +90,13 @@ void path_set_redirect(void)
          old_savestate_dir,
          sizeof(current_savestate_dir));
 
-   check_global_library_name_hash = (global_library_name_hash != 0);
+   check_library_name_hash = (library_name_hash != 0);
 #ifdef HAVE_MENU
-   check_global_library_name_hash = check_global_library_name_hash &&
-      (global_library_name_hash != MENU_VALUE_NO_CORE);
+   check_library_name_hash = check_library_name_hash &&
+      (library_name_hash != MENU_VALUE_NO_CORE);
 #endif
 
-   if (check_global_library_name_hash)
+   if (check_library_name_hash)
    {
       settings_t *settings = config_get_ptr();
 
