@@ -362,22 +362,25 @@ static bool path_init_subsystem(void)
       }
    }
 
-   /* Let other relevant paths be inferred from the main SRAM location. */
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
-      fill_pathname_noext(global->name.savefile,
-            path_main_basename,
-            file_path_str(FILE_PATH_SRM_EXTENSION),
-            sizeof(global->name.savefile));
-
-   if (path_is_directory(global->name.savefile))
+   if (global)
    {
-      fill_pathname_dir(global->name.savefile,
-            path_main_basename,
-            file_path_str(FILE_PATH_SRM_EXTENSION),
-            sizeof(global->name.savefile));
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-            global->name.savefile);
+      /* Let other relevant paths be inferred from the main SRAM location. */
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+         fill_pathname_noext(global->name.savefile,
+               path_main_basename,
+               file_path_str(FILE_PATH_SRM_EXTENSION),
+               sizeof(global->name.savefile));
+
+      if (path_is_directory(global->name.savefile))
+      {
+         fill_pathname_dir(global->name.savefile,
+               path_main_basename,
+               file_path_str(FILE_PATH_SRM_EXTENSION),
+               sizeof(global->name.savefile));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+               global->name.savefile);
+      }
    }
 
    return true;
@@ -448,25 +451,30 @@ void path_fill_names(void)
    global_t *global = global_get_ptr();
 
    path_init_savefile_internal();
-   bsv_movie_set_path(global->name.savefile);
+   
+   if (global)
+      bsv_movie_set_path(global->name.savefile);
 
    if (string_is_empty(path_main_basename))
       return;
 
-   if (string_is_empty(global->name.ups))
-      fill_pathname_noext(global->name.ups, path_main_basename,
-            file_path_str(FILE_PATH_UPS_EXTENSION),
-            sizeof(global->name.ups));
+   if (global)
+   {
+      if (string_is_empty(global->name.ups))
+         fill_pathname_noext(global->name.ups, path_main_basename,
+               file_path_str(FILE_PATH_UPS_EXTENSION),
+               sizeof(global->name.ups));
 
-   if (string_is_empty(global->name.bps))
-      fill_pathname_noext(global->name.bps, path_main_basename,
-            file_path_str(FILE_PATH_BPS_EXTENSION),
-            sizeof(global->name.bps));
+      if (string_is_empty(global->name.bps))
+         fill_pathname_noext(global->name.bps, path_main_basename,
+               file_path_str(FILE_PATH_BPS_EXTENSION),
+               sizeof(global->name.bps));
 
-   if (string_is_empty(global->name.ips))
-      fill_pathname_noext(global->name.ips, path_main_basename,
-            file_path_str(FILE_PATH_IPS_EXTENSION),
-            sizeof(global->name.ips));
+      if (string_is_empty(global->name.ips))
+         fill_pathname_noext(global->name.ips, path_main_basename,
+               file_path_str(FILE_PATH_IPS_EXTENSION),
+               sizeof(global->name.ips));
+   }
 }
 
 /* Core file path */
