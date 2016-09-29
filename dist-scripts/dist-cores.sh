@@ -134,11 +134,12 @@ COUNTER=0
 #for f in *_${platform}.${EXT} ; do
 for f in `ls -v *_${platform}.${EXT}`; do
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
+   async=0
+   pthread=0
    lto=0
    whole_archive=
    big_stack=
-   async=0
-   pthread=0
+   
    if [ $name = "nxengine" ] ; then
       echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
@@ -148,6 +149,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
       big_stack="BIG_STACK=1"
    elif [ $name = "mupen64plus" ] ; then
       async=1
+   elif [ $name = "dosbox" ] ; then
+      async=1
    fi
    echo "-- Building core: $name --"
    if [ $PLATFORM = "unix" ]; then
@@ -155,6 +158,9 @@ for f in `ls -v *_${platform}.${EXT}`; do
    else
       cp -f "$f" ../libretro_${platform}.${EXT}
    fi
+   echo NAME: $name
+   echo ASYNC: $async
+   echo LTO: $lto
 
    # Do cleanup if this is a big stack core
    if [ "$big_stack" = "BIG_STACK=1" ] ; then
@@ -173,6 +179,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $MAKEFILE_GRIFFIN = "yes" ]; then
       make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
+       echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js"
        make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
    elif [ $PLATFORM = "unix" ]; then
       make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1

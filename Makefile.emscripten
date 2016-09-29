@@ -21,8 +21,7 @@ HAVE_ZLIB = 1
 HAVE_FBO = 1
 WANT_ZLIB = 1
 MEMORY = 536870912
-LTO = 0
-ASYNC = 0
+
 # XXX: setting this to 1/2 currently crashes Firefox nightly
 PRECISE_F32 = 2
 
@@ -46,7 +45,7 @@ ifneq ($(PTHREAD), 0)
    LDFLAGS += -s USE_PTHREADS=$(PTHREAD) -s PTHREAD_POOL_SIZE=2
 endif
 
-ifneq ($(ASYNC), 0)
+ifeq ($(ASYNC), 1)
    LDFLAGS += -s ASYNCIFY=$(ASYNC)
 endif  
 
