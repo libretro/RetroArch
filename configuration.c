@@ -1342,7 +1342,7 @@ static void config_set_defaults(void)
       char temp_str[PATH_MAX_LENGTH];
       fill_pathname_expand_special(temp_str,
             g_defaults.path.config, sizeof(temp_str));
-      path_set_config(temp_str);
+      path_set(RARCH_PATH_CONFIG, temp_str);
    }
 
    /* Avoid reloading config on every content load */
@@ -1540,7 +1540,7 @@ static config_file_t *open_default_config_file(void)
    if (!conf)
       return NULL;
 
-   path_set_config(conf_path);
+   path_set(RARCH_PATH_CONFIG, conf_path);
 
    return conf;
 }
@@ -1926,7 +1926,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 #ifndef HAVE_DYNAMIC
    if (config_get_path(conf, "libretro_path", tmp_str, sizeof(tmp_str)))
-      path_set_core(tmp_str);
+      path_set(RARCH_PATH_CORE, tmp_str);
 #endif
 
 #ifdef RARCH_CONSOLE
@@ -2294,7 +2294,7 @@ bool config_load_override(void)
 
    /* Restore the libretro_path we're using
     * since it will be overwritten by the override when reloading. */
-   path_set_core(buf);
+   path_set(RARCH_PATH_CORE, buf);
    runloop_msg_queue_push("Configuration override loaded.", 1, 100, true);
 
    /* Reset save paths. */
@@ -3263,7 +3263,7 @@ bool config_replace(char *path)
    if (settings->config_save_on_exit && !path_is_config_empty())
       config_save_file(path_get_config());
 
-   path_set_config(path);
+   path_set(RARCH_PATH_CONFIG, path);
 
    rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 

@@ -708,13 +708,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_SET_LIBRETRO_PATH:
-         {
-            const char *fullpath = (const char*)data;
-            if (!fullpath)
-               return false;
-            path_set_core(fullpath);
-         }
-         break;
+         return path_set(RARCH_PATH_CORE, (const char*)data);
       case RUNLOOP_CTL_FRAME_TIME_FREE:
          memset(&runloop_frame_time, 0,
                sizeof(struct retro_frame_time_callback));

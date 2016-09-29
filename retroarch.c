@@ -589,7 +589,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'c':
-            path_set_config(optarg);
+            path_set(RARCH_PATH_CONFIG, optarg);
             break;
 
          case 'r':

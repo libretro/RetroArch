@@ -251,14 +251,13 @@ struct string_list *path_get_subsystem_list(void)
 
 const char *path_get_current_savefile_dir(void)
 {
-   char *ret = current_savefile_dir;
-
    /* try to infer the path in case it's still empty by calling
    path_set_redirect */
-   if (string_is_empty(ret) && !content_does_not_need_content())
+   if (string_is_empty(current_savefile_dir) 
+         && !content_does_not_need_content())
       path_set_redirect();
 
-   return ret;
+   return current_savefile_dir;
 }
 
 void path_set_special(char **argv, unsigned num_content)
@@ -497,11 +496,6 @@ size_t path_get_core_size(void)
    return sizeof(path_libretro);
 }
 
-void path_set_core(const char *path)
-{
-   strlcpy(path_libretro, path, sizeof(path_libretro));
-}
-
 bool path_set(enum rarch_path_type type, const char *path)
 {
    if (!path)
@@ -509,14 +503,25 @@ bool path_set(enum rarch_path_type type, const char *path)
 
    switch (type)
    {
+      case RARCH_PATH_CORE:
+         strlcpy(path_libretro, path,
+               sizeof(path_libretro));
+         break;
+      case RARCH_PATH_CONFIG:
+         strlcpy(path_config_file, path,
+               sizeof(path_config_file));
+         break;
       case RARCH_PATH_SUBSYSTEM:
-         strlcpy(subsystem_path, path, sizeof(subsystem_path));
+         strlcpy(subsystem_path, path,
+               sizeof(subsystem_path));
          break;
       case RARCH_PATH_CORE_OPTIONS:
-         strlcpy(path_core_options_file, path, sizeof(path_core_options_file));
+         strlcpy(path_core_options_file, path,
+               sizeof(path_core_options_file));
          break;
       case RARCH_PATH_CONTENT:
-         strlcpy(path_content, path, sizeof(path_content));
+         strlcpy(path_content, path,
+               sizeof(path_content));
          break;
       default:
       case RARCH_PATH_NONE:
@@ -559,10 +564,6 @@ bool path_is_config_empty(void)
    return false;
 }
 
-void path_set_config(const char *path)
-{
-   strlcpy(path_config_file, path, sizeof(path_config_file));
-}
 
 const char *path_get_config(void)
 {
