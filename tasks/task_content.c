@@ -711,13 +711,17 @@ static bool init_content_file_set_attribs(
  **/
 static bool content_file_init(struct string_list *temporary_content)
 {
-   unsigned i;
    struct retro_game_info               *info = NULL;
+   struct string_list *content                = NULL;
    bool ret                                   = false;
    const struct retro_subsystem_info *special = init_content_file_subsystem(&ret);
-   struct string_list *content                = string_list_new();
 
-   if (!ret || !content)
+   if (!ret)
+      goto error;
+
+   content = string_list_new();
+
+   if (!content)
       goto error;
 
    if (!init_content_file_set_attribs(temporary_content,
@@ -728,13 +732,15 @@ static bool content_file_init(struct string_list *temporary_content)
       calloc(content->size, sizeof(*info));
 
    if (info)
+   {
+      unsigned i;
       ret = load_content(temporary_content, info, content, special);
 
-   for (i = 0; i < content->size; i++)
-      free((void*)info[i].data);
+      for (i = 0; i < content->size; i++)
+         free((void*)info[i].data);
 
-   if (info)
       free(info);
+   }
 
 error:
    if (content)
