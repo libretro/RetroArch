@@ -646,8 +646,6 @@ bool config_overlay_enable_default(void);
 
 void config_free(void);
 
-void config_free_state(void);
-
 settings_t *config_get_ptr(void);
 
 RETRO_END_DECLS

@@ -3280,7 +3280,3 @@ bool config_replace(char *path)
 
    return true;
 }
-
-void config_free_state(void)
-{
-}
