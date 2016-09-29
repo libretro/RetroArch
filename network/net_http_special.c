@@ -78,6 +78,7 @@ int net_http_get(const char **result, size_t *size, const char *url, retro_time_
          goto error;
 
       memcpy((void*)res, (void*)data, length);
+      free(data);
       res[length] = 0;
       *result = res;
    }
