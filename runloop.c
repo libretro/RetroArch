@@ -808,12 +808,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          runloop_msg_queue_unlock();
          break;
-      case RUNLOOP_CTL_MSG_QUEUE_FREE:
-#ifdef HAVE_THREADS
-         slock_free(_runloop_msg_queue_lock);
-         _runloop_msg_queue_lock = NULL;
-#endif
-         break;
       case RUNLOOP_CTL_MSG_QUEUE_CLEAR:
          msg_queue_clear(runloop_msg_queue);
          break;
@@ -826,7 +820,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          msg_queue_free(runloop_msg_queue);
 
          runloop_msg_queue_unlock();
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_FREE, NULL);
+
+#ifdef HAVE_THREADS
+         slock_free(_runloop_msg_queue_lock);
+         _runloop_msg_queue_lock = NULL;
+#endif
 
          runloop_msg_queue = NULL;
          break;
