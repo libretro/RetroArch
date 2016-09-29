@@ -502,9 +502,17 @@ void path_set_core(const char *path)
    strlcpy(path_libretro, path, sizeof(path_libretro));
 }
 
-void path_set_subsystem(const char *path)
+void path_set(enum rarch_path_type type, const char *path)
 {
-   strlcpy(subsystem_path, path, sizeof(subsystem_path));
+   switch (type)
+   {
+      case RARCH_PATH_SUBSYSTEM:
+         strlcpy(subsystem_path, path, sizeof(subsystem_path));
+         break;
+      default:
+      case RARCH_PATH_NONE:
+         break;
+   }
 }
 
 void path_clear_subsystem(void)

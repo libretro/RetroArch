@@ -788,7 +788,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_SUBSYSTEM:
-            path_set_subsystem(optarg);
+            path_set(RARCH_PATH_SUBSYSTEM, optarg);
             break;
 
          case RA_OPT_FEATURES:

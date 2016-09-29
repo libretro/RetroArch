@@ -31,6 +31,12 @@ enum rarch_content_type
    RARCH_CONTENT_IMAGE
 };
 
+enum rarch_path_type
+{
+   RARCH_PATH_NONE = 0,
+   RARCH_PATH_SUBSYSTEM
+};
+
 void path_deinit_subsystem(void);
 
 void path_deinit_savefile(void);
@@ -43,7 +49,7 @@ void path_fill_names(void);
 
 /* set functions */
 
-void path_set_subsystem(const char *path);
+void path_set(enum rarch_path_type type, const char *path);
 
 void path_set_redirect(void);
 
