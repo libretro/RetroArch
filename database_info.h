@@ -46,6 +46,7 @@ enum database_type
    DATABASE_TYPE_CRC_LOOKUP
 };
 
+
 typedef struct
 {
    enum database_status status;
@@ -106,6 +107,8 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
 database_info_handle_t *database_info_file_init(const char *path,
       enum database_type type);
+
+enum database_type database_info_get_type(database_info_handle_t *handle);
 
 void database_info_free(database_info_handle_t *handle);
 

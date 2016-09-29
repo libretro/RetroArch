@@ -654,3 +654,10 @@ void database_info_list_free(database_info_list_t *database_info_list)
 
    free(database_info_list->list);
 }
+
+enum database_type database_info_get_type(database_info_handle_t *handle)
+{
+   if (!handle)
+      return DATABASE_TYPE_NONE;
+   return handle->type;
+}
