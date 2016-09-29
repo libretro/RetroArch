@@ -1591,12 +1591,14 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
          {
-            if (setting->value.target.boolean && *setting->value.target.boolean)
+            if (setting 
+                  && setting->value.target.boolean 
+                  && *setting->value.target.boolean)
                verbosity_enable();
             else
                verbosity_disable();
 
-            if (*setting->value.target.boolean)
+            if (setting && *setting->value.target.boolean)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY);
             else
                retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY);
