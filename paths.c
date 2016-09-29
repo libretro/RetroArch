@@ -400,14 +400,14 @@ void path_init_savefile(void)
    else
       rarch_ctl(RARCH_CTL_UNSET_SRAM_ENABLE, NULL);
 
-   if (rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
+   if (!rarch_ctl(RARCH_CTL_IS_SRAM_USED, NULL))
    {
-      command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
+      RARCH_LOG("%s\n",
+            msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
       return;
    }
 
-   RARCH_LOG("%s\n",
-         msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
+   command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
 }
 
 static void path_init_savefile_internal(void)
