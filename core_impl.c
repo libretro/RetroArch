@@ -176,6 +176,7 @@ bool core_set_rewind_callbacks(void)
    return true;
 }
 
+#ifdef HAVE_NETWORKING
 /**
  * core_set_netplay_callbacks:
  *
@@ -195,6 +196,7 @@ bool core_set_netplay_callbacks(void)
 
    return true;
 }
+#endif
 
 bool core_set_cheat(retro_ctx_cheat_info_t *info)
 {
