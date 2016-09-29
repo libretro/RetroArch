@@ -507,6 +507,14 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(path_libretro, path,
                sizeof(path_libretro));
          break;
+      case RARCH_PATH_DEFAULT_SHADER_PRESET:
+         strlcpy(path_default_shader_preset, path,
+               sizeof(path_default_shader_preset));
+         break;
+      case RARCH_PATH_CONFIG_APPEND:
+         strlcpy(path_config_append_file, path,
+               sizeof(path_config_append_file));
+         break;
       case RARCH_PATH_CONFIG:
          strlcpy(path_config_file, path,
                sizeof(path_config_file));
@@ -606,14 +614,6 @@ void path_clear_core_options(void)
    *path_core_options_file = '\0';
 }
 
-bool path_set_default_shader_preset(const char *preset)
-{
-   if (!preset)
-      return false;
-   strlcpy(path_default_shader_preset, preset,
-         sizeof(path_default_shader_preset));
-   return true;
-}
 
 
 const char *path_get_core_options(void)
@@ -644,11 +644,6 @@ void path_clear_content(void)
    *path_content = '\0';
 }
 
-
-void path_set_config_append(const char *path)
-{
-   strlcpy(path_config_append_file, path, sizeof(path_config_append_file));
-}
 
 bool path_get_content(char **fullpath)
 {

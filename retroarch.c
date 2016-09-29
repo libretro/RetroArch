@@ -760,7 +760,7 @@ static void retroarch_parse_input(int argc, char *argv[])
 #endif
 
          case RA_OPT_APPENDCONFIG:
-            path_set_config_append(optarg);
+            path_set(RARCH_PATH_CONFIG_APPEND, optarg);
             break;
 
          case RA_OPT_SIZE:

@@ -2234,7 +2234,7 @@ bool config_load_override(void)
       RARCH_LOG("[overrides] core-specific overrides found at %s.\n", core_path);
 
       config_file_free(new_conf);
-      path_set_config_append(core_path);
+      path_set(RARCH_PATH_CONFIG_APPEND, core_path);
 
       should_append = true;
    }
@@ -2262,7 +2262,7 @@ bool config_load_override(void)
       else
          strlcpy(temp_path, game_path, sizeof(temp_path));
 
-      path_set_config_append(temp_path);
+      path_set(RARCH_PATH_CONFIG_APPEND, temp_path);
 
       should_append = true;
    }
@@ -2533,7 +2533,7 @@ bool config_load_shader_preset(void)
       /* Game shader preset exists, load it. */
       RARCH_LOG("Shaders: game-specific shader preset found at %s.\n", game_path);
 
-      path_set_default_shader_preset(settings->path.shader);
+      path_set(RARCH_PATH_DEFAULT_SHADER_PRESET, settings->path.shader);
       strlcpy(settings->path.shader, game_path, sizeof(settings->path.shader));
       config_file_free(new_conf);
       return true;
@@ -2563,7 +2563,7 @@ bool config_load_shader_preset(void)
 
       /* Core shader preset exists, load it. */
       RARCH_LOG("Shaders: core-specific shader preset found at %s.\n", core_path);
-      path_set_default_shader_preset(settings->path.shader);
+      path_set(RARCH_PATH_DEFAULT_SHADER_PRESET, settings->path.shader);
       strlcpy(settings->path.shader, core_path, sizeof(settings->path.shader));
       config_file_free(new_conf);
       return true;
