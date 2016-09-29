@@ -744,6 +744,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             rarch_ctl(RARCH_CTL_UNSET_SRAM_LOAD_DISABLED, NULL);
             rarch_ctl(RARCH_CTL_UNSET_SRAM_SAVE_DISABLED, NULL);
             rarch_ctl(RARCH_CTL_UNSET_SRAM_ENABLE, NULL);
+            rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
+            rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+            rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
+            rarch_ctl(RARCH_CTL_UNSET_PATCH_BLOCKED, NULL);
             path_clear_content();
             runloop_overrides_active   = false;
 

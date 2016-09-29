@@ -473,10 +473,9 @@ static void retroarch_parse_input(int argc, char *argv[])
    retroarch_override_setting_free_state();
 
    rarch_ctl(RARCH_CTL_USERNAME_UNSET, NULL);
-
-   global->patch.ups_pref                = false;
-   global->patch.bps_pref                = false;
-   global->patch.ips_pref                = false;
+   rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
+   rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    *global->name.ups                     = '\0';
    *global->name.bps                     = '\0';
    *global->name.ips                     = '\0';
@@ -693,26 +692,26 @@ static void retroarch_parse_input(int argc, char *argv[])
          case RA_OPT_BPS:
             strlcpy(global->name.bps, optarg,
                   sizeof(global->name.bps));
-            global->patch.bps_pref   = true;
+            rarch_ctl(RARCH_CTL_SET_BPS_PREF, NULL);
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF);
             break;
 
          case 'U':
             strlcpy(global->name.ups, optarg,
                   sizeof(global->name.ups));
-            global->patch.ups_pref   = true;
+            rarch_ctl(RARCH_CTL_SET_UPS_PREF, NULL);
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF);
             break;
 
          case RA_OPT_IPS:
             strlcpy(global->name.ips, optarg,
                   sizeof(global->name.ips));
-            global->patch.ips_pref   = true;
+            rarch_ctl(RARCH_CTL_SET_IPS_PREF, NULL);
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF);
             break;
 
          case RA_OPT_NO_PATCH:
-            global->patch.block_patch = true;
+            rarch_ctl(RARCH_CTL_SET_PATCH_BLOCKED, NULL);
             break;
 
          case 'D':

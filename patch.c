@@ -32,6 +32,7 @@
 
 #include "msg_hash.h"
 #include "patch.h"
+#include "retroarch.h"
 #include "runloop.h"
 #include "verbosity.h"
 
@@ -555,7 +556,7 @@ error:
 static bool try_bps_patch(uint8_t **buf, ssize_t *size)
 {
    global_t *global = global_get_ptr();
-   bool allow_bps   = !global->patch.ups_pref && !global->patch.ips_pref;
+   bool allow_bps   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
 
    if (!allow_bps || string_is_empty(global->name.bps))
       return false;
@@ -567,7 +568,7 @@ static bool try_bps_patch(uint8_t **buf, ssize_t *size)
 static bool try_ups_patch(uint8_t **buf, ssize_t *size)
 {
    global_t *global = global_get_ptr();
-   bool allow_ups   = !global->patch.bps_pref && !global->patch.ips_pref;
+   bool allow_ups   = !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
 
    if (!allow_ups || string_is_empty(global->name.ups))
       return false;
@@ -579,7 +580,7 @@ static bool try_ups_patch(uint8_t **buf, ssize_t *size)
 static bool try_ips_patch(uint8_t **buf, ssize_t *size)
 {
    global_t *global = global_get_ptr();
-   bool allow_ips   = !global->patch.ups_pref && !global->patch.bps_pref;
+   bool allow_ips   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
 
    if (!allow_ips || string_is_empty(global->name.ips))
       return false;
@@ -598,11 +599,9 @@ static bool try_ips_patch(uint8_t **buf, ssize_t *size)
  **/
 void patch_content(uint8_t **buf, ssize_t *size)
 {
-   global_t *global = global_get_ptr();
-
-   if (    global->patch.ips_pref 
-         + global->patch.bps_pref 
-         + global->patch.ups_pref > 1)
+   if (    (unsigned)rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL) 
+         + (unsigned)rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) 
+         + (unsigned)rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) > 1)
    {
       RARCH_WARN("%s\n",
             msg_hash_to_str(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED));

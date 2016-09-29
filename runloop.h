@@ -154,14 +154,6 @@ typedef struct global
       char remapfile[PATH_MAX_LENGTH];
    } name;
 
-   struct
-   {
-      bool block_patch;
-      bool ups_pref;
-      bool bps_pref;
-      bool ips_pref;
-   } patch;
-
 #ifdef HAVE_NETPLAY
    /* Netplay. */
    struct

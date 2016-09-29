@@ -1172,11 +1172,11 @@ static void config_set_defaults(void)
    *settings->directory.audio_filter = '\0';
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF))
-      global->patch.ups_pref = false;
+      rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF))
-      global->patch.bps_pref = false;
+      rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF))
-      global->patch.ips_pref = false;
+      rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
    *global->record.output_dir = '\0';
    *global->record.config_dir = '\0';
@@ -1772,17 +1772,26 @@ static bool config_load_file(const char *path, bool set_defaults,
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF))
    {
-      CONFIG_GET_BOOL_BASE(conf, global, patch.ups_pref, "ups_pref");
+      if (config_get_bool(conf, "ups_pref", &tmp_bool))
+         rarch_ctl(RARCH_CTL_SET_UPS_PREF, NULL);
+      else
+         rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    }
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF))
    {
-      CONFIG_GET_BOOL_BASE(conf, global, patch.bps_pref, "bps_pref");
+      if (config_get_bool(conf, "bps_pref", &tmp_bool))
+         rarch_ctl(RARCH_CTL_SET_BPS_PREF, NULL);
+      else
+         rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    }
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF))
    {
-      CONFIG_GET_BOOL_BASE(conf, global, patch.ips_pref, "ips_pref");
+      if (config_get_bool(conf, "ips_pref", &tmp_bool))
+         rarch_ctl(RARCH_CTL_SET_IPS_PREF, NULL);
+      else
+         rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
    }
 
 #ifdef HAVE_NETPLAY
@@ -2971,11 +2980,11 @@ bool config_save_file(const char *path)
 #endif
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF))
-      config_set_bool(conf, "ups_pref", global->patch.ups_pref);
+      config_set_bool(conf, "ups_pref", rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL));
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF))
-      config_set_bool(conf, "bps_pref", global->patch.bps_pref);
+      config_set_bool(conf, "bps_pref", rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL));
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF))
-      config_set_bool(conf, "ips_pref", global->patch.ips_pref);
+      config_set_bool(conf, "ips_pref", rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL));
    config_set_bool(conf, "log_verbosity",
          verbosity_is_enabled());
    config_set_bool(conf, "perfcnt_enable",

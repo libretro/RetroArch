@@ -329,12 +329,11 @@ static bool load_content_into_memory(unsigned i, const char *path, void **buf,
 
    if (i == 0)
    {
-      global_t *global          = global_get_ptr();
       /* First content file is significant, attempt to do patching,
        * CRC checking, etc. */
 
       /* Attempt to apply a patch. */
-      if (!global->patch.block_patch)
+      if (!rarch_ctl(RARCH_CTL_IS_PATCH_BLOCKED, NULL))
          patch_content(&ret_buf, length);
 
       content_get_crc(&content_crc_ptr);
