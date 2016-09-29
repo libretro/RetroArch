@@ -173,7 +173,8 @@ void runloop_msg_queue_push(const char *msg,
 {
    runloop_ctx_msg_info_t msg_info;
    settings_t *settings = config_get_ptr();
-   if(!settings->video.font_enable)
+
+   if (!settings || !settings->video.font_enable)
       return;
 
    runloop_msg_queue_lock();
@@ -203,6 +204,7 @@ char* runloop_msg_queue_pull(void)
 static bool runloop_check_slowmotion(bool *ptr)
 {
    settings_t *settings  = config_get_ptr();
+
    if (!ptr)
       return false;
 
@@ -211,7 +213,7 @@ static bool runloop_check_slowmotion(bool *ptr)
    if (!runloop_slowmotion)
       return false;
 
-   if (settings->video.black_frame_insertion)
+   if (settings && settings->video.black_frame_insertion)
       video_driver_cached_frame_render();
 
    if (state_manager_frame_is_reversed())
@@ -280,7 +282,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
  *
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
-static bool runloop_check_pause(settings_t *settings,
+static bool runloop_check_pause(
       bool focus, bool pause_pressed,
       bool frameadvance_pressed)
 {
@@ -439,10 +441,9 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
 
 static bool runloop_check_idle_state(event_cmd_state_t *cmd)
 {
-   settings_t *settings      = config_get_ptr();
    bool focused              =  runloop_is_focused();
 
-   runloop_check_pause(settings, focused,
+   runloop_check_pause(focused,
          runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
          runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
 
