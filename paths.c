@@ -468,11 +468,6 @@ void path_fill_names(void)
 
 /* Core file path */
 
-const char *path_get_basename(void)
-{
-   return path_main_basename;
-}
-
 char *path_get_core_ptr(void)
 {
    return path_libretro;
@@ -482,6 +477,8 @@ const char *path_get(enum rarch_path_type type)
 {
    switch (type)
    {
+      case RARCH_PATH_BASENAME:
+         return path_main_basename;
       case RARCH_PATH_CORE_OPTIONS:
          if (!path_is_core_options_empty())
             return path_core_options_file;

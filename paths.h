@@ -40,6 +40,7 @@ enum rarch_path_type
    RARCH_PATH_CONFIG_APPEND,
    RARCH_PATH_CORE_OPTIONS,
    RARCH_PATH_DEFAULT_SHADER_PRESET,
+   RARCH_PATH_BASENAME,
    RARCH_PATH_SUBSYSTEM
 };
 
@@ -85,8 +86,6 @@ const char *path_get(enum rarch_path_type type);
 bool path_get_content(char **fullpath);
 
 const char *path_get_current_savefile_dir(void);
-
-const char *path_get_basename(void);
 
 bool path_get_default_shader_preset(char **preset);
 

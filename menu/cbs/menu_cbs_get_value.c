@@ -1351,8 +1351,8 @@ static void menu_action_setting_disp_set_label_core_option_create(
 
    strlcpy(s, "", len);
 
-   if (!string_is_empty(path_get_basename()))
-      strlcpy(s,  path_basename(path_get_basename()), len);
+   if (!string_is_empty(path_get(RARCH_PATH_BASENAME)))
+      strlcpy(s,  path_basename(path_get(RARCH_PATH_BASENAME)), len);
 
    strlcpy(s2, path, len2);
 }

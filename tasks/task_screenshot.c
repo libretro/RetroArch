@@ -283,7 +283,7 @@ static bool take_screenshot_choice(const char *name_base)
  **/
 bool take_screenshot(void)
 {
-   char *name_base            = strdup(path_get_basename());
+   char *name_base            = strdup(path_get(RARCH_PATH_BASENAME));
    bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
    bool             ret       = take_screenshot_choice(name_base);
    const char *msg_screenshot = ret 
