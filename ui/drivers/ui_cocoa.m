@@ -290,7 +290,7 @@ static char** waiting_argv;
                NULL, NULL);
       }
       else
-         path_set_content(__core.UTF8String);
+         path_set(RARCH_PATH_CONTENT, __core.UTF8String);
 
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -356,7 +356,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
     if (system)
         core_name = system->library_name;
                 
-    path_set_content(state->result);
+    path_set(RARCH_PATH_CONTENT, state->result);
                 
     if (core_name)
     {
