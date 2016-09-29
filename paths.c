@@ -482,6 +482,10 @@ const char *path_get(enum rarch_path_type type)
 {
    switch (type)
    {
+      case RARCH_PATH_CORE_OPTIONS:
+         if (!path_is_core_options_empty())
+            return path_core_options_file;
+         break;
       case RARCH_PATH_SUBSYSTEM:
          return subsystem_path;
       case RARCH_PATH_CONFIG:
@@ -625,13 +629,6 @@ void path_clear_core_options(void)
 
 
 
-const char *path_get_core_options(void)
-{
-   if (!path_is_core_options_empty())
-      return path_core_options_file;
-
-   return NULL;
-}
 
 /* Append config file path */
 

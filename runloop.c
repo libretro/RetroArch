@@ -971,7 +971,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if(!path_is_core_options_empty())
             {
                core_option_manager_flush_game_specific(runloop_core_options,
-                     path_get_core_options());
+                     path_get(RARCH_PATH_CORE_OPTIONS));
                path_clear_core_options();
             }
             else

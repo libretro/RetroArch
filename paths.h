@@ -88,8 +88,6 @@ const char *path_get_current_savefile_dir(void);
 
 const char *path_get_basename(void);
 
-const char *path_get_core_options(void);
-
 bool path_get_default_shader_preset(char **preset);
 
 /* clear functions */
