@@ -493,10 +493,12 @@ static int task_database_iterate_serial_lookup(
 static int task_database_iterate(database_state_handle_t *db_state,
       database_info_handle_t *db)
 {
-   const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
-
+   const char *name = NULL;
+   
    if (!db || !db->list)
       return -1;
+
+   name = db->list->elems[db->list_ptr].data;
 
    if (!name)
       return 0;
@@ -538,26 +540,39 @@ static void task_database_cleanup_state(
 
 static void task_database_handler(retro_task_t *task)
 {
-   settings_t *settings             = config_get_ptr();
-   db_handle_t *db                  = (db_handle_t*)task->state;
-   database_info_handle_t  *dbinfo  = db->handle;
-   database_state_handle_t *dbstate = &db->state;
-   const char *name                 = dbinfo ?
-      dbinfo->list->elems[dbinfo->list_ptr].data : NULL;
+   const char *name                 = NULL;
+   database_info_handle_t  *dbinfo  = NULL;
+   database_state_handle_t *dbstate = NULL;
+   db_handle_t *db                  = NULL;
+   
+   if (!task)
+      goto task_finished;
+   
+   db      = (db_handle_t*)task->state;
 
+   if (!db)
+      goto task_finished;
+
+   dbinfo  = db->handle;
+   dbstate = &db->state;
+   
    if (!dbinfo || task->cancelled)
       goto task_finished;
 
    switch (dbinfo->status)
    {
       case DATABASE_STATUS_ITERATE_BEGIN:
-         if (dbstate && !dbstate->list)
-            dbstate->list = dir_list_new_special(
-                  settings->path.content_database,
-                  DIR_LIST_DATABASES, NULL);
+         {
+            settings_t *settings = config_get_ptr();
+            if (dbstate && !dbstate->list)
+               dbstate->list = dir_list_new_special(
+                     settings->path.content_database,
+                     DIR_LIST_DATABASES, NULL);
+         }
          dbinfo->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
+         name = dbinfo->list->elems[dbinfo->list_ptr].data;
          task_database_cleanup_state(dbstate);
          dbstate->list_index  = 0;
          dbstate->entry_index = 0;
@@ -592,19 +607,27 @@ static void task_database_handler(retro_task_t *task)
 
    return;
 task_finished:
-   task->finished = true;
+   if (task)
+      task->finished = true;
 
-   if (dbstate->list)
-      dir_list_free(dbstate->list);
+   if (dbstate)
+   {
+      if (dbstate->list)
+         dir_list_free(dbstate->list);
+   }
 
-   if (db->state.buf)
-      free(db->state.buf);
+   if (db)
+   {
+      if (db->state.buf)
+         free(db->state.buf);
 
-   if (db->handle)
-      database_info_free(db->handle);
+      if (db->handle)
+         database_info_free(db->handle);
+      free(db);
+   }
 
-   free(dbinfo);
-   free(db);
+   if (dbinfo)
+      free(dbinfo);
 }
 
 bool task_push_dbscan(const char *fullpath,
