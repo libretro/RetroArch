@@ -4422,7 +4422,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &global->record.use_output_dir,
+                  recording_driver_get_use_output_dir_ptr(),
                   msg_hash_to_str(MENU_ENUM_LABEL_RECORD_USE_OUTPUT_DIRECTORY),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY),
                   false,

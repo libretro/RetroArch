@@ -172,6 +172,14 @@ void recording_driver_clear_data_ptr(void);
 
 void recording_driver_set_data_ptr(void *data);
 
+bool *recording_driver_get_use_output_dir_ptr(void);
+
+unsigned *recording_driver_get_width(void);
+
+unsigned *recording_driver_get_height(void);
+
+void recording_driver_free_state(void);
+
 RETRO_END_DECLS
 
 #endif

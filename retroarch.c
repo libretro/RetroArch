@@ -757,16 +757,15 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_SIZE:
-         {
-            if (sscanf(optarg, "%ux%u", &global->record.width,
-                     &global->record.height) != 2)
+            if (sscanf(optarg, "%ux%u",
+                     recording_driver_get_width(),
+                     recording_driver_get_height()) != 2)
             {
                RARCH_ERR("Wrong format for --size.\n");
                retroarch_print_help(argv[0]);
                retroarch_fail(1, "retroarch_parse_input()");
             }
             break;
-         }
 
          case RA_OPT_RECORDCONFIG:
             path_set(RARCH_PATH_RECORD_CONFIG, optarg);

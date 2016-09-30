@@ -761,6 +761,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             dir_clear(RARCH_DIR_RECORD_CONFIG);
             dir_clear(RARCH_DIR_RECORD_OUTPUT);
             dir_clear_all();
+            recording_driver_free_state();
 
             {
                global_t *global = global_get_ptr();
