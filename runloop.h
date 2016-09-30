@@ -17,7 +17,6 @@
 #define __RETROARCH_RUNLOOP_H
 
 #include <boolean.h>
-#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
 #ifdef HAVE_CONFIG_H
@@ -227,6 +226,7 @@ void runloop_msg_queue_push(const char *msg, unsigned prio,
 char* runloop_msg_queue_pull(void);
 
 bool runloop_is_quit_confirm(void);
+
 void runloop_set_quit_confirm(bool on);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
