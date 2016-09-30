@@ -658,9 +658,9 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    SETTING_PATH("audio_filter_dir",
          settings->directory.audio_filter, true, NULL, true);
    SETTING_PATH("savefile_directory", 
-         dir_get_savefile_ptr(), true, NULL, false);
+         dir_get_ptr(RARCH_DIR_SAVEFILE), true, NULL, false);
    SETTING_PATH("savestate_directory",
-         dir_get_savestate_ptr(), true, NULL, false);
+         dir_get_ptr(RARCH_DIR_SAVESTATE), true, NULL, false);
 #ifdef HAVE_MENU
    SETTING_PATH("rgui_browser_directory",
          settings->directory.menu_content, true, NULL, true);
@@ -673,7 +673,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #endif
 #ifdef HAVE_OVERLAY
    SETTING_PATH("osk_overlay_directory",
-         dir_get_osk_overlay_ptr(), true, NULL, true);
+         dir_get_ptr(RARCH_DIR_OSK_OVERLAY), true, NULL, true);
 #endif
 #ifndef HAVE_DYNAMIC
    SETTING_PATH("libretro_path", 

@@ -190,24 +190,24 @@ bool dir_is_empty(enum rarch_dir_type type)
 
 /* get size functions */
 
-size_t dir_get_system_size(void)
+size_t dir_get_size(enum rarch_dir_type type)
 {
-   return sizeof(dir_system);
-}
+   switch (type)
+   {
+      case RARCH_DIR_SYSTEM:
+         return sizeof(dir_system);
+      case RARCH_DIR_SAVEFILE:
+         return sizeof(dir_savefile);
+      case RARCH_DIR_SAVESTATE:
+         return sizeof(dir_savestate);
+      case RARCH_DIR_OSK_OVERLAY:
+         return sizeof(dir_osk_overlay);
+      case RARCH_DIR_NONE:
+      default:
+         break;
+   }
 
-size_t dir_get_savestate_size(void)
-{
-   return sizeof(dir_savestate);
-}
-
-size_t dir_get_savefile_size(void)
-{
-   return sizeof(dir_savefile);
-}
-
-size_t dir_get_osk_overlay_size(void)
-{
-   return sizeof(dir_osk_overlay);
+   return 0;
 }
 
 /* clear functions */
@@ -244,24 +244,24 @@ void dir_clear_all(void)
 
 /* get ptr functions */
 
-char *dir_get_osk_overlay_ptr(void)
+char *dir_get_ptr(enum rarch_dir_type type)
 {
-   return dir_osk_overlay;
-}
+   switch (type)
+   {
+      case RARCH_DIR_SYSTEM:
+         return dir_system;
+      case RARCH_DIR_SAVEFILE:
+         return dir_savefile;
+      case RARCH_DIR_SAVESTATE:
+         return dir_savestate;
+      case RARCH_DIR_OSK_OVERLAY:
+         return dir_osk_overlay;
+      case RARCH_DIR_NONE:
+      default:
+         break;
+   }
 
-char *dir_get_savefile_ptr(void)
-{
-   return dir_savefile;
-}
-
-char *dir_get_system_ptr(void)
-{
-   return dir_system;
-}
-
-char *dir_get_savestate_ptr(void)
-{
-   return dir_savestate;
+   return NULL;
 }
 
 /* get functions */
