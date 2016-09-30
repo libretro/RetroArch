@@ -571,21 +571,6 @@ bool path_set(enum rarch_path_type type, const char *path)
    return true;
 }
 
-void path_clear_subsystem(void)
-{
-   *subsystem_path = '\0';
-}
-
-void path_clear_core(void)
-{
-   *path_libretro = '\0';
-}
-
-void path_clear_default_shader_preset(void)
-{
-   *path_default_shader_preset = '\0';
-}
-
 /* Config file path */
 
 bool path_is_subsystem_empty(void)
@@ -604,8 +589,6 @@ bool path_is_config_empty(void)
    return false;
 }
 
-
-
 bool path_get_default_shader_preset(char **preset)
 {
    if (!preset)
@@ -614,14 +597,45 @@ bool path_get_default_shader_preset(char **preset)
    return true;
 }
 
-void path_clear_config(void)
+void path_clear(enum rarch_path_type type)
 {
-   *path_config_file = '\0';
+   switch (type)
+   {
+      case RARCH_PATH_SUBSYSTEM:
+         *subsystem_path = '\0';
+         break;
+      case RARCH_PATH_CORE:
+         *path_libretro = '\0';
+         break;
+      case RARCH_PATH_CONFIG:
+         *path_config_file = '\0';
+         break;
+      case RARCH_PATH_CONTENT:
+         *path_content = '\0';
+         break;
+      case RARCH_PATH_BASENAME:
+         *path_main_basename = '\0';
+         break;
+      case RARCH_PATH_CORE_OPTIONS:
+         *path_core_options_file = '\0';
+         break;
+      case RARCH_PATH_DEFAULT_SHADER_PRESET:
+         *path_default_shader_preset = '\0';
+         break;
+      case RARCH_PATH_CONFIG_APPEND:
+         *path_config_append_file = '\0';
+         break;
+      default:
+         break;
+   }
 }
 
-void path_clear_basename(void)
+void path_clear_all(void)
 {
-   *path_main_basename = '\0';
+   path_clear(RARCH_PATH_CONFIG);
+   path_clear(RARCH_PATH_CONFIG_APPEND);
+   path_clear(RARCH_PATH_CORE_OPTIONS);
+   path_clear(RARCH_PATH_BASENAME);
 }
 
 /* Core options file path */
@@ -634,14 +648,6 @@ bool path_is_core_options_empty(void)
    return false;
 }
 
-void path_clear_core_options(void)
-{
-   *path_core_options_file = '\0';
-}
-
-
-
-
 /* Append config file path */
 
 bool path_is_config_append_empty(void)
@@ -652,17 +658,6 @@ bool path_is_config_append_empty(void)
    return false;
 }
 
-void path_clear_config_append(void)
-{
-   *path_config_append_file = '\0';
-}
-
-void path_clear_content(void)
-{
-   *path_content = '\0';
-}
-
-
 bool path_get_content(char **fullpath)
 {
    if (!fullpath)
@@ -670,16 +665,6 @@ bool path_get_content(char **fullpath)
    *fullpath       = (char*)path_content;
 
    return true;
-}
-
-
-void path_clear_all(void)
-{
-   path_clear_config();
-   path_clear_config_append();
-   path_clear_core_options();
-
-   path_clear_basename();
 }
 
 enum rarch_content_type path_is_media_type(const char *path)

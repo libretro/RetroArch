@@ -743,7 +743,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
             rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
             rarch_ctl(RARCH_CTL_UNSET_PATCH_BLOCKED, NULL);
-            path_clear_content();
+            path_clear(RARCH_PATH_CONTENT);
             runloop_overrides_active   = false;
 
             core_unset_input_descriptors();
@@ -970,7 +970,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             {
                core_option_manager_flush_game_specific(runloop_core_options,
                      path_get(RARCH_PATH_CORE_OPTIONS));
-               path_clear_core_options();
+               path_clear(RARCH_PATH_CORE_OPTIONS);
             }
             else
                core_option_manager_flush(runloop_core_options);

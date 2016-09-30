@@ -1008,7 +1008,7 @@ static bool command_event_cmd_exec(const char *data,
 
    if (fullpath != (void*)data)
    {
-      path_clear_content();
+      path_clear(RARCH_PATH_CONTENT);
       if (!string_is_empty(data))
          path_set(RARCH_PATH_CONTENT, data);
    }
@@ -1096,7 +1096,7 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_VIDEO_PROCESSOR_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-         path_clear_content();
+         path_clear(RARCH_PATH_CONTENT);
          break;
       default:
          break;

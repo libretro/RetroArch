@@ -90,21 +90,7 @@ bool path_get_default_shader_preset(char **preset);
 
 /* clear functions */
 
-void path_clear_subsystem(void);
-
-void path_clear_default_shader_preset(void);
-
-void path_clear_basename(void);
-
-void path_clear_content(void);
-
-void path_clear_core(void);
-
-void path_clear_config(void);
-
-void path_clear_core_options(void);
-
-void path_clear_config_append(void);
+void path_clear(enum rarch_path_type type);
 
 void path_clear_all(void);
 

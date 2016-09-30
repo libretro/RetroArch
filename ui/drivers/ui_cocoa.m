@@ -329,7 +329,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
                       && settings->set_supports_no_game_enable)
     {
         content_ctx_info_t content_info = {0};
-        path_clear_content();
+        path_clear(RARCH_PATH_CONTENT);
         task_push_content_load_default(
                 NULL, NULL,
                 &content_info,

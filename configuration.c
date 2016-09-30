@@ -2054,7 +2054,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       RARCH_WARN("\"libretro_path\" is a directory, using this for \"libretro_directory\" instead.\n");
       strlcpy(settings->directory.libretro, path_get(RARCH_PATH_CORE),
             sizeof(settings->directory.libretro));
-      path_clear_core();
+      path_clear(RARCH_PATH_CORE);
    }
 
    if (string_is_equal(settings->path.menu_wallpaper, "default"))
@@ -2301,7 +2301,7 @@ bool config_load_override(void)
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
 
-   path_clear_config_append();
+   path_clear(RARCH_PATH_CONFIG_APPEND);
 
    return true;
 }
@@ -2316,7 +2316,7 @@ bool config_load_override(void)
  */
 bool config_unload_override(void)
 {
-   path_clear_config_append();
+   path_clear(RARCH_PATH_CONFIG_APPEND);
 
    /* Toggle has_save_path to false so it resets */
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
@@ -3268,7 +3268,7 @@ bool config_replace(char *path)
    rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
    /* Load core in new config. */
-   path_clear_core();
+   path_clear(RARCH_PATH_CORE);
 
    if (!task_push_content_load_default(
          NULL, NULL,

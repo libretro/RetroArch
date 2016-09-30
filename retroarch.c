@@ -469,7 +469,7 @@ static void retroarch_parse_input(int argc, char *argv[])
    if (!current_core_explicitly_set)
       retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
 
-   path_clear_subsystem();
+   path_clear(RARCH_PATH_SUBSYSTEM);
 
    retroarch_override_setting_free_state();
 
@@ -608,7 +608,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'L':
             if (path_is_directory(optarg))
             {
-               path_clear_core();
+               path_clear(RARCH_PATH_CORE);
                strlcpy(settings->directory.libretro, optarg,
                      sizeof(settings->directory.libretro));
 

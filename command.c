@@ -1408,7 +1408,7 @@ static void command_event_restore_default_shader_preset(void)
       strlcpy(settings->path.shader, preset, sizeof(settings->path.shader));
    }
 
-   path_clear_default_shader_preset();
+   path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);
 }
 
 static bool command_event_save_auto_state(void)
