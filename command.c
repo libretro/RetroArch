@@ -987,7 +987,7 @@ static bool command_event_disk_control_append_image(const char *path)
        * If we actually use append_image, we assume that we
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
-      path_set_names(path);
+      path_set(RARCH_PATH_NAMES, path);
       path_fill_names();
    }
 

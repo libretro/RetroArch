@@ -35,6 +35,7 @@ enum rarch_path_type
 {
    RARCH_PATH_NONE = 0,
    RARCH_PATH_CORE,
+   RARCH_PATH_NAMES,
    RARCH_PATH_CONFIG,
    RARCH_PATH_CONTENT,
    RARCH_PATH_CONFIG_APPEND,
@@ -60,8 +61,6 @@ void path_fill_names(void);
 bool path_set(enum rarch_path_type type, const char *path);
 
 void path_set_redirect(void);
-
-void path_set_names(const char *path);
 
 void path_set_special(char **argv, unsigned num_content);
 

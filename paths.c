@@ -423,28 +423,6 @@ static void path_init_savefile_internal(void)
       path_init_savefile_rtc();
 }
 
-void path_set_names(const char *path)
-{
-   global_t *global = global_get_ptr();
-
-   path_set_basename(path);
-
-   if (global)
-   {
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
-         fill_pathname_noext(global->name.savefile, path_main_basename,
-               file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
-
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
-         fill_pathname_noext(global->name.savestate, path_main_basename,
-               file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
-
-      fill_pathname_noext(global->name.cheatfile, path_main_basename,
-            file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(global->name.cheatfile));
-   }
-
-   path_set_redirect();
-}
 
 void path_fill_names(void)
 {
@@ -524,6 +502,29 @@ size_t path_get_core_size(void)
    return sizeof(path_libretro);
 }
 
+static void path_set_names(const char *path)
+{
+   global_t *global = global_get_ptr();
+
+   path_set_basename(path);
+
+   if (global)
+   {
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+         fill_pathname_noext(global->name.savefile, path_main_basename,
+               file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
+
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+         fill_pathname_noext(global->name.savestate, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
+
+      fill_pathname_noext(global->name.cheatfile, path_main_basename,
+            file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(global->name.cheatfile));
+   }
+
+   path_set_redirect();
+}
+
 bool path_set(enum rarch_path_type type, const char *path)
 {
    if (!path)
@@ -531,6 +532,9 @@ bool path_set(enum rarch_path_type type, const char *path)
 
    switch (type)
    {
+      case RARCH_PATH_NAMES:
+         path_set_names(path);
+         break;
       case RARCH_PATH_CORE:
          strlcpy(path_libretro, path,
                sizeof(path_libretro));
