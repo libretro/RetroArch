@@ -178,6 +178,8 @@ bool core_set_environment(retro_ctx_environ_info_t *info);
 
 bool core_serialize_size(retro_ctx_size_info_t *info);
 
+uint32_t core_serialize_quirks(void);
+
 bool core_serialize(retro_ctx_serialize_info_t *info);
 
 bool core_unserialize(retro_ctx_serialize_info_t *info);

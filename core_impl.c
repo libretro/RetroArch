@@ -291,6 +291,13 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
    return true;
 }
 
+uint32_t core_serialize_quirks(void)
+{
+   uint32_t ret = 0;
+   rarch_environment_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &ret);
+   return ret;
+}
+
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
    if (!info)
