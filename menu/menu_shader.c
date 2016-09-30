@@ -295,7 +295,7 @@ bool menu_shader_manager_save_preset(
       strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
-   if (!path_is_config_empty())
+   if (!path_is_empty(RARCH_PATH_CONFIG))
       fill_pathname_basedir(
             config_directory,
             path_get(RARCH_PATH_CONFIG),

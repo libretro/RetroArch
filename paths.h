@@ -96,15 +96,7 @@ void path_clear_all(void);
 
 /* is functions */
 
-bool path_is_subsystem_empty(void);
-
-bool path_is_core_empty(void);
-
-bool path_is_config_empty(void);
-
-bool path_is_core_options_empty(void);
-
-bool path_is_config_append_empty(void);
+bool path_is_empty(enum rarch_path_type type);
 
 enum rarch_content_type path_is_media_type(const char *path);
 

@@ -981,7 +981,7 @@ static bool command_event_disk_control_append_image(const char *path)
    command_event(CMD_EVENT_AUTOSAVE_DEINIT, NULL);
 
    /* TODO: Need to figure out what to do with subsystems case. */
-   if (path_is_subsystem_empty())
+   if (path_is_empty(RARCH_PATH_SUBSYSTEM))
    {
       /* Update paths for our new image.
        * If we actually use append_image, we assume that we
@@ -1485,7 +1485,7 @@ static bool command_event_save_core_config(void)
    if (!string_is_empty(settings->directory.menu_config))
       strlcpy(config_dir, settings->directory.menu_config,
             sizeof(config_dir));
-   else if (!path_is_config_empty()) /* Fallback */
+   else if (!path_is_empty(RARCH_PATH_CONFIG)) /* Fallback */
       fill_pathname_basedir(config_dir, path_get(RARCH_PATH_CONFIG),
             sizeof(config_dir));
    else
@@ -1591,7 +1591,7 @@ static void command_event_save_current_config(int override_type)
          RARCH_ERR("[overrides] %s\n", msg);
       }
    }
-   else if (!path_is_config_empty())
+   else if (!path_is_empty(RARCH_PATH_CONFIG))
       command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
 
    if (!string_is_empty(msg))

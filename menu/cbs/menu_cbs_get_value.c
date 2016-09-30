@@ -130,7 +130,7 @@ static void menu_action_setting_disp_set_label_configurations(
    *w = 19;
    strlcpy(s2, path, len2);
 
-   if (!path_is_config_empty())
+   if (!path_is_empty(RARCH_PATH_CONFIG))
       fill_pathname_base(s, path_get(RARCH_PATH_CONFIG),
             len);
    else

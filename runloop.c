@@ -940,7 +940,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                if (settings)
                   options_path = settings->path.core_options;
 
-               if (options_path && string_is_empty(options_path) && !path_is_config_empty())
+               if (options_path && string_is_empty(options_path) && !path_is_empty(RARCH_PATH_CONFIG))
                {
                   fill_pathname_resolve_relative(buf, path_get(RARCH_PATH_CONFIG),
                         file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
@@ -966,7 +966,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             /* check if game options file was just created and flush
                to that file instead */
-            if(!path_is_core_options_empty())
+            if(!path_is_empty(RARCH_PATH_CORE_OPTIONS))
             {
                core_option_manager_flush_game_specific(runloop_core_options,
                      path_get(RARCH_PATH_CORE_OPTIONS));

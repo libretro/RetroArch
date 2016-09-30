@@ -839,13 +839,13 @@ static void retroarch_parse_input(int argc, char *argv[])
 #endif
    }
 
-   if (path_is_subsystem_empty() && optind < argc)
+   if (path_is_empty(RARCH_PATH_SUBSYSTEM) && optind < argc)
    {
       /* We requested explicit ROM, so use PLAIN core type. */
       retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
       path_set(RARCH_PATH_NAMES, (const char*)argv[optind]);
    }
-   else if (!path_is_subsystem_empty() && optind < argc)
+   else if (!path_is_empty(RARCH_PATH_SUBSYSTEM) && optind < argc)
    {
       /* We requested explicit ROM, so use PLAIN core type. */
       retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);

@@ -590,7 +590,7 @@ static const struct retro_subsystem_info *init_content_file_subsystem(bool *ret)
    rarch_system_info_t *system                = NULL;
    struct string_list *subsystem              = path_get_subsystem_list();
 
-   if (path_is_subsystem_empty())
+   if (path_is_empty(RARCH_PATH_SUBSYSTEM))
    {
       *ret = true;
       return NULL;
@@ -653,7 +653,7 @@ static bool init_content_file_set_attribs(
 
    attr.i                           = 0;
 
-   if (!path_is_subsystem_empty() && special)
+   if (!path_is_empty(RARCH_PATH_SUBSYSTEM) && special)
    {
       unsigned i;
 
@@ -845,7 +845,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
    wrap_args->state_path       = NULL;
    wrap_args->content_path     = NULL;
 
-   if (!path_is_config_empty())
+   if (!path_is_empty(RARCH_PATH_CONFIG))
       wrap_args->config_path   = path_get(RARCH_PATH_CONFIG);
    if (!dir_is_savefile_empty())
       wrap_args->sram_path     = dir_get_savefile();

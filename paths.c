@@ -310,7 +310,7 @@ static bool path_init_subsystem(void)
    if (!system)
       return false;
 
-   if (path_is_subsystem_empty())
+   if (path_is_empty(RARCH_PATH_SUBSYSTEM))
       return false;
 
    /* For subsystems, we know exactly which RAM types are supported. */
@@ -325,7 +325,7 @@ static bool path_init_subsystem(void)
    if (info)
    {
       unsigned num_content = MIN(info->num_roms,
-            path_is_subsystem_empty() ?
+            path_is_empty(RARCH_PATH_SUBSYSTEM) ?
             0 : subsystem_fullpaths->size);
 
       for (i = 0; i < num_content; i++)
@@ -469,17 +469,17 @@ const char *path_get(enum rarch_path_type type)
       case RARCH_PATH_BASENAME:
          return path_main_basename;
       case RARCH_PATH_CORE_OPTIONS:
-         if (!path_is_core_options_empty())
+         if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
             return path_core_options_file;
          break;
       case RARCH_PATH_SUBSYSTEM:
          return subsystem_path;
       case RARCH_PATH_CONFIG:
-         if (!path_is_config_empty())
+         if (!path_is_empty(RARCH_PATH_CONFIG))
             return path_config_file;
          break;
       case RARCH_PATH_CONFIG_APPEND:
-         if (!path_is_config_append_empty())
+         if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
             return path_config_append_file;
          break;
       case RARCH_PATH_CORE:
@@ -492,10 +492,6 @@ const char *path_get(enum rarch_path_type type)
    return NULL;
 }
 
-bool path_is_core_empty(void)
-{
-   return !path_libretro[0];
-}
 
 size_t path_get_core_size(void)
 {
@@ -571,20 +567,31 @@ bool path_set(enum rarch_path_type type, const char *path)
    return true;
 }
 
-/* Config file path */
-
-bool path_is_subsystem_empty(void)
+bool path_is_empty(enum rarch_path_type type)
 {
-   if (string_is_empty(subsystem_path))
-      return true;
-
-   return false;
-}
-
-bool path_is_config_empty(void)
-{
-   if (string_is_empty(path_config_file))
-      return true;
+   switch (type)
+   {
+      case RARCH_PATH_SUBSYSTEM:
+         if (string_is_empty(subsystem_path))
+            return true;
+         break;
+      case RARCH_PATH_CONFIG:
+         if (string_is_empty(path_config_file))
+            return true;
+         break;
+      case RARCH_PATH_CORE_OPTIONS:
+         if (string_is_empty(path_core_options_file))
+            return true;
+         break;
+      case RARCH_PATH_CONFIG_APPEND:
+         if (string_is_empty(path_config_append_file))
+            return true;
+         break;
+      case RARCH_PATH_CORE:
+         return !path_libretro[0];
+      default:
+         break;
+   }
 
    return false;
 }
@@ -640,23 +647,9 @@ void path_clear_all(void)
 
 /* Core options file path */
 
-bool path_is_core_options_empty(void)
-{
-   if (string_is_empty(path_core_options_file))
-      return true;
-
-   return false;
-}
 
 /* Append config file path */
 
-bool path_is_config_append_empty(void)
-{
-   if (string_is_empty(path_config_append_file))
-      return true;
-
-   return false;
-}
 
 bool path_get_content(char **fullpath)
 {

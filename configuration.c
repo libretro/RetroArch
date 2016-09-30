@@ -1716,7 +1716,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (set_defaults)
       config_set_defaults();
 
-   if (!path_is_config_append_empty())
+   if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
    {
       /* Don't destroy append_config_path, store in temporary
        * variable. */
@@ -2573,14 +2573,14 @@ bool config_load_shader_preset(void)
 
 static void parse_config_file(void)
 {
-   if (!path_is_config_empty())
+   if (!path_is_empty(RARCH_PATH_CONFIG))
    {
       RARCH_LOG("Config: loading config from: %s.\n", path_get(RARCH_PATH_CONFIG));
    }
    else
    {
       RARCH_LOG("Loading default config.\n");
-      if (!path_is_config_empty())
+      if (!path_is_empty(RARCH_PATH_CONFIG))
          RARCH_LOG("Config: found default config: %s.\n", path_get(RARCH_PATH_CONFIG));
    }
 
@@ -3260,7 +3260,7 @@ bool config_replace(char *path)
    if (string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
       return false;
 
-   if (settings->config_save_on_exit && !path_is_config_empty())
+   if (settings->config_save_on_exit && !path_is_empty(RARCH_PATH_CONFIG))
       config_save_file(path_get(RARCH_PATH_CONFIG));
 
    path_set(RARCH_PATH_CONFIG, path);
