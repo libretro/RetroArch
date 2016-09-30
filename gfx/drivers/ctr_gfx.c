@@ -239,6 +239,7 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       GPUCMD_Finalize();
       ctrGuFlushAndRun(true);
       gspWaitForEvent(GSPGPU_EVENT_P3D, false);
+      ctr->p3d_event_pending = false;
    }
 
    if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_400x240))
@@ -386,10 +387,7 @@ static void* ctr_init(const video_info_t* video,
                             sizeof(ctr_vertex_t));
    GPUCMD_Finalize();
    ctrGuFlushAndRun(true);
-
-   ctrGuDisplayTransfer(true, ctr->drawbuffers.top.left, 240, 400, CTRGU_RGBA8,
-                        gfxTopLeftFramebuffers[ctr->current_buffer_top],
-                        240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
+   gspWaitForEvent(GSPGPU_EVENT_P3D, false);
 
    if (input && input_data)
    {
@@ -422,8 +420,8 @@ static void* ctr_init(const video_info_t* video,
    }
 
    ctr->msg_rendering_enabled = false;
-
-//   DEBUG_HOLD();
+   ctr->p3d_event_pending = false;
+   ctr->ppf_event_pending = false;
 
    return ctr;
 }
@@ -488,9 +486,17 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->lcd_buttom_on = !ctr->lcd_buttom_on;
    }
 
-   gspWaitForEvent(GSPGPU_EVENT_P3D, false);
-   gspWaitForEvent(GSPGPU_EVENT_PPF, false);
 
+   if (ctr->p3d_event_pending)
+   {
+      gspWaitForEvent(GSPGPU_EVENT_P3D, false);
+      ctr->p3d_event_pending = false;
+   }
+   if (ctr->ppf_event_pending)
+   {
+      gspWaitForEvent(GSPGPU_EVENT_PPF, false);
+      ctr->ppf_event_pending = false;
+   }
    frames++;
 
    if (ctr->vsync)
@@ -504,7 +510,6 @@ static bool ctr_frame(void* data, const void* frame,
       lastTick = currentTick;
       frames = 0;
    }
-
 
 //#define CTR_INSPECT_MEMORY_USAGE
 
@@ -780,7 +785,8 @@ static bool ctr_frame(void* data, const void* frame,
 	framebufferInfoHeader[0x1]=1;
 
    ctr->current_buffer_top ^= 1;
-
+   ctr->p3d_event_pending = true;
+   ctr->ppf_event_pending = true;
    performance_counter_stop(&ctrframe_f);
 
    return true;
@@ -840,7 +846,6 @@ static void ctr_free(void* data)
    linearFree(ctr->empty_framebuffer);
    linearFree(ctr->vertex_cache.buffer);
    linearFree(ctr);
-//   DEBUG_HOLD();
    //   gfxExit();
 }
 
@@ -957,6 +962,7 @@ static void ctr_viewport_info(void* data, struct video_viewport* vp)
 static uintptr_t ctr_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
+   ctr_video_t* ctr = (ctr_video_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
 
    ctr_texture_t* texture = calloc(1, sizeof(ctr_texture_t));
@@ -998,8 +1004,12 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    //   printf("ctrGuCopyImage 0x%08X, %i, %i, 0x%08X, %i\n", tmpdata, image->width, image->height, texture->data, texture->width);
       ctrGuCopyImage(true, tmpdata, image->width, image->height, CTRGU_RGBA8, false,
                      texture->data, texture->width, CTRGU_RGBA8,  true);
-
-   //   gspWaitForEvent(GSPGPU_EVENT_PPF, false);
+#if 0
+      gspWaitForEvent(GSPGPU_EVENT_PPF, false);
+      ctr->ppf_event_pending = false;
+#else
+      ctr->ppf_event_pending = true;
+#endif
       linearFree(tmpdata);
    }
 

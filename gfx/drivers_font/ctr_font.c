@@ -30,6 +30,11 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+/* FIXME: this is just a workaround to avoid
+ * using ctrGuCopyImage, since it seems to cause
+ * a freeze/blackscreen when used here. */
+//#define FONT_TEXTURE_IN_VRAM
+
 typedef struct
 {
    ctr_texture_t texture;
@@ -38,10 +43,11 @@ typedef struct
    void* font_data;
 } ctr_font_t;
 
-static void* ctr_font_init_font(void* gl_data, const char* font_path, float font_size)
+static void* ctr_font_init_font(void* data, const char* font_path, float font_size)
 {
    const struct font_atlas* atlas = NULL;
    ctr_font_t* font = (ctr_font_t*)calloc(1, sizeof(*font));
+   ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (!font)
       return NULL;
@@ -59,9 +65,14 @@ static void* ctr_font_init_font(void* gl_data, const char* font_path, float font
 
    font->texture.width = next_pow2(atlas->width);
    font->texture.height = next_pow2(atlas->height);
+#if FONT_TEXTURE_IN_VRAM
    font->texture.data = vramAlloc(font->texture.width * font->texture.height);
-
    uint8_t* tmp = linearAlloc(font->texture.width * font->texture.height);
+#else
+   font->texture.data = linearAlloc(font->texture.width * font->texture.height);
+   uint8_t* tmp = font->texture.data;
+#endif
+
    int i, j;
    const uint8_t*     src = atlas->buffer;
 
@@ -75,10 +86,13 @@ static void* ctr_font_init_font(void* gl_data, const char* font_path, float font
       }
 
    GSPGPU_FlushDataCache(tmp, font->texture.width * font->texture.height);
+
+#if FONT_TEXTURE_IN_VRAM
    ctrGuCopyImage(true, tmp, font->texture.width >> 2, font->texture.height, CTRGU_RGBA8, true,
                   font->texture.data, font->texture.width >> 2, CTRGU_RGBA8,  true);
 
    linearFree(tmp);
+#endif
 
    ctr_set_scale_vector(&font->scale_vector, 400, 240, font->texture.width, font->texture.height);
 
@@ -95,7 +109,11 @@ static void ctr_font_free_font(void* data)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
+#ifdef FONT_TEXTURE_IN_VRAM
    vramFree(font->texture.data);
+#else
+   linearFree(font->texture.data);
+#endif
    free(font);
 }
 

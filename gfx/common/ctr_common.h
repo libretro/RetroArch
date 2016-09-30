@@ -87,6 +87,9 @@ typedef struct ctr_video
    ctr_video_mode_enum video_mode;
    int current_buffer_top;
 
+   bool p3d_event_pending;
+   bool ppf_event_pending;
+
    struct
    {
       ctr_vertex_t* buffer;
