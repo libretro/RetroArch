@@ -956,7 +956,6 @@ static void config_set_defaults(void)
 {
    unsigned i, j;
    settings_t *settings            = config_get_ptr();
-   global_t   *global              = global_get_ptr();
    const char *def_video           = config_get_default_video();
    const char *def_audio           = config_get_default_audio();
    const char *def_audio_resampler = config_get_default_audio_resampler();
@@ -1132,6 +1131,8 @@ static void config_set_defaults(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      global_t *global = global_get_ptr();
+
       settings->input.joypad_map[i] = i;
       settings->input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
       if (!global->has_set.libretro_device[i])
