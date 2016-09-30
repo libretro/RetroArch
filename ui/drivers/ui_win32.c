@@ -581,7 +581,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   {
                      content_ctx_info_t content_info = {0};
 
-                     path_set_content(win32_file);
+                     path_set(RARCH_PATH_CONTENT, win32_file);
 
                      do_wm_close = true;
                      task_push_content_load_default(
