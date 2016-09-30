@@ -282,6 +282,8 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
 {
    if (!info)
       return false;
+   if (core_serialization_quirks_v & RETRO_SERIALIZATION_QUIRK_INITIALIZING)
+      return false;
    if (!core.retro_unserialize(info->data_const, info->size))
       return false;
 
@@ -292,19 +294,11 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
    return true;
 }
 
-uint32_t core_serialization_quirks(void)
-{
-   return core_serialization_quirks_v;
-}
-
-void core_set_serialization_quirks(uint32_t quirks)
-{
-   core_serialization_quirks_v = quirks;
-}
-
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
    if (!info)
+      return false;
+   if (core_serialization_quirks_v & RETRO_SERIALIZATION_QUIRK_INITIALIZING)
       return false;
    if (!core.retro_serialize(info->data, info->size))
       return false;
@@ -317,6 +311,16 @@ bool core_serialize_size(retro_ctx_size_info_t *info)
       return false;
    info->size = core.retro_serialize_size();
    return true;
+}
+
+uint32_t core_serialization_quirks(void)
+{
+   return core_serialization_quirks_v;
+}
+
+void core_set_serialization_quirks(uint32_t quirks)
+{
+   core_serialization_quirks_v = quirks;
 }
 
 bool core_frame(retro_ctx_frame_info_t *info)
