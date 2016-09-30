@@ -76,13 +76,7 @@ char *dir_get_osk_overlay_ptr(void);
 
 /* get functions */
 
-const char *dir_get_osk_overlay(void);
-
-const char *dir_get_savefile(void);
-
-const char *dir_get_savestate(void);
-
-const char *dir_get_system(void);
+const char *dir_get(enum rarch_dir_type type);
 
 /* set functions */
 

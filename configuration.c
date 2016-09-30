@@ -2085,7 +2085,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->directory.overlay, "default"))
       *settings->directory.overlay = '\0';
-   if (string_is_equal(dir_get_osk_overlay(), "default"))
+   if (string_is_equal(dir_get(RARCH_DIR_OSK_OVERLAY), "default"))
       dir_clear(RARCH_DIR_OSK_OVERLAY);
 #endif
    if (string_is_equal(settings->directory.system, "default"))
