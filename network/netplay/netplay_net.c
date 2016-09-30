@@ -183,7 +183,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
     * that can't even core_serialize_size early. */
    if (netplay->self_frame_count == 1 && netplay->state_size == 0)
    {
-      int i;
+      unsigned i;
       retro_ctx_size_info_t info;
 
       core_serialize_size(&info);

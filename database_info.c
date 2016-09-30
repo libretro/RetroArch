@@ -402,7 +402,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 {
    database_info_handle_t     *db  = (database_info_handle_t*)
       calloc(1, sizeof(*db));
-   int i = 0;
+   unsigned i = 0;
 
    if (!db)
       return NULL;
@@ -429,7 +429,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
             if (archive_list && archive_list->size > 0)
             {
-               int i = 0;
+               unsigned i;
 
                for (i = 0; i < archive_list->size; i++)
                {
@@ -489,7 +489,7 @@ database_info_handle_t *database_info_file_init(const char *path,
 
       if (archive_list && archive_list->size > 0)
       {
-         int i = 0;
+         unsigned i;
 
          for (i = 0; i < archive_list->size; i++)
          {

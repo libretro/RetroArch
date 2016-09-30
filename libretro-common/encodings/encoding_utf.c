@@ -158,7 +158,7 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
       while ((*sb&0xC0) == 0x80) sb++;
    }
 
-   if (sb - sb_org > d_len-1 /* NUL */)
+   if ((size_t)(sb - sb_org) > d_len-1 /* NUL */)
    {
       sb = sb_org + d_len-1;
       while ((*sb&0xC0) == 0x80) sb--;

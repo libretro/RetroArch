@@ -40,7 +40,7 @@ static bool netplay_spectate_pre_frame(netplay_t *netplay)
     * for cores that can't even core_serialize_size early. */
    if (netplay->self_frame_count == 0 && netplay->state_size == 0)
    {
-      int i;
+      unsigned i;
       retro_ctx_size_info_t info;
 
       core_serialize_size(&info);
