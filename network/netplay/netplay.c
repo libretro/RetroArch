@@ -557,6 +557,23 @@ static bool netplay_get_cmd(netplay_t *netplay)
          {
             uint32_t frame;
 
+            /* Make sure we're ready for it */
+            if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+            {
+               if (!netplay->is_replay)
+               {
+                  netplay->is_replay = true;
+                  netplay->replay_ptr = netplay->self_ptr;
+                  netplay->replay_frame_count = netplay->self_frame_count;
+                  netplay_wait_and_init_serialization(netplay);
+                  netplay->is_replay = false;
+               }
+               else
+               {
+                  netplay_wait_and_init_serialization(netplay);
+               }
+            }
+
             /* There is a subtlty in whether the load comes before or after the
              * current frame:
              *
@@ -1221,6 +1238,13 @@ bool netplay_pre_frame(netplay_t *netplay)
    /* FIXME: This is an ugly way to learn we're not paused anymore */
    if (netplay->local_paused)
       netplay_frontend_paused(netplay, false);
+
+   if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+   {
+      /* Are we ready now? */
+      if (!(core_serialization_quirks() & RETRO_SERIALIZATION_QUIRK_INITIALIZING) || netplay->self_frame_count > 60)
+         netplay_init_serialization(netplay);
+   }
 
    if (!netplay->net_cbs->pre_frame(netplay))
       return false;
