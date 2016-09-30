@@ -55,9 +55,12 @@ extra_flags += -static-libgcc -static-libstdc++
 DYLIB = exe
 endif
 
+LIBRETRO_COMM_DIR := ../..
+CORE_DIR := $(LIBRETRO_COMM_DIR)/utils
+
 CC      := $(compiler)
 CXX     := $(subst CC,++,$(compiler))
-flags   := -fPIC $(extra_flags) -I../../libretro-common/include
+flags   := -fPIC $(extra_flags) -I$(LIBRETRO_COMM_DIR)/include
 asflags := -fPIC  $(extra_flags)
 LDFLAGS := 
 flags   += -std=c99 -DMD5_BUILD_UTILITY
@@ -68,18 +71,22 @@ ASMFLAGS := -INEON/asm
 asflags += -mfpu=neon
 endif
 
-OBJS += djb2.o md5.o sha1.o crc32.o
+
+OBJS += $(CORE_DIR)/djb2.o \
+		  $(CORE_DIR)/md5.o \
+		  $(CORE_DIR)/sha1.o \
+		  $(CORE_DIR)/crc32.o
 UTILS += djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
 
 all: djb2$(DYLIB) md5$(DYLIB) sha1$(DYLIB) crc32$(DYLIB)
 
-djb2$(DYLIB): djb2.o
+djb2$(DYLIB): $(CORE_DIR)/djb2.o
 
-md5$(DYLIB): md5.o
+md5$(DYLIB): $(CORE_DIR)/md5.o
 
-sha1$(DYLIB): sha1.o
+sha1$(DYLIB): $(CORE_DIR)/sha1.o
 
-crc32$(DYLIB): crc32.o ../encodings/encoding_crc32.o
+crc32$(DYLIB): $(CORE_DIR)/crc32.o $(CORE_DIR)/../encodings/encoding_crc32.o
 
 %.o: %.S
 	$(CC) -c -o $@ $(asflags) $(LDFLAGS)  $(ASMFLAGS)  $<
