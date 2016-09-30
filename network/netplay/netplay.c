@@ -1016,7 +1016,7 @@ bool netplay_init_serialization(netplay_t *netplay)
    }
 
    /* Once initialized, we no longer exhibit this quirk */
-   netplay->quirks &= ~((uint32_t) NETPLAY_QUIRK_INITIALIZATION);
+   netplay->quirks &= ~((uint64_t) NETPLAY_QUIRK_INITIALIZATION);
 
    return true;
 }
@@ -1062,7 +1062,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  **/
 netplay_t *netplay_new(const char *server, uint16_t port,
       unsigned frames, unsigned check_frames, const struct retro_callbacks *cb,
-      bool spectate, const char *nick, uint32_t quirks)
+      bool spectate, const char *nick, uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -1398,8 +1398,8 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
 {
    struct retro_callbacks cbs = {0};
    settings_t *settings = config_get_ptr();
-   uint32_t serialization_quirks = 0;
-   uint32_t quirks      = 0;
+   uint64_t serialization_quirks = 0;
+   uint64_t quirks      = 0;
 
    if (!netplay_enabled)
       return false;
@@ -1415,7 +1415,7 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
 
    /* Map the core's quirks to our quirks */
    serialization_quirks = core_serialization_quirks();
-   if ((serialization_quirks & ~((uint32_t) NETPLAY_QUIRK_MAP_UNDERSTOOD)))
+   if ((serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD)))
    {
       /* Quirks we don't support! Just disable everything. */
       quirks |= NETPLAY_QUIRK_NO_SAVESTATES;

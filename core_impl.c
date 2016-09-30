@@ -52,7 +52,7 @@ static bool                core_game_loaded    = false;
 static bool                core_input_polled   = false;
 static bool   core_has_set_input_descriptors   = false;
 static struct retro_callbacks retro_ctx;
-static uint32_t            core_serialization_quirks_v = 0;
+static uint64_t            core_serialization_quirks_v = 0;
 
 static void core_input_state_poll_maybe(void)
 {
@@ -313,12 +313,12 @@ bool core_serialize_size(retro_ctx_size_info_t *info)
    return true;
 }
 
-uint32_t core_serialization_quirks(void)
+uint64_t core_serialization_quirks(void)
 {
    return core_serialization_quirks_v;
 }
 
-void core_set_serialization_quirks(uint32_t quirks)
+void core_set_serialization_quirks(uint64_t quirks)
 {
    core_serialization_quirks_v = quirks;
 }

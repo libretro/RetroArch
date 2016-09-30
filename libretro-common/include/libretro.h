@@ -996,7 +996,7 @@ struct retro_hw_render_context_negotiation_interface
     * one it was saved on. */
 
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
-                                           /* uint32_t * --
+                                           /* uint64_t * --
                                             * Sets quirk flags associated with serialization.
                                             */
 

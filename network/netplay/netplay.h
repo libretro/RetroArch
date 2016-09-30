@@ -149,7 +149,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
 netplay_t *netplay_new(const char *server,
       uint16_t port, unsigned frames, unsigned check_frames,
       const struct retro_callbacks *cb, bool spectate,
-      const char *nick, uint32_t quirks);
+      const char *nick, uint64_t quirks);
 
 /**
  * netplay_free:

@@ -140,7 +140,7 @@ struct netplay
    bool force_rewind;
 
    /* Quirks in the savestate implementation */
-   unsigned quirks;
+   uint64_t quirks;
 
    /* Force our state to be sent to the other side. Used when they request a
     * savestate, to send at the next pre-frame. */
