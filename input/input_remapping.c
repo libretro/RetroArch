@@ -20,6 +20,7 @@
 
 #include "input_remapping.h"
 #include "../configuration.h"
+#include "../paths.h"
 #include "../runloop.h"
 
 /**
@@ -40,8 +41,7 @@ bool input_remapping_load_file(void *data, const char *path)
    if (!conf ||  string_is_empty(path))
       return false;
 
-   strlcpy(global->name.remapfile, path,
-         sizeof(global->name.remapfile));
+   path_set(RARCH_PATH_REMAPFILE, path);
 
    for (i = 0; i < MAX_USERS; i++)
    {

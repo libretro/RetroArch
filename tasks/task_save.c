@@ -41,6 +41,7 @@
 #include "../file_path_special.h"
 #include "../configuration.h"
 #include "../msg_hash.h"
+#include "../paths.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
@@ -947,15 +948,14 @@ void path_init_savefile_rtc(void)
 {
    union string_list_elem_attr attr;
    char savefile_name_rtc[PATH_MAX_LENGTH] = {0};
-   global_t                        *global = global_get_ptr();
 
    attr.i = RETRO_MEMORY_SAVE_RAM;
-   string_list_append(task_save_files, global->name.savefile, attr);
+   string_list_append(task_save_files, path_get(RARCH_PATH_SAVEFILE), attr);
 
    /* Infer .rtc save path from save ram path. */
    attr.i = RETRO_MEMORY_RTC;
    fill_pathname(savefile_name_rtc,
-         global->name.savefile,
+         path_get(RARCH_PATH_SAVEFILE),
          file_path_str(FILE_PATH_RTC_EXTENSION),
          sizeof(savefile_name_rtc));
    string_list_append(task_save_files, savefile_name_rtc, attr);

@@ -477,9 +477,9 @@ static void retroarch_parse_input(int argc, char *argv[])
    rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
    rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   *global->name.ups                     = '\0';
-   *global->name.bps                     = '\0';
-   *global->name.ips                     = '\0';
+   path_clear(RARCH_PATH_UPS);
+   path_clear(RARCH_PATH_BPS);
+   path_clear(RARCH_PATH_IPS);
 
    runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
 
@@ -553,8 +553,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 's':
-            strlcpy(global->name.savefile, optarg,
-                  sizeof(global->name.savefile));
+            path_set(RARCH_PATH_SAVEFILE, optarg);
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_SAVE_PATH);
             break;
@@ -564,8 +563,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'S':
-            strlcpy(global->name.savestate, optarg,
-                  sizeof(global->name.savestate));
+            path_set(RARCH_PATH_SAVESTATE, optarg);
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_STATE_PATH);
             break;
@@ -719,22 +717,19 @@ static void retroarch_parse_input(int argc, char *argv[])
 #endif
 
          case RA_OPT_BPS:
-            strlcpy(global->name.bps, optarg,
-                  sizeof(global->name.bps));
+            path_set(RARCH_PATH_BPS, optarg);
             rarch_ctl(RARCH_CTL_SET_BPS_PREF, NULL);
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF);
             break;
 
          case 'U':
-            strlcpy(global->name.ups, optarg,
-                  sizeof(global->name.ups));
+            path_set(RARCH_PATH_UPS, optarg);
             rarch_ctl(RARCH_CTL_SET_UPS_PREF, NULL);
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF);
             break;
 
          case RA_OPT_IPS:
-            strlcpy(global->name.ips, optarg,
-                  sizeof(global->name.ips));
+            path_set(RARCH_PATH_IPS, optarg);
             rarch_ctl(RARCH_CTL_SET_IPS_PREF, NULL);
             retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF);
             break;
@@ -856,12 +851,12 @@ static void retroarch_parse_input(int argc, char *argv[])
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH) &&
-         path_is_directory(global->name.savefile))
-      dir_set_savefile(global->name.savefile);
+         path_is_directory(path_get(RARCH_PATH_SAVEFILE)))
+      dir_set_savefile(path_get(RARCH_PATH_SAVEFILE));
 
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH) &&
-         path_is_directory(global->name.savestate))
-      dir_set_savestate(global->name.savestate);
+         path_is_directory(path_get(RARCH_PATH_SAVESTATE)))
+      dir_set_savestate(path_get(RARCH_PATH_SAVESTATE));
 }
 
 static bool retroarch_init_state(void)

@@ -109,13 +109,10 @@ static void menu_action_setting_disp_set_label_remap_file_load(
       const char *path,
       char *s2, size_t len2)
 {
-   global_t *global = global_get_ptr();
-
    *w = 19;
    strlcpy(s2, path, len2);
-   if (global)
-      fill_pathname_base(s, global->name.remapfile,
-            len);
+   fill_pathname_base(s, path_get(RARCH_PATH_REMAPFILE),
+         len);
 }
 
 static void menu_action_setting_disp_set_label_configurations(

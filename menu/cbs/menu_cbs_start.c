@@ -33,6 +33,7 @@
 #include "../../core_info.h"
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
+#include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../performance_counters.h"
@@ -49,12 +50,7 @@
 
 static int action_start_remap_file_load(unsigned type, const char *label)
 {
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return -1;
-
-   global->name.remapfile[0] = '\0';
+   path_clear(RARCH_PATH_REMAPFILE);
    input_remapping_set_defaults();
    return 0;
 }

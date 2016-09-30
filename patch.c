@@ -32,6 +32,7 @@
 
 #include "msg_hash.h"
 #include "patch.h"
+#include "paths.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "verbosity.h"
@@ -555,37 +556,34 @@ error:
 
 static bool try_bps_patch(uint8_t **buf, ssize_t *size)
 {
-   global_t *global = global_get_ptr();
    bool allow_bps   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
 
-   if (!allow_bps || string_is_empty(global->name.bps))
+   if (!allow_bps || string_is_empty(path_get(RARCH_PATH_BPS)))
       return false;
 
-   return apply_patch_content(buf, size, "BPS", global->name.bps,
+   return apply_patch_content(buf, size, "BPS", path_get(RARCH_PATH_BPS),
          bps_apply_patch);
 }
 
 static bool try_ups_patch(uint8_t **buf, ssize_t *size)
 {
-   global_t *global = global_get_ptr();
    bool allow_ups   = !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL);
 
-   if (!allow_ups || string_is_empty(global->name.ups))
+   if (!allow_ups || string_is_empty(path_get(RARCH_PATH_UPS)))
       return false;
 
-   return apply_patch_content(buf, size, "UPS", global->name.ups,
+   return apply_patch_content(buf, size, "UPS", path_get(RARCH_PATH_UPS),
          ups_apply_patch);
 }
 
 static bool try_ips_patch(uint8_t **buf, ssize_t *size)
 {
-   global_t *global = global_get_ptr();
    bool allow_ips   = !rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL) && !rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL);
 
-   if (!allow_ips || string_is_empty(global->name.ips))
+   if (!allow_ips || string_is_empty(path_get(RARCH_PATH_IPS)))
       return false;
 
-   return apply_patch_content(buf, size, "IPS", global->name.ips,
+   return apply_patch_content(buf, size, "IPS", path_get(RARCH_PATH_IPS),
          ips_apply_patch);
 }
 
