@@ -752,6 +752,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             path_clear(RARCH_PATH_IPS);
             path_clear(RARCH_PATH_UPS);
             path_clear(RARCH_PATH_BPS);
+            path_clear(RARCH_PATH_RECORD);
+            path_clear(RARCH_PATH_RECORD_CONFIG);
             runloop_overrides_active   = false;
 
             core_unset_input_descriptors();

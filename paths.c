@@ -51,6 +51,8 @@
 /* For --subsystem content. */
 static struct string_list *subsystem_fullpaths          = NULL;
 
+static char path_record[PATH_MAX_LENGTH]                = {0};
+static char path_record_config[PATH_MAX_LENGTH]         = {0};
 static char path_server[PATH_MAX_LENGTH]                = {0};
 static char path_savefile[PATH_MAX_LENGTH]              = {0};
 static char path_savestate[PATH_MAX_LENGTH]             = {0};
@@ -490,7 +492,15 @@ void path_fill_names(void)
    }
 }
 
-/* Core file path */
+char *path_get_record_ptr(void)
+{
+   return path_record;
+}
+
+char *path_get_record_config_ptr(void)
+{
+   return path_record_config;
+}
 
 char *path_get_core_ptr(void)
 {
@@ -506,6 +516,10 @@ const char *path_get(enum rarch_path_type type)
 {
    switch (type)
    {
+      case RARCH_PATH_RECORD:
+         return path_record;
+      case RARCH_PATH_RECORD_CONFIG:
+         return path_record_config;
       case RARCH_PATH_SAVEFILE:
          return path_savefile;
       case RARCH_PATH_SAVESTATE:
@@ -546,6 +560,16 @@ const char *path_get(enum rarch_path_type type)
    }
 
    return NULL;
+}
+
+size_t path_get_record_size(void)
+{
+   return sizeof(path_record);
+}
+
+size_t path_get_record_config_size(void)
+{
+   return sizeof(path_record_config);
 }
 
 size_t path_get_server_size(void)
@@ -676,6 +700,14 @@ bool path_is_empty(enum rarch_path_type type)
 {
    switch (type)
    {
+      case RARCH_PATH_RECORD:
+         if (string_is_empty(path_record))
+            return true;
+         break;
+      case RARCH_PATH_RECORD_CONFIG:
+         if (string_is_empty(path_record_config))
+            return true;
+         break;
       case RARCH_PATH_SAVEFILE:
          if (string_is_empty(path_savefile))
             return true;
@@ -745,6 +777,12 @@ void path_clear(enum rarch_path_type type)
 {
    switch (type)
    {
+      case RARCH_PATH_RECORD:
+         *path_record  = '\0';
+         break;
+      case RARCH_PATH_RECORD_CONFIG:
+         *path_record_config  = '\0';
+         break;
       case RARCH_PATH_SAVEFILE:
          *path_savefile  = '\0';
          break;

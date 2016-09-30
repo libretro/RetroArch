@@ -592,8 +592,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'r':
-            strlcpy(global->record.path, optarg,
-                  sizeof(global->record.path));
+            path_set(RARCH_PATH_RECORD, optarg);
             {
                bool *recording_enabled = recording_is_enabled();
 
@@ -770,8 +769,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          }
 
          case RA_OPT_RECORDCONFIG:
-            strlcpy(global->record.config, optarg,
-                  sizeof(global->record.config));
+            path_set(RARCH_PATH_RECORD_CONFIG, optarg);
             break;
 
          case RA_OPT_MAX_FRAMES:

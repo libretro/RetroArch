@@ -1327,12 +1327,8 @@ static int generic_action_ok(const char *path,
          break;
 #endif
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
-         {
-            global_t *global = global_get_ptr();
-            flush_char = msg_hash_to_str(flush_id);
-            strlcpy(global->record.config, action_path,
-                  sizeof(global->record.config));
-         }
+         flush_char = msg_hash_to_str(flush_id);
+         path_set(RARCH_PATH_RECORD_CONFIG, action_path);
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
          {

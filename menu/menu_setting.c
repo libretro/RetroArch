@@ -4392,8 +4392,8 @@ static bool setting_append_list(
 
             CONFIG_PATH(
                   list, list_info,
-                  global->record.config,
-                  sizeof(global->record.config),
+                  path_get_record_config_ptr(),
+                  path_get_record_config_size(),
                   msg_hash_to_str(MENU_ENUM_LABEL_RECORD_CONFIG),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORD_CONFIG),
                   "",
@@ -4407,8 +4407,8 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
-                  global->record.path,
-                  sizeof(global->record.path),
+                  path_get_record_ptr(),
+                  path_get_record_size(),
                   msg_hash_to_str(MENU_ENUM_LABEL_RECORD_PATH),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORD_PATH),
                   "",
