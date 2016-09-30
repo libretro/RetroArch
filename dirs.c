@@ -288,28 +288,30 @@ const char *dir_get(enum rarch_dir_type type)
 
 /* set functions */
 
-void dir_set_osk_overlay(const char *path)
+void dir_set(enum rarch_dir_type type, const char *path)
 {
-   strlcpy(dir_osk_overlay, path,
-         sizeof(dir_osk_overlay));
-}
-
-void dir_set_system(const char *path)
-{
-   strlcpy(dir_system, path,
-         sizeof(dir_system));
-}
-
-void dir_set_savestate(const char *path)
-{
-   strlcpy(dir_savestate, path,
-         sizeof(dir_savestate));
-}
-
-void dir_set_savefile(const char *path)
-{
-   strlcpy(dir_savefile, path,
-         sizeof(dir_savefile));
+   switch (type)
+   {
+      case RARCH_DIR_OSK_OVERLAY:
+         strlcpy(dir_osk_overlay, path,
+               sizeof(dir_osk_overlay));
+         break;
+      case RARCH_DIR_SYSTEM:
+         strlcpy(dir_system, path,
+               sizeof(dir_system));
+         break;
+      case RARCH_DIR_SAVESTATE:
+         strlcpy(dir_savestate, path,
+               sizeof(dir_savestate));
+         break;
+      case RARCH_DIR_SAVEFILE:
+         strlcpy(dir_savefile, path,
+               sizeof(dir_savefile));
+         break;
+      case RARCH_DIR_NONE:
+      default:
+         break;
+   }
 }
 
 static void check_defaults_dir_create_dir(const char *path)
