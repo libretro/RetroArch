@@ -81,8 +81,12 @@ int sceClibPrintf ( const char * format, ... );
 #define PSP_CTRL_SQUARE SCE_CTRL_SQUARE
 #define PSP_CTRL_CROSS SCE_CTRL_CROSS
 #define PSP_CTRL_CIRCLE SCE_CTRL_CIRCLE
-#define PSP_CTRL_L SCE_CTRL_LTRIGGER
-#define PSP_CTRL_R SCE_CTRL_RTRIGGER
+#define PSP_CTRL_L SCE_CTRL_L1
+#define PSP_CTRL_R SCE_CTRL_R1
+#define PSP_CTRL_L2 SCE_CTRL_LTRIGGER
+#define PSP_CTRL_R2 SCE_CTRL_RTRIGGER
+#define PSP_CTRL_L3 SCE_CTRL_L3
+#define PSP_CTRL_R3 SCE_CTRL_R3
 #else
 #define DEFAULT_SAMPLING_MODE (SCE_CTRL_MODE_DIGITALANALOG)
 
@@ -100,7 +104,13 @@ int sceClibPrintf ( const char * format, ... );
 #define PSP_CTRL_R SCE_CTRL_R
 #endif
 
+#if defined(VITA)
+#define CtrlSetSamplingMode(mode) sceCtrlSetSamplingModeExt(mode)
+#define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlReadBufferPositiveExt2(port, pad_data, bufs)
+#else
+#define CtrlSetSamplingMode(mode) sceCtrlSetSamplingMode(mode)
 #define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlPeekBufferPositive(port, pad_data, bufs)
+#endif
 
 #elif defined(PSP)
 
@@ -115,6 +125,7 @@ int sceClibPrintf ( const char * format, ... );
 
 #define DEFAULT_SAMPLING_MODE (PSP_CTRL_MODE_ANALOG)
 
+#define CtrlSetSamplingMode(mode) sceCtrlSetSamplingMode(mode)
 #define CtrlPeekBufferPositive(port, pad_data, bufs) sceCtrlPeekBufferPositive(pad_data, bufs)
 #endif
 

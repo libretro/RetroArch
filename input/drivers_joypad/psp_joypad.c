@@ -20,7 +20,12 @@
 
 #include "../../configuration.h"
 
-#if defined(SN_TARGET_PSP2) || defined(VITA)
+#if defined(VITA)
+#include <psp2/kernel/sysmem.h>
+#define PSP_MAX_PADS 4
+static int psp2_model;
+static SceCtrlPortInfo old_ctrl_info, curr_ctrl_info;
+#elif defined(SN_TARGET_PSP2)
 #define PSP_MAX_PADS 4
 #else
 #define PSP_MAX_PADS 1
@@ -33,7 +38,17 @@ extern uint64_t lifecycle_state;
 static const char *psp_joypad_name(unsigned pad)
 {
 #ifdef VITA
-   return "Vita Controller";
+   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+      return "Vita Controller";
+
+   switch (curr_ctrl_info.port[pad + 1]) {
+      case SCE_CTRL_TYPE_DS3:
+         return "DS3 Controller";
+      case SCE_CTRL_TYPE_DS4:
+         return "DS4 Controller";
+      default:
+         return "Unpaired";
+   }
 #else
    return "PSP Controller";
 #endif
@@ -61,6 +76,14 @@ static bool psp_joypad_init(void *data)
    unsigned players_count = PSP_MAX_PADS;
 
    (void)data;
+
+#if defined(VITA)
+   psp2_model = sceKernelGetModelForCDialog();
+   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+      players_count = 1;
+   sceCtrlGetControllerPortInfo(&curr_ctrl_info);
+   memcpy(&old_ctrl_info, &curr_ctrl_info, sizeof(SceCtrlPortInfo));
+#endif
 
    for (i = 0; i < players_count; i++)
       psp_joypad_autodetect_add(i);
@@ -134,7 +157,28 @@ static void psp_joypad_poll(void)
    sceCtrlSetSamplingCycle(0);
 #endif
 
-   sceCtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
+#ifdef VITA
+   if (psp2_model != SCE_KERNEL_MODEL_VITATV) {
+      players_count = 1;
+   } else {
+      sceCtrlGetControllerPortInfo(&curr_ctrl_info);
+      for (player = 0; player < players_count; player++) {
+         if (old_ctrl_info.port[player + 1] == curr_ctrl_info.port[player + 1])
+            continue;
+
+         if (old_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED &&
+               curr_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED)
+            input_config_autoconfigure_disconnect(player, psp_joypad.ident);
+
+         if (old_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED &&
+               curr_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED)
+            psp_joypad_autodetect_add(player);
+      }
+      memcpy(&old_ctrl_info, &curr_ctrl_info, sizeof(SceCtrlPortInfo));
+   }
+#endif
+
+   CtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
@@ -143,12 +187,21 @@ static void psp_joypad_poll(void)
       unsigned j, k;
       SceCtrlData state_tmp;
       unsigned i  = player;
+#if defined(VITA)
+      unsigned p = (psp2_model == SCE_KERNEL_MODEL_VITATV) ? player + 1 : player;
+      if (curr_ctrl_info.port[p] == SCE_CTRL_TYPE_UNPAIRED) {
+         continue;
+      }
+#elif defined(SN_TARGET_PSP2)
       /* Dumb hack, but here's the explanation - 
        * sceCtrlPeekBufferPositive's port parameter
        * can be 0 or 1 to read the first controller on
        * a PSTV, but HAS to be 0 for a real VITA and 2 
        * for the 2nd controller on a PSTV */
       unsigned p  = (player > 0) ? player+1 : player;
+#else
+      unsigned p  = player;
+#endif
       int32_t ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
       pad_state[i] = 0;
@@ -176,6 +229,12 @@ static void psp_joypad_poll(void)
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+#if defined(VITA)
+      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
+      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
+      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
+      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+#endif
 
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGLX(state_tmp)-128) * 256;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGLY(state_tmp)-128) * 256;
