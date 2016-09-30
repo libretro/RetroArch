@@ -976,29 +976,29 @@ struct retro_hw_render_context_negotiation_interface
                                             * so it will be used after SET_HW_RENDER, but before the context_reset callback.
                                             */
 
+/* Serialized state is incomplete in some way. Set if serialization is
+ * usable in typical end-user cases but should not be relied upon to
+ * implement frame-sensitive frontend features such as netplay or
+ * rerecording. */
 #define RETRO_SERIALIZATION_QUIRK_INCOMPLETE (1 << 0)
-   /* Serialized state is incomplete in some way. Set if serialization is
-    * usable in typical end-user cases but should not be relied upon to
-    * implement frame-sensitive frontend features such as netplay or
-    * rerecording. */
+/* The core must spend some time initializing before serialization is
+ * safe. */
 #define RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE (1 << 1)
-   /* The core must spend some time initializing before serialization is
-    * safe. */
+/* If MUST_INITIALIZE is set, this should also be set if initialization is
+ * in progress. */
 #define RETRO_SERIALIZATION_QUIRK_INITIALIZING (1 << 2)
-   /* If MUST_INITIALIZE is set, this should also be set if initialization is
-    * in progress. */
+/* Serialization size may change within a session. */
 #define RETRO_SERIALIZATION_QUIRK_VARIABLE_SIZE (1 << 3)
-   /* Serialization size may change within a session. */
+/* Serialized state can only be loaded during the same session. */
 #define RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION (1 << 4)
-   /* Serialized state can only be loaded during the same session. */
+/* Serialized state cannot be loaded on a different architecture from the
+ * one it was saved on. */
 #define RETRO_SERIALIZATION_QUIRK_ARCHITECTURE_DEPENDENT (1 << 5)
-   /* Serialized state cannot be loaded on a different architecture from the
-    * one it was saved on. */
 
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
                                            /* uint64_t * --
                                             * Sets quirk flags associated with serialization. The frontend will zero any flags it doesn't
-                                            * recognize or support.
+                                            * recognize or support. Should be set during retro_init or retro_load_game.
                                             */
 
 
