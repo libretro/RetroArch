@@ -233,7 +233,7 @@ static void load_dynamic_core(void)
     * saved to content history, and a relative path would
     * break in that scenario. */
    path_resolve_realpath(
-         path_get_core_ptr(),
+         path_get_ptr(RARCH_PATH_CORE),
          path_get_ptr_size(RARCH_PATH_CORE));
 
    RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",

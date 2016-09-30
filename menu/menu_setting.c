@@ -2149,7 +2149,7 @@ static bool setting_append_list(
                      &subgroup_info,
                      parent_group);
                (*list)[list_info->index - 1].size                = path_get_ptr_size(RARCH_PATH_CORE);
-               (*list)[list_info->index - 1].value.target.string = path_get_core_ptr();
+               (*list)[list_info->index - 1].value.target.string = path_get_ptr(RARCH_PATH_CORE);
                (*list)[list_info->index - 1].values       = ext_name;
                menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_LOAD_CORE);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
@@ -4392,7 +4392,7 @@ static bool setting_append_list(
 
             CONFIG_PATH(
                   list, list_info,
-                  path_get_record_config_ptr(),
+                  path_get_ptr(RARCH_PATH_RECORD_CONFIG),
                   path_get_ptr_size(RARCH_PATH_RECORD_CONFIG),
                   msg_hash_to_str(MENU_ENUM_LABEL_RECORD_CONFIG),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORD_CONFIG),
@@ -4407,7 +4407,7 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
-                  path_get_record_ptr(),
+                  path_get_ptr(RARCH_PATH_RECORD),
                   path_get_ptr_size(RARCH_PATH_RECORD),
                   msg_hash_to_str(MENU_ENUM_LABEL_RECORD_PATH),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORD_PATH),
@@ -5810,7 +5810,7 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
-                  path_get_server_ptr(),
+                  path_get_ptr(RARCH_PATH_SERVER),
                   path_get_ptr_size(RARCH_PATH_SERVER),
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS),

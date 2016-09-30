@@ -73,13 +73,7 @@ void path_set_basename(const char *path);
 
 size_t path_get_ptr_size(enum rarch_path_type type);
 
-char *path_get_record_ptr(void);
-
-char *path_get_record_config_ptr(void);
-
-char *path_get_core_ptr(void);
-
-char *path_get_server_ptr(void);
+char *path_get_ptr(enum rarch_path_type type);
 
 struct string_list *path_get_subsystem_list(void);
 

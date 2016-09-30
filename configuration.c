@@ -587,7 +587,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    SETTING_PATH("core_updater_buildbot_url", settings->network.buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->network.buildbot_assets_url, false, NULL, true);
 #ifdef HAVE_NETWORKING
-   SETTING_PATH("netplay_ip_address",       path_get_server_ptr(), false, NULL, true);
+   SETTING_PATH("netplay_ip_address",       path_get_ptr(RARCH_PATH_SERVER), false, NULL, true);
 #endif
    SETTING_PATH("recording_output_directory",
          global->record.output_dir, false, NULL, true);
