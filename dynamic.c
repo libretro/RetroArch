@@ -1609,7 +1609,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
-         core_set_serialization_quirks(*((uint32_t *) data));
+         core_set_serialization_quirks(*((uint64_t *) data));
+
+         /* Zero any unrecognized quirks */
+         *((uint64_t *) data) &= ~((uint64_t)
+         ((RETRO_SERIALIZATION_QUIRK_ARCHITECTURE_DEPENDENT-1) |
+           RETRO_SERIALIZATION_QUIRK_ARCHITECTURE_DEPENDENT));
+
+         /* And zero variable-sized serialization, which we don't support */
+         *((uint64_t *) data) &= ~((uint64_t) RETRO_SERIALIZATION_QUIRK_VARIABLE_SIZE);
+
          break;
 
       /* Default */

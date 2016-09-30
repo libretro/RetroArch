@@ -997,7 +997,8 @@ struct retro_hw_render_context_negotiation_interface
 
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
                                            /* uint64_t * --
-                                            * Sets quirk flags associated with serialization.
+                                            * Sets quirk flags associated with serialization. The frontend will zero any flags it doesn't
+                                            * recognize or support.
                                             */
 
 
