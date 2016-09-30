@@ -17,6 +17,7 @@
 #include <stdlib.h>
 
 #include <encodings/utf.h>
+#include <string/stdstring.h>
 
 #include "../common/gl_common.h"
 #include "../font_driver.h"
@@ -384,10 +385,11 @@ static void gl_raster_font_render_message(
    int lines = 0;
    float line_height;
 
-   if (     !msg
-         || !*msg
+   if (!font)
+      return;
+
+   if (     string_is_empty(msg)
          || !font->gl
-         || !font
          || !font->font_data
          || !font->font_driver)
       return;
