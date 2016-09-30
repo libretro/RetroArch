@@ -64,7 +64,9 @@ void main_exit(void *args)
 #endif
 
    frontend_driver_deinit(args);
-   frontend_driver_exitspawn(path_get_ptr(RARCH_PATH_CORE), path_get_ptr_size(RARCH_PATH_CORE));
+   frontend_driver_exitspawn(
+         path_get_ptr(RARCH_PATH_CORE),
+         path_get_ptr_size(RARCH_PATH_CORE));
 
    rarch_ctl(RARCH_CTL_DESTROY, NULL);
 
@@ -91,9 +93,6 @@ void main_exit(void *args)
 int rarch_main(int argc, char *argv[], void *data)
 {
    void *args                      = (void*)data;
-#ifndef HAVE_MAIN
-   int ret                         = 0;
-#endif
 
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
    frontend_driver_init_first(args);
@@ -125,12 +124,14 @@ int rarch_main(int argc, char *argv[], void *data)
    do
    {
       unsigned sleep_ms = 0;
-      ret = runloop_iterate(&sleep_ms);
+      int           ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
       task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
-   }while(ret != -1);
+      if (ret == -1)
+         break;
+   }while(1);
 
    main_exit(args);
 #endif

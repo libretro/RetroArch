@@ -370,7 +370,6 @@ static void android_app_entry(void *data)
 {
    char arguments[]  = "retroarch";
    char      *argv[] = {arguments,   NULL};
-   int          ret  = 0;
    int          argc = 1;
 
    if (rarch_main(argc, argv, data) != 0)
@@ -379,12 +378,14 @@ static void android_app_entry(void *data)
    do
    {
       unsigned sleep_ms = 0;
-      ret = runloop_iterate(&sleep_ms);
+      int           ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
       task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
-   }while (ret != -1);
+      if (ret == -1)
+         break;
+   }while(1);
 
    main_exit(data);
 #endif
