@@ -222,9 +222,9 @@ static char** waiting_argv;
 
 - (void) rarch_main
 {
-    int ret = 0;
-    while (ret != -1)
+    do
     {
+       int ret;
        unsigned sleep_ms = 0;
        const ui_application_t *application = ui_companion_driver_get_application_ptr();
        if (application)
@@ -234,7 +234,9 @@ static char** waiting_argv;
           retro_sleep(sleep_ms);
        task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
-    }
+       if (ret == -1)
+          break;
+    }while(1);
     
     main_exit(NULL);
 }
