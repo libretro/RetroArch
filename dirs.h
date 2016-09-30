@@ -44,13 +44,7 @@ void dir_check_shader(bool pressed_next, bool pressed_prev);
 
 /* empty functions */
 
-bool dir_is_savefile_empty(void);
-
-bool dir_is_savestate_empty(void);
-
-bool dir_is_system_empty(void);
-
-bool dir_is_osk_overlay_empty(void);
+bool dir_is_empty(enum rarch_dir_type type);
 
 /* clear functions */
 
