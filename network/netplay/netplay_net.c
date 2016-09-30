@@ -61,8 +61,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
 
-   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count) &&
-       netplay->self_frame_count > 0 /* Frame 0 may not yet be ready for serialization */)
+   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
    {
       serial_info.data_const = NULL;
       serial_info.data = netplay->buffer[netplay->self_ptr].state;
@@ -206,7 +205,11 @@ static void netplay_net_post_frame(netplay_t *netplay)
 
    /* Only relevant if we're connected */
    if (!netplay->has_connection)
+   {
+      netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
+      netplay->read_ptr = netplay->other_ptr = netplay->self_ptr;
       return;
+   }
 
    if (!netplay->force_rewind)
    {
