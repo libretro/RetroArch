@@ -6467,8 +6467,8 @@ static bool setting_append_list(
          {
             CONFIG_DIR(
                   list, list_info,
-                  global->record.output_dir,
-                  sizeof(global->record.output_dir),
+                  dir_get_ptr(RARCH_DIR_RECORD_OUTPUT),
+                  dir_get_ptr_size(RARCH_DIR_RECORD_OUTPUT),
                   msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY),
                   "",
@@ -6482,8 +6482,8 @@ static bool setting_append_list(
 
             CONFIG_DIR(
                   list, list_info,
-                  global->record.config_dir,
-                  sizeof(global->record.config_dir),
+                  dir_get_ptr(RARCH_DIR_RECORD_CONFIG),
+                  dir_get_ptr_size(RARCH_DIR_RECORD_CONFIG),
                   msg_hash_to_str(MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY),
                   "",
@@ -6514,7 +6514,7 @@ static bool setting_append_list(
          CONFIG_DIR(
                list, list_info,
                dir_get_ptr(RARCH_DIR_OSK_OVERLAY),
-               dir_get_size(RARCH_DIR_OSK_OVERLAY),
+               dir_get_ptr_size(RARCH_DIR_OSK_OVERLAY),
                msg_hash_to_str(MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY),
                g_defaults.dir.osk_overlay,
@@ -6590,7 +6590,7 @@ static bool setting_append_list(
          CONFIG_DIR(
                list, list_info,
                dir_get_ptr(RARCH_DIR_SAVEFILE),
-               dir_get_size(RARCH_DIR_SAVEFILE),
+               dir_get_ptr_size(RARCH_DIR_SAVEFILE),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVEFILE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY),
                "",
@@ -6605,7 +6605,7 @@ static bool setting_append_list(
          CONFIG_DIR(
                list, list_info,
                dir_get_ptr(RARCH_DIR_SAVESTATE),
-               dir_get_size(RARCH_DIR_SAVESTATE),
+               dir_get_ptr_size(RARCH_DIR_SAVESTATE),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY),
                "",

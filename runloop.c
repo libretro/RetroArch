@@ -728,7 +728,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
          {
-            global_t *global = NULL;
             command_event(CMD_EVENT_TEMPORARY_CONTENT_DEINIT, NULL);
 
             path_deinit_subsystem();
@@ -758,10 +757,16 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             core_unset_input_descriptors();
 
-            global = global_get_ptr();
             path_clear_all();
+            dir_clear(RARCH_DIR_RECORD_CONFIG);
+            dir_clear(RARCH_DIR_RECORD_OUTPUT);
             dir_clear_all();
-            memset(global, 0, sizeof(struct global));
+
+            {
+               global_t *global = global_get_ptr();
+               memset(global, 0, sizeof(struct global));
+            }
+
             retroarch_override_setting_free_state();
          }
          break;

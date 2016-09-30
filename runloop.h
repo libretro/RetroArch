@@ -158,9 +158,6 @@ typedef struct global
    /* Recording. */
    struct
    {
-      char output_dir[PATH_MAX_LENGTH];
-      char config_dir[PATH_MAX_LENGTH];
-
       unsigned width;
       unsigned height;
 

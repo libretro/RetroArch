@@ -40,10 +40,12 @@ struct rarch_dir_list
 
 static struct rarch_dir_list dir_shader_list;
 
-static char dir_osk_overlay[PATH_MAX_LENGTH] = {0};
-static char dir_system[PATH_MAX_LENGTH]      = {0};
-static char dir_savefile[PATH_MAX_LENGTH]    = {0};
-static char dir_savestate[PATH_MAX_LENGTH]   = {0};
+static char dir_record_output[PATH_MAX_LENGTH] = {0};
+static char dir_record_config[PATH_MAX_LENGTH] = {0};
+static char dir_osk_overlay[PATH_MAX_LENGTH]   = {0};
+static char dir_system[PATH_MAX_LENGTH]        = {0};
+static char dir_savefile[PATH_MAX_LENGTH]      = {0};
+static char dir_savestate[PATH_MAX_LENGTH]     = {0};
 
 static bool shader_dir_init(struct rarch_dir_list *dir_list)
 {
@@ -172,6 +174,10 @@ bool dir_is_empty(enum rarch_dir_type type)
 {
    switch (type)
    {
+      case RARCH_DIR_RECORD_OUTPUT:
+         return string_is_empty(dir_record_output);
+      case RARCH_DIR_RECORD_CONFIG:
+         return string_is_empty(dir_record_config);
       case RARCH_DIR_SYSTEM:
          return string_is_empty(dir_system);
       case RARCH_DIR_SAVEFILE:
@@ -190,10 +196,14 @@ bool dir_is_empty(enum rarch_dir_type type)
 
 /* get size functions */
 
-size_t dir_get_size(enum rarch_dir_type type)
+size_t dir_get_ptr_size(enum rarch_dir_type type)
 {
    switch (type)
    {
+      case RARCH_DIR_RECORD_OUTPUT:
+         return sizeof(dir_record_output);
+      case RARCH_DIR_RECORD_CONFIG:
+         return sizeof(dir_record_config);
       case RARCH_DIR_SYSTEM:
          return sizeof(dir_system);
       case RARCH_DIR_SAVEFILE:
@@ -216,6 +226,12 @@ void dir_clear(enum rarch_dir_type type)
 {
    switch (type)
    {
+      case RARCH_DIR_RECORD_OUTPUT:
+         *dir_record_output = '\0';
+         break;
+      case RARCH_DIR_RECORD_CONFIG:
+         *dir_record_config = '\0';
+         break;
       case RARCH_DIR_SYSTEM:
          *dir_system = '\0';
          break;
@@ -248,6 +264,10 @@ char *dir_get_ptr(enum rarch_dir_type type)
 {
    switch (type)
    {
+      case RARCH_DIR_RECORD_OUTPUT:
+         return dir_record_output;
+      case RARCH_DIR_RECORD_CONFIG:
+         return dir_record_config;
       case RARCH_DIR_SYSTEM:
          return dir_system;
       case RARCH_DIR_SAVEFILE:
@@ -270,6 +290,10 @@ const char *dir_get(enum rarch_dir_type type)
 {
    switch (type)
    {
+      case RARCH_DIR_RECORD_OUTPUT:
+         return dir_record_output;
+      case RARCH_DIR_RECORD_CONFIG:
+         return dir_record_config;
       case RARCH_DIR_OSK_OVERLAY:
          return dir_osk_overlay;
       case RARCH_DIR_SYSTEM:
@@ -292,6 +316,14 @@ void dir_set(enum rarch_dir_type type, const char *path)
 {
    switch (type)
    {
+      case RARCH_DIR_RECORD_OUTPUT:
+         strlcpy(dir_record_output, path,
+               sizeof(dir_record_output));
+         break;
+      case RARCH_DIR_RECORD_CONFIG:
+         strlcpy(dir_record_config, path,
+               sizeof(dir_record_config));
+         break;
       case RARCH_DIR_OSK_OVERLAY:
          strlcpy(dir_osk_overlay, path,
                sizeof(dir_osk_overlay));
