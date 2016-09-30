@@ -198,6 +198,12 @@ struct netplay_callbacks* netplay_get_cbs_net(void);
 
 struct netplay_callbacks* netplay_get_cbs_spectate(void);
 
+/* Normally called at init time, unless the INITIALIZATION quirk is set */
+bool netplay_init_serialization(netplay_t *netplay);
+
+/* Force serialization to be ready by fast-forwarding the core */
+bool netplay_wait_and_init_serialization(netplay_t *netplay);
+
 void netplay_simulate_input(netplay_t *netplay, uint32_t sim_ptr);
 
 void   netplay_log_connection(const struct sockaddr_storage *their_addr,

@@ -31,6 +31,7 @@
 
 #include "netplay_private.h"
 
+#include "../../autosave.h"
 #include "../../configuration.h"
 #include "../../command.h"
 #include "../../movie.h"
@@ -951,6 +952,57 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
 
 
+bool netplay_wait_and_init_serialization(netplay_t *netplay)
+{
+   int frames;
+
+   if (netplay->state_size)
+      return true;
+
+   /* Wait maximally 60 frames, or until the core reports it's initialized */
+   for (frames = 0; (core_serialize_quirks() & RETRO_SERIALIZATION_QUIRK_INITIALIZING) && frames < 60; frames++)
+   {
+#if defined(HAVE_THREADS)
+         autosave_lock();
+#endif
+         core_run();
+#if defined(HAVE_THREADS)
+         autosave_unlock();
+#endif
+   }
+
+   return netplay_init_serialization(netplay);
+
+}
+
+bool netplay_init_serialization(netplay_t *netplay)
+{
+   unsigned i;
+   retro_ctx_size_info_t info;
+
+   if (netplay->state_size)
+      return true;
+
+   core_serialize_size(&info);
+
+   netplay->state_size = info.size;
+
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      netplay->buffer[i].state = calloc(netplay->state_size, 1);
+
+      if (!netplay->buffer[i].state)
+      {
+         netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
+         return false;
+      }
+   }
+
+   /* Once initialized, we no longer exhibit this quirk */
+   netplay->quirks &= ~((uint32_t) NETPLAY_QUIRK_INITIALIZATION);
+
+   return true;
+}
 
 static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
 {
@@ -969,25 +1021,8 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
    if (!netplay->buffer)
       return false;
 
-   {
-      unsigned i;
-      retro_ctx_size_info_t info;
-
-      core_serialize_size(&info);
-
-      netplay->state_size = info.size;
-
-      for (i = 0; i < netplay->buffer_size; i++)
-      {
-         netplay->buffer[i].state = calloc(netplay->state_size, 1);
-
-         if (!netplay->buffer[i].state)
-         {
-            netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-            netplay->stall_frames = 0;
-         }
-      }
-   }
+   if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
+      return netplay_init_serialization(netplay);
 
    return true;
 }

@@ -69,7 +69,11 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       serial_info.size = netplay->state_size;
 
       memset(serial_info.data, 0, serial_info.size);
-      if (!(netplay->quirks & NETPLAY_QUIRK_NO_SAVESTATES) && core_serialize(&serial_info))
+      if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+      {
+         /* Don't serialize until it's safe */
+      }
+      else if (!(netplay->quirks & NETPLAY_QUIRK_NO_SAVESTATES) && core_serialize(&serial_info))
       {
          if (netplay->force_send_savestate && !netplay->stall)
          {
@@ -215,6 +219,10 @@ static void netplay_net_post_frame(netplay_t *netplay)
       netplay->is_replay = true;
       netplay->replay_ptr = netplay->other_ptr;
       netplay->replay_frame_count = netplay->other_frame_count;
+
+      if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+         /* Make sure we're initialized before we start loading things */
+         netplay_wait_and_init_serialization(netplay);
 
       serial_info.data       = NULL;
       serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
