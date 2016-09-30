@@ -22,9 +22,24 @@
 
 #if defined(VITA)
 #include <psp2/kernel/sysmem.h>
+#include <psp2/touch.h>
 #define PSP_MAX_PADS 4
 static int psp2_model;
 static SceCtrlPortInfo old_ctrl_info, curr_ctrl_info;
+
+#define LERP(p, f, t) ((((p * 10) * (t * 10)) / (f * 10)) / 10)
+#define AREA(lx, ly, rx, ry, x, y) (lx <= x && x < rx && ly <= y && y < ry)
+#define TOUCH_MAX_WIDTH 1919
+#define TOUCH_MAX_HEIGHT 1087
+#define SCREEN_WIDTH PSP_FB_WIDTH
+#define SCREEN_HEIGHT PSP_FB_HEIGHT
+#define SCREEN_HALF_WIDTH SCREEN_WIDTH / 2
+#define SCREEN_HALF_HEIGHT SCREEN_HEIGHT / 2
+#define NW_AREA(x, y) AREA(0, 0, SCREEN_HALF_WIDTH, SCREEN_HALF_HEIGHT, (x), (y))
+#define NE_AREA(x, y) AREA(SCREEN_HALF_WIDTH, 0, SCREEN_WIDTH, SCREEN_HALF_HEIGHT, (x), (y))
+#define SW_AREA(x, y) AREA(0, SCREEN_HALF_HEIGHT, SCREEN_HALF_WIDTH, SCREEN_HEIGHT, (x), (y))
+#define SE_AREA(x, y) AREA(SCREEN_HALF_WIDTH, SCREEN_HALF_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, (x), (y))
+
 #elif defined(SN_TARGET_PSP2)
 #define PSP_MAX_PADS 4
 #else
@@ -79,8 +94,10 @@ static bool psp_joypad_init(void *data)
 
 #if defined(VITA)
    psp2_model = sceKernelGetModelForCDialog();
-   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+   if (psp2_model != SCE_KERNEL_MODEL_VITATV) {
+      sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, SCE_TOUCH_SAMPLING_STATE_START);
       players_count = 1;
+   }
    sceCtrlGetControllerPortInfo(&curr_ctrl_info);
    memcpy(&old_ctrl_info, &curr_ctrl_info, sizeof(SceCtrlPortInfo));
 #endif
@@ -189,9 +206,8 @@ static void psp_joypad_poll(void)
       unsigned i  = player;
 #if defined(VITA)
       unsigned p = (psp2_model == SCE_KERNEL_MODEL_VITATV) ? player + 1 : player;
-      if (curr_ctrl_info.port[p] == SCE_CTRL_TYPE_UNPAIRED) {
+      if (curr_ctrl_info.port[p] == SCE_CTRL_TYPE_UNPAIRED)
          continue;
-      }
 #elif defined(SN_TARGET_PSP2)
       /* Dumb hack, but here's the explanation - 
        * sceCtrlPeekBufferPositive's port parameter
@@ -209,8 +225,22 @@ static void psp_joypad_poll(void)
          analog_state[i][1][0] = analog_state[i][1][1] = 0;
 
 #if defined(SN_TARGET_PSP2) || defined(VITA)
-      if(ret < 0)
-        continue;
+      if (ret < 0)
+         continue;
+#endif
+#if defined(VITA)
+      if (psp2_model == SCE_KERNEL_MODEL_VITA) {
+         SceTouchData back = {0};
+         sceTouchPeek(SCE_TOUCH_PORT_BACK, &back, 1);
+         for (int i = 0; i < back.reportNum; i++) {
+            int x = LERP(back.report[i].x, TOUCH_MAX_WIDTH, SCREEN_WIDTH);
+            int y = LERP(back.report[i].y, TOUCH_MAX_HEIGHT, SCREEN_HEIGHT);
+            if (NW_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_L2;
+            if (NE_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_R2;
+            if (SW_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_L3;
+            if (SE_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_R3;
+         }
+      }
 #endif
 #ifdef HAVE_KERNEL_PRX
       state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
