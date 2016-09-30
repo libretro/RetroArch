@@ -982,13 +982,15 @@ struct retro_hw_render_context_negotiation_interface
  * rerecording. */
 #define RETRO_SERIALIZATION_QUIRK_INCOMPLETE (1 << 0)
 /* The core must spend some time initializing before serialization is
- * safe. */
+ * supported. */
 #define RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE (1 << 1)
 /* If MUST_INITIALIZE is set, this should also be set if initialization is
  * in progress. */
-#define RETRO_SERIALIZATION_QUIRK_INITIALIZING (1 << 2)
 /* Serialization size may change within a session. */
-#define RETRO_SERIALIZATION_QUIRK_VARIABLE_SIZE (1 << 3)
+#define RETRO_SERIALIZATION_QUIRK_CORE_VARIABLE_SIZE (1 << 2)
+/* Set by the frontend to acknowledge that it supports variable-sized
+ * states. */
+#define RETRO_SERIALIZATION_QUIRK_FRONT_VARIABLE_SIZE (1 << 3)
 /* Serialized state can only be loaded during the same session. */
 #define RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION (1 << 4)
 /* Serialized state cannot be loaded on a different architecture from the
@@ -998,7 +1000,7 @@ struct retro_hw_render_context_negotiation_interface
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
                                            /* uint64_t * --
                                             * Sets quirk flags associated with serialization. The frontend will zero any flags it doesn't
-                                            * recognize or support. Should be set during retro_init or retro_load_game.
+                                            * recognize or support. Should be set in either retro_init or retro_load_game, but not both.
                                             */
 
 

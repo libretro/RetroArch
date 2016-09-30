@@ -282,8 +282,6 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
 {
    if (!info)
       return false;
-   if (core_serialization_quirks_v & RETRO_SERIALIZATION_QUIRK_INITIALIZING)
-      return false;
    if (!core.retro_unserialize(info->data_const, info->size))
       return false;
 
@@ -297,8 +295,6 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
    if (!info)
-      return false;
-   if (core_serialization_quirks_v & RETRO_SERIALIZATION_QUIRK_INITIALIZING)
       return false;
    if (!core.retro_serialize(info->data, info->size))
       return false;

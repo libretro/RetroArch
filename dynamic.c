@@ -1611,16 +1611,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
       {
          uint64_t *quirks = (uint64_t *) data;
-
          core_set_serialization_quirks(*quirks);
-
-         /* Zero any unrecognized quirks, and zero unsupported VARIABLE_SIZE */
-         *quirks &= (RETRO_SERIALIZATION_QUIRK_INCOMPLETE
-                    |RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE
-                    |RETRO_SERIALIZATION_QUIRK_INITIALIZING
-                    |RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION
-                    |RETRO_SERIALIZATION_QUIRK_ARCHITECTURE_DEPENDENT);
-
          break;
       }
 
