@@ -960,7 +960,7 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay)
       return true;
 
    /* Wait maximally 60 frames, or until the core reports it's initialized */
-   for (frames = 0; (core_serialize_quirks() & RETRO_SERIALIZATION_QUIRK_INITIALIZING) && frames < 60; frames++)
+   for (frames = 0; (core_serialization_quirks() & RETRO_SERIALIZATION_QUIRK_INITIALIZING) && frames < 60; frames++)
    {
 #if defined(HAVE_THREADS)
          autosave_lock();
@@ -1390,7 +1390,7 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
    core_set_default_callbacks(&cbs);
 
    /* Map the core's quirks to our quirks */
-   serialization_quirks = core_serialize_quirks();
+   serialization_quirks = core_serialization_quirks();
    if ((serialization_quirks & ~((uint32_t) NETPLAY_QUIRK_MAP_UNDERSTOOD)))
    {
       /* Quirks we don't support! Just disable everything. */
