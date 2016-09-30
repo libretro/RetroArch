@@ -720,20 +720,15 @@ static bool netplay_poll(void)
    if (netplay_is_server(netplay_data) && netplay_data->spectate.enabled)
       return true;
 
-   /* WORKAROUND: The only reason poll_input is ignored in the first frame is
-    * that some cores can't report state size until after the first frame. */
-   if (netplay_data->self_frame_count > 0 || netplay_data->stall || netplay_data->spectate.enabled)
+   /* Read Netplay input, block if we're configured to stall for input every
+    * frame */
+   res = poll_input(netplay_data,
+         (netplay_data->stall_frames == 0)
+         && (netplay_data->read_frame_count <= netplay_data->self_frame_count));
+   if (res == -1)
    {
-      /* Read Netplay input, block if we're configured to stall for input every
-       * frame */
-      res = poll_input(netplay_data,
-            (netplay_data->stall_frames == 0) 
-            && (netplay_data->read_frame_count <= netplay_data->self_frame_count));
-      if (res == -1)
-      {
-         hangup(netplay_data);
-         return false;
-      }
+      hangup(netplay_data);
+      return false;
    }
 
    /* Simulate the input if we don't have real input */
@@ -965,9 +960,25 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
    if (!netplay->buffer)
       return false;
 
-   /* WORKAROUND: The code to initialize state buffers really should be here.
-    * It's been moved to work around cores that can't core_serialize_size
-    * early. */
+   {
+      unsigned i;
+      retro_ctx_size_info_t info;
+
+      core_serialize_size(&info);
+
+      netplay->state_size = info.size;
+
+      for (i = 0; i < netplay->buffer_size; i++)
+      {
+         netplay->buffer[i].state = calloc(netplay->state_size, 1);
+
+         if (!netplay->buffer[i].state)
+         {
+            netplay->savestates_work = false;
+            netplay->stall_frames = 0;
+         }
+      }
+   }
 
    return true;
 }
