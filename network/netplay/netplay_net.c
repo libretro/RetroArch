@@ -69,7 +69,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       serial_info.size = netplay->state_size;
 
       memset(serial_info.data, 0, serial_info.size);
-      if (netplay->savestates_work && core_serialize(&serial_info))
+      if (!(netplay->quirks & NETPLAY_QUIRK_NO_SAVESTATES) && core_serialize(&serial_info))
       {
          if (netplay->force_send_savestate && !netplay->stall)
          {
@@ -83,7 +83,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       {
          /* If the core can't serialize properly, we must stall for the
           * remote input on EVERY frame, because we can't recover */
-         netplay->savestates_work = false;
+         netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
          netplay->stall_frames = 0;
          if (!netplay->has_connection)
             netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
@@ -135,7 +135,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
             netplay->has_connection = true;
 
             /* Send them the savestate */
-            if (netplay->savestates_work)
+            if (!(netplay->quirks & NETPLAY_QUIRK_NO_SAVESTATES) && !(netplay->quirks & NETPLAY_QUIRK_NO_TRANSMISSION))
             {
                netplay_load_savestate(netplay, NULL, true);
             }

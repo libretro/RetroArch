@@ -729,9 +729,11 @@ static bool netplay_poll(void)
 
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
-   res = poll_input(netplay_data,
-         (netplay_data->stall_frames == 0)
-         && (netplay_data->read_frame_count <= netplay_data->self_frame_count));
+   if (netplay_data->stall_frames == 0 &&
+       netplay_data->read_frame_count <= netplay_data->self_frame_count)
+      res = poll_input(netplay_data, true);
+   else
+      res = poll_input(netplay_data, false);
    if (res == -1)
    {
       hangup(netplay_data);
@@ -981,7 +983,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
 
          if (!netplay->buffer[i].state)
          {
-            netplay->savestates_work = false;
+            netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
             netplay->stall_frames = 0;
          }
       }
@@ -999,6 +1001,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
  * @nick                 : Nickname of user.
+ * @quirks               : Netplay quirks required for this session.
  *
  * Creates a new netplay handle. A NULL host means we're 
  * hosting (user 1).
@@ -1007,7 +1010,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  **/
 netplay_t *netplay_new(const char *server, uint16_t port,
       unsigned frames, unsigned check_frames, const struct retro_callbacks *cb,
-      bool spectate, const char *nick)
+      bool spectate, const char *nick, uint32_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -1019,10 +1022,10 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
    netplay->is_server         = server == NULL;
-   netplay->savestates_work   = true;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
    netplay->stall_frames = frames;
    netplay->check_frames = check_frames;
+   netplay->quirks = quirks;
 
    if (!netplay_init_buffers(netplay, frames))
    {
@@ -1332,6 +1335,8 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
 {
    struct retro_callbacks cbs = {0};
    settings_t *settings = config_get_ptr();
+   uint32_t serialization_quirks = 0;
+   uint32_t quirks      = 0;
 
    if (!netplay_enabled)
       return false;
@@ -1344,6 +1349,20 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
    }
 
    core_set_default_callbacks(&cbs);
+
+   /* Map the core's quirks to our quirks */
+   serialization_quirks = core_serialize_quirks();
+   if ((serialization_quirks & ~((uint32_t) NETPLAY_QUIRK_MAP_UNDERSTOOD)))
+   {
+      /* Quirks we don't support! Just disable everything. */
+      quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
+   }
+   if ((serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES))
+      quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
+   if ((serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION))
+      quirks |= NETPLAY_QUIRK_NO_TRANSMISSION;
+   if ((serialization_quirks & NETPLAY_QUIRK_MAP_INITIALIZATION))
+      quirks |= NETPLAY_QUIRK_INITIALIZATION;
 
    if (netplay_is_client)
    {
@@ -1361,7 +1380,7 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
          netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
          settings->netplay.sync_frames, settings->netplay.check_frames, &cbs,
-         is_spectate, settings->username);
+         is_spectate, settings->username, quirks);
 
    if (netplay_data)
       return true;
