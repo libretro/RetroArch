@@ -969,27 +969,52 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
 
 
-bool netplay_wait_and_init_serialization(netplay_t *netplay)
+bool netplay_try_init_serialization(netplay_t *netplay)
 {
-   int frames;
+   retro_ctx_serialize_info_t serial_info;
 
    if (netplay->state_size)
       return true;
 
-   /* Wait maximally 60 frames, or until the core reports it's initialized */
-   for (frames = 0; (core_serialization_quirks() & RETRO_SERIALIZATION_QUIRK_INITIALIZING) && frames < 60; frames++)
-   {
+   if (!netplay_init_serialization(netplay))
+      return false;
+
+   /* Check if we can actually save */
+   serial_info.data_const = NULL;
+   serial_info.data = netplay->buffer[netplay->self_ptr].state;
+   serial_info.size = netplay->state_size;
+
+   if (!core_serialize(&serial_info))
+      return false;
+
+   /* Once initialized, we no longer exhibit this quirk */
+   netplay->quirks &= ~((uint64_t) NETPLAY_QUIRK_INITIALIZATION);
+
+   return true;
+}
+
+bool netplay_wait_and_init_serialization(netplay_t *netplay)
+{
+   int frame;
+
+   if (netplay->state_size)
+      return true;
+
+   /* Wait a maximum of 60 frames */
+   for (frame = 0; frame < 60; frame++) {
+      if (netplay_try_init_serialization(netplay))
+         return true;
+
 #if defined(HAVE_THREADS)
-         autosave_lock();
+      autosave_lock();
 #endif
-         core_run();
+      core_run();
 #if defined(HAVE_THREADS)
-         autosave_unlock();
+      autosave_unlock();
 #endif
    }
 
-   return netplay_init_serialization(netplay);
-
+   return false;
 }
 
 bool netplay_init_serialization(netplay_t *netplay)
@@ -1001,6 +1026,9 @@ bool netplay_init_serialization(netplay_t *netplay)
       return true;
 
    core_serialize_size(&info);
+
+   if (!info.size)
+      return false;
 
    netplay->state_size = info.size;
 
@@ -1014,9 +1042,6 @@ bool netplay_init_serialization(netplay_t *netplay)
          return false;
       }
    }
-
-   /* Once initialized, we no longer exhibit this quirk */
-   netplay->quirks &= ~((uint64_t) NETPLAY_QUIRK_INITIALIZATION);
 
    return true;
 }
@@ -1039,7 +1064,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
       return false;
 
    if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
-      return netplay_init_serialization(netplay);
+      netplay_init_serialization(netplay);
 
    return true;
 }
@@ -1242,8 +1267,7 @@ bool netplay_pre_frame(netplay_t *netplay)
    if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
    {
       /* Are we ready now? */
-      if (!(core_serialization_quirks() & RETRO_SERIALIZATION_QUIRK_INITIALIZING) || netplay->self_frame_count > 60)
-         netplay_init_serialization(netplay);
+      netplay_try_init_serialization(netplay);
    }
 
    if (!netplay->net_cbs->pre_frame(netplay))
