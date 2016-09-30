@@ -1144,9 +1144,9 @@ static void config_set_defaults(void)
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
-      dir_clear_savefile();
+      dir_clear(RARCH_DIR_SAVEFILE);
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
-      dir_clear_savestate();
+      dir_clear(RARCH_DIR_SAVESTATE);
 
    *settings->path.libretro_info = '\0';
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY))
@@ -2086,7 +2086,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (string_is_equal(settings->directory.overlay, "default"))
       *settings->directory.overlay = '\0';
    if (string_is_equal(dir_get_osk_overlay(), "default"))
-      dir_clear_osk_overlay();
+      dir_clear(RARCH_DIR_OSK_OVERLAY);
 #endif
    if (string_is_equal(settings->directory.system, "default"))
       *settings->directory.system = '\0';

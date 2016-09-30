@@ -21,6 +21,15 @@
 
 RETRO_BEGIN_DECLS
 
+enum rarch_dir_type
+{
+   RARCH_DIR_NONE = 0,
+   RARCH_DIR_SYSTEM,
+   RARCH_DIR_SAVEFILE,
+   RARCH_DIR_SAVESTATE,
+   RARCH_DIR_OSK_OVERLAY
+};
+
 /* init functions */
 
 bool dir_init_shader(void);
@@ -45,13 +54,7 @@ bool dir_is_osk_overlay_empty(void);
 
 /* clear functions */
 
-void dir_clear_system(void);
-
-void dir_clear_savefile(void);
-
-void dir_clear_savestate(void);
-
-void dir_clear_osk_overlay(void);
+void dir_clear(enum rarch_dir_type type);
 
 void dir_clear_all(void);
 
