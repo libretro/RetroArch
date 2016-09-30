@@ -587,7 +587,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    SETTING_PATH("core_updater_buildbot_url", settings->network.buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->network.buildbot_assets_url, false, NULL, true);
 #ifdef HAVE_NETWORKING
-   SETTING_PATH("netplay_ip_address",       global->netplay.server, false, NULL, true);
+   SETTING_PATH("netplay_ip_address",       path_get_server_ptr(), false, NULL, true);
 #endif
    SETTING_PATH("recording_output_directory",
          global->record.output_dir, false, NULL, true);
@@ -1755,7 +1755,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 #ifdef HAVE_NETWORKING
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS))
-      override_netplay_ip_address = strdup(global->netplay.server);
+      override_netplay_ip_address = strdup(path_get(RARCH_PATH_SERVER));
 #endif
 
    /* Boolean settings */
@@ -1944,7 +1944,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_NETWORKING
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS))
    {
-      strlcpy(global->netplay.server, override_netplay_ip_address, sizeof(global->netplay.server));
+      path_set(RARCH_PATH_SERVER, override_netplay_ip_address);
       free(override_netplay_ip_address);
    }
 #endif

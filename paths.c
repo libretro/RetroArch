@@ -51,6 +51,7 @@
 /* For --subsystem content. */
 static struct string_list *subsystem_fullpaths          = NULL;
 
+static char path_server[PATH_MAX_LENGTH]                = {0};
 static char path_savefile[PATH_MAX_LENGTH]              = {0};
 static char path_savestate[PATH_MAX_LENGTH]             = {0};
 static char path_cheatfile[PATH_MAX_LENGTH]             = {0};
@@ -496,6 +497,11 @@ char *path_get_core_ptr(void)
    return path_libretro;
 }
 
+char *path_get_server_ptr(void)
+{
+   return path_server;
+}
+
 const char *path_get(enum rarch_path_type type)
 {
    switch (type)
@@ -508,6 +514,8 @@ const char *path_get(enum rarch_path_type type)
          return path_cheatfile;
       case RARCH_PATH_REMAPFILE:
          return path_remapfile;
+      case RARCH_PATH_SERVER:
+         return path_server;
       case RARCH_PATH_IPS:
          return path_ips;
       case RARCH_PATH_BPS:
@@ -540,6 +548,10 @@ const char *path_get(enum rarch_path_type type)
    return NULL;
 }
 
+size_t path_get_server_size(void)
+{
+   return sizeof(path_server);
+}
 
 size_t path_get_core_size(void)
 {
@@ -607,6 +619,10 @@ bool path_set(enum rarch_path_type type, const char *path)
       case RARCH_PATH_REMAPFILE:
          strlcpy(path_remapfile, path,
                sizeof(path_remapfile));
+         break;
+      case RARCH_PATH_SERVER:
+         strlcpy(path_server, path,
+               sizeof(path_server));
          break;
       case RARCH_PATH_IPS:
          strlcpy(path_ips, path,
@@ -676,6 +692,10 @@ bool path_is_empty(enum rarch_path_type type)
          if (string_is_empty(path_remapfile))
             return true;
          break;
+      case RARCH_PATH_SERVER:
+         if (string_is_empty(path_server))
+            return true;
+         break;
       case RARCH_PATH_IPS:
          if (string_is_empty(path_ips))
             return true;
@@ -736,6 +756,9 @@ void path_clear(enum rarch_path_type type)
          break;
       case RARCH_PATH_REMAPFILE:
          *path_remapfile  = '\0';
+         break;
+      case RARCH_PATH_SERVER:
+         *path_server  = '\0';
          break;
       case RARCH_PATH_IPS:
          *path_ips  = '\0';

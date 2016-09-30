@@ -748,6 +748,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             path_clear(RARCH_PATH_SAVESTATE);
             path_clear(RARCH_PATH_CHEATFILE);
             path_clear(RARCH_PATH_REMAPFILE);
+            path_clear(RARCH_PATH_SERVER);
             path_clear(RARCH_PATH_IPS);
             path_clear(RARCH_PATH_UPS);
             path_clear(RARCH_PATH_BPS);

@@ -45,6 +45,7 @@ enum rarch_path_type
    RARCH_PATH_IPS,
    RARCH_PATH_BPS,
    RARCH_PATH_REMAPFILE,
+   RARCH_PATH_SERVER,
    RARCH_PATH_CONFIG_APPEND,
    RARCH_PATH_CORE_OPTIONS,
    RARCH_PATH_DEFAULT_SHADER_PRESET,
@@ -75,11 +76,15 @@ void path_set_basename(const char *path);
 
 /* get size functions */
 
+size_t path_get_server_size(void);
+
 size_t path_get_core_size(void);
 
 /* get ptr functions */
 
 char *path_get_core_ptr(void);
+
+char *path_get_server_ptr(void);
 
 /* get list functions */
 

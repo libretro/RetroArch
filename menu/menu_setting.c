@@ -1657,14 +1657,14 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_NETPLAY_MODE:
 #ifdef HAVE_NETWORKING
          if (!global->netplay.is_client)
-            *global->netplay.server = '\0';
+            path_clear(RARCH_PATH_SERVER);
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
 #ifdef HAVE_NETWORKING
          if (global->netplay.is_spectate)
-            *global->netplay.server = '\0';
+            path_clear(RARCH_PATH_SERVER);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
@@ -5810,8 +5810,8 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
-                  global->netplay.server,
-                  sizeof(global->netplay.server),
+                  path_get_server_ptr(),
+                  path_get_server_size(),
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS),
                   "",
