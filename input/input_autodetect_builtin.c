@@ -273,6 +273,8 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #if defined(VITA) || defined(SN_TARGET_PSP2)
    DECL_AUTOCONF_DEVICE("Vita Controller", "vita", PSPINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("DS3 Controller", "vita", PSPINPUT_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("DS4 Controller", "vita", PSPINPUT_DEFAULT_BINDS),
 #elif defined(PSP)
    DECL_AUTOCONF_DEVICE("PSP Controller", "psp", PSPINPUT_DEFAULT_BINDS),
 #endif
