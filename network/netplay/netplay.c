@@ -1280,6 +1280,10 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
       netplay->other_frame_count = netplay->self_frame_count;
    }
 
+   /* If we can't send it to the peer, loading a state was a bad idea */
+   if (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION))
+      return;
+
    /* And send it to the peer (FIXME: this is an ugly way to do this) */
    header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
    header[1] = htonl(serial_info->size + sizeof(uint32_t));

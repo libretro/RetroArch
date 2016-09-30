@@ -85,9 +85,12 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
           * remote input on EVERY frame, because we can't recover */
          netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
          netplay->stall_frames = 0;
-         if (!netplay->has_connection)
-            netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
       }
+
+      /* If we can't transmit savestates, we must stall until the client is ready */
+      if (!netplay->has_connection &&
+          (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
+         netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
    }
 
    if (netplay->is_server && !netplay->has_connection)
@@ -135,10 +138,8 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
             netplay->has_connection = true;
 
             /* Send them the savestate */
-            if (!(netplay->quirks & NETPLAY_QUIRK_NO_SAVESTATES) && !(netplay->quirks & NETPLAY_QUIRK_NO_TRANSMISSION))
-            {
+            if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
                netplay_load_savestate(netplay, NULL, true);
-            }
 
             /* And expect the current frame from the other side */
             netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
