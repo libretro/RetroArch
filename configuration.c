@@ -1625,8 +1625,21 @@ static void config_read_keybinds_conf(config_file_t *conf)
       read_keybinds_user(conf, i);
 }
 
-/* Also dumps inherited values, useful for logging. */
 #if 0
+static bool config_read_keybinds(const char *path)
+{
+   config_file_t *conf = (config_file_t*)config_file_new(path);
+
+   if (!conf)
+      return false;
+
+   config_read_keybinds_conf(conf);
+   config_file_free(conf);
+
+   return true;
+}
+
+/* Also dumps inherited values, useful for logging. */
 static void config_file_dump_all(config_file_t *conf)
 {
    struct config_entry_list *list = NULL;
@@ -2598,20 +2611,6 @@ static void parse_config_file(void)
 }
 
 
-#if 0
-static bool config_read_keybinds(const char *path)
-{
-   config_file_t *conf = (config_file_t*)config_file_new(path);
-
-   if (!conf)
-      return false;
-
-   config_read_keybinds_conf(conf);
-   config_file_free(conf);
-
-   return true;
-}
-#endif
 
 static void save_keybind_key(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
