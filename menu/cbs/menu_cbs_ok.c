@@ -347,12 +347,15 @@ int generic_action_ok_displaylist_push(const char *path,
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          break;
       case ACTION_OK_DL_RECORD_CONFIGFILE:
-         menu_displaylist_reset_filebrowser();
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = dir_get(RARCH_DIR_RECORD_CONFIG);
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         {
+            global_t  *global  = global_get_ptr();
+            menu_displaylist_reset_filebrowser();
+            info.type          = type;
+            info.directory_ptr = idx;
+            info_path          = dir_get(RARCH_DIR_RECORD_CONFIG);
+            info_label         = label;
+            dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
          break;
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          menu_displaylist_reset_filebrowser();
@@ -3268,8 +3271,8 @@ static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   bool netplay_was_on    = false;
-   global_t *global       = global_get_ptr();
+   bool netplay_was_on = false;
+   global_t *global  = global_get_ptr();
 
    global->netplay.enable = true;
 
@@ -3323,8 +3326,8 @@ static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   bool netplay_was_on    = false;
-   global_t *global       = global_get_ptr();
+   bool netplay_was_on = false;
+   global_t *global  = global_get_ptr();
 
    global->netplay.enable = true;
 
