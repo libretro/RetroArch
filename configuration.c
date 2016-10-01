@@ -2319,8 +2319,8 @@ bool config_load_override(void)
    runloop_msg_queue_push("Configuration override loaded.", 1, 100, true);
 
    /* Reset save paths. */
-   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
-   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+   retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
    path_clear(RARCH_PATH_CONFIG_APPEND);
 
@@ -2348,8 +2348,8 @@ bool config_unload_override(void)
       RARCH_LOG("[overrides] configuration overrides unloaded, original configuration restored.\n");
 
       /* Reset save paths */
-      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH);
-      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH);
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+      retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
       return true;
    }

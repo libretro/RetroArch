@@ -1599,7 +1599,7 @@ void general_write_handler(void *data)
                verbosity_disable();
 
             if (setting && *setting->value.target.boolean)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY);
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
             else
                retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY);
          }
@@ -1648,7 +1648,7 @@ void general_write_handler(void *data)
          {
             bool val = (!string_is_empty(setting->value.target.string));
             if (val)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
             else
                retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
          }
@@ -1658,7 +1658,7 @@ void general_write_handler(void *data)
 #ifdef HAVE_NETWORKING
          if (!global->netplay.is_client)
             path_clear(RARCH_PATH_SERVER);
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -1673,7 +1673,7 @@ void general_write_handler(void *data)
             bool val = (global->netplay.sync_frames > 0);
             
             if (val)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
             else
                retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
          }
@@ -1685,7 +1685,7 @@ void general_write_handler(void *data)
             bool val = (global->netplay.check_frames > 0);
 
             if (val)
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
             else
                retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
          }

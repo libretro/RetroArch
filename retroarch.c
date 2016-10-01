@@ -555,7 +555,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 's':
             path_set(RARCH_PATH_SAVEFILE, optarg);
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_SAVE_PATH);
+                  RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
             break;
 
          case 'f':
@@ -565,13 +565,13 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'S':
             path_set(RARCH_PATH_SAVESTATE, optarg);
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_STATE_PATH);
+                  RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
             break;
 
          case 'v':
             verbosity_enable();
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_VERBOSITY);
+                  RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
             break;
 
          case 'N':
@@ -609,8 +609,8 @@ static void retroarch_parse_input(int argc, char *argv[])
                strlcpy(settings->directory.libretro, optarg,
                      sizeof(settings->directory.libretro));
 
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY);
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL);
                RARCH_WARN("Using old --libretro behavior. "
                      "Setting libretro_directory to \"%s\" instead.\n",
                      optarg);
@@ -618,7 +618,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             else if (path_file_exists(optarg))
             {
                runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, optarg);
-               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
 
                /* We requested explicit core, so use PLAIN core type. */
                retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
@@ -667,14 +667,14 @@ static void retroarch_parse_input(int argc, char *argv[])
 #ifdef HAVE_NETWORKING
          case 'H':
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
+                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
             global->netplay.enable = true;
             path_clear(RARCH_PATH_SERVER);
             break;
 
          case 'C':
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
+                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
             global->netplay.enable = true;
             path_set(RARCH_PATH_SERVER, optarg);
             break;
@@ -682,24 +682,24 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'F':
             global->netplay.sync_frames = strtol(optarg, NULL, 0);
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
+                  RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
             break;
 
          case RA_OPT_CHECK_FRAMES:
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+                  RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
             global->netplay.check_frames = strtoul(optarg, NULL, 0);
             break;
 
          case RA_OPT_PORT:
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
+                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
             global->netplay.port = strtoul(optarg, NULL, 0);
             break;
 
          case RA_OPT_SPECTATE:
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
+                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
             global->netplay.is_spectate = true;
             break;
 
@@ -717,19 +717,19 @@ static void retroarch_parse_input(int argc, char *argv[])
          case RA_OPT_BPS:
             path_set(RARCH_PATH_BPS, optarg);
             rarch_ctl(RARCH_CTL_SET_BPS_PREF, NULL);
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF);
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL);
             break;
 
          case 'U':
             path_set(RARCH_PATH_UPS, optarg);
             rarch_ctl(RARCH_CTL_SET_UPS_PREF, NULL);
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF);
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL);
             break;
 
          case RA_OPT_IPS:
             path_set(RARCH_PATH_IPS, optarg);
             rarch_ctl(RARCH_CTL_SET_IPS_PREF, NULL);
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF);
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL);
             break;
 
          case RA_OPT_NO_PATCH:
@@ -950,7 +950,7 @@ static void retroarch_main_init_media(void)
          if (settings->multimedia.builtin_mediaplayer_enable)
          {
 #ifdef HAVE_FFMPEG
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
             retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
 #endif
          }
@@ -959,7 +959,7 @@ static void retroarch_main_init_media(void)
       case RARCH_CONTENT_IMAGE:
          if (settings->multimedia.builtin_imageviewer_enable)
          {
-            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO);
+            retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
             retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
          }
          break;
@@ -1329,7 +1329,7 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx)
    return false;
 }
 
-void retroarch_override_setting_set(enum rarch_override_setting enum_idx)
+void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data)
 {
    switch (enum_idx)
    {
