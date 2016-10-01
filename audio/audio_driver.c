@@ -49,14 +49,12 @@ struct audio_driver_input_data
 {
    float *data;
 
-   size_t data_ptr;
    struct
    {
       size_t size;
       size_t nonblock_size;
       size_t block_size;
    } chunk;
-
 
    struct
    {
@@ -69,20 +67,12 @@ struct audio_driver_input_data
       } source_ratio;
    } audio_rate;
 
-   bool use_float;
-
    struct
    {
       int16_t *buf;
       size_t ptr;
       size_t size;
    } rewind;
-
-   rarch_dsp_filter_t *dsp;
-
-   size_t driver_buffer_size;
-
-   float volume_gain;
 
    struct
    {
@@ -160,16 +150,25 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
-static struct audio_driver_input_data audio_driver_data;
-static struct retro_audio_callback audio_callback;
-static struct string_list *audio_driver_devices_list   = NULL;
-static struct retro_perf_counter resampler_proc        = {0};
-static const rarch_resampler_t *audio_driver_resampler = NULL;
-static void *audio_driver_resampler_data               = NULL;
-static bool audio_driver_active                        = false;
-static bool audio_driver_data_own                      = false;
-static const audio_driver_t *current_audio             = NULL;
-static void *audio_driver_context_audio_data           = NULL;
+static float audio_driver_volume_gain                    = 0.0f;
+
+static size_t audio_driver_buffer_size                   = 0;
+static size_t audio_driver_data_ptr                      = 0;
+
+static struct audio_driver_input_data audio_driver_data  = {0};
+static struct retro_audio_callback audio_callback        = {0};
+
+static rarch_dsp_filter_t *audio_driver_dsp              = NULL;
+static struct string_list *audio_driver_devices_list     = NULL;
+static const rarch_resampler_t *audio_driver_resampler   = NULL;
+static void *audio_driver_resampler_data                 = NULL;
+static const audio_driver_t *current_audio               = NULL;
+static void *audio_driver_context_audio_data             = NULL;
+
+static struct retro_perf_counter resampler_proc          = {0};
+static bool audio_driver_use_float                       = false;
+static bool audio_driver_active                          = false;
+static bool audio_driver_data_own                        = false;
 
 /**
  * compute_audio_buffer_statistics:
@@ -204,11 +203,11 @@ static void compute_audio_buffer_statistics(void)
    }
 
    stddev          = (unsigned)sqrt((double)accum_var / (samples - 2));
-   avg_filled      = 1.0f - (float)avg / audio_driver_data.driver_buffer_size;
-   deviation       = (float)stddev / audio_driver_data.driver_buffer_size;
+   avg_filled      = 1.0f - (float)avg / audio_driver_buffer_size;
+   deviation       = (float)stddev / audio_driver_buffer_size;
 
-   low_water_size  = audio_driver_data.driver_buffer_size * 3 / 4;
-   high_water_size = audio_driver_data.driver_buffer_size / 4;
+   low_water_size  = audio_driver_buffer_size * 3 / 4;
+   high_water_size = audio_driver_buffer_size / 4;
 
    for (i = 1; i < samples; i++)
    {
@@ -281,7 +280,7 @@ static bool uninit_audio(void)
    if (audio_driver_data.output_samples.conv_buf)
       free(audio_driver_data.output_samples.conv_buf);
    audio_driver_data.output_samples.conv_buf = NULL;
-   audio_driver_data.data_ptr                = 0;
+   audio_driver_data_ptr                = 0;
 
    if (audio_driver_data.rewind.buf)
       free(audio_driver_data.rewind.buf);
@@ -383,10 +382,10 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_unset_active();
    }
 
-   audio_driver_data.use_float = false;
+   audio_driver_use_float = false;
    if (     audio_driver_is_active() 
          && current_audio->use_float(audio_driver_context_audio_data))
-      audio_driver_data.use_float = true;
+      audio_driver_use_float = true;
 
    if (!settings->audio.sync && audio_driver_is_active())
    {
@@ -420,7 +419,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (!audio_driver_data.data)
       goto error;
 
-   audio_driver_data.data_ptr = 0;
+   audio_driver_data_ptr = 0;
 
    retro_assert(settings->audio.out_rate <
          audio_driver_data.audio_rate.input * AUDIO_MAX_RATIO);
@@ -443,7 +442,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
        * and buffer_size to be implemented. */
       if (current_audio->buffer_size)
       {
-         audio_driver_data.driver_buffer_size = 
+         audio_driver_buffer_size = 
             current_audio->buffer_size(audio_driver_context_audio_data);
          audio_driver_data.audio_rate.control = true;
       }
@@ -479,7 +478,7 @@ static void audio_driver_readjust_input_rate(void)
    settings_t *settings = config_get_ptr();
    unsigned write_idx   = audio_driver_data.free_samples.count++ &
       (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-   int      half_size   = audio_driver_data.driver_buffer_size / 2;
+   int      half_size   = audio_driver_buffer_size / 2;
    int      avail       = 
       current_audio->write_avail(audio_driver_context_audio_data);
    int      delta_mid   = avail - half_size;
@@ -488,7 +487,7 @@ static void audio_driver_readjust_input_rate(void)
 
 #if 0
    RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
-         (unsigned)(100 - (avail * 100) / audio_driver_data.driver_buffer_size));
+         (unsigned)(100 - (avail * 100) / audio_driver_buffer_size));
 #endif
 
    audio_driver_data.free_samples.buf[write_idx] = avail;
@@ -552,7 +551,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    performance_counter_init(&audio_convert_s16, "audio_convert_s16");
    performance_counter_start(&audio_convert_s16);
    convert_s16_to_float(audio_driver_data.data, data, samples,
-         audio_driver_data.volume_gain);
+         audio_driver_volume_gain);
    performance_counter_stop(&audio_convert_s16);
 
    src_data.data_in               = audio_driver_data.data;
@@ -561,11 +560,11 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    dsp_data.input                 = audio_driver_data.data;
    dsp_data.input_frames          = samples >> 1;
 
-   if (audio_driver_data.dsp)
+   if (audio_driver_dsp)
    {
       performance_counter_init(&audio_dsp, "audio_dsp");
       performance_counter_start(&audio_dsp);
-      rarch_dsp_filter_process(audio_driver_data.dsp, &dsp_data);
+      rarch_dsp_filter_process(audio_driver_dsp, &dsp_data);
       performance_counter_stop(&audio_dsp);
 
       if (dsp_data.output)
@@ -590,7 +589,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    output_data   = audio_driver_data.output_samples.buf;
    output_frames = src_data.output_frames;
 
-   if (!audio_driver_data.use_float)
+   if (!audio_driver_use_float)
    {
       performance_counter_init(&audio_convert_float, "audio_convert_float");
       performance_counter_start(&audio_convert_float);
@@ -621,16 +620,16 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
  **/
 void audio_driver_sample(int16_t left, int16_t right)
 {
-   audio_driver_data.output_samples.conv_buf[audio_driver_data.data_ptr++] = left;
-   audio_driver_data.output_samples.conv_buf[audio_driver_data.data_ptr++] = right;
+   audio_driver_data.output_samples.conv_buf[audio_driver_data_ptr++] = left;
+   audio_driver_data.output_samples.conv_buf[audio_driver_data_ptr++] = right;
 
-   if (audio_driver_data.data_ptr < audio_driver_data.chunk.size)
+   if (audio_driver_data_ptr < audio_driver_data.chunk.size)
       return;
 
    audio_driver_flush(audio_driver_data.output_samples.conv_buf, 
-         audio_driver_data.data_ptr);
+         audio_driver_data_ptr);
 
-   audio_driver_data.data_ptr = 0;
+   audio_driver_data_ptr = 0;
 }
 
 /**
@@ -694,28 +693,28 @@ size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames)
 
 void audio_driver_set_volume_gain(float gain)
 {
-   audio_driver_data.volume_gain = gain;
+   audio_driver_volume_gain = gain;
 }
 
 void audio_driver_dsp_filter_free(void)
 {
-   if (audio_driver_data.dsp)
-      rarch_dsp_filter_free(audio_driver_data.dsp);
-   audio_driver_data.dsp = NULL;
+   if (audio_driver_dsp)
+      rarch_dsp_filter_free(audio_driver_dsp);
+   audio_driver_dsp = NULL;
 }
 
 void audio_driver_dsp_filter_init(const char *device)
 {
-   audio_driver_data.dsp = rarch_dsp_filter_new(
+   audio_driver_dsp = rarch_dsp_filter_new(
          device, audio_driver_data.audio_rate.input);
 
-   if (!audio_driver_data.dsp)
+   if (!audio_driver_dsp)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
 }
 
 void audio_driver_set_buffer_size(size_t bufsize)
 {
-   audio_driver_data.driver_buffer_size = bufsize;
+   audio_driver_buffer_size = bufsize;
 }
 
 void audio_driver_monitor_adjust_system_rates(void)
@@ -748,7 +747,7 @@ void audio_driver_setup_rewind(void)
    /* Push audio ready to be played. */
    audio_driver_data.rewind.ptr = audio_driver_data.rewind.size;
 
-   for (i = 0; i < audio_driver_data.data_ptr; i += 2)
+   for (i = 0; i < audio_driver_data_ptr; i += 2)
    {
       audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] =
          audio_driver_data.output_samples.conv_buf[i + 1];
@@ -757,7 +756,7 @@ void audio_driver_setup_rewind(void)
          audio_driver_data.output_samples.conv_buf[i + 0];
    }
 
-   audio_driver_data.data_ptr = 0;
+   audio_driver_data_ptr = 0;
 }
 
 bool audio_driver_find_driver(void)
