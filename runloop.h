@@ -153,14 +153,15 @@ typedef struct global
    /* Recording. */
    struct
    {
-      char output_dir[PATH_MAX_LENGTH];
-      char config_dir[PATH_MAX_LENGTH];
-
+      char path[PATH_MAX_LENGTH];
+      char config[PATH_MAX_LENGTH];
       unsigned width;
       unsigned height;
 
       size_t gpu_width;
       size_t gpu_height;
+      char output_dir[PATH_MAX_LENGTH];
+      char config_dir[PATH_MAX_LENGTH];
       bool use_output_dir;
    } record;
 

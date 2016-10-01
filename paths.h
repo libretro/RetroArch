@@ -50,9 +50,7 @@ enum rarch_path_type
    RARCH_PATH_CORE_OPTIONS,
    RARCH_PATH_DEFAULT_SHADER_PRESET,
    RARCH_PATH_BASENAME,
-   RARCH_PATH_SUBSYSTEM,
-   RARCH_PATH_RECORD,
-   RARCH_PATH_RECORD_CONFIG
+   RARCH_PATH_SUBSYSTEM
 };
 
 void path_deinit_subsystem(void);
@@ -78,19 +76,11 @@ void path_set_basename(const char *path);
 
 /* get size functions */
 
-size_t path_get_record_size(void);
-
-size_t path_get_record_config_size(void);
-
 size_t path_get_server_size(void);
 
 size_t path_get_core_size(void);
 
 /* get ptr functions */
-
-char *path_get_record_ptr(void);
-
-char *path_get_record_config_ptr(void);
 
 char *path_get_core_ptr(void);
 

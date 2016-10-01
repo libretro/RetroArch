@@ -33,7 +33,6 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
-#include "../paths.h"
 #include "../list_special.h"
 
 
@@ -332,13 +331,12 @@ bool recording_init(void)
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
 
-   strlcpy(recording_file, path_get(RARCH_PATH_RECORD), sizeof(recording_file));
+   strlcpy(recording_file, global->record.path, sizeof(recording_file));
 
    if (recording_use_output_dir)
       fill_pathname_join(recording_file,
             global->record.output_dir,
-            path_get(RARCH_PATH_RECORD),
-            sizeof(recording_file));
+            global->record.path, sizeof(recording_file));
 
    params.out_width  = av_info->geometry.base_width;
    params.out_height = av_info->geometry.base_height;
@@ -352,8 +350,8 @@ bool recording_init(void)
       FFEMU_PIX_ARGB8888 : FFEMU_PIX_RGB565;
    params.config     = NULL;
    
-   if (!path_is_empty(RARCH_PATH_RECORD_CONFIG))
-      params.config = path_get(RARCH_PATH_RECORD_CONFIG);
+   if (*global->record.config)
+      params.config = global->record.config;
 
    if (video_driver_supports_recording())
    {
@@ -426,7 +424,7 @@ bool recording_init(void)
 
    RARCH_LOG("%s %s @ %ux%u. (FB size: %ux%u pix_fmt: %u)\n",
          msg_hash_to_str(MSG_RECORDING_TO),
-         path_get(RARCH_PATH_RECORD),
+         global->record.path,
          params.out_width, params.out_height,
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
