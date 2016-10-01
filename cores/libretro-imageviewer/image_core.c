@@ -70,31 +70,53 @@ struct string_list *file_list;
 static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|psd|tga|gif|hdr|pic|ppm|pgm";
 #else
 
+static const char* IMAGE_CORE_PREFIX(valid_extensions) =
+
+#undef SEPARATOR
+
 #ifdef HAVE_RJPEG
-#define RJPEG_ARGS "|jpg|jpeg"
-#else
-#define RJPEG_ARGS
+#  ifndef SEPARATOR
+#  define SEPARATOR
+#  else
+"|"
+#  endif
+"jpg|jpeg"
 #endif
 
 #ifdef HAVE_RPNG
-#define RPNG_ARGS "|png"
-#else
-#define RPNG_ARGS
+#  ifndef SEPARATOR
+#  define SEPARATOR
+#  else
+"|"
+#  endif
+"png"
 #endif
 
 #ifdef HAVE_RBMP
-#define RBMP_ARGS "|bmp"
-#else
-#define RBMP_ARGS
+#  ifndef SEPARATOR
+#  define SEPARATOR
+#  else
+"|"
+#  endif
+"bmp"
 #endif
 
 #ifdef HAVE_RTGA
-#define RTGA_ARGS "|tga"
-#else
-#define RTGA_ARGS
+#  ifndef SEPARATOR
+#  define SEPARATOR
+#  else
+"|"
+#  endif
+"tga"
 #endif
 
-static const char* IMAGE_CORE_PREFIX(valid_extensions) = RJPEG_ARGS RPNG_ARGS RBMP_ARGS RTGA_ARGS + 1; /* +1 to remove the extra | */
+#ifndef SEPARATOR
+#error "can't build this core with no image formats"
+#endif
+
+#undef SEPARATOR
+;
+
 #endif
 
 void IMAGE_CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
