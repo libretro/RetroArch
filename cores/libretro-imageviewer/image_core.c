@@ -70,51 +70,27 @@ struct string_list *file_list;
 static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|psd|tga|gif|hdr|pic|ppm|pgm";
 #else
 
-static const char* IMAGE_CORE_PREFIX(valid_extensions) =
-
-#undef SEPARATOR
+static const char* IMAGE_CORE_PREFIX(valid_extensions) = 1+ /* to remove the first |, the alternative is 25 extra lines of ifdef/etc */
 
 #ifdef HAVE_RJPEG
-#  ifndef SEPARATOR
-#  define SEPARATOR
-#  else
-"|"
-#  endif
-"jpg|jpeg"
+"|jpg|jpeg"
 #endif
 
 #ifdef HAVE_RPNG
-#  ifndef SEPARATOR
-#  define SEPARATOR
-#  else
-"|"
-#  endif
-"png"
+"|png"
 #endif
 
 #ifdef HAVE_RBMP
-#  ifndef SEPARATOR
-#  define SEPARATOR
-#  else
-"|"
-#  endif
-"bmp"
+"|bmp"
 #endif
 
 #ifdef HAVE_RTGA
-#  ifndef SEPARATOR
-#  define SEPARATOR
-#  else
-"|"
-#  endif
-"tga"
+"|tga"
 #endif
 
-#ifndef SEPARATOR
+#if !defined(HAVE_RJPEG) && !defined(HAVE_RPNG) && !defined(HAVE_RBMP) && !defined(HAVE_RTGA)
 #error "can't build this core with no image formats"
 #endif
-
-#undef SEPARATOR
 ;
 
 #endif
