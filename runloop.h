@@ -139,11 +139,6 @@ typedef struct global
 {
    struct
    {
-      bool libretro_device[MAX_USERS];
-   } has_set;
-   
-   struct
-   {
       char savefile[PATH_MAX_LENGTH];
       char savestate[PATH_MAX_LENGTH];
       char cheatfile[PATH_MAX_LENGTH];
