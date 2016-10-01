@@ -762,6 +762,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             dir_clear(RARCH_DIR_RECORD_OUTPUT);
             dir_clear_all();
             recording_driver_free_state();
+            {
+               unsigned j;
+               for (j = 0; j < MAX_USERS; j++)
+                  retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &j);
+            }
 
             {
                global_t *global = global_get_ptr();

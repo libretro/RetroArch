@@ -1601,7 +1601,7 @@ void general_write_handler(void *data)
             if (setting && *setting->value.target.boolean)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
             else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY);
+               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
@@ -1650,7 +1650,7 @@ void general_write_handler(void *data)
             if (val)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
             else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS);
+               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
          }
 #endif
          break;
@@ -1675,7 +1675,7 @@ void general_write_handler(void *data)
             if (val)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
             else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES);
+               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
          }
 #endif
          break;
@@ -1687,7 +1687,7 @@ void general_write_handler(void *data)
             if (val)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
             else
-               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES);
+               retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
          }
 #endif
       default:

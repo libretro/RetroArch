@@ -160,7 +160,7 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
 
 void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data);
 
-void retroarch_override_setting_unset(enum rarch_override_setting enum_idx);
+void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void *data);
 
 void retroarch_override_setting_free_state(void);
 

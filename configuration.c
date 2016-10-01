@@ -2307,8 +2307,8 @@ bool config_load_override(void)
    strlcpy(buf, path_get(RARCH_PATH_CORE), sizeof(buf));
 
    /* Toggle has_save_path to false so it resets */
-   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
-   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
    if (!config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
       return false;
@@ -2340,8 +2340,8 @@ bool config_unload_override(void)
    path_clear(RARCH_PATH_CONFIG_APPEND);
 
    /* Toggle has_save_path to false so it resets */
-   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH);
-   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH);
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
+   retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH,  NULL);
 
    if (config_load_file(path_get(RARCH_PATH_CONFIG), false, config_get_ptr()))
    {

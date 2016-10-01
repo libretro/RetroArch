@@ -1400,10 +1400,20 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *
    }
 }
 
-void retroarch_override_setting_unset(enum rarch_override_setting enum_idx)
+void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void *data)
 {
    switch (enum_idx)
    {
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE:
+         {
+            unsigned *val = (unsigned*)data;
+            if (val)
+            {
+               unsigned bit = *val;
+               BIT128_CLEAR(has_set_libretro_device, bit);
+            }
+         }
+         break;
       case RARCH_OVERRIDE_SETTING_VERBOSITY:
          has_set_verbosity = false;
          break;
@@ -1453,7 +1463,16 @@ void retroarch_override_setting_free_state(void)
 {
    unsigned i;
    for (i = 0; i < RARCH_OVERRIDE_SETTING_LAST; i++)
-      retroarch_override_setting_unset((enum rarch_override_setting)(i));
+   {
+      if (i == RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE)
+      {
+         unsigned j;
+         for (j = 0; j < MAX_USERS; j++)
+            retroarch_override_setting_unset((enum rarch_override_setting)(i), &j);
+      }
+      else
+         retroarch_override_setting_unset((enum rarch_override_setting)(i), NULL);
+   }
 }
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
