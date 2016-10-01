@@ -168,24 +168,24 @@ void dir_check_shader(bool pressed_next, bool pressed_prev)
 
 /* empty functions */
 
-bool dir_is_empty(enum rarch_dir_type type)
+bool dir_is_system_empty(void)
 {
-   switch (type)
-   {
-      case RARCH_DIR_SYSTEM:
-         return string_is_empty(dir_system);
-      case RARCH_DIR_SAVEFILE:
-         return string_is_empty(dir_savefile);
-      case RARCH_DIR_SAVESTATE:
-         return string_is_empty(dir_savestate);
-      case RARCH_DIR_OSK_OVERLAY:
-         return string_is_empty(dir_osk_overlay);
-      case RARCH_DIR_NONE:
-      default:
-         break;
-   }
+   return string_is_empty(dir_savefile);
+}
 
-   return false;
+bool dir_is_savefile_empty(void)
+{
+   return string_is_empty(dir_savefile);
+}
+
+bool dir_is_savestate_empty(void)
+{
+   return string_is_empty(dir_savestate);
+}
+
+bool dir_is_osk_overlay_empty(void)
+{
+   return string_is_empty(dir_osk_overlay);
 }
 
 /* get size functions */
