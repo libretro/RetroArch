@@ -266,24 +266,24 @@ char *dir_get_savestate_ptr(void)
 
 /* get functions */
 
-const char *dir_get(enum rarch_dir_type type)
+const char *dir_get_osk_overlay(void)
 {
-   switch (type)
-   {
-      case RARCH_DIR_OSK_OVERLAY:
-         return dir_osk_overlay;
-      case RARCH_DIR_SYSTEM:
-         return dir_system;
-      case RARCH_DIR_SAVEFILE:
-         return dir_savefile;
-      case RARCH_DIR_SAVESTATE:
-         return dir_savestate;
-      case RARCH_DIR_NONE:
-      default:
-         break;
-   }
+   return dir_osk_overlay;
+}
 
-   return NULL;
+const char *dir_get_system(void)
+{
+   return dir_system;
+}
+
+const char *dir_get_savefile(void)
+{
+   return dir_savefile;
+}
+
+const char *dir_get_savestate(void)
+{
+   return dir_savestate;
 }
 
 /* set functions */

@@ -80,8 +80,8 @@ void path_set_redirect(void)
    uint32_t library_name_hash                  = 0;
    bool check_library_name_hash                = false;
    rarch_system_info_t      *info              = NULL;
-   const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
-   const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
+   const char *old_savefile_dir                = dir_get_savefile();
+   const char *old_savestate_dir               = dir_get_savestate();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
@@ -360,11 +360,11 @@ static bool path_init_subsystem(void)
 
             snprintf(ext, sizeof(ext), ".%s", mem->extension);
 
-            if (path_is_directory(dir_get(RARCH_DIR_SAVEFILE)))
+            if (path_is_directory(dir_get_savefile()))
             {
                /* Use SRAM dir */
                /* Redirect content fullpath to save directory. */
-               strlcpy(path, dir_get(RARCH_DIR_SAVEFILE), sizeof(path));
+               strlcpy(path, dir_get_savefile(), sizeof(path));
                fill_pathname_dir(path,
                      subsystem_fullpaths->elems[i].data, ext,
                      sizeof(path));

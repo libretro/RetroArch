@@ -1039,7 +1039,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             *(const char**)data = dir_get_system_ptr();
             RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-                  dir_get(RARCH_DIR_SYSTEM));
+                  dir_get_system());
          }
          else
          {

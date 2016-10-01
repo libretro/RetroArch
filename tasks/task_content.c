@@ -848,9 +848,9 @@ static void menu_content_environment_get(int *argc, char *argv[],
    if (!path_is_empty(RARCH_PATH_CONFIG))
       wrap_args->config_path   = path_get(RARCH_PATH_CONFIG);
    if (!dir_is_empty(RARCH_DIR_SAVEFILE))
-      wrap_args->sram_path     = dir_get(RARCH_DIR_SAVEFILE);
+      wrap_args->sram_path     = dir_get_savefile();
    if (!dir_is_empty(RARCH_DIR_SAVESTATE))
-      wrap_args->state_path    = dir_get(RARCH_DIR_SAVESTATE);
+      wrap_args->state_path    = dir_get_savestate();
    if (fullpath && *fullpath)
       wrap_args->content_path  = fullpath;
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
