@@ -625,7 +625,26 @@ bool x11_alive(void *data)
             break;
 
          case ButtonPress:
-            x_input_poll_wheel(&event.xbutton, true);
+            switch (event.xbutton.button)
+            {
+               case 1: /* Left click */
+#if 0
+                  RARCH_LOG("Click occurred : [%d, %d]\n",
+                        event.xbutton.x_root,
+                        event.xbutton.y_root);
+#endif
+                  break;
+               case 2: /* Grabbed  */
+                       /* Middle click */
+                  break;
+               case 3: /* Right click */
+                  break;
+               case 4: /* Grabbed  */
+                       /* Scroll up */
+               case 5: /* Scroll down */
+                  x_input_poll_wheel(&event.xbutton, true);
+                  break;
+            }
             break;
 
          case ButtonRelease:
