@@ -89,7 +89,13 @@ const char *dir_get_system(void);
 
 const char *dir_get_current_savefile(void);
 
+const char *dir_get_current_savestate(void);
+
 /* set functions */
+
+void dir_set_current_savefile(const char *path);
+
+void dir_set_current_savestate(const char *path);
 
 void dir_set_osk_overlay(const char *path);
 

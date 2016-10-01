@@ -48,21 +48,15 @@
 
 #define MENU_VALUE_NO_CORE 0x7d5472cbU
 
-extern char current_savefile_dir[PATH_MAX_LENGTH];
-
 static struct string_list *subsystem_fullpaths          = NULL;
 
-char subsystem_path[PATH_MAX_LENGTH]                    = {0};
-
+static char subsystem_path[PATH_MAX_LENGTH]             = {0};
 static char path_default_shader_preset[PATH_MAX_LENGTH] = {0};
-static char path_main_basename[PATH_MAX_LENGTH]         = {0}
-;
+static char path_main_basename[PATH_MAX_LENGTH]         = {0};
 static char path_content[PATH_MAX_LENGTH]               = {0};
-static char current_savestate_dir[PATH_MAX_LENGTH]      = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};
 static char path_config_append_file[PATH_MAX_LENGTH]    = {0};
-/* Config file associated with per-core configs. */
 static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
 
 void path_set_redirect(void)
@@ -210,10 +204,8 @@ void path_set_redirect(void)
       }
    }
 
-   strlcpy(current_savefile_dir, new_savefile_dir,
-         sizeof(current_savefile_dir));
-   strlcpy(current_savestate_dir, new_savestate_dir,
-         sizeof(current_savestate_dir));
+   dir_set_current_savefile(new_savefile_dir);
+   dir_set_current_savestate(new_savestate_dir);
 }
 
 void path_set_basename(const char *path)

@@ -45,7 +45,8 @@ static struct rarch_dir_list dir_shader_list;
 static char dir_osk_overlay[PATH_MAX_LENGTH]            = {0};
 static char dir_system[PATH_MAX_LENGTH]                 = {0};
 static char dir_savefile[PATH_MAX_LENGTH]               = {0};
-char current_savefile_dir[PATH_MAX_LENGTH]              = {0};
+static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
+static char current_savestate_dir[PATH_MAX_LENGTH]      = {0};
 static char dir_savestate[PATH_MAX_LENGTH]              = {0};
 
 static bool shader_dir_init(struct rarch_dir_list *dir_list)
@@ -278,6 +279,11 @@ const char *dir_get_current_savefile(void)
    return current_savefile_dir;
 }
 
+const char *dir_get_current_savestate(void)
+{
+   return current_savestate_dir;
+}
+
 const char *dir_get_osk_overlay(void)
 {
    return dir_osk_overlay;
@@ -299,6 +305,14 @@ const char *dir_get_savestate(void)
 }
 
 /* set functions */
+
+void dir_set_current_savefile(const char *path)
+{
+}
+
+void dir_set_current_savestate(const char *path)
+{
+}
 
 void dir_set_osk_overlay(const char *path)
 {
