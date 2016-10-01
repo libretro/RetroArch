@@ -281,7 +281,7 @@ void path_set_special(char **argv, unsigned num_content)
     * It is more complicated for special content types. */
    if (global)
    {
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
          fill_pathname_noext(global->name.savestate, path_main_basename,
                file_path_str(FILE_PATH_STATE_EXTENSION),
                sizeof(global->name.savestate));
@@ -362,15 +362,10 @@ static bool path_init_subsystem(void)
       }
    }
 
-<<<<<<< HEAD
-   /* Let other relevant paths be inferred from the main SRAM location. */
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-=======
    if (global)
->>>>>>> parent of 6ee7b73... Move global->name to paths.c
    {
       /* Let other relevant paths be inferred from the main SRAM location. */
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
          fill_pathname_noext(global->name.savefile,
                path_main_basename,
                file_path_str(FILE_PATH_SRM_EXTENSION),
@@ -505,38 +500,17 @@ size_t path_get_core_size(void)
 
 static void path_set_names(const char *path)
 {
-<<<<<<< HEAD
-   path_set_basename(path);
-
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-   {
-      char tmp[PATH_MAX_LENGTH] = {0};
-
-      fill_pathname_noext(tmp, path_main_basename,
-            file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(tmp));
-
-      path_set(RARCH_PATH_SAVEFILE, tmp);
-   }
-
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-   {
-      char tmp[PATH_MAX_LENGTH] = {0};
-
-      fill_pathname_noext(tmp, path_main_basename,
-            file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(tmp));
-=======
    global_t *global = global_get_ptr();
->>>>>>> parent of 6ee7b73... Move global->name to paths.c
 
    path_set_basename(path);
 
    if (global)
    {
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
          fill_pathname_noext(global->name.savefile, path_main_basename,
                file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
 
-      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
          fill_pathname_noext(global->name.savestate, path_main_basename,
                file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
 

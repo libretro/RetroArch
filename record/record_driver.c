@@ -304,9 +304,10 @@ bool recording_init(void)
 {
    char recording_file[PATH_MAX_LENGTH] = {0};
    struct ffemu_params params           = {0};
-   settings_t *settings                 = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
    bool *recording_enabled              = recording_is_enabled();
+   settings_t *settings                 = config_get_ptr();
+   global_t *global                     = global_get_ptr();
 
    if (!*recording_enabled)
       return false;

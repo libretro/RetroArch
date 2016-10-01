@@ -1658,7 +1658,7 @@ void general_write_handler(void *data)
 #ifdef HAVE_NETWORKING
          if (!global->netplay.is_client)
             *global->netplay.server = '\0';
-         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE);
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:

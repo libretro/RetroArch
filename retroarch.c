@@ -873,23 +873,13 @@ static void retroarch_parse_input(int argc, char *argv[])
       content_set_does_not_need_content();
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
-<<<<<<< HEAD
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
-         path_is_directory(path_get(RARCH_PATH_SAVEFILE)))
-      dir_set_savefile(path_get(RARCH_PATH_SAVEFILE));
-
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
-         path_is_directory(path_get(RARCH_PATH_SAVESTATE)))
-      dir_set_savestate(path_get(RARCH_PATH_SAVESTATE));
-=======
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH) &&
          path_is_directory(global->name.savefile))
       dir_set_savefile(global->name.savefile);
 
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH) &&
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
          path_is_directory(global->name.savestate))
       dir_set_savestate(global->name.savestate);
->>>>>>> parent of 6ee7b73... Move global->name to paths.c
 }
 
 static bool retroarch_init_state(void)

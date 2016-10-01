@@ -1142,9 +1142,9 @@ static void config_set_defaults(void)
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
       dir_clear_savefile();
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
       dir_clear_savestate();
 
    *settings->path.libretro_info = '\0';
@@ -1177,8 +1177,11 @@ static void config_set_defaults(void)
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL))
       rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
-   *global->record.output_dir = '\0';
-   *global->record.config_dir = '\0';
+   {
+      global_t   *global                              = global_get_ptr();
+      *global->record.output_dir = '\0';
+      *global->record.config_dir = '\0';
+   }
 
    *settings->path.core_options      = '\0';
    *settings->path.content_history   = '\0';
@@ -1766,7 +1769,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       override_username = strdup(settings->username);
 
 #ifdef HAVE_NETWORKING
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS))
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL))
       override_netplay_ip_address = strdup(global->netplay.server);
 #endif
 
