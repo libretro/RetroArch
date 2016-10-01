@@ -178,6 +178,7 @@ else
    echo "Warning: All networking features have been disabled."
    HAVE_NETWORK_CMD='no'
    HAVE_NETWORKGAMEPAD='no'
+   HAVE_CHEEVOS='no'
 fi
 
 check_lib STDIN_CMD "$CLIB" fcntl
