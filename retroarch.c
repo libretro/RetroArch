@@ -41,6 +41,7 @@
 #include <file/file_path.h>
 #include <retro_stat.h>
 #include <retro_assert.h>
+#include <retro_miscellaneous.h>
 
 #include <features/features_cpu.h>
 
@@ -124,6 +125,7 @@ static enum rarch_core_type current_core_type           = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
 static char error_string[PATH_MAX_LENGTH]               = {0};
 
+static retro_bits_t has_set_libretro_device             = {0};
 static bool has_set_username                            = false;
 static bool rarch_is_inited                             = false;
 static bool rarch_error_on_init                         = false;
@@ -1333,6 +1335,16 @@ void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *
 {
    switch (enum_idx)
    {
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE:
+         {
+            unsigned *val = (unsigned*)data;
+            if (val)
+            {
+               unsigned bit = *val;
+               BIT128_SET(has_set_libretro_device, bit);
+            }
+         }
+         break;
       case RARCH_OVERRIDE_SETTING_VERBOSITY:
          has_set_verbosity = true;
          break;
