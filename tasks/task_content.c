@@ -836,7 +836,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
    wrap_args->no_content       = menu_driver_ctl(
          RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
       wrap_args->verbose       = verbosity_is_enabled();
 
    wrap_args->touched          = true;
@@ -853,7 +853,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
       wrap_args->state_path    = dir_get(RARCH_DIR_SAVESTATE);
    if (fullpath && *fullpath)
       wrap_args->content_path  = fullpath;
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
       wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE)) ? NULL :
          path_get(RARCH_PATH_CORE);
 

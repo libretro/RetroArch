@@ -292,7 +292,7 @@ void path_set_special(char **argv, unsigned num_content)
 
    /* We defer SRAM path updates until we can resolve it.
     * It is more complicated for special content types. */
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
    {
       char tmp[PATH_MAX_LENGTH] = {0};
 
@@ -382,7 +382,7 @@ static bool path_init_subsystem(void)
    }
 
    /* Let other relevant paths be inferred from the main SRAM location. */
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
    {
       char tmp[PATH_MAX_LENGTH] = {0};
 
@@ -586,7 +586,7 @@ static void path_set_names(const char *path)
 {
    path_set_basename(path);
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
    {
       char tmp[PATH_MAX_LENGTH] = {0};
 
@@ -596,7 +596,7 @@ static void path_set_names(const char *path)
       path_set(RARCH_PATH_SAVEFILE, tmp);
    }
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
    {
       char tmp[PATH_MAX_LENGTH] = {0};
 

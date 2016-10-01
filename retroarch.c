@@ -848,11 +848,11 @@ static void retroarch_parse_input(int argc, char *argv[])
       content_set_does_not_need_content();
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH) &&
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
          path_is_directory(path_get(RARCH_PATH_SAVEFILE)))
       dir_set(RARCH_DIR_SAVEFILE, path_get(RARCH_PATH_SAVEFILE));
 
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH) &&
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
          path_is_directory(path_get(RARCH_PATH_SAVESTATE)))
       dir_set(RARCH_DIR_SAVESTATE, path_get(RARCH_PATH_SAVESTATE));
 }
@@ -1292,7 +1292,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 }
 
 
-bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx)
+bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data)
 {
    switch (enum_idx)
    {

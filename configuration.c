@@ -1143,13 +1143,13 @@ static void config_set_defaults(void)
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
       dir_clear(RARCH_DIR_SAVEFILE);
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
       dir_clear(RARCH_DIR_SAVESTATE);
 
    *settings->path.libretro_info = '\0';
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL))
       *settings->directory.libretro = '\0';
    *settings->directory.cursor = '\0';
    *settings->directory.resampler = '\0';
@@ -1171,11 +1171,11 @@ static void config_set_defaults(void)
    *settings->directory.video_filter = '\0';
    *settings->directory.audio_filter = '\0';
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL))
       rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL))
       rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL))
       rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
    dir_clear(RARCH_DIR_RECORD_OUTPUT);
@@ -1313,11 +1313,11 @@ static void config_set_defaults(void)
             g_defaults.dir.autoconfig,
             sizeof(settings->directory.autoconfig));
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH) &&
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
          !string_is_empty(g_defaults.dir.savestate))
       dir_set(RARCH_DIR_SAVESTATE, g_defaults.dir.savestate);
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH) &&
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
          !string_is_empty(g_defaults.dir.sram))
       dir_set(RARCH_DIR_SAVEFILE, g_defaults.dir.sram);
 
@@ -1767,7 +1767,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       override_username = strdup(settings->username);
 
 #ifdef HAVE_NETWORKING
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS))
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL))
       override_netplay_ip_address = strdup(path_get(RARCH_PATH_SERVER));
 #endif
 
@@ -1783,7 +1783,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL))
    {
       if (config_get_bool(conf, "ups_pref", &tmp_bool))
          rarch_ctl(RARCH_CTL_SET_UPS_PREF, NULL);
@@ -1791,7 +1791,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
    }
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL))
    {
       if (config_get_bool(conf, "bps_pref", &tmp_bool))
          rarch_ctl(RARCH_CTL_SET_BPS_PREF, NULL);
@@ -1799,7 +1799,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
    }
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL))
    {
       if (config_get_bool(conf, "ips_pref", &tmp_bool))
          rarch_ctl(RARCH_CTL_SET_IPS_PREF, NULL);
@@ -1808,10 +1808,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
 #ifdef HAVE_NETWORKING
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
       CONFIG_GET_BOOL_BASE(conf, global, netplay.is_spectate,
             "netplay_spectator_mode_enable");
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
       CONFIG_GET_BOOL_BASE(conf, global, netplay.is_client, "netplay_mode");
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
@@ -1825,7 +1825,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          settings->network_remote_enable_user[i] = tmp_bool;
    }
 #endif
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL))
    {
       if (config_get_bool(conf, "log_verbosity", &tmp_bool))
       {
@@ -1858,11 +1858,11 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
 #ifdef HAVE_NETWORKING
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL))
       CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_delay_frames");
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL))
       CONFIG_GET_INT_BASE(conf, global, netplay.check_frames, "netplay_check_frames");
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL))
       CONFIG_GET_INT_BASE(conf, global, netplay.port, "netplay_ip_port");
 #endif
    for (i = 0; i < MAX_USERS; i++)
@@ -1931,7 +1931,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DIRECTORY, NULL))
    {
       if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
             strlcpy(settings->directory.libretro, tmp_str, sizeof(settings->directory.libretro));
@@ -1955,7 +1955,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
 #ifdef HAVE_NETWORKING
-   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS))
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL))
    {
       path_set(RARCH_PATH_SERVER, override_netplay_ip_address);
       free(override_netplay_ip_address);
@@ -2118,7 +2118,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings->bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH) &&
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
          config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
@@ -2142,7 +2142,7 @@ static bool config_load_file(const char *path, bool set_defaults,
          RARCH_WARN("savefile_directory is not a directory, ignoring ...\n");
    }
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH) &&
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
          config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
@@ -2985,11 +2985,11 @@ bool config_save_file(const char *path)
    }
 #endif
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL))
       config_set_bool(conf, "ups_pref", rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL));
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL))
       config_set_bool(conf, "bps_pref", rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL));
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF))
+   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL))
       config_set_bool(conf, "ips_pref", rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL));
    config_set_bool(conf, "log_verbosity",
          verbosity_is_enabled());

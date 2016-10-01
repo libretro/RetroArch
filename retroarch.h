@@ -164,7 +164,7 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx);
 
 void retroarch_override_setting_free_state(void);
 
-bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx);
+bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
 
