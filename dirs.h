@@ -21,6 +21,15 @@
 
 RETRO_BEGIN_DECLS
 
+enum rarch_dir_type
+{
+   RARCH_DIR_NONE = 0,
+   RARCH_DIR_SAVEFILE,
+   RARCH_DIR_SAVESTATE,
+   RARCH_DIR_SYSTEM,
+   RARCH_DIR_OSK_OVERLAY
+};
+
 /* init functions */
 
 bool dir_init_shader(void);
