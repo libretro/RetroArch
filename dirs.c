@@ -308,10 +308,14 @@ const char *dir_get_savestate(void)
 
 void dir_set_current_savefile(const char *path)
 {
+   strlcpy(current_savefile_dir, path,
+         sizeof(current_savefile_dir));
 }
 
 void dir_set_current_savestate(const char *path)
 {
+   strlcpy(current_savestate_dir, path,
+         sizeof(current_savestate_dir));
 }
 
 void dir_set_osk_overlay(const char *path)
