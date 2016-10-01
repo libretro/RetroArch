@@ -54,13 +54,7 @@ bool dir_is_osk_overlay_empty(void);
 
 /* clear functions */
 
-void dir_clear_system(void);
-
-void dir_clear_savefile(void);
-
-void dir_clear_savestate(void);
-
-void dir_clear_osk_overlay(void);
+void dir_clear(enum rarch_dir_type type);
 
 void dir_clear_all(void);
 
