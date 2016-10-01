@@ -66,15 +66,6 @@
 
 typedef struct video_driver_state
 {
-
-   struct
-   {
-      const void *data;
-      unsigned width;
-      unsigned height;
-      size_t pitch;
-   } frame_cache;
-
    struct
    {
       rarch_softfilter_t *filter;
@@ -102,6 +93,11 @@ static uintptr_t video_driver_window;
 static video_driver_state_t video_driver_state;
 
 static enum retro_pixel_format video_driver_pix_fmt;
+
+static const void *frame_cache_data                      = NULL;
+static unsigned frame_cache_width                        = 0;
+static unsigned frame_cache_height                       = 0;
+static size_t frame_cache_pitch                          = 0;
 
 static float video_driver_aspect_ratio;
 static unsigned video_driver_width                       = 0;
@@ -866,22 +862,22 @@ void video_driver_cached_frame_set(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    video_driver_set_cached_frame_ptr(data);
-   video_driver_state.frame_cache.width  = width;
-   video_driver_state.frame_cache.height = height;
-   video_driver_state.frame_cache.pitch  = pitch;
+   frame_cache_width  = width;
+   frame_cache_height = height;
+   frame_cache_pitch  = pitch;
 }
 
 void video_driver_cached_frame_get(const void **data, unsigned *width,
       unsigned *height, size_t *pitch)
 {
    if (data)
-      *data    = video_driver_state.frame_cache.data;
+      *data    = frame_cache_data;
    if (width)
-      *width  = video_driver_state.frame_cache.width;
+      *width   = frame_cache_width;
    if (height)
-      *height = video_driver_state.frame_cache.height;
+      *height  = frame_cache_height;
    if (pitch)
-      *pitch  = video_driver_state.frame_cache.pitch;
+      *pitch   = frame_cache_pitch;
 }
 
 void video_driver_get_size(unsigned *width, unsigned *height)
@@ -1129,12 +1125,12 @@ static bool video_driver_cached_frame(void)
     * It would be really stupid at any rate ...
     */
    info.data        = NULL;
-   info.width       = video_driver_state.frame_cache.width;
-   info.height      = video_driver_state.frame_cache.height;
-   info.pitch       = video_driver_state.frame_cache.pitch;
+   info.width       = frame_cache_width;
+   info.height      = frame_cache_height;
+   info.pitch       = frame_cache_pitch;
 
-   if (video_driver_state.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID)
-      info.data = video_driver_state.frame_cache.data;
+   if (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
+      info.data = frame_cache_data;
 
    core_frame(&info);
 
@@ -1362,7 +1358,7 @@ void video_driver_destroy(void)
 void video_driver_set_cached_frame_ptr(const void *data)
 {
    if (data)
-      video_driver_state.frame_cache.data = data;
+      frame_cache_data = data;
 }
 
 void video_driver_set_stub_frame(void)
@@ -1694,9 +1690,9 @@ bool video_driver_read_viewport(uint8_t *buffer)
 
 bool video_driver_cached_frame_has_valid_framebuffer(void)
 {
-   if (!video_driver_state.frame_cache.data)
+   if (!frame_cache_data)
       return false;
-   return video_driver_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID;
+   return frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
 }
 
 bool video_driver_cached_frame_render(void)
