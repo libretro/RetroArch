@@ -125,7 +125,7 @@ static enum rarch_core_type current_core_type           = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
 static char error_string[PATH_MAX_LENGTH]               = {0};
 
-static retro_bits_t has_set_libretro_device             = {0};
+static retro_bits_t has_set_libretro_device;
 static bool has_set_username                            = false;
 static bool rarch_is_inited                             = false;
 static bool rarch_error_on_init                         = false;
@@ -395,9 +395,7 @@ static void retroarch_parse_input(int argc, char *argv[])
    const char *optstring = NULL;
    bool explicit_menu    = false;
    settings_t *settings  = config_get_ptr();
-#ifdef HAVE_NETWORKING
    global_t  *global     = global_get_ptr();
-#endif
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC

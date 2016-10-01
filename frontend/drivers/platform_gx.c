@@ -386,7 +386,7 @@ static void frontend_gx_exitspawn(char *s, size_t len)
             {
                fill_pathname_join(new_path, g_defaults.dir.core,
                      salamander_name, sizeof(new_path));
-               path_set_content(new_path);
+               path_set(RARCH_PATH_CONTENT, new_path);
             }
          }
          break;
@@ -415,7 +415,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
     * active core path is set here. */
-   if (path_is_core_empty() && *argc >= 1 && strrchr(argv[0], '/'))
+   if (path_is_empty(RARCH_PATH_CORE) && *argc >= 1 && strrchr(argv[0], '/'))
    {
       char path[PATH_MAX_LENGTH] = {0};
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
