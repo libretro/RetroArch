@@ -1051,9 +1051,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = path_get_current_savefile_dir();
-         RARCH_LOG("Environ GET_SAVE_DIRECTORY: \"%s\".\n",
-               path_get_current_savefile_dir());
+         *(const char**)data = dir_get_current_savefile();
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:

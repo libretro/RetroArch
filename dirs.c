@@ -29,6 +29,8 @@
 #include "list_special.h"
 #include "file_path_special.h"
 #include "msg_hash.h"
+#include "paths.h"
+#include "content.h"
 #include "runloop.h"
 #include "verbosity.h"
 
@@ -40,10 +42,11 @@ struct rarch_dir_list
 
 static struct rarch_dir_list dir_shader_list;
 
-static char dir_osk_overlay[PATH_MAX_LENGTH] = {0};
-static char dir_system[PATH_MAX_LENGTH]      = {0};
-static char dir_savefile[PATH_MAX_LENGTH]    = {0};
-static char dir_savestate[PATH_MAX_LENGTH]   = {0};
+static char dir_osk_overlay[PATH_MAX_LENGTH]            = {0};
+static char dir_system[PATH_MAX_LENGTH]                 = {0};
+static char dir_savefile[PATH_MAX_LENGTH]               = {0};
+char current_savefile_dir[PATH_MAX_LENGTH]              = {0};
+static char dir_savestate[PATH_MAX_LENGTH]              = {0};
 
 static bool shader_dir_init(struct rarch_dir_list *dir_list)
 {
@@ -263,6 +266,17 @@ char *dir_get_savestate_ptr(void)
 }
 
 /* get functions */
+
+const char *dir_get_current_savefile(void)
+{
+   /* try to infer the path in case it's still empty by calling
+   path_set_redirect */
+   if (string_is_empty(current_savefile_dir) 
+         && !content_does_not_need_content())
+      path_set_redirect();
+
+   return current_savefile_dir;
+}
 
 const char *dir_get_osk_overlay(void)
 {

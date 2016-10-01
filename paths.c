@@ -48,7 +48,8 @@
 
 #define MENU_VALUE_NO_CORE 0x7d5472cbU
 
-/* For --subsystem content. */
+extern char current_savefile_dir[PATH_MAX_LENGTH];
+
 static struct string_list *subsystem_fullpaths          = NULL;
 
 char subsystem_path[PATH_MAX_LENGTH]                    = {0};
@@ -57,7 +58,7 @@ static char path_default_shader_preset[PATH_MAX_LENGTH] = {0};
 static char path_main_basename[PATH_MAX_LENGTH]         = {0}
 ;
 static char path_content[PATH_MAX_LENGTH]               = {0};
-static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
+static char current_savestate_dir[PATH_MAX_LENGTH]      = {0};
 static char path_libretro[PATH_MAX_LENGTH]              = {0};
 static char path_config_file[PATH_MAX_LENGTH]           = {0};
 static char path_config_append_file[PATH_MAX_LENGTH]    = {0};
@@ -66,7 +67,6 @@ static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
 
 void path_set_redirect(void)
 {
-   char current_savestate_dir[PATH_MAX_LENGTH] = {0};
    uint32_t library_name_hash                  = 0;
    bool check_library_name_hash                = false;
    rarch_system_info_t      *info              = NULL;
@@ -86,6 +86,7 @@ void path_set_redirect(void)
    strlcpy(current_savefile_dir,
          old_savefile_dir,
          sizeof(current_savefile_dir));
+
    strlcpy(current_savestate_dir,
          old_savestate_dir,
          sizeof(current_savestate_dir));
@@ -101,7 +102,7 @@ void path_set_redirect(void)
       settings_t *settings = config_get_ptr();
 
       /* per-core saves: append the library_name to the save location */
-      if (settings->sort_savefiles_enable
+      if (      settings->sort_savefiles_enable
             && !string_is_empty(old_savefile_dir))
       {
          fill_pathname_join(
@@ -247,17 +248,6 @@ void path_set_basename(const char *path)
 struct string_list *path_get_subsystem_list(void)
 {
    return subsystem_fullpaths;
-}
-
-const char *path_get_current_savefile_dir(void)
-{
-   /* try to infer the path in case it's still empty by calling
-   path_set_redirect */
-   if (string_is_empty(current_savefile_dir) 
-         && !content_does_not_need_content())
-      path_set_redirect();
-
-   return current_savefile_dir;
 }
 
 void path_set_special(char **argv, unsigned num_content)
