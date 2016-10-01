@@ -1206,9 +1206,9 @@ static void command_event_load_auto_state(void)
    char msg[128]                             = {0};
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
    settings_t *settings = config_get_ptr();
-#ifdef HAVE_NETWORKING
    global_t   *global   = global_get_ptr();
 
+#ifdef HAVE_NETWORKING
    if (global->netplay.enable && !global->netplay.is_spectate)
       return;
 #endif
@@ -1221,7 +1221,7 @@ static void command_event_load_auto_state(void)
    if (!settings->savestate_auto_load)
       return;
 
-   fill_pathname_noext(savestate_name_auto, path_get(RARCH_PATH_SAVESTATE),
+   fill_pathname_noext(savestate_name_auto, global->name.savestate,
          file_path_str(FILE_PATH_AUTO_EXTENSION),
          sizeof(savestate_name_auto));
 
@@ -1246,20 +1246,21 @@ static void command_event_set_savestate_auto_index(void)
    struct string_list *dir_list     = NULL;
    unsigned max_idx                 = 0;
    settings_t *settings             = config_get_ptr();
+   global_t   *global               = global_get_ptr();
 
    if (!settings->savestate_auto_index)
       return;
 
-   /* Find the file in the same directory as path_get(RARCH_PATH_SAVESTATE)
+   /* Find the file in the same directory as global->savestate_name
     * with the largest numeral suffix.
     *
     * E.g. /foo/path/content.state, will try to find
     * /foo/path/content.state%d, where %d is the largest number available.
     */
 
-   fill_pathname_basedir(state_dir, path_get(RARCH_PATH_SAVESTATE),
+   fill_pathname_basedir(state_dir, global->name.savestate,
          sizeof(state_dir));
-   fill_pathname_base(state_base, path_get(RARCH_PATH_SAVESTATE),
+   fill_pathname_base(state_base, global->name.savestate,
          sizeof(state_base));
 
    if (!(dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL)))
@@ -1415,8 +1416,11 @@ static bool command_event_save_auto_state(void)
    bool ret;
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (!settings || !settings->savestate_auto_save)
+      return false;
+   if (!global)
       return false;
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return false;
@@ -1428,7 +1432,7 @@ static bool command_event_save_auto_state(void)
       return false;
 #endif
 
-   fill_pathname_noext(savestate_name_auto, path_get(RARCH_PATH_SAVESTATE),
+   fill_pathname_noext(savestate_name_auto, global->name.savestate,
          file_path_str(FILE_PATH_AUTO_EXTENSION),
          sizeof(savestate_name_auto));
 
@@ -1707,17 +1711,17 @@ static void command_event_main_state(unsigned cmd)
    retro_ctx_size_info_t info;
    char path[PATH_MAX_LENGTH] = {0};
    char msg[128]              = {0};
+   global_t *global           = global_get_ptr();
    settings_t *settings       = config_get_ptr();
 
    if (settings->state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
-            path_get(RARCH_PATH_SAVESTATE),
-            settings->state_slot);
+            global->name.savestate, settings->state_slot);
    else if (settings->state_slot < 0)
       fill_pathname_join_delim(path,
-            path_get(RARCH_PATH_SAVESTATE), "auto", '.', sizeof(path));
+            global->name.savestate, "auto", '.', sizeof(path));
    else
-      strlcpy(path, path_get(RARCH_PATH_SAVESTATE), sizeof(path));
+      strlcpy(path, global->name.savestate, sizeof(path));
 
    core_serialize_size(&info);
 

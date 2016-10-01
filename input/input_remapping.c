@@ -20,8 +20,6 @@
 
 #include "input_remapping.h"
 #include "../configuration.h"
-#include "../paths.h"
-#include "../retroarch.h"
 #include "../runloop.h"
 
 /**
@@ -41,7 +39,8 @@ bool input_remapping_load_file(void *data, const char *path)
    if (!conf ||  string_is_empty(path))
       return false;
 
-   path_set(RARCH_PATH_REMAPFILE, path);
+   strlcpy(global->name.remapfile, path,
+         sizeof(global->name.remapfile));
 
    for (i = 0; i < MAX_USERS; i++)
    {

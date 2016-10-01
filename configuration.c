@@ -2125,17 +2125,14 @@ static bool config_load_file(const char *path, bool set_defaults,
 
       else if (path_is_directory(tmp_str))
       {
-         char tmp_str_local[PATH_MAX_LENGTH] = {0};
          dir_set_savefile(tmp_str);
 
-         strlcpy(tmp_str_local, tmp_str,
-               sizeof(tmp_str_local));
-         fill_pathname_dir(tmp_str_local,
+         strlcpy(global->name.savefile, tmp_str,
+               sizeof(global->name.savefile));
+         fill_pathname_dir(global->name.savefile,
                path_get(RARCH_PATH_BASENAME),
                file_path_str(FILE_PATH_SRM_EXTENSION),
-               sizeof(tmp_str_local));
-
-         path_set(RARCH_PATH_SAVEFILE, tmp_str_local);
+               sizeof(global->name.savefile));
       }
       else
          RARCH_WARN("savefile_directory is not a directory, ignoring ...\n");
@@ -2148,18 +2145,14 @@ static bool config_load_file(const char *path, bool set_defaults,
          dir_set_savestate(g_defaults.dir.savestate);
       else if (path_is_directory(tmp_str))
       {
-         char tmp_str_local[PATH_MAX_LENGTH] = {0};
-
          dir_set_savestate(tmp_str);
 
-         strlcpy(tmp_str_local, tmp_str,
-               sizeof(tmp_str_local));
-         fill_pathname_dir(tmp_str_local,
+         strlcpy(global->name.savestate, tmp_str,
+               sizeof(global->name.savestate));
+         fill_pathname_dir(global->name.savestate,
                path_get(RARCH_PATH_BASENAME),
                file_path_str(FILE_PATH_STATE_EXTENSION),
-               sizeof(tmp_str_local));
-
-         path_set(RARCH_PATH_SAVESTATE, tmp_str_local);
+               sizeof(global->name.savestate));
       }
       else
          RARCH_WARN("savestate_directory is not a directory, ignoring ...\n");

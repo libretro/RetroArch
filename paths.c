@@ -51,13 +51,6 @@
 /* For --subsystem content. */
 static struct string_list *subsystem_fullpaths          = NULL;
 
-static char path_savefile[PATH_MAX_LENGTH]              = {0};
-static char path_savestate[PATH_MAX_LENGTH]             = {0};
-static char path_cheatfile[PATH_MAX_LENGTH]             = {0};
-static char path_ups[PATH_MAX_LENGTH]                   = {0};
-static char path_bps[PATH_MAX_LENGTH]                   = {0};
-static char path_ips[PATH_MAX_LENGTH]                   = {0};
-static char path_remapfile[PATH_MAX_LENGTH]             = {0};
 char subsystem_path[PATH_MAX_LENGTH]                    = {0};
 
 static char path_default_shader_preset[PATH_MAX_LENGTH] = {0};
@@ -77,6 +70,7 @@ void path_set_redirect(void)
    uint32_t library_name_hash                  = 0;
    bool check_library_name_hash                = false;
    rarch_system_info_t      *info              = NULL;
+   global_t                *global             = global_get_ptr();
    const char *old_savefile_dir                = dir_get_savefile();
    const char *old_savestate_dir               = dir_get_savestate();
 
@@ -172,50 +166,45 @@ void path_set_redirect(void)
       path_basedir(current_savefile_dir);
    }
 
-   if(path_is_directory(current_savefile_dir))
-      path_set(RARCH_PATH_SAVEFILE, current_savefile_dir);
-
-   if(path_is_directory(current_savestate_dir))
-      path_set(RARCH_PATH_SAVESTATE, current_savestate_dir);
-
-   if (path_is_directory(path_get(RARCH_PATH_SAVEFILE)))
+   if (global)
    {
-      char savefile_path[PATH_MAX_LENGTH] = {0};
+      if(path_is_directory(current_savefile_dir))
+         strlcpy(global->name.savefile, current_savefile_dir,
+               sizeof(global->name.savefile));
 
-      fill_pathname_dir(savefile_path, path_main_basename,
-            file_path_str(FILE_PATH_SRM_EXTENSION),
-            sizeof(savefile_path));
+      if(path_is_directory(current_savestate_dir))
+         strlcpy(global->name.savestate, current_savestate_dir,
+               sizeof(global->name.savestate));
 
-      path_set(RARCH_PATH_SAVEFILE, savefile_path);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-            savefile_path);
-   }
+      if (path_is_directory(global->name.savefile))
+      {
+         fill_pathname_dir(global->name.savefile, path_main_basename,
+               file_path_str(FILE_PATH_SRM_EXTENSION),
+               sizeof(global->name.savefile));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+               global->name.savefile);
+      }
 
-   if (path_is_directory(path_get(RARCH_PATH_SAVESTATE)))
-   {
-      char savestate_path[PATH_MAX_LENGTH] = {0};
+      if (path_is_directory(global->name.savestate))
+      {
+         fill_pathname_dir(global->name.savestate, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION),
+               sizeof(global->name.savestate));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+               global->name.savestate);
+      }
 
-      fill_pathname_dir(savestate_path, path_main_basename,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(savestate_path));
-      path_set(RARCH_PATH_SAVESTATE, savestate_path);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
-            savestate_path);
-   }
-
-   if (path_is_directory(path_get(RARCH_PATH_CHEATFILE)))
-   {
-      char cheatfile_path[PATH_MAX_LENGTH] = {0};
-
-      fill_pathname_dir(cheatfile_path, path_main_basename,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(cheatfile_path));
-      path_set(RARCH_PATH_CHEATFILE, cheatfile_path);
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
-            cheatfile_path);
+      if (path_is_directory(global->name.cheatfile))
+      {
+         fill_pathname_dir(global->name.cheatfile, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION),
+               sizeof(global->name.cheatfile));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_CHEATFILE_TO),
+               global->name.cheatfile);
+      }
    }
 }
 
@@ -275,6 +264,7 @@ void path_set_special(char **argv, unsigned num_content)
 {
    unsigned i;
    union string_list_elem_attr attr;
+   global_t   *global   = global_get_ptr();
 
    /* First content file is the significant one. */
    path_set_basename(argv[0]);
@@ -289,29 +279,22 @@ void path_set_special(char **argv, unsigned num_content)
 
    /* We defer SRAM path updates until we can resolve it.
     * It is more complicated for special content types. */
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
+   if (global)
    {
-      char tmp[PATH_MAX_LENGTH] = {0};
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+         fill_pathname_noext(global->name.savestate, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION),
+               sizeof(global->name.savestate));
 
-      fill_pathname_noext(tmp, path_main_basename,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(tmp));
-
-      path_set(RARCH_PATH_SAVESTATE, tmp);
-   }
-
-   if (path_is_directory(path_get(RARCH_PATH_SAVESTATE)))
-   {
-      char tmp[PATH_MAX_LENGTH] = {0};
-
-      fill_pathname_dir(tmp, path_main_basename,
-            file_path_str(FILE_PATH_STATE_EXTENSION),
-            sizeof(tmp));
-      path_set(RARCH_PATH_SAVESTATE, tmp);
-
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
-            tmp);
+      if (path_is_directory(global->name.savestate))
+      {
+         fill_pathname_dir(global->name.savestate, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION),
+               sizeof(global->name.savestate));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVESTATE_TO),
+               global->name.savestate);
+      }
    }
 }
 
@@ -320,6 +303,7 @@ static bool path_init_subsystem(void)
    unsigned i, j;
    const struct retro_subsystem_info *info = NULL;
    rarch_system_info_t             *system = NULL;
+   global_t                        *global = global_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -378,31 +362,30 @@ static bool path_init_subsystem(void)
       }
    }
 
+<<<<<<< HEAD
    /* Let other relevant paths be inferred from the main SRAM location. */
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
+=======
+   if (global)
+>>>>>>> parent of 6ee7b73... Move global->name to paths.c
    {
-      char tmp[PATH_MAX_LENGTH] = {0};
+      /* Let other relevant paths be inferred from the main SRAM location. */
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+         fill_pathname_noext(global->name.savefile,
+               path_main_basename,
+               file_path_str(FILE_PATH_SRM_EXTENSION),
+               sizeof(global->name.savefile));
 
-      fill_pathname_noext(tmp,
-            path_main_basename,
-            file_path_str(FILE_PATH_SRM_EXTENSION),
-            sizeof(tmp));
-      path_set(RARCH_PATH_SAVEFILE, tmp);
-   }
-
-   if (path_is_directory(path_get(RARCH_PATH_SAVEFILE)))
-   {
-      char tmp[PATH_MAX_LENGTH] = {0};
-
-      fill_pathname_dir(tmp,
-            path_main_basename,
-            file_path_str(FILE_PATH_SRM_EXTENSION),
-            sizeof(tmp));
-      path_set(RARCH_PATH_SAVEFILE, tmp);
-
-      RARCH_LOG("%s \"%s\".\n",
-            msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
-            tmp);
+      if (path_is_directory(global->name.savefile))
+      {
+         fill_pathname_dir(global->name.savefile,
+               path_main_basename,
+               file_path_str(FILE_PATH_SRM_EXTENSION),
+               sizeof(global->name.savefile));
+         RARCH_LOG("%s \"%s\".\n",
+               msg_hash_to_str(MSG_REDIRECTING_SAVEFILE_TO),
+               global->name.savefile);
+      }
    }
 
    return true;
@@ -448,44 +431,32 @@ static void path_init_savefile_internal(void)
 
 void path_fill_names(void)
 {
-   path_init_savefile_internal();
+   global_t *global = global_get_ptr();
 
-   bsv_movie_set_path(path_get(RARCH_PATH_SAVEFILE));
+   path_init_savefile_internal();
+   
+   if (global)
+      bsv_movie_set_path(global->name.savefile);
 
    if (string_is_empty(path_main_basename))
       return;
 
-   if (string_is_empty(path_get(RARCH_PATH_UPS)))
+   if (global)
    {
-      char tmp[PATH_MAX_LENGTH] = {0};
+      if (string_is_empty(global->name.ups))
+         fill_pathname_noext(global->name.ups, path_main_basename,
+               file_path_str(FILE_PATH_UPS_EXTENSION),
+               sizeof(global->name.ups));
 
-      fill_pathname_noext(tmp, path_main_basename,
-            file_path_str(FILE_PATH_UPS_EXTENSION),
-            sizeof(tmp));
+      if (string_is_empty(global->name.bps))
+         fill_pathname_noext(global->name.bps, path_main_basename,
+               file_path_str(FILE_PATH_BPS_EXTENSION),
+               sizeof(global->name.bps));
 
-      path_set(RARCH_PATH_UPS, tmp);
-   }
-
-   if (string_is_empty(path_get(RARCH_PATH_BPS)))
-   {
-      char tmp[PATH_MAX_LENGTH] = {0};
-
-      fill_pathname_noext(tmp, path_main_basename,
-            file_path_str(FILE_PATH_BPS_EXTENSION),
-            sizeof(tmp));
-
-      path_set(RARCH_PATH_BPS, tmp);
-   }
-
-   if (string_is_empty(path_get(RARCH_PATH_IPS)))
-   {
-      char tmp[PATH_MAX_LENGTH] = {0};
-
-      fill_pathname_noext(tmp, path_main_basename,
-            file_path_str(FILE_PATH_IPS_EXTENSION),
-            sizeof(tmp));
-
-      path_set(RARCH_PATH_IPS, tmp);
+      if (string_is_empty(global->name.ips))
+         fill_pathname_noext(global->name.ips, path_main_basename,
+               file_path_str(FILE_PATH_IPS_EXTENSION),
+               sizeof(global->name.ips));
    }
 }
 
@@ -500,20 +471,6 @@ const char *path_get(enum rarch_path_type type)
 {
    switch (type)
    {
-      case RARCH_PATH_SAVEFILE:
-         return path_savefile;
-      case RARCH_PATH_SAVESTATE:
-         return path_savestate;
-      case RARCH_PATH_CHEATFILE:
-         return path_cheatfile;
-      case RARCH_PATH_REMAPFILE:
-         return path_remapfile;
-      case RARCH_PATH_IPS:
-         return path_ips;
-      case RARCH_PATH_BPS:
-         return path_bps;
-      case RARCH_PATH_UPS:
-         return path_ups;
       case RARCH_PATH_BASENAME:
          return path_main_basename;
       case RARCH_PATH_CORE_OPTIONS:
@@ -548,6 +505,7 @@ size_t path_get_core_size(void)
 
 static void path_set_names(const char *path)
 {
+<<<<<<< HEAD
    path_set_basename(path);
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
@@ -566,17 +524,24 @@ static void path_set_names(const char *path)
 
       fill_pathname_noext(tmp, path_main_basename,
             file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(tmp));
+=======
+   global_t *global = global_get_ptr();
+>>>>>>> parent of 6ee7b73... Move global->name to paths.c
 
-      path_set(RARCH_PATH_SAVESTATE, tmp);
-   }
+   path_set_basename(path);
 
+   if (global)
    {
-      char tmp[PATH_MAX_LENGTH] = {0};
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH))
+         fill_pathname_noext(global->name.savefile, path_main_basename,
+               file_path_str(FILE_PATH_SRM_EXTENSION), sizeof(global->name.savefile));
 
-      fill_pathname_noext(tmp, path_main_basename,
-            file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(tmp));
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH))
+         fill_pathname_noext(global->name.savestate, path_main_basename,
+               file_path_str(FILE_PATH_STATE_EXTENSION), sizeof(global->name.savestate));
 
-      path_set(RARCH_PATH_CHEATFILE, tmp);
+      fill_pathname_noext(global->name.cheatfile, path_main_basename,
+            file_path_str(FILE_PATH_CHT_EXTENSION), sizeof(global->name.cheatfile));
    }
 
    path_set_redirect();
@@ -591,34 +556,6 @@ bool path_set(enum rarch_path_type type, const char *path)
    {
       case RARCH_PATH_NAMES:
          path_set_names(path);
-         break;
-      case RARCH_PATH_SAVEFILE:
-         strlcpy(path_savefile, path,
-               sizeof(path_savefile));
-         break;
-      case RARCH_PATH_SAVESTATE:
-         strlcpy(path_savestate, path,
-               sizeof(path_savestate));
-         break;
-      case RARCH_PATH_CHEATFILE:
-         strlcpy(path_cheatfile, path,
-               sizeof(path_cheatfile));
-         break;
-      case RARCH_PATH_REMAPFILE:
-         strlcpy(path_remapfile, path,
-               sizeof(path_remapfile));
-         break;
-      case RARCH_PATH_IPS:
-         strlcpy(path_ips, path,
-               sizeof(path_ips));
-         break;
-      case RARCH_PATH_BPS:
-         strlcpy(path_bps, path,
-               sizeof(path_bps));
-         break;
-      case RARCH_PATH_UPS:
-         strlcpy(path_ups, path,
-               sizeof(path_ups));
          break;
       case RARCH_PATH_CORE:
          strlcpy(path_libretro, path,
@@ -660,34 +597,6 @@ bool path_is_empty(enum rarch_path_type type)
 {
    switch (type)
    {
-      case RARCH_PATH_SAVEFILE:
-         if (string_is_empty(path_savefile))
-            return true;
-         break;
-      case RARCH_PATH_SAVESTATE:
-         if (string_is_empty(path_savestate))
-            return true;
-         break;
-      case RARCH_PATH_CHEATFILE:
-         if (string_is_empty(path_cheatfile))
-            return true;
-         break;
-      case RARCH_PATH_REMAPFILE:
-         if (string_is_empty(path_remapfile))
-            return true;
-         break;
-      case RARCH_PATH_IPS:
-         if (string_is_empty(path_ips))
-            return true;
-         break;
-      case RARCH_PATH_BPS:
-         if (string_is_empty(path_bps))
-            return true;
-         break;
-      case RARCH_PATH_UPS:
-         if (string_is_empty(path_ups))
-            return true;
-         break;
       case RARCH_PATH_SUBSYSTEM:
          if (string_is_empty(subsystem_path))
             return true;
@@ -725,27 +634,6 @@ void path_clear(enum rarch_path_type type)
 {
    switch (type)
    {
-      case RARCH_PATH_SAVEFILE:
-         *path_savefile  = '\0';
-         break;
-      case RARCH_PATH_SAVESTATE:
-         *path_savestate  = '\0';
-         break;
-      case RARCH_PATH_CHEATFILE:
-         *path_cheatfile  = '\0';
-         break;
-      case RARCH_PATH_REMAPFILE:
-         *path_remapfile  = '\0';
-         break;
-      case RARCH_PATH_IPS:
-         *path_ips  = '\0';
-         break;
-      case RARCH_PATH_BPS:
-         *path_bps  = '\0';
-         break;
-      case RARCH_PATH_UPS:
-         *path_ups  = '\0';
-         break;
       case RARCH_PATH_SUBSYSTEM:
          *subsystem_path = '\0';
          break;

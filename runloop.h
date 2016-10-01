@@ -137,6 +137,25 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
+<<<<<<< HEAD
+=======
+   struct
+   {
+      bool libretro_device[MAX_USERS];
+   } has_set;
+   
+   struct
+   {
+      char savefile[PATH_MAX_LENGTH];
+      char savestate[PATH_MAX_LENGTH];
+      char cheatfile[PATH_MAX_LENGTH];
+      char ups[PATH_MAX_LENGTH];
+      char bps[PATH_MAX_LENGTH];
+      char ips[PATH_MAX_LENGTH];
+      char remapfile[PATH_MAX_LENGTH];
+   } name;
+
+>>>>>>> parent of 6ee7b73... Move global->name to paths.c
 #ifdef HAVE_NETWORKING
    /* Netplay. */
    struct
