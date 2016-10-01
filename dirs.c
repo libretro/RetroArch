@@ -212,34 +212,32 @@ size_t dir_get_osk_overlay_size(void)
 
 /* clear functions */
 
-void dir_clear(enum rarch_dir_type type)
+void dir_clear_system(void)
 {
-   switch (type)
-   {
-      case RARCH_DIR_SYSTEM:
-         *dir_system = '\0';
-         break;
-      case RARCH_DIR_SAVEFILE:
-         *dir_savefile = '\0';
-         break;
-      case RARCH_DIR_SAVESTATE:
-         *dir_savestate = '\0';
-         break;
-      case RARCH_DIR_OSK_OVERLAY:
-         *dir_osk_overlay = '\0';
-         break;
-      case RARCH_DIR_NONE:
-      default:
-         break;
-   }
+   *dir_system = '\0';
+}
+
+void dir_clear_savefile(void)
+{
+   *dir_savefile = '\0';
+}
+
+void dir_clear_savestate(void)
+{
+   *dir_savestate = '\0';
+}
+
+void dir_clear_osk_overlay(void)
+{
+   *dir_osk_overlay = '\0';
 }
 
 void dir_clear_all(void)
 {
-   dir_clear(RARCH_DIR_SYSTEM);
-   dir_clear(RARCH_DIR_OSK_OVERLAY);
-   dir_clear(RARCH_DIR_SAVEFILE);
-   dir_clear(RARCH_DIR_SAVESTATE);
+   dir_clear_system();
+   dir_clear_osk_overlay();
+   dir_clear_savefile();
+   dir_clear_savestate();
 }
 
 /* get ptr functions */
