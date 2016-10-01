@@ -34,7 +34,6 @@
 #include "../../configuration.h"
 #include "../../command.h"
 #include "../../movie.h"
-#include "../../paths.h"
 #include "../../runloop.h"
 
 #define MAX_STALL_TIME_USEC         (10*1000*1000)
@@ -1339,7 +1338,7 @@ bool init_netplay(void)
 
    core_set_default_callbacks(&cbs);
 
-   if (!path_is_empty(RARCH_PATH_SERVER))
+   if (*global->netplay.server)
    {
       RARCH_LOG("Connecting to netplay host...\n");
       global->netplay.is_client = true;
@@ -1353,13 +1352,10 @@ bool init_netplay(void)
    }
 
    netplay_data = (netplay_t*)netplay_new(
-         global->netplay.is_client ? path_get(RARCH_PATH_SERVER) : NULL,
-         global->netplay.port      ? global->netplay.port        : RARCH_DEFAULT_PORT,
-         global->netplay.sync_frames,
-         global->netplay.check_frames,
-         &cbs,
-         global->netplay.is_spectate,
-         settings->username);
+         global->netplay.is_client ? global->netplay.server : NULL,
+         global->netplay.port ? global->netplay.port : RARCH_DEFAULT_PORT,
+         global->netplay.sync_frames, global->netplay.check_frames, &cbs,
+         global->netplay.is_spectate, settings->username);
 
    if (netplay_data)
       return true;

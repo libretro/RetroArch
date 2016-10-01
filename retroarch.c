@@ -689,14 +689,15 @@ static void retroarch_parse_input(int argc, char *argv[])
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
             global->netplay.enable = true;
-            path_clear(RARCH_PATH_SERVER);
+            *global->netplay.server = '\0';
             break;
 
          case 'C':
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
             global->netplay.enable = true;
-            path_set(RARCH_PATH_SERVER, optarg);
+            strlcpy(global->netplay.server, optarg,
+                  sizeof(global->netplay.server));
             break;
 
          case 'F':

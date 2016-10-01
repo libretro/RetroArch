@@ -3297,8 +3297,7 @@ static int action_ok_netplay_enable_host(const char *path,
    }
 
    global->netplay.is_client = false;
-
-   path_clear(RARCH_PATH_SERVER);
+   global->netplay.server[0] = '\0';
 
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())
@@ -3345,7 +3344,7 @@ static int action_ok_netplay_enable_client(const char *path,
    global->netplay.is_client = true;
 
    /* We can't do anything without a host specified */
-   if (path_is_empty(RARCH_PATH_SERVER))
+   if (!global->netplay.server[0])
    {
       runloop_msg_queue_push(
             "Please specify the Netplay server's IP address or hostname.",
