@@ -148,20 +148,27 @@ static void app_terminate(void)
         case NSLeftMouseDown:
         case NSRightMouseDown:
         case NSOtherMouseDown:
+       {
+           NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
          apple = (cocoa_input_data_t*)input_driver_get_data();
-         if (!apple)
+         if (!apple || pos.y < 0)
             return;
          apple->mouse_buttons |= 1 << event.buttonNumber;
-         apple->touch_count = 1;
+        
+           apple->touch_count = 1;
+       }
          break;
       case NSLeftMouseUp:
       case NSRightMouseUp:
       case NSOtherMouseUp:
+       {
+         NSPoint pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
          apple = (cocoa_input_data_t*)input_driver_get_data();
-         if (!apple)
+         if (!apple || pos.y < 0)
             return;
          apple->mouse_buttons &= ~(1 << event.buttonNumber);
          apple->touch_count = 0;
+       }
          break;
    }
 }
