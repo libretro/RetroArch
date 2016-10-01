@@ -67,6 +67,8 @@ static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
 
 void path_set_redirect(void)
 {
+   char new_savefile_dir[PATH_MAX_LENGTH]      = {0};
+   char new_savestate_dir[PATH_MAX_LENGTH]     = {0};
    uint32_t library_name_hash                  = 0;
    bool check_library_name_hash                = false;
    rarch_system_info_t      *info              = NULL;
@@ -83,13 +85,13 @@ void path_set_redirect(void)
 
    /* Initialize current save directories
     * with the values from the config. */
-   strlcpy(current_savefile_dir,
+   strlcpy(new_savefile_dir,
          old_savefile_dir,
-         sizeof(current_savefile_dir));
+         sizeof(new_savefile_dir));
 
-   strlcpy(current_savestate_dir,
+   strlcpy(new_savestate_dir,
          old_savestate_dir,
-         sizeof(current_savestate_dir));
+         sizeof(new_savestate_dir));
 
    check_library_name_hash = (library_name_hash != 0);
 #ifdef HAVE_MENU
@@ -106,26 +108,26 @@ void path_set_redirect(void)
             && !string_is_empty(old_savefile_dir))
       {
          fill_pathname_join(
-               current_savefile_dir,
+               new_savefile_dir,
                old_savefile_dir,
                info->info.library_name,
-               sizeof(current_savefile_dir));
+               sizeof(new_savefile_dir));
 
          /* If path doesn't exist, try to create it,
           * if everything fails revert to the original path. */
-         if(!path_is_directory(current_savefile_dir)
-               && !string_is_empty(current_savefile_dir))
+         if(!path_is_directory(new_savefile_dir)
+               && !string_is_empty(new_savefile_dir))
          {
-            path_mkdir(current_savefile_dir);
-            if(!path_is_directory(current_savefile_dir))
+            path_mkdir(new_savefile_dir);
+            if(!path_is_directory(new_savefile_dir))
             {
                RARCH_LOG("%s %s\n",
                      msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
                      old_savefile_dir);
 
-               strlcpy(current_savefile_dir,
+               strlcpy(new_savefile_dir,
                      old_savefile_dir,
-                     sizeof(current_savefile_dir));
+                     sizeof(new_savefile_dir));
             }
          }
       }
@@ -135,46 +137,46 @@ void path_set_redirect(void)
             && !string_is_empty(old_savestate_dir))
       {
          fill_pathname_join(
-               current_savestate_dir,
+               new_savestate_dir,
                old_savestate_dir,
                info->info.library_name,
-               sizeof(current_savestate_dir));
+               sizeof(new_savestate_dir));
 
          /* If path doesn't exist, try to create it.
           * If everything fails, revert to the original path. */
-         if(!path_is_directory(current_savestate_dir) &&
-               !string_is_empty(current_savestate_dir))
+         if(!path_is_directory(new_savestate_dir) &&
+               !string_is_empty(new_savestate_dir))
          {
-            path_mkdir(current_savestate_dir);
-            if(!path_is_directory(current_savestate_dir))
+            path_mkdir(new_savestate_dir);
+            if(!path_is_directory(new_savestate_dir))
             {
                RARCH_LOG("%s %s\n",
                      msg_hash_to_str(MSG_REVERTING_SAVESTATE_DIRECTORY_TO),
                      old_savestate_dir);
-               strlcpy(current_savestate_dir,
+               strlcpy(new_savestate_dir,
                      old_savestate_dir,
-                     sizeof(current_savestate_dir));
+                     sizeof(new_savestate_dir));
             }
          }
       }
    }
 
    /* Set savefile directory if empty based on content directory */
-   if (string_is_empty(current_savefile_dir))
+   if (string_is_empty(new_savefile_dir))
    {
-      strlcpy(current_savefile_dir, path_main_basename,
-            sizeof(current_savefile_dir));
-      path_basedir(current_savefile_dir);
+      strlcpy(new_savefile_dir, path_main_basename,
+            sizeof(new_savefile_dir));
+      path_basedir(new_savefile_dir);
    }
 
    if (global)
    {
-      if(path_is_directory(current_savefile_dir))
-         strlcpy(global->name.savefile, current_savefile_dir,
+      if(path_is_directory(new_savefile_dir))
+         strlcpy(global->name.savefile, new_savefile_dir,
                sizeof(global->name.savefile));
 
-      if(path_is_directory(current_savestate_dir))
-         strlcpy(global->name.savestate, current_savestate_dir,
+      if(path_is_directory(new_savestate_dir))
+         strlcpy(global->name.savestate, new_savestate_dir,
                sizeof(global->name.savestate));
 
       if (path_is_directory(global->name.savefile))
@@ -207,6 +209,11 @@ void path_set_redirect(void)
                global->name.cheatfile);
       }
    }
+
+   strlcpy(current_savefile_dir, new_savefile_dir,
+         sizeof(current_savefile_dir));
+   strlcpy(current_savestate_dir, new_savestate_dir,
+         sizeof(current_savestate_dir));
 }
 
 void path_set_basename(const char *path)
