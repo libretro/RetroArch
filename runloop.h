@@ -150,6 +150,20 @@ typedef struct global
    } netplay;
 #endif
 
+   /* Recording. */
+   struct
+   {
+      char output_dir[PATH_MAX_LENGTH];
+      char config_dir[PATH_MAX_LENGTH];
+
+      unsigned width;
+      unsigned height;
+
+      size_t gpu_width;
+      size_t gpu_height;
+      bool use_output_dir;
+   } record;
+
    /* Settings and/or global state that is specific to 
     * a console-style implementation. */
    struct

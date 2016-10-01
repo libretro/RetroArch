@@ -33,7 +33,6 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
-#include "../dirs.h"
 #include "../paths.h"
 #include "../list_special.h"
 
@@ -337,7 +336,7 @@ bool recording_init(void)
 
    if (recording_use_output_dir)
       fill_pathname_join(recording_file,
-            dir_get(RARCH_DIR_RECORD_OUTPUT),
+            global->record.output_dir,
             path_get(RARCH_PATH_RECORD),
             sizeof(recording_file));
 

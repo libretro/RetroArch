@@ -575,6 +575,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 {
    unsigned count = 0;
    struct config_path_setting     *tmp = NULL;
+   global_t   *global                  = global_get_ptr();
 
    /* Paths */
 #ifdef HAVE_XMB
@@ -589,9 +590,9 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    SETTING_PATH("netplay_ip_address",       path_get_ptr(RARCH_PATH_SERVER), false, NULL, true);
 #endif
    SETTING_PATH("recording_output_directory",
-         dir_get_ptr(RARCH_DIR_RECORD_OUTPUT), false, NULL, true);
+         global->record.output_dir, false, NULL, true);
    SETTING_PATH("recording_config_directory",
-         dir_get_ptr(RARCH_DIR_RECORD_CONFIG), false, NULL, true);
+         global->record.config_dir, false, NULL, true);
    SETTING_PATH("libretro_directory",
          settings->directory.libretro, false, NULL, false);
    SETTING_PATH("core_options_path",
@@ -1176,8 +1177,8 @@ static void config_set_defaults(void)
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL))
       rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
 
-   dir_clear(RARCH_DIR_RECORD_OUTPUT);
-   dir_clear(RARCH_DIR_RECORD_CONFIG);
+   *global->record.output_dir = '\0';
+   *global->record.config_dir = '\0';
 
    *settings->path.core_options      = '\0';
    *settings->path.content_history   = '\0';

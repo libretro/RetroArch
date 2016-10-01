@@ -27,9 +27,7 @@ enum rarch_dir_type
    RARCH_DIR_SYSTEM,
    RARCH_DIR_SAVEFILE,
    RARCH_DIR_SAVESTATE,
-   RARCH_DIR_OSK_OVERLAY,
-   RARCH_DIR_RECORD_OUTPUT,
-   RARCH_DIR_RECORD_CONFIG
+   RARCH_DIR_OSK_OVERLAY
 };
 
 bool dir_init_shader(void);
@@ -44,7 +42,7 @@ void dir_clear(enum rarch_dir_type type);
 
 void dir_clear_all(void);
 
-size_t dir_get_ptr_size(enum rarch_dir_type type);
+size_t dir_get_size(enum rarch_dir_type type);
 
 char *dir_get_ptr(enum rarch_dir_type type);
 

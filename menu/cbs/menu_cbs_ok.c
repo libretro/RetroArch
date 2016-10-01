@@ -43,7 +43,6 @@
 #include "../../managers/cheat_manager.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
-#include "../../dirs.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
@@ -352,7 +351,7 @@ int generic_action_ok_displaylist_push(const char *path,
             menu_displaylist_reset_filebrowser();
             info.type          = type;
             info.directory_ptr = idx;
-            info_path          = dir_get(RARCH_DIR_RECORD_CONFIG);
+            info_path          = global->record.config_dir;
             info_label         = label;
             dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          }
