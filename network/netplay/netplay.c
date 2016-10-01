@@ -1439,16 +1439,16 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
 
    /* Map the core's quirks to our quirks */
    serialization_quirks = core_serialization_quirks();
-   if ((serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD)))
+   if (serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD))
    {
       /* Quirks we don't support! Just disable everything. */
       quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
    }
-   if ((serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES))
+   if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES)
       quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
-   if ((serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION))
+   if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION)
       quirks |= NETPLAY_QUIRK_NO_TRANSMISSION;
-   if ((serialization_quirks & NETPLAY_QUIRK_MAP_INITIALIZATION))
+   if (serialization_quirks & NETPLAY_QUIRK_MAP_INITIALIZATION)
       quirks |= NETPLAY_QUIRK_INITIALIZATION;
 
    if (netplay_is_client)

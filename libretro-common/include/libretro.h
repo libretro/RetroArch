@@ -984,8 +984,6 @@ struct retro_hw_render_context_negotiation_interface
 /* The core must spend some time initializing before serialization is
  * supported. */
 #define RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE (1 << 1)
-/* If MUST_INITIALIZE is set, this should also be set if initialization is
- * in progress. */
 /* Serialization size may change within a session. */
 #define RETRO_SERIALIZATION_QUIRK_CORE_VARIABLE_SIZE (1 << 2)
 /* Set by the frontend to acknowledge that it supports variable-sized
@@ -993,8 +991,8 @@ struct retro_hw_render_context_negotiation_interface
 #define RETRO_SERIALIZATION_QUIRK_FRONT_VARIABLE_SIZE (1 << 3)
 /* Serialized state can only be loaded during the same session. */
 #define RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION (1 << 4)
-/* Serialized state cannot be loaded on a different architecture from the
- * one it was saved on. */
+/* Serialized state cannot be loaded on a different architecture from the one
+ * it was saved on, typically due to endianness or word length issues. */
 #define RETRO_SERIALIZATION_QUIRK_ARCHITECTURE_DEPENDENT (1 << 5)
 
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
