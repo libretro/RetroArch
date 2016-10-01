@@ -286,7 +286,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       if (!list_size)
          return 0;
 
-      path_set(RARCH_PATH_CONTENT, szFilename);
+      path_set_content(szFilename);
 
       if (!path_is_core_empty())
       {
