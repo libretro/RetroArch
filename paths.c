@@ -562,24 +562,24 @@ const char *path_get(enum rarch_path_type type)
    return NULL;
 }
 
-size_t path_get_ptr_size(enum rarch_path_type type)
+size_t path_get_record_size(void)
 {
-   switch (type)
-   {
-      case RARCH_PATH_RECORD:
-         return sizeof(path_record);
-      case RARCH_PATH_RECORD_CONFIG:
-         return sizeof(path_record_config);
-      case RARCH_PATH_SERVER:
-         return sizeof(path_server);
-      case RARCH_PATH_CORE:
-         return sizeof(path_libretro);
-      default:
-      case RARCH_PATH_NONE:
-         break;
-   }
+   return sizeof(path_record);
+}
 
-   return 0;
+size_t path_get_record_config_size(void)
+{
+   return sizeof(path_record_config);
+}
+
+size_t path_get_server_size(void)
+{
+   return sizeof(path_server);
+}
+
+size_t path_get_core_size(void)
+{
+   return sizeof(path_libretro);
 }
 
 static void path_set_names(const char *path)

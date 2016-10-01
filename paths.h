@@ -61,7 +61,12 @@ void path_deinit_savefile(void);
 
 void path_init_savefile(void);
 
+/* fill functions */
+
 void path_fill_names(void);
+
+/* set functions */
+
 
 bool path_set(enum rarch_path_type type, const char *path);
 
@@ -71,7 +76,17 @@ void path_set_special(char **argv, unsigned num_content);
 
 void path_set_basename(const char *path);
 
-size_t path_get_ptr_size(enum rarch_path_type type);
+/* get size functions */
+
+size_t path_get_record_size(void);
+
+size_t path_get_record_config_size(void);
+
+size_t path_get_server_size(void);
+
+size_t path_get_core_size(void);
+
+/* get ptr functions */
 
 char *path_get_record_ptr(void);
 
@@ -81,7 +96,11 @@ char *path_get_core_ptr(void);
 
 char *path_get_server_ptr(void);
 
+/* get list functions */
+
 struct string_list *path_get_subsystem_list(void);
+
+/* get functions */
 
 const char *path_get(enum rarch_path_type type);
 
@@ -91,9 +110,13 @@ const char *path_get_current_savefile_dir(void);
 
 bool path_get_default_shader_preset(char **preset);
 
+/* clear functions */
+
 void path_clear(enum rarch_path_type type);
 
 void path_clear_all(void);
+
+/* is functions */
 
 bool path_is_empty(enum rarch_path_type type);
 
