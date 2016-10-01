@@ -45,27 +45,15 @@
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 #endif
 
-struct audio_driver_input_data
+struct audio_rate_data
 {
-   float *data;
-
+   float input;
+   bool  control; 
    struct
    {
-      float input;
-      bool  control; 
-      struct
-      {
-         double original;
-         double current;
-      } source_ratio;
-   } audio_rate;
-
-   struct
-   {
-      int16_t *buf;
-      size_t ptr;
-      size_t size;
-   } rewind;
+      double original;
+      double current;
+   } source_ratio;
 };
 
 static const audio_driver_t *audio_drivers[] = {
@@ -131,12 +119,18 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
-static size_t audio_driver_chunk_size;
-static size_t audio_driver_chunk_nonblock_size;
-static size_t audio_driver_chunk_block_size;
+static size_t audio_driver_chunk_size                    = 0;
+static size_t audio_driver_chunk_nonblock_size           = 0;
+static size_t audio_driver_chunk_block_size              = 0;
+
+static size_t audio_driver_rewind_ptr                    = 0;
+static size_t audio_driver_rewind_size                   = 0;
+static int16_t *audio_driver_rewind_buf                  = NULL;
+
+static float *audio_driver_input_data                    = NULL;
 
 static unsigned audio_driver_free_samples_buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
-static uint64_t audio_driver_free_samples_count;
+static uint64_t audio_driver_free_samples_count          = 0;
 
 static float   *audio_driver_output_samples_buf          = NULL;
 static int16_t *audio_driver_output_samples_conv_buf     = NULL;
@@ -146,7 +140,7 @@ static float audio_driver_volume_gain                    = 0.0f;
 static size_t audio_driver_buffer_size                   = 0;
 static size_t audio_driver_data_ptr                      = 0;
 
-static struct audio_driver_input_data audio_driver_data  = {0};
+static struct audio_rate_data audio_driver_data          = {0};
 static struct retro_audio_callback audio_callback        = {0};
 
 static rarch_dsp_filter_t *audio_driver_dsp              = NULL;
@@ -274,10 +268,11 @@ static bool uninit_audio(void)
 
    audio_driver_data_ptr                = 0;
 
-   if (audio_driver_data.rewind.buf)
-      free(audio_driver_data.rewind.buf);
-   audio_driver_data.rewind.buf   = NULL;
-   audio_driver_data.rewind.size  = 0;
+   if (audio_driver_rewind_buf)
+      free(audio_driver_rewind_buf);
+   audio_driver_rewind_buf   = NULL;
+
+   audio_driver_rewind_size  = 0;
 
    if (!settings->audio.enable)
    {
@@ -287,9 +282,9 @@ static bool uninit_audio(void)
 
    audio_driver_deinit_resampler();
 
-   if (audio_driver_data.data)
-      free(audio_driver_data.data);
-   audio_driver_data.data = NULL;
+   if (audio_driver_input_data)
+      free(audio_driver_input_data);
+   audio_driver_input_data = NULL;
 
    if (audio_driver_output_samples_buf)
       free(audio_driver_output_samples_buf);
@@ -328,14 +323,14 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
-   audio_driver_data.rewind.buf = (int16_t*)malloc
+   audio_driver_rewind_buf = (int16_t*)malloc
       (max_bufsamples * sizeof(int16_t));
-   retro_assert(audio_driver_data.rewind.buf != NULL);
+   retro_assert(audio_driver_rewind_buf != NULL);
 
-   if (!audio_driver_data.rewind.buf)
+   if (!audio_driver_rewind_buf)
       goto error;
 
-   audio_driver_data.rewind.size             = max_bufsamples;
+   audio_driver_rewind_size             = max_bufsamples;
 
    if (!settings->audio.enable)
    {
@@ -385,17 +380,17 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
    }
 
-   if (audio_driver_data.audio_rate.input <= 0.0f)
+   if (audio_driver_data.input <= 0.0f)
    {
       /* Should never happen. */
       RARCH_WARN("Input rate is invalid (%.3f Hz). Using output rate (%u Hz).\n",
-            audio_driver_data.audio_rate.input, settings->audio.out_rate);
-      audio_driver_data.audio_rate.input = settings->audio.out_rate;
+            audio_driver_data.input, settings->audio.out_rate);
+      audio_driver_data.input = settings->audio.out_rate;
    }
 
-   audio_driver_data.audio_rate.source_ratio.original   = 
-      audio_driver_data.audio_rate.source_ratio.current =
-      (double)settings->audio.out_rate / audio_driver_data.audio_rate.input;
+   audio_driver_data.source_ratio.original   = 
+      audio_driver_data.source_ratio.current =
+      (double)settings->audio.out_rate / audio_driver_data.input;
 
    if (!audio_driver_init_resampler())
    {
@@ -404,17 +399,17 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_unset_active();
    }
 
-   audio_driver_data.data = (float*)
+   audio_driver_input_data = (float*)
       malloc(max_bufsamples * sizeof(float));
-   retro_assert(audio_driver_data.data != NULL);
+   retro_assert(audio_driver_input_data != NULL);
 
-   if (!audio_driver_data.data)
+   if (!audio_driver_input_data)
       goto error;
 
    audio_driver_data_ptr = 0;
 
    retro_assert(settings->audio.out_rate <
-         audio_driver_data.audio_rate.input * AUDIO_MAX_RATIO);
+         audio_driver_data.input * AUDIO_MAX_RATIO);
 
    audio_driver_output_samples_buf = (float*)
       malloc(outsamples_max * sizeof(float));
@@ -423,7 +418,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (!audio_driver_output_samples_buf)
       goto error;
 
-   audio_driver_data.audio_rate.control = false;
+   audio_driver_data.control = false;
    if (
          !audio_cb_inited
          && audio_driver_is_active() 
@@ -436,7 +431,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       {
          audio_driver_buffer_size = 
             current_audio->buffer_size(audio_driver_context_audio_data);
-         audio_driver_data.audio_rate.control = true;
+         audio_driver_data.control = true;
       }
       else
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
@@ -483,13 +478,13 @@ static void audio_driver_readjust_input_rate(void)
 #endif
 
    audio_driver_free_samples_buf[write_idx] = avail;
-   audio_driver_data.audio_rate.source_ratio.current = 
-      audio_driver_data.audio_rate.source_ratio.original * adjust;
+   audio_driver_data.source_ratio.current = 
+      audio_driver_data.source_ratio.original * adjust;
 
 #if 0
    RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
-         audio_driver_data.audio_rate.source_ratio.current,
-         audio_driver_data.audio_rate.source_ratio.original);
+         audio_driver_data.source_ratio.current,
+         audio_driver_data.source_ratio.original);
 #endif
 }
 
@@ -537,19 +532,19 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       return true;
    if (!audio_driver_is_active())
       return false;
-   if (!audio_driver_data.data)
+   if (!audio_driver_input_data)
       return false;
 
    performance_counter_init(&audio_convert_s16, "audio_convert_s16");
    performance_counter_start(&audio_convert_s16);
-   convert_s16_to_float(audio_driver_data.data, data, samples,
+   convert_s16_to_float(audio_driver_input_data, data, samples,
          audio_driver_volume_gain);
    performance_counter_stop(&audio_convert_s16);
 
-   src_data.data_in               = audio_driver_data.data;
+   src_data.data_in               = audio_driver_input_data;
    src_data.input_frames          = samples >> 1;
 
-   dsp_data.input                 = audio_driver_data.data;
+   dsp_data.input                 = audio_driver_input_data;
    dsp_data.input_frames          = samples >> 1;
 
    if (audio_driver_dsp)
@@ -568,10 +563,10 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    src_data.data_out = audio_driver_output_samples_buf;
 
-   if (audio_driver_data.audio_rate.control)
+   if (audio_driver_data.control)
       audio_driver_readjust_input_rate();
 
-   src_data.ratio = audio_driver_data.audio_rate.source_ratio.current;
+   src_data.ratio = audio_driver_data.source_ratio.current;
 
    if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
       src_data.ratio *= settings->slowmotion_ratio;
@@ -655,8 +650,8 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
  **/
 void audio_driver_sample_rewind(int16_t left, int16_t right)
 {
-   audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] = right;
-   audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] = left;
+   audio_driver_rewind_buf[--audio_driver_rewind_ptr] = right;
+   audio_driver_rewind_buf[--audio_driver_rewind_ptr] = left;
 }
 
 /**
@@ -678,7 +673,7 @@ size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames)
    size_t samples   = frames << 1;
 
    for (i = 0; i < samples; i++)
-      audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] = data[i];
+      audio_driver_rewind_buf[--audio_driver_rewind_ptr] = data[i];
 
    return frames;
 }
@@ -698,7 +693,7 @@ void audio_driver_dsp_filter_free(void)
 void audio_driver_dsp_filter_init(const char *device)
 {
    audio_driver_dsp = rarch_dsp_filter_new(
-         device, audio_driver_data.audio_rate.input);
+         device, audio_driver_data.input);
 
    if (!audio_driver_dsp)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
@@ -722,14 +717,14 @@ void audio_driver_monitor_adjust_system_rates(void)
    if (!info || info->sample_rate <= 0.0)
       return;
 
-   timing_skew        = fabs(1.0f - info->fps / settings->video.refresh_rate);
-   audio_driver_data.audio_rate.input = info->sample_rate;
+   timing_skew             = fabs(1.0f - info->fps / settings->video.refresh_rate);
+   audio_driver_data.input = info->sample_rate;
 
    if (timing_skew <= settings->audio.max_timing_skew)
-      audio_driver_data.audio_rate.input *= (settings->video.refresh_rate / info->fps);
+      audio_driver_data.input *= (settings->video.refresh_rate / info->fps);
 
    RARCH_LOG("Set audio input rate to: %.2f Hz.\n",
-         audio_driver_data.audio_rate.input);
+         audio_driver_data.input);
 }
 
 void audio_driver_setup_rewind(void)
@@ -737,14 +732,14 @@ void audio_driver_setup_rewind(void)
    unsigned i;
 
    /* Push audio ready to be played. */
-   audio_driver_data.rewind.ptr = audio_driver_data.rewind.size;
+   audio_driver_rewind_ptr = audio_driver_rewind_size;
 
    for (i = 0; i < audio_driver_data_ptr; i += 2)
    {
-      audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] =
+      audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
          audio_driver_output_samples_conv_buf[i + 1];
 
-      audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] =
+      audio_driver_rewind_buf[--audio_driver_rewind_ptr] =
          audio_driver_output_samples_conv_buf[i + 0];
    }
 
@@ -837,7 +832,7 @@ bool audio_driver_init_resampler(void)
          &audio_driver_resampler_data,
          &audio_driver_resampler,
          settings->audio.resampler,
-         audio_driver_data.audio_rate.source_ratio.original);
+         audio_driver_data.source_ratio.original);
 }
 
 void audio_driver_process_resampler(void *data)
@@ -900,10 +895,10 @@ void audio_driver_monitor_set_rate(void)
 {
    settings_t *settings = config_get_ptr();
    double new_src_ratio = (double)settings->audio.out_rate / 
-      audio_driver_data.audio_rate.input;
+      audio_driver_data.input;
 
-   audio_driver_data.audio_rate.source_ratio.original = new_src_ratio;
-   audio_driver_data.audio_rate.source_ratio.current  = new_src_ratio;
+   audio_driver_data.source_ratio.original = new_src_ratio;
+   audio_driver_data.source_ratio.current  = new_src_ratio;
 }
 
 bool audio_driver_callback(void)
@@ -976,8 +971,8 @@ void audio_driver_frame_is_reverse(void)
 {
    /* We just rewound. Flush rewind audio buffer. */
    audio_driver_flush(
-         audio_driver_data.rewind.buf + audio_driver_data.rewind.ptr,
-         audio_driver_data.rewind.size - audio_driver_data.rewind.ptr);
+         audio_driver_rewind_buf + audio_driver_rewind_ptr,
+         audio_driver_rewind_size - audio_driver_rewind_ptr);
 }
 
 void audio_driver_destroy_data(void)
