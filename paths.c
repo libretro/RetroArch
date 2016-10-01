@@ -492,24 +492,24 @@ void path_fill_names(void)
    }
 }
 
-char *path_get_ptr(enum rarch_path_type type)
+char *path_get_record_ptr(void)
 {
-   switch (type)
-   {
-      case RARCH_PATH_RECORD:
-         return path_record;
-      case RARCH_PATH_RECORD_CONFIG:
-         return path_record_config;
-      case RARCH_PATH_CORE:
-         return path_libretro;
-      case RARCH_PATH_SERVER:
-         return path_server;
-      case RARCH_PATH_NONE:
-      default:
-         break;
-   }
+   return path_record;
+}
 
-   return NULL;
+char *path_get_record_config_ptr(void)
+{
+   return path_record_config;
+}
+
+char *path_get_core_ptr(void)
+{
+   return path_libretro;
+}
+
+char *path_get_server_ptr(void)
+{
+   return path_server;
 }
 
 const char *path_get(enum rarch_path_type type)
