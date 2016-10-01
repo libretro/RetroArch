@@ -1131,11 +1131,9 @@ static void config_set_defaults(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      global_t *global = global_get_ptr();
-
       settings->input.joypad_map[i] = i;
       settings->input.analog_dpad_mode[i] = ANALOG_DPAD_NONE;
-      if (!global->has_set.libretro_device[i])
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
          settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
    }
 
@@ -1874,7 +1872,7 @@ static bool config_load_file(const char *path, bool set_defaults,
       snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, input.analog_dpad_mode[i], buf);
 
-      if (!global->has_set.libretro_device[i])
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
       {
          snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
          CONFIG_GET_INT_BASE(conf, settings, input.libretro_device[i], buf);

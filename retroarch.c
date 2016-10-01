@@ -393,9 +393,11 @@ static void retroarch_print_help(const char *arg0)
 static void retroarch_parse_input(int argc, char *argv[])
 {
    const char *optstring = NULL;
-   global_t  *global     = global_get_ptr();
-   settings_t *settings  = config_get_ptr();
    bool explicit_menu    = false;
+   settings_t *settings  = config_get_ptr();
+#ifdef HAVE_NETWORKING
+   global_t  *global     = global_get_ptr();
+#endif
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
@@ -519,6 +521,7 @@ static void retroarch_parse_input(int argc, char *argv[])
 
          case 'd':
          {
+            unsigned new_port;
             unsigned id = 0;
             struct string_list *list = string_split(optarg, ":");
 
@@ -537,12 +540,17 @@ static void retroarch_parse_input(int argc, char *argv[])
                retroarch_print_help(argv[0]);
                retroarch_fail(1, "retroarch_parse_input()");
             }
-            settings->input.libretro_device[port - 1] = id;
-            global->has_set.libretro_device[port - 1] = true;
+            new_port = port -1;
+            settings->input.libretro_device[new_port] = id;
+
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
             break;
          }
 
          case 'A':
+         {
+            unsigned new_port;
             port = strtol(optarg, NULL, 0);
             if (port < 1 || port > MAX_USERS)
             {
@@ -550,8 +558,12 @@ static void retroarch_parse_input(int argc, char *argv[])
                retroarch_print_help(argv[0]);
                retroarch_fail(1, "retroarch_parse_input()");
             }
-            settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
-            global->has_set.libretro_device[port - 1] = true;
+            new_port = port - 1;
+
+            settings->input.libretro_device[new_port] = RETRO_DEVICE_ANALOG;
+            retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
+         }
             break;
 
          case 's':
@@ -577,16 +589,21 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'N':
-            port = strtol(optarg, NULL, 0);
-            if (port < 1 || port > MAX_USERS)
             {
-               RARCH_ERR("%s\n",
-                     msg_hash_to_str(MSG_VALUE_DISCONNECT_DEVICE_FROM_A_VALID_PORT));
-               retroarch_print_help(argv[0]);
-               retroarch_fail(1, "retroarch_parse_input()");
+               unsigned new_port;
+               port = strtol(optarg, NULL, 0);
+               if (port < 1 || port > MAX_USERS)
+               {
+                  RARCH_ERR("%s\n",
+                        msg_hash_to_str(MSG_VALUE_DISCONNECT_DEVICE_FROM_A_VALID_PORT));
+                  retroarch_print_help(argv[0]);
+                  retroarch_fail(1, "retroarch_parse_input()");
+               }
+               new_port = port - 1;
+               settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
+               retroarch_override_setting_set(
+                     RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &new_port);
             }
-            settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
-            global->has_set.libretro_device[port - 1] = true;
             break;
 
          case 'c':

@@ -136,11 +136,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   struct
-   {
-      bool libretro_device[MAX_USERS];
-   } has_set;
-   
 #ifdef HAVE_NETWORKING
    /* Netplay. */
    struct

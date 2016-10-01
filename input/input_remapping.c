@@ -21,6 +21,7 @@
 #include "input_remapping.h"
 #include "../configuration.h"
 #include "../paths.h"
+#include "../retroarch.h"
 #include "../runloop.h"
 
 /**
@@ -36,7 +37,6 @@ bool input_remapping_load_file(void *data, const char *path)
    unsigned i, j;
    config_file_t *conf  = (config_file_t*)data;
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
 
    if (!conf ||  string_is_empty(path))
       return false;
@@ -88,7 +88,7 @@ bool input_remapping_load_file(void *data, const char *path)
       snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, input.analog_dpad_mode[i], buf);
 
-      if (!global->has_set.libretro_device[i])
+      if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
       {
          snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
          CONFIG_GET_INT_BASE(conf, settings, input.libretro_device[i], buf);
