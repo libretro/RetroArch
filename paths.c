@@ -455,6 +455,10 @@ const char *path_get(enum rarch_path_type type)
 {
    switch (type)
    {
+      case RARCH_PATH_CONTENT:
+         return path_content;
+      case RARCH_PATH_DEFAULT_SHADER_PRESET:
+         return path_default_shader_preset;
       case RARCH_PATH_BASENAME:
          return path_main_basename;
       case RARCH_PATH_CORE_OPTIONS:
@@ -473,8 +477,8 @@ const char *path_get(enum rarch_path_type type)
          break;
       case RARCH_PATH_CORE:
          return path_libretro;
-      default:
       case RARCH_PATH_NONE:
+      case RARCH_PATH_NAMES:
          break;
    }
 
@@ -517,6 +521,10 @@ bool path_set(enum rarch_path_type type, const char *path)
 
    switch (type)
    {
+      case RARCH_PATH_BASENAME:
+         strlcpy(path_main_basename, path,
+               sizeof(path_main_basename));
+         break;
       case RARCH_PATH_NAMES:
          path_set_names(path);
          break;
@@ -548,7 +556,6 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(path_content, path,
                sizeof(path_content));
          break;
-      default:
       case RARCH_PATH_NONE:
          break;
    }
@@ -560,6 +567,10 @@ bool path_is_empty(enum rarch_path_type type)
 {
    switch (type)
    {
+      case RARCH_PATH_DEFAULT_SHADER_PRESET:
+         if (string_is_empty(path_default_shader_preset))
+            return true;
+         break;
       case RARCH_PATH_SUBSYSTEM:
          if (string_is_empty(subsystem_path))
             return true;
@@ -576,9 +587,20 @@ bool path_is_empty(enum rarch_path_type type)
          if (string_is_empty(path_config_append_file))
             return true;
          break;
+      case RARCH_PATH_CONTENT:
+         if (string_is_empty(path_content))
+            return true;
+         break;
       case RARCH_PATH_CORE:
-         return !path_libretro[0];
-      default:
+         if (string_is_empty(path_libretro))
+            return true;
+         break;
+      case RARCH_PATH_BASENAME:
+         if (string_is_empty(path_main_basename))
+            return true;
+         break;
+      case RARCH_PATH_NONE:
+      case RARCH_PATH_NAMES:
          break;
    }
 
@@ -621,7 +643,8 @@ void path_clear(enum rarch_path_type type)
       case RARCH_PATH_CONFIG_APPEND:
          *path_config_append_file = '\0';
          break;
-      default:
+      case RARCH_PATH_NONE:
+      case RARCH_PATH_NAMES:
          break;
    }
 }
