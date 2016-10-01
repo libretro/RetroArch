@@ -1296,6 +1296,16 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
 {
    switch (enum_idx)
    {
+      case RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE:
+         {
+            unsigned *val = (unsigned*)data;
+            if (val)
+            {
+               unsigned bit = *val;
+               return BIT128_GET(has_set_libretro_device, bit);
+            }
+         }
+         break;
       case RARCH_OVERRIDE_SETTING_VERBOSITY:
          return has_set_verbosity;
       case RARCH_OVERRIDE_SETTING_LIBRETRO:
