@@ -66,17 +66,6 @@
 
 typedef struct video_driver_state
 {
-   struct
-   {
-      retro_time_t samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
-      uint64_t count;
-   } frame_time;
-
-   enum retro_pixel_format pix_fmt;
-
-   unsigned video_width;
-   unsigned video_height;
-   float aspect_ratio;
 
    struct
    {
@@ -112,9 +101,17 @@ static uintptr_t video_driver_window;
 
 static video_driver_state_t video_driver_state;
 
+static enum retro_pixel_format video_driver_pix_fmt;
+
+static float video_driver_aspect_ratio;
+static unsigned video_driver_width                       = 0;
+static unsigned video_driver_height                      = 0;
+
 static enum rarch_display_type video_driver_display_type = RARCH_DISPLAY_NONE;
 static char video_driver_title_buf[64]                   = {0};
 
+static retro_time_t video_driver_frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
+static uint64_t video_driver_frame_time_count            = 0;
 static uint64_t video_driver_frame_count                 = 0;
 
 static void *video_driver_data                           = NULL;
@@ -479,7 +476,7 @@ static void video_monitor_compute_fps_statistics(void)
       return;
    }
 
-   if (video_driver_state.frame_time.count < 
+   if (video_driver_frame_time_count < 
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
       RARCH_LOG(
@@ -611,7 +608,7 @@ static bool init_video(void)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   init_video_filter(video_driver_state.pix_fmt);
+   init_video_filter(video_driver_pix_fmt);
    command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
 
    if (av_info)
@@ -696,7 +693,7 @@ static bool init_video(void)
    video.input_scale  = scale;
    video.rgb32        = video_driver_state.filter.filter ?
       video_driver_state.filter.out_rgb32 :
-      (video_driver_state.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+      (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    /* Reset video frame count */
    video_driver_frame_count = 0;
@@ -890,17 +887,17 @@ void video_driver_cached_frame_get(const void **data, unsigned *width,
 void video_driver_get_size(unsigned *width, unsigned *height)
 {
    if (width)
-      *width  = video_driver_state.video_width;
+      *width  = video_driver_width;
    if (height)
-      *height = video_driver_state.video_height;
+      *height = video_driver_height;
 }
 
 void video_driver_set_size(unsigned *width, unsigned *height)
 {
    if (width)
-      video_driver_state.video_width  = *width;
+      video_driver_width  = *width;
    if (height)
-      video_driver_state.video_height = *height;
+      video_driver_height = *height;
 }
 
 /**
@@ -944,14 +941,14 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    retro_time_t accum   = 0, avg, accum_var = 0;
    settings_t *settings = config_get_ptr();
    unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
-         video_driver_state.frame_time.count);
+         video_driver_frame_time_count);
 
    if (settings->video.threaded || (samples < 2))
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */
    for (i = 0; i < samples; i++)
-      accum += video_driver_state.frame_time.samples[i];
+      accum += video_driver_frame_time_samples[i];
 
 #if 0
    for (i = 0; i < samples; i++)
@@ -964,7 +961,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    /* Drop first measurement. It is likely to be bad. */
    for (i = 0; i < samples; i++)
    {
-      retro_time_t diff = video_driver_state.frame_time.samples[i] - avg;
+      retro_time_t diff = video_driver_frame_time_samples[i] - avg;
       accum_var += diff * diff;
    }
 
@@ -1003,10 +1000,10 @@ bool video_monitor_get_fps(char *buf, size_t size,
       static float last_fps;
       bool ret             = false;
       settings_t *settings = config_get_ptr();
-      unsigned write_index = video_driver_state.frame_time.count++ &
+      unsigned write_index = video_driver_frame_time_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
 
-      video_driver_state.frame_time.samples[write_index] = new_time - fps_time;
+      video_driver_frame_time_samples[write_index] = new_time - fps_time;
       fps_time = new_time;
 
       if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
@@ -1056,12 +1053,12 @@ bool video_monitor_get_fps(char *buf, size_t size,
 
 float video_driver_get_aspect_ratio(void)
 {
-   return video_driver_state.aspect_ratio;
+   return video_driver_aspect_ratio;
 }
 
 void video_driver_set_aspect_ratio_value(float value)
 {
-   video_driver_state.aspect_ratio = value;
+   video_driver_aspect_ratio = value;
 }
 
 static bool video_driver_frame_filter(const void *data,
@@ -1103,12 +1100,12 @@ rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
 
 enum retro_pixel_format video_driver_get_pixel_format(void)
 {
-   return video_driver_state.pix_fmt;
+   return video_driver_pix_fmt;
 }
 
 void video_driver_set_pixel_format(enum retro_pixel_format fmt)
 {
-   video_driver_state.pix_fmt = fmt;
+   video_driver_pix_fmt = fmt;
 }
 
 /**
@@ -1575,7 +1572,7 @@ void video_driver_deinit(void)
 
 void video_driver_monitor_reset(void)
 {
-   video_driver_state.frame_time.count = 0;
+   video_driver_frame_time_count = 0;
 }
 
 void video_driver_set_aspect_ratio(void)
