@@ -180,8 +180,12 @@ bool dir_is_empty(enum rarch_dir_type type)
          return string_is_empty(dir_savefile);
       case RARCH_DIR_SAVEFILE:
          return string_is_empty(dir_savefile);
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         return string_is_empty(current_savefile_dir);
       case RARCH_DIR_SAVESTATE:
          return string_is_empty(dir_savestate);
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         return string_is_empty(current_savestate_dir);
       case RARCH_DIR_OSK_OVERLAY:
          return string_is_empty(dir_osk_overlay);
       case RARCH_DIR_NONE:
@@ -222,8 +226,14 @@ void dir_clear(enum rarch_dir_type type)
       case RARCH_DIR_SAVEFILE:
          *dir_savefile = '\0';
          break;
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         *current_savefile_dir = '\0';
+         break;
       case RARCH_DIR_SAVESTATE:
          *dir_savestate = '\0';
+         break;
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         *current_savestate_dir = '\0';
          break;
       case RARCH_DIR_SYSTEM:
          *dir_system = '\0';
