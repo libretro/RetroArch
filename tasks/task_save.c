@@ -924,7 +924,8 @@ static void content_load_and_save_state_cb(void *task_data,
  * @size : the total size of the save state
  * @load_to_backup_buffer : If true, the state will be loaded into undo_save_buf.
  *
- * Create a new task to both load and save the content state.
+ * Create a new task to load current state first into a backup buffer (for undo)
+ * and then save the content state.
  **/
 static void task_push_load_and_save_state(const char *path, void *data, size_t size, bool load_to_backup_buffer)
 {
