@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -44,7 +44,7 @@ bool content_load_ram_file(unsigned slot);
 bool content_save_ram_file(unsigned slot);
 
 /* Load a state from disk to memory. */
-bool content_load_state(const char* path, bool load_to_backup_buffer);
+bool content_load_state(const char* path, bool load_to_backup_buffer, bool autoload);
 
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk);

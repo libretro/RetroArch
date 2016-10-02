@@ -32,6 +32,7 @@
 #include <streams/file_stream.h>
 #include <rthreads/rthreads.h>
 #include <file/file_path.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../core.h"
@@ -46,7 +47,7 @@
 #include "../verbosity.h"
 #include "tasks_internal.h"
 
-/* TODO/FIXME - turn this into actual task */
+#define SAVE_STATE_CHUNK 4096
 
 static struct string_list *task_save_files = NULL;
 
@@ -69,6 +70,22 @@ struct sram_block
    void *data;
    size_t size;
 };
+
+typedef struct
+{
+   RFILE *file;
+   char path[PATH_MAX_LENGTH];
+   void *data;
+   void *undo_data;
+   ssize_t size;
+   ssize_t undo_size;
+   ssize_t written;
+   ssize_t bytes_read;
+   bool load_to_backup_buffer;
+   bool autoload;
+} save_task_state_t;
+
+typedef save_task_state_t load_task_data_t;
 
 /* Holds the previous saved state
  * Can be restored to disk with undo_save_state(). */
@@ -398,7 +415,7 @@ bool content_undo_load_state(void)
             memcpy(blocks[i].data, ptr, blocks[i].size);
       }
    }
-   
+
    /* We need to make a temporary copy of the buffer, to allow the swap below */
    temp_data              = malloc(undo_load_buf.size);
    temp_data_size         = undo_load_buf.size;
@@ -444,7 +461,7 @@ bool content_undo_load_state(void)
       RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
          undo_load_buf.path);
-   } 
+   }
 
    return ret;
 }
@@ -479,127 +496,237 @@ bool content_undo_save_state(void)
    return ret;
 }
 
-
-/* TODO/FIXME - turn this into actual task */
-
 /**
- * save_state:
- * @path      : path of saved state that shall be written to.
- * @save_to_disk: If false, saves the state onto undo_load_buf.
- * Save a state from memory to disk.
+ * task_save_handler_finished:
+ * @task : the task to finish
+ * @state : the state associated with this task
  *
- * Returns: true if successful, false otherwise.
+ * Close the save state file and finish the task.
  **/
-bool content_save_state(const char *path, bool save_to_disk)
+static void task_save_handler_finished(retro_task_t *task,
+      save_task_state_t *state)
 {
-   retro_ctx_serialize_info_t serial_info;
-   retro_ctx_size_info_t info;
-   bool ret    = false;
-   void *data  = NULL;
+   task->finished = true;
 
-   core_serialize_size(&info);
+   filestream_close(state->file);
 
-   RARCH_LOG("%s: \"%s\".\n",
-         msg_hash_to_str(MSG_SAVING_STATE),
-         path);
+   if (!task->error && task->cancelled)
+      task->error = strdup("Task canceled");
 
-   if (info.size == 0)
-      return false;
+   if (state->data)
+      free(state->data);
 
-   data = malloc(info.size);
-
-   if (!data)
-      return false;
-
-   RARCH_LOG("%s: %d %s.\n",
-         msg_hash_to_str(MSG_STATE_SIZE),
-         (int)info.size,
-         msg_hash_to_str(MSG_BYTES));
-
-   serial_info.data = data;
-   serial_info.size = info.size;
-   ret              = core_serialize(&serial_info);
-
-   if (ret)
-   {
-      if (save_to_disk)
-      {
-         if (path_file_exists(path))
-         {
-            /* Before overwritting the savestate file, load it into a buffer
-            to allow undo_save_state() to work */
-            /* TODO/FIXME - Use msg_hash_to_str here */
-            RARCH_LOG("%s\n",
-               "File already exists. Saving to backup buffer...");
-
-            content_load_state(path, true);
-         }
-
-         ret = filestream_write_file(path, data, info.size);
-      }
-      
-      else 
-      {
-         /* save_to_disk is false, which means we are saving the state
-         in undo_load_buf to allow content_undo_load_state() to restore it */
-
-         /* If we were holding onto an old state already, clean it up first */
-         if (undo_load_buf.data)
-         {
-            free(undo_load_buf.data);
-            undo_load_buf.data = NULL;
-         }
-
-         undo_load_buf.data = malloc(info.size);
-         if (!undo_load_buf.data)
-         {
-            free(data);
-            return false;
-         }
-
-         memcpy(undo_load_buf.data, data, info.size);
-         undo_load_buf.size = info.size;
-         strlcpy(undo_load_buf.path, path, sizeof(undo_load_buf.path));
-      }
-   }
-   else
-   {
-      RARCH_ERR("%s \"%s\".\n",
-            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
-            path);
-   }
-
-   free(data);
-
-   return ret;
+   free(state);
 }
 
 /**
- * content_load_state:
+ * task_load_handler_finished:
+ * @task : the task to finish
+ * @state : the state associated with this task
+ *
+ * Close the loaded state file and finish the task.
+ **/
+static void task_load_handler_finished(retro_task_t *task,
+      save_task_state_t *state)
+{
+   load_task_data_t *task_data = NULL;
+   task->finished = true;
+
+   filestream_close(state->file);
+
+   if (!task->error && task->cancelled)
+      task->error = strdup("Task canceled");
+
+   task_data = (load_task_data_t*)calloc(1, sizeof(*task_data));
+   memcpy(task_data, state, sizeof(*task_data));
+
+   task->task_data = task_data;
+
+   free(state);
+}
+
+/**
+ * task_save_handler:
+ * @task : the task being worked on
+ *
+ * Write a chunk of data to the save state file.
+ **/
+static void task_save_handler(retro_task_t *task)
+{
+   save_task_state_t *state = (save_task_state_t*)task->state;
+   int written;
+   ssize_t remaining;
+
+   if (!state->file)
+   {
+      state->file = filestream_open(state->path, RFILE_MODE_WRITE, -1);
+
+      if (!state->file)
+         return;
+   }
+
+   remaining = MIN(state->size - state->written, SAVE_STATE_CHUNK);
+
+   written = filestream_write(state->file, state->data + state->written, remaining);
+
+   state->written += written;
+   task->progress = (state->written / (float)state->size) * 100;
+
+   if (task->cancelled || written != remaining)
+   {
+      char err[PATH_MAX_LENGTH] = {0};
+      snprintf(err, sizeof(err), "%s %s", msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), state->path);
+      task->error = strdup(err);
+      task_save_handler_finished(task, state);
+      return;
+   }
+
+   if (state->written == state->size)
+   {
+      settings_t *settings = config_get_ptr();
+      char msg[1024] = {0};
+
+      task_save_handler_finished(task, state);
+
+      if (task->title)
+         free(task->title);
+
+      task->title = NULL;
+
+      if (settings->state_slot < 0)
+         snprintf(msg, sizeof(msg), "%s #-1 (auto).",
+               msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
+      else
+         snprintf(msg, sizeof(msg), "%s #%d.", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
+               settings->state_slot);
+
+      runloop_msg_queue_push(msg, 2, 180, true);
+
+      return;
+   }
+}
+
+/**
+ * task_load_handler:
+ * @task : the task being worked on
+ *
+ * Load a chunk of data from the save state file.
+ **/
+static void task_load_handler(retro_task_t *task)
+{
+   save_task_state_t *state = (save_task_state_t*)task->state;
+   ssize_t remaining;
+   ssize_t bytes_read;
+
+   if (!state->file)
+   {
+      state->file = filestream_open(state->path, RFILE_MODE_READ, -1);
+
+      if (!state->file)
+         return;
+
+      if (filestream_seek(state->file, 0, SEEK_END) != 0)
+         return;
+
+      state->size = filestream_tell(state->file);
+
+      if (state->size < 0)
+         return;
+
+      filestream_rewind(state->file);
+
+      state->data = malloc(state->size + 1);
+
+      if (!state->data)
+         return;
+   }
+
+   remaining = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
+
+   bytes_read = filestream_read(state->file, state->data + state->bytes_read, remaining);
+
+   state->bytes_read += bytes_read;
+   task->progress = (state->bytes_read / (float)state->size) * 100;
+
+   if (task->cancelled || bytes_read != remaining)
+   {
+      if (state->autoload)
+      {
+         char msg[1024] = {0};
+         snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" failed.",
+               state->path);
+         task->error = strdup(msg);
+      }
+      else
+      {
+         task->error = strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE));
+      }
+
+      free(state->data);
+      state->data = NULL;
+      task_load_handler_finished(task, state);
+      return;
+   }
+
+   if (state->bytes_read == state->size)
+   {
+      settings_t *settings = config_get_ptr();
+      char msg[1024] = {0};
+
+      if (task->title)
+         free(task->title);
+
+      task->title = NULL;
+
+      if (state->autoload)
+      {
+         snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" succeeded.",
+               state->path);
+         runloop_msg_queue_push(msg, 1, 180, true);
+      }
+      else
+      {
+         if (settings->state_slot < 0)
+            snprintf(msg, sizeof(msg), "%s #-1 (auto).",
+                  msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
+         else
+            snprintf(msg, sizeof(msg), "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
+                  settings->state_slot);
+
+         runloop_msg_queue_push(msg, 2, 180, true);
+      }
+
+      task_load_handler_finished(task, state);
+
+      return;
+   }
+}
+
+/**
+ * content_load_state_cb:
  * @path      : path that state will be loaded from.
- * @load_to_backup_buffer: If true, the state will be loaded into undo_save_buf.
  * Load a state from disk to memory.
  *
- * Returns: true if successful, false otherwise.
- *
- *
  **/
-bool content_load_state(const char *path, bool load_to_backup_buffer)
+static void content_load_state_cb(void *task_data,
+                           void *user_data, const char *error)
 {
+   load_task_data_t *load_data = (load_task_data_t*)task_data;
    unsigned i;
-   ssize_t size;
+   bool ret;
+   ssize_t size = load_data->size;
    retro_ctx_serialize_info_t serial_info;
    unsigned num_blocks       = 0;
-   void *buf                 = NULL;
+   void *buf                 = load_data->data;
    struct sram_block *blocks = NULL;
-   bool ret                  = filestream_read_file(path, &buf, &size);
    settings_t *settings      = config_get_ptr();
+   char err_buf[1024] = {0};
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
-         path);
+         load_data->path);
 
-   if (!ret || size < 0)
+   if (size < 0 || !buf)
       goto error;
 
    RARCH_LOG("%s: %u %s.\n",
@@ -609,7 +736,7 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
 
    /* This means we're backing up the file in memory, so content_undo_save_state()
    can restore it */
-   if (load_to_backup_buffer)
+   if (load_data->load_to_backup_buffer)
    {
       /* If we were previously backing up a file, let go of it first */
       if (undo_save_buf.data)
@@ -624,10 +751,11 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
 
       memcpy(undo_save_buf.data, buf, size);
       undo_save_buf.size = size;
-      strlcpy(undo_save_buf.path, path, sizeof(undo_save_buf.path));
+      strlcpy(undo_save_buf.path, load_data->path, sizeof(undo_save_buf.path));
 
       free(buf);
-      return true;
+      free(load_data);
+      return;
    }
 
    if (settings->block_sram_overwrite && task_save_files
@@ -681,7 +809,7 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
 
    serial_info.data_const = buf;
    serial_info.size       = size;
-   
+
    /* Backup the current state so we can undo this load */
    content_save_state("RAM", false);
 
@@ -708,20 +836,243 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
    for (i = 0; i < num_blocks; i++)
       free(blocks[i].data);
    free(blocks);
-   
+
    if (!ret)
       goto error;
 
    free(buf);
+   free(load_data);
 
-   return true;
+   return;
 
 error:
+   if (load_data->autoload)
+      snprintf(err_buf, sizeof(err_buf), "Auto-loading savestate from \"%s\" failed.",
+            load_data->path);
+   else
+      snprintf(err_buf, sizeof(err_buf), "%s \"%s\".\n",
+                          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
+                          load_data->path);
+
+   runloop_msg_queue_push(err_buf, 1, 180, true);
+
    RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
+         load_data->path);
+   if (buf)
+      free(buf);
+   free(load_data);
+   return;
+}
+
+/**
+ * task_push_save_state:
+ * @path : file path of the save state
+ * @data : the save state data to write
+ * @size : the total size of the save state
+ *
+ * Create a new task to save the content state.
+ **/
+static void task_push_save_state(const char *path, void *data, size_t size)
+{
+   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
+
+   if (!task || !state)
+   {
+      if (data)
+         free(data);
+      return;
+   }
+
+   strlcpy(state->path, path, sizeof(state->path));
+   state->data = data;
+   state->size = size;
+
+   task->state = state;
+   task->handler = task_save_handler;
+   task->title = strdup(msg_hash_to_str(MSG_SAVING_STATE));
+
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+}
+
+/**
+ * content_load_and_save_state_cb:
+ * @path      : path that state will be loaded from.
+ * Load then save a state.
+ *
+ **/
+static void content_load_and_save_state_cb(void *task_data,
+                           void *user_data, const char *error)
+{
+   load_task_data_t *load_data = (load_task_data_t*)task_data;
+   char *path = strdup(load_data->path);
+   void *data = load_data->undo_data;
+   size_t size = load_data->undo_size;
+
+   content_load_state_cb(task_data, user_data, error);
+
+   task_push_save_state(path, data, size);
+
+   free(path);
+}
+
+/**
+ * task_push_load_and_save_state:
+ * @path : file path of the save state
+ * @data : the save state data to write
+ * @size : the total size of the save state
+ * @load_to_backup_buffer : If true, the state will be loaded into undo_save_buf.
+ *
+ * Create a new task to both load and save the content state.
+ **/
+static void task_push_load_and_save_state(const char *path, void *data, size_t size, bool load_to_backup_buffer)
+{
+   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
+
+   if (!task || !state)
+   {
+      if (data)
+         free(data);
+      return;
+   }
+
+   strlcpy(state->path, path, sizeof(state->path));
+   state->load_to_backup_buffer = load_to_backup_buffer;
+   state->undo_size = size;
+   state->undo_data = data;
+
+   task->state = state;
+
+   task->handler = task_load_handler;
+   task->callback = content_load_and_save_state_cb;
+   task->title = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+}
+
+/**
+ * content_save_state:
+ * @path      : path of saved state that shall be written to.
+ * @save_to_disk: If false, saves the state onto undo_load_buf.
+ * Save a state from memory to disk.
+ *
+ * Returns: true if successful, false otherwise.
+ **/
+bool content_save_state(const char *path, bool save_to_disk)
+{
+   retro_ctx_serialize_info_t serial_info;
+   retro_ctx_size_info_t info;
+   bool ret    = false;
+   void *data  = NULL;
+
+   core_serialize_size(&info);
+
+   RARCH_LOG("%s: \"%s\".\n",
+         msg_hash_to_str(MSG_SAVING_STATE),
          path);
-   free(buf);
-   return false;
+
+   if (info.size == 0)
+      return false;
+
+   data = malloc(info.size);
+
+   if (!data)
+      return false;
+
+   RARCH_LOG("%s: %d %s.\n",
+         msg_hash_to_str(MSG_STATE_SIZE),
+         (int)info.size,
+         msg_hash_to_str(MSG_BYTES));
+
+   serial_info.data = data;
+   serial_info.size = info.size;
+   ret              = core_serialize(&serial_info);
+
+   if (ret)
+   {
+      if (save_to_disk)
+      {
+         if (path_file_exists(path))
+         {
+            /* Before overwritting the savestate file, load it into a buffer
+            to allow undo_save_state() to work */
+            /* TODO/FIXME - Use msg_hash_to_str here */
+            RARCH_LOG("%s\n",
+               "File already exists. Saving to backup buffer...");
+
+            task_push_load_and_save_state(path, data, info.size, true);
+         }
+         else
+            task_push_save_state(path, data, info.size);
+      }
+      else
+      {
+         /* save_to_disk is false, which means we are saving the state
+         in undo_load_buf to allow content_undo_load_state() to restore it */
+
+         /* If we were holding onto an old state already, clean it up first */
+         if (undo_load_buf.data)
+         {
+            free(undo_load_buf.data);
+            undo_load_buf.data = NULL;
+         }
+
+         undo_load_buf.data = malloc(info.size);
+         if (!undo_load_buf.data)
+         {
+            free(data);
+            return false;
+         }
+
+         memcpy(undo_load_buf.data, data, info.size);
+         free(data);
+         undo_load_buf.size = info.size;
+         strlcpy(undo_load_buf.path, path, sizeof(undo_load_buf.path));
+      }
+   }
+   else
+   {
+      free(data);
+      RARCH_ERR("%s \"%s\".\n",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
+            path);
+   }
+
+   return ret;
+}
+
+/**
+ * content_load_state:
+ * @path      : path that state will be loaded from.
+ * @load_to_backup_buffer: If true, the state will be loaded into undo_save_buf.
+ * Load a state from disk to memory.
+ *
+ * Returns: true if successful, false otherwise.
+ *
+ *
+ **/
+bool content_load_state(const char *path, bool load_to_backup_buffer, bool autoload)
+{
+   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
+
+   if (!task || !state)
+      return false;
+
+   strlcpy(state->path, path, sizeof(state->path));
+   state->load_to_backup_buffer = load_to_backup_buffer;
+   state->autoload = autoload;
+
+   task->state = state;
+   task->handler = task_load_handler;
+   task->callback = content_load_state_cb;
+   task->title = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+
+   return true;
 }
 
 bool content_rename_state(const char *origin, const char *dest)
@@ -739,7 +1090,7 @@ bool content_rename_state(const char *origin, const char *dest)
 }
 
 /*
-* 
+*
 * TODO/FIXME: Figure out when and where this should be called.
 * As it is, when e.g. closing Gambatte, we get the same printf message 4 times.
 *
@@ -900,7 +1251,7 @@ bool content_save_ram_file(unsigned slot)
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
       RARCH_WARN("Attempting to recover ...\n");
 
-      /* In case the file could not be written to, 
+      /* In case the file could not be written to,
        * the fallback function 'dump_to_file_desperate'
        * will be called. */
       if (!dump_to_file_desperate(mem_info.data, mem_info.size, ram.type))

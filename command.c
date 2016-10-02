@@ -1228,13 +1228,12 @@ static void command_event_load_auto_state(void)
    if (!path_file_exists(savestate_name_auto))
       return;
 
-   ret = content_load_state(savestate_name_auto, false);
+   ret = content_load_state(savestate_name_auto, false, true);
 
    RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
 
    snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.",
          savestate_name_auto, ret ? "succeeded" : "failed");
-   runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 }
 
@@ -1612,19 +1611,7 @@ static void command_event_save_state(const char *path,
    settings_t *settings = config_get_ptr();
 
    if (!content_save_state(path, true))
-   {
-      snprintf(s, len, "%s \"%s\".",
-            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
-            path);
       return;
-   }
-
-   if (settings->state_slot < 0)
-      snprintf(s, len, "%s #-1 (auto).",
-            msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
-   else
-      snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
-            settings->state_slot);
 }
 
 static void command_event_undo_save_state(char *s, size_t len)
@@ -1659,24 +1646,12 @@ static void command_event_load_state(const char *path, char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
-   if (!content_load_state(path, false))
-   {
-      snprintf(s, len, "%s \"%s\".",
-            msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
-            path);
+   if (!content_load_state(path, false, false))
       return;
-   }
 
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
-
-   if (settings->state_slot < 0)
-      snprintf(s, len, "%s #-1 (auto).",
-            msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
-   else
-      snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
-            settings->state_slot);
 }
 
 static void command_event_undo_load_state(char *s, size_t len)
@@ -1713,6 +1688,7 @@ static void command_event_main_state(unsigned cmd)
    char msg[128]              = {0};
    global_t *global           = global_get_ptr();
    settings_t *settings       = config_get_ptr();
+   bool push_msg              = true;
 
    if (settings->state_slot > 0)
       snprintf(path, sizeof(path), "%s%d",
@@ -1731,9 +1707,11 @@ static void command_event_main_state(unsigned cmd)
       {
          case CMD_EVENT_SAVE_STATE:
             command_event_save_state(path, msg, sizeof(msg));
+            push_msg = false;
             break;
          case CMD_EVENT_LOAD_STATE:
             command_event_load_state(path, msg, sizeof(msg));
+            push_msg = false;
             break;
          case CMD_EVENT_UNDO_LOAD_STATE:
             command_event_undo_load_state(msg, sizeof(msg));
@@ -1747,7 +1725,8 @@ static void command_event_main_state(unsigned cmd)
       strlcpy(msg, msg_hash_to_str(
                MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
 
-   runloop_msg_queue_push(msg, 2, 180, true);
+   if (push_msg)
+      runloop_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
 }
 
