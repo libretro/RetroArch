@@ -121,12 +121,11 @@ static void ctr_update_viewport(ctr_video_t* ctr)
 {
    int x                = 0;
    int y                = 0;
-   float device_aspect  = ((float)ctr->vp.full_width) / ctr->vp.full_height;
    float width          = ctr->vp.full_width;
    float height         = ctr->vp.full_height;
    settings_t *settings = config_get_ptr();
-
    float desired_aspect = video_driver_get_aspect_ratio();
+
    if(ctr->rotation & 0x1)
       desired_aspect = 1.0 / desired_aspect;
 
@@ -154,6 +153,7 @@ static void ctr_update_viewport(ctr_video_t* ctr)
 #endif
       {
          float delta;
+         float device_aspect  = ((float)ctr->vp.full_width) / ctr->vp.full_height;
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
