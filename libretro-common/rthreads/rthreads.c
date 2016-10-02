@@ -137,7 +137,14 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, NULL);
    thread_created = !!thread->thread;
 #else
+#if defined(VITA)
+   pthread_attr_t thread_attr;
+   pthread_attr_init(&thread_attr);
+   pthread_attr_setstacksize(&thread_attr , 0x10000 );
+   thread_created = pthread_create(&thread->id, &thread_attr, thread_wrap, data) == 0;
+#else
    thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
+#endif
 #endif
 
    if (!thread_created)
