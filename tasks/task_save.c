@@ -650,7 +650,8 @@ static void task_load_handler_finished(retro_task_t *task,
    load_task_data_t *task_data = NULL;
    task->finished = true;
 
-   filestream_close(state->file);
+   if (state->file)
+      filestream_close(state->file);
 
    if (!task->error && task->cancelled)
       task->error = strdup("Task canceled");
@@ -680,22 +681,22 @@ static void task_load_handler(retro_task_t *task)
       state->file = filestream_open(state->path, RFILE_MODE_READ, -1);
 
       if (!state->file)
-         return;
+         goto error;
 
       if (filestream_seek(state->file, 0, SEEK_END) != 0)
-         return;
+         goto error;
 
       state->size = filestream_tell(state->file);
 
       if (state->size < 0)
-         return;
+         goto error;
 
       filestream_rewind(state->file);
 
       state->data = malloc(state->size + 1);
 
       if (!state->data)
-         return;
+         goto error;
    }
 
    remaining = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
@@ -757,6 +758,11 @@ static void task_load_handler(retro_task_t *task)
 
       return;
    }
+
+   return;
+
+error:
+   task_load_handler_finished(task, state);
 }
 
 /**
