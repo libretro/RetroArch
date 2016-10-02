@@ -976,6 +976,22 @@ struct retro_hw_render_context_negotiation_interface
                                             * so it will be used after SET_HW_RENDER, but before the context_reset callback.
                                             */
 
+/* Struct to query for system files among multiple system directories */
+struct retro_resource_path
+{
+   const char *rel_path;
+   char *base_directory;
+   size_t base_directory_max_len;
+};
+
+#define RETRO_ENVIRONMENT_GET_RESOURCE_DIRECTORY 44
+                                           /* struct retro_resource_path * --
+                                            * Interface to acquire resource paths by a relative filename.
+                                            * 'rel_path' should be set to a filename relative to the system directory.
+                                            * 'base_directory' will be set to the base directory containing the resource or the empty string if unknown.
+                                            * 'base_directory_max_len' is the maximum amount of bytes that can be written to base_directory
+                                            */
+
 #define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
 #define RETRO_MEMDESC_ALIGN_2   (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
