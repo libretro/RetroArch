@@ -61,7 +61,7 @@ static void task_queue_msg_push(unsigned prio, unsigned duration,
 #endif
    char buf[1024];
    va_list ap;
-   
+
    va_start(ap, fmt);
    vsnprintf(buf, sizeof(buf), fmt, ap);
    va_end(ap);
@@ -155,7 +155,7 @@ static void retro_task_regular_cancel(void *task)
    retro_task_t *t = (retro_task_t*)task;
    t->cancelled    = true;
 }
- 
+
 static void retro_task_regular_gather(void)
 {
    retro_task_t *task  = NULL;
@@ -324,7 +324,7 @@ static void retro_task_threaded_cancel(void *task)
    retro_task_t *t;
 
    slock_lock(running_lock);
-   
+
    for (t = tasks_running.front; t; t = t->next)
    {
       if (t == task)
@@ -556,7 +556,7 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
          {
 #ifdef HAVE_THREADS
             bool current_threaded = (impl_current == &impl_threaded);
-            bool want_threaded    = 
+            bool want_threaded    =
                task_queue_ctl(TASK_QUEUE_CTL_IS_THREADED, NULL);
 
             if (want_threaded != current_threaded)
@@ -571,7 +571,7 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
          break;
       case TASK_QUEUE_CTL_PUSH:
          {
-            /* The lack of NULL checks in the following functions 
+            /* The lack of NULL checks in the following functions
              * is proposital to ensure correct control flow by the users. */
             retro_task_t *task = (retro_task_t*)data;
             impl_current->push_running(task);

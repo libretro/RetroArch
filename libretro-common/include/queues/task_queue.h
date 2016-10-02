@@ -37,14 +37,14 @@ enum task_queue_ctl_state
    TASK_QUEUE_CTL_NONE = 0,
 
    /* Deinitializes the task system.
-    * This deinitializes the task system. 
+    * This deinitializes the task system.
     * The tasks that are running at
-    * the moment will stay on hold 
+    * the moment will stay on hold
     * until TASK_QUEUE_CTL_INIT is called again. */
    TASK_QUEUE_CTL_DEINIT,
 
    /* Initializes the task system.
-    * This initializes the task system 
+    * This initializes the task system
     * and chooses an appropriate
     * implementation according to the settings.
     *
@@ -52,7 +52,7 @@ enum task_queue_ctl_state
    TASK_QUEUE_CTL_INIT,
 
    /**
-    * Calls func for every running task 
+    * Calls func for every running task
     * until it returns true.
     * Returns a task or NULL if not found.
     */
@@ -71,7 +71,7 @@ enum task_queue_ctl_state
    TASK_QUEUE_CTL_WAIT,
 
    /* Checks for finished tasks
-    * Takes the finished tasks, if any, 
+    * Takes the finished tasks, if any,
     * and runs their callbacks.
     * This must only be called from the main thread. */
    TASK_QUEUE_CTL_CHECK,
@@ -93,7 +93,7 @@ enum task_queue_ctl_state
    TASK_QUEUE_CTL_UNSET_THREADED,
 
    TASK_QUEUE_CTL_IS_THREADED,
-   
+
    /**
     * Signals a task to end without waiting for
     * it to complete. */
@@ -127,11 +127,11 @@ struct retro_task
     * be called immediately after running the main callback */
    retro_task_handler_t cleanup;
 
-   /* set to true by the handler to signal 
+   /* set to true by the handler to signal
     * the task has finished executing. */
    bool finished;
 
-   /* set to true by the task system 
+   /* set to true by the task system
     * to signal the task *must* end. */
    bool cancelled;
 
@@ -147,14 +147,14 @@ struct retro_task
    /* created and destroyed by the code related to the handler */
    void *state;
 
-   /* created by task handler; destroyed by main loop 
+   /* created by task handler; destroyed by main loop
     * (after calling the callback) */
    char *error;
 
    /* -1 = unmettered, 0-100 progress value */
    int8_t progress;
 
-   /* handler can modify but will be 
+   /* handler can modify but will be
     * free()d automatically if non-NULL. */
    char *title;
 
