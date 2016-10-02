@@ -73,12 +73,12 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                         " \n"
                         );
                   snprintf(u, sizeof(u),
-                        "Der Treiber liest evdev-Ereigniss für Tastatur- \n"
-                        "Unterstützung und kann auch mit  Tastatur-Callbacks, \n"
+                        "Der Treiber liest evdev-Ereignisse für die Tastatur- \n"
+                        "Unterstützung und kann auch mit Tastatur-Callbacks, \n"
                         "Mäusen und Touchpads umgehen. \n"
                         " \n"
                         "Standardmäßig sind die /dev/input-Dateien in den \n"
-                        "meisten Linux-Distribution nur für den Root- \n"
+                        "meisten Linux-Distribution nur vom Root- \n"
                         "Benutzer lesbar (mode 600). Du kannst eine udev- \n"
                         "Regel erstellen, die auch den Zugriff für andere \n"
                         "Benutzer erlaubt.");
@@ -90,7 +90,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                snprintf(s, len,
                      "linuxraw-Eingabetreiber. \n"
                      " \n"
-                     "Dieser Treiber erforder eine aktive TTY-Schnittstelle. \n"
+                     "Dieser Treiber erfordert eine aktive TTY-Schnittstelle. \n"
                      "Tastatur-Ereignisse werden direkt von der TTY gelesen, \n"
                      "was es einfacher, aber weniger flexibel als udev macht. \n"
                      "Mäuse, etc, werden nicht unterstützt. \n"
@@ -133,7 +133,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                "sowie der dazugehörige Core im Verlauf gespeichert. \n"
                " \n"
                "Der Verlauf wird im selben Verzeichnis wie die \n"
-               "RetroArch-Konfigurationsdatei gespeicher. Wenn \n"
+               "RetroArch-Konfigurationsdatei gespeichert. Wenn \n"
                "beim Start keine Konfigurationsdatei geladen wurde, \n"
                "wird keine Verlauf geladen oder gespeichert und nicht \n"
                "im Hauptmenü angezeigt."
@@ -149,7 +149,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "OpenGL-Grafiktreiber. \n"
                   " \n"
                   "Dieser Treiber erlaubt es, neben software- \n"
-                  "gerenderten Cores aus Libretro-GL-Cores zu \n"
+                  "gerenderten Cores auch Libretro-GL-Cores zu \n"
                   "verwenden. \n"
                   " \n"
                   "Die Leistung, sowohl bei software-gerenderten, \n"
@@ -206,7 +206,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Sunxi-G2D-Grafiktreiber\n"
                   " \n"
                   "Dies ist ein Low-Level-Sunxi-Grafiktreiber. \n"
-                  "Er verwendet den G2D-Block in Allwinnder-SoCs.");
+                  "Er verwendet den G2D-Block in Allwinner-SoCs.");
          }
          break;
       case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
@@ -489,7 +489,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW: /* TODO/FIXME */
          return "Zeige Core-Eingabe-Beschriftungen";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
-         return "Verstecke unzugewiesene Core-Eingabe-Beschriftungen";
+         return "Verstecke nicht zugewiesene Core-Eingabe-Beschriftungen";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE:
          return "Zeige OSD-Nachrichten";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH:
@@ -627,7 +627,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
          return "DPI-Override";
       case MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
-         return "Bildschirmschone aussetzen";
+         return "Bildschirmschoner aussetzen";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
          return "Deaktiviere Desktop-Komposition";
       case MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE:
@@ -647,7 +647,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
          return "Länge der Verlaufsliste";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
-         return "Geschätzte Monitor-Bildrate";
+         return "Geschätzte Bildwiederholrate";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Dummy bei Core-Abschaltung";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
@@ -655,7 +655,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Begrenze maximale Ausführungsgeschwindigkeit";
       case MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO:
-         return "Maximale Ausführungsgeschwindigkeitd";
+         return "Maximale Ausführungsgeschwindigkeit";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Lade Remap-Dateien automatisch";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
@@ -769,7 +769,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
          return "Automatische Konfiguration aktivieren";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Audio-Frequenzrate (KHz)";
+         return "Audio-Frequenzrate (kHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
          return "Maximaler Audioversatz";
       case MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES:
@@ -857,7 +857,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursormanager";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
-         return "Hauptmenü"; 
+         return "Hauptmenü";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Einstellungen";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:
@@ -947,7 +947,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
          return "Menü Shaderparameter (Menü)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
-         return "Speiche Shader-Voreinstellung unter...";
+         return "Speichere Shader-Voreinstellung unter...";
       case MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS:
          return "Keine Shaderparameter";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET:
@@ -961,9 +961,9 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "Sekunden";
       case MENU_ENUM_LABEL_VALUE_OFF: /* Don't change. Needed for XMB atm. (Would be: "AN") */
-         return "OFF"; 
+         return "OFF";
       case MENU_ENUM_LABEL_VALUE_ON: /* Don't change. Needed for XMB atm. (Would be: "AUS") */
-         return "ON"; 
+         return "ON";
       case MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS:
          return "Aktualisiere Assets";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS:
@@ -1283,7 +1283,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU:
          return "Jeder nutze kann Menü Steuern";
       case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
-         return "Zeige Versteckte Ordner und Dateien";
+         return "Zeige versteckte Ordner und Dateien";
       case MENU_ENUM_LABEL_VALUE_WIFI_DRIVER:
          return "Wlan-Treiber";
       case MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS:
@@ -1291,6 +1291,6 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
       default:
          break;
    }
- 
+
    return "null";
 }
