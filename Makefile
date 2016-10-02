@@ -31,6 +31,12 @@ ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang"),1)
    DEFINES +=  -Wno-invalid-source-encoding
 endif
 
+ifeq ($(shell $(CC) -v 2>&1 | grep -c "tcc"),1)
+   MD = -MD
+else
+   MD = -MMD
+endif
+
 HEADERS = $(wildcard */*/*.h) $(wildcard */*.h) $(wildcard *.h)
 
 ifeq ($(MISSING_DECLS), 1)
@@ -133,7 +139,7 @@ retroarch: $(RARCH_OBJ)
 $(OBJDIR)/%.o: %.c config.h config.mk
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CC $<),)
-	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
+	$(Q)$(CC) $(CPPFLAGS) $(CFLAGS) $(DEFINES) $(MD) -c -o $@ $<
 
 $(OBJDIR)/%.o: %.cpp config.h config.mk
 	@mkdir -p $(dir $@)
