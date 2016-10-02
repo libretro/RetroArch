@@ -141,7 +141,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Complete by toggling eject again.");
             break;
          case RARCH_GRAB_MOUSE_TOGGLE:
-            snprintf(s, len, 
+            snprintf(s, len,
                   "Toggles mouse grab. \n"
                   " \n"
                   "When mouse is grabbed, RetroArch hides the \n"
@@ -485,7 +485,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Hide input descriptors that were not set \n"
                "by the core.");
          break;
-      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE: 
+      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
          snprintf(s, len,
                "Video refresh rate of your monitor. \n"
                "Used to calculate a suitable audio input rate.");
@@ -634,7 +634,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             char u[501];
             char t[501];
 
-            strlcpy(t, 
+            strlcpy(t,
                   "RetroArch relies on an unique form of\n"
                   "audio/video synchronization where it needs to be\n"
                   "calibrated against the refresh rate of your\n"
@@ -1500,7 +1500,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                " Possible values are [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
-         snprintf(s, len, 
+         snprintf(s, len,
                "Turbo period.\n"
                " \n"
                "Describes the period of which turbo-enabled\n"
@@ -1510,7 +1510,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
-         snprintf(s, len, 
+         snprintf(s, len,
                "Duty cycle.\n"
                " \n"
                "Describes how long the period of a turbo-enabled\n"
@@ -2602,7 +2602,7 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "video_aspect_ratio_auto";
       case MENU_ENUM_LABEL_VIDEO_FORCE_ASPECT:
          return "video_force_aspect";
-      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE: 
+      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
          return "video_refresh_rate";
       case MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE:
          return "video_force_srgb_disable";
@@ -3335,6 +3335,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "to";
       case MSG_SAVING_RAM_TYPE:
          return "Saving RAM type";
+      case MSG_UNDOING_SAVE_STATE:
+         return "Undoing save state";
       case MSG_SAVING_STATE:
          return "Saving state";
       case MSG_LOADING_STATE:

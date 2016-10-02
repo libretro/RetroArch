@@ -83,6 +83,7 @@ typedef struct
    ssize_t bytes_read;
    bool load_to_backup_buffer;
    bool autoload;
+   bool undo_save;
 } save_task_state_t;
 
 typedef save_task_state_t load_task_data_t;
@@ -466,17 +467,9 @@ bool content_undo_load_state(void)
    return ret;
 }
 
-/**
- * undo_save_state:
- * Reverts the last save operation
- *
- * Returns: true if successful, false otherwise.
- **/
-bool content_undo_save_state(void)
+static void undo_save_state_cb(void *task_data,
+                               void *user_data, const char *error)
 {
-   bool ret = filestream_write_file(undo_save_buf.path,
-         undo_save_buf.data, undo_save_buf.size);
-
    /* Wipe the save file buffer as it's intended to be one use only */
    undo_save_buf.path[0] = '\0';
    undo_save_buf.size    = 0;
@@ -485,15 +478,6 @@ bool content_undo_save_state(void)
       free(undo_save_buf.data);
       undo_save_buf.data = NULL;
    }
-
-   if (!ret)
-   {
-      RARCH_ERR("%s \"%s\".\n",
-         msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
-         undo_save_buf.path);
-   }
-
-   return ret;
 }
 
 /**
@@ -514,33 +498,12 @@ static void task_save_handler_finished(retro_task_t *task,
       task->error = strdup("Task canceled");
 
    if (state->data)
+   {
+      if (state->undo_save && state->data == undo_save_buf.data)
+         undo_save_buf.data = NULL;
       free(state->data);
-
-   free(state);
-}
-
-/**
- * task_load_handler_finished:
- * @task : the task to finish
- * @state : the state associated with this task
- *
- * Close the loaded state file and finish the task.
- **/
-static void task_load_handler_finished(retro_task_t *task,
-      save_task_state_t *state)
-{
-   load_task_data_t *task_data = NULL;
-   task->finished = true;
-
-   filestream_close(state->file);
-
-   if (!task->error && task->cancelled)
-      task->error = strdup("Task canceled");
-
-   task_data = (load_task_data_t*)calloc(1, sizeof(*task_data));
-   memcpy(task_data, state, sizeof(*task_data));
-
-   task->task_data = task_data;
+      state->data = NULL;
+   }
 
    free(state);
 }
@@ -575,7 +538,20 @@ static void task_save_handler(retro_task_t *task)
    if (task->cancelled || written != remaining)
    {
       char err[PATH_MAX_LENGTH] = {0};
-      snprintf(err, sizeof(err), "%s %s", msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), state->path);
+
+      if (state->undo_save)
+      {
+         RARCH_ERR("%s \"%s\".\n",
+            msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
+            undo_save_buf.path);
+
+         snprintf(err, sizeof(err), "%s \"%s\".",
+                  msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
+                  "RAM");
+      }
+      else
+         snprintf(err, sizeof(err), "%s %s", msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), state->path);
+
       task->error = strdup(err);
       task_save_handler_finished(task, state);
       return;
@@ -586,24 +562,104 @@ static void task_save_handler(retro_task_t *task)
       settings_t *settings = config_get_ptr();
       char msg[1024] = {0};
 
-      task_save_handler_finished(task, state);
-
       if (task->title)
          free(task->title);
 
       task->title = NULL;
 
-      if (settings->state_slot < 0)
-         snprintf(msg, sizeof(msg), "%s #-1 (auto).",
-               msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
+      if (state->undo_save)
+      {
+         strlcpy(msg, msg_hash_to_str(MSG_RESTORED_OLD_SAVE_STATE),
+               sizeof(msg));
+      }
       else
-         snprintf(msg, sizeof(msg), "%s #%d.", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
-               settings->state_slot);
+      {
+         if (settings->state_slot < 0)
+            snprintf(msg, sizeof(msg), "%s #-1 (auto).",
+                  msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
+         else
+            snprintf(msg, sizeof(msg), "%s #%d.", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
+                  settings->state_slot);
+      }
 
       runloop_msg_queue_push(msg, 2, 180, true);
+      task_save_handler_finished(task, state);
 
       return;
    }
+}
+
+/**
+ * task_push_undo_save_state:
+ * @path : file path of the save state
+ * @data : the save state data to write
+ * @size : the total size of the save state
+ *
+ * Create a new task to undo the last save of the content state.
+ **/
+static void task_push_undo_save_state(const char *path, void *data, size_t size)
+{
+   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
+
+   if (!task || !state)
+   {
+      if (data)
+         free(data);
+      return;
+   }
+
+   strlcpy(state->path, path, sizeof(state->path));
+   state->data = data;
+   state->size = size;
+   state->undo_save = true;
+
+   task->state = state;
+   task->handler = task_save_handler;
+   task->callback = undo_save_state_cb;
+   task->title = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
+
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+}
+
+/**
+ * undo_save_state:
+ * Reverts the last save operation
+ *
+ * Returns: true if successful, false otherwise.
+ **/
+bool content_undo_save_state(void)
+{
+   task_push_undo_save_state(undo_save_buf.path,
+                             undo_save_buf.data,
+                             undo_save_buf.size);
+   return true;
+}
+
+/**
+ * task_load_handler_finished:
+ * @task : the task to finish
+ * @state : the state associated with this task
+ *
+ * Close the loaded state file and finish the task.
+ **/
+static void task_load_handler_finished(retro_task_t *task,
+      save_task_state_t *state)
+{
+   load_task_data_t *task_data = NULL;
+   task->finished = true;
+
+   filestream_close(state->file);
+
+   if (!task->error && task->cancelled)
+      task->error = strdup("Task canceled");
+
+   task_data = (load_task_data_t*)calloc(1, sizeof(*task_data));
+   memcpy(task_data, state, sizeof(*task_data));
+
+   task->task_data = task_data;
+
+   free(state);
 }
 
 /**

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -251,6 +251,7 @@ enum msg_hash_enums
    MSG_FAILED_TO_TAKE_SCREENSHOT,
    MSG_CUSTOM_TIMING_GIVEN,
    MSG_SAVING_STATE,
+   MSG_UNDOING_SAVE_STATE,
    MSG_LOADING_STATE,
    MSG_FAILED_TO_SAVE_STATE_TO,
    MSG_FAILED_TO_SAVE_SRAM,
@@ -399,7 +400,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
 
    /* Input  */
-   
+
    MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE,
    MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE_LAST = MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + MAX_USERS,
    MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE,
@@ -563,7 +564,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-   
+
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
 
    MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
