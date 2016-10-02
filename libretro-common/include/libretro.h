@@ -1007,6 +1007,132 @@ struct retro_hw_render_context_negotiation_interface
                                             * recognize or support. Should be set in either retro_init or retro_load_game, but not both.
                                             */
 
+/* File open modes */
+enum retro_vfs_open_mode
+{
+   RETRO_RDONLY,
+   RETRO_WRONLY,
+   RETRO_RDWR,
+   RETRO_RDWR_TRUNC,
+};
+
+/* Opaque file handle */
+typedef struct retro_file retro_file;
+
+/* Open a file for reading or writing. If path points to a directory, this will
+ * fail. Returns the opaque file handle, or NULL for error. */
+typedef struct retro_file *(RETRO_CALLCONV *retro_vfs_open_file_t)(const char *path, enum retro_vfs_open_mode mode);
+
+/* Read data from a file. Returns the number of bytes read, or -1 for error. */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_read_file_t)(struct retro_file *file, uint8_t *buffer, size_t buffer_size);
+
+/* Write data to a file. Returns the number of bytes written, or -1 for error. */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_write_file_t)(struct retro_file *file, const uint8_t *buffer, size_t buffer_size);
+
+/* Set the current read/write position for the file. Returns the new position, -1 for error. */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_seek_file_t)(struct retro_file *file, uint64_t position);
+
+/* Get the current read/write position for the file. Returns -1 for error. */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_get_file_position_t)(struct retro_file *file);
+
+/* Return the size of the file in bytes, or -1 for error. */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_get_file_size_t)(struct retro_file *file);
+
+/* Extend or truncate a file to the requested size. Returns the new size, or -1 for error. */
+typedef int64_t (RETRO_CALLCONV *retro_vfs_resize_file_t)(struct retro_file *file, uint64_t size);
+
+/* Close the file and release its resources. Must be called if open_file returns non-NULL. */
+typedef void (RETRO_CALLCONV *retro_vfs_close_file_t)(struct retro_file *file);
+
+/* Delete the specified file. Returns true if the file was deleted. */
+typedef bool (RETRO_CALLCONV *retro_vfs_remove_file_t)(const char *path);
+
+/* Stat fields */
+struct retro_file_info
+{
+   /* The path to the file, useful for translating overlay filesystem paths. */
+   char path[PATH_MAX];
+
+   /* True if the stat path is a directory, false if it is a file. */
+   bool is_directory;
+
+   /* Total size of file in bytes, or -1 if unknown. Unused if is_directory is true. */
+   int64_t size;
+};
+
+/* Get the properties of a file or directory. Returns false if the path doesn't exist. */
+typedef bool (RETRO_CALLCONV *retro_vfs_stat_file_t)(const char *path, struct retro_file_info *buffer);
+
+/* Create an empty directory. Parent directories will be created as needed. */
+typedef bool (RETRO_CALLCONV *retro_vfs_create_directory_t)(const char *path);
+
+/* Remove a directory and its contents. */
+typedef bool (RETRO_CALLCONV *retro_vfs_remove_directory_t)(const char *path);
+
+/* Get the contents of a directory. Does not include '.' or '..' entries. If
+ * this sets 'item_count' to greater than zero, then 'items' will point to an
+ * array of strings in lexicographical order. */
+typedef bool (RETRO_CALLCONV *retro_vfs_list_directory_t)(const char *path, char ***items, unsigned int *item_count);
+
+/* Free the list obtained by list_directory. Must be called if list_directory returns true. */
+typedef void (RETRO_CALLCONV *retro_vfs_free_directory_t)(char **items, unsigned int item_count);
+
+struct retro_vfs_interface
+{
+   retro_vfs_open_file_t open_file;
+   retro_vfs_read_file_t read_file;
+   retro_vfs_write_file_t write_file;
+   retro_vfs_seek_file_t seek_file;
+   retro_vfs_get_file_position_t get_file_position;
+   retro_vfs_get_file_size_t get_file_size;
+   retro_vfs_resize_file_t resize_file;
+   retro_vfs_close_file_t close_file;
+   retro_vfs_stat_file_t stat_file;
+   retro_vfs_remove_file_t remove_file;
+   retro_vfs_create_directory_t create_directory;
+   retro_vfs_remove_directory_t remove_directory;
+   retro_vfs_list_directory_t list_directory;
+   retro_vfs_free_directory_t free_directory;
+};
+
+struct retro_vfs_interface_info
+{
+   /* Set by core, frontend won't use VFS unless it supports at least this version. */
+   unsigned required_interface_version;
+
+   /* Frontend writes interface pointer here. The frontend also sets the actual
+    * version, must be at least requested_interface_version. */
+   struct retro_vfs_interface *iface;
+};
+
+#define RETRO_ENVIRONMENT_GET_VFS_INTERFACE 45
+                                           /* struct retro_vfs_interface_info * --
+                                            * Gets access to the VFS interface.
+                                            *
+                                            * This interface exposes the following schemes that a core may use:
+                                            *
+                                            * file://
+                                            *     The path represents a true path on the file system. This allows
+                                            *     the core to use VFS for all I/O.
+                                            *
+                                            * retro://
+                                            *     A special scheme that allows for location-agnostic I/O. Cores
+                                            *     have access to the following locations:
+                                            *
+                                            *     retro://game/
+                                            *         The folder containing the loaded game. If no game is loaded,
+                                            *         listing this directory will return empty. Read-only.
+                                            *
+                                            *     retro://assets/
+                                            *         The assets folder for standalone applications. Read-only.
+                                            *
+                                            *     retro://system/
+                                            *         The "system" directory used to store system-specific
+                                            *         content such as BIOSes, configuration data, etc. Read-only.
+                                            *
+                                            *     retro://save/
+                                            *         The saves directory. Read-write.
+                                            */
 
 #define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
