@@ -304,12 +304,12 @@ static bool psp_joypad_rumble(unsigned pad,
       case RETRO_RUMBLE_WEAK:
          if (strength > 1)
             strength = 1;
-         params.unk = strength;
+         params.small = strength;
          break;
       case RETRO_RUMBLE_STRONG:
          if (strength > 255)
             strength = 255;
-         params.enable = strength;
+         params.large = strength;
          break;
       case RETRO_RUMBLE_DUMMY:
       default:
