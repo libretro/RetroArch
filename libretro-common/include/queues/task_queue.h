@@ -32,6 +32,16 @@
 
 RETRO_BEGIN_DECLS
 
+enum task_type
+{
+   TASK_TYPE_NONE,
+   /* Only one blocking task can exist in the queue at a time.
+    * Attempts to add a new one while another is running is
+    * ignored.
+    */
+   TASK_TYPE_BLOCKING
+};
+
 enum task_queue_ctl_state
 {
    TASK_QUEUE_CTL_NONE = 0,
@@ -157,6 +167,8 @@ struct retro_task
    /* handler can modify but will be
     * free()d automatically if non-NULL. */
    char *title;
+
+   enum task_type type;
 
    /* don't touch this. */
    retro_task_t *next;

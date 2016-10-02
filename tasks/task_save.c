@@ -614,6 +614,7 @@ static void task_push_undo_save_state(const char *path, void *data, size_t size)
    state->size = size;
    state->undo_save = true;
 
+   task->type = TASK_TYPE_BLOCKING;
    task->state = state;
    task->handler = task_save_handler;
    task->callback = undo_save_state_cb;
@@ -945,6 +946,7 @@ static void task_push_save_state(const char *path, void *data, size_t size)
    state->data = data;
    state->size = size;
 
+   task->type = TASK_TYPE_BLOCKING;
    task->state = state;
    task->handler = task_save_handler;
    task->title = strdup(msg_hash_to_str(MSG_SAVING_STATE));
@@ -1001,7 +1003,7 @@ static void task_push_load_and_save_state(const char *path, void *data, size_t s
    state->undo_data = data;
 
    task->state = state;
-
+   task->type = TASK_TYPE_BLOCKING;
    task->handler = task_load_handler;
    task->callback = content_load_and_save_state_cb;
    task->title = strdup(msg_hash_to_str(MSG_LOADING_STATE));
@@ -1122,6 +1124,7 @@ bool content_load_state(const char *path, bool load_to_backup_buffer, bool autol
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->autoload = autoload;
 
+   task->type = TASK_TYPE_BLOCKING;
    task->state = state;
    task->handler = task_load_handler;
    task->callback = content_load_state_cb;

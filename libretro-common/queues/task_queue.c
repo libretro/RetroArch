@@ -571,9 +571,30 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
          break;
       case TASK_QUEUE_CTL_PUSH:
          {
+            retro_task_t *task = (retro_task_t*)data;
+
+            /* Ignore this task if a related one is already running */
+            if (task->type == TASK_TYPE_BLOCKING)
+            {
+               retro_task_t *running = tasks_running.front;
+               bool found = false;
+
+               for (; running; running = running->next)
+               {
+                  if (running->type == TASK_TYPE_BLOCKING)
+                  {
+                     found = true;
+                     break;
+                  }
+               }
+
+               /* skip this task, user must try again later */
+               if (found)
+                  break;
+            }
+
             /* The lack of NULL checks in the following functions
              * is proposital to ensure correct control flow by the users. */
-            retro_task_t *task = (retro_task_t*)data;
             impl_current->push_running(task);
             break;
          }
