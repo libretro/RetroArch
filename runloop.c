@@ -741,7 +741,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
             rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
             rarch_ctl(RARCH_CTL_UNSET_PATCH_BLOCKED, NULL);
-            path_clear(RARCH_PATH_CONTENT);
             runloop_overrides_active   = false;
 
             core_unset_input_descriptors();

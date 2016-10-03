@@ -651,6 +651,7 @@ void path_clear(enum rarch_path_type type)
 
 void path_clear_all(void)
 {
+   path_clear(RARCH_PATH_CONTENT);
    path_clear(RARCH_PATH_CONFIG);
    path_clear(RARCH_PATH_CONFIG_APPEND);
    path_clear(RARCH_PATH_CORE_OPTIONS);
