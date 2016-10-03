@@ -1612,6 +1612,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Disconnects an active Netplay connection.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
+         snprintf(s, len,
+               "Setting related to Netplay.");
+         break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
                "Dynamically load a new wallpaper \n"
@@ -2488,6 +2492,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "menu_netplay_enable_client";
       case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
          return "menu_netplay_disconnect";
+      case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
+         return "menu_netplay_settings";
       case MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE:
          return "dpi_override_enable";
       case MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE:
@@ -3825,6 +3831,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Connect to Netplay host";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT:
          return "Disconnect";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS:
+         return "Netplay settings";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
          return "DPI Override Enable";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:

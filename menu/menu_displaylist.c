@@ -1500,10 +1500,21 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    return 0;
 }
 
+static int menu_displaylist_parse_settings_enum(void *data,
+      menu_displaylist_info_t *info,
+      enum msg_hash_enums label,
+      enum menu_displaylist_parse_type parse_type,
+      bool add_empty_entry);
+
 static int menu_displaylist_parse_netplay(
       menu_displaylist_info_t *info)
 {
 #ifdef HAVE_NETWORKING
+   menu_handle_t *menu = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      menu = NULL;
+
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
@@ -1521,6 +1532,11 @@ static int menu_displaylist_parse_netplay(
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DISCONNECT),
          MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
          MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
+         MENU_ENUM_LABEL_NETWORK_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 
 #else
    menu_entries_append_enum(info->list,
