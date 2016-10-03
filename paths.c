@@ -511,10 +511,32 @@ const char *path_get(enum rarch_path_type type)
    return NULL;
 }
 
-
-size_t path_get_core_size(void)
+size_t path_get_realsize(enum rarch_path_type type)
 {
-   return sizeof(path_libretro);
+   switch (type)
+   {
+      case RARCH_PATH_CONTENT:
+         return sizeof(path_content);
+      case RARCH_PATH_DEFAULT_SHADER_PRESET:
+         return sizeof(path_default_shader_preset);
+      case RARCH_PATH_BASENAME:
+         return sizeof(path_main_basename);
+      case RARCH_PATH_CORE_OPTIONS:
+         return sizeof(path_core_options_file);
+      case RARCH_PATH_SUBSYSTEM:
+         return sizeof(subsystem_path);
+      case RARCH_PATH_CONFIG:
+         return sizeof(path_config_file);
+      case RARCH_PATH_CONFIG_APPEND:
+         return sizeof(path_config_append_file);
+      case RARCH_PATH_CORE:
+         return sizeof(path_libretro);
+      case RARCH_PATH_NONE:
+      case RARCH_PATH_NAMES:
+         break;
+   }
+
+   return 0;
 }
 
 static void path_set_names(const char *path)

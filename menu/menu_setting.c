@@ -2145,7 +2145,7 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
-               (*list)[list_info->index - 1].size                = path_get_core_size();
+               (*list)[list_info->index - 1].size                = path_get_realsize(RARCH_PATH_CORE);
                (*list)[list_info->index - 1].value.target.string = path_get_ptr(RARCH_PATH_CORE);
                (*list)[list_info->index - 1].values       = ext_name;
                menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_LOAD_CORE);

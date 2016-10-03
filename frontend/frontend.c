@@ -64,7 +64,9 @@ void main_exit(void *args)
 #endif
 
    frontend_driver_deinit(args);
-   frontend_driver_exitspawn(path_get_ptr(RARCH_PATH_CORE), path_get_core_size());
+   frontend_driver_exitspawn(
+         path_get_ptr(RARCH_PATH_CORE),
+         path_get_realsize(RARCH_PATH_CORE));
 
    rarch_ctl(RARCH_CTL_DESTROY, NULL);
 

@@ -51,12 +51,7 @@ void path_deinit_savefile(void);
 
 void path_init_savefile(void);
 
-/* fill functions */
-
 void path_fill_names(void);
-
-/* set functions */
-
 
 bool path_set(enum rarch_path_type type, const char *path);
 
@@ -66,27 +61,17 @@ void path_set_special(char **argv, unsigned num_content);
 
 void path_set_basename(const char *path);
 
-/* get size functions */
-
-size_t path_get_core_size(void);
-
-/* get list functions */
+size_t path_get_realsize(enum rarch_path_type type);
 
 struct string_list *path_get_subsystem_list(void);
-
-/* get functions */
 
 char *path_get_ptr(enum rarch_path_type type);
 
 const char *path_get(enum rarch_path_type type);
 
-/* clear functions */
-
 void path_clear(enum rarch_path_type type);
 
 void path_clear_all(void);
-
-/* is functions */
 
 bool path_is_empty(enum rarch_path_type type);
 
