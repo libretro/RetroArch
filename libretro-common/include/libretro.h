@@ -991,9 +991,13 @@ struct retro_hw_render_context_negotiation_interface
 #define RETRO_SERIALIZATION_QUIRK_FRONT_VARIABLE_SIZE (1 << 3)
 /* Serialized state can only be loaded during the same session. */
 #define RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION (1 << 4)
-/* Serialized state cannot be loaded on a different architecture from the one
- * it was saved on, typically due to endianness or word length issues. */
-#define RETRO_SERIALIZATION_QUIRK_ARCHITECTURE_DEPENDENT (1 << 5)
+/* Serialized state cannot be loaded on an architecture with a different
+ * endianness from the one it was saved on. */
+#define RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT (1 << 5)
+/* Serialized state cannot be loaded on a different platform from the one it
+ * was saved on for reasons other than endianness, such as word or C type size
+ * dependence */
+#define RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT (1 << 6)
 
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
                                            /* uint64_t * --
