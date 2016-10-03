@@ -80,6 +80,8 @@ struct string_list *path_get_subsystem_list(void);
 
 /* get functions */
 
+char *path_get_ptr(enum rarch_path_type type);
+
 const char *path_get(enum rarch_path_type type);
 
 const char *path_get_current_savefile_dir(void);

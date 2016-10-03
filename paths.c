@@ -451,6 +451,40 @@ char *path_get_core_ptr(void)
    return path_libretro;
 }
 
+char *path_get_ptr(enum rarch_path_type type)
+{
+   switch (type)
+   {
+      case RARCH_PATH_CONTENT:
+         return path_content;
+      case RARCH_PATH_DEFAULT_SHADER_PRESET:
+         return path_default_shader_preset;
+      case RARCH_PATH_BASENAME:
+         return path_main_basename;
+      case RARCH_PATH_CORE_OPTIONS:
+         if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
+            return path_core_options_file;
+         break;
+      case RARCH_PATH_SUBSYSTEM:
+         return subsystem_path;
+      case RARCH_PATH_CONFIG:
+         if (!path_is_empty(RARCH_PATH_CONFIG))
+            return path_config_file;
+         break;
+      case RARCH_PATH_CONFIG_APPEND:
+         if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
+            return path_config_append_file;
+         break;
+      case RARCH_PATH_CORE:
+         return path_libretro;
+      case RARCH_PATH_NONE:
+      case RARCH_PATH_NAMES:
+         break;
+   }
+
+   return NULL;
+}
+
 const char *path_get(enum rarch_path_type type)
 {
    switch (type)
