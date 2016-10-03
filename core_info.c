@@ -688,6 +688,52 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
    return num;
 }
 
+bool core_info_unsupported_content_path(const char *path)
+{
+   size_t i;
+
+   if (!core_info_curr_list)
+      return false;
+
+   for (i = 0; i < core_info_curr_list->count; i++)
+   {
+      const core_info_t *info = &core_info_curr_list->list[i];
+
+      if (string_list_find_elem(info->supported_extensions_list, path_get_extension(path)))
+         return false;
+   }
+
+   return true;
+}
+
+bool core_info_database_supports_content_path(const char *database_path, const char *path)
+{
+   size_t i;
+   char *database = NULL;
+
+   if (!core_info_curr_list)
+      return false;
+
+   database = strdup(path_basename(database_path));
+
+   path_remove_extension(database);
+
+   for (i = 0; i < core_info_curr_list->count; i++)
+   {
+      const core_info_t *info = &core_info_curr_list->list[i];
+
+      if (string_list_find_elem(info->supported_extensions_list, path_get_extension(path)))
+         if (string_list_find_elem(info->databases_list, database))
+         {
+            free(database);
+            return true;
+         }
+   }
+
+   free(database);
+   return false;
+}
+
 bool core_info_list_get_display_name(core_info_list_t *core_info_list,
       const char *path, char *s, size_t len)
 {

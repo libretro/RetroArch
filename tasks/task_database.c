@@ -23,7 +23,6 @@
 #include <queues/message_queue.h>
 #include <encodings/crc32.h>
 #include <streams/file_stream.h>
-
 #include "tasks_internal.h"
 
 #include "../database_info.h"
@@ -35,6 +34,7 @@
 #include "../playlist.h"
 #include "../runloop.h"
 #include "../verbosity.h"
+#include "../core_info.h"
 
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE                99999
@@ -206,6 +206,7 @@ static int database_info_list_iterate_new(database_state_handle_t *db_state,
       const char *query)
 {
    const char *new_database = database_info_get_current_name(db_state);
+
 #if 0
    RARCH_LOG("Check database [%d/%d] : %s\n", (unsigned)db_state->list_index,
          (unsigned)db_state->list->size, new_database);
@@ -311,6 +312,7 @@ static int database_info_list_iterate_next(
 static int task_database_iterate_crc_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db,
+      const char *name,
       const char *archive_entry)
 {
 
@@ -321,6 +323,11 @@ static int task_database_iterate_crc_lookup(
    if (db_state->entry_index == 0)
    {
       char query[50] = {0};
+
+      if (!core_info_database_supports_content_path(db_state->list->elems[db_state->list_index].data, name) &&
+          !core_info_unsupported_content_path(name))
+         return database_info_list_iterate_next(db_state);
+
       snprintf(query, sizeof(query),
             "{crc:or(b\"%08X\",b\"%08X\")}",
             swap_if_big32(db_state->crc), swap_if_big32(db_state->archive_crc));
@@ -362,7 +369,10 @@ static int task_database_iterate_crc_lookup(
       return 1;
 
    database_info_list_free(db_state->info);
-   free(db_state->info);
+
+   if (db_state->info)
+      free(db_state->info);
+
    return 0;
 }
 
@@ -373,7 +383,7 @@ static int task_database_iterate_playlist_archive(
 #ifdef HAVE_COMPRESSION
    if (db_state->crc != 0)
       return task_database_iterate_crc_lookup(
-            db_state, db, db_state->archive_name);
+            db_state, db, name, db_state->archive_name);
 
    db_state->crc = file_archive_get_file_crc32(name);
 #endif
@@ -500,7 +510,7 @@ static int task_database_iterate(database_state_handle_t *db_state,
       case DATABASE_TYPE_SERIAL_LOOKUP:
          return task_database_iterate_serial_lookup(db_state, db, name);
       case DATABASE_TYPE_CRC_LOOKUP:
-         return task_database_iterate_crc_lookup(db_state, db, NULL);
+         return task_database_iterate_crc_lookup(db_state, db, name, NULL);
       case DATABASE_TYPE_NONE:
       default:
          break;
@@ -561,7 +571,7 @@ static void task_database_handler(retro_task_t *task)
          task_database_iterate_start(dbinfo, name);
          break;
       case DATABASE_STATUS_ITERATE:
-         if (dbstate && task_database_iterate(dbstate, dbinfo) == 0)
+         if (task_database_iterate(dbstate, dbinfo) == 0)
          {
             dbinfo->status = DATABASE_STATUS_ITERATE_NEXT;
             dbinfo->type   = DATABASE_TYPE_ITERATE;

@@ -52,7 +52,7 @@ typedef struct
    char *notes;
    struct string_list *categories_list;
    struct string_list *databases_list;
-   struct string_list *note_list;   
+   struct string_list *note_list;
    struct string_list *supported_extensions_list;
    struct string_list *authors_list;
    struct string_list *permissions_list;
@@ -118,6 +118,10 @@ bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info);
 bool core_info_find(core_info_ctx_find_t *info, const char *name);
 
 bool core_info_load(core_info_ctx_find_t *info);
+
+bool core_info_database_supports_content_path(const char *database_path, const char *path);
+
+bool core_info_unsupported_content_path(const char *path);
 
 RETRO_END_DECLS
 
