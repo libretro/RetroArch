@@ -530,7 +530,7 @@ static void task_save_handler(retro_task_t *task)
 
    remaining = MIN(state->size - state->written, SAVE_STATE_CHUNK);
 
-   written = filestream_write(state->file, state->data + state->written, remaining);
+   written = filestream_write(state->file, (uint8_t*)state->data + state->written, remaining);
 
    state->written += written;
    task->progress = (state->written / (float)state->size) * 100;
