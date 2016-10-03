@@ -80,8 +80,6 @@ char *path_get_ptr(enum rarch_path_type type);
 
 const char *path_get(enum rarch_path_type type);
 
-const char *path_get_current_savefile_dir(void);
-
 /* clear functions */
 
 void path_clear(enum rarch_path_type type);
