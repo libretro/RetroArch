@@ -277,7 +277,6 @@ typedef struct settings
       unsigned device[MAX_USERS];
       unsigned device_name_index[MAX_USERS];
       bool autodetect_enable;
-      bool netplay_client_swap_input;
 
       unsigned turbo_period;
       unsigned turbo_duty_cycle;
@@ -394,6 +393,19 @@ typedef struct settings
       char menu_config[PATH_MAX_LENGTH];
       char menu_content[PATH_MAX_LENGTH];
    } directory;
+
+#ifdef HAVE_NETWORKING
+   struct
+   {
+      char server[PATH_MAX_LENGTH];
+      unsigned port;
+      unsigned sync_frames;
+      unsigned check_frames;
+      bool is_client;
+      bool is_spectate;
+      bool swap_input;
+   } netplay;
+#endif
 
    unsigned content_history_size;
 

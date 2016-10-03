@@ -49,6 +49,7 @@ enum
    CMD_OPT_REQUIRE_SYNC             = 0x10
 };
 
+static bool netplay_enabled = false;
 static netplay_t *netplay_data = NULL;
 
 static int init_tcp_connection(const struct addrinfo *res,
@@ -267,7 +268,7 @@ static bool get_self_input_state(netplay_t *netplay)
       retro_input_state_t cb = netplay->cbs.state_cb;
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
       {
-         int16_t tmp = cb(settings->input.netplay_client_swap_input ?
+         int16_t tmp = cb(settings->netplay.swap_input ?
                0 : !netplay->port,
                RETRO_DEVICE_JOYPAD, 0, i);
          state[0] |= tmp ? 1 << i : 0;
@@ -275,10 +276,10 @@ static bool get_self_input_state(netplay_t *netplay)
 
       for (i = 0; i < 2; i++)
       {
-         int16_t tmp_x = cb(settings->input.netplay_client_swap_input ?
+         int16_t tmp_x = cb(settings->netplay.swap_input ?
                0 : !netplay->port,
                RETRO_DEVICE_ANALOG, i, 0);
-         int16_t tmp_y = cb(settings->input.netplay_client_swap_input ?
+         int16_t tmp_y = cb(settings->netplay.swap_input ?
                0 : !netplay->port,
                RETRO_DEVICE_ANALOG, i, 1);
          state[1 + i] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
@@ -1320,13 +1321,13 @@ void deinit_netplay(void)
  * Returns: true (1) if successful, otherwise false (0).
  **/
 
-bool init_netplay(void)
+bool init_netplay(bool is_client, bool is_spectate, const char *server,
+                  unsigned port)
 {
    struct retro_callbacks cbs = {0};
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
 
-   if (!global->netplay.enable)
+   if (!netplay_enabled)
       return false;
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_START_PLAYBACK, NULL))
@@ -1338,10 +1339,9 @@ bool init_netplay(void)
 
    core_set_default_callbacks(&cbs);
 
-   if (*global->netplay.server)
+   if (is_client)
    {
       RARCH_LOG("Connecting to netplay host...\n");
-      global->netplay.is_client = true;
    }
    else
    {
@@ -1352,15 +1352,14 @@ bool init_netplay(void)
    }
 
    netplay_data = (netplay_t*)netplay_new(
-         global->netplay.is_client ? global->netplay.server : NULL,
-         global->netplay.port ? global->netplay.port : RARCH_DEFAULT_PORT,
-         global->netplay.sync_frames, global->netplay.check_frames, &cbs,
-         global->netplay.is_spectate, settings->username);
+         is_client ? server : NULL,
+         port ? port : RARCH_DEFAULT_PORT,
+         settings->netplay.sync_frames, settings->netplay.check_frames, &cbs,
+         is_spectate, settings->username);
 
    if (netplay_data)
       return true;
 
-   global->netplay.is_client = false;
    RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
 
    runloop_msg_queue_push(
@@ -1373,15 +1372,35 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
    if (!netplay_data)
    {
-      if (state == RARCH_NETPLAY_CTL_IS_DATA_INITED)
-         return false;
-      else
-         return true;
+      switch (state)
+      {
+         case RARCH_NETPLAY_CTL_ENABLE:
+            netplay_enabled = true;
+            return true;
+
+         case RARCH_NETPLAY_CTL_DISABLE:
+            netplay_enabled = false;
+            return true;
+
+         case RARCH_NETPLAY_CTL_IS_ENABLED:
+            return netplay_enabled;
+
+         case RARCH_NETPLAY_CTL_IS_DATA_INITED:
+            return false;
+
+         default:
+            return true;
+      }
    }
 
    switch (state)
    {
+      case RARCH_NETPLAY_CTL_ENABLE:
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
+         return true;
+      case RARCH_NETPLAY_CTL_DISABLE:
+         return false;
+      case RARCH_NETPLAY_CTL_IS_ENABLED:
          return true;
       case RARCH_NETPLAY_CTL_POST_FRAME:
          netplay_post_frame(netplay_data);

@@ -1656,21 +1656,21 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_NETPLAY_MODE:
 #ifdef HAVE_NETWORKING
-         if (!global->netplay.is_client)
-            *global->netplay.server = '\0';
+         if (!settings->netplay.is_client)
+            *settings->netplay.server = '\0';
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
 #ifdef HAVE_NETWORKING
-         if (global->netplay.is_spectate)
-            *global->netplay.server = '\0';
+         if (settings->netplay.is_spectate)
+            *settings->netplay.server = '\0';
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
 #ifdef HAVE_NETWORKING
          {
-            bool val = (global->netplay.sync_frames > 0);
+            bool val = (settings->netplay.sync_frames > 0);
             
             if (val)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
@@ -1682,7 +1682,7 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
 #ifdef HAVE_NETWORKING
          {
-            bool val = (global->netplay.check_frames > 0);
+            bool val = (settings->netplay.check_frames > 0);
 
             if (val)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
@@ -5783,24 +5783,7 @@ static bool setting_append_list(
 #endif
             CONFIG_BOOL(
                   list, list_info,
-                  &global->netplay.enable,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE),
-                  false,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE
-                  );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_ENABLE);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->input.netplay_client_swap_input,
+                  &settings->netplay.swap_input,
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT),
                   netplay_client_swap_input,
@@ -5816,8 +5799,8 @@ static bool setting_append_list(
 
             CONFIG_STRING(
                   list, list_info,
-                  global->netplay.server,
-                  sizeof(global->netplay.server),
+                  settings->netplay.server,
+                  sizeof(settings->netplay.server),
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS),
                   "",
@@ -5831,7 +5814,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &global->netplay.is_client,
+                  &settings->netplay.is_client,
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_MODE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE),
                   false,
@@ -5847,7 +5830,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &global->netplay.is_spectate,
+                  &settings->netplay.is_spectate,
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE),
                   false,
@@ -5863,7 +5846,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &global->netplay.sync_frames,
+                  &settings->netplay.sync_frames,
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES),
                   0,
@@ -5878,7 +5861,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &global->netplay.check_frames,
+                  &settings->netplay.check_frames,
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES),
                   0,
@@ -5893,7 +5876,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &global->netplay.port,
+                  &settings->netplay.port,
                   msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT),
                   RARCH_DEFAULT_PORT,
