@@ -1500,12 +1500,6 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
    return 0;
 }
 
-static int menu_displaylist_parse_settings_enum(void *data,
-      menu_displaylist_info_t *info,
-      enum msg_hash_enums label,
-      enum menu_displaylist_parse_type parse_type,
-      bool add_empty_entry);
-
 static int menu_displaylist_parse_netplay(
       menu_displaylist_info_t *info)
 {
