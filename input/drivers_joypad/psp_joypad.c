@@ -26,6 +26,7 @@
 #define PSP_MAX_PADS 4
 static int psp2_model;
 static SceCtrlPortInfo old_ctrl_info, curr_ctrl_info;
+static SceCtrlActuator actuators[PSP_MAX_PADS] = {0};
 
 #define LERP(p, f, t) ((((p * 10) * (t * 10)) / (f * 10)) / 10)
 #define AREA(lx, ly, rx, ry, x, y) (lx <= x && x < rx && ly <= y && y < ry)
@@ -184,8 +185,10 @@ static void psp_joypad_poll(void)
             continue;
 
          if (old_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED &&
-               curr_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED)
+               curr_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED) {
+            memset(&actuators[player], 0, sizeof(SceCtrlActuator));
             input_config_autoconfigure_disconnect(player, psp_joypad.ident);
+         }
 
          if (old_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED &&
                curr_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED)
@@ -294,29 +297,40 @@ static bool psp_joypad_rumble(unsigned pad,
       enum retro_rumble_effect effect, uint16_t strength)
 {
 #ifdef VITA
-   struct SceCtrlActuator params = {
-      0,
-  		0
-   };
-    
+   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+      return false;
+
    switch (effect)
    {
       case RETRO_RUMBLE_WEAK:
-         if (strength > 1)
-            strength = 1;
-         params.small = strength;
+         switch (curr_ctrl_info.port[pad + 1]) {
+            case SCE_CTRL_TYPE_DS3:
+               actuators[pad].small = strength > 1 ? 1 : 0;
+               break;
+            case SCE_CTRL_TYPE_DS4:
+               actuators[pad].small = LERP(strength, 0xffff, 0xff);
+               break;
+            default:
+               actuators[pad].small = 0;
+         }
          break;
       case RETRO_RUMBLE_STRONG:
-         if (strength > 255)
-            strength = 255;
-         params.large = strength;
+         switch (curr_ctrl_info.port[pad + 1]) {
+            case SCE_CTRL_TYPE_DS3:
+               actuators[pad].large = strength > 1 ? LERP(strength, 0xffff, 0xbf) + 0x40 : 0;
+               break;
+            case SCE_CTRL_TYPE_DS4:
+               actuators[pad].large = LERP(strength, 0xffff, 0xff);
+               break;
+            default:
+               actuators[pad].large = 0;
+         }
          break;
       case RETRO_RUMBLE_DUMMY:
       default:
          break;
    }
-   unsigned p  = (pad == 1) ? 2 : pad;
-   sceCtrlSetActuator(p, &params);
+   sceCtrlSetActuator(pad + 1, &actuators[pad]);
 
    return true;
 #else
