@@ -1608,8 +1608,6 @@ static void command_event_save_current_config(int override_type)
 static void command_event_save_state(const char *path,
       char *s, size_t len)
 {
-   settings_t *settings = config_get_ptr();
-
    if (!content_save_state(path, true))
       return;
 }
@@ -1637,8 +1635,6 @@ static void command_event_undo_save_state(char *s, size_t len)
  **/
 static void command_event_load_state(const char *path, char *s, size_t len)
 {
-   settings_t *settings = config_get_ptr();
-
    if (!content_load_state(path, false, false))
       return;
 
