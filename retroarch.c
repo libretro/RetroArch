@@ -955,8 +955,8 @@ static void retroarch_validate_cpu_features(void)
 
 static void retroarch_main_init_media(void)
 {
-   char    *fullpath    = NULL;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings    = config_get_ptr();
+   const char    *fullpath = path_get(RARCH_PATH_CONTENT);
 
    if (!settings)
       return;
@@ -964,9 +964,6 @@ static void retroarch_main_init_media(void)
    if (  !settings->multimedia.builtin_mediaplayer_enable &&
          !settings->multimedia.builtin_imageviewer_enable
       )
-      return;
-
-   if (!path_get_content(&fullpath))
       return;
 
    if (string_is_empty(fullpath))

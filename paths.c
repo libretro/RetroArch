@@ -658,21 +658,6 @@ void path_clear_all(void)
    path_clear(RARCH_PATH_BASENAME);
 }
 
-/* Core options file path */
-
-
-/* Append config file path */
-
-
-bool path_get_content(char **fullpath)
-{
-   if (!fullpath)
-      return false;
-   *fullpath       = (char*)path_content;
-
-   return true;
-}
-
 enum rarch_content_type path_is_media_type(const char *path)
 {
    char ext_lower[PATH_MAX_LENGTH] = {0};

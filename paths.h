@@ -82,8 +82,6 @@ struct string_list *path_get_subsystem_list(void);
 
 const char *path_get(enum rarch_path_type type);
 
-bool path_get_content(char **fullpath);
-
 const char *path_get_current_savefile_dir(void);
 
 bool path_get_default_shader_preset(char **preset);

@@ -2701,14 +2701,12 @@ static int menu_displaylist_parse_horizontal_content_actions(
    const char *core_path           = NULL;
    const char *core_name           = NULL;
    const char *db_name             = NULL;
-   char *fullpath                  = NULL;
    playlist_t *playlist            = NULL;
    settings_t *settings            = config_get_ptr();
+   const char *fullpath            = path_get(RARCH_PATH_CONTENT);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
-
-   path_get_content(&fullpath);
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          && string_is_equal(menu->deferred_path, fullpath))

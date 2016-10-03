@@ -668,7 +668,6 @@ static bool init_content_file_set_attribs(
    }
    else
    {
-      char       *fullpath        = NULL;
       rarch_system_info_t *system = NULL;
       settings_t *settings        = config_get_ptr();
 
@@ -681,14 +680,14 @@ static bool init_content_file_set_attribs(
       }
       attr.i              |= (!content_does_not_need_content())  << 2;
 
-      if (!path_get_content(&fullpath)
+      if (path_is_empty(RARCH_PATH_CONTENT)
             && content_does_not_need_content()
             && settings->set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
       {
-         if(fullpath)
-            string_list_append(content, fullpath, attr);
+         if (!path_is_empty(RARCH_PATH_CONTENT))
+            string_list_append(content, path_get(RARCH_PATH_CONTENT), attr);
       }
    }
 
@@ -825,13 +824,10 @@ error:
 static void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   char *fullpath                    = NULL;
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
 
    if (!wrap_args)
       return;
-
-   path_get_content(&fullpath);
 
    wrap_args->no_content       = menu_driver_ctl(
          RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
@@ -851,8 +847,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
       wrap_args->sram_path     = dir_get(RARCH_DIR_SAVEFILE);
    if (!dir_is_empty(RARCH_DIR_SAVESTATE))
       wrap_args->state_path    = dir_get(RARCH_DIR_SAVESTATE);
-   if (fullpath && *fullpath)
-      wrap_args->content_path  = fullpath;
+   if (!path_is_empty(RARCH_PATH_CONTENT))
+      wrap_args->content_path  = path_get(RARCH_PATH_CONTENT);
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL))
       wrap_args->libretro_path = string_is_empty(path_get(RARCH_PATH_CORE)) ? NULL :
          path_get(RARCH_PATH_CORE);
@@ -874,9 +870,6 @@ static bool task_load_content(content_ctx_info_t *content_info,
 {
    char name[PATH_MAX_LENGTH]                 = {0};
    char msg[PATH_MAX_LENGTH]                  = {0};
-   char *fullpath                             = NULL;
-
-   path_get_content(&fullpath);
 
    if (launched_from_menu)
    {
@@ -885,12 +878,12 @@ static bool task_load_content(content_ctx_info_t *content_info,
       menu_display_set_msg_force(true);
       menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
-      if (!string_is_empty(fullpath))
-         fill_pathname_base(name, fullpath, sizeof(name));
+      if (!path_is_empty(RARCH_PATH_CONTENT))
+         fill_pathname_base(name, path_get(RARCH_PATH_CONTENT), sizeof(name));
 #endif
 
       /** Show loading OSD message */
-      if (!string_is_empty(fullpath))
+      if (!string_is_empty(path_get(RARCH_PATH_CONTENT)))
       {
          snprintf(msg, sizeof(msg), "%s %s ...",
                msg_hash_to_str(MSG_LOADING),
@@ -918,7 +911,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
          menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &info);
 #endif
 
-      strlcpy(tmp, fullpath, sizeof(tmp));
+      strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
 
       if (!launched_from_menu)
       {
@@ -974,7 +967,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
 error:
    if (launched_from_menu)
    {
-      if (!string_is_empty(fullpath) && !string_is_empty(name))
+      if (!path_is_empty(RARCH_PATH_CONTENT) && !string_is_empty(name))
       {
          snprintf(msg, sizeof(msg), "%s %s.\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD),
@@ -991,7 +984,6 @@ static bool command_event_cmd_exec(const char *data,
 #if defined(HAVE_DYNAMIC)
    content_ctx_info_t content_info;
 #endif
-   char *fullpath           = NULL;
 
 #if defined(HAVE_DYNAMIC)
    content_info.argc        = 0;
@@ -1004,9 +996,7 @@ static bool command_event_cmd_exec(const char *data,
 #endif
 #endif
 
-   path_get_content(&fullpath);
-
-   if (fullpath != (void*)data)
+   if (path_get(RARCH_PATH_CONTENT) != (void*)data)
    {
       path_clear(RARCH_PATH_CONTENT);
       if (!string_is_empty(data))
@@ -1247,13 +1237,8 @@ bool task_push_content_load_default(
          break;
 #ifndef HAVE_DYNAMIC
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-         {
-            char *fullpath       = NULL;
-
-            path_get_content(&fullpath);
-            command_event_cmd_exec(fullpath, mode);
-            command_event(CMD_EVENT_QUIT, NULL);
-         }
+         command_event_cmd_exec(path_get(RARCH_PATH_CONTENT), mode);
+         command_event(CMD_EVENT_QUIT, NULL);
          break;
 #endif
       case CONTENT_MODE_LOAD_NONE:

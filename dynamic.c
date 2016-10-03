@@ -1026,8 +1026,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
          if (string_is_empty(settings->directory.system))
          {
-            char *fullpath = NULL;
-            if (path_get_content(&fullpath) && fullpath)
+            const char *fullpath = path_get(RARCH_PATH_CONTENT);
+            if (!string_is_empty(fullpath))
             {
                char temp_path[PATH_MAX_LENGTH] = {0};
 
