@@ -1597,21 +1597,6 @@ static void command_event_save_current_config(int override_type)
       runloop_msg_queue_push(msg, 1, 180, true);
 }
 
-/**
- * event_save_state
- * @path            : Path to state.
- * @s               : Message.
- * @len             : Size of @s.
- *
- * Saves a state with path being @path.
- **/
-static void command_event_save_state(const char *path,
-      char *s, size_t len)
-{
-   if (!content_save_state(path, true))
-      return;
-}
-
 static void command_event_undo_save_state(char *s, size_t len)
 {
    if (content_undo_save_buf_is_empty())
@@ -1623,24 +1608,6 @@ static void command_event_undo_save_state(char *s, size_t len)
 
    if (!content_undo_save_state())
       return;
-}
-
-/**
- * event_load_state
- * @path            : Path to state.
- * @s               : Message.
- * @len             : Size of @s.
- *
- * Loads a state with path being @path.
- **/
-static void command_event_load_state(const char *path, char *s, size_t len)
-{
-   if (!content_load_state(path, false, false))
-      return;
-
-#ifdef HAVE_NETWORKING
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
-#endif
 }
 
 static void command_event_undo_load_state(char *s, size_t len)
@@ -1695,11 +1662,16 @@ static void command_event_main_state(unsigned cmd)
       switch (cmd)
       {
          case CMD_EVENT_SAVE_STATE:
-            command_event_save_state(path, msg, sizeof(msg));
+            content_save_state(path, true);
             push_msg = false;
             break;
          case CMD_EVENT_LOAD_STATE:
-            command_event_load_state(path, msg, sizeof(msg));
+            if (content_load_state(path, false, false))
+            {
+#ifdef HAVE_NETWORKING
+               netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
+#endif
+            }
             push_msg = false;
             break;
          case CMD_EVENT_UNDO_LOAD_STATE:
