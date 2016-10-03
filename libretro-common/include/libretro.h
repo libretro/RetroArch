@@ -995,7 +995,7 @@ struct retro_hw_render_context_negotiation_interface
  * endianness from the one it was saved on. */
 #define RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT (1 << 5)
 /* Serialized state cannot be loaded on a different platform from the one it
- * was saved on for reasons other than endianness, such as word or C type size
+ * was saved on for reasons other than endianness, such as word size
  * dependence */
 #define RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT (1 << 6)
 
