@@ -1504,11 +1504,6 @@ static int menu_displaylist_parse_netplay(
       menu_displaylist_info_t *info)
 {
 #ifdef HAVE_NETWORKING
-   menu_handle_t *menu = NULL;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      menu = NULL;
-
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
