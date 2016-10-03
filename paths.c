@@ -444,13 +444,6 @@ void path_fill_names(void)
    }
 }
 
-/* Core file path */
-
-char *path_get_core_ptr(void)
-{
-   return path_libretro;
-}
-
 char *path_get_ptr(enum rarch_path_type type)
 {
    switch (type)

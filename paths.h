@@ -70,10 +70,6 @@ void path_set_basename(const char *path);
 
 size_t path_get_core_size(void);
 
-/* get ptr functions */
-
-char *path_get_core_ptr(void);
-
 /* get list functions */
 
 struct string_list *path_get_subsystem_list(void);
