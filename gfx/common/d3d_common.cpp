@@ -403,7 +403,7 @@ void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-   if (d3d_lock_rectangle(tex, 0, lr, NULL, NULL, 0, 0))
+   if (d3d_lock_rectangle(tex, 0, lr, NULL, 0, 0))
    {
 #if defined(_XBOX360) && defined(_XBOX360)
       D3DSURFACE_DESC desc;
