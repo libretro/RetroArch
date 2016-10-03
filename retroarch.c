@@ -691,15 +691,18 @@ static void retroarch_parse_input(int argc, char *argv[])
 #ifdef HAVE_NETWORKING
          case 'H':
             retroarch_override_setting_set(
-                  RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
+                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
             netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE, NULL);
             settings->netplay.is_client = false;
             break;
 
          case 'C':
             retroarch_override_setting_set(
+                  RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
+            retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
             netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE, NULL);
+            settings->netplay.is_client = true;
             strlcpy(settings->netplay.server, optarg,
                   sizeof(settings->netplay.server));
             break;

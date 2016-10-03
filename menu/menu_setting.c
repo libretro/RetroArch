@@ -1656,15 +1656,12 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_NETPLAY_MODE:
 #ifdef HAVE_NETWORKING
-         if (!settings->netplay.is_client)
-            *settings->netplay.server = '\0';
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
 #ifdef HAVE_NETWORKING
-         if (settings->netplay.is_spectate)
-            *settings->netplay.server = '\0';
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
 #endif
          break;
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
