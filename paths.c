@@ -634,14 +634,6 @@ bool path_is_empty(enum rarch_path_type type)
    return false;
 }
 
-bool path_get_default_shader_preset(char **preset)
-{
-   if (!preset)
-      return false;
-   *preset       = (char*)path_default_shader_preset;
-   return true;
-}
-
 void path_clear(enum rarch_path_type type)
 {
    switch (type)

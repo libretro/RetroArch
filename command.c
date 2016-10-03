@@ -1393,17 +1393,16 @@ static void command_event_disable_overrides(void)
 
 static void command_event_restore_default_shader_preset(void)
 {
-   /* auto shader preset: reload the original shader */
-
-   char *preset = NULL;
-
-   if (path_get_default_shader_preset(&preset) && !string_is_empty(preset))
+   if (!path_is_empty(RARCH_PATH_DEFAULT_SHADER_PRESET))
    {
+      /* auto shader preset: reload the original shader */
       settings_t *settings = config_get_ptr();
 
       RARCH_LOG("Shaders: restoring default shader preset to %s\n",
-            preset);
-      strlcpy(settings->path.shader, preset, sizeof(settings->path.shader));
+            path_get(RARCH_PATH_DEFAULT_SHADER_PRESET));
+      strlcpy(settings->path.shader,
+            path_get(RARCH_PATH_DEFAULT_SHADER_PRESET),
+            sizeof(settings->path.shader));
    }
 
    path_clear(RARCH_PATH_DEFAULT_SHADER_PRESET);

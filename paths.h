@@ -82,8 +82,6 @@ const char *path_get(enum rarch_path_type type);
 
 const char *path_get_current_savefile_dir(void);
 
-bool path_get_default_shader_preset(char **preset);
-
 /* clear functions */
 
 void path_clear(enum rarch_path_type type);
