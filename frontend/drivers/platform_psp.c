@@ -332,7 +332,6 @@ static void frontend_psp_init(void *data)
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER) || defined(VITA)
-   char *fullpath = NULL;
    char argp[512] = {0};
    SceSize   args = 0;
 
@@ -340,12 +339,10 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
    args = strlen(argp) + 1;
 
 #ifndef IS_SALAMANDER
-   path_get_content(&fullpath);
-
-   if (should_load_game && !string_is_empty(fullpath))
+   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
       argp[args] = '\0';
-      strlcat(argp + args, fullpath, sizeof(argp) - args);
+      strlcat(argp + args, path_get(RARCH_PATH_CONTENT), sizeof(argp) - args);
       args += strlen(argp + args) + 1;
    }
 #endif

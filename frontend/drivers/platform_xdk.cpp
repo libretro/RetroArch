@@ -1263,26 +1263,21 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
       XLaunchNewImage(path, NULL);
 #else
 #ifdef _XBOX
-   char *fullpath = NULL;
-
-   path_get_content(&fullpath);
-
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;
    memset(&ptr, 0, sizeof(ptr));
 
-
-   if (should_load_game && !string_is_empty(fullpath))
-      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", fullpath);
+   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", path_get(RARCH_PATH_CONTENT));
 
    if (!string_is_empty(path))
       XLaunchNewImage(path, !string_is_empty(ptr.Data) ? &ptr : NULL);
 #elif defined(_XBOX360)
    char game_path[1024] = {0};
 
-   if (should_load_game && !string_is_empty(fullpath))
+   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
    {
-      strlcpy(game_path, fullpath, sizeof(game_path));
+      strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
       XSetLaunchData(game_path, MAX_LAUNCH_DATA_SIZE);
    }
 

@@ -132,7 +132,6 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
    size_t list_size;
    core_info_list_t *core_info_list = NULL;
    const core_info_t *core_info     = NULL;
-   char *fullpath                   = NULL;
 
    switch (message)
    {
@@ -142,10 +141,9 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
             unsigned i;
             /* Add items to list.  */
 
-            path_get_content(&fullpath);
             core_info_get_list(&core_info_list);
             core_info_list_get_supported_cores(core_info_list,
-                  (const char*)fullpath, &core_info, &list_size);
+                  path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
 
             hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
 
@@ -175,12 +173,11 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
                         {
                            int lbItem;
                            const core_info_t *info = NULL;
-                           path_get_content(&fullpath);
                            HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
                            lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
                            core_info_get_list(&core_info_list);
                            core_info_list_get_supported_cores(core_info_list,
-                                 (const char*)fullpath, &core_info, &list_size);
+                                 path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
                            info = (const core_info_t*)&core_info[lbItem];
                            runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
                         } 
