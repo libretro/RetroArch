@@ -1703,6 +1703,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    struct config_path_setting     *path_settings   = NULL;
    char *override_username                         = NULL;
 #ifdef HAVE_NETWORKING
+   bool override_netplay_is_client                 = false;
    char *override_netplay_ip_address               = NULL;
 #endif
    global_t   *global                              = global_get_ptr();
@@ -1768,6 +1769,8 @@ static bool config_load_file(const char *path, bool set_defaults,
       override_username = strdup(settings->username);
 
 #ifdef HAVE_NETWORKING
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
+      override_netplay_is_client = settings->netplay.is_client;
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL))
       override_netplay_ip_address = strdup(settings->netplay.server);
 #endif
@@ -1810,10 +1813,11 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 #ifdef HAVE_NETWORKING
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
+   {
       CONFIG_GET_BOOL_BASE(conf, settings, netplay.is_spectate,
             "netplay_spectator_mode_enable");
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, netplay.is_client, "netplay_mode");
+   }
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
@@ -1956,6 +1960,8 @@ static bool config_load_file(const char *path, bool set_defaults,
    }
 
 #ifdef HAVE_NETWORKING
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
+      settings->netplay.is_client = override_netplay_is_client;
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL))
    {
       strlcpy(settings->netplay.server, override_netplay_ip_address, sizeof(settings->netplay.server));
