@@ -587,7 +587,7 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
    SETTING_PATH("core_updater_buildbot_url", settings->network.buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->network.buildbot_assets_url, false, NULL, true);
 #ifdef HAVE_NETWORKING
-   SETTING_PATH("netplay_ip_address",       global->netplay.server, false, NULL, true);
+   SETTING_PATH("netplay_ip_address",       settings->netplay.server, false, NULL, true);
 #endif
    SETTING_PATH("recording_output_directory",
          global->record.output_dir, false, NULL, true);
@@ -702,7 +702,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable, true, true, false);
    SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable, true, true, false);
    SETTING_BOOL("all_users_control_menu",        &settings->input.all_users_control_menu, true, all_users_control_menu, false);
-   SETTING_BOOL("netplay_client_swap_input",     &settings->input.netplay_client_swap_input, true, netplay_client_swap_input, false);
+   SETTING_BOOL("netplay_client_swap_input",     &settings->netplay.swap_input, true, netplay_client_swap_input, false);
    SETTING_BOOL("input_descriptor_label_show",   &settings->input.input_descriptor_label_show, true, input_descriptor_label_show, false);
    SETTING_BOOL("input_descriptor_hide_unbound", &settings->input.input_descriptor_hide_unbound, true, input_descriptor_hide_unbound, false);
    SETTING_BOOL("load_dummy_on_core_shutdown",   &settings->load_dummy_on_core_shutdown, true, load_dummy_on_core_shutdown, false);
@@ -802,8 +802,8 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("network_remote_enable",        &settings->network_remote_enable, false, false /* TODO */, false);
 #endif
 #ifdef HAVE_NETWORKING
-   SETTING_BOOL("netplay_spectator_mode_enable",&global->netplay.is_spectate, false, false /* TODO */, false);
-   SETTING_BOOL("netplay_mode",                 &global->netplay.is_client, false, false /* TODO */, false);
+   SETTING_BOOL("netplay_spectator_mode_enable",&settings->netplay.is_spectate, false, false /* TODO */, false);
+   SETTING_BOOL("netplay_mode",                 &settings->netplay.is_client, false, false /* TODO */, false);
 #endif
    SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite, true, block_sram_overwrite, false);
    SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index, true, savestate_auto_index, false);
@@ -932,9 +932,9 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx, true, aspect_ratio_idx, false);
    SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETWORKING
-   SETTING_INT("netplay_ip_port",              &global->netplay.port, false, 0 /* TODO */, false);
-   SETTING_INT("netplay_delay_frames",         &global->netplay.sync_frames, true, 16, false);
-   SETTING_INT("netplay_check_frames",         &global->netplay.check_frames, false, 0, false);
+   SETTING_INT("netplay_ip_port",              &settings->netplay.port, false, 0 /* TODO */, false);
+   SETTING_INT("netplay_delay_frames",         &settings->netplay.sync_frames, true, 16, false);
+   SETTING_INT("netplay_check_frames",         &settings->netplay.check_frames, false, 0, false);
 #endif
 #ifdef HAVE_LANGEXTRA
    SETTING_INT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH, false);
@@ -1770,7 +1770,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 #ifdef HAVE_NETWORKING
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL))
-      override_netplay_ip_address = strdup(global->netplay.server);
+      override_netplay_ip_address = strdup(settings->netplay.server);
 #endif
 
    /* Boolean settings */
@@ -1811,10 +1811,10 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 #ifdef HAVE_NETWORKING
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
-      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_spectate,
+      CONFIG_GET_BOOL_BASE(conf, settings, netplay.is_spectate,
             "netplay_spectator_mode_enable");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
-      CONFIG_GET_BOOL_BASE(conf, global, netplay.is_client, "netplay_mode");
+      CONFIG_GET_BOOL_BASE(conf, settings, netplay.is_client, "netplay_mode");
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
@@ -1861,11 +1861,11 @@ static bool config_load_file(const char *path, bool set_defaults,
 
 #ifdef HAVE_NETWORKING
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL))
-      CONFIG_GET_INT_BASE(conf, global, netplay.sync_frames, "netplay_delay_frames");
+      CONFIG_GET_INT_BASE(conf, settings, netplay.sync_frames, "netplay_delay_frames");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL))
-      CONFIG_GET_INT_BASE(conf, global, netplay.check_frames, "netplay_check_frames");
+      CONFIG_GET_INT_BASE(conf, settings, netplay.check_frames, "netplay_check_frames");
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL))
-      CONFIG_GET_INT_BASE(conf, global, netplay.port, "netplay_ip_port");
+      CONFIG_GET_INT_BASE(conf, settings, netplay.port, "netplay_ip_port");
 #endif
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1959,7 +1959,7 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_NETWORKING
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL))
    {
-      strlcpy(global->netplay.server, override_netplay_ip_address, sizeof(global->netplay.server));
+      strlcpy(settings->netplay.server, override_netplay_ip_address, sizeof(settings->netplay.server));
       free(override_netplay_ip_address);
    }
 #endif
@@ -2288,13 +2288,6 @@ bool config_load_override(void)
       return false;
 
    /* Re-load the configuration with any overrides that might have been found */
-#ifdef HAVE_NETWORKING
-   if (global && global->netplay.enable)
-   {
-      RARCH_WARN("[overrides] can't use overrides in conjunction with netplay, disabling overrides.\n");
-      return false;
-   }
-#endif
 
    /* Store the libretro_path we're using since it will be 
     * overwritten by the override when reloading. */

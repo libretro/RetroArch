@@ -35,6 +35,9 @@ enum rarch_netplay_ctl_state
    RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE,
    RARCH_NETPLAY_CTL_POST_FRAME,
    RARCH_NETPLAY_CTL_PRE_FRAME,
+   RARCH_NETPLAY_CTL_ENABLE,
+   RARCH_NETPLAY_CTL_DISABLE,
+   RARCH_NETPLAY_CTL_IS_ENABLED,
    RARCH_NETPLAY_CTL_IS_DATA_INITED,
    RARCH_NETPLAY_CTL_PAUSE,
    RARCH_NETPLAY_CTL_UNPAUSE,
@@ -206,7 +209,11 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
 bool netplay_disconnect(netplay_t *netplay);
 
 /**
- * init_netplay:
+ * init_netplay
+ * @is_client            : true if starting Netplay as client
+ * @is_spectate          : true if running in spectate mode
+ * @server               : server address to connect to (client only)
+ * @port                 : TCP port to host on/connect to
  *
  * Initializes netplay.
  *
@@ -214,7 +221,8 @@ bool netplay_disconnect(netplay_t *netplay);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool init_netplay(void);
+bool init_netplay(bool is_client, bool is_spectate, const char *server,
+                  unsigned port);
 
 void deinit_netplay(void);
 

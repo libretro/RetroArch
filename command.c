@@ -1209,7 +1209,7 @@ static void command_event_load_auto_state(void)
    global_t   *global   = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
-   if (global->netplay.enable && !global->netplay.is_spectate)
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) && !settings->netplay.is_spectate)
       return;
 #endif
 
@@ -1312,8 +1312,7 @@ static bool event_init_content(void)
    if (content_does_not_need_content())
    {
 #ifdef HAVE_NETWORKING
-      global_t   *global = global_get_ptr();
-      if (global->netplay.enable)
+      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
          RARCH_ERR("sorry, unimplemented: cores that don't demand content cannot participate in netplay\n");
 #endif
       return true;
@@ -2351,7 +2350,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT:
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETWORKING
-         if (!init_netplay())
+         if (!init_netplay(settings->netplay.is_client,
+              settings->netplay.is_spectate, settings->netplay.server,
+              settings->netplay.port))
             return false;
 #endif
          break;

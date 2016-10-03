@@ -57,6 +57,10 @@
 #include "menu/menu_driver.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "network/netplay/netplay.h"
+#endif
+
 #include "config.features.h"
 #include "content.h"
 #include "core_type.h"
@@ -688,20 +692,20 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'H':
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-            global->netplay.enable = true;
-            *global->netplay.server = '\0';
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE, NULL);
+            settings->netplay.is_client = false;
             break;
 
          case 'C':
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-            global->netplay.enable = true;
-            strlcpy(global->netplay.server, optarg,
-                  sizeof(global->netplay.server));
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE, NULL);
+            strlcpy(settings->netplay.server, optarg,
+                  sizeof(settings->netplay.server));
             break;
 
          case 'F':
-            global->netplay.sync_frames = strtol(optarg, NULL, 0);
+            settings->netplay.sync_frames = strtol(optarg, NULL, 0);
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
             break;
@@ -709,19 +713,19 @@ static void retroarch_parse_input(int argc, char *argv[])
          case RA_OPT_CHECK_FRAMES:
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_CHECK_FRAMES, NULL);
-            global->netplay.check_frames = strtoul(optarg, NULL, 0);
+            settings->netplay.check_frames = strtoul(optarg, NULL, 0);
             break;
 
          case RA_OPT_PORT:
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT, NULL);
-            global->netplay.port = strtoul(optarg, NULL, 0);
+            settings->netplay.port = strtoul(optarg, NULL, 0);
             break;
 
          case RA_OPT_SPECTATE:
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-            global->netplay.is_spectate = true;
+            settings->netplay.is_spectate = true;
             break;
 
 #if defined(HAVE_NETWORK_CMD)

@@ -32,6 +32,10 @@
 #include "../record/record_driver.h"
 #include "audio_thread_wrapper.h"
 
+#ifdef HAVE_NETWORKING
+#include "network/netplay/netplay.h"
+#endif
+
 #include "../command.h"
 #include "../driver.h"
 #include "../configuration.h"
@@ -855,8 +859,7 @@ bool audio_driver_set_callback(const void *data)
 {
    const struct retro_audio_callback *cb = (const struct retro_audio_callback*)data;
 #ifdef HAVE_NETWORKING
-   global_t *global = global_get_ptr();
-   if (global->netplay.enable)
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
       return false;
 #endif
 

@@ -148,20 +148,6 @@ typedef struct global
       char remapfile[PATH_MAX_LENGTH];
    } name;
 
-#ifdef HAVE_NETWORKING
-   /* Netplay. */
-   struct
-   {
-      char server[PATH_MAX_LENGTH];
-      bool enable;
-      bool is_client;
-      bool is_spectate;
-      unsigned sync_frames;
-      unsigned check_frames;
-      unsigned port;
-   } netplay;
-#endif
-
    /* Recording. */
    struct
    {
