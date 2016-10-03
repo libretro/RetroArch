@@ -701,7 +701,7 @@ static void task_load_handler(retro_task_t *task)
 
    remaining = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
 
-   bytes_read = filestream_read(state->file, state->data + state->bytes_read, remaining);
+   bytes_read = filestream_read(state->file, (uint8_t*)state->data + state->bytes_read, remaining);
 
    state->bytes_read += bytes_read;
    task->progress = (state->bytes_read / (float)state->size) * 100;
