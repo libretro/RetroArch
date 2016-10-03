@@ -1286,7 +1286,7 @@ static void config_set_defaults(void)
                   sizeof(settings->path.osk_overlay));
 #endif
 
-      dir_set_osk_overlay(temp_path);
+      dir_set(RARCH_DIR_OSK_OVERLAY, temp_path);
    }
    else
    {
@@ -1296,7 +1296,7 @@ static void config_set_defaults(void)
             settings->directory.overlay,
             sizeof(temp_path));
 
-      dir_set_osk_overlay(temp_path);
+      dir_set(RARCH_DIR_OSK_OVERLAY, temp_path);
    }
 #endif
 #ifdef HAVE_MENU
@@ -1316,11 +1316,11 @@ static void config_set_defaults(void)
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
          !string_is_empty(g_defaults.dir.savestate))
-      dir_set_savestate(g_defaults.dir.savestate);
+      dir_set(RARCH_DIR_SAVESTATE, g_defaults.dir.savestate);
 
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
          !string_is_empty(g_defaults.dir.sram))
-      dir_set_savefile(g_defaults.dir.sram);
+      dir_set(RARCH_DIR_SAVEFILE, g_defaults.dir.sram);
 
    if (!string_is_empty(g_defaults.dir.system))
       strlcpy(settings->directory.system,
@@ -2123,11 +2123,11 @@ static bool config_load_file(const char *path, bool set_defaults,
          config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
-         dir_set_savefile(g_defaults.dir.sram);
+         dir_set(RARCH_DIR_SAVEFILE, g_defaults.dir.sram);
 
       else if (path_is_directory(tmp_str))
       {
-         dir_set_savefile(tmp_str);
+         dir_set(RARCH_DIR_SAVEFILE, tmp_str);
 
          strlcpy(global->name.savefile, tmp_str,
                sizeof(global->name.savefile));
@@ -2144,10 +2144,10 @@ static bool config_load_file(const char *path, bool set_defaults,
          config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
       if (string_is_equal(tmp_str, "default"))
-         dir_set_savestate(g_defaults.dir.savestate);
+         dir_set(RARCH_DIR_SAVESTATE, g_defaults.dir.savestate);
       else if (path_is_directory(tmp_str))
       {
-         dir_set_savestate(tmp_str);
+         dir_set(RARCH_DIR_SAVESTATE, tmp_str);
 
          strlcpy(global->name.savestate, tmp_str,
                sizeof(global->name.savestate));

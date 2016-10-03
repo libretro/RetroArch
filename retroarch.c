@@ -877,11 +877,11 @@ static void retroarch_parse_input(int argc, char *argv[])
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
          path_is_directory(global->name.savefile))
-      dir_set_savefile(global->name.savefile);
+      dir_set(RARCH_DIR_SAVEFILE, global->name.savefile);
 
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL) &&
          path_is_directory(global->name.savestate))
-      dir_set_savestate(global->name.savestate);
+      dir_set(RARCH_DIR_SAVESTATE, global->name.savestate);
 }
 
 static bool retroarch_init_state(void)

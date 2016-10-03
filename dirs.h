@@ -50,19 +50,7 @@ char *dir_get_ptr(enum rarch_dir_type type);
 
 const char *dir_get(enum rarch_dir_type type);
 
-/* set functions */
-
-void dir_set_current_savefile(const char *path);
-
-void dir_set_current_savestate(const char *path);
-
-void dir_set_osk_overlay(const char *path);
-
-void dir_set_savefile(const char *path);
-
-void dir_set_savestate(const char *path);
-
-void dir_set_system(const char *path);
+void dir_set(enum rarch_dir_type type, const char *path);
 
 void dir_check_defaults(void);
 

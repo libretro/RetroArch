@@ -204,8 +204,8 @@ void path_set_redirect(void)
       }
    }
 
-   dir_set_current_savefile(new_savefile_dir);
-   dir_set_current_savestate(new_savestate_dir);
+   dir_set(RARCH_DIR_CURRENT_SAVEFILE, new_savefile_dir);
+   dir_set(RARCH_DIR_CURRENT_SAVESTATE, new_savestate_dir);
 }
 
 void path_set_basename(const char *path)

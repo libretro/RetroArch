@@ -305,42 +305,37 @@ const char *dir_get(enum rarch_dir_type type)
    return NULL;
 }
 
-/* set functions */
-
-void dir_set_current_savefile(const char *path)
+void dir_set(enum rarch_dir_type type, const char *path)
 {
-   strlcpy(current_savefile_dir, path,
-         sizeof(current_savefile_dir));
-}
-
-void dir_set_current_savestate(const char *path)
-{
-   strlcpy(current_savestate_dir, path,
-         sizeof(current_savestate_dir));
-}
-
-void dir_set_osk_overlay(const char *path)
-{
-   strlcpy(dir_osk_overlay, path,
-         sizeof(dir_osk_overlay));
-}
-
-void dir_set_system(const char *path)
-{
-   strlcpy(dir_system, path,
-         sizeof(dir_system));
-}
-
-void dir_set_savestate(const char *path)
-{
-   strlcpy(dir_savestate, path,
-         sizeof(dir_savestate));
-}
-
-void dir_set_savefile(const char *path)
-{
-   strlcpy(dir_savefile, path,
-         sizeof(dir_savefile));
+   switch (type)
+   {
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         strlcpy(current_savefile_dir, path,
+               sizeof(current_savefile_dir));
+         break;
+      case RARCH_DIR_SAVEFILE:
+         strlcpy(dir_savefile, path,
+               sizeof(dir_savefile));
+         break;
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         strlcpy(current_savestate_dir, path,
+               sizeof(current_savestate_dir));
+         break;
+      case RARCH_DIR_SAVESTATE:
+         strlcpy(dir_savestate, path,
+               sizeof(dir_savestate));
+         break;
+      case RARCH_DIR_SYSTEM:
+         strlcpy(dir_system, path,
+               sizeof(dir_system));
+         break;
+      case RARCH_DIR_OSK_OVERLAY:
+         strlcpy(dir_osk_overlay, path,
+               sizeof(dir_osk_overlay));
+         break;
+      case RARCH_DIR_NONE:
+         break;
+   }
 }
 
 static void check_defaults_dir_create_dir(const char *path)

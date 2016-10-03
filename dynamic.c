@@ -1034,7 +1034,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                      fullpath);
                fill_pathname_basedir(temp_path, fullpath, sizeof(temp_path));
-               dir_set_system(temp_path);
+               dir_set(RARCH_DIR_SYSTEM, temp_path);
             }
 
             *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
