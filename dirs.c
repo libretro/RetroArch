@@ -49,10 +49,13 @@ static char current_savefile_dir[PATH_MAX_LENGTH]       = {0};
 static char current_savestate_dir[PATH_MAX_LENGTH]      = {0};
 static char dir_savestate[PATH_MAX_LENGTH]              = {0};
 
-static bool shader_dir_init(struct rarch_dir_list *dir_list)
+/* init functions */
+
+bool dir_init_shader(void)
 {
    unsigned i;
-   settings_t *settings  = config_get_ptr();
+   struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
+   settings_t           *settings  = config_get_ptr();
 
    if (!*settings->directory.video_shader)
       return false;
@@ -74,13 +77,6 @@ static bool shader_dir_init(struct rarch_dir_list *dir_list)
             msg_hash_to_str(MSG_FOUND_SHADER),
             dir_list->list->elems[i].data);
    return true;
-}
-
-/* init functions */
-
-bool dir_init_shader(void)
-{
-   return shader_dir_init(&dir_shader_list);
 }
 
 /* free functions */
