@@ -867,9 +867,6 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
 {
    unsigned count                     = 0;
    struct config_int_setting     *tmp = NULL;
-#ifdef HAVE_NETWORKING
-   global_t   *global                 = global_get_ptr();
-#endif
 
    SETTING_INT("input_bind_timeout",           &settings->input.bind_timeout,     true, input_bind_timeout, false);
    SETTING_INT("input_turbo_period",           &settings->input.turbo_period,     true, turbo_period, false);
@@ -2209,11 +2206,8 @@ bool config_load_override(void)
    config_file_t *new_conf                = NULL;
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
-   bool should_append                     = false;
    rarch_system_info_t *system            = NULL;
-#ifdef HAVE_NETWORKING
-   global_t *global                       = global_get_ptr();
-#endif
+   bool should_append                     = false;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
