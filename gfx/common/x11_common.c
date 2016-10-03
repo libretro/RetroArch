@@ -56,6 +56,7 @@ static bool g_x11_has_focus;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
 static bool g_x11_true_full;
+bool g_x11_entered            = false;
 
 unsigned g_x11_screen;
 
@@ -645,6 +646,14 @@ bool x11_alive(void *data)
                   x_input_poll_wheel(&event.xbutton, true);
                   break;
             }
+            break;
+
+         case EnterNotify:
+            g_x11_entered = true;
+            break;
+
+         case LeaveNotify:
+            g_x11_entered = false;
             break;
 
          case ButtonRelease:

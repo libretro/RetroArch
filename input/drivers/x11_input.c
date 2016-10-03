@@ -300,6 +300,8 @@ static void x_input_free(void *data)
    free(x11);
 }
 
+extern bool g_x11_entered;
+
 static void x_input_poll_mouse(x11_input_t *x11)
 {
    unsigned mask;
@@ -316,31 +318,34 @@ static void x_input_poll_mouse(x11_input_t *x11)
             &win_x, &win_y,
             &mask);
 
-   x11->mouse_x  = win_x;
-   x11->mouse_y  = win_y;
-   x11->mouse_l  = mask & Button1Mask; 
-   x11->mouse_m  = mask & Button2Mask; 
-   x11->mouse_r  = mask & Button3Mask; 
-
-   /* Somewhat hacky, but seem to do the job. */
-   if (x11->grab_mouse && video_driver_is_focused())
+   if (g_x11_entered)
    {
-      int mid_w, mid_h;
-      struct video_viewport vp = {0};
+      x11->mouse_x  = win_x;
+      x11->mouse_y  = win_y;
+      x11->mouse_l  = mask & Button1Mask; 
+      x11->mouse_m  = mask & Button2Mask; 
+      x11->mouse_r  = mask & Button3Mask; 
 
-      video_driver_get_viewport_info(&vp);
-
-      mid_w = vp.full_width >> 1;
-      mid_h = vp.full_height >> 1;
-
-      if (x11->mouse_x != mid_w || x11->mouse_y != mid_h)
+      /* Somewhat hacky, but seem to do the job. */
+      if (x11->grab_mouse && video_driver_is_focused())
       {
-         XWarpPointer(x11->display, None,
-               x11->win, 0, 0, 0, 0,
-               mid_w, mid_h);
+         int mid_w, mid_h;
+         struct video_viewport vp = {0};
+
+         video_driver_get_viewport_info(&vp);
+
+         mid_w = vp.full_width >> 1;
+         mid_h = vp.full_height >> 1;
+
+         if (x11->mouse_x != mid_w || x11->mouse_y != mid_h)
+         {
+            XWarpPointer(x11->display, None,
+                  x11->win, 0, 0, 0, 0,
+                  mid_w, mid_h);
+         }
+         x11->mouse_last_x = mid_w;
+         x11->mouse_last_y = mid_h;
       }
-      x11->mouse_last_x = mid_w;
-      x11->mouse_last_y = mid_h;
    }
 }
 

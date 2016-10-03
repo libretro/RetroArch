@@ -481,6 +481,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    swa.colormap = g_x11_cmap = XCreateColormap(g_x11_dpy,
          RootWindow(g_x11_dpy, vi->screen), vi->visual, AllocNone);
    swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
+      LeaveWindowMask | EnterWindowMask |
       ButtonReleaseMask | ButtonPressMask;
    swa.override_redirect = fullscreen ? True : False;
 
