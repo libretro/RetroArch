@@ -204,7 +204,7 @@ void path_set_redirect(void)
       }
    }
 
-   dir_set(RARCH_DIR_CURRENT_SAVEFILE, new_savefile_dir);
+   dir_set(RARCH_DIR_CURRENT_SAVEFILE,  new_savefile_dir);
    dir_set(RARCH_DIR_CURRENT_SAVESTATE, new_savestate_dir);
 }
 
@@ -212,9 +212,8 @@ void path_set_basename(const char *path)
 {
    char *dst          = NULL;
 
-   path_set(RARCH_PATH_CONTENT, path);
-
-   strlcpy(path_main_basename,     path, sizeof(path_main_basename));
+   path_set(RARCH_PATH_CONTENT,  path);
+   path_set(RARCH_PATH_BASENAME, path);
 
 #ifdef HAVE_COMPRESSION
    /* Removing extension is a bit tricky for compressed files.
