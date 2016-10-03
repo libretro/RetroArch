@@ -5778,22 +5778,6 @@ static bool setting_append_list(
 #if defined(HAVE_NETWORK_CMD)
             unsigned user;
 #endif
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->netplay.swap_input,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT),
-                  netplay_client_swap_input,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT);
-
             CONFIG_STRING(
                   list, list_info,
                   settings->netplay.server,
@@ -5809,37 +5793,20 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
 
-            CONFIG_BOOL(
+            CONFIG_UINT(
                   list, list_info,
-                  &settings->netplay.is_client,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_MODE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_MODE),
-                  false,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &settings->netplay.port,
+                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT),
+                  RARCH_DEFAULT_PORT,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_MODE);
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->netplay.is_spectate,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE),
-                  false,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE);
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 65535, 1, true, true);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
 
             CONFIG_UINT(
                   list, list_info,
@@ -5871,20 +5838,37 @@ static bool setting_append_list(
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
             menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES);
 
-            CONFIG_UINT(
+            CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.port,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT),
-                  RARCH_DEFAULT_PORT,
+                  &settings->netplay.is_spectate,
+                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE),
+                  false,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
-                  general_read_handler);
-            menu_settings_list_current_add_range(list, list_info, 1, 99999, 1, true, true);
-            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->netplay.swap_input,
+                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT),
+                  netplay_client_swap_input,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT);
 
             END_SUB_GROUP(list, list_info, parent_group);
 

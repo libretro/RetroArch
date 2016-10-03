@@ -401,7 +401,6 @@ typedef struct settings
       unsigned port;
       unsigned sync_frames;
       unsigned check_frames;
-      bool is_client;
       bool is_spectate;
       bool swap_input;
    } netplay;

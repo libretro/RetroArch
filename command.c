@@ -2349,7 +2349,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_INIT:
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETWORKING
-         if (!init_netplay(settings->netplay.is_client,
+         if (!init_netplay(
               settings->netplay.is_spectate, settings->netplay.server,
               settings->netplay.port))
             return false;

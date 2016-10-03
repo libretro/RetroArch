@@ -692,8 +692,7 @@ static void retroarch_parse_input(int argc, char *argv[])
          case 'H':
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE, NULL);
-            settings->netplay.is_client = false;
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
             break;
 
          case 'C':
@@ -701,8 +700,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                   RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL);
             retroarch_override_setting_set(
                   RARCH_OVERRIDE_SETTING_NETPLAY_IP_ADDRESS, NULL);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE, NULL);
-            settings->netplay.is_client = true;
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
             strlcpy(settings->netplay.server, optarg,
                   sizeof(settings->netplay.server));
             break;
