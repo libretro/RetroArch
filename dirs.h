@@ -54,15 +54,7 @@ void dir_clear(enum rarch_dir_type type);
 
 void dir_clear_all(void);
 
-/* get size functions */
-
-size_t dir_get_osk_overlay_size(void);
-
-size_t dir_get_system_size(void);
-
-size_t dir_get_savestate_size(void);
-
-size_t dir_get_savefile_size(void);
+size_t dir_get_size(enum rarch_dir_type type);
 
 /* get ptr functions */
 

@@ -197,24 +197,27 @@ bool dir_is_empty(enum rarch_dir_type type)
 
 /* get size functions */
 
-size_t dir_get_system_size(void)
+size_t dir_get_size(enum rarch_dir_type type)
 {
-   return sizeof(dir_system);
-}
+   switch (type)
+   {
+      case RARCH_DIR_SYSTEM:
+         return sizeof(dir_system);
+      case RARCH_DIR_SAVESTATE:
+         return sizeof(dir_savestate);
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         return sizeof(current_savestate_dir);
+      case RARCH_DIR_SAVEFILE:
+         return sizeof(dir_savefile);
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         return sizeof(current_savefile_dir);
+      case RARCH_DIR_OSK_OVERLAY:
+         return sizeof(dir_osk_overlay);
+      case RARCH_DIR_NONE:
+         break;
+   }
 
-size_t dir_get_savestate_size(void)
-{
-   return sizeof(dir_savestate);
-}
-
-size_t dir_get_savefile_size(void)
-{
-   return sizeof(dir_savefile);
-}
-
-size_t dir_get_osk_overlay_size(void)
-{
-   return sizeof(dir_osk_overlay);
+   return 0;
 }
 
 /* clear functions */
