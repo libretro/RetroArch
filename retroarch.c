@@ -124,12 +124,12 @@ enum
 };
 
 static jmp_buf error_sjlj_context;
-static bool current_core_explicitly_set                 = false;
 static enum rarch_core_type current_core_type           = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
 static char error_string[PATH_MAX_LENGTH]               = {0};
 
 static retro_bits_t has_set_libretro_device;
+static bool has_set_core                                = false;
 static bool has_set_username                            = false;
 static bool rarch_is_inited                             = false;
 static bool rarch_error_on_init                         = false;
@@ -472,7 +472,7 @@ static void retroarch_parse_input(int argc, char *argv[])
     * bogus arguments.
     */
 
-   if (!current_core_explicitly_set)
+   if (!has_set_core)
       retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
 
    path_clear(RARCH_PATH_SUBSYSTEM);
@@ -1049,9 +1049,9 @@ bool retroarch_main_init(int argc, char *argv[])
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
 
    /* Attempt to initialize core */
-   if (current_core_explicitly_set)
+   if (has_set_core)
    {
-      current_core_explicitly_set = false;
+      has_set_core = false;
       if (!command_event(CMD_EVENT_CORE_INIT, &explicit_current_core_type))
          init_failed = true;
    }
@@ -1582,13 +1582,13 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
 
 void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set)
 {
-   if (explicitly_set && !current_core_explicitly_set)
+   if (explicitly_set && !has_set_core)
    {
-      current_core_explicitly_set = true;
+      has_set_core                = true;
       explicit_current_core_type  = type;
       current_core_type           = type;
    }
-   else if (!current_core_explicitly_set)
+   else if (!has_set_core)
       current_core_type          = type;
 }
 
