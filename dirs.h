@@ -32,23 +32,13 @@ enum rarch_dir_type
    RARCH_DIR_OSK_OVERLAY
 };
 
-/* init functions */
-
 bool dir_init_shader(void);
-
-/* free functions */
 
 bool dir_free_shader(void);
 
-/* check functions */
-
 void dir_check_shader(bool pressed_next, bool pressed_prev);
 
-/* empty functions */
-
 bool dir_is_empty(enum rarch_dir_type type);
-
-/* clear functions */
 
 void dir_clear(enum rarch_dir_type type);
 
@@ -56,31 +46,9 @@ void dir_clear_all(void);
 
 size_t dir_get_size(enum rarch_dir_type type);
 
-/* get ptr functions */
+char *dir_get_ptr(enum rarch_dir_type type);
 
-char *dir_get_osk_overlay_ptr(void);
-
-char *dir_get_savefile_ptr(void);
-
-char *dir_get_savestate_ptr(void);
-
-char *dir_get_system_ptr(void);
-
-char *dir_get_osk_overlay_ptr(void);
-
-/* get functions */
-
-const char *dir_get_osk_overlay(void);
-
-const char *dir_get_savefile(void);
-
-const char *dir_get_savestate(void);
-
-const char *dir_get_system(void);
-
-const char *dir_get_current_savefile(void);
-
-const char *dir_get_current_savestate(void);
+const char *dir_get(enum rarch_dir_type type);
 
 /* set functions */
 

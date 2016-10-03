@@ -259,62 +259,50 @@ void dir_clear_all(void)
 
 /* get ptr functions */
 
-char *dir_get_osk_overlay_ptr(void)
+char *dir_get_ptr(enum rarch_dir_type type)
 {
-   return dir_osk_overlay;
+   switch (type)
+   {
+      case RARCH_DIR_OSK_OVERLAY:
+         return dir_osk_overlay;
+      case RARCH_DIR_SAVEFILE:
+         return dir_savefile;
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         return current_savefile_dir;
+      case RARCH_DIR_SAVESTATE:
+         return dir_savestate;
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         return current_savestate_dir;
+      case RARCH_DIR_SYSTEM:
+         return dir_system;
+      case RARCH_DIR_NONE:
+         break;
+   }
+
+   return NULL;
 }
 
-char *dir_get_savefile_ptr(void)
+const char *dir_get(enum rarch_dir_type type)
 {
-   return dir_savefile;
-}
+   switch (type)
+   {
+      case RARCH_DIR_OSK_OVERLAY:
+         return dir_osk_overlay;
+      case RARCH_DIR_SAVEFILE:
+         return dir_savefile;
+      case RARCH_DIR_CURRENT_SAVEFILE:
+         return current_savefile_dir;
+      case RARCH_DIR_SAVESTATE:
+         return dir_savestate;
+      case RARCH_DIR_CURRENT_SAVESTATE:
+         return current_savestate_dir;
+      case RARCH_DIR_SYSTEM:
+         return dir_system;
+      case RARCH_DIR_NONE:
+         break;
+   }
 
-char *dir_get_system_ptr(void)
-{
-   return dir_system;
-}
-
-char *dir_get_savestate_ptr(void)
-{
-   return dir_savestate;
-}
-
-/* get functions */
-
-const char *dir_get_current_savefile(void)
-{
-   /* try to infer the path in case it's still empty by calling
-   path_set_redirect */
-   if (string_is_empty(current_savefile_dir) 
-         && !content_does_not_need_content())
-      path_set_redirect();
-
-   return current_savefile_dir;
-}
-
-const char *dir_get_current_savestate(void)
-{
-   return current_savestate_dir;
-}
-
-const char *dir_get_osk_overlay(void)
-{
-   return dir_osk_overlay;
-}
-
-const char *dir_get_system(void)
-{
-   return dir_system;
-}
-
-const char *dir_get_savefile(void)
-{
-   return dir_savefile;
-}
-
-const char *dir_get_savestate(void)
-{
-   return dir_savestate;
+   return NULL;
 }
 
 /* set functions */

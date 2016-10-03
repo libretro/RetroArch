@@ -4810,7 +4810,7 @@ static bool setting_append_list(
                sizeof(settings->path.osk_overlay),
                msg_hash_to_str(MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET),
-               dir_get_osk_overlay_ptr(),
+               dir_get_ptr(RARCH_DIR_OSK_OVERLAY),
                &group_info,
                &subgroup_info,
                parent_group,
@@ -6502,7 +6502,7 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               dir_get_osk_overlay_ptr(),
+               dir_get_ptr(RARCH_DIR_OSK_OVERLAY),
                dir_get_size(RARCH_DIR_OSK_OVERLAY),
                msg_hash_to_str(MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY),
@@ -6578,7 +6578,7 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               dir_get_savefile_ptr(),
+               dir_get_ptr(RARCH_DIR_SAVEFILE),
                dir_get_size(RARCH_DIR_SAVEFILE),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVEFILE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY),
@@ -6593,7 +6593,7 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               dir_get_savestate_ptr(),
+               dir_get_ptr(RARCH_DIR_SAVESTATE),
                dir_get_size(RARCH_DIR_SAVESTATE),
                msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY),

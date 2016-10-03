@@ -1037,9 +1037,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                dir_set_system(temp_path);
             }
 
-            *(const char**)data = dir_get_system_ptr();
+            *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
             RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-                  dir_get_system());
+                  dir_get(RARCH_DIR_SYSTEM));
          }
          else
          {
@@ -1051,7 +1051,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = dir_get_current_savefile();
+         *(const char**)data = dir_get(RARCH_DIR_CURRENT_SAVEFILE);
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
