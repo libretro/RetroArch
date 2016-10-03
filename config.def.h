@@ -372,7 +372,7 @@ static const bool def_history_list_enable = true;
 
 static const unsigned int def_user_language = 0;
 
-#if (defined(_WIN32) && !defined(_XBOX))
+#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID)) || (defined(__MACH__) && !defined(IOS))
 static const bool def_mouse_enable = true;
 #else
 static const bool def_mouse_enable = false;
