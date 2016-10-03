@@ -33,7 +33,7 @@
 #include "audio_thread_wrapper.h"
 
 #ifdef HAVE_NETWORKING
-#include "network/netplay/netplay.h"
+#include "../network/netplay/netplay.h"
 #endif
 
 #include "../command.h"
