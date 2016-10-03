@@ -328,7 +328,9 @@ bool d3d_lock_rectangle(LPDIRECT3DTEXTURE tex,
 
 void d3d_unlock_rectangle(LPDIRECT3DTEXTURE tex)
 {
-#ifndef _XBOX
+#ifdef _XBOX
+   D3DTexture_UnlockRect(tex, 0);
+#else
 #if defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DSurface9_UnlockRect(tex);
 #else
@@ -401,36 +403,24 @@ void d3d_texture_blit(unsigned pixel_size,
       LPDIRECT3DTEXTURE tex, D3DLOCKED_RECT *lr, const void *frame,
       unsigned width, unsigned height, unsigned pitch)
 {
-#ifdef _XBOX
-   D3DTexture_LockRect(tex, 0, lr, NULL, D3DLOCK_NOSYSLOCK);
-#if defined(_XBOX360)
-   D3DSURFACE_DESC desc;
-   tex->GetLevelDesc(0, &desc);
-   XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
-      frame, pitch, desc.Format, NULL, 0, 0);
-#elif defined(_XBOX1)
-   unsigned y;
-   for (y = 0; y < height; y++)
+   if (d3d_lock_rectangle(tex, 0, lr, NULL, NULL, 0, 0))
    {
-      const uint8_t *in = (const uint8_t*)frame + y * pitch;
-      uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
-      memcpy(out, in, width * pixel_size);
-   }
-#endif
-   D3DTexture_UnlockRect(tex, 0);
+#if defined(_XBOX360) && defined(_XBOX360)
+      D3DSURFACE_DESC desc;
+      tex->GetLevelDesc(0, &desc);
+      XGCopySurface(lr->pBits, lr->Pitch, width, height, desc.Format, NULL,
+            frame, pitch, desc.Format, NULL, 0, 0);
 #else
-   if (SUCCEEDED(tex->LockRect(0, lr, NULL, D3DLOCK_NOSYSLOCK)))
-   {
       unsigned y;
       for (y = 0; y < height; y++)
-      { 
+      {
          const uint8_t *in = (const uint8_t*)frame + y * pitch;
          uint8_t *out = (uint8_t*)lr->pBits + y * lr->Pitch;
          memcpy(out, in, width * pixel_size);
       }
-      tex->UnlockRect(0);
-   }
 #endif
+      d3d_unlock_rectangle(tex);
+   }
 }
 
 void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value)
