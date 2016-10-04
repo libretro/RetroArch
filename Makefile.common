@@ -184,6 +184,7 @@ OBJ += frontend/frontend.o \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        input/input_autodetect.o \
+		 input/input_autodetect_builtin.o \
        input/input_joypad_driver.o \
        input/input_config.o \
        input/input_keymaps.o \
@@ -899,7 +900,6 @@ ifeq ($(HAVE_VULKAN), 1)
    LIBS += -lstdc++
 endif
 
-   OBJ += input/input_autodetect_builtin.o
 
 ifeq ($(HAVE_OMAP), 1)
    OBJ += gfx/drivers/omap_gfx.o
