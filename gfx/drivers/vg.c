@@ -97,6 +97,7 @@ static void *vg_init(const video_info_t *video,
    gfx_ctx_aspect_t aspect_data;
    unsigned interval;
    unsigned temp_width = 0, temp_height = 0;
+   unsigned win_width, win_height;
    VGfloat clearColor[4] = {0, 0, 0, 1};
    settings_t        *settings = config_get_ptr();
    vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
@@ -129,8 +130,9 @@ static void *vg_init(const video_info_t *video,
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->keep_aspect = video->force_aspect;
 
-   unsigned win_width  = video->width;
-   unsigned win_height = video->height;
+   win_width  = video->width;
+   win_height = video->height;
+
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
       video_driver_get_size(&temp_width, &temp_height);
@@ -190,7 +192,7 @@ static void *vg_init(const video_info_t *video,
 
    video_context_driver_input_driver(&inp);
 
-   if (     settings->video.font_enable 
+   if (     settings->video.font_enable
          && font_renderer_create_default((const void**)&vg->font_driver, &vg->mFontRenderer,
             *settings->path.font ? settings->path.font : NULL, settings->video.font_size))
    {
@@ -198,20 +200,23 @@ static void *vg_init(const video_info_t *video,
 
       if (vg->mFont != VG_INVALID_HANDLE)
       {
+         VGfloat paintFg[4];
+         VGfloat paintBg[4];
+
          vg->mFontsOn      = true;
          vg->mFontHeight   = settings->video.font_size;
          vg->mPaintFg      = vgCreatePaint();
          vg->mPaintBg      = vgCreatePaint();
-         VGfloat paintFg[] = { 
-            settings->video.msg_color_r,
-            settings->video.msg_color_g,
-            settings->video.msg_color_b,
-            1.0f };
-         VGfloat paintBg[] = { 
-            settings->video.msg_color_r / 2.0f,
-            settings->video.msg_color_g / 2.0f,
-            settings->video.msg_color_b / 2.0f,
-            0.5f };
+
+         paintFg[0] = settings->video.msg_color_r;
+         paintFg[1] = settings->video.msg_color_g;
+         paintFg[2] = settings->video.msg_color_b;
+         paintFg[3] = 1.0f;
+
+         paintBg[0] = settings->video.msg_color_r / 2.0f;
+         paintBg[1] = settings->video.msg_color_g / 2.0f;
+         paintBg[2] = settings->video.msg_color_b / 2.0f;
+         paintBg[3] = 0.5f;
 
          vgSetParameteri(vg->mPaintFg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
          vgSetParameterfv(vg->mPaintFg, VG_PAINT_COLOR, 4, paintFg);
@@ -221,7 +226,7 @@ static void *vg_init(const video_info_t *video,
       }
    }
 
-   if (vg_query_extension("KHR_EGL_image") 
+   if (vg_query_extension("KHR_EGL_image")
          && video_context_driver_init_image_buffer((void*)video))
    {
       gfx_ctx_proc_address_t proc_address;
@@ -230,7 +235,7 @@ static void *vg_init(const video_info_t *video,
 
       video_context_driver_get_proc_address(&proc_address);
 
-      pvgCreateEGLImageTargetKHR = 
+      pvgCreateEGLImageTargetKHR =
          (PFNVGCREATEEGLIMAGETARGETKHRPROC)proc_address.addr;
 
       if (pvgCreateEGLImageTargetKHR)
@@ -287,7 +292,7 @@ static void vg_calculate_quad(vg_t *vg)
    {
       float desired_aspect = video_driver_get_aspect_ratio();
 
-      /* If the aspect ratios of screen and desired aspect ratio 
+      /* If the aspect ratios of screen and desired aspect ratio
        * are sufficiently equal (floating point stuff),
        * assume they are actually equal. */
       if (fabs(vg->mScreenAspect - desired_aspect) < 0.0001)
@@ -348,9 +353,9 @@ static void vg_copy_frame(void *data, const void *frame,
       img_info.rgb32  = (vg->mTexType == VG_sXRGB_8888);
       img_info.index  = 0;
       img_info.handle = &img;
-      
+
       new_egl         = video_context_driver_write_to_image_buffer(&img_info);
-      
+
       retro_assert(img != EGL_NO_IMAGE_KHR);
 
       if (new_egl)
@@ -385,8 +390,8 @@ static bool vg_frame(void *data, const void *frame,
 
    video_driver_get_size(&width, &height);
 
-   if (     frame_width != vg->mRenderWidth 
-         || frame_height != vg->mRenderHeight 
+   if (     frame_width != vg->mRenderWidth
+         || frame_height != vg->mRenderHeight
          || vg->should_resize)
    {
       vg->mRenderWidth  = frame_width;
@@ -472,7 +477,7 @@ static bool vg_set_shader(void *data,
    (void)type;
    (void)path;
 
-   return false; 
+   return false;
 }
 
 static void vg_set_rotation(void *data, unsigned rotation)
