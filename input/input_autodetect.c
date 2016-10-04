@@ -107,7 +107,7 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    else
    {
       if (!string_is_empty(ident) 
-            && !strncmp(params->name, ident, strlen(ident)))
+            && string_is_equal(params->name, ident))
          score += 1;
    }
 
