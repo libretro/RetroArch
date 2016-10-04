@@ -32,7 +32,6 @@
 
 #include <compat/fnmatch.h>
 #include <compat/strl.h>
-#include <string/stdstring.h>
 
 #include "libretrodb.h"
 #include "query.h"
@@ -469,7 +468,8 @@ static int query_peek(struct buffer buff, const char * data)
    if (remain < strlen(data))
       return 0;
 
-   return (int)string_is_equal(buff.data + buff.offset, data);
+   return (strncmp(buff.data + buff.offset,
+            data, strlen(data)) == 0);
 }
 
 static int query_is_eot(struct buffer buff)
@@ -723,7 +723,7 @@ static struct buffer query_parse_method_call(struct buffer buff,
 
    while (rf->name)
    {
-      if (string_is_equal(rf->name, func_name))
+      if (strncmp(rf->name, func_name, func_name_len) == 0)
       {
          invocation->func = rf->func;
          break;

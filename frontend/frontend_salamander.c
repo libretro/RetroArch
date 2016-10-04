@@ -74,7 +74,7 @@ static void find_first_libretro_core(char *first_file,
                salamander_name, sizeof(salamander_name)))
          break;
 
-      if (string_is_equal(fname, salamander_name))
+      if (!strncmp(fname, salamander_name, sizeof(fname)))
       {
          if (list->size == (i + 1))
          {
