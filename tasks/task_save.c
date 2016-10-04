@@ -612,7 +612,7 @@ static void task_save_handler(retro_task_t *task)
  *
  * Create a new task to undo the last save of the content state.
  **/
-static void task_push_undo_save_state(const char *path, void *data, size_t size)
+static bool task_push_undo_save_state(const char *path, void *data, size_t size)
 {
    retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
@@ -633,7 +633,7 @@ static void task_push_undo_save_state(const char *path, void *data, size_t size)
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
-   return;
+   return true;
 
 error:
    if (data)
@@ -642,6 +642,8 @@ error:
       free(state);
    if (task)
       free(task);
+
+   return false;
 }
 
 /**
@@ -652,10 +654,9 @@ error:
  **/
 bool content_undo_save_state(void)
 {
-   task_push_undo_save_state(undo_save_buf.path,
+   return task_push_undo_save_state(undo_save_buf.path,
                              undo_save_buf.data,
                              undo_save_buf.size);
-   return true;
 }
 
 /**
@@ -952,7 +953,6 @@ error:
    if (buf)
       free(buf);
    free(load_data);
-   return;
 }
 
 /**
