@@ -203,7 +203,7 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 
-#ifdef _XBOX
+#ifndef _XBOX
 #define XINPUT_DEFAULT_BINDS \
 DECL_BTN(a, 1) \
 DECL_BTN(b, 0) \
