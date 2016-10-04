@@ -265,8 +265,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    {
       config_file_t *conf = config_file_new_from_string(
             input_builtin_autoconfs[i]);
-      bool            ret = input_autoconfigure_joypad_from_conf(conf, params);
-      if (ret)
+      if (input_autoconfigure_joypad_from_conf(conf, params))
          return true;
    }
 
