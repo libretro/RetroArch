@@ -368,6 +368,14 @@ bool core_unload_game(void)
 
 bool core_run(void)
 {
+#ifdef HAVE_NETWORKING
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
+   {
+      /* Paused due to Netplay */
+      return true;
+   }
+#endif
+
    switch (core_poll_type)
    {
       case POLL_TYPE_EARLY:
@@ -384,6 +392,11 @@ bool core_run(void)
       core.retro_run();
    if (core_poll_type == POLL_TYPE_LATE && !core_input_polled)
       input_poll();
+
+#ifdef HAVE_NETWORKING
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_POST_FRAME, NULL);
+#endif
+
    return true;
 }
 

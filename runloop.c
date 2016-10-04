@@ -1330,16 +1330,6 @@ int runloop_iterate(unsigned *sleep_ms)
 
    autosave_lock();
 
-#ifdef HAVE_NETWORKING
-   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
-   {
-      /* Paused due to Netplay */
-      core_poll();
-      *sleep_ms = 10;
-      return 1;
-   }
-#endif
-
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_START, NULL);
 
@@ -1378,10 +1368,6 @@ int runloop_iterate(unsigned *sleep_ms)
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_END, NULL);
-
-#ifdef HAVE_NETWORKING
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_POST_FRAME, NULL);
-#endif
 
    autosave_unlock();
 
