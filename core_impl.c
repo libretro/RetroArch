@@ -283,6 +283,11 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
       return false;
    if (!core.retro_unserialize(info->data_const, info->size))
       return false;
+
+#if HAVE_NETWORKING
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, info);
+#endif
+
    return true;
 }
 
