@@ -631,29 +631,29 @@ static bool ctr_frame(void* data, const void* frame,
 
    ctr_check_3D_slider(ctr);
 
-   /* ARGB --> RGBA */
+//   /* ARGB --> RGBA */
    if (ctr->rgb32)
    {
       GPU_SetTexEnv(0,
                     GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, 0),
-                    GPU_TEVSOURCES(GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, 0),
+                    GPU_CONSTANT,
                     GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_G, 0, 0),
-                    GPU_TEVOPERANDS(0, 0, 0),
-                    GPU_MODULATE, GPU_MODULATE,
-                    0x0000FF);
+                    0,
+                    GPU_MODULATE, GPU_REPLACE,
+                    0xFF0000FF);
       GPU_SetTexEnv(1,
                     GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, GPU_PREVIOUS),
-                    GPU_TEVSOURCES(GPU_PREVIOUS, GPU_PREVIOUS, 0),
+                    GPU_PREVIOUS,
                     GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_B, 0, 0),
-                    GPU_TEVOPERANDS(0, 0, 0),
-                    GPU_MULTIPLY_ADD, GPU_MODULATE,
+                    0,
+                    GPU_MULTIPLY_ADD, GPU_REPLACE,
                     0x00FF00);
       GPU_SetTexEnv(2,
                     GPU_TEVSOURCES(GPU_TEXTURE0, GPU_CONSTANT, GPU_PREVIOUS),
-                    GPU_TEVSOURCES(GPU_PREVIOUS, GPU_PREVIOUS, 0),
+                    GPU_PREVIOUS,
                     GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_ALPHA, 0, 0),
-                    GPU_TEVOPERANDS(0, 0, 0),
-                    GPU_MULTIPLY_ADD, GPU_MODULATE,
+                    0,
+                    GPU_MULTIPLY_ADD, GPU_REPLACE,
                     0xFF0000);
    }
 
