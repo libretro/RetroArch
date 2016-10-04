@@ -239,13 +239,9 @@ static void netplay_net_post_frame(netplay_t *netplay)
          if (netplay->replay_frame_count >= netplay->read_frame_count)
             netplay_simulate_input(netplay, netplay->replay_ptr);
 
-#if defined(HAVE_THREADS)
          autosave_lock();
-#endif
          core_run();
-#if defined(HAVE_THREADS)
          autosave_unlock();
-#endif
          netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
          netplay->replay_frame_count++;
       }

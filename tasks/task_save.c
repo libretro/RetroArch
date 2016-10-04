@@ -258,37 +258,6 @@ static void autosave_free(autosave_t *handle)
    free(handle);
 }
 
-/**
- * autosave_lock:
- *
- * Lock autosave.
- **/
-void autosave_lock(void)
-{
-   unsigned i;
-
-   for (i = 0; i < autosave_state.num; i++)
-   {
-      if (autosave_state.list[i])
-         slock_lock(autosave_state.list[i]->lock);
-   }
-}
-
-/**
- * autosave_unlock:
- *
- * Unlocks autosave.
- **/
-void autosave_unlock(void)
-{
-   unsigned i;
-
-   for (i = 0; i < autosave_state.num; i++)
-   {
-      if (autosave_state.list[i])
-         slock_unlock(autosave_state.list[i]->lock);
-   }
-}
 
 void autosave_init(void)
 {
@@ -344,6 +313,42 @@ void autosave_deinit(void)
    autosave_state.num      = 0;
 }
 #endif
+
+/**
+ * autosave_lock:
+ *
+ * Lock autosave.
+ **/
+void autosave_lock(void)
+{
+#ifdef HAVE_THREADS
+   unsigned i;
+
+   for (i = 0; i < autosave_state.num; i++)
+   {
+      if (autosave_state.list[i])
+         slock_lock(autosave_state.list[i]->lock);
+   }
+#endif
+}
+
+/**
+ * autosave_unlock:
+ *
+ * Unlocks autosave.
+ **/
+void autosave_unlock(void)
+{
+#ifdef HAVE_THREADS
+   unsigned i;
+
+   for (i = 0; i < autosave_state.num; i++)
+   {
+      if (autosave_state.list[i])
+         slock_unlock(autosave_state.list[i]->lock);
+   }
+#endif
+}
 
 /**
  * undo_load_state:

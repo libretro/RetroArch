@@ -205,13 +205,9 @@ static void netplay_spectate_post_frame(netplay_t *netplay)
 
          while (netplay->replay_frame_count < netplay->self_frame_count)
          {
-#if defined(HAVE_THREADS)
             autosave_lock();
-#endif
             core_run();
-#if defined(HAVE_THREADS)
             autosave_unlock();
-#endif
             netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
             netplay->replay_frame_count++;
          }
@@ -242,13 +238,9 @@ static void netplay_spectate_post_frame(netplay_t *netplay)
 
          while (netplay->replay_frame_count < netplay->read_frame_count - 1)
          {
-#if defined(HAVE_THREADS)
             autosave_lock();
-#endif
             core_run();
-#if defined(HAVE_THREADS)
             autosave_unlock();
-#endif
 
             netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
             netplay->replay_frame_count++;
@@ -268,10 +260,7 @@ static bool netplay_spectate_info_cb(netplay_t* netplay, unsigned frames)
    {
       int i;
       for (i = 0; i < MAX_SPECTATORS; i++)
-      {
          netplay->spectate.fds[i] = -1;
-      }
-
    }
    else
    {

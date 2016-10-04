@@ -1328,9 +1328,7 @@ int runloop_iterate(unsigned *sleep_ms)
       return 1;
    }
 
-#if defined(HAVE_THREADS)
    autosave_lock();
-#endif
 
 #ifdef HAVE_NETWORKING
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_PRE_FRAME, NULL))
@@ -1385,9 +1383,7 @@ int runloop_iterate(unsigned *sleep_ms)
    netplay_driver_ctl(RARCH_NETPLAY_CTL_POST_FRAME, NULL);
 #endif
 
-#if defined(HAVE_THREADS)
    autosave_unlock();
-#endif
 
    if (!settings->fastforward_ratio)
       return 0;
