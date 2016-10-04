@@ -3275,7 +3275,6 @@ static int action_ok_netplay_enable_host(const char *path,
 {
 #ifdef HAVE_NETWORKING
    bool netplay_was_on = false;
-   settings_t *settings = config_get_ptr();
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
    {

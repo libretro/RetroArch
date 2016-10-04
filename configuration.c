@@ -1702,7 +1702,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    struct config_path_setting     *path_settings   = NULL;
    char *override_username                         = NULL;
 #ifdef HAVE_NETWORKING
-   bool override_netplay_is_client                 = false;
    char *override_netplay_ip_address               = NULL;
 #endif
    global_t   *global                              = global_get_ptr();
