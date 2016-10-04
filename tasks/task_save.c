@@ -440,12 +440,6 @@ bool content_undo_load_state(void)
 
    ret                    = core_unserialize(&serial_info);
 
-#if HAVE_NETWORKING
-   /* If Netplay is running, inform it */
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, &serial_info);
-#endif
-
    /* Clean up the temporary copy */
    free(temp_data);
    temp_data              = NULL;
@@ -901,12 +895,6 @@ static void content_load_state_cb(void *task_data,
    content_save_state("RAM", false);
 
    ret                    = core_unserialize(&serial_info);
-
-#if HAVE_NETWORKING
-   /* If Netplay is running, inform it */
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, &serial_info);
-#endif
 
     /* Flush back. */
    for (i = 0; i < num_blocks; i++)

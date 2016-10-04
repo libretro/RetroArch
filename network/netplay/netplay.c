@@ -56,6 +56,9 @@ static bool netplay_is_client = false;
 /* Used while Netplay is running */
 static netplay_t *netplay_data = NULL;
 
+/* Used to avoid recursive netplay calls */
+static bool in_netplay = false;
+
 static int init_tcp_connection(const struct addrinfo *res,
       bool server, bool spectate,
       struct sockaddr *other_addr, socklen_t addr_size)
@@ -1373,6 +1376,12 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
 
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
+   bool ret = true;
+
+   if (in_netplay)
+      return true;
+   in_netplay = true;
+
    if (!netplay_data)
    {
       switch (state)
@@ -1380,7 +1389,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          case RARCH_NETPLAY_CTL_ENABLE_SERVER:
             netplay_enabled = true;
             netplay_is_client = false;
-            return true;
+            goto done;
 
          case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
             netplay_enabled = true;
@@ -1389,16 +1398,18 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
          case RARCH_NETPLAY_CTL_DISABLE:
             netplay_enabled = false;
-            return true;
+            goto done;
 
          case RARCH_NETPLAY_CTL_IS_ENABLED:
-            return netplay_enabled;
+            ret = netplay_enabled;
+            goto done;
 
          case RARCH_NETPLAY_CTL_IS_DATA_INITED:
-            return false;
+            ret = false;
+            goto done;
 
          default:
-            return true;
+            goto done;
       }
    }
 
@@ -1407,16 +1418,18 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_ENABLE_SERVER:
       case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
-         return true;
+         goto done;
       case RARCH_NETPLAY_CTL_DISABLE:
-         return false;
+         ret = false;
+         goto done;
       case RARCH_NETPLAY_CTL_IS_ENABLED:
-         return true;
+         goto done;
       case RARCH_NETPLAY_CTL_POST_FRAME:
          netplay_post_frame(netplay_data);
          break;
       case RARCH_NETPLAY_CTL_PRE_FRAME:
-         return netplay_pre_frame(netplay_data);
+         ret = netplay_pre_frame(netplay_data);
+         goto done;
       case RARCH_NETPLAY_CTL_FLIP_PLAYERS:
          {
             bool *state = (bool*)data;
@@ -1441,11 +1454,14 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          netplay_load_savestate(netplay_data, (retro_ctx_serialize_info_t*)data, true);
          break;
       case RARCH_NETPLAY_CTL_DISCONNECT:
-         return netplay_disconnect(netplay_data);
+         ret = netplay_disconnect(netplay_data);
+         goto done;
       default:
       case RARCH_NETPLAY_CTL_NONE:
-         break;
+         ret = false;
    }
 
-   return false;
+done:
+   in_netplay = false;
+   return ret;
 }
