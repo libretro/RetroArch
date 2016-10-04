@@ -921,9 +921,6 @@ static void ctr_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 {
    ctr_video_t *ctr = (ctr_video_t*)data;
 
-   if(!ctr)
-      return;
-
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
@@ -943,6 +940,9 @@ static void ctr_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
    }
 
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
+
+   if(!ctr)
+      return;
 
    ctr->keep_aspect = true;
    ctr->should_resize = true;
