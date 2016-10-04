@@ -34,6 +34,7 @@
 
 #include <streams/file_stream.h>
 #include <retro_endianness.h>
+#include <string/stdstring.h>
 #include <compat/strl.h>
 
 #include "libretrodb.h"
@@ -227,7 +228,7 @@ int libretrodb_open(const char *path, libretrodb_t *db)
       goto error;
    }
 
-   if (strncmp(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)) != 0)
+   if (!string_is_equal(header.magic_number, MAGIC_NUMBER))
    {
       rv = -EINVAL;
       goto error;
@@ -264,7 +265,7 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
    {
       libretrodb_read_index_header(db->fd, idx);
 
-      if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
+      if (string_is_equal(index_name, idx->name))
          return 0;
 
       offset = filestream_seek(db->fd, (ssize_t)idx->next, SEEK_CUR);
