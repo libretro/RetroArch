@@ -1702,7 +1702,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Cattura Screenshot";
 	  case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
-         return "Rimuovi dalla Playlist";
+         return "Rimuovi";
       case MENU_ENUM_LABEL_VALUE_RESUME:
          return "Riprendi";
       case MENU_ENUM_LABEL_VALUE_DISK_INDEX:

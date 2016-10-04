@@ -504,7 +504,9 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_COUNTERS:
          return "Core Prestatie Tellers";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
-         return "Maak Screenshot";
+         return "Schermafdruk";
+      case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
+         return "Verwijderen";
       case MENU_ENUM_LABEL_VALUE_RESUME:
          return "Hervatten";
       case MENU_ENUM_LABEL_VALUE_DISK_INDEX:
