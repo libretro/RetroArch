@@ -259,19 +259,18 @@ static bool input_autoconfigure_joypad_from_conf_internal(
 {
    size_t i;
    settings_t *settings = config_get_ptr();
-   bool             ret = false;
 
    /* Load internal autoconfig files  */
    for (i = 0; input_builtin_autoconfs[i]; i++)
    {
       config_file_t *conf = config_file_new_from_string(
             input_builtin_autoconfs[i]);
-
-      if ((ret = input_autoconfigure_joypad_from_conf(conf, params)))
-         break;
+      bool            ret = input_autoconfigure_joypad_from_conf(conf, params);
+      if (ret)
+         return true;
    }
 
-   if (ret || !*settings->directory.autoconfig)
+   if (string_is_empty(settings->directory.autoconfig))
       return true;
    return false;
 }
