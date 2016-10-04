@@ -44,6 +44,9 @@ struct RDIR *retro_opendir(const char *name)
    rdir->directory = FindFirstFile(path_buf, &rdir->entry);
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
+#elif defined(_3DS)
+   rdir->directory = (name && *name)? opendir(name) : NULL;
+   rdir->entry     = NULL;
 #elif defined(__CELLOS_LV2__)
    rdir->error = cellFsOpendir(name, &rdir->directory);
 #else
