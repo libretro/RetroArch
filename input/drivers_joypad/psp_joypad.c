@@ -229,7 +229,7 @@ static void psp_joypad_poll(void)
          continue;
 #endif
 #if defined(VITA)
-      if (psp2_model == SCE_KERNEL_MODEL_VITA) {
+      if (psp2_model == SCE_KERNEL_MODEL_VITA && !menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)) {
          SceTouchData back = {0};
          sceTouchPeek(SCE_TOUCH_PORT_BACK, &back, 1);
          for (int i = 0; i < back.reportNum; i++) {
