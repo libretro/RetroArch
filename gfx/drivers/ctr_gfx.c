@@ -200,6 +200,7 @@ static void ctr_update_viewport(ctr_video_t* ctr)
 static void ctr_lcd_aptHook(APT_HookType hook, void* param)
 {
    ctr_video_t *ctr  = (ctr_video_t*)param;
+
    if(!ctr)
       return;
 
@@ -854,12 +855,12 @@ static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
 {
    int i;
    ctr_video_t* ctr = (ctr_video_t*)data;
-   uint16_t* dst = (uint16_t*)ctr->menu.texture_linear;
-   const uint16_t* src = frame;
    int line_width = width;
-
    (void)rgb32;
    (void)alpha;
+
+   if(!ctr || !frame)
+      return;
 
    if (line_width > ctr->menu.texture_width)
       line_width = ctr->menu.texture_width;
@@ -867,6 +868,8 @@ static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
    if (height > (unsigned)ctr->menu.texture_height)
       height = (unsigned)ctr->menu.texture_height;
 
+   const uint16_t* src = frame;
+   uint16_t* dst = (uint16_t*)ctr->menu.texture_linear;
    for (i = 0; i < height; i++)
    {
       memcpy(dst, src, line_width * sizeof(uint16_t));
@@ -938,6 +941,9 @@ static void ctr_set_aspect_ratio(void* data, unsigned aspect_ratio_idx)
 
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 
+   if(!ctr)
+      return;
+
    ctr->keep_aspect = true;
    ctr->should_resize = true;
 }
@@ -965,6 +971,9 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    ctr_video_t* ctr = (ctr_video_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
 
+   if(!ctr || !image)
+      return;
+
    ctr_texture_t* texture = calloc(1, sizeof(ctr_texture_t));
    uint32_t texsize = image->width * image->height * sizeof(uint32_t);
    void* tmpdata;
@@ -976,7 +985,7 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    texture->height = image->height;
 
 
-   if ((!texture->data))
+   if (!texture->data)
    {
       free(texture);
       return 0;
@@ -1019,6 +1028,7 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
 static void ctr_unload_texture(void *data, uintptr_t handle)
 {
    struct ctr_texture *texture   = (struct ctr_texture*)handle;
+
    if (!texture)
       return;
 
@@ -1037,7 +1047,7 @@ static void ctr_set_osd_msg(void *data, const char *msg,
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
-   if (ctr->msg_rendering_enabled)
+   if (ctr && ctr->msg_rendering_enabled)
       font_driver_render_msg(font, msg, params);
 }
 
