@@ -591,7 +591,6 @@ ifeq ($(HAVE_DINPUT), 1)
 endif
 
 ifeq ($(HAVE_XINPUT), 1)
-	HAVE_BUILTIN_AUTOCONFIG=1
    DEFINES += -DHAVE_XINPUT
    OBJ += input/drivers_joypad/xinput_joypad.o
 endif
@@ -824,7 +823,6 @@ ifeq ($(HAVE_SDL), 1)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-	HAVE_BUILTIN_AUTOCONFIG=1
    OBJ += gfx/drivers/sdl2_gfx.o \
           input/drivers/sdl_input.o \
           input/drivers_joypad/sdl_joypad.o \
@@ -901,10 +899,7 @@ ifeq ($(HAVE_VULKAN), 1)
    LIBS += -lstdc++
 endif
 
-ifeq ($(HAVE_BUILTIN_AUTOCONFIG), 1)
    OBJ += input/input_autodetect_builtin.o
-   DEFINES += -DHAVE_BUILTIN_AUTOCONFIG
-endif
 
 ifeq ($(HAVE_OMAP), 1)
    OBJ += gfx/drivers/omap_gfx.o

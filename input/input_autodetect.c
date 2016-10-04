@@ -166,7 +166,6 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    input_reindex_devices();
 }
 
-#if defined(HAVE_BUILTIN_AUTOCONFIG)
 static int input_autoconfigure_joypad_from_conf(
       config_file_t *conf, autoconfig_params_t *params)
 {
@@ -185,7 +184,6 @@ static int input_autoconfigure_joypad_from_conf(
 
    return ret;
 }
-#endif
 
 static bool input_autoconfigure_joypad_from_conf_dir(
       autoconfig_params_t *params)
@@ -256,7 +254,6 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    return true;
 }
 
-#if defined(HAVE_BUILTIN_AUTOCONFIG)
 static bool input_autoconfigure_joypad_from_conf_internal(
       autoconfig_params_t *params)
 {
@@ -278,7 +275,6 @@ static bool input_autoconfigure_joypad_from_conf_internal(
       return true;
    return false;
 }
-#endif
 
 static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
 {
@@ -312,10 +308,8 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 
    if (input_autoconfigure_joypad_from_conf_dir(params))
       return true;
-#if defined(HAVE_BUILTIN_AUTOCONFIG)
    if (input_autoconfigure_joypad_from_conf_internal(params))
       return true;
-#endif
 
    RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)\n",
          params->name, params->vid, params->pid);

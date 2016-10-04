@@ -30,7 +30,7 @@ ifneq ($(NATIVE_ZLIB),)
 endif
 
 ifeq ($(HAVE_SDL2), 1)
-DEFINES += -DHAVE_SDL2 -DHAVE_BUILTIN_AUTOCONFIG
+DEFINES += -DHAVE_SDL2
 endif
 
 #if you compile with SDL2 flag add this Emscripten flag "-s USE_SDL=2" to LDFLAGS:

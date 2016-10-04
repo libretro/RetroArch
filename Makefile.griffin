@@ -131,7 +131,6 @@ endif
   HAVE_RBMP					   := 1
   HAVE_RTGA					   := 1
   HAVE_OVERLAY             := 1
-  HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_ZLIB                := 1
   WANT_ZLIB						:= 1
   HAVE_7ZIP                := 1
@@ -234,7 +233,6 @@ else ifeq ($(platform), vita)
   LDFLAGS +=  -Wl,-q
 
   HAVE_FILTERS_BUILTIN     := 1
-  HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_LANGEXTRA				:= 1
   HAVE_RPNG                := 1
   HAVE_RJPEG					:= 1
@@ -334,10 +332,6 @@ endif
 
 ifeq ($(HAVE_OVERLAY), 1)
 CFLAGS      += -DHAVE_OVERLAY
-endif
-
-ifeq ($(HAVE_BUILTIN_AUTOCONFIG), 1)
-CFLAGS      += -DHAVE_BUILTIN_AUTOCONFIG
 endif
 
 ifeq ($(HAVE_NETWORKING), 1)

@@ -409,9 +409,7 @@ INPUT
 #include "../input/common/x11_input_common.c"
 #endif
 
-#ifdef HAVE_BUILTIN_AUTOCONFIG
 #include "../input/input_autodetect_builtin.c"
-#endif
 
 #if defined(__CELLOS_LV2__)
 #include "../input/drivers/ps3_input.c"
