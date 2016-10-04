@@ -80,9 +80,6 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    int                      input_pid = 0;
    int                          score = 0;
 
-   if (!conf)
-      return false;
-
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
 
@@ -165,12 +162,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 static int input_autoconfigure_joypad_from_conf(
       config_file_t *conf, autoconfig_params_t *params)
 {
-   int ret = 0;
-
-   if (!conf)
-      return false;
-
-   ret = input_try_autoconfigure_joypad_from_conf(conf,
+   int ret = input_try_autoconfigure_joypad_from_conf(conf,
          params);
 
    if (ret)
@@ -214,7 +206,9 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    for (i = 0; i < list->size; i++)
    {
       conf = config_file_new(list->elems[i].data);
-      ret  = input_try_autoconfigure_joypad_from_conf(conf, params);
+
+      if (conf)
+         ret  = input_try_autoconfigure_joypad_from_conf(conf, params);
 
       if(ret >= current_best)
       {
@@ -261,7 +255,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    {
       config_file_t *conf = config_file_new_from_string(
             input_builtin_autoconfs[i]);
-      if (input_autoconfigure_joypad_from_conf(conf, params))
+      if (conf && input_autoconfigure_joypad_from_conf(conf, params))
          return true;
    }
 
