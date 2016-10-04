@@ -726,7 +726,9 @@ static void task_load_handler(retro_task_t *task)
    bytes_read = filestream_read(state->file, (uint8_t*)state->data + state->bytes_read, remaining);
 
    state->bytes_read += bytes_read;
-   task->progress = (state->bytes_read / (float)state->size) * 100;
+
+   if (state->size > 0)
+      task->progress = (state->bytes_read / (float)state->size) * 100;
 
    if (task->cancelled || bytes_read != remaining)
    {
