@@ -2,6 +2,7 @@
 #define _CTR_DEBUG_H__
 
 #include <stdio.h>
+#include <3ds/types.h>
 
 #ifdef __cplusplus
 extern "C" {
