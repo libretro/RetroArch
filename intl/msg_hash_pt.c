@@ -1268,11 +1268,11 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Overlays";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
          return "Overlays de Teclado";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
          return "Trocar Entradas de Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Ativar Espectador de Netplay";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS: /* TODO: Original string changed */
          return "Endereço IP";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "Portas TCP/UDP de Netplay";

@@ -261,11 +261,11 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Overlay Map";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
          return "OSK Overlay Map";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
          return "Swap Netplay Input";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Netplay Spectator Activeren";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS: /* TODO: Original string changed */
          return "IP Adres";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "Netplay TCP/UDP Poort";

@@ -1670,11 +1670,11 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Carpeta de superposiciones";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
          return "Carpeta de teclados superpuestos";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
          return "Intercambiar entrada en red";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Permitir espectadores en red";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS: /* TODO: Original string changed */
          return "Dirección IP";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "Puerto TCP/UDP para juego en red";

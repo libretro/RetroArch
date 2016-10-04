@@ -1682,7 +1682,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
          snprintf(s, len,
-               "The IP address of the host to connect to.");
+               "The address of the host to connect to.");
          break;
       case MENU_ENUM_LABEL_STDIN_CMD_ENABLE:
          snprintf(s, len,
@@ -3784,11 +3784,11 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
          return "OSK Overlay Dir";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
-         return "Swap Netplay Input";
+         return "Netplay P2 Uses C1";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Netplay Spectator Enable";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
-         return "IP Address";
+         return "Server Address";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "Netplay TCP/UDP Port";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:

@@ -4737,24 +4737,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             unsigned count = 0;
 
             if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_NETPLAY_ENABLE,
-                  PARSE_ONLY_BOOL, false) != -1)
-               count++;
-            if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
-                  PARSE_ONLY_BOOL, false) != -1)
-               count++;
-            if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
                   PARSE_ONLY_STRING, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_NETPLAY_MODE,
-                  PARSE_ONLY_BOOL, false) != -1)
-               count++;
-            if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE,
-                  PARSE_ONLY_BOOL, false) != -1)
+                  MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
+                  PARSE_ONLY_UINT, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES,
@@ -4765,8 +4753,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_UINT, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
-                  PARSE_ONLY_UINT, false) != -1)
+                  MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
+                  PARSE_ONLY_BOOL, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,

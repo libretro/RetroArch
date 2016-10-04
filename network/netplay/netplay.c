@@ -49,7 +49,11 @@ enum
    CMD_OPT_REQUIRE_SYNC             = 0x10
 };
 
+/* Only used before init_netplay */
 static bool netplay_enabled = false;
+static bool netplay_is_client = false;
+
+/* Used while Netplay is running */
 static netplay_t *netplay_data = NULL;
 
 static int init_tcp_connection(const struct addrinfo *res,
@@ -1321,8 +1325,7 @@ void deinit_netplay(void)
  * Returns: true (1) if successful, otherwise false (0).
  **/
 
-bool init_netplay(bool is_client, bool is_spectate, const char *server,
-                  unsigned port)
+bool init_netplay(bool is_spectate, const char *server, unsigned port)
 {
    struct retro_callbacks cbs = {0};
    settings_t *settings = config_get_ptr();
@@ -1339,7 +1342,7 @@ bool init_netplay(bool is_client, bool is_spectate, const char *server,
 
    core_set_default_callbacks(&cbs);
 
-   if (is_client)
+   if (netplay_is_client)
    {
       RARCH_LOG("Connecting to netplay host...\n");
    }
@@ -1352,7 +1355,7 @@ bool init_netplay(bool is_client, bool is_spectate, const char *server,
    }
 
    netplay_data = (netplay_t*)netplay_new(
-         is_client ? server : NULL,
+         netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
          settings->netplay.sync_frames, settings->netplay.check_frames, &cbs,
          is_spectate, settings->username);
@@ -1374,9 +1377,15 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
    {
       switch (state)
       {
-         case RARCH_NETPLAY_CTL_ENABLE:
+         case RARCH_NETPLAY_CTL_ENABLE_SERVER:
             netplay_enabled = true;
+            netplay_is_client = false;
             return true;
+
+         case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
+            netplay_enabled = true;
+            netplay_is_client = true;
+            break;
 
          case RARCH_NETPLAY_CTL_DISABLE:
             netplay_enabled = false;
@@ -1395,7 +1404,8 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 
    switch (state)
    {
-      case RARCH_NETPLAY_CTL_ENABLE:
+      case RARCH_NETPLAY_CTL_ENABLE_SERVER:
+      case RARCH_NETPLAY_CTL_ENABLE_CLIENT:
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
          return true;
       case RARCH_NETPLAY_CTL_DISABLE:

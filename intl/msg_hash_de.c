@@ -586,11 +586,11 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
          return "Overlay-Verzeichnis";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
          return "OSK-Overlay-Verzeichnis";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
          return "Tausche Netplay-Eingabe";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Aktiviere Netplay-Zuschauermodus";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS: /* TODO: Original string changed */
          return "IP-Addresse für Netplay";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "TCP/UDP-Port für Netplay";

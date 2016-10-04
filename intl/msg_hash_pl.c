@@ -366,11 +366,11 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Katalog nak³adek";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
          return "Katalog klawiatur ekranowych";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
          return "Zamieñ kontrolery w grze sieciowej";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Tryb obserwatora gry sieciowej";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS: /* TODO: Original string changed */
          return "Adres IP";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "Port TCP/UDP gry sieciowej";

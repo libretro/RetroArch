@@ -3277,26 +3277,15 @@ static int action_ok_netplay_enable_host(const char *path,
    bool netplay_was_on = false;
    settings_t *settings = config_get_ptr();
 
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE, NULL);
-
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
    {
       netplay_was_on = true;
 
-      /* Netplay is already on. Are we in the wrong mode? */
-      if (settings->netplay.is_client)
-      {
-         /* Kill it! */
-         command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-      }
-      else
-      {
-         /* We were already hosting! */
-         return generic_action_ok_command(CMD_EVENT_RESUME);
-      }
+      /* Netplay is already on. Kill it. */
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    }
 
-   settings->netplay.is_client = false;
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
    /* If we haven't yet started, this will load on its own */
    if (!content_is_inited())
@@ -3330,8 +3319,6 @@ static int action_ok_netplay_enable_client(const char *path,
    bool netplay_was_on = false;
    settings_t *settings = config_get_ptr();
 
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE, NULL);
-
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
    {
       netplay_was_on = true;
@@ -3340,7 +3327,7 @@ static int action_ok_netplay_enable_client(const char *path,
       command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
    }
 
-   settings->netplay.is_client = true;
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
 
    /* We can't do anything without a host specified */
    if (!settings->netplay.server[0])
