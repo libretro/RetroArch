@@ -87,7 +87,9 @@ typedef struct
    ssize_t bytes_read;
    bool load_to_backup_buffer;
    bool autoload;
+   bool autosave;
    bool undo_save;
+   bool mute;
 } save_task_state_t;
 
 typedef save_task_state_t load_task_data_t;
@@ -436,7 +438,7 @@ bool content_undo_load_state(void)
 
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
-   content_save_state("RAM", false);
+   content_save_state("RAM", false, false);
 
    ret                    = core_unserialize(&serial_info);
 
@@ -542,6 +544,7 @@ static void task_save_handler(retro_task_t *task)
    written = filestream_write(state->file, (uint8_t*)state->data + state->written, remaining);
 
    state->written += written;
+
    task->progress = (state->written / (float)state->size) * 100;
 
    if (task->cancelled || written != remaining)
@@ -591,7 +594,9 @@ static void task_save_handler(retro_task_t *task)
                   settings->state_slot);
       }
 
-      runloop_msg_queue_push(msg, 2, 180, true);
+      if (!task->mute)
+         runloop_msg_queue_push(msg, 2, 180, true);
+
       task_save_handler_finished(task, state);
 
       return;
@@ -758,7 +763,8 @@ static void task_load_handler(retro_task_t *task)
       {
          snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" succeeded.",
                state->path);
-         runloop_msg_queue_push(msg, 1, 180, true);
+         if (!task->mute)
+            runloop_msg_queue_push(msg, 1, 180, true);
       }
       else
       {
@@ -769,7 +775,8 @@ static void task_load_handler(retro_task_t *task)
             snprintf(msg, sizeof(msg), "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
                   settings->state_slot);
 
-         runloop_msg_queue_push(msg, 2, 180, true);
+         if (!task->mute)
+            runloop_msg_queue_push(msg, 2, 180, true);
       }
 
       task_load_handler_finished(task, state);
@@ -855,7 +862,6 @@ static void content_load_state_cb(void *task_data,
       }
    }
 
-
    for (i = 0; i < num_blocks; i++)
    {
       retro_ctx_memory_info_t    mem_info;
@@ -892,7 +898,7 @@ static void content_load_state_cb(void *task_data,
    serial_info.size       = size;
 
    /* Backup the current state so we can undo this load */
-   content_save_state("RAM", false);
+   content_save_state("RAM", false, false);
 
    ret                    = core_unserialize(&serial_info);
 
@@ -935,7 +941,8 @@ error:
                           msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
                           load_data->path);
 
-   runloop_msg_queue_push(err_buf, 1, 180, true);
+   if (!load_data->mute)
+      runloop_msg_queue_push(err_buf, 1, 180, true);
 
    RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
@@ -953,7 +960,7 @@ error:
  *
  * Create a new task to save the content state.
  **/
-static void task_push_save_state(const char *path, void *data, size_t size)
+static void task_push_save_state(const char *path, void *data, size_t size, bool autosave)
 {
    retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
@@ -964,11 +971,14 @@ static void task_push_save_state(const char *path, void *data, size_t size)
    strlcpy(state->path, path, sizeof(state->path));
    state->data = data;
    state->size = size;
+   state->autosave = autosave;
+   state->mute = autosave; /* don't show OSD messages if we are auto-saving */
 
    task->type = TASK_TYPE_BLOCKING;
    task->state = state;
    task->handler = task_save_handler;
    task->title = strdup(msg_hash_to_str(MSG_SAVING_STATE));
+   task->mute = state->mute;
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -996,10 +1006,11 @@ static void content_load_and_save_state_cb(void *task_data,
    char                  *path = strdup(load_data->path);
    void                  *data = load_data->undo_data;
    size_t                 size = load_data->undo_size;
+   bool               autosave = load_data->autosave;
 
    content_load_state_cb(task_data, user_data, error);
 
-   task_push_save_state(path, data, size);
+   task_push_save_state(path, data, size, autosave);
 
    free(path);
 }
@@ -1014,7 +1025,7 @@ static void content_load_and_save_state_cb(void *task_data,
  * Create a new task to load current state first into a backup buffer (for undo)
  * and then save the content state.
  **/
-static void task_push_load_and_save_state(const char *path, void *data, size_t size, bool load_to_backup_buffer)
+static void task_push_load_and_save_state(const char *path, void *data, size_t size, bool load_to_backup_buffer, bool autosave)
 {
    retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
@@ -1026,12 +1037,15 @@ static void task_push_load_and_save_state(const char *path, void *data, size_t s
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->undo_size = size;
    state->undo_data = data;
+   state->autosave = autosave;
+   state->mute = autosave; /* don't show OSD messages if we are auto-saving */
 
    task->state      = state;
    task->type       = TASK_TYPE_BLOCKING;
    task->handler    = task_load_handler;
    task->callback   = content_load_and_save_state_cb;
    task->title      = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+   task->mute       = state->mute;
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -1054,7 +1068,7 @@ error:
  *
  * Returns: true if successful, false otherwise.
  **/
-bool content_save_state(const char *path, bool save_to_disk)
+bool content_save_state(const char *path, bool save_to_disk, bool autosave)
 {
    retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
@@ -1096,10 +1110,10 @@ bool content_save_state(const char *path, bool save_to_disk)
             RARCH_LOG("%s\n",
                "File already exists. Saving to backup buffer...");
 
-            task_push_load_and_save_state(path, data, info.size, true);
+            task_push_load_and_save_state(path, data, info.size, true, autosave);
          }
          else
-            task_push_save_state(path, data, info.size);
+            task_push_save_state(path, data, info.size, autosave);
       }
       else
       {

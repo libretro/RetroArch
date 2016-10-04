@@ -47,7 +47,7 @@ bool content_save_ram_file(unsigned slot);
 bool content_load_state(const char* path, bool load_to_backup_buffer, bool autoload);
 
 /* Save a state from memory to disk. */
-bool content_save_state(const char *path, bool save_to_disk);
+bool content_save_state(const char *path, bool save_to_disk, bool autosave);
 
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);

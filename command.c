@@ -1433,7 +1433,7 @@ static bool command_event_save_auto_state(void)
          file_path_str(FILE_PATH_AUTO_EXTENSION),
          sizeof(savestate_name_auto));
 
-   ret = content_save_state((const char*)savestate_name_auto, true);
+   ret = content_save_state((const char*)savestate_name_auto, true, true);
    RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ?
          "succeeded" : "failed");
 
@@ -1660,7 +1660,7 @@ static void command_event_main_state(unsigned cmd)
       switch (cmd)
       {
          case CMD_EVENT_SAVE_STATE:
-            content_save_state(path, true);
+            content_save_state(path, true, false);
             push_msg = false;
             break;
          case CMD_EVENT_LOAD_STATE:
