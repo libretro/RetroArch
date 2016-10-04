@@ -22,10 +22,6 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
 #include "input_config.h"
 #include "input_autodetect.h"
 
