@@ -693,9 +693,8 @@ static bool init_content_file_set_attribs(
 
 #ifdef HAVE_COMPRESSION
    /* Try to extract all content we're going to load if appropriate. */
-   if (!init_content_file_extract(temporary_content,
-            content, special, &attr))
-      return false;
+   init_content_file_extract(temporary_content,
+            content, special, &attr);
 #endif
    return true;
 }
