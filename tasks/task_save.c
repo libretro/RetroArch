@@ -614,15 +614,11 @@ static void task_save_handler(retro_task_t *task)
  **/
 static void task_push_undo_save_state(const char *path, void *data, size_t size)
 {
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
-   {
-      if (data)
-         free(data);
-      return;
-   }
+      goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
    state->data = data;
@@ -636,6 +632,14 @@ static void task_push_undo_save_state(const char *path, void *data, size_t size)
    task->title = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+
+   return;
+
+error:
+   if (data)
+      free(data);
+   if (task)
+      free(task);
 }
 
 /**
@@ -963,11 +967,7 @@ static void task_push_save_state(const char *path, void *data, size_t size)
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
-   {
-      if (data)
-         free(data);
-      return;
-   }
+      goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
    state->data = data;
@@ -979,6 +979,14 @@ static void task_push_save_state(const char *path, void *data, size_t size)
    task->title = strdup(msg_hash_to_str(MSG_SAVING_STATE));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+
+   return;
+
+error:
+   if (data)
+      free(data);
+   if (task)
+      free(task);
 }
 
 /**
@@ -991,9 +999,9 @@ static void content_load_and_save_state_cb(void *task_data,
                            void *user_data, const char *error)
 {
    load_task_data_t *load_data = (load_task_data_t*)task_data;
-   char *path = strdup(load_data->path);
-   void *data = load_data->undo_data;
-   size_t size = load_data->undo_size;
+   char                  *path = strdup(load_data->path);
+   void                  *data = load_data->undo_data;
+   size_t                 size = load_data->undo_size;
 
    content_load_state_cb(task_data, user_data, error);
 
@@ -1014,28 +1022,32 @@ static void content_load_and_save_state_cb(void *task_data,
  **/
 static void task_push_load_and_save_state(const char *path, void *data, size_t size, bool load_to_backup_buffer)
 {
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
-   {
-      if (data)
-         free(data);
-      return;
-   }
+      goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->undo_size = size;
    state->undo_data = data;
 
-   task->state = state;
-   task->type = TASK_TYPE_BLOCKING;
-   task->handler = task_load_handler;
-   task->callback = content_load_and_save_state_cb;
-   task->title = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+   task->state      = state;
+   task->type       = TASK_TYPE_BLOCKING;
+   task->handler    = task_load_handler;
+   task->callback   = content_load_and_save_state_cb;
+   task->title      = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+
+   return;
+
+error:
+   if (data)
+      free(data);
+   if (task)
+      free(task);
 }
 
 /**
@@ -1141,11 +1153,11 @@ bool content_save_state(const char *path, bool save_to_disk)
  **/
 bool content_load_state(const char *path, bool load_to_backup_buffer, bool autoload)
 {
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
-      return false;
+      goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
    state->load_to_backup_buffer = load_to_backup_buffer;
@@ -1160,6 +1172,14 @@ bool content_load_state(const char *path, bool load_to_backup_buffer, bool autol
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
    return true;
+
+error:
+   if (state)
+      free(state);
+   if (task)
+      free(task);
+
+   return false;
 }
 
 bool content_rename_state(const char *origin, const char *dest)

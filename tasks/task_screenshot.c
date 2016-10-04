@@ -192,7 +192,11 @@ static bool screenshot_dump(
 #elif defined(HAVE_RPNG)
    state->out_buffer = (uint8_t*)malloc(width * height * 3);
    if (!state->out_buffer)
+   {
+      if (task)
+         free(task);
       return false;
+   }
 #endif
 
    task->type = TASK_TYPE_BLOCKING;
