@@ -638,6 +638,8 @@ static void task_push_undo_save_state(const char *path, void *data, size_t size)
 error:
    if (data)
       free(data);
+   if (state)
+      free(state);
    if (task)
       free(task);
 }
@@ -963,7 +965,7 @@ error:
  **/
 static void task_push_save_state(const char *path, void *data, size_t size)
 {
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
@@ -985,6 +987,8 @@ static void task_push_save_state(const char *path, void *data, size_t size)
 error:
    if (data)
       free(data);
+   if (state)
+      free(state);
    if (task)
       free(task);
 }
@@ -1046,6 +1050,8 @@ static void task_push_load_and_save_state(const char *path, void *data, size_t s
 error:
    if (data)
       free(data);
+   if (state)
+      free(state);
    if (task)
       free(task);
 }
