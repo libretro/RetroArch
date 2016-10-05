@@ -27,26 +27,39 @@
 
 #include "../../autosave.h"
 
-#define TOO_EARLY_TO_SAVE 60
+#if 0
+#define DEBUG_NONDETERMINISTIC_CORES
+#endif
 
 static void netplay_handle_frame_hash(netplay_t *netplay, struct delta_frame *delta)
 {
+   static bool crcs_valid = true;
    if (netplay_is_server(netplay))
    {
-      if (netplay->check_frames && delta->frame % netplay->check_frames == 0)
+      if (netplay->check_frames &&
+          (delta->frame % netplay->check_frames == 0 || delta->frame == 1))
       {
          delta->crc = netplay_delta_frame_crc(netplay, delta);
          netplay_cmd_crc(netplay, delta);
       }
    }
-   else if (delta->crc)
+   else if (delta->crc && crcs_valid)
    {
       /* We have a remote CRC, so check it */
       uint32_t local_crc = netplay_delta_frame_crc(netplay, delta);
       if (local_crc != delta->crc)
       {
-         /* Fix this! */
-         netplay_cmd_request_savestate(netplay);
+         if (delta->frame == 1)
+         {
+            /* We check frame 1 just to make sure the CRCs make sense at all.
+             * If we've diverged at frame 1, we assume CRCs are not useful. */
+            crcs_valid = false;
+         }
+         else if (crcs_valid)
+         {
+            /* Fix this! */
+            netplay_cmd_request_savestate(netplay);
+         }
       }
    }
 }
@@ -184,6 +197,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
       return;
    }
 
+#ifndef DEBUG_NONDETERMINISTIC_CORES
    if (!netplay->force_rewind)
    {
       /* Skip ahead if we predicted correctly.
@@ -202,6 +216,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
          netplay->other_frame_count++;
       }
    }
+#endif
 
    /* Now replay the real input if we've gotten ahead of it */
    if (netplay->force_rewind ||
@@ -246,6 +261,22 @@ static void netplay_net_post_frame(netplay_t *netplay)
          autosave_unlock();
          netplay->replay_ptr = NEXT_PTR(netplay->replay_ptr);
          netplay->replay_frame_count++;
+
+#ifdef DEBUG_NONDETERMINISTIC_CORES
+         if (ptr->have_remote && netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->replay_ptr], netplay->replay_frame_count))
+         {
+            RARCH_LOG("PRE  %u: %X\n", netplay->replay_frame_count-1, netplay_delta_frame_crc(netplay, ptr));
+            if (netplay->is_server)
+               RARCH_LOG("INP  %X %X\n", ptr->real_input_state[0], ptr->self_state[0]);
+            else
+               RARCH_LOG("INP  %X %X\n", ptr->self_state[0], ptr->real_input_state[0]);
+            ptr = &netplay->buffer[netplay->replay_ptr];
+            serial_info.data = ptr->state;
+            memset(serial_info.data, 0, serial_info.size);
+            core_serialize(&serial_info);
+            RARCH_LOG("POST %u: %X\n", netplay->replay_frame_count-1, netplay_delta_frame_crc(netplay, ptr));
+         }
+#endif
       }
 
       if (netplay->read_frame_count < netplay->self_frame_count)

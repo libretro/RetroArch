@@ -339,9 +339,7 @@ bool netplay_get_info(netplay_t *netplay)
       }
    }
 
-#ifndef HAVE_SOCKET_LEGACY
    netplay_log_connection(&netplay->other_addr, 0, netplay->other_nick);
-#endif
 
    return true;
 }
