@@ -898,6 +898,7 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
    const char *str               = NULL;
    char buf_v4[INET_ADDRSTRLEN]  = {0};
    char buf_v6[INET6_ADDRSTRLEN] = {0};
+   char msg[512] = {0};
 
    u.storage = their_addr;
 
@@ -937,14 +938,34 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
    if (str)
    {
-      char msg[512] = {0};
-
-      snprintf(msg, sizeof(msg), "Got connection from: \"%s (%s)\" (#%u)",
-            nick, str, slot);
+      snprintf(msg, sizeof(msg), "Got connection from: \"%s (%s)\"",
+            nick, str);
       runloop_msg_queue_push(msg, 1, 180, false);
       RARCH_LOG("%s\n", msg);
    }
+   else
+   {
+      snprintf(msg, sizeof(msg), "Got connection from: \"%s\"",
+            nick);
+      runloop_msg_queue_push(msg, 1, 180, false);
+      RARCH_LOG("%s\n", msg);
+   }
+   RARCH_LOG("Connection slot %u\n", slot);
 }
+
+#else
+void netplay_log_connection(const struct sockaddr_storage *their_addr,
+      unsigned slot, const char *nick)
+{
+   char msg[512] = {0};
+
+   snprintf(msg, sizeof(msg), "Got connection from: \"%s\"",
+         nick);
+   runloop_msg_queue_push(msg, 1, 180, false);
+   RARCH_LOG("%s\n", msg);
+   RARCH_LOG("Connection slot %u\n", slot);
+}
+
 #endif
 
 
