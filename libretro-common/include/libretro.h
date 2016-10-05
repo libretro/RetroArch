@@ -982,7 +982,8 @@ struct retro_hw_render_context_negotiation_interface
  * rerecording. */
 #define RETRO_SERIALIZATION_QUIRK_INCOMPLETE (1 << 0)
 /* The core must spend some time initializing before serialization is
- * supported. */
+ * supported. retro_serialize() will initially fail; retro_unserialize()
+ * and retro_serialize_size() may or may not work correctly either. */
 #define RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE (1 << 1)
 /* Serialization size may change within a session. */
 #define RETRO_SERIALIZATION_QUIRK_CORE_VARIABLE_SIZE (1 << 2)
