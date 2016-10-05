@@ -68,9 +68,10 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       serial_info.data = netplay->buffer[netplay->self_ptr].state;
       serial_info.size = netplay->state_size;
 
+      memset(serial_info.data, 0, serial_info.size);
       if (netplay->savestates_work && core_serialize(&serial_info))
       {
-         if (netplay->force_send_savestate)
+         if (netplay->force_send_savestate && !netplay->stall)
          {
             /* Send this along to the other side */
             serial_info.data_const = netplay->buffer[netplay->self_ptr].state;
@@ -231,6 +232,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
          serial_info.data_const = NULL;
 
          /* Remember the current state */
+         memset(serial_info.data, 0, serial_info.size);
          core_serialize(&serial_info);
          if (netplay->replay_frame_count < netplay->read_frame_count)
             netplay_handle_frame_hash(netplay, ptr);
