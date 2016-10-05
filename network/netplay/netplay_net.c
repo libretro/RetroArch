@@ -74,15 +74,18 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
 
-   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count) &&
-       netplay->self_frame_count > 0)
+   if (netplay_delta_frame_ready(netplay, &netplay->buffer[netplay->self_ptr], netplay->self_frame_count))
    {
       serial_info.data_const = NULL;
       serial_info.data = netplay->buffer[netplay->self_ptr].state;
       serial_info.size = netplay->state_size;
 
       memset(serial_info.data, 0, serial_info.size);
-      if (netplay->savestates_work && core_serialize(&serial_info))
+      if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+      {
+         /* Don't serialize until it's safe */
+      }
+      else if (!(netplay->quirks & NETPLAY_QUIRK_NO_SAVESTATES) && core_serialize(&serial_info))
       {
          if (netplay->force_send_savestate && !netplay->stall)
          {
@@ -96,11 +99,14 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       {
          /* If the core can't serialize properly, we must stall for the
           * remote input on EVERY frame, because we can't recover */
-         netplay->savestates_work = false;
+         netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
          netplay->stall_frames = 0;
-         if (!netplay->has_connection)
-            netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
       }
+
+      /* If we can't transmit savestates, we must stall until the client is ready */
+      if (!netplay->has_connection &&
+          (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
+         netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
    }
 
    if (netplay->is_server && !netplay->has_connection)
@@ -148,10 +154,8 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
             netplay->has_connection = true;
 
             /* Send them the savestate */
-            if (netplay->savestates_work)
-            {
+            if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
                netplay_load_savestate(netplay, NULL, true);
-            }
 
             /* And expect the current frame from the other side */
             netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
@@ -229,6 +233,10 @@ static void netplay_net_post_frame(netplay_t *netplay)
       netplay->is_replay = true;
       netplay->replay_ptr = netplay->other_ptr;
       netplay->replay_frame_count = netplay->other_frame_count;
+
+      if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+         /* Make sure we're initialized before we start loading things */
+         netplay_wait_and_init_serialization(netplay);
 
       serial_info.data       = NULL;
       serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;

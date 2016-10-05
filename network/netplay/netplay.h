@@ -139,6 +139,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
  * @nick                 : Nickname of user.
+ * @quirks               : Netplay quirks.
  *
  * Creates a new netplay handle. A NULL host means we're 
  * hosting (user 1).
@@ -148,7 +149,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
 netplay_t *netplay_new(const char *server,
       uint16_t port, unsigned frames, unsigned check_frames,
       const struct retro_callbacks *cb, bool spectate,
-      const char *nick);
+      const char *nick, uint64_t quirks);
 
 /**
  * netplay_free:

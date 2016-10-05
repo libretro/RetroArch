@@ -1608,6 +1608,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
+      {
+         uint64_t *quirks = (uint64_t *) data;
+         core_set_serialization_quirks(*quirks);
+         break;
+      }
+
       /* Default */
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);

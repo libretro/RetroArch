@@ -31,6 +31,7 @@
 
 #include "netplay_private.h"
 
+#include "../../autosave.h"
 #include "../../configuration.h"
 #include "../../command.h"
 #include "../../movie.h"
@@ -556,6 +557,23 @@ static bool netplay_get_cmd(netplay_t *netplay)
          {
             uint32_t frame;
 
+            /* Make sure we're ready for it */
+            if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+            {
+               if (!netplay->is_replay)
+               {
+                  netplay->is_replay = true;
+                  netplay->replay_ptr = netplay->self_ptr;
+                  netplay->replay_frame_count = netplay->self_frame_count;
+                  netplay_wait_and_init_serialization(netplay);
+                  netplay->is_replay = false;
+               }
+               else
+               {
+                  netplay_wait_and_init_serialization(netplay);
+               }
+            }
+
             /* There is a subtlty in whether the load comes before or after the
              * current frame:
              *
@@ -729,9 +747,11 @@ static bool netplay_poll(void)
 
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
-   res = poll_input(netplay_data,
-         (netplay_data->stall_frames == 0)
-         && (netplay_data->read_frame_count <= netplay_data->self_frame_count));
+   if (netplay_data->stall_frames == 0 &&
+       netplay_data->read_frame_count <= netplay_data->self_frame_count)
+      res = poll_input(netplay_data, true);
+   else
+      res = poll_input(netplay_data, false);
    if (res == -1)
    {
       hangup(netplay_data);
@@ -970,6 +990,82 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
 
 
+bool netplay_try_init_serialization(netplay_t *netplay)
+{
+   retro_ctx_serialize_info_t serial_info;
+
+   if (netplay->state_size)
+      return true;
+
+   if (!netplay_init_serialization(netplay))
+      return false;
+
+   /* Check if we can actually save */
+   serial_info.data_const = NULL;
+   serial_info.data = netplay->buffer[netplay->self_ptr].state;
+   serial_info.size = netplay->state_size;
+
+   if (!core_serialize(&serial_info))
+      return false;
+
+   /* Once initialized, we no longer exhibit this quirk */
+   netplay->quirks &= ~((uint64_t) NETPLAY_QUIRK_INITIALIZATION);
+
+   return true;
+}
+
+bool netplay_wait_and_init_serialization(netplay_t *netplay)
+{
+   int frame;
+
+   if (netplay->state_size)
+      return true;
+
+   /* Wait a maximum of 60 frames */
+   for (frame = 0; frame < 60; frame++) {
+      if (netplay_try_init_serialization(netplay))
+         return true;
+
+#if defined(HAVE_THREADS)
+      autosave_lock();
+#endif
+      core_run();
+#if defined(HAVE_THREADS)
+      autosave_unlock();
+#endif
+   }
+
+   return false;
+}
+
+bool netplay_init_serialization(netplay_t *netplay)
+{
+   unsigned i;
+   retro_ctx_size_info_t info;
+
+   if (netplay->state_size)
+      return true;
+
+   core_serialize_size(&info);
+
+   if (!info.size)
+      return false;
+
+   netplay->state_size = info.size;
+
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      netplay->buffer[i].state = calloc(netplay->state_size, 1);
+
+      if (!netplay->buffer[i].state)
+      {
+         netplay->quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
+         return false;
+      }
+   }
+
+   return true;
+}
 
 static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
 {
@@ -988,25 +1084,8 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
    if (!netplay->buffer)
       return false;
 
-   {
-      unsigned i;
-      retro_ctx_size_info_t info;
-
-      core_serialize_size(&info);
-
-      netplay->state_size = info.size;
-
-      for (i = 0; i < netplay->buffer_size; i++)
-      {
-         netplay->buffer[i].state = calloc(netplay->state_size, 1);
-
-         if (!netplay->buffer[i].state)
-         {
-            netplay->savestates_work = false;
-            netplay->stall_frames = 0;
-         }
-      }
-   }
+   if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
+      netplay_init_serialization(netplay);
 
    return true;
 }
@@ -1020,6 +1099,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
  * @nick                 : Nickname of user.
+ * @quirks               : Netplay quirks required for this session.
  *
  * Creates a new netplay handle. A NULL host means we're 
  * hosting (user 1).
@@ -1028,7 +1108,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  **/
 netplay_t *netplay_new(const char *server, uint16_t port,
       unsigned frames, unsigned check_frames, const struct retro_callbacks *cb,
-      bool spectate, const char *nick)
+      bool spectate, const char *nick, uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -1040,10 +1120,10 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
    netplay->is_server         = server == NULL;
-   netplay->savestates_work   = true;
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
    netplay->stall_frames = frames;
    netplay->check_frames = check_frames;
+   netplay->quirks = quirks;
 
    if (!netplay_init_buffers(netplay, frames))
    {
@@ -1205,6 +1285,12 @@ bool netplay_pre_frame(netplay_t *netplay)
    if (netplay->local_paused)
       netplay_frontend_paused(netplay, false);
 
+   if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+   {
+      /* Are we ready now? */
+      netplay_try_init_serialization(netplay);
+   }
+
    if (!netplay->net_cbs->pre_frame(netplay))
       return false;
 
@@ -1298,6 +1384,10 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
       netplay->other_frame_count = netplay->self_frame_count;
    }
 
+   /* If we can't send it to the peer, loading a state was a bad idea */
+   if (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION))
+      return;
+
    /* And send it to the peer (FIXME: this is an ugly way to do this) */
    header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
    header[1] = htonl(serial_info->size + sizeof(uint32_t));
@@ -1353,6 +1443,8 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
 {
    struct retro_callbacks cbs = {0};
    settings_t *settings = config_get_ptr();
+   uint64_t serialization_quirks = 0;
+   uint64_t quirks      = 0;
 
    if (!netplay_enabled)
       return false;
@@ -1365,6 +1457,20 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
    }
 
    core_set_default_callbacks(&cbs);
+
+   /* Map the core's quirks to our quirks */
+   serialization_quirks = core_serialization_quirks();
+   if (serialization_quirks & ~((uint64_t) NETPLAY_QUIRK_MAP_UNDERSTOOD))
+   {
+      /* Quirks we don't support! Just disable everything. */
+      quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
+   }
+   if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_SAVESTATES)
+      quirks |= NETPLAY_QUIRK_NO_SAVESTATES;
+   if (serialization_quirks & NETPLAY_QUIRK_MAP_NO_TRANSMISSION)
+      quirks |= NETPLAY_QUIRK_NO_TRANSMISSION;
+   if (serialization_quirks & NETPLAY_QUIRK_MAP_INITIALIZATION)
+      quirks |= NETPLAY_QUIRK_INITIALIZATION;
 
    if (netplay_is_client)
    {
@@ -1382,7 +1488,7 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
          netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
          settings->netplay.sync_frames, settings->netplay.check_frames, &cbs,
-         is_spectate, settings->username);
+         is_spectate, settings->username, quirks);
 
    if (netplay_data)
       return true;

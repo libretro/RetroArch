@@ -40,6 +40,28 @@
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
 
+/* Quirks mandated by how particular cores save states. This is distilled from
+ * the larger set of quirks that the quirks environment can communicate. */
+#define NETPLAY_QUIRK_NO_SAVESTATES (1<<0)
+#define NETPLAY_QUIRK_NO_TRANSMISSION (1<<1)
+#define NETPLAY_QUIRK_INITIALIZATION (1<<2)
+
+/* Mapping of serialization quirks to netplay quirks. */
+#define NETPLAY_QUIRK_MAP_UNDERSTOOD \
+   (RETRO_SERIALIZATION_QUIRK_INCOMPLETE \
+   |RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE \
+   |RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION \
+   |RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT \
+   |RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT)
+#define NETPLAY_QUIRK_MAP_NO_SAVESTATES \
+   (RETRO_SERIALIZATION_QUIRK_INCOMPLETE)
+#define NETPLAY_QUIRK_MAP_NO_TRANSMISSION \
+   (RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION \
+   |RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT \
+   |RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT)
+#define NETPLAY_QUIRK_MAP_INITIALIZATION \
+   (RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE)
+
 struct delta_frame
 {
    bool used; /* a bit derpy, but this is how we know if the delta's been used at all */
@@ -118,8 +140,8 @@ struct netplay
     * events, such as player flipping or savestate loading. */
    bool force_rewind;
 
-   /* Does the core support savestates? */
-   bool savestates_work;
+   /* Quirks in the savestate implementation */
+   uint64_t quirks;
 
    /* Force our state to be sent to the other side. Used when they request a
     * savestate, to send at the next pre-frame. */
@@ -176,6 +198,12 @@ struct netplay
 struct netplay_callbacks* netplay_get_cbs_net(void);
 
 struct netplay_callbacks* netplay_get_cbs_spectate(void);
+
+/* Normally called at init time, unless the INITIALIZATION quirk is set */
+bool netplay_init_serialization(netplay_t *netplay);
+
+/* Force serialization to be ready by fast-forwarding the core */
+bool netplay_wait_and_init_serialization(netplay_t *netplay);
 
 void netplay_simulate_input(netplay_t *netplay, uint32_t sim_ptr);
 

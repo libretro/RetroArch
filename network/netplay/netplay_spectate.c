@@ -111,6 +111,16 @@ static bool netplay_spectate_pre_frame(netplay_t *netplay)
          return true;
       }
 
+      /* Wait until it's safe to serialize */
+      if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+      {
+         netplay->is_replay = true;
+         netplay->replay_ptr = netplay->self_ptr;
+         netplay->replay_frame_count = netplay->self_frame_count;
+         netplay_wait_and_init_serialization(netplay);
+         netplay->is_replay = false;
+      }
+
       /* Start them at the current frame */
       netplay->spectate.frames[idx] = netplay->self_frame_count;
       serial_info.data_const = NULL;
@@ -196,6 +206,10 @@ static void netplay_spectate_post_frame(netplay_t *netplay)
          netplay->is_replay = true;
          netplay->replay_ptr = netplay->other_ptr;
          netplay->replay_frame_count = netplay->other_frame_count;
+
+         /* Wait until it's safe to serialize */
+         if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+            netplay_wait_and_init_serialization(netplay);
 
          serial_info.data       = NULL;
          serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
