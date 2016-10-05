@@ -1608,6 +1608,19 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_RESOURCE_DIRECTORY:
+      {
+         const struct retro_resource_path *res = (const struct retro_resource_path*)data;
+
+         const char *system_dir = NULL;
+         if (!rarch_environment_cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY, (void*)&system_dir) || system_dir == NULL)
+            return false;
+
+         strncpy(res->base_directory, system_dir, res->base_directory_max_len);
+
+         break;
+      }
+
       /* Default */
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
