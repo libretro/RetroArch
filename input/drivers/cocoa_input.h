@@ -45,6 +45,8 @@ typedef struct
    int16_t mouse_rel_y;
    int16_t mouse_wu;
    int16_t mouse_wd;
+   int16_t mouse_wl;
+   int16_t mouse_wr;
 
    const input_device_driver_t *sec_joypad;
    const input_device_driver_t *joypad;

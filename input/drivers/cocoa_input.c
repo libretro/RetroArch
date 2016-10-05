@@ -192,6 +192,10 @@ static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
            return apple->mouse_wu;
        case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
            return apple->mouse_wd;
+       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+           return apple->mouse_wl;
+       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+           return apple->mouse_wr;
    }
 
    return 0;

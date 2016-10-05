@@ -57,6 +57,16 @@ void cocoagl_gfx_ctx_update(void);
 void *glkitview_init(void);
 
 @implementation CocoaView
+
+#if defined(HAVE_COCOA)
+#include "../../../input/drivers/cocoa_input.h"
+
+- (void)scrollWheel:(NSEvent *)theEvent {
+    cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
+    (void)apple;
+}
+#endif
+
 + (CocoaView*)get
 {
    if (!g_instance)
