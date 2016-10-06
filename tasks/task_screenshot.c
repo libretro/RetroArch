@@ -195,8 +195,7 @@ static bool screenshot_dump(
    {
       if (task)
          free(task);
-      if (state)
-         free(state);
+      free(state);
       return false;
    }
 #endif
