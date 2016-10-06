@@ -1598,7 +1598,9 @@ void general_write_handler(void *data)
             else
                verbosity_disable();
 
-            if (setting && *setting->value.target.boolean)
+            if (setting 
+                  && setting->value.target.boolean
+                  && *setting->value.target.boolean)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
             else
                retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
