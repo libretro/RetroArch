@@ -125,24 +125,61 @@ uint32_t netplay_impl_magic(void)
    return res;
 }
 
-bool netplay_send_info(netplay_t *netplay)
+/**
+ * netplay_platform_magic
+ *
+ * Just enough info to tell us if our platforms mismatch: Endianness and a
+ * couple of type sizes.
+ *
+ * Format:
+ *    bit 31:     Reserved
+ *    bit 30:     1 for big endian
+ *    bits 29-15: sizeof(size_t)
+ *    bits 14-0:  sizeof(long)
+ */
+static uint32_t netplay_platform_magic(void)
+{
+   uint32_t ret =
+       ((1 == htonl(1)) << 30)
+      |(sizeof(size_t) << 15)
+      |(sizeof(long));
+   return ret;
+}
+
+/**
+ * netplay_endian_mismatch
+ *
+ * Do the platform magics mismatch on endianness?
+ */
+static bool netplay_endian_mismatch(uint32_t pma, uint32_t pmb)
+{
+   uint32_t ebit = (1<<30);
+   return (pma & ebit) != (pmb & ebit);
+}
+
+bool netplay_handshake(netplay_t *netplay)
 {
    unsigned sram_size, remote_sram_size;
    retro_ctx_memory_info_t mem_info;
    char msg[512]             = {0};
    uint32_t *content_crc_ptr = NULL;
    void *sram                = NULL;
-   uint32_t header[3]        = {0};
+   uint32_t header[4]        = {0};
    size_t i;
+   uint32_t local_pmagic, remote_pmagic;
+   bool is_server = netplay->is_server;
 
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
 
    core_get_memory(&mem_info);
    content_get_crc(&content_crc_ptr);
 
+   local_pmagic = netplay_platform_magic();
+
    header[0] = htonl(*content_crc_ptr);
    header[1] = htonl(netplay_impl_magic());
    header[2] = htonl(mem_info.size);
+   header[3] = htonl(local_pmagic);
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
       return false;
@@ -176,62 +213,116 @@ bool netplay_send_info(netplay_t *netplay)
       RARCH_WARN("Content SRAM sizes do not correspond.\n");
    }
 
-   if (!netplay_send_nickname(netplay, netplay->fd))
+   /* We only care about platform magic if our core is quirky */
+   remote_pmagic = ntohl(header[3]);
+   if ((netplay->quirks & NETPLAY_QUIRK_ENDIAN_DEPENDENT) &&
+       netplay_endian_mismatch(local_pmagic, remote_pmagic))
    {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST));
+      RARCH_ERR("Endianness mismatch with an endian-sensitive core.\n");
+      return false;
+   }
+   if ((netplay->quirks & NETPLAY_QUIRK_PLATFORM_DEPENDENT) &&
+       (local_pmagic != remote_pmagic))
+   {
+      RARCH_ERR("Platform mismatch with a platform-sensitive core.\n");
       return false;
    }
 
-   /* Get SRAM data from User 1. */
-   if (sram_size != 0 && sram_size == remote_sram_size)
+   /* Client sends nickname first, server replies with nickname */
+   if (!is_server)
    {
-      sram      = mem_info.data;
-
-      if (!socket_receive_all_blocking(netplay->fd, sram, sram_size))
+      if (!netplay_send_nickname(netplay, netplay->fd))
       {
          RARCH_ERR("%s\n",
-               msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+               msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST));
+         return false;
+      }
+   }
+
+   if (!netplay_get_nickname(netplay, netplay->fd))
+   {
+      if (is_server)
+         RARCH_ERR("%s\n",
+               msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT));
+      else
+         RARCH_ERR("%s\n", 
+               msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST));
+      return false;
+   }
+
+   if (is_server)
+   {
+      if (!netplay_send_nickname(netplay, netplay->fd))
+      {
+         RARCH_ERR("%s\n",
+               msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT));
+         return false;
+      }
+   }
+
+   /* Server sends SRAM, client receives */
+   if (is_server)
+   {
+      /* Send SRAM data to the client */
+      sram      = mem_info.data;
+
+      if (!socket_send_all_blocking(netplay->fd, sram, sram_size, false))
+      {
+         RARCH_ERR("%s\n",
+               msg_hash_to_str(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT));
          return false;
       }
 
    }
-   else if (remote_sram_size != 0)
+   else
    {
-      /* We can't load this, but we still need to get rid of the data */
-      uint32_t quickbuf;
-      while (remote_sram_size > 0)
+      /* Get SRAM data from User 1. */
+      if (sram_size != 0 && sram_size == remote_sram_size)
       {
-         if (!socket_receive_all_blocking(netplay->fd, &quickbuf, (remote_sram_size > sizeof(uint32_t)) ? sizeof(uint32_t) : remote_sram_size))
+         sram      = mem_info.data;
+
+         if (!socket_receive_all_blocking(netplay->fd, sram, sram_size))
          {
             RARCH_ERR("%s\n",
                   msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
             return false;
          }
-         if (remote_sram_size > sizeof(uint32_t))
-            remote_sram_size -= sizeof(uint32_t);
-         else
-            remote_sram_size = 0;
+
+      }
+      else if (remote_sram_size != 0)
+      {
+         /* We can't load this, but we still need to get rid of the data */
+         uint32_t quickbuf;
+         while (remote_sram_size > 0)
+         {
+            if (!socket_receive_all_blocking(netplay->fd, &quickbuf, (remote_sram_size > sizeof(uint32_t)) ? sizeof(uint32_t) : remote_sram_size))
+            {
+               RARCH_ERR("%s\n",
+                     msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+               return false;
+            }
+            if (remote_sram_size > sizeof(uint32_t))
+               remote_sram_size -= sizeof(uint32_t);
+            else
+               remote_sram_size = 0;
+         }
+
       }
 
-   }
-
-   if (!netplay_get_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("%s\n", 
-            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST));
-      return false;
    }
 
    /* Reset our frame count so it's consistent with the server */
-   netplay->self_frame_count = netplay->read_frame_count = netplay->other_frame_count = 0;
+   netplay->self_frame_count = netplay->other_frame_count = 0;
+   netplay->read_frame_count = 1;
    for (i = 0; i < netplay->buffer_size; i++)
    {
       netplay->buffer[i].used = false;
       if (i == netplay->self_ptr)
       {
          netplay_delta_frame_ready(netplay, &netplay->buffer[i], 0);
-         netplay->read_ptr = netplay->other_ptr = i;
+         netplay->buffer[i].have_remote = true;
+         netplay->other_ptr = i;
+         netplay->read_ptr = NEXT_PTR(i);
       }
       else
       {
@@ -239,107 +330,18 @@ bool netplay_send_info(netplay_t *netplay)
       }
    }
 
-   snprintf(msg, sizeof(msg), "%s: \"%s\"",
-         msg_hash_to_str(MSG_CONNECTED_TO),
-         netplay->other_nick);
-   RARCH_LOG("%s\n", msg);
-   runloop_msg_queue_push(msg, 1, 180, false);
-
-   return true;
-}
-
-bool netplay_get_info(netplay_t *netplay)
-{
-   unsigned sram_size, remote_sram_size;
-   uint32_t header[3];
-   retro_ctx_memory_info_t mem_info;
-   uint32_t *content_crc_ptr = NULL;
-   const void *sram          = NULL;
-   size_t i;
-
-   /* FIXME: There's a huge amount of duplication between send_info and
-    * get_info */
-
-   mem_info.id = RETRO_MEMORY_SAVE_RAM;
-
-   core_get_memory(&mem_info);
-   content_get_crc(&content_crc_ptr);
-
-   header[0] = htonl(*content_crc_ptr);
-   header[1] = htonl(netplay_impl_magic());
-   header[2] = htonl(mem_info.size);
-
-   if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
-      return false;
-
-   if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
+   if (is_server)
    {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT));
-      return false;
+      netplay_log_connection(&netplay->other_addr, 0, netplay->other_nick);
    }
-
-   if (*content_crc_ptr != ntohl(header[0]))
+   else
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER));
-      return false;
+      snprintf(msg, sizeof(msg), "%s: \"%s\"",
+            msg_hash_to_str(MSG_CONNECTED_TO),
+            netplay->other_nick);
+      RARCH_LOG("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false);
    }
-
-   if (netplay_impl_magic() != ntohl(header[1]))
-   {
-      RARCH_ERR("Implementations differ, make sure you're using exact same "
-            "libretro implementations and RetroArch version.\n");
-      return false;
-   }
-
-   sram_size = mem_info.size;
-   remote_sram_size = ntohl(header[2]);
-   if (sram_size != 0 && remote_sram_size != 0 && sram_size != remote_sram_size)
-   {
-      RARCH_WARN("Content SRAM sizes do not correspond.\n");
-   }
-
-   if (!netplay_get_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT));
-      return false;
-   }
-
-   /* Send SRAM data to our User 2. */
-   sram      = mem_info.data;
-
-   if (!socket_send_all_blocking(netplay->fd, sram, sram_size, false))
-   {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT));
-      return false;
-   }
-
-   if (!netplay_send_nickname(netplay, netplay->fd))
-   {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT));
-      return false;
-   }
-
-   /* Reset our frame count so it's consistent with the client */
-   netplay->self_frame_count = netplay->read_frame_count = netplay->other_frame_count = 0;
-   for (i = 0; i < netplay->buffer_size; i++)
-   {
-      netplay->buffer[i].used = false;
-      if (i == netplay->self_ptr)
-      {
-         netplay_delta_frame_ready(netplay, &netplay->buffer[i], 0);
-         netplay->read_ptr = netplay->other_ptr = i;
-      }
-      else
-      {
-         netplay->buffer[i].used = false;
-      }
-   }
-
-   netplay_log_connection(&netplay->other_addr, 0, netplay->other_nick);
 
    return true;
 }

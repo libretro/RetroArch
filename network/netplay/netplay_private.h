@@ -35,7 +35,7 @@
 #define MAX_SPECTATORS 16
 #define RARCH_DEFAULT_PORT 55435
 
-#define NETPLAY_PROTOCOL_VERSION 1
+#define NETPLAY_PROTOCOL_VERSION 2
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
@@ -45,6 +45,8 @@
 #define NETPLAY_QUIRK_NO_SAVESTATES (1<<0)
 #define NETPLAY_QUIRK_NO_TRANSMISSION (1<<1)
 #define NETPLAY_QUIRK_INITIALIZATION (1<<2)
+#define NETPLAY_QUIRK_ENDIAN_DEPENDENT (1<<3)
+#define NETPLAY_QUIRK_PLATFORM_DEPENDENT (1<<4)
 
 /* Mapping of serialization quirks to netplay quirks. */
 #define NETPLAY_QUIRK_MAP_UNDERSTOOD \
@@ -56,11 +58,13 @@
 #define NETPLAY_QUIRK_MAP_NO_SAVESTATES \
    (RETRO_SERIALIZATION_QUIRK_INCOMPLETE)
 #define NETPLAY_QUIRK_MAP_NO_TRANSMISSION \
-   (RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION \
-   |RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT \
-   |RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT)
+   (RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION)
 #define NETPLAY_QUIRK_MAP_INITIALIZATION \
    (RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE)
+#define NETPLAY_QUIRK_MAP_ENDIAN_DEPENDENT \
+   (RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT)
+#define NETPLAY_QUIRK_MAP_PLATFORM_DEPENDENT \
+   (RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT)
 
 struct delta_frame
 {
@@ -214,13 +218,9 @@ bool netplay_get_nickname(netplay_t *netplay, int fd);
 
 bool netplay_send_nickname(netplay_t *netplay, int fd);
 
-bool netplay_send_info(netplay_t *netplay);
+bool netplay_handshake(netplay_t *netplay);
 
 uint32_t netplay_impl_magic(void);
-
-bool netplay_send_info(netplay_t *netplay);
-
-bool netplay_get_info(netplay_t *netplay);
 
 bool netplay_is_server(netplay_t* netplay);
 

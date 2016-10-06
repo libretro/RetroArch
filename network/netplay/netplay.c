@@ -1471,6 +1471,10 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
       quirks |= NETPLAY_QUIRK_NO_TRANSMISSION;
    if (serialization_quirks & NETPLAY_QUIRK_MAP_INITIALIZATION)
       quirks |= NETPLAY_QUIRK_INITIALIZATION;
+   if (serialization_quirks & NETPLAY_QUIRK_MAP_ENDIAN_DEPENDENT)
+      quirks |= NETPLAY_QUIRK_ENDIAN_DEPENDENT;
+   if (serialization_quirks & NETPLAY_QUIRK_MAP_PLATFORM_DEPENDENT)
+      quirks |= NETPLAY_QUIRK_PLATFORM_DEPENDENT;
 
    if (netplay_is_client)
    {
