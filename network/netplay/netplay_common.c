@@ -224,14 +224,17 @@ bool netplay_send_info(netplay_t *netplay)
    }
 
    /* Reset our frame count so it's consistent with the server */
-   netplay->self_frame_count = netplay->read_frame_count = netplay->other_frame_count = 0;
+   netplay->self_frame_count = netplay->other_frame_count = 0;
+   netplay->read_frame_count = 1;
    for (i = 0; i < netplay->buffer_size; i++)
    {
       netplay->buffer[i].used = false;
       if (i == netplay->self_ptr)
       {
          netplay_delta_frame_ready(netplay, &netplay->buffer[i], 0);
-         netplay->read_ptr = netplay->other_ptr = i;
+         netplay->buffer[i].have_remote = true;
+         netplay->other_ptr = i;
+         netplay->read_ptr = NEXT_PTR(i);
       }
       else
       {
@@ -324,14 +327,17 @@ bool netplay_get_info(netplay_t *netplay)
    }
 
    /* Reset our frame count so it's consistent with the client */
-   netplay->self_frame_count = netplay->read_frame_count = netplay->other_frame_count = 0;
+   netplay->self_frame_count = netplay->other_frame_count = 0;
+   netplay->read_frame_count = 1;
    for (i = 0; i < netplay->buffer_size; i++)
    {
       netplay->buffer[i].used = false;
       if (i == netplay->self_ptr)
       {
          netplay_delta_frame_ready(netplay, &netplay->buffer[i], 0);
-         netplay->read_ptr = netplay->other_ptr = i;
+         netplay->buffer[i].have_remote = true;
+         netplay->other_ptr = i;
+         netplay->read_ptr = NEXT_PTR(i);
       }
       else
       {

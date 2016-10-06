@@ -81,7 +81,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       serial_info.size = netplay->state_size;
 
       memset(serial_info.data, 0, serial_info.size);
-      if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
+      if ((netplay->quirks & NETPLAY_QUIRK_INITIALIZATION) || netplay->self_frame_count == 0)
       {
          /* Don't serialize until it's safe */
       }
@@ -105,6 +105,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
 
       /* If we can't transmit savestates, we must stall until the client is ready */
       if (!netplay->has_connection &&
+          netplay->self_frame_count > 0 &&
           (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
          netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
    }
@@ -155,7 +156,16 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
 
             /* Send them the savestate */
             if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
+            {
                netplay_load_savestate(netplay, NULL, true);
+            }
+            else
+            {
+               /* Because the first frame isn't serialized, we're actually at
+                * frame 1 */
+               netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+               netplay->self_frame_count = 1;
+            }
 
             /* And expect the current frame from the other side */
             netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
