@@ -19,6 +19,12 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#define RARCH_VFS_DIR_ASSETS    "retro://assets/"
+#define RARCH_VFS_DIR_CORE      "retro://core/"
+#define RARCH_VFS_DIR_GAME      "retro://game/"
+#define RARCH_VFS_DIR_SAVE      "retro://save/"
+#define RARCH_VFS_DIR_SYSTEM    "retro://system/"
+
 RETRO_BEGIN_DECLS
 
 enum rarch_dir_type
