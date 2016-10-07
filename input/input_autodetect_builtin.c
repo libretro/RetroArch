@@ -68,6 +68,8 @@ DECL_BTN(l, 10) \
 DECL_BTN(r, 11) \
 DECL_BTN(l2, 12) \
 DECL_BTN(r2, 13) \
+DECL_BTN(l3, 14) \
+DECL_BTN(r3, 15) \
 DECL_AXIS(l_x_plus,  +0) \
 DECL_AXIS(l_x_minus, -0) \
 DECL_AXIS(l_y_plus,  +1) \
