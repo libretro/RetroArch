@@ -2247,6 +2247,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;
+#ifndef HAVE_DYNAMIC
+         command_event(CMD_EVENT_QUIT, NULL);
+#endif
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          command_event_save_current_config(OVERRIDE_NONE);

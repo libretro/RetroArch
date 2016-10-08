@@ -149,6 +149,9 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
 #elif defined(__linux__)
    strlcpy(s, "elf", len);
    return true;
+#elif defined(_3DS)
+   strlcpy(s, "core", len);
+   return true;
 #else
    return false;
 #endif
@@ -179,6 +182,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    return true;
 #elif defined(HW_RVL)
    strlcpy(s, "boot.dol", len);
+   return true;
+#elif defined(_3DS)
+   strlcpy(s, "retroarch.core", len);
    return true;
 #else
    return false;
