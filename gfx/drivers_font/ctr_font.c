@@ -228,6 +228,9 @@ static void ctr_font_render_line(
       delta_y += glyph->advance_y;
    }
 
+   if (v == ctr->vertex_cache.current)
+      return;
+
    ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector, 1);
    GSPGPU_FlushDataCache(ctr->vertex_cache.current, (v - ctr->vertex_cache.current) * sizeof(ctr_vertex_t));
    ctrGuSetAttributeBuffers(2,
