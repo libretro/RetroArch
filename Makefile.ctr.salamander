@@ -87,7 +87,7 @@ LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 CFLAGS   += -std=gnu99 -ffast-math
 
 
-LIBS	:= -lretro_ctr  -lctru -lm
+LIBS	:= -lctru -lm
 
 
 ifeq ($(BUILD_3DSX), 1)
