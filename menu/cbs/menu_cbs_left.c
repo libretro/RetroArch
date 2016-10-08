@@ -325,12 +325,12 @@ static int playlist_association_left(unsigned type, const char *label,
       bool wraparound)
 {
    unsigned i;
-   int next, found, current = 0;
+   char core_path[PATH_MAX_LENGTH];
+   char new_playlist_cores[PATH_MAX_LENGTH];
+   int next, found, current         = 0;
    core_info_t *info                = NULL;
    struct string_list *stnames      = NULL;
    struct string_list *stcores      = NULL;
-   char core_path[PATH_MAX_LENGTH]  = {0};
-   char new_playlist_cores[PATH_MAX_LENGTH] = {0};
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
    core_info_list_t           *list = NULL;
@@ -339,6 +339,8 @@ static int playlist_association_left(unsigned type, const char *label,
 
    if (!list)
       return menu_cbs_exit();
+
+   core_path[0] = new_playlist_cores[0] = '\0';
 
    stnames = string_split(settings->playlist_names, ";");
    stcores = string_split(settings->playlist_cores, ";");
@@ -425,7 +427,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
    for (i = 0; i < MAX_USERS; i++)
    {
       uint32_t label_setting_hash;
-      char label_setting[PATH_MAX_LENGTH] = {0};
+      char label_setting[PATH_MAX_LENGTH];
+      
+      label_setting[0] = '\0';
 
       snprintf(label_setting, sizeof(label_setting), "input_player%d_joypad_index", i + 1);
       label_setting_hash = msg_hash_calculate(label_setting);

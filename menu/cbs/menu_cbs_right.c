@@ -338,19 +338,21 @@ static int action_right_video_resolution(unsigned type, const char *label,
 static int playlist_association_right(unsigned type, const char *label,
       bool wraparound)
 {
-   size_t i, next, found, current = 0;
-   char core_path[PATH_MAX_LENGTH]  = {0};
+   char core_path[PATH_MAX_LENGTH];
+   char new_playlist_cores[PATH_MAX_LENGTH];
+   size_t i, next, found, current   = 0;
    core_info_t *info                = NULL;
    struct string_list *stnames      = NULL;
    struct string_list *stcores      = NULL;
-   char new_playlist_cores[PATH_MAX_LENGTH] = {0};
+   core_info_list_t           *list = NULL;
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
-   core_info_list_t           *list = NULL;
    
    core_info_get_list(&list);
    if (!list)
       return menu_cbs_exit();
+
+   core_path[0] = new_playlist_cores[0] = '\0';
 
    stnames = string_split(settings->playlist_names, ";");
    stcores = string_split(settings->playlist_cores, ";");
