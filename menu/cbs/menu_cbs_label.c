@@ -84,7 +84,9 @@ static int action_bind_label_playlist_collection_entry(
 {
    if (strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
    {
-      char path_base[PATH_MAX_LENGTH] = {0};
+      char path_base[PATH_MAX_LENGTH];
+      path_base[0] = '\0';
+
       fill_short_pathname_representation_noext(path_base, path,
             sizeof(path_base));
 
