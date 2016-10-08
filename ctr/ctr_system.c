@@ -87,9 +87,6 @@ void __attribute__((weak)) __libctru_init(void (*retAddr)(void))
 
    /* Allocate application and linear heaps */
    __system_allocateHeaps();
-
-   /* Build argc/argv if present */
-   __system_initArgv();
 }
 
 
@@ -136,14 +133,64 @@ int __system_argc;
 char** __system_argv;
 extern const char* __system_arglist;
 
+// sha-256 of "ARGV"
+char __argv_hmac[0x20] = {0x1d, 0x78, 0xff, 0xb9, 0xc5, 0xbc, 0x78, 0xb7, 0xac, 0x29, 0x1d, 0x3e, 0x16, 0xd0, 0xcf, 0x53,
+                         0xef, 0x12, 0x58, 0x83, 0xb6, 0x9e, 0x2f, 0x79, 0x47, 0xf9, 0x35, 0x61, 0xeb, 0x50, 0xd7, 0x67};
+
+Result APT_ReceiveDeliverArg(void* param, size_t param_size, void* hmac, size_t hmac_size, u64* source_pid, bool* received)
+{
+	u32 cmdbuf[16];
+	cmdbuf[0]=IPC_MakeHeader(0x35,2,0);
+	cmdbuf[1]=param_size;
+	cmdbuf[2]=hmac_size;
+
+	u32 saved_threadstorage[4];
+	u32* staticbufs = getThreadStaticBuffers();
+   saved_threadstorage[0]=staticbufs[0];
+	saved_threadstorage[1]=staticbufs[1];
+   saved_threadstorage[2]=staticbufs[2];
+	saved_threadstorage[3]=staticbufs[3];
+   staticbufs[0]=IPC_Desc_StaticBuffer(param_size, 0);
+	staticbufs[1]=(u32)param;
+   staticbufs[2]=IPC_Desc_StaticBuffer(hmac_size, 2);
+	staticbufs[3]=(u32)hmac;
+
+	Result ret = aptSendCommand(cmdbuf);
+   staticbufs[0]=saved_threadstorage[0];
+	staticbufs[1]=saved_threadstorage[1];
+   staticbufs[2]=saved_threadstorage[2];
+	staticbufs[3]=saved_threadstorage[3];
+
+   if(R_FAILED(ret))
+      return ret;
+
+   if(source_pid)
+      *source_pid = ((u64*)cmdbuf)[1];
+   if(received)
+      *received = ((bool*)cmdbuf)[16];
+
+	return cmdbuf[1];
+}
+
 void __system_initArgv(void)
 {
    int i;
+
    struct
    {
       u32 argc;
       char args[];
    }*arg_struct = (void*)__system_arglist;
+
+   static u8 param[0x300];
+   u8 hmac[0x20];
+   bool received;
+
+   if(!__service_ptr
+      && R_SUCCEEDED(APT_ReceiveDeliverArg(&param, sizeof(param), hmac, sizeof(hmac), NULL, &received))
+      && received
+      && !memcmp(hmac, __argv_hmac, sizeof(__argv_hmac)))
+      arg_struct = (void*)param;
 
    __system_argc = 0;
 
@@ -184,6 +231,7 @@ void initSystem(void (*retAddr)(void))
 {
    __libctru_init(retAddr);
    __appInit();
+   __system_initArgv();
    __libc_init_array();
 }
 
