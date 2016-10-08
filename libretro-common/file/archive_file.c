@@ -232,9 +232,11 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
    /* Extract first file that matches our list. */
    if (ext && string_list_find_elem(userdata->ext, ext))
    {
-      char new_path[PATH_MAX_LENGTH]    = {0};
-      char wanted_file[PATH_MAX_LENGTH] = {0};
+      char new_path[PATH_MAX_LENGTH];
+      char wanted_file[PATH_MAX_LENGTH];
       const char *delim                 = NULL;
+
+      new_path[0] = wanted_file[0]      = '\0';
 
       if (userdata->extraction_directory)
          fill_pathname_join(new_path, userdata->extraction_directory,
@@ -754,9 +756,11 @@ const struct file_archive_file_backend *file_archive_get_7z_file_backend(void)
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
+   char newpath[PATH_MAX_LENGTH];
    const char *file_ext          = NULL;
    char *last                    = NULL;
-   char newpath[PATH_MAX_LENGTH] = {0};
+
+   newpath[0] = '\0';
 
    strlcpy(newpath, path, sizeof(newpath));
 

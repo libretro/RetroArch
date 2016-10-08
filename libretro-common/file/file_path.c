@@ -257,8 +257,10 @@ bool path_file_exists(const char *path)
 void fill_pathname(char *out_path, const char *in_path,
       const char *replace, size_t size)
 {
-   char tmp_path[PATH_MAX_LENGTH] = {0};
+   char tmp_path[PATH_MAX_LENGTH];
    char *tok                      = NULL;
+
+   tmp_path[0] = '\0';
 
    retro_assert(strlcpy(tmp_path, in_path,
             sizeof(tmp_path)) < sizeof(tmp_path));
@@ -575,7 +577,9 @@ bool path_is_absolute(const char *path)
 void path_resolve_realpath(char *buf, size_t size)
 {
 #ifndef RARCH_CONSOLE
-   char tmp[PATH_MAX_LENGTH] = {0};
+   char tmp[PATH_MAX_LENGTH];
+
+   tmp[0] = '\0';
 
    strlcpy(tmp, buf, sizeof(tmp));
 
@@ -728,10 +732,12 @@ void fill_pathname_join_delim_concat(char *out_path, const char *dir,
 void fill_short_pathname_representation(char* out_rep,
       const char *in_path, size_t size)
 {
-   char path_short[PATH_MAX_LENGTH] = {0};
+   char path_short[PATH_MAX_LENGTH];
 #ifdef HAVE_COMPRESSION
    char *last_slash                  = NULL;
 #endif
+
+   path_short[0] = '\0';
 
    fill_pathname(path_short, path_basename(in_path), "",
             sizeof(path_short));
