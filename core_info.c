@@ -171,7 +171,7 @@ static config_file_t *core_info_list_iterate(
    fill_pathname_base_noext(info_path_base, contents->elems[i].data,
          sizeof(info_path_base));
 
-#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP))
+#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS))
    char *substr = strrchr(info_path_base, '_');
    if (substr)
       *substr = '\0';

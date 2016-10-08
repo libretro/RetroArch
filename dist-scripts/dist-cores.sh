@@ -38,10 +38,12 @@ mkdir -p ../pkg/vita/vpk
 # CTR/3DS
 elif [ $PLATFORM = "ctr" ] ; then
 platform=ctr
+SALAMANDER=yes
 EXT=a
 mkdir -p ../pkg/3ds/cia
 mkdir -p ../pkg/3ds/rom
 mkdir -p ../pkg/3ds/3ds
+mkdir -p ../pkg/3ds/retroarch/cores
 
 # Emscripten
 elif [ $PLATFORM = "emscripten" ] ; then
@@ -123,6 +125,10 @@ if [ $SALAMANDER = "yes" ]; then
    make -C ../ -f Makefile.${platform}.salamander || exit 1
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
+   fi
+   if [ $PLATFORM = "ctr" ] ; then
+   mv -f ../retroarch_3ds_salamander.cia ../pkg/3ds/cia/retroarch_3ds.cia
+   make -C ../ -f Makefile.${platform} clean || exit 1
    fi
    if [ $PLATFORM = "wii" ] ; then
    mv -f ../retroarch-salamander_wii.dol ../pkg/${platform}/boot.dol
@@ -243,6 +249,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
       mv -f ../retroarch_3ds.3ds ../pkg/3ds/rom/${name}_libretro.3ds
+      mv -f ../retroarch_3ds.core ../pkg/3ds/retroarch/cores/${name}_libretro.core
       mkdir -p ../pkg/3ds/3ds/${name}_libretro
       mv -f ../retroarch_3ds.3dsx ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.3dsx
       mv -f ../retroarch_3ds.smdh ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.smdh

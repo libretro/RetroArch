@@ -35,6 +35,7 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../../defaults.h"
+#include "../../paths.h"
 #include "retroarch.h"
 #include "file_path_special.h"
 #include "audio/audio_driver.h"
@@ -47,7 +48,8 @@
 #endif
 #endif
 
-const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
+static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
+static const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
 
 static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -104,7 +106,8 @@ static void frontend_ctr_deinit(void *data)
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 #endif
 
-   if(gfxBottomFramebuffers[0] == (u8*)currentConsole->frameBuffer)
+   if((gfxBottomFramebuffers[0] == (u8*)currentConsole->frameBuffer)
+      && (ctr_fork_mode == FRONTEND_FORK_NONE))
       wait_for_input();
 
    CFGU_GetModelNintendo2DS(&not_2DS);
@@ -127,6 +130,118 @@ static void frontend_ctr_deinit(void *data)
    gfxTopRightFramebuffers[1] = NULL;
    gfxExit();
 #endif
+}
+
+static void frontend_ctr_exec(const char *path, bool should_load_game)
+{
+   struct
+   {
+      u32 argc;
+      char args[0x300 - 0x4];
+   }param;
+   int len;
+   Result res;
+   extern char __argv_hmac[0x20];
+
+   DEBUG_VAR(path);
+   DEBUG_STR(path);
+
+   strlcpy(param.args, elf_path_cst, sizeof(param.args));
+   len = strlen(param.args) + 1;
+   param.argc = 1;
+
+   RARCH_LOG("Attempt to load core: [%s].\n", path);
+#ifndef IS_SALAMANDER
+   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   {
+      strlcpy(param.args + len, path_get(RARCH_PATH_CONTENT), sizeof(param.args) - len);
+      len += strlen(param.args + len) + 1;
+      param.argc++;
+      RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
+   }
+#endif
+   uint64_t app_ID;
+   if(!path || !*path)
+   {
+      APT_GetProgramID(&app_ID);
+      RARCH_LOG("APP_ID 0x%016llX.\n", app_ID);
+   }
+   else
+   {
+      u32 app_ID_low;
+      char app_ID_str[11];
+      FILE* fp = fopen(path, "rb");
+      size_t bytes_read = fread(app_ID_str, 1, sizeof(app_ID_str), fp);
+      fclose(fp);
+      if(bytes_read <= 0)
+      {
+         RARCH_LOG("error reading APP_ID from: [%s].\n", path);
+         return;
+      }
+      app_ID_str[bytes_read] = '\0';
+      sscanf(app_ID_str, "0x%x", &app_ID_low);
+      app_ID_low <<= 8;
+      app_ID = 0x0004000000000000ULL | app_ID_low;
+      RARCH_LOG("APP_ID [%s] -- > 0x%016llX.\n", app_ID_str, app_ID);
+   }
+
+   if(R_SUCCEEDED(res = APT_PrepareToDoApplicationJump(0, app_ID, 0x1)))
+        res = APT_DoApplicationJump(&param, sizeof(param.argc) + len, __argv_hmac);
+
+   if(res)
+   {
+      RARCH_LOG("Failed to load core\n");
+      dump_result_value(res);
+   }
+
+   svcSleepThread(INT64_MAX);
+}
+
+#ifndef IS_SALAMANDER
+static bool frontend_ctr_set_fork(enum frontend_fork fork_mode)
+{
+   switch (fork_mode)
+   {
+      case FRONTEND_FORK_CORE:
+         RARCH_LOG("FRONTEND_FORK_CORE\n");
+         ctr_fork_mode  = fork_mode;
+         break;
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
+         ctr_fork_mode  = fork_mode;
+         break;
+      case FRONTEND_FORK_RESTART:
+         RARCH_LOG("FRONTEND_FORK_RESTART\n");
+         /* NOTE: We don't implement Salamander, so just turn
+          * this into FRONTEND_FORK_CORE. */
+         ctr_fork_mode  = FRONTEND_FORK_CORE;
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         return false;
+   }
+
+   return true;
+}
+#endif
+
+static void frontend_ctr_exitspawn(char *s, size_t len)
+{
+   bool should_load_game = false;
+#ifndef IS_SALAMANDER
+   if (ctr_fork_mode == FRONTEND_FORK_NONE)
+      return;
+
+   switch (ctr_fork_mode)
+   {
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         should_load_game = true;
+         break;
+      default:
+         break;
+   }
+#endif
+   frontend_ctr_exec(s, should_load_game);
 }
 
 static void frontend_ctr_shutdown(bool unused)
@@ -192,6 +307,15 @@ static void frontend_ctr_init(void *data)
 {
 #ifndef IS_SALAMANDER
    (void)data;
+
+   extern void* __service_ptr;
+   if (__service_ptr)
+   {
+      frontend_ctx_ctr.exec = NULL;
+      frontend_ctx_ctr.exitspawn = NULL;
+      frontend_ctx_ctr.set_fork = NULL;
+   }
+
    verbosity_enable();
 
    gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);   
@@ -255,9 +379,9 @@ enum frontend_architecture frontend_ctr_get_architecture(void)
 
 static int frontend_ctr_parse_drive_list(void *data)
 {
+#ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
 
-#ifndef IS_SALAMANDER
    if (!list)
       return -1;
 
@@ -272,10 +396,14 @@ frontend_ctx_driver_t frontend_ctx_ctr = {
    frontend_ctr_get_environment_settings,
    frontend_ctr_init,
    frontend_ctr_deinit,
-   NULL,                         /* exitspawn */
+   frontend_ctr_exitspawn,
    NULL,                         /* process_args */
-   NULL,                         /* exec */
-   NULL,                         /* set_fork */
+   frontend_ctr_exec,
+#ifdef IS_SALAMANDER
+   NULL,
+#else
+   frontend_ctr_set_fork,
+#endif
    frontend_ctr_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */

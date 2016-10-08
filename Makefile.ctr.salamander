@@ -1,13 +1,10 @@
-TARGET := retroarch_3ds
+TARGET := retroarch_3ds_salamander
 LIBRETRO =
 
 DEBUG                   = 0
-GRIFFIN_BUILD           = 1
-WHOLE_ARCHIVE_LINK      = 0
-BUILD_3DSX              = 1
-BUILD_3DS               = 1
+BUILD_3DSX              = 0
+BUILD_3DS               = 0
 BUILD_CIA               = 1
-LIBCTRU_NO_DEPRECATION  = 1
 
 APP_TITLE            = Retroarch 3DS
 APP_DESCRIPTION      = Retroarch 3DS
@@ -20,84 +17,30 @@ APP_AUDIO            = ctr/assets/silent.wav
 APP_RSF              = ctr/tools/template.rsf
 APP_SYSTEM_MODE      = 64MB
 APP_SYSTEM_MODE_EXT  = 124MB
-APP_BIG_TEXT_SECTION = 0
-APP_USE_SVCHAX       = 0
-
-include ctr/Makefile.cores
 
 OBJ :=
-OBJ += gfx/drivers/ctr_shaders/ctr_sprite.o
 OBJ += ctr/ctr_system.o
 OBJ += ctr/ctr_memory.o
 OBJ += ctr/ctr_linear.o
-OBJ += ctr/gpu_old.o
-
-ifeq ($(APP_BIG_TEXT_SECTION), 1)
-	APP_USE_SVCHAX = 1
-	LDFLAGS  += -Wl,--defsym,__ctr_patch_services=__service_ptr
-endif
-
-ifeq ($(APP_USE_SVCHAX), 1)
-	OBJ += ctr/ctr_svchax.o
-endif
-
-DEFINES :=
-ifeq ($(GRIFFIN_BUILD), 1)
-	OBJ += griffin/griffin.o
-	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_MATERIALUI
-	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB
-else
-	HAVE_MENU_COMMON = 1
-	HAVE_RTGA = 1
-	HAVE_RPNG = 1
-	HAVE_RJPEG = 1
-	HAVE_RBMP = 1
-	HAVE_RGUI = 1
-	HAVE_ZLIB = 1
-	HAVE_7ZIP = 1
-	HAVE_BUILTINZLIB = 1
-	HAVE_LIBRETRODB = 0
-	HAVE_ZARCH = 0
-	HAVE_MATERIALUI = 1
-	HAVE_XMB = 1
-
-	include Makefile.common
-	BLACKLIST :=
-	BLACKLIST += input/input_overlay.o
-	BLACKLIST += tasks/task_overlay.o
-	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
-
-	OBJ += gfx/drivers/ctr_gfx.o
-	OBJ += gfx/drivers_font/ctr_font.o
-	OBJ += menu/drivers_display/menu_display_ctr.o
-	OBJ += input/drivers/ctr_input.o
-	OBJ += input/drivers_joypad/ctr_joypad.o
-	OBJ += audio/drivers/ctr_csnd_audio.o
-	OBJ += audio/drivers/ctr_dsp_audio.o
-	OBJ += frontend/drivers/platform_ctr.o
-	OBJ += gfx/video_filters/2xsai.o
-	OBJ += gfx/video_filters/super2xsai.o
-	OBJ += gfx/video_filters/supereagle.o
-	OBJ += gfx/video_filters/2xbr.o
-	OBJ += gfx/video_filters/darken.o
-	OBJ += gfx/video_filters/epx.o
-	OBJ += gfx/video_filters/scale2x.o
-	OBJ += gfx/video_filters/blargg_ntsc_snes.o
-	OBJ += gfx/video_filters/lq2x.o
-	OBJ += gfx/video_filters/phosphor2x.o
-	OBJ += audio/audio_filters/echo.o
-	OBJ += audio/audio_filters/eq.o
-	OBJ += audio/audio_filters/chorus.o
-	OBJ += audio/audio_filters/iir.o
-	OBJ += audio/audio_filters/panning.o
-	OBJ += audio/audio_filters/phaser.o
-	OBJ += audio/audio_filters/reverb.o
-	OBJ += audio/audio_filters/wahwah.o
-endif
-
+OBJ += frontend/frontend_salamander.o
+OBJ += frontend/frontend_driver.o
+OBJ += frontend/drivers/platform_ctr.o
+OBJ += frontend/drivers/platform_null.o
+OBJ += libretro-common/file/file_path.o
+OBJ += libretro-common/string/stdstring.o
+OBJ += libretro-common/lists/string_list.o
+OBJ += libretro-common/lists/dir_list.o
+OBJ += libretro-common/file/retro_dirent.o
+OBJ += libretro-common/compat/compat_strl.o
+OBJ += libretro-common/file/config_file.o
+OBJ += libretro-common/streams/file_stream.o
+OBJ += libretro-common/file/retro_stat.o
+OBJ += libretro-common/hash/rhash.o
+OBJ += file_path_str.o
+OBJ += verbosity.o
 
 ifeq ($(strip $(DEVKITPRO)),)
-$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
+	$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitpro")
 endif
 
 ifeq ($(strip $(CTRULIB)),)
@@ -115,7 +58,6 @@ MAKEROM_ARGS_COMMON = -rsf $(APP_RSF) -exefslogo -elf $(TARGET).elf -icon $(TARG
 INCDIRS := -I$(CTRULIB)/include
 LIBDIRS := -L. -L$(CTRULIB)/lib
 
-
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
 CFLAGS	+=	-mword-relocations \
@@ -132,19 +74,10 @@ else
    CFLAGS	+= -O3
 endif
 
-ifeq ($(LIBCTRU_NO_DEPRECATION), 1)
-   CFLAGS	+= -DLIBCTRU_NO_DEPRECATION
-endif
-
-ifeq ($(WHOLE_ARCHIVE_LINK), 1)
-   WHOLE_START := -Wl,--whole-archive
-   WHOLE_END := -Wl,--no-whole-archive
-endif
-
 CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 
-CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
-CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
+#CFLAGS += -DRARCH_INTERNAL
+CFLAGS += -DRARCH_CONSOLE -DIS_SALAMANDER
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
@@ -154,7 +87,7 @@ LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 CFLAGS   += -std=gnu99 -ffast-math
 
 
-LIBS	:= $(WHOLE_START) -lretro_ctr $(WHOLE_END) -lctru -lm
+LIBS	:= -lretro_ctr  -lctru -lm
 
 
 ifeq ($(BUILD_3DSX), 1)
@@ -173,9 +106,9 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA) $(TARGET).core
+$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
-$(TARGET).elf: $(OBJ) libretro_ctr.a
+$(TARGET).elf: $(OBJ)
 
 PREFIX		:=	$(DEVKITPRO)/devkitARM/bin/arm-none-eabi-
 
@@ -253,17 +186,12 @@ $(TARGET).3ds: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 $(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
 
-$(TARGET).core: $(TARGET).elf
-	echo $(APP_UNIQUE_ID) > $(TARGET).core
-
-
 clean:
 	rm -f $(OBJ)
 	rm -f $(TARGET).3dsx
 	rm -f $(TARGET).elf
 	rm -f $(TARGET).3ds
 	rm -f $(TARGET).cia
-	rm -f $(TARGET).core
 	rm -f $(TARGET).smdh
 	rm -f $(TARGET).bnr
 	rm -f $(TARGET).icn
