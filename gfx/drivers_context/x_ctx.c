@@ -276,18 +276,17 @@ static void gfx_ctx_x_swap_buffers(void *data)
 static void gfx_ctx_x_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
-#ifdef HAVE_VULKAN
-   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-#endif
-
    x11_check_window(data, quit, resize, width, height, frame_count);
 
    switch (x_api)
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         if (x->vk.need_new_swapchain)
-            *resize = true;
+         {
+            gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+            if (x->vk.need_new_swapchain)
+               *resize = true;
+         }
 #endif
          break;
 
@@ -300,9 +299,6 @@ static void gfx_ctx_x_check_window(void *data, bool *quit,
 static bool gfx_ctx_x_set_resize(void *data,
       unsigned width, unsigned height)
 {
-#ifdef HAVE_VULKAN
-   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-#endif
    (void)data;
    (void)width;
    (void)height;
@@ -311,14 +307,17 @@ static bool gfx_ctx_x_set_resize(void *data,
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         if (!vulkan_create_swapchain(&x->vk, width, height, x->g_interval))
          {
-            RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
-            return false;
-         }
+            gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+            if (!vulkan_create_swapchain(&x->vk, width, height, x->g_interval))
+            {
+               RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
+               return false;
+            }
 
-         x->vk.context.invalid_swapchain = true;
-         x->vk.need_new_swapchain        = false;
+            x->vk.context.invalid_swapchain = true;
+            x->vk.need_new_swapchain        = false;
+         }
 #endif
          break;
 
@@ -830,12 +829,12 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
 
    g_major = major;
    g_minor = minor;
+   x_api   = api;
 
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
-         x_api = GFX_CTX_OPENGL_API;
          return true;
 #else
          break;
@@ -853,7 +852,6 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
                g_major = 2; /* ES 2.0. */
                g_minor = 0;
             }
-            x_api = GFX_CTX_OPENGL_ES_API;
             return ret;
          }
 #else
@@ -861,7 +859,6 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
 #endif
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         x_api = api;
          return true;
 #else
          break;
