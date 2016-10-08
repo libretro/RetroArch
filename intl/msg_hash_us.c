@@ -2984,6 +2984,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "update_cg_shaders";
       case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
          return "update_glsl_shaders";
+      case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
+         return "update_slang_shaders";
       case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
          return "screen_resolution";
       case MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER:
@@ -4289,6 +4291,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Update Cg Shaders";
       case MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS:
          return "Update GLSL Shaders";
+      case MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS:
+         return "Update Slang Shaders";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Core name";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL:
@@ -4421,6 +4425,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Cg support";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
          return "GLSL support";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT:
+         return "Slang support";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT:
          return "HLSL support";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:

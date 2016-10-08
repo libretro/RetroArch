@@ -2228,11 +2228,16 @@ static void cb_generic_download(void *task_data,
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
       {
          static char shaderdir[PATH_MAX_LENGTH]       = {0};
-         const char *dirname                          =
-            transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG ?
-            "shaders_cg" : "shaders_glsl";
+         const char *dirname;
+         if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG)
+         dirname                                      = "shaders_cg";
+         else if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL)
+         dirname                                      = "shaders_glsl";
+         else if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG)
+         dirname                                      = "shaders_slang";
 
          fill_pathname_join(shaderdir,
                settings->directory.video_shader,
@@ -2399,6 +2404,9 @@ static int action_ok_download_generic(const char *path,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
          path = file_path_str(FILE_PATH_SHADERS_GLSL_ZIP);
          break;
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
+         path = file_path_str(FILE_PATH_SHADERS_SLANG_ZIP);
+         break;
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
          path = file_path_str(FILE_PATH_SHADERS_CG_ZIP);
          break;
@@ -2504,6 +2512,13 @@ static int action_ok_update_shaders_glsl(const char *path,
 {
    return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
          MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL);
+}
+
+static int action_ok_update_shaders_slang(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_download_generic(path, label, NULL, type, idx, entry_idx,
+         MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG);
 }
 
 static int action_ok_update_databases(const char *path,
@@ -3808,6 +3823,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
             BIND_ACTION_OK(cbs, action_ok_update_shaders_cg);
+            break;
+         case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
+            BIND_ACTION_OK(cbs, action_ok_update_shaders_slang);
             break;
          case MENU_ENUM_LABEL_UPDATE_CHEATS:
             BIND_ACTION_OK(cbs, action_ok_update_cheats);
