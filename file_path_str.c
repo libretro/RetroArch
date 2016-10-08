@@ -107,6 +107,8 @@ const char *file_path_str(enum file_path_enum enum_idx)
          return "http://mirror.lakka.tv/nightly";
       case FILE_PATH_SHADERS_GLSL_ZIP:
          return "shaders_glsl.zip";
+      case FILE_PATH_SHADERS_SLANG_ZIP:
+         return "shaders_slang.zip";
       case FILE_PATH_SHADERS_CG_ZIP:
          return "shaders_cg.zip";
       case FILE_PATH_DATABASE_RDB_ZIP:

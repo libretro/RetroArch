@@ -2972,6 +2972,14 @@ static int menu_displaylist_parse_options(
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
+#ifdef HAVE_VULKAN
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
+         msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS),
+         MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+
 #endif
 
 #else
