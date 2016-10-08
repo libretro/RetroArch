@@ -24,6 +24,15 @@
 
 #ifdef HAVE_OPENGL
 #include <GL/glx.h>
+
+#ifndef GLX_SAMPLE_BUFFERS
+#define GLX_SAMPLE_BUFFERS 100000
+#endif
+
+#ifndef GLX_SAMPLES
+#define GLX_SAMPLES 100001
+#endif
+
 #endif
 
 #include "../../configuration.h"
@@ -334,6 +343,8 @@ static void *gfx_ctx_x_init(void *data)
       GLX_ALPHA_SIZE       , 8,
       GLX_DEPTH_SIZE       , 0,
       GLX_STENCIL_SIZE     , 0,
+      GLX_SAMPLE_BUFFERS   , 0,
+      GLX_SAMPLES          , 0,
       None
    };
    GLXFBConfig *fbcs       = NULL;
