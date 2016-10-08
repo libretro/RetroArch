@@ -427,7 +427,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
    for (i = 0; i < MAX_USERS; i++)
    {
       uint32_t label_setting_hash;
-      char label_setting[PATH_MAX_LENGTH];
+      char label_setting[128];
       
       label_setting[0] = '\0';
 

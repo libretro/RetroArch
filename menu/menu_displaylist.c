@@ -153,9 +153,11 @@ static void print_buf_lines(file_list_t *list, char *buf,
 
                if (settings)
                {
-                  char display_name[PATH_MAX_LENGTH] = {0};
-                  char core_path[PATH_MAX_LENGTH]    = {0};
+                  char display_name[PATH_MAX_LENGTH];
+                  char core_path[PATH_MAX_LENGTH];
                   char *last                         = NULL;
+
+                  display_name[0] = core_path[0]     = '\0';
 
                   fill_pathname_join_noext(
                         core_path,
@@ -226,9 +228,11 @@ static void menu_displaylist_push_perfcounter(
 static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 {
    unsigned i;
-   char tmp[PATH_MAX_LENGTH] = {0};
-   settings_t *settings      = config_get_ptr();
+   char tmp[PATH_MAX_LENGTH];
    core_info_t *core_info    = NULL;
+   settings_t *settings      = config_get_ptr();
+
+   tmp[0] = '\0';
 
    core_info_get_current_core(&core_info);
 
@@ -432,7 +436,10 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 
    for (k = 0; k < list->size; k++)
    {
-      char tmp[PATH_MAX_LENGTH] = {0};
+      char tmp[PATH_MAX_LENGTH];
+
+      tmp[0] = '\0';
+
       snprintf(tmp, sizeof(tmp), "%s (%s) : %s\n",
             msg_hash_to_str(MSG_INTERFACE),
             list->entries[k].name, list->entries[k].host);
@@ -467,11 +474,13 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    gfx_ctx_ident_t ident_info;
 #endif
-   char tmp[PATH_MAX_LENGTH]             = {0};
-   char feat_str[PATH_MAX_LENGTH]        = {0};
+   char tmp[PATH_MAX_LENGTH];
+   char feat_str[PATH_MAX_LENGTH];
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    settings_t                  *settings = config_get_ptr();
+
+   tmp[0] = feat_str[0] = '\0';
 
    snprintf(tmp, sizeof(tmp), "%s: %s",
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
@@ -519,10 +528,13 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 
    {
-      char cpu_str[PATH_MAX_LENGTH]      = {0};
-      char cpu_arch_str[PATH_MAX_LENGTH] = {0};
-      char cpu_text_str[PATH_MAX_LENGTH] = {0};
+      char cpu_str[PATH_MAX_LENGTH];
+      char cpu_arch_str[PATH_MAX_LENGTH];
+      char cpu_text_str[PATH_MAX_LENGTH];
       enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
+
+      cpu_str[0] = cpu_arch_str[0] = cpu_text_str[0] = '\0';
+
       strlcpy(cpu_text_str,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
             sizeof(cpu_text_str));
@@ -1365,13 +1377,15 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    for (i = 0; i < list_size; i++)
    {
-      char fill_buf[PATH_MAX_LENGTH]  = {0};
-      char path_copy[PATH_MAX_LENGTH] = {0};
+      char fill_buf[PATH_MAX_LENGTH];
+      char path_copy[PATH_MAX_LENGTH];
       const char *core_name           = NULL;
       const char *db_name             = NULL;
       const char *path                = NULL;
       const char *label               = NULL;
       const char *crc32               = NULL;
+
+      fill_buf[0] = path_copy[0]      = '\0';
 
       strlcpy(path_copy, info->path, sizeof(path_copy));
 
@@ -1385,7 +1399,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       if (path)
       {
-         char path_short[PATH_MAX_LENGTH] = {0};
+         char path_short[PATH_MAX_LENGTH];
+
+         path_short[0] = '\0';
 
          fill_short_pathname_representation(path_short, path,
                sizeof(path_short));
@@ -1398,7 +1414,10 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             if (!string_is_equal(core_name,
                      file_path_str(FILE_PATH_DETECT)))
             {
-               char tmp[PATH_MAX_LENGTH] = {0};
+               char tmp[PATH_MAX_LENGTH];
+
+               tmp[0] = '\0';
+
                snprintf(tmp, sizeof(tmp), " (%s)", core_name);
                strlcat(fill_buf, tmp, sizeof(fill_buf));
             }
@@ -1545,14 +1564,16 @@ static int create_string_list_rdb_entry_string(
       const char *actual_string, const char *path,
       file_list_t *list)
 {
-   char tmp[PATH_MAX_LENGTH]    = {0};
+   char tmp[PATH_MAX_LENGTH];
    union string_list_elem_attr attr = {0};
-   char *output_label           = NULL;
-   int str_len                  = 0;
-   struct string_list *str_list = string_list_new();
+   char *output_label               = NULL;
+   int str_len                      = 0;
+   struct string_list *str_list     = string_list_new();
 
    if (!str_list)
       return -1;
+
+   tmp[0] = '\0';
 
    str_len += strlen(label) + 1;
    string_list_append(str_list, label, attr);
@@ -1592,15 +1613,17 @@ static int create_string_list_rdb_entry_int(
       const char *desc, const char *label,
       int actual_int, const char *path, file_list_t *list)
 {
-   char tmp[PATH_MAX_LENGTH]        = {0};
+   char tmp[PATH_MAX_LENGTH];
+   char str[PATH_MAX_LENGTH];
    union string_list_elem_attr attr = {0};
-   char str[PATH_MAX_LENGTH]        = {0};
    char *output_label               = NULL;
    int str_len                      = 0;
    struct string_list *str_list     = string_list_new();
 
    if (!str_list)
       return -1;
+
+   tmp[0] = str[0] = '\0';
 
    str_len += strlen(label) + 1;
    string_list_append(str_list, label, attr);
@@ -1640,13 +1663,15 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_LIBRETRODB
    unsigned i, j, k;
-   char path_playlist[PATH_MAX_LENGTH] = {0};
-   char path_base[PATH_MAX_LENGTH]     = {0};
-   char query[PATH_MAX_LENGTH]         = {0};
+   char path_playlist[PATH_MAX_LENGTH];
+   char path_base[PATH_MAX_LENGTH];
+   char query[PATH_MAX_LENGTH];
    playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
    menu_handle_t *menu                 = NULL;
    settings_t *settings                = config_get_ptr();
+
+   path_playlist[0] = path_base[0] = query[0] = '\0';
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
@@ -1675,11 +1700,13 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
    for (i = 0; i < db_info->count; i++)
    {
-      char tmp[PATH_MAX_LENGTH]      = {0};
+      char tmp[PATH_MAX_LENGTH];
       char crc_str[20]               = {0};
       database_info_t *db_info_entry = &db_info->list[i];
       settings_t *settings           = config_get_ptr();
       bool show_advanced_settings    = false;
+
+      tmp[0] = '\0';
 
       if (settings)
          show_advanced_settings      = settings->menu.show_advanced_settings;
@@ -1690,11 +1717,13 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       {
          for (j = 0; j < playlist_size(playlist); j++)
          {
+            char elem0[PATH_MAX_LENGTH];
+            char elem1[PATH_MAX_LENGTH];
             const char *crc32                = NULL;
-            char elem0[PATH_MAX_LENGTH]      = {0};
-            char elem1[PATH_MAX_LENGTH]      = {0};
             bool match_found                 = false;
             struct string_list *tmp_str_list = NULL;
+
+            elem0[0] = elem1[0] = '\0';
 
             playlist_get_index(playlist, j,
                   NULL, NULL, NULL, NULL,
@@ -2516,13 +2545,15 @@ static int menu_displaylist_parse_horizontal_list(
 {
    menu_ctx_list_t list_info;
    menu_ctx_list_t list_horiz_info;
-   char lpl_basename[PATH_MAX_LENGTH]  = {0};
-   char path_playlist[PATH_MAX_LENGTH] = {0};
+   char lpl_basename[PATH_MAX_LENGTH];
+   char path_playlist[PATH_MAX_LENGTH];
    bool is_historylist                 = false;
    playlist_t *playlist                = NULL;
    menu_handle_t        *menu          = NULL;
    struct item_file *item              = NULL;
    settings_t      *settings           = config_get_ptr();
+
+   lpl_basename[0] = path_playlist[0]  = '\0';
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
 
@@ -2731,7 +2762,9 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    if (!string_is_empty(db_name))
    {
-      char db_path[PATH_MAX_LENGTH] = {0};
+      char db_path[PATH_MAX_LENGTH];
+
+      db_path[0] = '\0';
 
       fill_pathname_join_noext(db_path, settings->path.content_database,
             db_name, sizeof(db_path));
@@ -3010,9 +3043,12 @@ static int menu_displaylist_parse_options_remappings(
 
    for (p = 0; p < settings->input.max_users; p++)
    {
-      char key_type[PATH_MAX_LENGTH]   = {0};
-      char key_analog[PATH_MAX_LENGTH] = {0};
+      char key_type[PATH_MAX_LENGTH];
+      char key_analog[PATH_MAX_LENGTH];
       unsigned val = p + 1;
+
+      key_type[0] = key_analog[0] = '\0';
+
       snprintf(key_type, sizeof(key_type),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), val);
       snprintf(key_analog, sizeof(key_analog),
@@ -3136,9 +3172,11 @@ static int menu_displaylist_parse_playlists(
 
    for (i = 0; i < list_size; i++)
    {
-      char label[PATH_MAX_LENGTH]   = {0};
+      char label[PATH_MAX_LENGTH];
       const char *path              = NULL;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
+
+      label[0] = '\0';
 
       switch (str_list->elems[i].attr.i)
       {
@@ -3215,7 +3253,10 @@ static int menu_displaylist_parse_cores(
          true, settings->show_hidden_files, true, false);
 
    {
-      char out_dir[PATH_MAX_LENGTH] = {0};
+      char out_dir[PATH_MAX_LENGTH];
+
+      out_dir[0] = '\0';
+
       fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
 
       if (string_is_empty(out_dir))
@@ -3264,10 +3305,12 @@ static int menu_displaylist_parse_cores(
    for (i = 0; i < list_size; i++)
    {
       bool is_dir;
-      char label[PATH_MAX_LENGTH]   = {0};
+      char label[PATH_MAX_LENGTH];
       const char *path              = NULL;
       enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
+
+      label[0] = '\0';
 
       switch (str_list->elems[i].attr.i)
       {
@@ -3358,10 +3401,12 @@ static int menu_displaylist_parse_cores(
 
       for (i = 0; i < list_size; i++)
       {
-         char core_path[PATH_MAX_LENGTH]    = {0};
-         char display_name[PATH_MAX_LENGTH] = {0};
+         char core_path[PATH_MAX_LENGTH];
+         char display_name[PATH_MAX_LENGTH];
          unsigned type                      = 0;
          const char *path                   = NULL;
+
+         core_path[0] = display_name[0]     = '\0';
 
          menu_entries_get_at_offset(info->list,
                i, &path, NULL, &type, NULL,
@@ -3461,10 +3506,12 @@ static int menu_displaylist_parse_generic(
       for (i = 0; i < list_size; i++)
       {
          bool is_dir;
-         char label[PATH_MAX_LENGTH]   = {0};
+         char label[PATH_MAX_LENGTH];
          const char *path              = NULL;
          enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
          enum msg_file_type file_type  = FILE_TYPE_NONE;
+
+         label[0] = '\0';
 
          switch (str_list->elems[i].attr.i)
          {
@@ -3630,17 +3677,21 @@ static void menu_displaylist_parse_playlist_associations(
    if (str_list && str_list->size)
    {
       unsigned i;
-      char new_playlist_names[PATH_MAX_LENGTH] = {0};
-      char new_playlist_cores[PATH_MAX_LENGTH] = {0};
+      char new_playlist_names[PATH_MAX_LENGTH];
+      char new_playlist_cores[PATH_MAX_LENGTH];
+
+      new_playlist_names[0] = new_playlist_cores[0] = '\0';
 
       for (i = 0; i < str_list->size; i++)
       {
+         char path_base[PATH_MAX_LENGTH];
+         char core_path[PATH_MAX_LENGTH];
          unsigned found = 0;
          union string_list_elem_attr attr = {0};
-         char path_base[PATH_MAX_LENGTH]  = {0};
-         char core_path[PATH_MAX_LENGTH]  = {0};
          const char *path                 =
             path_basename(str_list->elems[i].data);
+
+         path_base[0] = core_path[0]      = '\0';
 
          if (!menu_content_playlist_find_associated_core(
                   path, core_path, sizeof(core_path)))
@@ -3916,7 +3967,9 @@ static void menu_displaylist_parse_playlist_history(
 
    if (settings->history_list_enable)
    {
-      char path_playlist[PATH_MAX_LENGTH] = {0};
+      char path_playlist[PATH_MAX_LENGTH];
+
+      path_playlist[0] = '\0';
 
       if (!playlist)
          command_event(CMD_EVENT_HISTORY_INIT, NULL);
