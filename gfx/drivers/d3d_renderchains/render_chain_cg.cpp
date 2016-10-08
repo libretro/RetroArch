@@ -135,7 +135,7 @@ static INLINE CGparameter d3d9_cg_find_param_from_semantic(
             return ret;
       }
 
-      if (cgGetParameterDirection(param) != CG_IN 
+      if (     cgGetParameterDirection(param) != CG_IN 
             || cgGetParameterVariability(param) != CG_VARYING)
          continue;
 
@@ -154,7 +154,6 @@ static INLINE CGparameter d3d9_cg_find_param_from_semantic(
 static bool d3d9_cg_load_program(void *data,
       void *fragment_data, void *vertex_data, const char *prog, bool path_is_file)
 {
-   bool ret                   = true;
    const char *list           = NULL;
    char *listing_f            = NULL;
    char *listing_v            = NULL;
@@ -192,23 +191,26 @@ static bool d3d9_cg_load_program(void *data,
       listing_v = strdup(list);
 
    if (!fPrg || !vPrg)
-   {
-      RARCH_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
-      if (listing_f)
-         RARCH_ERR("Fragment:\n%s\n", listing_f);
-      else if (listing_v)
-         RARCH_ERR("Vertex:\n%s\n", listing_v);
-      ret = false;
-      goto end;
-   }
+      goto error;
 
    cgD3D9LoadProgram(*fPrg, true, 0);
    cgD3D9LoadProgram(*vPrg, true, 0);
 
-end:
    free(listing_f);
    free(listing_v);
-   return ret;
+
+   return true;
+
+error:
+   RARCH_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
+   if (listing_f)
+      RARCH_ERR("Fragment:\n%s\n", listing_f);
+   else if (listing_v)
+      RARCH_ERR("Vertex:\n%s\n", listing_v);
+   free(listing_f);
+   free(listing_v);
+
+   return false;
 }
 
 static INLINE void renderchain_set_shaders(CGprogram frag, CGprogram vert)
@@ -1171,40 +1173,59 @@ static void renderchain_set_vertices(
       pass->last_width  = width;
       pass->last_height = height;
 
-      for (i = 0; i < 4; i++)
-      {
-         vert[i].z      = 0.5f;
-         vert[i].r      = vert[i].g = vert[i].b = vert[i].a = 1.0f;
-      }
-
       vert[0].x         = 0.0f;
-      vert[1].x         = out_width;
-      vert[2].x         = 0.0f;
-      vert[3].x         = out_width;
       vert[0].y         = out_height;
-      vert[1].y         = out_height;
-      vert[2].y         = 0.0f;
-      vert[3].y         = 0.0f;
-
+      vert[0].z         = 0.5f;
       vert[0].u         = 0.0f;
-      vert[1].u         = _u;
-      vert[2].u         = 0.0f;
-      vert[3].u         = _u;
       vert[0].v         = 0.0f;
-      vert[1].v         = 0.0f;
-      vert[2].v         = _v;
-      vert[3].v         = _v;
-
       vert[0].lut_u     = 0.0f;
-      vert[1].lut_u     = 1.0f;
-      vert[2].lut_u     = 0.0f;
-      vert[3].lut_u     = 1.0f;
       vert[0].lut_v     = 0.0f;
-      vert[1].lut_v     = 0.0f;
-      vert[2].lut_v     = 1.0f;
-      vert[3].lut_v     = 1.0f;
+      vert[0].r         = 1.0f;
+      vert[0].g         = 1.0f;
+      vert[0].b         = 1.0f;
+      vert[0].a         = 1.0f;
 
-      /* Align texels and vertices. */
+      vert[1].x         = out_width;
+      vert[1].y         = out_height;
+      vert[1].z         = 0.5f;
+      vert[1].u         = _u;
+      vert[1].v         = 0.0f;
+      vert[1].lut_u     = 1.0f;
+      vert[1].lut_v     = 0.0f;
+      vert[1].r         = 1.0f;
+      vert[1].g         = 1.0f;
+      vert[1].b         = 1.0f;
+      vert[1].a         = 1.0f;
+
+      vert[2].x         = 0.0f;
+      vert[2].y         = 0.0f;
+      vert[2].z         = 0.5f;
+      vert[2].u         = 0.0f;
+      vert[2].v         = _v;
+      vert[2].lut_u     = 0.0f;
+      vert[2].lut_v     = 1.0f;
+      vert[2].r         = 1.0f;
+      vert[2].g         = 1.0f;
+      vert[2].b         = 1.0f;
+      vert[2].a         = 1.0f;
+
+      vert[3].x         = out_width;
+      vert[3].y         = 0.0f;
+      vert[3].z         = 0.5f;
+      vert[3].u         = _u;
+      vert[3].v         = _v;
+      vert[3].lut_u     = 1.0f;
+      vert[3].lut_v     = 1.0f;
+      vert[3].r         = 1.0f;
+      vert[3].g         = 1.0f;
+      vert[3].b         = 1.0f;
+      vert[3].a         = 1.0f;
+
+      /* Align texels and vertices. 
+       *
+       * Fixes infamous 'half-texel offset' issue of D3D9
+       *	http://msdn.microsoft.com/en-us/library/bb219690%28VS.85%29.aspx.
+       */
       for (i = 0; i < 4; i++)
       {
          vert[i].x     -= 0.5f;
