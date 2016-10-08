@@ -117,6 +117,12 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 
    switch (enum_idx)
    {
+      case GL_CAPS_GLES3_SUPPORTED:
+#if defined(HAVE_OPENGLES)
+         if (major >= 3)
+            return true;
+#endif
+         break;
       case GL_CAPS_EGLIMAGE:
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES)
          if (glEGLImageTargetTexture2DOES != NULL)
