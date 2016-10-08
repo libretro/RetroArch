@@ -662,9 +662,11 @@ static void mui_render_menu_list(mui_handle_t *mui,
    {
       int y;
       size_t selection;
-      char rich_label[PATH_MAX_LENGTH] = {0};
-      char entry_value[PATH_MAX_LENGTH] = {0};
+      char rich_label[PATH_MAX_LENGTH];
+      char entry_value[PATH_MAX_LENGTH];
       bool entry_selected = false;
+
+      rich_label[0] = entry_value[0] = '\0';
 
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
