@@ -63,6 +63,10 @@ else
    OPTIMIZE_FLAG = -O3 -ffast-math
 endif
 
+ifneq ($(findstring Win32,$(OS)),)
+   LDFLAGS += -mwindows
+endif
+
 CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
 
 APPEND_CFLAGS := $(CFLAGS)

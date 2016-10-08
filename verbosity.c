@@ -26,6 +26,10 @@
 #endif
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -50,11 +54,22 @@ static bool main_verbosity = false;
 void verbosity_enable(void)
 {
    main_verbosity = true;
+#ifdef _WIN32
+   AllocConsole();
+   AttachConsole( GetCurrentProcessId()) ;
+   freopen( "CON", "w", stdout );
+   freopen( "CON", "w", stderr );
+#endif
 }
 
 void verbosity_disable(void)
 {
    main_verbosity = false;
+#ifdef _WIN32
+   HWND wnd = GetConsoleWindow();
+   FreeConsole();
+   PostMessage(wnd, WM_CLOSE, 0, 0);
+#endif
 }
 
 bool verbosity_is_enabled(void)
