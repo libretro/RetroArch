@@ -405,13 +405,6 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
-static bool runloop_is_focused(void)
-{
-   settings_t *settings      = config_get_ptr();
-   if (settings && settings->pause_nonactive)
-      return video_driver_is_focused();
-   return true;
-}
 
 static bool runloop_check_pause_state(event_cmd_state_t *cmd)
 {
@@ -441,7 +434,9 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
 
 static bool runloop_check_idle_state(event_cmd_state_t *cmd)
 {
-   bool focused              =  runloop_is_focused();
+   settings_t *settings      = config_get_ptr();
+   bool focused              = (settings && 
+         settings->pause_nonactive) ? video_driver_is_focused() : true;
 
    runloop_check_pause(focused,
          runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
@@ -1137,9 +1132,11 @@ static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
 {
    menu_ctx_iterate_t iter;
    settings_t *settings    = config_get_ptr();
-   bool focused            = runloop_is_focused() &&
-      !ui_companion_is_on_foreground();
+   bool focused            = (settings && 
+         settings->pause_nonactive) ? video_driver_is_focused() : true;
    bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
+
+   focused                 = focused && !ui_companion_is_on_foreground();
 
    iter.action             = action;
 
