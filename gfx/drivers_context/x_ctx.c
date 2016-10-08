@@ -75,9 +75,10 @@ typedef struct gfx_ctx_x_data
 #endif
 } gfx_ctx_x_data_t;
 
-static unsigned g_major;
-static unsigned g_minor;
-static enum gfx_ctx_api x_api;
+static bool x_enable_msaa     = false;
+static unsigned g_major       = 0;
+static unsigned g_minor       = 0;
+static enum gfx_ctx_api x_api = GFX_CTX_NONE;
 
 #ifdef HAVE_OPENGL
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
@@ -924,6 +925,10 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
    {
       BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
    }
+   if (x_enable_msaa)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
+   }
    return flags;
 }
 
@@ -932,6 +937,8 @@ static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
    if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
       x->core_hw_context_enable = true;
+   if (BIT32_GET(flags, GFX_CTX_FLAGS_MULTISAMPLING))
+      x_enable_msaa = true;
 }
 
 static void gfx_ctx_x_make_current(bool release)
