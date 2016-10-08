@@ -2210,8 +2210,12 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "input_settings_begin";
       case MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN:
          return "playlist_settings_begin";
+      case MENU_ENUM_LABEL_RECORDING_SETTINGS:
+         return "recording_settings";
       case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
          return "playlist_settings";
+      case MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
+         return "deferred_recording_settings";
       case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
          return "deferred_playlist_settings";
       case MENU_ENUM_LABEL_INPUT_SETTINGS:
