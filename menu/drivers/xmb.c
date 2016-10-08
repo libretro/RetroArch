@@ -1101,8 +1101,10 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
    if (settings->menu.dynamic_wallpaper_enable)
    {
-      char path[PATH_MAX_LENGTH] = {0};
+      char path[PATH_MAX_LENGTH];
       char *tmp = string_replace_substring(xmb->title_name, "/", " ");
+
+      path[0] = '\0';
 
       if (tmp)
       {
@@ -1410,8 +1412,10 @@ static void xmb_context_reset_horizontal_list(
 {
    unsigned i;
    int depth; /* keep this integer */
+   char themepath[PATH_MAX_LENGTH];
    size_t list_size                = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
-   char themepath[PATH_MAX_LENGTH] = {0};
+
+   themepath[0] = '\0';
 
    fill_pathname_application_special(themepath, sizeof(themepath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);

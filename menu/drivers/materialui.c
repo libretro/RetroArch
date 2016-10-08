@@ -532,13 +532,16 @@ static void mui_render_label_value(mui_handle_t *mui,
 
 
    menu_animation_ctx_ticker_t ticker;
-   char label_str[PATH_MAX_LENGTH] = {0};
-   char value_str[PATH_MAX_LENGTH] = {0};
+   char label_str[PATH_MAX_LENGTH];
+   char value_str[PATH_MAX_LENGTH];
+   bool switch_is_on               = true;
    int value_len                   = utf8len(value);
    int ticker_limit                = 0;
    uintptr_t texture_switch        = 0;
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
+
+   label_str[0] = value_str[0]     = '\0';
 
    if (value_len * mui->glyph_width > usable_width / 2)
       value_len = (usable_width/2) / mui->glyph_width;
@@ -562,7 +565,6 @@ static void mui_render_label_value(mui_handle_t *mui,
    mui_draw_text(mui->margin, y + mui->line_height / 2,
          width, height, label_str, color, TEXT_ALIGN_LEFT);
 
-   bool switch_is_on = true;
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF]) {
