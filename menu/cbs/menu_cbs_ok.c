@@ -83,12 +83,14 @@ size_t core_len;
 
 static void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
 {
-   char subdir_path[PATH_MAX_LENGTH] = {0};
+   char subdir_path[PATH_MAX_LENGTH];
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
 
    if (!data || err)
       goto finish;
+
+   subdir_path[0] = '\0';
 
    memcpy(subdir_path, data->data, data->len * sizeof(char));
    subdir_path[data->len] = '\0';
@@ -96,7 +98,9 @@ static void cb_net_generic_subdir(void *task_data, void *user_data, const char *
 finish:
    if (!err && !strstr(subdir_path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
-      char parent_dir[PATH_MAX_LENGTH] = {0};
+      char parent_dir[PATH_MAX_LENGTH];
+
+      parent_dir[0] = '\0';
 
       fill_pathname_parent_dir(parent_dir,
             state->path, sizeof(parent_dir));
@@ -1602,12 +1606,14 @@ static int generic_action_ok_shader_preset_save(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
-   char directory[PATH_MAX_LENGTH] = {0};
-   char file[PATH_MAX_LENGTH]      = {0};
-   char tmp[PATH_MAX_LENGTH]       = {0};
+   char directory[PATH_MAX_LENGTH];
+   char file[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH];
    settings_t *settings            = config_get_ptr();
    rarch_system_info_t *info       = NULL;
    const char *core_name           = NULL;
+
+   directory[0] = file[0] = tmp[0] = '\0';
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
@@ -1719,11 +1725,13 @@ static int generic_action_ok_remap_file_save(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
-   char directory[PATH_MAX_LENGTH] = {0};
-   char file[PATH_MAX_LENGTH]      = {0};
+   char directory[PATH_MAX_LENGTH];
+   char file[PATH_MAX_LENGTH];
    settings_t *settings            = config_get_ptr();
    rarch_system_info_t *info       = NULL;
    const char *core_name           = NULL;
+
+   directory[0] = file[0]          = '\0';
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
@@ -1803,12 +1811,14 @@ static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection;
-   char core_display_name[PATH_MAX_LENGTH] = {0};
+   char core_display_name[PATH_MAX_LENGTH];
    const char            *entry_path       = NULL;
    const char           *entry_label       = NULL;
    const char           *entry_crc32       = NULL;
    const char               *db_name       = NULL;
    playlist_t               *playlist      = NULL;
+
+   core_display_name[0] = '\0';
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return menu_cbs_exit();
@@ -1914,12 +1924,14 @@ static int action_ok_file_load_detect_core(const char *path,
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char menu_path_new[PATH_MAX_LENGTH] = {0};
-   char full_path_new[PATH_MAX_LENGTH] = {0};
+   char menu_path_new[PATH_MAX_LENGTH];
+   char full_path_new[PATH_MAX_LENGTH];
    const char *menu_label              = NULL;
    const char *menu_path               = NULL;
    rarch_setting_t *setting            = NULL;
    file_list_t  *menu_stack            = menu_entries_get_menu_stack_ptr(0);
+
+   menu_path_new[0] = full_path_new[0] = '\0';
 
    menu_entries_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
@@ -2043,7 +2055,7 @@ static int generic_action_ok_network(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum msg_hash_enums enum_idx)
 {
-   char url_path[PATH_MAX_LENGTH] = {0};
+   char url_path[PATH_MAX_LENGTH];
    settings_t *settings           = config_get_ptr();
    unsigned type_id2              = 0;
    menu_file_transfer_t *transf   = NULL;
@@ -2051,6 +2063,8 @@ static int generic_action_ok_network(const char *path,
    retro_task_callback_t callback = NULL;
    bool refresh                   = true;
    bool suppress_msg              = false;
+
+   url_path[0] = '\0';
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
@@ -2168,7 +2182,7 @@ static void cb_generic_dir_download(void *task_data,
 static void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
-   char output_path[PATH_MAX_LENGTH]     = {0};
+   char output_path[PATH_MAX_LENGTH];
    const char             *file_ext      = NULL;
    const char             *dir_path      = NULL;
    menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
@@ -2177,6 +2191,8 @@ static void cb_generic_download(void *task_data,
 
    if (!data || !data->data | !transf)
       goto finish;
+
+   output_path[0] = '\0';
 
    /* we have to determine dir_path at the time of writting or else
     * we'd run into races when the user changes the setting during an
@@ -2326,12 +2342,14 @@ static int action_ok_download_generic(const char *path,
       enum msg_hash_enums enum_idx)
 {
 #ifdef HAVE_NETWORKING
-   char s[PATH_MAX_LENGTH]      = {0};
-   char s3[PATH_MAX_LENGTH]     = {0};
+   char s[PATH_MAX_LENGTH];
+   char s3[PATH_MAX_LENGTH];
    menu_file_transfer_t *transf = NULL;
    settings_t *settings         = config_get_ptr();
    bool suppress_msg            = false;
    retro_task_callback_t cb     = cb_generic_download;
+
+   s[0] = s3[0] = '\0';
 
    fill_pathname_join(s,
          settings->network.buildbot_assets_url,
@@ -3181,12 +3199,14 @@ static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_content_ctx_defer_info_t def_info;
-   char new_core_path[PATH_MAX_LENGTH] = {0};
+   char new_core_path[PATH_MAX_LENGTH];
    int ret                             = 0;
    core_info_list_t *list              = NULL;
    menu_handle_t *menu                 = NULL;
    const char *menu_path               = NULL;
    const char *content_path            = NULL;
+
+   new_core_path[0] = '\0';
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -3289,7 +3309,10 @@ static int action_ok_video_resolution(const char *path,
 
    if (video_driver_get_video_output_size(&width, &height))
    {
-      char msg[PATH_MAX_LENGTH] = {0};
+      char msg[PATH_MAX_LENGTH];
+
+      msg[0] = '\0';
+
 #ifdef __CELLOS_LV2__
       command_event(CMD_EVENT_REINIT, NULL);
 #endif
