@@ -972,7 +972,7 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    struct texture_image *image = (struct texture_image*)data;
 
    if(!ctr || !image)
-      return;
+      return 0;
 
    ctr_texture_t* texture = calloc(1, sizeof(ctr_texture_t));
    uint32_t texsize = image->width * image->height * sizeof(uint32_t);
