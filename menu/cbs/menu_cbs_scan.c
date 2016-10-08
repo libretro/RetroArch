@@ -47,11 +47,13 @@ static void handle_dbscan_finished(void *task_data, void *user_data, const char 
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   char fullpath[PATH_MAX_LENGTH] = {0};
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+   char fullpath[PATH_MAX_LENGTH];
+   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = NULL;
+
+   fullpath[0]                    = '\0';
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -68,11 +70,13 @@ int action_scan_file(const char *path,
 int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   char fullpath[PATH_MAX_LENGTH] = {0};
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+   char fullpath[PATH_MAX_LENGTH];
+   enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = NULL;
+
+   fullpath[0]                    = '\0';
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();

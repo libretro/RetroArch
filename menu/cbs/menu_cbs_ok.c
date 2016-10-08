@@ -158,8 +158,10 @@ finish:
 
    if (!err && !strstr(state->path, file_path_str(FILE_PATH_INDEX_DIRS_URL)))
    {
+      char parent_dir[PATH_MAX_LENGTH];
       menu_file_transfer_t *transf     = NULL;
-      char parent_dir[PATH_MAX_LENGTH] = {0};
+
+      parent_dir[0] = '\0';
 
       fill_pathname_parent_dir(parent_dir,
             state->path, sizeof(parent_dir));
@@ -178,11 +180,11 @@ int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
+   char new_path_tmp[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH];
+   char parent_dir[PATH_MAX_LENGTH];
+   char action_path[PATH_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
-   char new_path_tmp[PATH_MAX_LENGTH]      = {0};
-   char tmp[PATH_MAX_LENGTH]               = {0};
-   char parent_dir[PATH_MAX_LENGTH]        = {0};
-   char action_path[PATH_MAX_LENGTH]       = {0};
    menu_displaylist_info_t      info       = {0};
    const char           *menu_label        = NULL;
    const char            *menu_path        = NULL;
@@ -196,6 +198,8 @@ int generic_action_ok_displaylist_push(const char *path,
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
+
+   new_path_tmp[0] = tmp[0] = parent_dir[0] = action_path[0] = '\0';
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
@@ -838,8 +842,8 @@ static int file_load_with_detect_core_wrapper(
       unsigned type, bool is_carchive)
 {
    menu_content_ctx_defer_info_t def_info;
-   char new_core_path[PATH_MAX_LENGTH] = {0};
-   char menu_path_new[PATH_MAX_LENGTH] = {0};
+   char new_core_path[PATH_MAX_LENGTH];
+   char menu_path_new[PATH_MAX_LENGTH];
    int ret                             = 0;
    const char *menu_path               = NULL;
    const char *menu_label              = NULL;
@@ -848,6 +852,8 @@ static int file_load_with_detect_core_wrapper(
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
+
+   new_core_path[0] = menu_path_new[0] = '\0';
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
@@ -943,10 +949,10 @@ static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection;
+   menu_content_ctx_playlist_info_t playlist_info;
+   char new_core_path[PATH_MAX_LENGTH];
    enum rarch_core_type action_type = CORE_TYPE_PLAIN;
    enum content_mode_load content_enum_idx = CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU;
-   menu_content_ctx_playlist_info_t playlist_info;
-   char new_core_path[PATH_MAX_LENGTH]    = {0};
    size_t selection_ptr             = 0;
    playlist_t *playlist             = NULL;
    bool playlist_initialized        = false;
@@ -961,6 +967,8 @@ static int action_ok_playlist_entry_collection(const char *path,
       return menu_cbs_exit();
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return menu_cbs_exit();
+
+   new_core_path[0] = '\0';
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
@@ -985,7 +993,7 @@ static int action_ok_playlist_entry_collection(const char *path,
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
-      char new_display_name[PATH_MAX_LENGTH] = {0};
+      char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
       const char *entry_crc32                = NULL;
       const char *db_name                    = NULL;
@@ -994,6 +1002,8 @@ static int action_ok_playlist_entry_collection(const char *path,
       bool        found_associated_core      =
          menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
+
+      new_display_name[0] = '\0';
 
       core_info.inf  = NULL;
       core_info.path = new_core_path;
@@ -1073,14 +1083,18 @@ static int action_ok_playlist_entry(const char *path,
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
-      char new_core_path[PATH_MAX_LENGTH]    = {0};
-      char new_display_name[PATH_MAX_LENGTH] = {0};
+      char new_core_path[PATH_MAX_LENGTH];
+      char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
       const char *entry_crc32                = NULL;
       const char *db_name                    = NULL;
       const char             *path_base      =
          path_basename(menu->db_playlist_file);
-      bool        found_associated_core      =
+      bool        found_associated_core      = false;
+
+      new_core_path[0] = new_display_name[0] = '\0';
+
+      found_associated_core                  =
          menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
@@ -1167,14 +1181,18 @@ static int action_ok_playlist_entry_start_content(const char *path,
          && string_is_equal(core_name, file_path_str(FILE_PATH_DETECT)))
    {
       core_info_ctx_find_t core_info;
-      char new_core_path[PATH_MAX_LENGTH]    = {0};
-      char new_display_name[PATH_MAX_LENGTH] = {0};
+      char new_core_path[PATH_MAX_LENGTH];
+      char new_display_name[PATH_MAX_LENGTH];
       const char *entry_path                 = NULL;
       const char *entry_crc32                = NULL;
       const char *db_name                    = NULL;
       const char             *path_base      =
          path_basename(menu->db_playlist_file);
-      bool        found_associated_core      =
+      bool        found_associated_core      = false;
+
+      new_core_path[0] = new_display_name[0] = '\0';
+
+      found_associated_core                  = 
          menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
@@ -1251,7 +1269,7 @@ static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
 {
-   char action_path[PATH_MAX_LENGTH] = {0};
+   char action_path[PATH_MAX_LENGTH];
    unsigned flush_type               = 0;
    int ret                           = 0;
    enum msg_hash_enums enum_idx      = MSG_UNKNOWN;
@@ -1265,6 +1283,8 @@ static int generic_action_ok(const char *path,
 
    menu_entries_get_last_stack(&menu_path,
          &menu_label, NULL, &enum_idx, NULL);
+
+   action_path[0] = '\0';
 
    if (!string_is_empty(path))
       fill_pathname_join(action_path,
@@ -2615,9 +2635,9 @@ static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    union string_list_elem_attr attr;
+   char new_label[PATH_MAX_LENGTH];
+   char new_path[PATH_MAX_LENGTH];
    int ret                         = -1;
-   char new_label[PATH_MAX_LENGTH] = {0};
-   char new_path[PATH_MAX_LENGTH]  = {0};
    char *rdb                       = NULL;
    int len                         = 0;
    struct string_list *str_list    = NULL;
@@ -2625,6 +2645,8 @@ static int action_ok_rdb_entry_submenu(const char *path,
 
    if (!label)
       return menu_cbs_exit();
+
+   new_label[0] = new_path[0]      = '\0';
 
    str_list = string_split(label, "|");
 
