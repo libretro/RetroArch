@@ -1424,10 +1424,10 @@ static void xmb_context_reset_horizontal_list(
 
    for (i = 0; i < list_size; i++)
    {
-      char iconpath[PATH_MAX_LENGTH]            = {0};
-      char sysname[PATH_MAX_LENGTH]             = {0};
-      char texturepath[PATH_MAX_LENGTH]         = {0};
-      char content_texturepath[PATH_MAX_LENGTH] = {0};
+      char iconpath[PATH_MAX_LENGTH];
+      char sysname[PATH_MAX_LENGTH];
+      char texturepath[PATH_MAX_LENGTH];
+      char content_texturepath[PATH_MAX_LENGTH];
       struct texture_image ti                   = {0};
       const char *path                          = NULL;
       xmb_node_t *node                          =
@@ -1439,6 +1439,9 @@ static void xmb_context_reset_horizontal_list(
          if (!node)
             continue;
       }
+
+      iconpath[0] = sysname[0] = texturepath[0] = 
+         content_texturepath[0] = '\0';
 
       file_list_get_at_offset(xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
@@ -1772,11 +1775,11 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    {
       float icon_x, icon_y;
       menu_animation_ctx_ticker_t ticker;
+      char ticker_str[PATH_MAX_LENGTH];
+      char name[PATH_MAX_LENGTH];
+      char value[PATH_MAX_LENGTH];
+      char entry_value[PATH_MAX_LENGTH];
       menu_entry_t entry                = {{0}};
-      char ticker_str[PATH_MAX_LENGTH]  = {0};
-      char name[PATH_MAX_LENGTH]        = {0};
-      char value[PATH_MAX_LENGTH]       = {0};
-      char entry_value[PATH_MAX_LENGTH] = {0};
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;
       xmb_node_t *   node               = (xmb_node_t*)
@@ -1786,6 +1789,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       if (!node)
          continue;
+
+      ticker_str[0] = name[0] = value[0] = entry_value[0] = '\0';
 
       icon_y = xmb->margins.screen.top + node->y + half_size;
 
@@ -2153,7 +2158,7 @@ static void xmb_frame(void *data)
    unsigned i, width, height;
    float item_color[16], coord_black[16], coord_white[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
-   char msg[PATH_MAX_LENGTH]               = {0};
+   char msg[PATH_MAX_LENGTH];
    char title_msg[256]                     = {0};
    char title_truncated[256]               = {0};
    bool render_background                  = false;
