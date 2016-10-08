@@ -433,8 +433,10 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
                for (i = 0; i < archive_list->size; i++)
                {
-                  char new_path[PATH_MAX_LENGTH] = {0};
+                  char new_path[PATH_MAX_LENGTH];
                   size_t path_len = strlen(path);
+
+                  new_path[0] = '\0';
 
                   strlcpy(new_path, path, sizeof(new_path));
 
@@ -493,8 +495,10 @@ database_info_handle_t *database_info_file_init(const char *path,
 
          for (i = 0; i < archive_list->size; i++)
          {
-            char new_path[PATH_MAX_LENGTH] = {0};
+            char new_path[PATH_MAX_LENGTH];
             size_t path_len = strlen(path);
+
+            new_path[0] = '\0';
 
             strlcpy(new_path, path, sizeof(new_path));
 
