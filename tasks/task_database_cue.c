@@ -399,7 +399,9 @@ int find_first_data_track(const char *cue_path,
    {
       if (string_is_equal(tmp_token, "FILE"))
       {
-         char cue_dir[PATH_MAX_LENGTH] = {0};
+         char cue_dir[PATH_MAX_LENGTH];
+
+         cue_dir[0] = '\0';
 
          fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
 

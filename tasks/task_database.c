@@ -144,7 +144,9 @@ static int task_database_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
-   char parent_dir[PATH_MAX_LENGTH] = {0};
+   char parent_dir[PATH_MAX_LENGTH];
+
+   parent_dir[0] = '\0';
 
    path_parent_dir(parent_dir);
 
@@ -226,10 +228,10 @@ static int database_info_list_iterate_found_match(
       const char *archive_name
       )
 {
-   char db_crc[PATH_MAX_LENGTH]                = {0};
-   char db_playlist_path[PATH_MAX_LENGTH]      = {0};
-   char  db_playlist_base_str[PATH_MAX_LENGTH] = {0};
-   char entry_path_str[PATH_MAX_LENGTH]        = {0};
+   char db_crc[PATH_MAX_LENGTH];
+   char db_playlist_path[PATH_MAX_LENGTH];
+   char  db_playlist_base_str[PATH_MAX_LENGTH];
+   char entry_path_str[PATH_MAX_LENGTH];
    playlist_t   *playlist                      = NULL;
    settings_t           *settings              = config_get_ptr();
    const char         *db_path                 = 
@@ -238,6 +240,11 @@ static int database_info_list_iterate_found_match(
       database_info_get_current_element_name(db);
    database_info_t *db_info_entry              =
       &db_state->info->list[db_state->entry_index];
+
+   db_crc[0] = '\0';
+   db_playlist_path[0] = '\0';
+   db_playlist_base_str[0] = '\0';
+   entry_path_str[0] = '\0';
 
    fill_short_pathname_representation_noext(db_playlist_base_str,
          db_path, sizeof(db_playlist_base_str));
@@ -396,9 +403,11 @@ static int task_database_iterate_playlist_lutro(
       database_info_handle_t *db,
       const char *path)
 {
-   char db_playlist_path[PATH_MAX_LENGTH]      = {0};
+   char db_playlist_path[PATH_MAX_LENGTH];
    playlist_t   *playlist                      = NULL;
    settings_t           *settings              = config_get_ptr();
+
+   db_playlist_path[0] = '\0';
 
    fill_pathname_join(db_playlist_path,
          settings->directory.playlist,
@@ -409,7 +418,9 @@ static int task_database_iterate_playlist_lutro(
 
    if(!playlist_entry_exists(playlist, path, file_path_str(FILE_PATH_DETECT)))
    {
-      char game_title[PATH_MAX_LENGTH]            = {0};
+      char game_title[PATH_MAX_LENGTH];
+
+      game_title[0] = '\0';
 
       fill_short_pathname_representation_noext(game_title,
             path, sizeof(game_title));

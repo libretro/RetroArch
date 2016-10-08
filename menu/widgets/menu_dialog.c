@@ -85,7 +85,7 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
       case MENU_DIALOG_HELP_CONTROLS:
          {
             unsigned i;
-            char s2[PATH_MAX_LENGTH] = {0};
+            char s2[PATH_MAX_LENGTH];
             const unsigned binds[] = {
                RETRO_DEVICE_ID_JOYPAD_UP,
                RETRO_DEVICE_ID_JOYPAD_DOWN,
@@ -112,6 +112,8 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
                input_config_get_bind_string(desc[i],
                      keybind, auto_bind, sizeof(desc[i]));
             }
+
+            s2[0] = '\0';
 
             menu_hash_get_help_enum(MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG,
                   s2, sizeof(s2));

@@ -236,13 +236,15 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
    task_finder_data_t find_data;
-   char tmp[PATH_MAX_LENGTH]      = {0};
+   char tmp[PATH_MAX_LENGTH];
    struct http_connection_t *conn = NULL;
    retro_task_t  *t               = NULL;
    http_handle_t *http            = NULL;
 
    if (string_is_empty(url))
       return NULL;
+
+   tmp[0]             = '\0';
 
    find_data.func     = task_http_finder;
    find_data.userdata = (void*)url;

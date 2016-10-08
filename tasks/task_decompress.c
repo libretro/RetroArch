@@ -82,8 +82,10 @@ static int file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
    uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   char path[PATH_MAX_LENGTH] = {0};
+   char path[PATH_MAX_LENGTH];
    decompress_state_t    *dec = userdata->dec;
+
+   path[0] = '\0';
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')

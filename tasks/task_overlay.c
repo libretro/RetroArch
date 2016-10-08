@@ -60,9 +60,12 @@ static void task_overlay_load_desc_image(
       struct overlay *input_overlay,
       unsigned ol_idx, unsigned desc_idx)
 {
-   char overlay_desc_image_key[64]  = {0};
-   char image_path[PATH_MAX_LENGTH] = {0};
+   char overlay_desc_image_key[64];
+   char image_path[PATH_MAX_LENGTH];
    config_file_t              *conf = loader->conf;
+
+   overlay_desc_image_key[0] = '\0';
+   image_path[0]             = '\0';
 
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
@@ -71,7 +74,10 @@ static void task_overlay_load_desc_image(
             image_path, sizeof(image_path)))
    {
       struct texture_image image_tex;
-      char path[PATH_MAX_LENGTH] = {0};
+      char path[PATH_MAX_LENGTH];
+
+      path[0] = '\0';
+
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 
@@ -473,6 +479,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
    for (i = 0; i < loader->pos_increment; i++, loader->pos++)
    {
+      char tmp_str[PATH_MAX_LENGTH];
       float tmp_float                   = 0.0;
       bool tmp_bool                     = false;
       char conf_key[64]                 = {0};
@@ -480,7 +487,6 @@ static void task_overlay_deferred_load(retro_task_t *task)
       struct texture_image *texture_img = NULL;
       struct overlay_desc *overlay_desc = NULL;
       struct overlay          *overlay  = NULL;
-      char tmp_str[PATH_MAX_LENGTH]     = {0};
       bool                     to_cont  = loader->pos < loader->size;
 
       if (!to_cont)
@@ -489,6 +495,8 @@ static void task_overlay_deferred_load(retro_task_t *task)
          loader->state = OVERLAY_STATUS_DEFERRED_LOADING;
          break;
       }
+
+      tmp_str[0] = '\0';
 
       overlay = &loader->overlays[loader->pos];
 
@@ -562,7 +570,9 @@ static void task_overlay_deferred_load(retro_task_t *task)
       if (!string_is_empty(overlay->config.paths.path))
       {
          struct texture_image image_tex;
-         char overlay_resolved_path[PATH_MAX_LENGTH] = {0};
+         char overlay_resolved_path[PATH_MAX_LENGTH];
+
+         overlay_resolved_path[0] = '\0';
 
          fill_pathname_resolve_relative(overlay_resolved_path,
                loader->overlay_path,
