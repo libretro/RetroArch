@@ -389,21 +389,18 @@ static void rgui_render(void *data)
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
    int bottom;
+   char title[256];
+   char title_buf[256];
+   char title_msg[64];
+   char msg[PATH_MAX_LENGTH];
    bool msg_force                 = false;
    uint64_t *frame_count          = NULL;
-   char title[256]                = {0};
-   char title_buf[256]            = {0};
-   char title_msg[64]             = {0};
-   char msg[PATH_MAX_LENGTH]      = {0};
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
 
    frame_count = video_driver_get_frame_count_ptr();
 
-   msg[0]       = '\0';
-   title[0]     = '\0';
-   title_buf[0] = '\0';
-   title_msg[0] = '\0';
+   msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
    if (!rgui)
       return;
@@ -539,7 +536,9 @@ static void rgui_render(void *data)
    if (settings->menu.timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
-      char timedate[PATH_MAX_LENGTH] = {0};
+      char timedate[PATH_MAX_LENGTH];
+
+      timedate[0] = '\0';
 
       datetime.s         = timedate;
       datetime.len       = sizeof(timedate);
@@ -562,11 +561,11 @@ static void rgui_render(void *data)
    {
       menu_animation_ctx_ticker_t ticker;
       size_t selection;
-      char entry_path[PATH_MAX_LENGTH]      = {0};
-      char entry_value[PATH_MAX_LENGTH]     = {0};
-      char message[PATH_MAX_LENGTH]         = {0};
-      char entry_title_buf[PATH_MAX_LENGTH] = {0};
-      char type_str_buf[PATH_MAX_LENGTH]    = {0};
+      char entry_path[PATH_MAX_LENGTH];
+      char entry_value[PATH_MAX_LENGTH];
+      char message[PATH_MAX_LENGTH];
+      char entry_title_buf[PATH_MAX_LENGTH];
+      char type_str_buf[PATH_MAX_LENGTH];
       unsigned                entry_spacing = menu_entry_get_spacing(i);
       bool                entry_selected    = menu_entry_is_currently_selected(i);
       
