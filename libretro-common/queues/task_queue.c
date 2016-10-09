@@ -454,10 +454,6 @@ static void threaded_worker(void *userdata)
          task_queue_put(&tasks_finished, task);
          slock_unlock(finished_lock);
       }
-
-#if 0
-      retro_sleep(10);
-#endif
    }
 }
 
