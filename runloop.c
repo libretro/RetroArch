@@ -358,7 +358,9 @@ static void runloop_check_fast_forward_button(bool fastforward_pressed,
 static void runloop_check_stateslots(settings_t *settings,
       bool pressed_increase, bool pressed_decrease)
 {
-   char msg[128]         = {0};
+   char msg[128];
+
+   msg[0] = '\0';
 
    /* Save state slots */
    if (pressed_increase)
@@ -389,7 +391,9 @@ static void runloop_check_stateslots(settings_t *settings,
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   char game_path[PATH_MAX_LENGTH] = {0};
+   char game_path[PATH_MAX_LENGTH];
+
+   game_path[0] ='\0';
 
    if (!retroarch_validate_game_options(game_path,
             sizeof(game_path), false))

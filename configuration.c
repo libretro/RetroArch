@@ -1340,6 +1340,9 @@ static void config_set_defaults(void)
    if (!string_is_empty(g_defaults.path.config))
    {
       char temp_str[PATH_MAX_LENGTH];
+
+      temp_str[0] = '\0';
+
       fill_pathname_expand_special(temp_str,
             g_defaults.path.config, sizeof(temp_str));
       path_set(RARCH_PATH_CONFIG, temp_str);
@@ -1733,8 +1736,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    {
       /* Don't destroy append_config_path, store in temporary
        * variable. */
-      char tmp_append_path[PATH_MAX_LENGTH] = {0};
+      char tmp_append_path[PATH_MAX_LENGTH];
       const char *extra_path                = NULL;
+
+      tmp_append_path[0] = '\0';
 
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_APPEND),
             sizeof(tmp_append_path));
@@ -1817,7 +1822,9 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
    {
-      char tmp[64]  = {0};
+      char tmp[64];
+
+      tmp[0] = '\0';
 
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
 
@@ -1836,7 +1843,9 @@ static bool config_load_file(const char *path, bool set_defaults,
       }
    }
    {
-      char tmp[64]  = {0};
+      char tmp[64];
+
+      tmp[0] = '\0';
 
       strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
       if (config_get_bool(conf, tmp, &tmp_bool))
@@ -1867,7 +1876,10 @@ static bool config_load_file(const char *path, bool set_defaults,
 #endif
    for (i = 0; i < MAX_USERS; i++)
    {
-      char buf[64] = {0};
+      char buf[64];
+
+      buf[0] = '\0';
+
       snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
       CONFIG_GET_INT_BASE(conf, settings, input.joypad_map[i], buf);
 
@@ -2598,8 +2610,10 @@ static void parse_config_file(void)
 static void save_keybind_key(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind)
 {
-   char key[64] = {0};
-   char btn[64] = {0};
+   char key[64];
+   char btn[64];
+
+   key[0] = btn[0] = '\0';
 
    fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
@@ -2610,9 +2624,11 @@ static void save_keybind_key(config_file_t *conf, const char *prefix,
 static void save_keybind_hat(config_file_t *conf, const char *key,
       const struct retro_keybind *bind)
 {
-   char config[16]  = {0};
+   char config[16];
    unsigned hat     = GET_HAT(bind->joykey);
    const char *dir  = NULL;
+
+   config[0]        = '\0';
 
    switch (GET_HAT_DIR(bind->joykey))
    {
@@ -2644,7 +2660,9 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
 static void save_keybind_joykey(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind, bool save_empty)
 {
-   char key[64] = {0};
+   char key[64];
+
+   key[0] = '\0';
 
    fill_pathname_join_delim_concat(key, prefix,
          base, '_', "_btn", sizeof(key));
@@ -2663,9 +2681,11 @@ static void save_keybind_joykey(config_file_t *conf, const char *prefix,
 static void save_keybind_axis(config_file_t *conf, const char *prefix,
       const char *base, const struct retro_keybind *bind, bool save_empty)
 {
-   char key[64]    = {0};
+   char key[64];
    unsigned axis   = 0;
    char dir        = '\0';
+
+   key[0] = '\0';
 
    fill_pathname_join_delim_concat(key,
          prefix, base, '_',
@@ -2690,7 +2710,10 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
 
    if (dir)
    {
-      char config[16] = {0};
+      char config[16];
+
+      config[0] = '\0';
+
       snprintf(config, sizeof(config), "%c%u", dir, axis);
       config_set_string(conf, key, config);
    }
@@ -2802,18 +2825,22 @@ static bool config_save_keybinds_file(const char *path)
 bool config_save_autoconf_profile(const char *path, unsigned user)
 {
    unsigned i;
+   char buf[PATH_MAX_LENGTH];
+   char autoconf_file[PATH_MAX_LENGTH];
    bool ret                             = false;
-   char buf[PATH_MAX_LENGTH]            = {0};
-   char autoconf_file[PATH_MAX_LENGTH]  = {0};
    config_file_t *conf                  = NULL;
    settings_t *settings                 = config_get_ptr();
+
+   buf[0] = autoconf_file[0]            = '\0';
 
    fill_pathname_join(buf, settings->directory.autoconfig,
          settings->input.joypad_driver, sizeof(buf));
 
    if(path_is_directory(buf))
    {
-      char buf_new[PATH_MAX_LENGTH] = {0};
+      char buf_new[PATH_MAX_LENGTH];
+
+      buf_new[0] = '\0';
 
       fill_pathname_join(buf_new, buf,
             path, sizeof(buf_new));
@@ -2941,7 +2968,9 @@ bool config_save_file(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char cfg[64] = {0};
+      char cfg[64];
+
+      cfg[0] = '\0';
 
       snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
       config_set_int(conf, cfg, settings->input.device[i]);
@@ -2961,7 +2990,10 @@ bool config_save_file(const char *path)
 #ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
    {
-      char tmp[64] = {0};
+      char tmp[64];
+
+      tmp[0] = '\0';
+
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
       config_set_bool(conf, tmp, settings->network_remote_enable_user[i]);
    }

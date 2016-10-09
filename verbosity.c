@@ -136,7 +136,10 @@ static aslclient asl_client;
 #endif
 #elif defined(_XBOX1)
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
-   char msg_new[1024], buffer[1024];
+   char msg_new[1024];
+   char buffer[1024];
+
+   msg_new[0] = buffer[0] = '\0';
    snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
          file_path_str(FILE_PATH_PROGRAM_NAME),
          tag ? tag : "",
