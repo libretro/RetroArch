@@ -62,6 +62,8 @@ static void task_queue_msg_push(unsigned prio, unsigned duration,
    char buf[1024];
    va_list ap;
 
+   buf[0] = '\0';
+
    va_start(ap, fmt);
    vsnprintf(buf, sizeof(buf), fmt, ap);
    va_end(ap);

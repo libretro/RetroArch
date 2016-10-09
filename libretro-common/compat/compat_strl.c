@@ -34,7 +34,7 @@
 size_t strlcpy(char *dest, const char *source, size_t size)
 {
    size_t src_size = 0;
-   size_t n = size;
+   size_t        n = size;
 
    if (n)
       while (--n && (*dest++ = *source++)) src_size++;

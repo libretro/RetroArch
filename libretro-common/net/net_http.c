@@ -254,7 +254,9 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
    if (conn->port != 80)
    {
-      char portstr[16] = {0};
+      char portstr[16];
+
+      portstr[0] = '\0';
 
       snprintf(portstr, sizeof(portstr), ":%i", conn->port);
       net_http_send_str(fd, &error, portstr);

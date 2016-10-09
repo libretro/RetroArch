@@ -467,8 +467,10 @@ void fill_dated_filename(char *out_filename,
 void fill_str_dated_filename(char *out_filename,
       const char *in_str, const char *ext, size_t size)
 {
-   char format[256] = {0};
+   char format[256];
    time_t cur_time = time(NULL);
+
+   format[0] = '\0';
 
    strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", localtime(&cur_time));
    strlcpy(out_filename, in_str, size);

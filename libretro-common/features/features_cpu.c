@@ -520,7 +520,7 @@ uint64_t cpu_features_get(void)
 {
    int flags[4];
    int vendor_shuffle[3];
-   char vendor[13]     = {0};
+   char vendor[13];
    size_t len          = 0;
    uint64_t cpu_flags  = 0;
    uint64_t cpu        = 0;
@@ -606,6 +606,8 @@ uint64_t cpu_features_get(void)
    vendor_shuffle[0] = flags[1];
    vendor_shuffle[1] = flags[3];
    vendor_shuffle[2] = flags[2];
+
+   vendor[0]         = '\0';
    memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
 
    /* printf("[CPUID]: Vendor: %s\n", vendor); */

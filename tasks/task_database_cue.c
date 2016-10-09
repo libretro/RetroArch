@@ -382,7 +382,7 @@ int find_first_data_track(const char *cue_path,
       int32_t *offset, char *track_path, size_t max_len)
 {
    int rv;
-   char tmp_token[MAX_TOKEN_LEN] = {0};
+   char tmp_token[MAX_TOKEN_LEN];
    RFILE *fd                     = 
       filestream_open(cue_path, RFILE_MODE_READ, -1);
 
@@ -394,6 +394,8 @@ int find_first_data_track(const char *cue_path,
    }
 
    RARCH_LOG("Parsing CUE file '%s'...\n", cue_path);
+
+   tmp_token[0] = '\0';
 
    while (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0)
    {

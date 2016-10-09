@@ -508,13 +508,15 @@ static void SHA1Input(SHA1Context *context,
 
 int sha1_calculate(const char *path, char *result)
 {
-   unsigned char buff[4096] = {0};
    SHA1Context sha;
-   int rv = 1;
+   unsigned char buff[4096];
+   int rv    = 1;
    RFILE *fd = filestream_open(path, RFILE_MODE_READ, -1);
 
    if (!fd)
       goto error;
+
+   buff[0] = '\0';
 
    SHA1Reset(&sha);
 

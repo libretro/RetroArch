@@ -51,7 +51,9 @@ typedef struct db_handle
 static int task_database_iterate_start(database_info_handle_t *db,
       const char *name)
 {
-   char msg[128] = {0};
+   char msg[128];
+
+   msg[0] = '\0';
 
    snprintf(msg, sizeof(msg),
          STRING_REP_ULONG "/" STRING_REP_ULONG ": %s %s...\n",
@@ -107,9 +109,13 @@ static int iso_get_serial(database_state_handle_t *db_state,
 static int cue_get_serial(database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name, char* serial)
 {
+   char track_path[PATH_MAX_LENGTH];
    int32_t offset                   = 0;
-   char track_path[PATH_MAX_LENGTH] = {0};
-   int rv                           = find_first_data_track(name,
+   int rv                           = 0;
+
+   track_path[0]                    = '\0';
+   
+   rv = find_first_data_track(name,
          &offset, track_path, PATH_MAX_LENGTH);
 
    if (rv < 0)
@@ -329,7 +335,9 @@ static int task_database_iterate_crc_lookup(
 
    if (db_state->entry_index == 0)
    {
-      char query[50] = {0};
+      char query[50];
+
+      query[0] = '\0';
 
       if (!core_info_database_supports_content_path(db_state->list->elems[db_state->list_index].data, name) &&
           !core_info_unsupported_content_path(name))
@@ -450,12 +458,14 @@ static int task_database_iterate_serial_lookup(
 
    if (db_state->entry_index == 0)
    {
-      char query[50]   = {0};
+      char query[50];
       char *serial_buf =
          bin_to_hex_alloc((uint8_t*)db_state->serial, 10 * sizeof(uint8_t));
 
       if (!serial_buf)
          return 1;
+
+      query[0] = '\0';
 
       snprintf(query, sizeof(query), "{'serial': b'%s'}", serial_buf);
       database_info_list_iterate_new(db_state, query);

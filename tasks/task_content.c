@@ -356,8 +356,8 @@ static bool load_content_from_compressed_archive(
       bool need_fullpath, const char *path)
 {
    union string_list_elem_attr attributes;
-   char new_path[PATH_MAX_LENGTH]    = {0};
-   char new_basedir[PATH_MAX_LENGTH] = {0};
+   char new_path[PATH_MAX_LENGTH];
+   char new_basedir[PATH_MAX_LENGTH];
    ssize_t new_path_len              = 0;
    bool ret                          = false;
    rarch_system_info_t      *sys_info= NULL;
@@ -386,7 +386,10 @@ static bool load_content_from_compressed_archive(
             sizeof(new_basedir));
    }
 
-   attributes.i = 0;
+   new_path[0]    = '\0';
+   new_basedir[0] = '\0';
+   attributes.i   = 0;
+
    fill_pathname_join(new_path, new_basedir,
          path_basename(path), sizeof(new_path));
 
@@ -425,8 +428,8 @@ static bool init_content_file_extract(
 
    for (i = 0; i < content->size; i++)
    {
-      char temp_content[PATH_MAX_LENGTH] = {0};
-      char new_path[PATH_MAX_LENGTH]     = {0};
+      char temp_content[PATH_MAX_LENGTH];
+      char new_path[PATH_MAX_LENGTH];
       bool contains_compressed           = NULL;
       bool block_extract                 = content->elems[i].attr.i & 1;
       const char *valid_ext              = system->info.valid_extensions;
@@ -446,6 +449,8 @@ static bool init_content_file_extract(
          if (!path_is_compressed_file(content->elems[i].data))
             continue;
       }
+
+      temp_content[0] = new_path[0] = '\0';
 
       strlcpy(temp_content, content->elems[i].data,
             sizeof(temp_content));
@@ -867,8 +872,10 @@ static bool task_load_content(content_ctx_info_t *content_info,
       bool launched_from_menu,
       enum content_mode_load mode)
 {
-   char name[PATH_MAX_LENGTH]                 = {0};
-   char msg[PATH_MAX_LENGTH]                  = {0};
+   char name[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH];
+
+   name[0] = msg[0] = '\0';
 
    if (launched_from_menu)
    {
@@ -897,9 +904,11 @@ static bool task_load_content(content_ctx_info_t *content_info,
    /* Push entry to top of history playlist */
    if (content_is_inited() || content_does_not_need_content())
    {
-      char tmp[PATH_MAX_LENGTH]      = {0};
+      char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = NULL;
       rarch_system_info_t *system    = NULL;
+
+      tmp[0] = '\0';
 
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
       if (system)

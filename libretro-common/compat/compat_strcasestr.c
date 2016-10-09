@@ -43,10 +43,10 @@ static int casencmp(const char *a, const char *b, size_t n)
 
 char *strcasestr_retro__(const char *haystack, const char *needle)
 {
-   size_t i, hay_len, needle_len, search_off;
+   size_t i, search_off;
+   size_t hay_len    = strlen(haystack);
+   size_t needle_len = strlen(needle);
 
-   hay_len = strlen(haystack);
-   needle_len = strlen(needle);
    if (needle_len > hay_len)
       return NULL;
 

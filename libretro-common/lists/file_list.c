@@ -437,15 +437,16 @@ void file_list_get_last(const file_list_t *list,
 bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
 {
    size_t i;
-   const char *alt;
-   bool ret = false;
+   const char *alt = NULL;
+   bool ret        = false;
 
    if (!list)
       return false;
 
    for (i = 0; i < list->size; i++)
    {
-      const char *str;
+      const char *str = NULL;
+
       file_list_get_alt_at_offset(list, i, &alt);
       if (!alt)
       {

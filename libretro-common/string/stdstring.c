@@ -79,9 +79,10 @@ char *string_replace_substring(const char *in,
       const char *pattern, const char *replacement)
 {
    size_t numhits, pattern_len, replacement_len, outlen;
-   const char *inat;
-   const char *inprev;
-   char *out, *outat;
+   const char *inat   = NULL;
+   const char *inprev = NULL;
+   char          *out = NULL;
+   char        *outat = NULL;
    
    /* if either pattern or replacement is NULL,
     * duplicate in and let caller handle it. */

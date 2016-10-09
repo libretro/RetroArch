@@ -139,7 +139,7 @@ static int sevenzip_file_read(
       for (i = 0; i < db.db.NumFiles; i++)
       {
          size_t len;
-         char infile[PATH_MAX_LENGTH] = {0};
+         char infile[PATH_MAX_LENGTH];
          size_t offset                = 0;
          size_t outSizeProcessed      = 0;
          const CSzFileItem    *f      = db.db.Files + i;
@@ -166,7 +166,9 @@ static int sevenzip_file_read(
          }
 
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res = SZ_ERROR_FAIL;
+         res       = SZ_ERROR_FAIL;
+         infile[0] = '\0';
+
          if (temp)
             res = utf16_to_char_string(temp, infile, sizeof(infile))
                ? SZ_OK : SZ_ERROR_FAIL;
@@ -340,12 +342,14 @@ static int sevenzip_parse_file_iterate_step_internal(
 
       if (len < PATH_MAX_LENGTH && !file->IsDir)
       {
+         char infile[PATH_MAX_LENGTH];
          SRes res                     = SZ_ERROR_FAIL;
-         char infile[PATH_MAX_LENGTH] = {0};
          uint16_t *temp               = (uint16_t*)malloc(len * sizeof(uint16_t));
 
          if (!temp)
             return -1;
+
+         infile[0] = '\0';
 
          SzArEx_GetFileNameUtf16(&sevenzip_context->db, sevenzip_context->index,
                temp);
@@ -375,8 +379,10 @@ static int sevenzip_parse_file_iterate_step_internal(
 }
 
 static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
-      const char *valid_exts, struct archive_extract_userdata *userdata, file_archive_file_cb file_cb)
+      const char *valid_exts,
+      struct archive_extract_userdata *userdata, file_archive_file_cb file_cb)
 {
+   char filename[PATH_MAX_LENGTH];
    const uint8_t *cdata = NULL;
    uint32_t checksum    = 0;
    uint32_t size        = 0;
@@ -384,7 +390,6 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
    unsigned cmode       = 0;
    unsigned payload     = 0;
    struct sevenzip_context_t *sevenzip_context = NULL;
-   char filename[PATH_MAX_LENGTH] = {0};
    int ret = sevenzip_parse_file_iterate_step_internal(state, filename,
          &cdata, &cmode, &size, &csize,
          &checksum, &payload, userdata);
@@ -392,8 +397,9 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
    if (ret != 1)
       return ret;
 
+   filename[0]                   = '\0';
    userdata->extracted_file_path = filename;
-   userdata->crc = checksum;
+   userdata->crc                 = checksum;
 
    if (file_cb && !file_cb(filename, valid_exts, cdata, cmode,
             csize, size, checksum, userdata))
