@@ -24,6 +24,9 @@
 #include "../config.h"
 #endif
 
+#include <stdlib.h>
+#include <rhash.h>
+
 static const font_backend_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
    &freetype_font_backend,
@@ -38,7 +41,7 @@ static const font_backend_t *font_backends[] = {
    NULL
 };
 
-static const struct font_renderer *font_osd_driver;
+static const font_renderer_t *font_osd_driver;
 
 static void *font_osd_data;
 
@@ -350,3 +353,149 @@ bool font_driver_init_first(
          data, font_path, font_size, api);
 }
 
+
+struct font_t {
+   font_t *next;
+   const font_backend_t *backend;
+   void                 *backend_data;
+
+   unsigned hash; /* filename hash */
+   float    size;
+
+   int ref;
+};
+
+#if 0 /* disabled until all relevant files are updated */
+static font_t *g_fonts = NULL;
+
+static font_t *find_font_instance(unsigned hash, float size)
+{
+   font_t *font = g_fonts;
+
+   while (font) {
+      if (font->hash == hash && fabs(font->size - size) < 0.0001)
+         return font;
+   }
+
+   return NULL;
+}
+#endif
+
+static font_t *create_font_instance(const char *filename, float size)
+{
+   font_t *font = (font_t*)calloc(sizeof(*font), 1);
+   const font_backend_t **backend;
+
+   if (!font)
+   {
+      RARCH_ERR("[font] Failed to allocate the font structure.\n");
+      return NULL;
+   }
+
+   font->hash = djb2_calculate(filename ? filename : "");
+   font->size = size;
+
+   for (backend = font_backends; *backend; ++backend)
+   {
+      const char *path = filename;
+      void *data;
+
+      if (!path || !*path)
+         path = (*backend)->get_default_font();
+
+      data = (*backend)->init(path, size);
+
+      if (data)
+      {
+         font->backend      = *backend;
+         font->backend_data = data;
+
+         break;
+      }
+   }
+
+   if (font->backend)
+   {
+      RARCH_LOG("[font] Loaded '%s' (size=%.2f backend=%s)\n",
+                filename, size, font->backend->ident);
+#if 0 /* disabled until all relevant files are updated */
+      font->next = g_fonts;
+      g_fonts = font;
+#endif
+   }
+   else
+   {
+      RARCH_ERR("[font] Failed to load %s (size=%.2f): no working backend\n",
+                filename, size);
+      free(font);
+      font = NULL;
+   }
+
+   return font;
+}
+
+const font_t *font_load(const char *filename, float size)
+{
+   font_t *font;
+
+#if 0 /* disabled until all relevant files are updated */
+   font = find_font_instance(djb2_calculate(filename ? filename : ""), size);
+
+   if (!font)
+#endif
+      font = create_font_instance(filename, size);
+
+   if (font)
+      font->ref++;
+
+   return font;
+}
+
+void font_unref(const font_t *font)
+{
+   font_t *f = (font_t*)font;
+
+   if (--f->ref <= 0)
+   {
+#if 0 /* disabled until all relevant files are updated */
+      font_t *it, *prev;
+
+      for (it = g_fonts; it; it = it->next)
+      {
+         if (it == f)
+         {
+            if (prev)
+               prev->next = it->next;
+
+            break;
+         }
+         prev = it;
+      }
+#endif
+      f->backend->free(f->backend_data);
+      free(f);
+   }
+}
+
+const struct font_atlas *font_get_atlas(const font_t *font)
+{
+   return font->backend->get_atlas(font->backend_data);
+}
+
+const struct font_glyph *font_get_glyph(const font_t *font, uint32_t codepoint)
+{
+   const struct font_glyph *glyph = font->backend->get_glyph(font->backend_data, codepoint);
+
+   if (!glyph)
+      glyph = font->backend->get_glyph(font->backend_data, '?');
+
+   return glyph;
+}
+
+int font_get_line_height(const font_t *font)
+{
+   if (font->backend->get_line_height)
+      return font->backend->get_line_height(font->backend_data);
+   else
+      return 0;
+}

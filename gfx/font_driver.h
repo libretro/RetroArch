@@ -93,7 +93,10 @@ struct font_params
    enum text_alignment text_align;
 };
 
-typedef struct font_renderer
+/** Don't free() it. Use font_load() and font_unref() to manage. */
+typedef struct font_t font_t;
+
+typedef struct
 {
    void *(*init)(void *data, const char *font_path, float font_size);
    void (*free)(void *data);
@@ -145,6 +148,29 @@ void font_driver_free(void *data);
 bool font_driver_init_first(const void **font_driver, void **font_handle,
       void *data, const char *font_path, float font_size,
       bool threading_hint, enum font_driver_render_api api);
+
+
+/**
+ * @brief Loads a font file
+ *
+ * The returned pointer must be freed using font_unref().
+ *
+ * @param filename
+ * @param size
+ * @return pointer to a font_t structure
+ * @see font_unref()
+ */
+const font_t *font_load(const char *filename, float size);
+
+/**
+ * @brief Decrements the font refcount and/or deallocates it
+ * @param font
+ */
+void font_unref(const font_t *font);
+
+const struct font_atlas *font_get_atlas(const font_t *font);
+const struct font_glyph *font_get_glyph(const font_t *font, uint32_t codepoint);
+int font_get_line_height(const font_t *font);
 
 extern font_renderer_t gl_raster_font;
 extern font_renderer_t libdbg_font;
