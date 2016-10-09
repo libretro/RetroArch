@@ -438,9 +438,13 @@ size_t playlist_size(playlist_t *playlist)
 static bool playlist_read_file(
       playlist_t *playlist, const char *path)
 {
-   char buf[PLAYLIST_ENTRIES][1024] = {{0}};
+   unsigned i;
+   char buf[PLAYLIST_ENTRIES][1024];
    RFILE *file                      = filestream_open(
          path, RFILE_MODE_READ_TEXT, -1);
+
+   for (i = 0; i < PLAYLIST_ENTRIES; i++)
+      buf[i][0] = '\0';
 
    /* If playlist file does not exist,
     * create an empty playlist instead.
