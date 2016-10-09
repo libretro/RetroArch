@@ -185,6 +185,9 @@ void input_config_parse_key(config_file_t *conf,
 {
    char tmp[64];
    char key[64];
+
+   tmp[0] = key[0] = '\0';
+
    fill_pathname_join_delim(key, prefix, btn, '_', sizeof(key));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
@@ -288,11 +291,13 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
 void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
       const char *btn, struct retro_keybind *bind)
 {
-   char str[256]      = {0};
-   char tmp[64]       = {0};
-   char key[64]       = {0};
-   char key_label[64] = {0};
-   char *tmp_a        = NULL;
+   char str[256];
+   char tmp[64];
+   char key[64];
+   char key_label[64]       = {0};
+   char *tmp_a              = NULL;
+
+   str[0] = tmp[0] = key[0] = '\0';
 
    fill_pathname_join_delim(str, prefix, btn,
          '_', sizeof(str));
@@ -325,11 +330,13 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind)
 {
-   char str[256]      = {0};
-   char       tmp[64] = {0};
-   char       key[64] = {0};
-   char key_label[64] = {0};
+   char str[256];
+   char       tmp[64];
+   char       key[64];
+   char key_label[64];
    char        *tmp_a = NULL;
+
+   str[0] = tmp[0] = key[0] = key_label[0] = '\0';
 
    fill_pathname_join_delim(str, prefix, axis,
          '_', sizeof(str));
@@ -439,6 +446,8 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
 #ifndef RARCH_CONSOLE
    char key[64];
    char keybuf[64];
+
+   key[0] = keybuf[0] = '\0';
 #endif
 
    *buf = '\0';
