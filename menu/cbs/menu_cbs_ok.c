@@ -1886,10 +1886,12 @@ static int action_ok_start_video_processor_core(const char *path,
 static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char new_path[PATH_MAX_LENGTH]  = {0};
+   char new_path[PATH_MAX_LENGTH];
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
    menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
+
+   new_path[0] = '\0';
 
    fill_pathname_join(new_path, menu_path, path,
          sizeof(new_path));
@@ -2231,7 +2233,7 @@ static void cb_generic_download(void *task_data,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
       {
          static char shaderdir[PATH_MAX_LENGTH]       = {0};
-         const char *dirname;
+         const char *dirname                          = NULL;
          if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG)
          dirname                                      = "shaders_cg";
          else if (transf->enum_idx == MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL)
@@ -2552,8 +2554,10 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 static int action_ok_option_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char game_path[PATH_MAX_LENGTH] = {0};
+   char game_path[PATH_MAX_LENGTH];
    config_file_t *conf             = NULL;
+
+   game_path[0] = '\0';
 
    if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
    {
@@ -3391,7 +3395,7 @@ static int action_ok_netplay_enable_client(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #ifdef HAVE_NETWORKING
-   bool netplay_was_on = false;
+   bool netplay_was_on  = false;
    settings_t *settings = config_get_ptr();
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
@@ -3495,7 +3499,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       for (i = 0; i < MAX_USERS; i++)
       {
          unsigned first_char = 0;
-         const char *str = msg_hash_to_str(cbs->enum_idx);
+         const char     *str = msg_hash_to_str(cbs->enum_idx);
          if (!str)
             continue;
          if (!strstr(str, "input_binds_list"))
