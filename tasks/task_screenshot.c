@@ -212,12 +212,14 @@ static bool screenshot_dump(
 #if !defined(VITA)
 static bool take_screenshot_viewport(const char *name_base)
 {
-   char screenshot_path[PATH_MAX_LENGTH] = {0};
+   char screenshot_path[PATH_MAX_LENGTH];
    const char *screenshot_dir            = NULL;
    uint8_t *buffer                       = NULL;
    bool retval                           = false;
    struct video_viewport vp              = {0};
    settings_t *settings                  = config_get_ptr();
+
+   screenshot_path[0]                    = '\0';
 
    video_driver_get_viewport_info(&vp);
 
@@ -259,10 +261,12 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf)
 {
    unsigned width, height;
    size_t pitch;
-   char screenshot_path[PATH_MAX_LENGTH] = {0};
+   char screenshot_path[PATH_MAX_LENGTH];
    const void *data                      = NULL;
    settings_t *settings                  = config_get_ptr();
    const char *screenshot_dir            = settings->directory.screenshot;
+
+   screenshot_path[0]                    = '\0';
 
    video_driver_cached_frame_get(&data, &width, &height, &pitch);
 
