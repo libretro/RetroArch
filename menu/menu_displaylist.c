@@ -514,7 +514,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
 #endif
    {
-      char cpu_str[PATH_MAX_LENGTH] = {0};
+      char cpu_str[PATH_MAX_LENGTH];
+
+      cpu_str[0] = '\0';
 
       fill_pathname_noext(cpu_str,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
@@ -578,8 +580,10 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 
    {
-      char cpu_str[PATH_MAX_LENGTH] = {0};
+      char cpu_str[PATH_MAX_LENGTH];
       unsigned         amount_cores = cpu_features_get_core_amount();
+
+      cpu_str[0] = '\0';
 
       snprintf(cpu_str, sizeof(cpu_str),
             "%s %d\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_CORES), amount_cores);
@@ -610,9 +614,11 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    if (frontend)
    {
-      char tmp2[PATH_MAX_LENGTH] = {0};
+      char tmp2[PATH_MAX_LENGTH];
       int                  major = 0;
       int                  minor = 0;
+
+      tmp2[0] = '\0';
 
       fill_pathname_noext(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER),
@@ -660,11 +666,13 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
       {
-         char tmp[PATH_MAX_LENGTH]  = {0};
-         char tmp2[PATH_MAX_LENGTH] = {0};
-         char tmp3[PATH_MAX_LENGTH] = {0};
+         char tmp[PATH_MAX_LENGTH];
+         char tmp2[PATH_MAX_LENGTH];
+         char tmp3[PATH_MAX_LENGTH];
          uint64_t memory_used       = frontend_driver_get_used_memory();
          uint64_t memory_total      = frontend_driver_get_total_memory();
+
+         tmp[0] = tmp2[0] = tmp3[0] = '\0';
 
          if (memory_used != 0 && memory_total != 0)
          {
@@ -1492,8 +1500,10 @@ static int menu_displaylist_parse_shader_options(menu_displaylist_info_t *info)
 
    for (i = 0; i < shader->passes; i++)
    {
-      char buf_tmp[64] = {0};
-      char buf[64]     = {0};
+      char buf_tmp[64];
+      char buf[64];
+
+      buf[0] = buf_tmp[0] = '\0';
 
       snprintf(buf_tmp, sizeof(buf_tmp),
             "%s #%u", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER), i);
@@ -1701,12 +1711,12 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    for (i = 0; i < db_info->count; i++)
    {
       char tmp[PATH_MAX_LENGTH];
-      char crc_str[20]               = {0};
+      char crc_str[20];
       database_info_t *db_info_entry = &db_info->list[i];
       settings_t *settings           = config_get_ptr();
       bool show_advanced_settings    = false;
 
-      tmp[0] = '\0';
+      crc_str[0] = tmp[0] = '\0';
 
       if (settings)
          show_advanced_settings      = settings->menu.show_advanced_settings;
@@ -3092,10 +3102,12 @@ static int menu_displaylist_parse_options_remappings(
       {
          for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
          {
-            char desc_label[64]     = {0};
+            char desc_label[64];
             unsigned user           = p + 1;
             unsigned desc_offset    = retro_id;
             const char *description = NULL;
+
+            desc_label[0]           = '\0';
 
             if (desc_offset >= RARCH_FIRST_CUSTOM_BIND)
                desc_offset = RARCH_FIRST_CUSTOM_BIND
@@ -3348,7 +3360,9 @@ static int menu_displaylist_parse_cores(
 #ifndef HAVE_DYNAMIC
       if (frontend_driver_has_fork())
       {
-         char salamander_name[PATH_MAX_LENGTH] = {0};
+         char salamander_name[PATH_MAX_LENGTH];
+
+         salamander_name[0] = '\0';
 
          if (frontend_driver_get_salamander_basename(
                   salamander_name, sizeof(salamander_name)))
@@ -4199,10 +4213,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_USER_BINDS_LIST:
          {
-            char lbl[PATH_MAX_LENGTH] = {0};
+            char lbl[PATH_MAX_LENGTH];
             unsigned val              = atoi(info->path);
             const char *temp_val      = msg_hash_to_str(
                   (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
+
+            lbl[0]                    = '\0';
 
             strlcpy(lbl, temp_val, sizeof(lbl));
             ret = menu_displaylist_parse_settings(menu, info,
@@ -5481,8 +5497,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR:
          {
 #ifdef HAVE_NETWORKING
+            char new_label[PATH_MAX_LENGTH];
             struct string_list *str_list = string_split(info->path, ";");
-            char new_label[PATH_MAX_LENGTH] = {0};
+
+            new_label[0] = '\0';
+
             if (str_list->elems[0].data)
                strlcpy(new_label, str_list->elems[0].data, sizeof(new_label));
             if (str_list->elems[1].data)
@@ -5500,7 +5519,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORE_CONTENT_DIRS:
          {
 #ifdef HAVE_NETWORKING
-            char new_label[PATH_MAX_LENGTH] = {0};
+            char new_label[PATH_MAX_LENGTH];
+
+            new_label[0] = '\0';
+
             fill_pathname_join(new_label,
                   settings->network.buildbot_assets_url,
                   "cores", sizeof(new_label));
@@ -5549,8 +5571,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          else
          {
-            char path_playlist[PATH_MAX_LENGTH] = {0};
+            char path_playlist[PATH_MAX_LENGTH];
             playlist_t *playlist                = NULL;
+
+            path_playlist[0] = '\0';
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
@@ -5854,7 +5878,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_CORES:
          {
-            char ext_name[PATH_MAX_LENGTH] = {0};
+            char ext_name[PATH_MAX_LENGTH];
+
+            ext_name[0] = '\0';
 
             menu_displaylist_reset_filebrowser();
             info->type_default = FILE_TYPE_PLAIN;
