@@ -80,5 +80,7 @@ frontend_ctx_driver_t frontend_ctx_bsd = {
    frontend_bsd_get_signal_handler_state,
    frontend_bsd_set_signal_handler_state,
    frontend_bsd_destroy_signal_handler_state,
+   NULL,                         /* attach_console */
+   NULL,                         /* detach_console */
    "bsd",
 };

@@ -206,5 +206,7 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                         /* get_signal_handler_state */
    NULL,                         /* set_signal_handler_state */
    NULL,                         /* destroy_signal_handler_state */
+   NULL,                         /* attach_console */
+   NULL,                         /* detach_console */
    "emscripten"
 };

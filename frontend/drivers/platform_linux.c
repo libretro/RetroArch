@@ -2089,6 +2089,8 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_signal_handler_state,
    frontend_linux_set_signal_handler_state,
    frontend_linux_destroy_signal_handler_state,
+   NULL,                         /* attach_console */
+   NULL,                         /* detach_console */
 #ifdef ANDROID
    "android"
 #else

@@ -766,9 +766,7 @@ static void retroarch_parse_input(int argc, char *argv[])
             break;
 
          case 'D':
-#if defined(_WIN32) && !defined(_XBOX)
-            FreeConsole();
-#endif
+            frontend_driver_detach_console();
             break;
 
          case RA_OPT_MENU:

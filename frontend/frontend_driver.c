@@ -361,6 +361,22 @@ void frontend_driver_set_signal_handler_state(int value)
    frontend->set_signal_handler_state(value);
 }
 
+void frontend_driver_attach_console(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->attach_console)
+      return;
+   frontend->attach_console();
+}
+
+void frontend_driver_detach_console(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->detach_console)
+      return;
+   frontend->detach_console();
+}
+
 void frontend_driver_destroy_signal_handler_state(void)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();

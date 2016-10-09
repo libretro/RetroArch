@@ -320,6 +320,25 @@ static uint64_t frontend_win32_get_mem_used(void)
 	return ((frontend_win32_get_mem_total() - mem_info.ullAvailPhys));
 }
 
+static void frontend_win32_attach_console(void)
+{
+#ifdef _WIN32
+   AllocConsole();
+   AttachConsole( GetCurrentProcessId()) ;
+   freopen( "CON", "w", stdout );
+   freopen( "CON", "w", stderr );
+#endif
+}
+
+static void frontend_win32_detach_console(void)
+{
+#if defined(_WIN32) && !defined(_XBOX)
+   HWND wnd = GetConsoleWindow();
+   FreeConsole();
+   PostMessage(wnd, WM_CLOSE, 0, 0);
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_environment_get,
    frontend_win32_init,
@@ -342,5 +361,7 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */
    NULL,                            /* destroy_sighandler_state */
+   frontend_win32_attach_console,   /* attach_console */
+   frontend_win32_detach_console,   /* detach_console */
    "win32"
 };

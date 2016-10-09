@@ -82,6 +82,8 @@ typedef struct frontend_ctx_driver
    int (*get_signal_handler_state)(void);
    void (*set_signal_handler_state)(int value);
    void (*destroy_signal_handler_state)(void);
+   void (*attach_console)(void);
+   void (*detach_console)(void);
 
    const char *ident;
 
@@ -168,6 +170,10 @@ int frontend_driver_get_signal_handler_state(void);
 void frontend_driver_set_signal_handler_state(int value);
 
 void frontend_driver_destroy_signal_handler_state(void);
+
+void frontend_driver_attach_console(void);
+
+void frontend_driver_detach_console(void);
 
 RETRO_END_DECLS
 

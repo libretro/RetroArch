@@ -90,5 +90,7 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
    NULL,                         /* destroy_sighandler_state */
+   NULL,                         /* attach_console */
+   NULL,                         /* detach_console */
    "qnx",
 };

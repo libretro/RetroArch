@@ -43,6 +43,10 @@
 #include "config.h"
 #endif
 
+#ifdef RARCH_INTERNAL
+#include "frontend/frontend_driver.h"
+#endif
+
 #include "file_path_special.h"
 #include "verbosity.h"
 
@@ -54,21 +58,16 @@ static bool main_verbosity = false;
 void verbosity_enable(void)
 {
    main_verbosity = true;
-#ifdef _WIN32
-   AllocConsole();
-   AttachConsole( GetCurrentProcessId()) ;
-   freopen( "CON", "w", stdout );
-   freopen( "CON", "w", stderr );
+#ifdef RARCH_INTERNAL
+   frontend_driver_attach_console();
 #endif
 }
 
 void verbosity_disable(void)
 {
    main_verbosity = false;
-#ifdef _WIN32
-   HWND wnd = GetConsoleWindow();
-   FreeConsole();
-   PostMessage(wnd, WM_CLOSE, 0, 0);
+#ifdef RARCH_INTERNAL
+   frontend_driver_detach_console();
 #endif
 }
 

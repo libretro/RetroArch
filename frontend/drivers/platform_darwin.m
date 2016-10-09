@@ -714,5 +714,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
    NULL,                         /* destroy_signal_handler_state */
+   NULL,                         /* attach_console */
+   NULL,                         /* detach_console */
    "darwin",
 };
