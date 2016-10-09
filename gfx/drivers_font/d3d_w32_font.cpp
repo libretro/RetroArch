@@ -98,6 +98,7 @@ static void d3dfonts_w32_render_msg(void *data, const char *msg,
       return;
    if (!msg)
       return;
+   d3d_set_viewports(d3dfonts->d3d->dev, &d3dfonts->d3d->final_viewport);
    if (!(SUCCEEDED(d3dfonts->d3d->dev->BeginScene())))
       return;
 
