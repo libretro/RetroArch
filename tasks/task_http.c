@@ -119,6 +119,10 @@ static int task_http_iterate_transfer(retro_task_t *task)
    http_handle_t *http  = (http_handle_t*)task->state;
    size_t pos  = 0, tot = 0;
 
+   /* FIXME: This wouldn't be needed if we could wait for a timeout */
+   if (task_queue_ctl(TASK_QUEUE_CTL_IS_THREADED, NULL))
+      retro_sleep(1);
+
    if (!net_http_update(http->handle, &pos, &tot))
    {
       task->progress = (tot == 0) ? -1 : (signed)(pos * 100 / tot);
