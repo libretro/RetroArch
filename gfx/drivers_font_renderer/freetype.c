@@ -240,7 +240,7 @@ static int font_renderer_ft_get_line_height(void* data)
    return handle->face->size->metrics.height/64;
 }
 
-font_renderer_driver_t freetype_font_renderer = {
+font_backend_t freetype_font_backend = {
    font_renderer_ft_init,
    font_renderer_ft_get_atlas,
    font_renderer_ft_get_glyph,

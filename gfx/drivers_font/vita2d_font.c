@@ -23,7 +23,7 @@
 typedef struct
 {
    vita2d_texture *texture;
-   const font_renderer_driver_t *font_driver;
+   const font_backend_t *font_driver;
    void *font_data;
 
 } vita_font_t;

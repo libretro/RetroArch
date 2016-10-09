@@ -27,7 +27,7 @@ typedef struct
 {
    vk_t *vk;
    struct vk_texture texture;
-   const font_renderer_driver_t *font_driver;
+   const font_backend_t *font_driver;
    void *font_data;
 
    struct vk_vertex *pv;

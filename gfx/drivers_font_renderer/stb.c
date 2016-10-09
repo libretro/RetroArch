@@ -227,7 +227,7 @@ static int font_renderer_stb_get_line_height(void* data)
     return handle->line_height;
 }
 
-font_renderer_driver_t stb_font_renderer = {
+font_backend_t stb_font_backend = {
    font_renderer_stb_init,
    font_renderer_stb_get_atlas,
    font_renderer_stb_get_glyph,

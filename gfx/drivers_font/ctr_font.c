@@ -39,7 +39,7 @@ typedef struct
 {
    ctr_texture_t texture;
    ctr_scale_vector_t scale_vector;
-   const font_renderer_driver_t* font_driver;
+   const font_backend_t* font_driver;
    void* font_data;
 } ctr_font_t;
 

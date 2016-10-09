@@ -140,7 +140,7 @@ static int font_renderer_bmp_get_line_height(void* data)
     return FONT_HEIGHT * handle->scale_factor;
 }
 
-font_renderer_driver_t bitmap_font_renderer = {
+font_backend_t bitmap_font_backend = {
    font_renderer_bmp_init,
    font_renderer_bmp_get_atlas,
    font_renderer_bmp_get_glyph,

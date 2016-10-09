@@ -61,7 +61,7 @@ typedef struct xv
    uint8_t *vtable;
 
    void *font;
-   const font_renderer_driver_t *font_driver;
+   const font_backend_t *font_driver;
 
    unsigned luma_index[2];
    unsigned chroma_u_index;

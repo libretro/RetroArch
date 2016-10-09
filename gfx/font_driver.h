@@ -108,7 +108,7 @@ typedef struct font_renderer
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
 } font_renderer_t;
 
-typedef struct font_renderer_driver
+typedef struct
 {
    void *(*init)(const char *font_path, float font_size);
 
@@ -124,7 +124,7 @@ typedef struct font_renderer_driver
    const char *ident;
    
    int (*get_line_height)(void* data);
-} font_renderer_driver_t;
+} font_backend_t;
 
 /* font_path can be NULL for default font. */
 int font_renderer_create_default(const void **driver,
@@ -155,10 +155,10 @@ extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t vulkan_raster_font;
 
-extern font_renderer_driver_t stb_font_renderer;
-extern font_renderer_driver_t freetype_font_renderer;
-extern font_renderer_driver_t coretext_font_renderer;
-extern font_renderer_driver_t bitmap_font_renderer;
+extern font_backend_t stb_font_backend;
+extern font_backend_t freetype_font_backend;
+extern font_backend_t coretext_font_backend;
+extern font_backend_t bitmap_font_backend;
 
 RETRO_END_DECLS
 

@@ -49,7 +49,7 @@ typedef struct
    GLuint tex;
    unsigned tex_width, tex_height;
 
-   const font_renderer_driver_t *font_driver;
+   const font_backend_t *font_driver;
    void *font_data;
 
    video_font_raster_block_t *block;

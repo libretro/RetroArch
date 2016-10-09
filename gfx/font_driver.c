@@ -24,17 +24,17 @@
 #include "../config.h"
 #endif
 
-static const font_renderer_driver_t *font_backends[] = {
+static const font_backend_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
-   &freetype_font_renderer,
+   &freetype_font_backend,
 #endif
 #if defined(__APPLE__) && defined(HAVE_CORETEXT)
-   &coretext_font_renderer,
+   &coretext_font_backend,
 #endif
 #ifdef HAVE_STB_FONT
-   &stb_font_renderer,
+   &stb_font_backend,
 #endif
-   &bitmap_font_renderer,
+   &bitmap_font_backend,
    NULL
 };
 
@@ -47,8 +47,8 @@ int font_renderer_create_default(const void **data, void **handle,
 {
 
    unsigned i;
-   const font_renderer_driver_t **drv = 
-      (const font_renderer_driver_t**)data;
+   const font_backend_t **drv = 
+      (const font_backend_t**)data;
 
    for (i = 0; font_backends[i]; i++)
    {
