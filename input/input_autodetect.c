@@ -73,12 +73,14 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       autoconfig_params_t *params)
 {
+   char ident[256];
+   char input_driver[32];
    int tmp_int                        = 0;
-   char ident[PATH_MAX_LENGTH]        = {0};
-   char input_driver[PATH_MAX_LENGTH] = {0};
    int                      input_vid = 0;
    int                      input_pid = 0;
    int                          score = 0;
+
+   ident[0] = input_driver[0]         = '\0';
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
@@ -114,12 +116,14 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 static void input_autoconfigure_joypad_add(config_file_t *conf,
       autoconfig_params_t *params)
 {
-   bool block_osd_spam;
+   char msg[PATH_MAX_LENGTH];
+   char display_name[PATH_MAX_LENGTH];
+   char device_type[PATH_MAX_LENGTH];
+   bool block_osd_spam                = false;
    static bool remote_is_bound        = false;
-   char msg[PATH_MAX_LENGTH]          = {0};
-   char display_name[PATH_MAX_LENGTH] = {0};
-   char device_type[PATH_MAX_LENGTH]  = {0};
    settings_t      *settings          = config_get_ptr();
+
+   msg[0] = display_name[0] = device_type[0] = '\0';
 
    config_get_array(conf, "input_device_display_name",
          display_name, sizeof(display_name));
@@ -177,12 +181,14 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       autoconfig_params_t *params)
 {
    size_t i;
-   char path[PATH_MAX_LENGTH] = {0};
+   char path[PATH_MAX_LENGTH];
    int ret                    = 0;
    int index                  = -1;
    int current_best           = 0;
    config_file_t *conf        = NULL;
    struct string_list *list   = NULL;
+
+   path[0]                    = '\0';
 
    fill_pathname_application_special(path, sizeof(path),
          APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG);
@@ -225,6 +231,8 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       if (conf)
       {
          char conf_path[PATH_MAX_LENGTH];
+
+         conf_path[0] = '\0';
 
          config_get_config_path(conf, conf_path, sizeof(conf_path));
 
@@ -288,6 +296,8 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
    char msg[PATH_MAX_LENGTH];
 
+   msg[0] = '\0';
+
    if (!input_config_autoconfigure_joypad_init(params))
       goto error;
 
@@ -325,6 +335,8 @@ const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[PATH_MAX_LENGTH];
+
+   msg[0] = '\0';
 
    snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, ident);
    runloop_msg_queue_push(msg, 2, 60, false);
