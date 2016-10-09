@@ -45,11 +45,11 @@ struct hostent *gethostbyname(const char *name)
    WSAEVENT event;
    static struct hostent he;
    static struct in_addr addr;
-   static char *addr_ptr;
-   XNDNS *dns     = NULL;
+   static char *addr_ptr      = NULL;
+   XNDNS *dns                 = NULL;
 
-   he.h_addr_list = &addr_ptr;
-   addr_ptr       = (char*)&addr;
+   he.h_addr_list             = &addr_ptr;
+   addr_ptr                   = (char*)&addr;
 
    if (!name)
       return NULL;
@@ -115,9 +115,9 @@ struct hostent *gethostbyname(const char *name)
 {
    int err;
    static struct hostent ent;
-   static char sname[MAX_NAME] = "";
-   static struct SceNetInAddr saddr = { 0 };
-   static char *addrlist[2] = { (char *) &saddr, NULL };
+   static char sname[MAX_NAME]      = {0};
+   static struct SceNetInAddr saddr = {0};
+   static char *addrlist[2]         = {(char *) &saddr, NULL };
    int rid = sceNetResolverCreate("resolver", NULL, 0);
 
    if(rid < 0)
