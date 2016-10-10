@@ -114,6 +114,9 @@ static void vita2d_render_overlay(void *data);
 static void vita2d_free_overlay(vita_video_t *vita)
 {
    unsigned i;
+
+   vita2d_wait_rendering_done();
+
    for (i = 0; i < vita->overlays; i++)
       vita2d_free_texture(vita->overlay[i].tex);
    free(vita->overlay);
