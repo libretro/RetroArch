@@ -421,7 +421,7 @@ bool netplay_ad_server(netplay_t *netplay, int ad_fd)
 
    if (!ad_packet_buffer)
    {
-      ad_packet_buffer = malloc(AD_PACKET_MAX_SIZE);
+      ad_packet_buffer = (uint32_t *) malloc(AD_PACKET_MAX_SIZE);
       if (!ad_packet_buffer)
          return false;
    }
@@ -438,7 +438,7 @@ bool netplay_ad_server(netplay_t *netplay, int ad_fd)
 
       /* Somebody queried, so check that it's valid */
       if (recvfrom(ad_fd, ad_packet_buffer, AD_PACKET_MAX_SIZE, 0,
-                   &their_addr, &addr_size) >= 2*sizeof(uint32_t))
+                   &their_addr, &addr_size) >= (ssize_t) (2*sizeof(uint32_t)))
       {
          /* Make sure it's a valid query */
          if (memcmp(ad_packet_buffer, "RANQ", 4))
