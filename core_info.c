@@ -2,7 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2013-2015 - Jason Fetters
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -47,7 +47,7 @@ static void core_info_list_resolve_all_extensions(
    for (i = 0; i < core_info_list->count; i++)
    {
       if (core_info_list->list[i].supported_extensions)
-         all_ext_len += 
+         all_ext_len +=
             (strlen(core_info_list->list[i].supported_extensions) + 2);
    }
 
@@ -171,7 +171,7 @@ static config_file_t *core_info_list_iterate(
    fill_pathname_base_noext(info_path_base, contents->elems[i].data,
          sizeof(info_path_base));
 
-#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS))
+#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP) && !defined(_3DS) && !defined(VITA))
    char *substr = strrchr(info_path_base, '_');
    if (substr)
       *substr = '\0';
@@ -288,7 +288,7 @@ static core_info_list_t *core_info_list_new(void)
       core_info[i].path = strdup(contents->elems[i].data);
 
       if (!core_info[i].display_name)
-         core_info[i].display_name = 
+         core_info[i].display_name =
             strdup(path_basename(core_info[i].path));
    }
 
@@ -305,7 +305,7 @@ error:
    return NULL;
 }
 
-/* Shallow-copies internal state. 
+/* Shallow-copies internal state.
  *
  * Data in *info is invalidated when the
  * core_info_list is freed. */
@@ -322,7 +322,7 @@ static bool core_info_list_get_info(core_info_list_t *core_info_list,
    {
       const core_info_t *info = &core_info_list->list[i];
 
-      if (string_is_equal(path_basename(info->path), 
+      if (string_is_equal(path_basename(info->path),
                path_basename(path)))
       {
          *out_info = *info;
@@ -362,10 +362,10 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 {
    const core_info_t *a = (const core_info_t*)a_;
    const core_info_t *b = (const core_info_t*)b_;
-   int support_a        = 
+   int support_a        =
          core_info_does_support_any_file(a, core_info_tmp_list)
       || core_info_does_support_file(a, core_info_tmp_path);
-   int support_b        = 
+   int support_b        =
          core_info_does_support_any_file(b, core_info_tmp_list)
       || core_info_does_support_file(b, core_info_tmp_path);
 
@@ -587,7 +587,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    core_info_tmp_list = list;
 #endif
 
-   /* Let supported core come first in list so we can return 
+   /* Let supported core come first in list so we can return
     * a pointer to them. */
    qsort(core_info_list->list, core_info_list->count,
          sizeof(core_info_t), core_info_qsort_cmp);
@@ -649,7 +649,7 @@ void core_info_get_name(const char *path, char *s, size_t len)
 
       if (!string_is_equal(contents->elems[i].data, path))
          continue;
-      
+
       conf = core_info_list_iterate(contents, i);
 
       if (conf)

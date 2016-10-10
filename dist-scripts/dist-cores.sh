@@ -17,7 +17,7 @@ mkdir -p ../pkg/${platform}/
 cd ..
 LDFLAGS=-L. ./configure --disable-dynamic
 cd dist-scripts
-   
+
 elif [ $PLATFORM = "psp1" ] ; then
 platform=psp1
 SALAMANDER=yes
@@ -33,6 +33,7 @@ cp -f ../kernel_functions.prx ../pkg/${platform}/kernel_functions.prx
 elif [ $PLATFORM = "vita" ] ; then
 platform=vita
 MAKEFILE_GRIFFIN=yes
+SALAMANDER=yes
 EXT=a
 mkdir -p ../pkg/vita/vpk
 # CTR/3DS
@@ -126,6 +127,26 @@ if [ $SALAMANDER = "yes" ]; then
    if [ $PLATFORM = "psp1" ] ; then
    mv -f ../EBOOT.PBP ../pkg/${platform}/EBOOT.PBP
    fi
+   if [ $PLATFORM = "vita" ] ; then
+     mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/livearea/contents
+     vita-make-fself -s ../retroarchvita_salamander.velf ../pkg/${platform}/retroarch.vpk/vpk/eboot.bin
+     vita-mksfoex -s TITLE_ID=RETROVITA "RetroArch" ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/param.sfo
+     cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/icon0.png
+     cp -R ../pkg/${platform}/assets/livearea ../pkg/${platform}/retroarch.vpk/vpk/sce_sys/
+     mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/assets
+      if [ -d ../media/assets/glui ]; then
+         cp -r ../media/assets/glui ../pkg/${platform}/retroarch.vpk/vpk/assets
+      fi
+      if [ -d ../media/assets/xmb ]; then
+         cp -r ../media/assets/xmb ../pkg/${platform}/retroarch.vpk/vpk/assets
+         # Strip source SVG files
+         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/flatui/src
+         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/monochrome/src
+         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive/src
+         rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive_marked/src
+      fi
+      make -C ../ -f Makefile.${platform}.salamander clean || exit 1
+   fi
    if [ $PLATFORM = "ctr" ] ; then
    mv -f ../retroarch_3ds_salamander.cia ../pkg/3ds/cia/retroarch_3ds.cia
    make -C ../ -f Makefile.${platform} clean || exit 1
@@ -145,7 +166,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
    lto=0
    whole_archive=
    big_stack=
-   
+
    if [ $name = "nxengine" ] ; then
       echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
@@ -228,6 +249,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea
       mkdir -p ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents
       vita-make-fself -s ../retroarch_${platform}.velf ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin
+      cp ../pkg/${platform}/${name}_libretro.vpk/vpk/eboot.bin ../pkg/${platform}/retroarch.vpk/vpk/${name}_libretro.self
       vita-mksfoex -s TITLE_ID=RETR${COUNTER_ID} "RetroArch ${name}" ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/param.sfo
       cp ../pkg/${platform}/assets/ICON0.PNG ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/icon0.png
       cp ../pkg/${platform}/assets/livearea/contents/bg.png ../pkg/${platform}/${name}_libretro.vpk/vpk/sce_sys/livearea/contents/bg.png
@@ -240,7 +262,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
          fi
          if [ -d ../media/assets/xmb ]; then
             cp -r ../media/assets/xmb ../pkg/${platform}/${name}_libretro.vpk/vpk/assets
-            # Strip source SVG files 
+            # Strip source SVG files
             rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/flatui/src
             rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/monochrome/src
             rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/retroactive/src
