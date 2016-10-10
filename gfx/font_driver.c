@@ -149,19 +149,19 @@ static bool gl_font_init_first(
 
 #ifdef HAVE_VULKAN
 static const font_renderer_t *vulkan_font_backends[] = {
-   &vulkan_raster_font,
+   &vulkan_font_renderer,
    NULL,
 };
 
 static bool vulkan_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const font_t *font)
 {
    unsigned i;
 
    for (i = 0; vulkan_font_backends[i]; i++)
    {
-      void *data = vulkan_font_backends[i]->init(video_data, font_path, font_size);
+      void *data = vulkan_font_backends[i]->init(video_data, font);
 
       if (!data)
          continue;
@@ -477,6 +477,11 @@ void font_unref(const font_t *font)
       f->backend->free(f->backend_data);
       free(f);
    }
+}
+
+float font_get_size(const font_t *font)
+{
+   return font->size;
 }
 
 const struct font_atlas *font_get_atlas(const font_t *font)

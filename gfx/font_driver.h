@@ -168,6 +168,7 @@ const font_t *font_load(const char *filename, float size);
  */
 void font_unref(const font_t *font);
 
+float font_get_size(const font_t *font);
 const struct font_atlas *font_get_atlas(const font_t *font);
 const struct font_glyph *font_get_glyph(const font_t *font, uint32_t codepoint);
 int font_get_line_height(const font_t *font);
@@ -179,7 +180,7 @@ extern font_renderer_t d3d_xdk1_font;
 extern font_renderer_t d3d_win32_font;
 extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
-extern font_renderer_t vulkan_raster_font;
+extern font_renderer_t vulkan_font_renderer;
 
 extern font_backend_t stb_font_backend;
 extern font_backend_t freetype_font_backend;
