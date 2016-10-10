@@ -386,3 +386,103 @@ uint32_t netplay_delta_frame_crc(netplay_t *netplay, struct delta_frame *delta)
       return 0;
    return encoding_crc32(0L, (const unsigned char*)delta->state, netplay->state_size);
 }
+
+/*
+ * AD PACKET FORMAT:
+ *
+ * Request:
+ *    1 word: RANQ (RetroArch Netplay Query)
+ *    1 word: Netplay protocol version
+ *
+ * Reply:
+ *    1 word : RANS (RetroArch Netplay Server)
+ *    1 word : Netplay protocol version
+ *    1 word : Port
+ *    8 words: RetroArch version
+ *    8 words: Nick
+ *    8 words: Core name
+ *    8 words: Core version
+ *    8 words: Content name (currently always blank)
+ */
+
+#define AD_PACKET_MAX_SIZE       512
+#define AD_PACKET_STRING_SIZE    32
+#define AD_PACKET_STRING_WORDS   (AD_PACKET_STRING_SIZE/sizeof(uint32_t))
+static uint32_t *ad_packet_buffer = NULL;
+
+bool netplay_ad_server(netplay_t *netplay, int ad_fd)
+{
+   fd_set fds;
+   struct timeval tmp_tv = {0};
+   struct sockaddr their_addr;
+   socklen_t addr_size;
+   rarch_system_info_t *info = NULL;
+   size_t bufloc;
+
+   if (!ad_packet_buffer)
+   {
+      ad_packet_buffer = (uint32_t *) malloc(AD_PACKET_MAX_SIZE);
+      if (!ad_packet_buffer)
+         return false;
+   }
+
+   /* Check for any ad queries */
+   while (1)
+   {
+      FD_ZERO(&fds);
+      FD_SET(ad_fd, &fds);
+      if (socket_select(ad_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+         break;
+      if (!FD_ISSET(ad_fd, &fds))
+         break;
+
+      /* Somebody queried, so check that it's valid */
+      if (recvfrom(ad_fd, ad_packet_buffer, AD_PACKET_MAX_SIZE, 0,
+                   &their_addr, &addr_size) >= (ssize_t) (2*sizeof(uint32_t)))
+      {
+         /* Make sure it's a valid query */
+         if (memcmp(ad_packet_buffer, "RANQ", 4))
+            continue;
+
+         /* For this version */
+         if (ntohl(ad_packet_buffer[1]) != NETPLAY_PROTOCOL_VERSION)
+            continue;
+
+         runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+
+         /* Now build our response */
+         memset(ad_packet_buffer, 0, AD_PACKET_MAX_SIZE);
+         memcpy(ad_packet_buffer, "RANS", 4);
+         ad_packet_buffer[1] = htonl(NETPLAY_PROTOCOL_VERSION);
+         ad_packet_buffer[2] = htonl(netplay->tcp_port);
+         bufloc = 3;
+         strncpy((char *) (ad_packet_buffer + bufloc),
+                 PACKAGE_VERSION, AD_PACKET_STRING_SIZE);
+         bufloc += AD_PACKET_STRING_WORDS;
+         strncpy((char *) (ad_packet_buffer + bufloc),
+                 netplay->nick, AD_PACKET_STRING_SIZE);
+         bufloc += AD_PACKET_STRING_WORDS;
+         if (info)
+         {
+            strncpy((char *) (ad_packet_buffer + bufloc),
+                    info->info.library_name, AD_PACKET_STRING_SIZE);
+            bufloc += AD_PACKET_STRING_WORDS;
+            strncpy((char *) (ad_packet_buffer + bufloc),
+                    info->info.library_version, AD_PACKET_STRING_SIZE);
+            bufloc += AD_PACKET_STRING_WORDS;
+            /* Blank content */
+            bufloc += AD_PACKET_STRING_WORDS;
+         }
+         else
+         {
+            bufloc += 3*AD_PACKET_STRING_WORDS;
+         }
+
+         /* And send it */
+         sendto(ad_fd, ad_packet_buffer, bufloc*sizeof(uint32_t), 0,
+                &their_addr, addr_size);
+      }
+   }
+
+   return true;
+}
