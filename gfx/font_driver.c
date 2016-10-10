@@ -336,7 +336,13 @@ bool font_driver_init_first(
       : (void**)&font_osd_data;
 
    /* FIXME: check PSP, PS3(LIBDBG), Vita and D3D. */
-   const font_t *font = font_load(font_path, font_size);
+   const font_t *font;
+
+#ifdef _3DS
+   font_size = 10;
+#endif
+
+   font = font_load(font_path, font_size);
 
    if (!font)
       return false;
