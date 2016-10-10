@@ -25,6 +25,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 #include <rhash.h>
 
 static const font_backend_t *font_backends[] = {
@@ -337,11 +338,13 @@ bool font_driver_init_first(
 
    /* FIXME: check PSP, PS3(LIBDBG), Vita and D3D. */
    const font_t *font;
+   bool result = false;
 
 #ifdef _3DS
    font_size = 10;
 #endif
 
+   /* TODO: font_load() and font_unref() should be handled by the caller */
    font = font_load(font_path, font_size);
 
    if (!font)
@@ -353,12 +356,16 @@ bool font_driver_init_first(
    if (threading_hint 
          && settings->video.threaded 
          && !video_driver_is_hw_context())
-      return video_thread_font_init(new_font_driver, new_font_handle,
+      result = video_thread_font_init(new_font_driver, new_font_handle,
             data, font, api, font_init_first);
 #endif
 
-   return font_init_first(new_font_driver, new_font_handle,
+   result = font_init_first(new_font_driver, new_font_handle,
          data, font, api);
+
+   font_unref(font);
+
+   return result;
 }
 
 
@@ -432,6 +439,7 @@ static font_t *create_font_instance(const char *filename, float size)
       font->next = g_fonts;
       g_fonts = font;
 #endif
+      font->ref = 0;
    }
    else
    {
@@ -461,6 +469,7 @@ const font_t *font_load(const char *filename, float size)
    return font;
 }
 
+/* XXX: ref and unref might have concurrency issues */
 const font_t *font_ref(const font_t *font)
 {
    font_t *f = (font_t*)font;
