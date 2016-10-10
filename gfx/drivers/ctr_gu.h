@@ -237,4 +237,15 @@ static INLINE void ctrGuSetVshGsh(shaderProgram_s* sp, DVLB_s* dvlb, u32 vsh_out
    shaderProgramSetGsh(sp, &dvlb->DVLE[1], gsh_input_count);
 }
 
+__attribute__((always_inline))
+static INLINE int ctrgu_swizzle_coords(int x, int y, int width)
+{
+   int pos = (x & 0x1) << 0 | ((x & 0x2) << 1) | ((x & 0x4) << 2) |
+             (y & 0x1) << 1 | ((y & 0x2) << 2) | ((y & 0x4) << 3);
+
+
+   return ((x >> 3) << 6) + ((y >> 3) * ((width >> 3) << 6)) + pos;
+
+}
+
 #endif // CTR_GU_H

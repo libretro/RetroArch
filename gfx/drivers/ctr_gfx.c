@@ -40,6 +40,9 @@
 #include "../../performance_counters.h"
 
 #include "../common/ctr_common.h"
+#ifndef HAVE_THREADS
+#include "../../tasks/tasks_internal.h"
+#endif
 
 static INLINE void ctr_check_3D_slider(ctr_video_t* ctr)
 {
@@ -269,6 +272,19 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       }
    }
 }
+
+static void ctr_vsync_hook(ctr_video_t* ctr)
+{
+   ctr->vsync_event_pending = false;
+}
+#ifndef HAVE_THREADS
+static bool ctr_tasks_finder(retro_task_t *task,void *userdata)
+{
+   return task;
+}
+task_finder_data_t ctr_tasks_finder_data = {ctr_tasks_finder, NULL};
+#endif
+
 static void* ctr_init(const video_info_t* video,
       const input_driver_t** input, void** input_data)
 {
@@ -294,7 +310,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->drawbuffers.top.left = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
    ctr->drawbuffers.top.right = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
 
-   ctr->display_list_size = 0x10000;
+   ctr->display_list_size = 0x4000;
    ctr->display_list = linearAlloc(ctr->display_list_size * sizeof(uint32_t));
    GPU_Reset(NULL, ctr->display_list, ctr->display_list_size);
 
@@ -424,6 +440,8 @@ static void* ctr_init(const video_info_t* video,
    ctr->p3d_event_pending = false;
    ctr->ppf_event_pending = false;
 
+   gspSetEventCallback(GSPGPU_EVENT_VBlank0, (ThreadFunc)ctr_vsync_hook, ctr, false);
+
    return ctr;
 }
 
@@ -499,9 +517,22 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->ppf_event_pending = false;
    }
    frames++;
-
+#ifndef HAVE_THREADS
+   if(task_queue_ctl(TASK_QUEUE_CTL_FIND, &ctr_tasks_finder_data))
+   {
+//      ctr->vsync_event_pending = true;
+      while(ctr->vsync_event_pending)
+      {
+         task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+         svcSleepThread(0);
+//         aptMainLoop();
+      }
+   }
+#endif
    if (ctr->vsync)
       gspWaitForEvent(GSPGPU_EVENT_VBlank0, false);
+
+   ctr->vsync_event_pending = true;
 
    currentTick = svcGetSystemTick();
    diff        = currentTick - lastTick;
@@ -834,6 +865,7 @@ static void ctr_free(void* data)
       return;
 
    aptUnhook(&ctr->lcd_aptHook);
+   gspSetEventCallback(GSPGPU_EVENT_VBlank0, NULL, NULL, true);
    shaderProgramFree(&ctr->shader);
    DVLB_Free(ctr->dvlb);
    vramFree(ctr->drawbuffers.top.left);
@@ -849,7 +881,6 @@ static void ctr_free(void* data)
    linearFree(ctr);
    //   gfxExit();
 }
-
 static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
                                   unsigned width, unsigned height, float alpha)
 {
@@ -970,19 +1001,23 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
 {
    ctr_video_t* ctr = (ctr_video_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
+   int size = image->width * image->height * sizeof(uint32_t);
 
-   if(!ctr || !image)
+   if((size * 3) > linearSpaceFree())
+      return 0;
+
+   if(!ctr || !image || image->width > 2048 || image->height > 2048)
       return 0;
 
    ctr_texture_t* texture = calloc(1, sizeof(ctr_texture_t));
-   uint32_t texsize = image->width * image->height * sizeof(uint32_t);
+
    void* tmpdata;
-//   texture->data = vramAlloc(image->width * image->height * sizeof(uint32_t));
-//   if(!texture->data)
-      texture->data = linearAlloc(image->width * image->height * sizeof(uint32_t));
+   texture->width = next_pow2(image->width);
+   texture->height = next_pow2(image->height);
+   texture->active_width = image->width;
+   texture->active_height = image->height;
+   texture->data = linearAlloc(texture->width * texture->height * sizeof(uint32_t));
    texture->type = filter_type;
-   texture->width = image->width;
-   texture->height = image->height;
 
 
    if (!texture->data)
@@ -990,14 +1025,29 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
       free(texture);
       return 0;
    }
-   if ((texture->width == 1) && (texture->height == 1))
+   if ((image->width <= 32) || (image->height <= 32))
    {
-      *(uint32_t*)texture->data = *image->pixels;
+      int i, j;
+      uint32_t* src = (uint32_t*)image->pixels;
+
+      for (j = 0; j < image->height; j++)
+         for (i = 0; i < image->width; i++)
+         {
+            ((uint32_t*)texture->data)[ctrgu_swizzle_coords(i, j, texture->width)] =
+                  ((*src >> 8) & 0x00FF00) | ((*src >> 24) & 0xFF)| ((*src << 8) & 0xFF0000)| ((*src << 24) & 0xFF000000);
+            src++;
+         }
+      GSPGPU_FlushDataCache(texture->data, texture->width  * texture->height * sizeof(uint32_t));
    }
    else
    {
       tmpdata = linearAlloc(image->width * image->height * sizeof(uint32_t));
-   //   memcpy(tmpdata, image->pixels, image->width * image->height * sizeof(uint32_t));
+      if (!tmpdata)
+      {
+         free(texture->data);
+         free(texture);
+         return 0;
+      }
       int i;
       uint32_t* src = (uint32_t*)image->pixels;
       uint32_t* dst = (uint32_t*)tmpdata;
@@ -1010,7 +1060,6 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
 
 
       GSPGPU_FlushDataCache(tmpdata, image->width  * image->height * sizeof(uint32_t));
-   //   printf("ctrGuCopyImage 0x%08X, %i, %i, 0x%08X, %i\n", tmpdata, image->width, image->height, texture->data, texture->width);
       ctrGuCopyImage(true, tmpdata, image->width, image->height, CTRGU_RGBA8, false,
                      texture->data, texture->width, CTRGU_RGBA8,  true);
 #if 0

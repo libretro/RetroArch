@@ -2470,6 +2470,9 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    settings_t *settings = config_get_ptr();
 
    scale_factor = ((settings->menu.xmb.scale_factor * width) / (1920.0 * 100)) * 1.5;
+#ifdef _3DS
+   scale_factor = settings->menu.xmb.scale_factor / 400.0;
+#endif
 
    xmb->above_subitem_offset     =  1.5;
    xmb->above_item_offset        = -1.0;
@@ -2523,7 +2526,7 @@ static void xmb_layout(xmb_handle_t *xmb)
    video_driver_get_size(&width, &height);
 
    /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
-   if (width > 320)
+   if (width > 320 && height > 240)
       xmb_layout_ps3(xmb, width);
    else
       xmb_layout_psp(xmb, width);

@@ -78,12 +78,7 @@ static void* ctr_font_init_font(void* data, const char* font_path, float font_si
 
    for (j = 0; (j < atlas->height) && (j < font->texture.height); j++)
       for (i = 0; (i < atlas->width) && (i < font->texture.width); i++)
-      {
-         int pos = (i & 0x1) << 0 | ((i & 0x2) << 1) | ((i & 0x4) << 2) |
-                   (j & 0x1) << 1 | ((j & 0x2) << 2) | ((j & 0x4) << 3);
-
-         tmp[((i >> 3) << 6) + ((j >> 3) * ((font->texture.width >> 3) << 6)) + pos ] = src[i + j * atlas->width];
-      }
+         tmp[ctrgu_swizzle_coords(i, j, font->texture.width)] = src[i + j * atlas->width];
 
    GSPGPU_FlushDataCache(tmp, font->texture.width * font->texture.height);
 

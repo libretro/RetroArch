@@ -137,7 +137,7 @@ extern const char* __system_arglist;
 char __argv_hmac[0x20] = {0x1d, 0x78, 0xff, 0xb9, 0xc5, 0xbc, 0x78, 0xb7, 0xac, 0x29, 0x1d, 0x3e, 0x16, 0xd0, 0xcf, 0x53,
                          0xef, 0x12, 0x58, 0x83, 0xb6, 0x9e, 0x2f, 0x79, 0x47, 0xf9, 0x35, 0x61, 0xeb, 0x50, 0xd7, 0x67};
 
-Result APT_ReceiveDeliverArg(void* param, size_t param_size, void* hmac, size_t hmac_size, u64* source_pid, bool* received)
+Result APT_ReceiveDeliverArg_(void* param, size_t param_size, void* hmac, size_t hmac_size, u64* source_pid, bool* received)
 {
 	u32 cmdbuf[16];
 	cmdbuf[0]=IPC_MakeHeader(0x35,2,0);
@@ -187,7 +187,7 @@ void __system_initArgv(void)
    bool received;
 
    if(!__service_ptr
-      && R_SUCCEEDED(APT_ReceiveDeliverArg(&param, sizeof(param), hmac, sizeof(hmac), NULL, &received))
+      && R_SUCCEEDED(APT_ReceiveDeliverArg_(&param, sizeof(param), hmac, sizeof(hmac), NULL, &received))
       && received
       && !memcmp(hmac, __argv_hmac, sizeof(__argv_hmac)))
       arg_struct = (void*)param;
