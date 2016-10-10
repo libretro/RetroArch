@@ -95,8 +95,9 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #ifdef VITA
-   strlcpy(eboot_path, "ux0:/data/retroarch/", sizeof(eboot_path));
+   strlcpy(eboot_path, "app0:/", sizeof(eboot_path));
    strlcpy(g_defaults.dir.port, eboot_path, sizeof(g_defaults.dir.port));
+   strlcpy(user_path, "ux0:/data/retroarch/", sizeof(user_path));
 #else
    strlcpy(eboot_path, argv[0], sizeof(eboot_path));
    /* for PSP, use uppercase directories, and no trailing slashes
@@ -108,36 +109,40 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
 
 #ifdef VITA
    /* bundle data*/
-   fill_pathname_join(g_defaults.dir.assets, "app0:/",
-         "assets", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.core, "app0:/",
+   fill_pathname_join(g_defaults.dir.core, g_defaults.dir.port,
          "", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.assets, g_defaults.dir.port,
+         "assets", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.core_info, g_defaults.dir.core,
          "info", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.database, g_defaults.dir.port,
+         "database/rdb", sizeof(g_defaults.dir.database));
+   fill_pathname_join(g_defaults.dir.cursor, g_defaults.dir.port,
+         "database/cursors", sizeof(g_defaults.dir.cursor));
    /* user data*/
-   fill_pathname_join(g_defaults.dir.cheats, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.cheats, user_path,
          "cheats", sizeof(g_defaults.dir.cheats));
-   fill_pathname_join(g_defaults.dir.menu_config, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.menu_config, user_path,
          "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.core_assets, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.core_assets, user_path,
          "downloads", sizeof(g_defaults.dir.core_assets));
-   fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.playlist, user_path,
          "playlists", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.remap, user_path,
          "remaps", sizeof(g_defaults.dir.remap));
-   fill_pathname_join(g_defaults.dir.sram, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.sram, user_path,
          "savefiles", sizeof(g_defaults.dir.sram));
-   fill_pathname_join(g_defaults.dir.savestate, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.savestate, user_path,
          "savestates", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.system, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.system, user_path,
          "system", sizeof(g_defaults.dir.system));
-   fill_pathname_join(g_defaults.dir.cache, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.cache, user_path,
          "temp", sizeof(g_defaults.dir.cache));
-   fill_pathname_join(g_defaults.dir.overlay, g_defaults.dir.port,
+   fill_pathname_join(g_defaults.dir.overlay, user_path,
          "overlays", sizeof(g_defaults.dir.overlay));
    strlcpy(g_defaults.dir.content_history,
-         g_defaults.dir.port, sizeof(g_defaults.dir.content_history));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
+         user_path, sizeof(g_defaults.dir.content_history));
+   fill_pathname_join(g_defaults.path.config, user_path,
          file_path_str(FILE_PATH_MAIN_CONFIG), sizeof(g_defaults.path.config));
 #else
 
@@ -222,7 +227,7 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    if (!string_is_empty(argv[1]))
    {
       static char path[PATH_MAX_LENGTH] = {0};
-      struct rarch_main_wrap      *args = 
+      struct rarch_main_wrap      *args =
          (struct rarch_main_wrap*)params_data;
 
       if (args)

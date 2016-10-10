@@ -248,6 +248,7 @@ else ifeq ($(platform), vita)
   HAVE_STB_FONT :=1
   RARCH_CONSOLE          = 1
   HAVE_THREADS     := 1
+  HAVE_LIBRETRODB := 1
 endif
 
 

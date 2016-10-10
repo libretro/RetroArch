@@ -145,6 +145,18 @@ if [ $SALAMANDER = "yes" ]; then
          rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive/src
          rm -rf ../pkg/${platform}/retroarch.vpk/vpk/assets/xmb/retroactive_marked/src
       fi
+      if [ -d ../media/libretrodb/rdb ]; then
+         mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
+         cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
+      fi
+      if [ -d ../media/libretrodb/cursors ]; then
+         mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/cursors
+         cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/retroarch.vpk/vpk/database/cursors
+      fi
+      if [ -d ../../dist/info ]; then
+         mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/info
+         cp -fv ../../dist/info/*.info ../pkg/${platform}/retroarch.vpk/vpk/info/
+      fi
       make -C ../ -f Makefile.${platform}.salamander clean || exit 1
    fi
    if [ $PLATFORM = "ctr" ] ; then
@@ -267,6 +279,18 @@ for f in `ls -v *_${platform}.${EXT}`; do
             rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/monochrome/src
             rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/retroactive/src
             rm -rf ../pkg/${platform}/${name}_libretro.vpk/vpk/assets/xmb/retroactive_marked/src
+         fi
+         if [ -d ../media/libretrodb/rdb ]; then
+            mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/rdb
+            cp -r ../media/libretrodb/rdb/* ../pkg/${platform}/${name}_libretro.vpk/vpk/database/rdb
+         fi
+         if [ -d ../media/libretrodb/cursors ]; then
+            mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/database/cursors
+            cp -r ../media/libretrodb/cursors/* ../pkg/${platform}/${name}_libretro.vpk/vpk/database/cursors
+         fi
+         if [ -d ../../dist/info ]; then
+            mkdir -p ../pkg/${platform}/retroarch.vpk/vpk/info
+            cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/${platform}/${name}_libretro.vpk/vpk/info/"${name}_libretro.info"
          fi
    elif [ $PLATFORM = "ctr" ] ; then
       mv -f ../retroarch_3ds.cia ../pkg/3ds/cia/${name}_libretro.cia
