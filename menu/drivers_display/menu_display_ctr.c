@@ -90,12 +90,12 @@ static void menu_display_ctr_draw(void *data)
 
     v->x0 = draw->x;
     v->y0 = 240 - draw->height - draw->y;
-    v->x1 = draw->x + draw->width;
+    v->x1 = v->x0 + draw->width;
     v->y1 = v->y0 + draw->height;
     v->u0 = 0;
     v->v0 = 0;
-    v->u1 = texture->width;
-    v->v1 = texture->height;
+    v->u1 = texture->active_width;
+    v->v1 = texture->active_height;
 
     ctrGuSetAttributeBuffers(2,
                              VIRT_TO_PHYS(v),

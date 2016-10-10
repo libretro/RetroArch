@@ -1,6 +1,7 @@
 #ifndef CTR_COMMON_H__
 #define CTR_COMMON_H__
 
+#include <retro_inline.h>
 
 #define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
 
@@ -89,6 +90,7 @@ typedef struct ctr_video
 
    bool p3d_event_pending;
    bool ppf_event_pending;
+   volatile bool vsync_event_pending;
 
    struct
    {
@@ -103,6 +105,9 @@ typedef struct ctr_texture
 {
    int width;
    int height;
+   int active_width;
+   int active_height;
+
    enum texture_filter_type type;
    void* data;
 } ctr_texture_t;
