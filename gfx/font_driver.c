@@ -210,14 +210,13 @@ static const font_renderer_t *ctr_font_backends[] = {
 
 static bool ctr_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const font_t *font)
 {
    unsigned i;
 
    for (i = 0; ctr_font_backends[i]; i++)
    {
-      void *data = ctr_font_backends[i]->init(
-            video_data, font_path, font_size);
+      void *data = ctr_font_backends[i]->init(video_data, font);
 
       if (!data)
          continue;
