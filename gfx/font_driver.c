@@ -118,7 +118,7 @@ static bool d3d_font_init_first(
 
 #ifdef HAVE_OPENGL
 static const font_renderer_t *gl_font_backends[] = {
-   &gl_raster_font,
+   &gl_font_renderer,
 #if defined(HAVE_LIBDBGFONT)
    &libdbg_font,
 #endif
@@ -127,14 +127,13 @@ static const font_renderer_t *gl_font_backends[] = {
 
 static bool gl_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const font_t *font)
 {
    unsigned i;
 
    for (i = 0; gl_font_backends[i]; i++)
    {
-      void *data = gl_font_backends[i]->init(
-            video_data, font_path, font_size);
+      void *data = gl_font_backends[i]->init(video_data, font);
 
       if (!data)
          continue;
@@ -234,38 +233,35 @@ static bool ctr_font_init_first(
 
 static bool font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size,
+      void *video_data, const font_t *font,
       enum font_driver_render_api api)
 {
-   if (font_path && !font_path[0])
-      font_path = NULL;
-
    switch (api)
    {
 #ifdef HAVE_D3D
       case FONT_DRIVER_RENDER_DIRECT3D_API:
          return d3d_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font);
 #endif
 #ifdef HAVE_OPENGL
       case FONT_DRIVER_RENDER_OPENGL_API:
          return gl_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font);
 #endif
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:
          return vulkan_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font);
 #endif
 #ifdef HAVE_VITA2D
       case FONT_DRIVER_RENDER_VITA2D:
          return vita2d_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font);
 #endif
 #ifdef _3DS
       case FONT_DRIVER_RENDER_CTR:
          return ctr_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font);
 #endif
       case FONT_DRIVER_RENDER_DONT_CARE:
          /* TODO/FIXME - lookup graphics driver's 'API' */
@@ -339,6 +335,12 @@ bool font_driver_init_first(
       : (const void**)&font_osd_driver;
    void **new_font_handle        = font_handle ? font_handle 
       : (void**)&font_osd_data;
+
+   const font_t *font = font_load(font_path, font_size);
+
+   if (!font)
+      return false;
+
 #ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
 
@@ -346,11 +348,11 @@ bool font_driver_init_first(
          && settings->video.threaded 
          && !video_driver_is_hw_context())
       return video_thread_font_init(new_font_driver, new_font_handle,
-            data, font_path, font_size, api, font_init_first);
+            data, font, api, font_init_first);
 #endif
 
    return font_init_first(new_font_driver, new_font_handle,
-         data, font_path, font_size, api);
+         data, font, api);
 }
 
 

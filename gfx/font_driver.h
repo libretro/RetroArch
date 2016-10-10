@@ -98,7 +98,7 @@ typedef struct font_t font_t;
 
 typedef struct
 {
-   void *(*init)(void *data, const char *font_path, float font_size);
+   void *(*init)(void *data, const font_t *font);
    void (*free)(void *data);
    void (*render_msg)(void *data, const char *msg,
          const void *params);
@@ -172,7 +172,7 @@ const struct font_atlas *font_get_atlas(const font_t *font);
 const struct font_glyph *font_get_glyph(const font_t *font, uint32_t codepoint);
 int font_get_line_height(const font_t *font);
 
-extern font_renderer_t gl_raster_font;
+extern font_renderer_t gl_font_renderer;
 extern font_renderer_t libdbg_font;
 extern font_renderer_t d3d_xbox360_font;
 extern font_renderer_t d3d_xdk1_font;
