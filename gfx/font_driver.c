@@ -335,6 +335,7 @@ bool font_driver_init_first(
    void **new_font_handle        = font_handle ? font_handle 
       : (void**)&font_osd_data;
 
+   /* FIXME: check PSP, PS3(LIBDBG), Vita and D3D. */
    const font_t *font = font_load(font_path, font_size);
 
    if (!font)
@@ -442,14 +443,23 @@ const font_t *font_load(const char *filename, float size)
 #if 0 /* disabled until all relevant files are updated */
    font = find_font_instance(djb2_calculate(filename ? filename : ""), size);
 
-   if (!font)
+   if (font)
+      font_ref(font);
+   else
 #endif
       font = create_font_instance(filename, size);
 
-   if (font)
-      font->ref++;
-
    return font;
+}
+
+const font_t *font_ref(const font_t *font)
+{
+   font_t *f = (font_t*)font;
+
+   if (f->ref >= 0)
+      f->ref++;
+
+   return f;
 }
 
 void font_unref(const font_t *font)
@@ -492,7 +502,7 @@ const struct font_glyph *font_get_glyph(const font_t *font, uint32_t codepoint)
 {
    const struct font_glyph *glyph = font->backend->get_glyph(font->backend_data, codepoint);
 
-   if (!glyph)
+   if (!glyph) /* Do something smarter here ... */
       glyph = font->backend->get_glyph(font->backend_data, '?');
 
    return glyph;

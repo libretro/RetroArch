@@ -57,6 +57,8 @@ static void *vulkan_raster_font_init_font(void *data,
    self->vk = (vk_t*)data;
    self->font = font;
 
+   font_ref(self->font);
+
    atlas = font_get_atlas(self->font);
    self->texture = vulkan_create_texture(self->vk, NULL,
          atlas->width, atlas->height, VK_FORMAT_R8_UNORM, atlas->buffer,

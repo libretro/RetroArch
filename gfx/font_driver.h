@@ -163,6 +163,13 @@ bool font_driver_init_first(const void **font_driver, void **font_handle,
 const font_t *font_load(const char *filename, float size);
 
 /**
+ * @brief Increments the font refcount
+ * @param font
+ * @return the font itself
+ */
+const font_t *font_ref(const font_t *font);
+
+/**
  * @brief Decrements the font refcount and/or deallocates it
  * @param font
  */
