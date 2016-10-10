@@ -361,6 +361,7 @@ struct font_t {
    const font_backend_t *backend;
    void                 *backend_data;
 
+   char *filename;
    unsigned hash; /* filename hash */
    float    size;
 
@@ -394,6 +395,7 @@ static font_t *create_font_instance(const char *filename, float size)
       return NULL;
    }
 
+   font->filename = strdup(filename ? filename : "");
    font->hash = djb2_calculate(filename ? filename : "");
    font->size = size;
 
@@ -429,6 +431,7 @@ static font_t *create_font_instance(const char *filename, float size)
    {
       RARCH_ERR("[font] Failed to load %s (size=%.2f): no working backend\n",
                 filename, size);
+      free(font->filename);
       free(font);
       font = NULL;
    }
@@ -484,8 +487,14 @@ void font_unref(const font_t *font)
       }
 #endif
       f->backend->free(f->backend_data);
+      free(font->filename);
       free(f);
    }
+}
+
+const char *font_get_filename(const font_t *font)
+{
+   return font->filename;
 }
 
 float font_get_size(const font_t *font)

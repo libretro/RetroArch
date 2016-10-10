@@ -175,6 +175,7 @@ const font_t *font_ref(const font_t *font);
  */
 void font_unref(const font_t *font);
 
+const char *font_get_filename(const font_t *font);
 float font_get_size(const font_t *font);
 const struct font_atlas *font_get_atlas(const font_t *font);
 const struct font_glyph *font_get_glyph(const font_t *font, uint32_t codepoint);
