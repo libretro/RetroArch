@@ -31,14 +31,13 @@
 
 #include "../font_driver.h"
 
-static void *libdbg_font_init_font(void *gl_data, const char *font_path, float font_size)
+static void *libdbg_font_init_font(void *gl_data, const font_t *font)
 {
    unsigned width, height;
 
    video_driver_get_size(&width, &height);
 
-   (void)font_path;
-   (void)font_size;
+   (void)font;
    (void)width;
    (void)height;
 
