@@ -41,7 +41,6 @@ static unsigned int dbus_screensaver_cookie = 0;
 #endif
 
 static bool xdg_screensaver_available = true;
-static bool xdg_screensaver_running = false;
 
 Colormap g_x11_cmap;
 Window   g_x11_win;
@@ -290,9 +289,6 @@ static void xdg_screensaver_inhibit(Window wnd)
    if (!xdg_screensaver_available)
       return;
 
-   if (xdg_screensaver_running)
-      return;
-
    RARCH_LOG("Suspending screensaver (X11, xdg-screensaver).\n");
 
    snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend 0x%x", (int)wnd);
@@ -308,46 +304,15 @@ static void xdg_screensaver_inhibit(Window wnd)
       xdg_screensaver_available = false;
       RARCH_WARN("Could not suspend screen saver.\n");
    }
-   else
-   {
-      xdg_screensaver_running = true;
-   }
-}
-
-static void xdg_screensaver_uninhibit(Window wnd)
-{
-   int ret;
-   char               cmd[64] = {0};
-
-   if (!xdg_screensaver_available)
-      return;
-
-   if (!xdg_screensaver_running)
-      return;
-
-   RARCH_LOG("Resuming screensaver (X11, xdg-screensaver).\n");
-
-   snprintf(cmd, sizeof(cmd), "xdg-screensaver resume 0x%x", (int)wnd);
-
-   ret = system(cmd);
-
-   if (ret == -1)
-   {
-      xdg_screensaver_available = false;
-      RARCH_WARN("Failed to launch xdg-screensaver.\n");
-   }
-   else if (WEXITSTATUS(ret))
-   {
-      xdg_screensaver_available = false;
-      RARCH_WARN("Could not suspend screen saver.\n");
-   }
 }
 
 void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
 {
-   if (enable)
-      xdg_screensaver_inhibit(wnd);
-   xdg_screensaver_uninhibit(wnd);
+   // Check if screensaver suspend is enabled in config
+   if (!enable)
+      return;
+
+   xdg_screensaver_inhibit(wnd);
 }
 
 void x11_suspend_screensaver(Window wnd, bool enable)
