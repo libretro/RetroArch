@@ -438,7 +438,7 @@ static font_t *create_font_instance(const char *filename, float size)
       font->next = g_fonts;
       g_fonts = font;
 #endif
-      font->ref = 0;
+      font->ref = 1;
    }
    else
    {
