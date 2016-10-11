@@ -88,6 +88,10 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
 
    (void)font_path;
 
+#ifdef _3DS
+   font_size = 10;
+#endif
+
    handle->scale_factor = (unsigned)roundf(font_size / FONT_HEIGHT);
    if (!handle->scale_factor)
       handle->scale_factor = 1;

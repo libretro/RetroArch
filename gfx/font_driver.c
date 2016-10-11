@@ -339,10 +339,6 @@ bool font_driver_init_first(
    const font_t *font;
    bool result = false;
 
-#ifdef _3DS
-   font_size = 10;
-#endif
-
    /* TODO: font_load() and font_unref() should be handled by the caller */
    font = font_load(font_path, font_size);
 
