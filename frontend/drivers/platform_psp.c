@@ -29,8 +29,6 @@
 #include <psp2/appmgr.h>
 #include <pthread.h>
 
-int _newlib_heap_size_user = 192 * 1024 * 1024;
-
 #include "../../bootstrap/vita/sbrk.c"
 
 #else

@@ -8,6 +8,7 @@ static char _newlib_sbrk_mutex[32] __attribute__ ((aligned (8)));
 
 static int _newlib_vm_memblock;
 
+extern int _newlib_heap_size_user __attribute__((weak));
 extern int _newlib_vm_size_user __attribute__((weak));
 
 void * _sbrk_r(struct _reent *reent, ptrdiff_t incr) {
@@ -28,7 +29,7 @@ fail:
 }
 
 void _init_vita_heap(void) {
-  
+
 	int _newlib_vm_size = 0;
 	if (&_newlib_vm_size_user != NULL) {
 		_newlib_vm_size = _newlib_vm_size_user;
@@ -41,17 +42,21 @@ void _init_vita_heap(void) {
 	}else{
 		_newlib_vm_memblock = 0;
 	}
-	
-  
+
+
 	// Create a mutex to use inside _sbrk_r
 	if (sceKernelCreateLwMutex((struct SceKernelLwMutexWork*)_newlib_sbrk_mutex, "sbrk mutex", 0, 0, 0) < 0) {
 		goto failure;
 	}
-	
-	_newlib_heap_size = _newlib_heap_size_user;
-	
-	_newlib_heap_size -= _newlib_vm_size; 
-	
+
+	if (&_newlib_heap_size_user != NULL) {
+		_newlib_heap_size = _newlib_heap_size_user;
+	}else{
+		_newlib_heap_size = 192 * 1024 * 1024;
+	}
+
+	_newlib_heap_size -= _newlib_vm_size;
+
 	_newlib_heap_memblock = sceKernelAllocMemBlock("Newlib heap", 0x0c20d060, _newlib_heap_size, 0);
 	if (_newlib_heap_memblock < 0) {
 		goto failure;
@@ -75,13 +80,13 @@ int getVMBlock(){
 }
 
 void _free_vita_heap(void) {
-	
+
 	// Destroy the sbrk mutex
 	sceKernelDeleteLwMutex((struct SceKernelLwMutexWork*)_newlib_sbrk_mutex);
 
 	// Free the heap memblock to avoid memory leakage.
 	sceKernelFreeMemBlock(_newlib_heap_memblock);
-  
+
 	if(_newlib_vm_memblock)
   	sceKernelFreeMemBlock(_newlib_vm_memblock);
 
