@@ -416,8 +416,11 @@ static font_t *create_font_instance(const char *filename, float size)
       const char *path = filename;
       void *data;
 
-      if (!path || !*path)
+      if (!path)
          path = (*backend)->get_default_font();
+
+      if (!path)
+         continue;
 
       data = (*backend)->init(path, size);
 
