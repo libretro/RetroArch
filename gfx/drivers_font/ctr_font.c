@@ -69,9 +69,9 @@ static void* ctr_font_init_font(void* data, const font_t* font)
    int i, j;
    const uint8_t*     src = atlas->buffer;
 
-   for (j = 0; (j < atlas->height) && (j < font->texture.height); j++)
-      for (i = 0; (i < atlas->width) && (i < font->texture.width); i++)
-         tmp[ctrgu_swizzle_coords(i, j, font->texture.width)] = src[i + j * atlas->width];
+   for (j = 0; (j < atlas->height) && (j < self->texture.height); j++)
+      for (i = 0; (i < atlas->width) && (i < self->texture.width); i++)
+         tmp[ctrgu_swizzle_coords(i, j, self->texture.width)] = src[i + j * atlas->width];
 
    GSPGPU_FlushDataCache(tmp, self->texture.width * self->texture.height);
 
