@@ -42,9 +42,8 @@ static const font_backend_t *font_backends[] = {
    NULL
 };
 
-static const font_renderer_t *font_osd_driver;
-
-static void *font_osd_data;
+static const font_renderer_t *font_osd_driver = NULL;
+static void *font_osd_data = NULL;
 
 int font_renderer_create_default(const void **data, void **handle,
       const char *font_path, unsigned font_size)
@@ -235,6 +234,21 @@ static bool font_init_first(
       void *video_data, const font_t *font,
       enum font_driver_render_api api)
 {
+
+   if (font_osd_driver)
+   {
+      void *data = font_osd_driver->init(video_data, font);
+
+      if (data)
+      {
+         *font_driver = font_osd_driver;
+         *font_handle = data;
+         return true;
+      }
+
+      RARCH_WARN("[font] Failed to reuse renderer.\n");
+   }
+
    switch (api)
    {
 #ifdef HAVE_D3D
