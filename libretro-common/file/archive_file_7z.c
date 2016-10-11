@@ -390,14 +390,17 @@ static int sevenzip_parse_file_iterate_step(file_archive_transfer_t *state,
    unsigned cmode       = 0;
    unsigned payload     = 0;
    struct sevenzip_context_t *sevenzip_context = NULL;
-   int ret = sevenzip_parse_file_iterate_step_internal(state, filename,
+   int ret;
+
+   filename[0]                   = '\0';
+
+   ret = sevenzip_parse_file_iterate_step_internal(state, filename,
          &cdata, &cmode, &size, &csize,
          &checksum, &payload, userdata);
 
    if (ret != 1)
       return ret;
 
-   filename[0]                   = '\0';
    userdata->extracted_file_path = filename;
    userdata->crc                 = checksum;
 
