@@ -182,14 +182,14 @@ static const font_renderer_t *vita2d_font_backends[] = {
 
 static bool vita2d_font_init_first(
       const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      void *video_data, const font_t *font)
 {
    unsigned i;
 
    for (i = 0; vita2d_font_backends[i]; i++)
    {
       void *data = vita2d_font_backends[i]->init(
-            video_data, font_path, font_size);
+            video_data, font);
 
       if (!data)
          continue;
