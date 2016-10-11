@@ -1355,6 +1355,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
 
 static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 {
+   size_t i;
    menu_displaylist_info_t info = {0};
    settings_t *settings         = config_get_ptr();
 
@@ -1378,7 +1379,11 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    strlcpy(info.exts, "lpl", sizeof(info.exts));
 
    if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
+   {
+      for (i=0; i < xmb->horizontal_list->size; i++)
+         xmb_node_allocate_userdata(xmb, i);
       menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+   }
 }
 
 static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
