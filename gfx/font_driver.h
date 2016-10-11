@@ -164,6 +164,13 @@ const font_t *font_load(const char *filename, float size);
 
 /**
  * @brief Increments the font refcount
+ *
+ * Use this function if you want to tie the font lifetime to a certain piece of
+ * code's lifetime e.g. a menu driver or a font renderer.
+ *
+ * All font_ref() calls must have a matching font_unref() call otherwise the
+ * program leaks.
+ *
  * @param font
  * @return the font itself
  */
@@ -171,9 +178,11 @@ const font_t *font_ref(const font_t *font);
 
 /**
  * @brief Decrements the font refcount and/or deallocates it
+ *
  * @param font
+ * @return the font itself or NULL
  */
-void font_unref(const font_t *font);
+const font_t *font_unref(const font_t *font);
 
 const char *font_get_filename(const font_t *font);
 float font_get_size(const font_t *font);

@@ -52,8 +52,7 @@ static void* ctr_font_init_font(void* data, const font_t* font)
    if (!self)
       return NULL;
 
-   self->font = font;
-   font_ref(font);
+   self->font = font_ref(font);
 
    atlas = font_get_atlas(font);
 

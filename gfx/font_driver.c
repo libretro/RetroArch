@@ -471,17 +471,17 @@ const font_t *font_load(const char *filename, float size)
 /* XXX: ref and unref might have concurrency issues */
 const font_t *font_ref(const font_t *font)
 {
-   font_t *f = (font_t*)font;
+   font_t *f = (font_t*)font; /* yes */
 
    if (f->ref >= 0)
       f->ref++;
 
-   return f;
+   return font;
 }
 
-void font_unref(const font_t *font)
+const font_t *font_unref(const font_t *font)
 {
-   font_t *f = (font_t*)font;
+   font_t *f = (font_t*)font; /* YES */
 
    if (--f->ref <= 0)
    {
@@ -503,7 +503,11 @@ void font_unref(const font_t *font)
       f->backend->free(f->backend_data);
       free(font->filename);
       free(f);
+
+      f = NULL;
    }
+
+   return f;
 }
 
 const char *font_get_filename(const font_t *font)

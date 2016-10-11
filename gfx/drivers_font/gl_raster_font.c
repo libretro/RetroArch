@@ -154,9 +154,7 @@ static void *gl_raster_font_init_font(void *data,
       return NULL;
 
    self->gl = (gl_t*)data;
-   self->font = font;
-
-   font_ref(self->font);
+   self->font = font_ref(font);
 
    if (settings->video.threaded)
       video_context_driver_make_current(false);
