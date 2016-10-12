@@ -103,8 +103,6 @@ unsigned menu_event(retro_input_t input,
          BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_DOWN);
          BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_LEFT);
          BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_B);
-         BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_A);
          BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_L);
          BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_R);
 
