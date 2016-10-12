@@ -206,7 +206,7 @@ void libretro_get_environment_info(void (*func)(retro_environment_t),
    ignore_environment_cb = false;
 }
 
-static void load_dynamic_core(void)
+static bool load_dynamic_core(void)
 {
    function_t sym       = dylib_proc(NULL, "retro_init");
 
@@ -244,8 +244,11 @@ static void load_dynamic_core(void)
       RARCH_ERR("Failed to open libretro core: \"%s\"\n",
             path_get(RARCH_PATH_CORE));
       RARCH_ERR("Error(s): %s\n", dylib_error());
-      retroarch_fail(1, "load_dynamic()");
+      runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE), 1, 180, true);
+      return false;
    }
+
+   return true;
 }
 
 static dylib_t libretro_get_system_info_lib(const char *path,
@@ -366,15 +369,17 @@ bool libretro_get_system_info(const char *path,
  *                                If CORE_TYPE_DUMMY, will
  *                                load dummy symbols.
  *
- * Setup libretro callback symbols.
+ * Setup libretro callback symbols. Returns true on success,
+ * or false if symbols could not be loaded.
  **/
-static void load_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
+static bool load_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
 {
    switch (type)
    {
       case CORE_TYPE_PLAIN:
 #ifdef HAVE_DYNAMIC
-         load_dynamic_core();
+         if (!load_dynamic_core())
+            return false;
 #endif
 
          SYMBOL(retro_init);
@@ -595,6 +600,8 @@ static void load_symbols(enum rarch_core_type type, struct retro_core_t *current
 #endif
          break;
    }
+
+   return true;
 }
 
 /**
@@ -644,15 +651,19 @@ void libretro_get_current_core_pathname(char *name, size_t size)
  *                                load dummy symbols.
  *
  * Initializes libretro symbols and
- * setups environment callback functions.
+ * setups environment callback functions. Returns true on success,
+ * or false if symbols could not be loaded.
  **/
-void init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_core)
+bool init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_core)
 {
    /* Guarantee that we can do "dirty" casting.
     * Every OS that this program supports should pass this. */
    retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
-   load_symbols(type, current_core);
+   if (!load_symbols(type, current_core))
+      return false;
+
+   return true;
 }
 
 /**

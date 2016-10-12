@@ -145,9 +145,10 @@ struct retro_core_t
  *                                load dummy symbols.
  *
  * Initializes libretro symbols and
- * setups environment callback functions.
+ * setups environment callback functions. Returns true on success,
+ * or false if symbols could not be loaded.
  **/
-void init_libretro_sym(enum rarch_core_type type,
+bool init_libretro_sym(enum rarch_core_type type,
       struct retro_core_t *core);
 
 /**

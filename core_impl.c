@@ -235,7 +235,8 @@ bool core_init_symbols(enum rarch_core_type *type)
 {
    if (!type)
       return false;
-   init_libretro_sym(*type, &core);
+   if (!init_libretro_sym(*type, &core))
+      return false;
    core_symbols_inited = true;
    return true;
 }
