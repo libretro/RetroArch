@@ -83,14 +83,12 @@ size_t core_len;
 
 static void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
 {
-   char subdir_path[PATH_MAX_LENGTH];
+   char subdir_path[PATH_MAX_LENGTH] = {0};
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
 
    if (!data || err)
       goto finish;
-
-   subdir_path[0] = '\0';
 
    memcpy(subdir_path, data->data, data->len * sizeof(char));
    subdir_path[data->len] = '\0';
