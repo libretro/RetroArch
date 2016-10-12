@@ -42,6 +42,19 @@ static const font_backend_t *font_backends[] = {
    NULL
 };
 
+struct font_t {
+   font_t *next;
+   const font_backend_t *backend;
+   void                 *backend_data;
+
+   char *filename;
+   unsigned hash; /* filename hash */
+   float    size;
+
+   int ref;
+};
+
+static font_t *g_fonts = NULL;
 static const font_renderer_t *font_osd_driver = NULL;
 static void *font_osd_data = NULL;
 
@@ -377,22 +390,6 @@ bool font_driver_init_first(
    return result;
 }
 
-
-struct font_t {
-   font_t *next;
-   const font_backend_t *backend;
-   void                 *backend_data;
-
-   char *filename;
-   unsigned hash; /* filename hash */
-   float    size;
-
-   int ref;
-};
-
-#if 0 /* disabled until all relevant files are updated */
-static font_t *g_fonts = NULL;
-
 static font_t *find_font_instance(unsigned hash, float size)
 {
    font_t *font = g_fonts;
@@ -400,27 +397,16 @@ static font_t *find_font_instance(unsigned hash, float size)
    while (font) {
       if (font->hash == hash && fabs(font->size - size) < 0.0001)
          return font;
+      font = font->next;
    }
 
    return NULL;
 }
-#endif
 
 static font_t *create_font_instance(const char *filename, float size)
 {
-   font_t *font = (font_t*)calloc(sizeof(*font), 1);
+   font_t *font = NULL;
    const font_backend_t **backend;
-
-   if (!font)
-   {
-      RARCH_ERR("[font] Failed to allocate the font structure.\n");
-      return NULL;
-   }
-
-   font->filename = strdup(filename ? filename : "");
-   font->hash = djb2_calculate(filename ? filename : "");
-   font->size = size;
-
    for (backend = font_backends; *backend; ++backend)
    {
       const char *path = filename;
@@ -436,46 +422,47 @@ static font_t *create_font_instance(const char *filename, float size)
 
       if (data)
       {
+         font = (font_t*)calloc(sizeof(*font), 1);
+
+         if (!font)
+         {
+            RARCH_ERR("[font] Failed to load %s (size=%.2f): "
+                      "allocation failed.\n", path, size);
+            return NULL;
+         }
+
+         font->filename     = strdup(path);
          font->backend      = *backend;
          font->backend_data = data;
+         font->hash = djb2_calculate(path);
+         font->size = size;
+         font->ref  = 1;
 
+         font->next = g_fonts;
+         g_fonts    = font;
          break;
       }
    }
 
-   if (font->backend)
-   {
+   if (font)
       RARCH_LOG("[font] Loaded '%s' (size=%.2f backend=%s)\n",
-                filename, size, font->backend->ident);
-#if 0 /* disabled until all relevant files are updated */
-      font->next = g_fonts;
-      g_fonts = font;
-#endif
-      font->ref = 1;
-   }
+                font->filename, font->size, font->backend->ident);
    else
-   {
       RARCH_ERR("[font] Failed to load %s (size=%.2f): no working backend\n",
                 filename, size);
-      free(font->filename);
-      free(font);
-      font = NULL;
-   }
 
    return font;
 }
 
 const font_t *font_load(const char *filename, float size)
 {
-   font_t *font;
+   const font_t *font;
 
-#if 0 /* disabled until all relevant files are updated */
    font = find_font_instance(djb2_calculate(filename ? filename : ""), size);
 
    if (font)
-      font_ref(font);
+      font = font_ref(font);
    else
-#endif
       font = create_font_instance(filename, size);
 
    return font;
@@ -498,8 +485,7 @@ const font_t *font_unref(const font_t *font)
 
    if (--f->ref <= 0)
    {
-#if 0 /* disabled until all relevant files are updated */
-      font_t *it, *prev;
+      font_t *it, *prev = NULL;
 
       for (it = g_fonts; it; it = it->next)
       {
@@ -508,11 +494,14 @@ const font_t *font_unref(const font_t *font)
             if (prev)
                prev->next = it->next;
 
+            if (it == g_fonts)
+               g_fonts = it->next;
+
             break;
          }
          prev = it;
       }
-#endif
+
       f->backend->free(f->backend_data);
       free(font->filename);
       free(f);
