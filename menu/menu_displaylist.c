@@ -3511,7 +3511,7 @@ static int menu_displaylist_parse_generic(
 
       menu_entries_append_enum(info->list, str, "",
             MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND, 0, 0, 0);
-      return 0;
+      goto end;
    }
 
    dir_list_sort(str_list, true);
