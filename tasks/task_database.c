@@ -114,7 +114,7 @@ static int cue_get_serial(database_state_handle_t *db_state,
    int rv                           = 0;
 
    track_path[0]                    = '\0';
-   
+
    rv = find_first_data_track(name,
          &offset, track_path, PATH_MAX_LENGTH);
 
@@ -240,9 +240,9 @@ static int database_info_list_iterate_found_match(
    char entry_path_str[PATH_MAX_LENGTH];
    playlist_t   *playlist                      = NULL;
    settings_t           *settings              = config_get_ptr();
-   const char         *db_path                 = 
+   const char         *db_path                 =
       database_info_get_current_name(db_state);
-   const char         *entry_path              = 
+   const char         *entry_path              =
       database_info_get_current_element_name(db);
    database_info_t *db_info_entry              =
       &db_state->info->list[db_state->entry_index];
@@ -335,12 +335,17 @@ static int task_database_iterate_crc_lookup(
 
    if (db_state->entry_index == 0)
    {
+      bool db_supports_content;
+      bool unsupported_content;
       char query[50];
 
       query[0] = '\0';
 
-      if (!core_info_database_supports_content_path(db_state->list->elems[db_state->list_index].data, name) &&
-          !core_info_unsupported_content_path(name))
+      db_supports_content = core_info_database_supports_content_path(db_state->list->elems[db_state->list_index].data, name);
+      unsupported_content = core_info_unsupported_content_path(name);
+
+      /* don't scan files that can't be in this database */
+      if(!db_supports_content && !unsupported_content)
          return database_info_list_iterate_next(db_state);
 
       snprintf(query, sizeof(query),
@@ -557,10 +562,10 @@ static void task_database_handler(retro_task_t *task)
    database_info_handle_t  *dbinfo  = NULL;
    database_state_handle_t *dbstate = NULL;
    db_handle_t *db                  = NULL;
-   
+
    if (!task)
       goto task_finished;
-   
+
    db      = (db_handle_t*)task->state;
 
    if (!db)
@@ -568,7 +573,7 @@ static void task_database_handler(retro_task_t *task)
 
    dbinfo  = db->handle;
    dbstate = &db->state;
-   
+
    if (!dbinfo || task->cancelled)
       goto task_finished;
 
