@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -80,7 +80,7 @@ typedef struct gfx_ctx_drm_data
    unsigned fb_width;
    unsigned fb_height;
 
-   bool core_hw_context_enable; 
+   bool core_hw_context_enable;
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -185,7 +185,7 @@ static bool gfx_ctx_drm_wait_flip(bool block)
 
    if (!waiting_for_flip)
       return false;
-   
+
    if (block)
       timeout = -1;
 
@@ -203,7 +203,7 @@ static bool gfx_ctx_drm_wait_flip(bool block)
    /* This buffer is not on-screen anymore. Release it to GBM. */
    gbm_surface_release_buffer(g_gbm_surface, g_bo);
    /* This buffer is being shown now. */
-   g_bo = g_next_bo; 
+   g_bo = g_next_bo;
 
    return false;
 }
@@ -217,7 +217,7 @@ static bool gfx_ctx_drm_queue_flip(void)
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
       return true;
-   
+
    /* Failed to queue page flip. */
    return false;
 }
@@ -240,7 +240,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
          break;
    }
 
-   /* I guess we have to wait for flip to have taken 
+   /* I guess we have to wait for flip to have taken
     * place before another flip can be queued up.
     *
     * If true, we are still waiting for a flip
@@ -255,7 +255,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
          gbm_surface_has_free_buffers(g_gbm_surface))
       return;
 
-   gfx_ctx_drm_wait_flip(true);  
+   gfx_ctx_drm_wait_flip(true);
 }
 
 static bool gfx_ctx_drm_set_resize(void *data,
@@ -397,7 +397,7 @@ nextgpu:
 
    drm_setup(fd);
 
-   /* First mode is assumed to be the "optimal" 
+   /* First mode is assumed to be the "optimal"
     * one for get_video_size() purposes. */
    drm->fb_width    = g_drm_connector->modes[0].hdisplay;
    drm->fb_height   = g_drm_connector->modes[0].vdisplay;
@@ -460,7 +460,7 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
             *attr++ = drm->egl.minor;
 
             /* Technically, we don't have core/compat until 3.2.
-             * Version 3.1 is either compat or not depending 
+             * Version 3.1 is either compat or not depending
              * on GL_ARB_compatibility. */
             if (version >= 3002)
             {
@@ -482,7 +482,7 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_OPENGLES
          *attr++ = EGL_CONTEXT_CLIENT_VERSION;
-         *attr++ = drm->egl.major 
+         *attr++ = drm->egl.major
             ? (EGLint)drm->egl.major : 2;
 #ifdef EGL_KHR_create_context
          if (drm->egl.minor > 0)
@@ -586,7 +586,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
          attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
          egl_attribs_ptr = &egl_attribs[0];
 
-         if (!egl_create_context(&drm->egl, (attr != egl_attribs_ptr) 
+         if (!egl_create_context(&drm->egl, (attr != egl_attribs_ptr)
                   ? egl_attribs_ptr : NULL))
             goto error;
 
@@ -627,23 +627,23 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
    frontend_driver_install_signal_handler();
 
-   /* If we use black frame insertion, 
-    * we fake a 60 Hz monitor for 120 Hz one, 
+   /* If we use black frame insertion,
+    * we fake a 60 Hz monitor for 120 Hz one,
     * etc, so try to match that. */
-   refresh_mod = settings->video.black_frame_insertion 
+   refresh_mod = settings->video.black_frame_insertion
       ? 0.5f : 1.0f;
 
    /* Find desired video mode, and use that.
-    * If not fullscreen, we get desired windowed size, 
+    * If not fullscreen, we get desired windowed size,
     * which is not appropriate. */
    if ((width == 0 && height == 0) || !fullscreen)
       g_drm_mode = &g_drm_connector->modes[0];
    else
    {
-      /* Try to match settings->video.refresh_rate 
+      /* Try to match settings->video.refresh_rate
        * as closely as possible.
        *
-       * Lower resolutions tend to have multiple supported 
+       * Lower resolutions tend to have multiple supported
        * refresh rates as well.
        */
       float minimum_fps_diff = 0.0f;
@@ -652,7 +652,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       for (i = 0; i < g_drm_connector->count_modes; i++)
       {
          float diff;
-         if (width != g_drm_connector->modes[i].hdisplay || 
+         if (width != g_drm_connector->modes[i].hdisplay ||
                height != g_drm_connector->modes[i].vdisplay)
             continue;
 
