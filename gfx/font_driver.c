@@ -54,9 +54,21 @@ struct font_t {
    int ref;
 };
 
+typedef struct {
+   const font_t          *font;
+   const font_renderer_t *renderer;
+   void                  *data;
+} fcache_t;
+
 static font_t *g_fonts = NULL;
 static const font_renderer_t *font_osd_driver = NULL;
 static void *font_osd_data = NULL;
+
+static enum font_driver_render_api g_font_api = FONT_DRIVER_RENDER_DONT_CARE;
+static fcache_t *g_fcache         = NULL;
+static fcache_t *g_fcache_last    = NULL;
+static size_t    g_fcache_size    = 0;
+static size_t    g_fcache_entries = 0;
 
 int font_renderer_create_default(const void **data, void **handle,
       const char *font_path, unsigned font_size)
@@ -351,6 +363,101 @@ void font_driver_free(void *data)
    font_osd_driver = NULL;
 }
 
+
+static fcache_t *fcache_find(const font_t *font)
+{
+   fcache_t *entry     = g_fcache;
+
+   if (g_fcache_last && g_fcache_last->font == font)
+      return g_fcache_last;
+
+   if (g_fcache)
+   {
+      const fcache_t *end = &g_fcache[g_fcache_entries];
+
+      while (entry < end)
+      {
+         if (entry->font == font)
+            return entry;
+
+         entry++;
+      }
+   }
+
+   return NULL;
+}
+
+static fcache_t *fcache_push(const font_t *font,
+      const font_renderer_t *renderer, void *renderer_data)
+{
+   fcache_t *entry = NULL;
+   bool reuse      = false;
+
+   if (g_fcache)
+   {
+      const fcache_t *end = &g_fcache[g_fcache_entries];
+
+      for (entry = g_fcache; entry < end; ++entry)
+      {
+         if (!entry->font)
+         {
+            reuse = true;
+            break;
+         }
+      }
+   }
+
+   if (!g_fcache || (!reuse && g_fcache_entries == g_fcache_size))
+   {
+      const int amount = 4;
+      g_fcache = (fcache_t*)realloc(g_fcache,
+            sizeof(fcache_t) * (g_fcache_size + amount));
+
+      g_fcache_size += amount;
+   }
+
+   if (!reuse)
+      entry = &g_fcache[g_fcache_entries++];
+
+   entry->font     = font;
+   entry->renderer = renderer;
+   entry->data     = renderer_data;
+
+   return entry;
+}
+
+static bool get_font_renderer_for(const font_t *font, bool video_thread, const font_renderer_t **renderer, void **data)
+{
+   void *video_data = video_driver_get_ptr(false);
+#ifdef HAVE_THREADS
+   if (!video_thread)
+   {
+      settings_t *settings = config_get_ptr();
+      if (settings->video.threaded && !video_driver_is_hw_context())
+         return video_thread_font_init((const void**)renderer, data, video_data,
+               font, g_font_api, font_init_first);
+   }
+#endif
+
+   return font_init_first((const void**)renderer, data, video_data, font, g_font_api);
+}
+
+static const fcache_t *fcache_find_or_create(const font_t *font, bool video_thread)
+{
+   const fcache_t *cached = fcache_find(font);
+
+   if (!cached)
+   {
+      const font_renderer_t *renderer;
+      void *data = NULL;
+
+      if (get_font_renderer_for(font, video_thread, &renderer, &data))
+         cached = fcache_push(font, renderer, data);
+   }
+
+   return cached;
+}
+
 bool font_driver_init_first(
       const void **font_driver, void **font_handle,
       void *data, const char *font_path, float font_size,
@@ -543,4 +650,45 @@ int font_get_line_height(const font_t *font)
       return font->backend->get_line_height(font->backend_data);
    else
       return 0;
+}
+
+void font_set_api(enum font_driver_render_api api)
+{
+   if (g_font_api == FONT_DRIVER_RENDER_DONT_CARE)
+      g_font_api = api;
+}
+
+void font_render_full(const font_t *font, bool video_thread, const char *text, const font_params_t *params)
+{
+   const fcache_t *cached = fcache_find_or_create(font, video_thread);
+
+   if (cached)
+      cached->renderer->render_msg(cached->data, text, params);
+}
+
+void font_render(const font_t *font, bool video_thread, const char *text, float x, float y, enum text_alignment align, uint32_t color)
+{
+   font_params_t params;
+
+   params.x           = x;
+   params.y           = y;
+   params.scale       = 1.0f;
+   params.drop_mod    = 0.0f;
+   params.drop_x      = 0.0f;
+   params.drop_y      = 0.0f;
+   params.color       = color;
+   params.full_screen = true;
+   params.text_align  = align;
+
+   font_render_full(font, video_thread, text, &params);
+}
+
+int font_width(const font_t *font, bool video_thread, const char *text, unsigned len, float scale)
+{
+   const fcache_t *cache = fcache_find_or_create(font, video_thread);
+
+   if (cache && cache->renderer->get_message_width)
+      return cache->renderer->get_message_width(cache->data, text, len, scale);
+
+   return -1;
 }

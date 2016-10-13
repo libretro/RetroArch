@@ -75,7 +75,7 @@ struct font_atlas
    unsigned height;
 };
 
-struct font_params
+typedef struct font_params
 {
    float x;
    float y;
@@ -91,7 +91,7 @@ struct font_params
    uint32_t color;
    bool full_screen;
    enum text_alignment text_align;
-};
+} font_params_t;
 
 /** Don't free() it. Use font_load() and font_unref() to manage. */
 typedef struct font_t font_t;
@@ -189,6 +189,19 @@ float font_get_size(const font_t *font);
 const struct font_atlas *font_get_atlas(const font_t *font);
 const struct font_glyph *font_get_glyph(const font_t *font, uint32_t codepoint);
 int font_get_line_height(const font_t *font);
+int font_width(const font_t *font, bool video_thread, const char *text, unsigned len, float scale);
+
+void font_set_api(enum font_driver_render_api api);
+
+/**
+ * @brief Render text on the screen
+ * @param font
+ * @param video_thread whether the caller is in the video thread
+ * @param text
+ * @param params
+ */
+void font_render_full(const font_t *font, bool video_thread, const char *text, const font_params_t *params);
+void font_render(const font_t *font, bool video_thread, const char *text, float x, float y, enum text_alignment align, uint32_t color);
 
 extern font_renderer_t gl_font_renderer;
 extern font_renderer_t libdbg_font;
