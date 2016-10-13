@@ -76,6 +76,7 @@ typedef struct ctr_video
    bool vsync;
    bool smooth;
    bool menu_texture_enable;
+   bool menu_texture_frame_enable;
    unsigned rotation;
    bool keep_aspect;
    bool should_resize;
