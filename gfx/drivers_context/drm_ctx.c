@@ -215,7 +215,8 @@ static bool gfx_ctx_drm_queue_flip(void)
    fb                = (struct drm_fb*)drm_fb_get_from_bo(g_next_bo);
 
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
-         DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
+                       DRM_MODE_PAGE_FLIP_EVENT | DRM_MODE_PAGE_FLIP_ASYNC,
+                       &waiting_for_flip) == 0)
       return true;
 
    /* Failed to queue page flip. */
