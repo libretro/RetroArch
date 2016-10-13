@@ -581,8 +581,8 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
 
    core_info_tmp_path = path;
 
-#ifdef HAVE_ZLIB
-   if (string_is_equal_noncase(path_get_extension(path), "zip"))
+#ifdef HAVE_COMPRESSION
+   if (path_is_compressed_file(path))
       list = file_archive_get_file_list(path, NULL);
    core_info_tmp_list = list;
 #endif
@@ -599,7 +599,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       if (core_info_does_support_file(core, path))
          continue;
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
       if (core_info_does_support_any_file(core, list))
          continue;
 #endif

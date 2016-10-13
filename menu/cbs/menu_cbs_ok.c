@@ -2276,10 +2276,8 @@ static void cb_generic_download(void *task_data,
       fill_pathname_join(output_path, dir_path,
             transf->path, sizeof(output_path));
 
-#ifdef HAVE_ZLIB
-   file_ext = path_get_extension(output_path);
-
-   if (string_is_equal_noncase(file_ext, "zip"))
+#ifdef HAVE_COMPRESSION
+   if (path_is_compressed_file(output_path))
    {
       if (task_check_decompress(output_path))
       {
@@ -2295,11 +2293,11 @@ static void cb_generic_download(void *task_data,
       goto finish;
    }
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    if (!settings->network.buildbot_auto_extract_archive)
       goto finish;
 
-   if (string_is_equal_noncase(file_ext, "zip"))
+   if (path_is_compressed_file(output_path))
    {
       if (!task_push_decompress(output_path, dir_path,
                NULL, NULL, NULL,
