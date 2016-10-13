@@ -53,7 +53,7 @@ static int task_database_iterate_start(database_info_handle_t *db,
 {
    char msg[128];
 
-   msg[0] = '\0';
+   msg[0] = msg[127] = '\0';
 
    snprintf(msg, sizeof(msg),
          STRING_REP_ULONG "/" STRING_REP_ULONG ": %s %s...\n",
