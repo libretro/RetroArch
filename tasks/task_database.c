@@ -51,13 +51,15 @@ typedef struct db_handle
 static int task_database_iterate_start(database_info_handle_t *db,
       const char *name)
 {
+  
+
    char msg[128];
 
    msg[0] = msg[127] = '\0';
 
    snprintf(msg, sizeof(msg),
          STRING_REP_ULONG "/" STRING_REP_ULONG ": %s %s...\n",
-#if defined(_WIN32) || defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
+#if defined(_WIN32) || defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L && !defined(VITA)
          db->list_ptr,
          db->list->size,
 #else
