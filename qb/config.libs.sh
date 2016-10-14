@@ -288,10 +288,13 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    fi
 fi
 
-if [ "$OS" = 'Darwin' ]; then
-   check_lib ZLIB "-lz"
-else
+if [ "$HAVE_ZLIB" != 'no' ]; then
    check_pkgconf ZLIB zlib
+
+   if [ "$HAVE_ZLIB" = 'no' ]; then
+      HAVE_ZLIB='auto'
+      check_lib ZLIB '-lz'
+   fi
 fi
 
 if [ "$HAVE_THREADS" != 'no' ]; then
