@@ -2036,6 +2036,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "cheevos_test_unofficial";
       case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
          return "cheevos_enable";
+      case MENU_ENUM_LABEL_INPUT_BACKTOUCH_ENABLE:
+         return "input_backtouch_enable";
       case MENU_ENUM_LABEL_INPUT_ICADE_ENABLE:
          return "input_icade_enable";
       case MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
