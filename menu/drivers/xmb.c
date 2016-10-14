@@ -671,7 +671,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    menu_display_draw_text(xmb->font, str, width, height, &params);
 
    /* FIXME: why is this needed? */
-   menu_display_blend_begin();
+   /* menu_display_blend_begin(); */
 }
 
 static void xmb_messagebox(void *data, const char *message)
@@ -2383,6 +2383,7 @@ static void xmb_frame(void *data)
          height);
 
    font_flush(xmb->font);
+   font_bind_block(xmb->font, NULL);
 
    if (menu_input_dialog_get_display_kb())
    {

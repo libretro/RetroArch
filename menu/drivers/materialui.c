@@ -1116,6 +1116,8 @@ static void mui_frame(void *data)
    );
 
    font_flush(mui->font);
+   font_bind_block(mui->font, NULL);
+
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
