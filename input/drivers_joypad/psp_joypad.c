@@ -171,6 +171,8 @@ static void psp_joypad_poll(void)
 {
    unsigned player;
    unsigned players_count = PSP_MAX_PADS;
+   settings_t *settings = config_get_ptr();
+
 #ifdef PSP
    sceCtrlSetSamplingCycle(0);
 #endif
@@ -232,7 +234,9 @@ static void psp_joypad_poll(void)
          continue;
 #endif
 #if defined(VITA)
-      if (psp2_model == SCE_KERNEL_MODEL_VITA && !menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)) {
+      if (psp2_model == SCE_KERNEL_MODEL_VITA 
+         && !menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)
+         && settings->input.backtouch_enable) {
          SceTouchData back = {0};
          sceTouchPeek(SCE_TOUCH_PORT_BACK, &back, 1);
          for (int i = 0; i < back.reportNum; i++) {
