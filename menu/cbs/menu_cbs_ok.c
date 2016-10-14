@@ -2183,7 +2183,6 @@ static void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
    char output_path[PATH_MAX_LENGTH];
-   const char             *file_ext      = NULL;
    const char             *dir_path      = NULL;
    menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
    settings_t              *settings     = config_get_ptr();
