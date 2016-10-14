@@ -90,9 +90,8 @@
 #define CLOCK_REALTIME 0
 #endif
 
-#if __IPHONE_OS_VERSION_MAX_ALLOWED < 100000
-// this function is part of iOS 10 now
-static int clock_gettime(int clk_ik, struct timespec *t)
+/* this function is part of iOS 10 now */
+static int ra_clock_gettime(int clk_ik, struct timespec *t)
 {
    struct timeval now;
    int rv = gettimeofday(&now, NULL);
@@ -103,7 +102,12 @@ static int clock_gettime(int clk_ik, struct timespec *t)
    return 0;
 }
 #endif
+
+#if defined(__MACH__) && __IPHONE_OS_VERSION_MAX_ALLOWED < 100000
+#else
+#define ra_clock_gettime clock_gettime
 #endif
+
 
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
@@ -141,8 +145,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    tv_usec    = (long)(system_time.wMilliseconds * 1000);
    time_ticks = (1000000 * tv_sec + tv_usec);
 #elif defined(__linux__) || defined(__QNX__) || defined(__MACH__)
-   struct timespec tv;
-   if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
+   struct timespec tv = {0};
+   if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
          (retro_perf_tick_t)tv.tv_nsec;
 
@@ -199,7 +203,7 @@ retro_time_t cpu_features_get_time_usec(void)
    return ticks_to_microsecs(gettime());
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
    struct timespec tv = {0};
-   if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
+   if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
 #elif defined(EMSCRIPTEN)
