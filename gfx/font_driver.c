@@ -399,7 +399,7 @@ static fcache_t *fcache_push(const font_t *font,
 
       for (entry = g_fcache; entry < end; ++entry)
       {
-         if (!entry->font)
+         if (!entry->renderer)
          {
             reuse = true;
             break;
