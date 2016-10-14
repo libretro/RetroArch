@@ -1788,30 +1788,6 @@ static bool config_load_file(const char *path, bool set_defaults,
    if (!rarch_ctl(RARCH_CTL_IS_FORCE_FULLSCREEN, NULL))
       CONFIG_GET_BOOL_BASE(conf, settings, video.fullscreen, "video_fullscreen");
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL))
-   {
-      if (config_get_bool(conf, "ups_pref", &tmp_bool))
-         rarch_ctl(RARCH_CTL_SET_UPS_PREF, NULL);
-      else
-         rarch_ctl(RARCH_CTL_UNSET_UPS_PREF, NULL);
-   }
-
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL))
-   {
-      if (config_get_bool(conf, "bps_pref", &tmp_bool))
-         rarch_ctl(RARCH_CTL_SET_BPS_PREF, NULL);
-      else
-         rarch_ctl(RARCH_CTL_UNSET_BPS_PREF, NULL);
-   }
-
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL))
-   {
-      if (config_get_bool(conf, "ips_pref", &tmp_bool))
-         rarch_ctl(RARCH_CTL_SET_IPS_PREF, NULL);
-      else
-         rarch_ctl(RARCH_CTL_UNSET_IPS_PREF, NULL);
-   }
-
 #ifdef HAVE_NETWORKING
    if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_NETPLAY_MODE, NULL))
    {
@@ -2999,12 +2975,6 @@ bool config_save_file(const char *path)
    }
 #endif
 
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_UPS_PREF, NULL))
-      config_set_bool(conf, "ups_pref", rarch_ctl(RARCH_CTL_IS_UPS_PREF, NULL));
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_BPS_PREF, NULL))
-      config_set_bool(conf, "bps_pref", rarch_ctl(RARCH_CTL_IS_BPS_PREF, NULL));
-   if (!retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_IPS_PREF, NULL))
-      config_set_bool(conf, "ips_pref", rarch_ctl(RARCH_CTL_IS_IPS_PREF, NULL));
    config_set_bool(conf, "log_verbosity",
          verbosity_is_enabled());
    config_set_bool(conf, "perfcnt_enable",
