@@ -586,6 +586,18 @@ const font_t *font_ref(const font_t *font)
    return font;
 }
 
+static void font_invalidate_cache(const font_t *font)
+{
+   fcache_t *cached = fcache_find(font);
+
+   if (cached)
+   {
+      cached->renderer->free(cached->data);
+      cached->renderer = NULL;
+      cached->data     = NULL;
+   }
+}
+
 const font_t *font_unref(const font_t *font)
 {
    font_t *f = (font_t*)font; /* YES */
@@ -608,6 +620,8 @@ const font_t *font_unref(const font_t *font)
          }
          prev = it;
       }
+
+      font_invalidate_cache(f);
 
       f->backend->free(f->backend_data);
       free(font->filename);
@@ -691,4 +705,22 @@ int font_width(const font_t *font, bool video_thread, const char *text, unsigned
       return cache->renderer->get_message_width(cache->data, text, len, scale);
 
    return -1;
+}
+
+void font_invalidate_caches(void)
+{
+   if (g_fcache)
+   {
+      const fcache_t *end = &g_fcache[g_fcache_entries];
+      fcache_t *entry     = g_fcache;
+
+      for (entry = g_fcache; entry < end; ++entry)
+      {
+         entry->renderer->free(entry->data);
+         entry->renderer = NULL;
+         entry->data     = NULL;
+      }
+
+      g_fcache_entries = 0;
+   }
 }
