@@ -65,6 +65,15 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(DeleteVertexArraysOES),
     SYM(GenVertexArraysOES),
     SYM(IsVertexArrayOES),
+    SYM(ViewportArrayvOES),
+    SYM(ViewportIndexedfOES),
+    SYM(ViewportIndexedfvOES),
+    SYM(ScissorArrayvOES),
+    SYM(ScissorIndexedOES),
+    SYM(ScissorIndexedvOES),
+    SYM(DepthRangeArrayfvOES),
+    SYM(DepthRangeIndexedfOES),
+    SYM(GetFloati_vOES),
     SYM(DrawArraysInstancedBaseInstanceEXT),
     SYM(DrawElementsInstancedBaseInstanceEXT),
     SYM(DrawElementsInstancedBaseVertexBaseInstanceEXT),
@@ -73,6 +82,8 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(GetProgramResourceLocationIndexEXT),
     SYM(GetFragDataIndexEXT),
     SYM(BufferStorageEXT),
+    SYM(ClearTexImageEXT),
+    SYM(ClearTexSubImageEXT),
     SYM(CopyImageSubDataEXT),
     SYM(LabelObjectEXT),
     SYM(GetObjectLabelEXT),
@@ -119,6 +130,7 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(ReadBufferIndexedEXT),
     SYM(DrawBuffersIndexedEXT),
     SYM(GetIntegeri_vEXT),
+    SYM(PolygonOffsetClampEXT),
     SYM(PrimitiveBoundingBoxEXT),
     SYM(RasterSamplesEXT),
     SYM(GetGraphicsResetStatusEXT),
@@ -169,6 +181,9 @@ const struct rglgen_sym_map rglgen_symbol_map[] = {
     SYM(ProgramUniformMatrix4x2fvEXT),
     SYM(ProgramUniformMatrix3x4fvEXT),
     SYM(ProgramUniformMatrix4x3fvEXT),
+    SYM(FramebufferPixelLocalStorageSizeEXT),
+    SYM(GetFramebufferPixelLocalStorageSizeEXT),
+    SYM(ClearPixelLocalStorageuiEXT),
     SYM(TexPageCommitmentEXT),
     SYM(PatchParameteriEXT),
     SYM(TexParameterIivEXT),
@@ -256,6 +271,15 @@ RGLSYMGLBINDVERTEXARRAYOESPROC __rglgen_glBindVertexArrayOES;
 RGLSYMGLDELETEVERTEXARRAYSOESPROC __rglgen_glDeleteVertexArraysOES;
 RGLSYMGLGENVERTEXARRAYSOESPROC __rglgen_glGenVertexArraysOES;
 RGLSYMGLISVERTEXARRAYOESPROC __rglgen_glIsVertexArrayOES;
+RGLSYMGLVIEWPORTARRAYVOESPROC __rglgen_glViewportArrayvOES;
+RGLSYMGLVIEWPORTINDEXEDFOESPROC __rglgen_glViewportIndexedfOES;
+RGLSYMGLVIEWPORTINDEXEDFVOESPROC __rglgen_glViewportIndexedfvOES;
+RGLSYMGLSCISSORARRAYVOESPROC __rglgen_glScissorArrayvOES;
+RGLSYMGLSCISSORINDEXEDOESPROC __rglgen_glScissorIndexedOES;
+RGLSYMGLSCISSORINDEXEDVOESPROC __rglgen_glScissorIndexedvOES;
+RGLSYMGLDEPTHRANGEARRAYFVOESPROC __rglgen_glDepthRangeArrayfvOES;
+RGLSYMGLDEPTHRANGEINDEXEDFOESPROC __rglgen_glDepthRangeIndexedfOES;
+RGLSYMGLGETFLOATI_VOESPROC __rglgen_glGetFloati_vOES;
 RGLSYMGLDRAWARRAYSINSTANCEDBASEINSTANCEEXTPROC __rglgen_glDrawArraysInstancedBaseInstanceEXT;
 RGLSYMGLDRAWELEMENTSINSTANCEDBASEINSTANCEEXTPROC __rglgen_glDrawElementsInstancedBaseInstanceEXT;
 RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCEEXTPROC __rglgen_glDrawElementsInstancedBaseVertexBaseInstanceEXT;
@@ -264,6 +288,8 @@ RGLSYMGLBINDFRAGDATALOCATIONEXTPROC __rglgen_glBindFragDataLocationEXT;
 RGLSYMGLGETPROGRAMRESOURCELOCATIONINDEXEXTPROC __rglgen_glGetProgramResourceLocationIndexEXT;
 RGLSYMGLGETFRAGDATAINDEXEXTPROC __rglgen_glGetFragDataIndexEXT;
 RGLSYMGLBUFFERSTORAGEEXTPROC __rglgen_glBufferStorageEXT;
+RGLSYMGLCLEARTEXIMAGEEXTPROC __rglgen_glClearTexImageEXT;
+RGLSYMGLCLEARTEXSUBIMAGEEXTPROC __rglgen_glClearTexSubImageEXT;
 RGLSYMGLCOPYIMAGESUBDATAEXTPROC __rglgen_glCopyImageSubDataEXT;
 RGLSYMGLLABELOBJECTEXTPROC __rglgen_glLabelObjectEXT;
 RGLSYMGLGETOBJECTLABELEXTPROC __rglgen_glGetObjectLabelEXT;
@@ -310,6 +336,7 @@ RGLSYMGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC __rglgen_glFramebufferTexture2DMu
 RGLSYMGLREADBUFFERINDEXEDEXTPROC __rglgen_glReadBufferIndexedEXT;
 RGLSYMGLDRAWBUFFERSINDEXEDEXTPROC __rglgen_glDrawBuffersIndexedEXT;
 RGLSYMGLGETINTEGERI_VEXTPROC __rglgen_glGetIntegeri_vEXT;
+RGLSYMGLPOLYGONOFFSETCLAMPEXTPROC __rglgen_glPolygonOffsetClampEXT;
 RGLSYMGLPRIMITIVEBOUNDINGBOXEXTPROC __rglgen_glPrimitiveBoundingBoxEXT;
 RGLSYMGLRASTERSAMPLESEXTPROC __rglgen_glRasterSamplesEXT;
 RGLSYMGLGETGRAPHICSRESETSTATUSEXTPROC __rglgen_glGetGraphicsResetStatusEXT;
@@ -360,6 +387,9 @@ RGLSYMGLPROGRAMUNIFORMMATRIX2X4FVEXTPROC __rglgen_glProgramUniformMatrix2x4fvEXT
 RGLSYMGLPROGRAMUNIFORMMATRIX4X2FVEXTPROC __rglgen_glProgramUniformMatrix4x2fvEXT;
 RGLSYMGLPROGRAMUNIFORMMATRIX3X4FVEXTPROC __rglgen_glProgramUniformMatrix3x4fvEXT;
 RGLSYMGLPROGRAMUNIFORMMATRIX4X3FVEXTPROC __rglgen_glProgramUniformMatrix4x3fvEXT;
+RGLSYMGLFRAMEBUFFERPIXELLOCALSTORAGESIZEEXTPROC __rglgen_glFramebufferPixelLocalStorageSizeEXT;
+RGLSYMGLGETFRAMEBUFFERPIXELLOCALSTORAGESIZEEXTPROC __rglgen_glGetFramebufferPixelLocalStorageSizeEXT;
+RGLSYMGLCLEARPIXELLOCALSTORAGEUIEXTPROC __rglgen_glClearPixelLocalStorageuiEXT;
 RGLSYMGLTEXPAGECOMMITMENTEXTPROC __rglgen_glTexPageCommitmentEXT;
 RGLSYMGLPATCHPARAMETERIEXTPROC __rglgen_glPatchParameteriEXT;
 RGLSYMGLTEXPARAMETERIIVEXTPROC __rglgen_glTexParameterIivEXT;

@@ -3,6 +3,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+typedef khronos_int64_t  GLint64;
+typedef khronos_uint64_t GLuint64;
 #ifdef GL_APIENTRY
 typedef void (GL_APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
 typedef void (GL_APIENTRY *RGLGENGLDEBUGPROCKHR)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
@@ -91,6 +93,15 @@ typedef void (GL_APIENTRYP RGLSYMGLBINDVERTEXARRAYOESPROC) (GLuint array);
 typedef void (GL_APIENTRYP RGLSYMGLDELETEVERTEXARRAYSOESPROC) (GLsizei n, const GLuint *arrays);
 typedef void (GL_APIENTRYP RGLSYMGLGENVERTEXARRAYSOESPROC) (GLsizei n, GLuint *arrays);
 typedef GLboolean (GL_APIENTRYP RGLSYMGLISVERTEXARRAYOESPROC) (GLuint array);
+typedef void (GL_APIENTRYP RGLSYMGLVIEWPORTARRAYVOESPROC) (GLuint first, GLsizei count, const GLfloat *v);
+typedef void (GL_APIENTRYP RGLSYMGLVIEWPORTINDEXEDFOESPROC) (GLuint index, GLfloat x, GLfloat y, GLfloat w, GLfloat h);
+typedef void (GL_APIENTRYP RGLSYMGLVIEWPORTINDEXEDFVOESPROC) (GLuint index, const GLfloat *v);
+typedef void (GL_APIENTRYP RGLSYMGLSCISSORARRAYVOESPROC) (GLuint first, GLsizei count, const GLint *v);
+typedef void (GL_APIENTRYP RGLSYMGLSCISSORINDEXEDOESPROC) (GLuint index, GLint left, GLint bottom, GLsizei width, GLsizei height);
+typedef void (GL_APIENTRYP RGLSYMGLSCISSORINDEXEDVOESPROC) (GLuint index, const GLint *v);
+typedef void (GL_APIENTRYP RGLSYMGLDEPTHRANGEARRAYFVOESPROC) (GLuint first, GLsizei count, const GLfloat *v);
+typedef void (GL_APIENTRYP RGLSYMGLDEPTHRANGEINDEXEDFOESPROC) (GLuint index, GLfloat n, GLfloat f);
+typedef void (GL_APIENTRYP RGLSYMGLGETFLOATI_VOESPROC) (GLenum target, GLuint index, GLfloat *data);
 typedef void (GL_APIENTRYP RGLSYMGLDRAWARRAYSINSTANCEDBASEINSTANCEEXTPROC) (GLenum mode, GLint first, GLsizei count, GLsizei instancecount, GLuint baseinstance);
 typedef void (GL_APIENTRYP RGLSYMGLDRAWELEMENTSINSTANCEDBASEINSTANCEEXTPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLuint baseinstance);
 typedef void (GL_APIENTRYP RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCEEXTPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount, GLint basevertex, GLuint baseinstance);
@@ -99,6 +110,8 @@ typedef void (GL_APIENTRYP RGLSYMGLBINDFRAGDATALOCATIONEXTPROC) (GLuint program,
 typedef GLint (GL_APIENTRYP RGLSYMGLGETPROGRAMRESOURCELOCATIONINDEXEXTPROC) (GLuint program, GLenum programInterface, const GLchar *name);
 typedef GLint (GL_APIENTRYP RGLSYMGLGETFRAGDATAINDEXEXTPROC) (GLuint program, const GLchar *name);
 typedef void (GL_APIENTRYP RGLSYMGLBUFFERSTORAGEEXTPROC) (GLenum target, GLsizeiptr size, const void *data, GLbitfield flags);
+typedef void (GL_APIENTRYP RGLSYMGLCLEARTEXIMAGEEXTPROC) (GLuint texture, GLint level, GLenum format, GLenum type, const void *data);
+typedef void (GL_APIENTRYP RGLSYMGLCLEARTEXSUBIMAGEEXTPROC) (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *data);
 typedef void (GL_APIENTRYP RGLSYMGLCOPYIMAGESUBDATAEXTPROC) (GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth);
 typedef void (GL_APIENTRYP RGLSYMGLLABELOBJECTEXTPROC) (GLenum type, GLuint object, GLsizei length, const GLchar *label);
 typedef void (GL_APIENTRYP RGLSYMGLGETOBJECTLABELEXTPROC) (GLenum type, GLuint object, GLsizei bufSize, GLsizei *length, GLchar *label);
@@ -115,6 +128,8 @@ typedef void (GL_APIENTRYP RGLSYMGLQUERYCOUNTEREXTPROC) (GLuint id, GLenum targe
 typedef void (GL_APIENTRYP RGLSYMGLGETQUERYIVEXTPROC) (GLenum target, GLenum pname, GLint *params);
 typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTIVEXTPROC) (GLuint id, GLenum pname, GLint *params);
 typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTUIVEXTPROC) (GLuint id, GLenum pname, GLuint *params);
+typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTI64VEXTPROC) (GLuint id, GLenum pname, GLint64 *params);
+typedef void (GL_APIENTRYP RGLSYMGLGETQUERYOBJECTUI64VEXTPROC) (GLuint id, GLenum pname, GLuint64 *params);
 typedef void (GL_APIENTRYP RGLSYMGLDRAWBUFFERSEXTPROC) (GLsizei n, const GLenum *bufs);
 typedef void (GL_APIENTRYP RGLSYMGLENABLEIEXTPROC) (GLenum target, GLuint index);
 typedef void (GL_APIENTRYP RGLSYMGLDISABLEIEXTPROC) (GLenum target, GLuint index);
@@ -143,6 +158,7 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC) (GLen
 typedef void (GL_APIENTRYP RGLSYMGLREADBUFFERINDEXEDEXTPROC) (GLenum src, GLint index);
 typedef void (GL_APIENTRYP RGLSYMGLDRAWBUFFERSINDEXEDEXTPROC) (GLint n, const GLenum *location, const GLint *indices);
 typedef void (GL_APIENTRYP RGLSYMGLGETINTEGERI_VEXTPROC) (GLenum target, GLuint index, GLint *data);
+typedef void (GL_APIENTRYP RGLSYMGLPOLYGONOFFSETCLAMPEXTPROC) (GLfloat factor, GLfloat units, GLfloat clamp);
 typedef void (GL_APIENTRYP RGLSYMGLPRIMITIVEBOUNDINGBOXEXTPROC) (GLfloat minX, GLfloat minY, GLfloat minZ, GLfloat minW, GLfloat maxX, GLfloat maxY, GLfloat maxZ, GLfloat maxW);
 typedef void (GL_APIENTRYP RGLSYMGLRASTERSAMPLESEXTPROC) (GLuint samples, GLboolean fixedsamplelocations);
 typedef GLenum (GL_APIENTRYP RGLSYMGLGETGRAPHICSRESETSTATUSEXTPROC) (void);
@@ -193,6 +209,9 @@ typedef void (GL_APIENTRYP RGLSYMGLPROGRAMUNIFORMMATRIX2X4FVEXTPROC) (GLuint pro
 typedef void (GL_APIENTRYP RGLSYMGLPROGRAMUNIFORMMATRIX4X2FVEXTPROC) (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 typedef void (GL_APIENTRYP RGLSYMGLPROGRAMUNIFORMMATRIX3X4FVEXTPROC) (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 typedef void (GL_APIENTRYP RGLSYMGLPROGRAMUNIFORMMATRIX4X3FVEXTPROC) (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERPIXELLOCALSTORAGESIZEEXTPROC) (GLuint target, GLsizei size);
+typedef GLsizei (GL_APIENTRYP RGLSYMGLGETFRAMEBUFFERPIXELLOCALSTORAGESIZEEXTPROC) (GLuint target);
+typedef void (GL_APIENTRYP RGLSYMGLCLEARPIXELLOCALSTORAGEUIEXTPROC) (GLsizei offset, GLsizei n, const GLuint *values);
 typedef void (GL_APIENTRYP RGLSYMGLTEXPAGECOMMITMENTEXTPROC) (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit);
 typedef void (GL_APIENTRYP RGLSYMGLPATCHPARAMETERIEXTPROC) (GLenum pname, GLint value);
 typedef void (GL_APIENTRYP RGLSYMGLTEXPARAMETERIIVEXTPROC) (GLenum target, GLenum pname, const GLint *params);
@@ -212,6 +231,7 @@ typedef void (GL_APIENTRYP RGLSYMGLTEXTURESTORAGE1DEXTPROC) (GLuint texture, GLe
 typedef void (GL_APIENTRYP RGLSYMGLTEXTURESTORAGE2DEXTPROC) (GLuint texture, GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 typedef void (GL_APIENTRYP RGLSYMGLTEXTURESTORAGE3DEXTPROC) (GLuint texture, GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 typedef void (GL_APIENTRYP RGLSYMGLTEXTUREVIEWEXTPROC) (GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers);
+typedef void (GL_APIENTRYP RGLSYMGLWINDOWRECTANGLESEXTPROC) (GLenum mode, GLsizei count, const GLint *box);
 typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC) (GLenum target, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews);
 typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC) (GLenum target, GLenum attachment, GLuint texture, GLint level, GLsizei samples, GLint baseViewIndex, GLsizei numViews);
 
@@ -278,6 +298,15 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glDeleteVertexArraysOES __rglgen_glDeleteVertexArraysOES
 #define glGenVertexArraysOES __rglgen_glGenVertexArraysOES
 #define glIsVertexArrayOES __rglgen_glIsVertexArrayOES
+#define glViewportArrayvOES __rglgen_glViewportArrayvOES
+#define glViewportIndexedfOES __rglgen_glViewportIndexedfOES
+#define glViewportIndexedfvOES __rglgen_glViewportIndexedfvOES
+#define glScissorArrayvOES __rglgen_glScissorArrayvOES
+#define glScissorIndexedOES __rglgen_glScissorIndexedOES
+#define glScissorIndexedvOES __rglgen_glScissorIndexedvOES
+#define glDepthRangeArrayfvOES __rglgen_glDepthRangeArrayfvOES
+#define glDepthRangeIndexedfOES __rglgen_glDepthRangeIndexedfOES
+#define glGetFloati_vOES __rglgen_glGetFloati_vOES
 #define glDrawArraysInstancedBaseInstanceEXT __rglgen_glDrawArraysInstancedBaseInstanceEXT
 #define glDrawElementsInstancedBaseInstanceEXT __rglgen_glDrawElementsInstancedBaseInstanceEXT
 #define glDrawElementsInstancedBaseVertexBaseInstanceEXT __rglgen_glDrawElementsInstancedBaseVertexBaseInstanceEXT
@@ -286,6 +315,8 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glGetProgramResourceLocationIndexEXT __rglgen_glGetProgramResourceLocationIndexEXT
 #define glGetFragDataIndexEXT __rglgen_glGetFragDataIndexEXT
 #define glBufferStorageEXT __rglgen_glBufferStorageEXT
+#define glClearTexImageEXT __rglgen_glClearTexImageEXT
+#define glClearTexSubImageEXT __rglgen_glClearTexSubImageEXT
 #define glCopyImageSubDataEXT __rglgen_glCopyImageSubDataEXT
 #define glLabelObjectEXT __rglgen_glLabelObjectEXT
 #define glGetObjectLabelEXT __rglgen_glGetObjectLabelEXT
@@ -302,6 +333,8 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glGetQueryivEXT __rglgen_glGetQueryivEXT
 #define glGetQueryObjectivEXT __rglgen_glGetQueryObjectivEXT
 #define glGetQueryObjectuivEXT __rglgen_glGetQueryObjectuivEXT
+#define glGetQueryObjecti64vEXT __rglgen_glGetQueryObjecti64vEXT
+#define glGetQueryObjectui64vEXT __rglgen_glGetQueryObjectui64vEXT
 #define glDrawBuffersEXT __rglgen_glDrawBuffersEXT
 #define glEnableiEXT __rglgen_glEnableiEXT
 #define glDisableiEXT __rglgen_glDisableiEXT
@@ -330,6 +363,7 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glReadBufferIndexedEXT __rglgen_glReadBufferIndexedEXT
 #define glDrawBuffersIndexedEXT __rglgen_glDrawBuffersIndexedEXT
 #define glGetIntegeri_vEXT __rglgen_glGetIntegeri_vEXT
+#define glPolygonOffsetClampEXT __rglgen_glPolygonOffsetClampEXT
 #define glPrimitiveBoundingBoxEXT __rglgen_glPrimitiveBoundingBoxEXT
 #define glRasterSamplesEXT __rglgen_glRasterSamplesEXT
 #define glGetGraphicsResetStatusEXT __rglgen_glGetGraphicsResetStatusEXT
@@ -380,6 +414,9 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glProgramUniformMatrix4x2fvEXT __rglgen_glProgramUniformMatrix4x2fvEXT
 #define glProgramUniformMatrix3x4fvEXT __rglgen_glProgramUniformMatrix3x4fvEXT
 #define glProgramUniformMatrix4x3fvEXT __rglgen_glProgramUniformMatrix4x3fvEXT
+#define glFramebufferPixelLocalStorageSizeEXT __rglgen_glFramebufferPixelLocalStorageSizeEXT
+#define glGetFramebufferPixelLocalStorageSizeEXT __rglgen_glGetFramebufferPixelLocalStorageSizeEXT
+#define glClearPixelLocalStorageuiEXT __rglgen_glClearPixelLocalStorageuiEXT
 #define glTexPageCommitmentEXT __rglgen_glTexPageCommitmentEXT
 #define glPatchParameteriEXT __rglgen_glPatchParameteriEXT
 #define glTexParameterIivEXT __rglgen_glTexParameterIivEXT
@@ -399,6 +436,7 @@ typedef void (GL_APIENTRYP RGLSYMGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC
 #define glTextureStorage2DEXT __rglgen_glTextureStorage2DEXT
 #define glTextureStorage3DEXT __rglgen_glTextureStorage3DEXT
 #define glTextureViewEXT __rglgen_glTextureViewEXT
+#define glesEXT __rglgen_glesEXT
 #define glFramebufferTextureMultiviewOVR __rglgen_glFramebufferTextureMultiviewOVR
 #define glFramebufferTextureMultisampleMultiviewOVR __rglgen_glFramebufferTextureMultisampleMultiviewOVR
 
@@ -465,6 +503,15 @@ extern RGLSYMGLBINDVERTEXARRAYOESPROC __rglgen_glBindVertexArrayOES;
 extern RGLSYMGLDELETEVERTEXARRAYSOESPROC __rglgen_glDeleteVertexArraysOES;
 extern RGLSYMGLGENVERTEXARRAYSOESPROC __rglgen_glGenVertexArraysOES;
 extern RGLSYMGLISVERTEXARRAYOESPROC __rglgen_glIsVertexArrayOES;
+extern RGLSYMGLVIEWPORTARRAYVOESPROC __rglgen_glViewportArrayvOES;
+extern RGLSYMGLVIEWPORTINDEXEDFOESPROC __rglgen_glViewportIndexedfOES;
+extern RGLSYMGLVIEWPORTINDEXEDFVOESPROC __rglgen_glViewportIndexedfvOES;
+extern RGLSYMGLSCISSORARRAYVOESPROC __rglgen_glScissorArrayvOES;
+extern RGLSYMGLSCISSORINDEXEDOESPROC __rglgen_glScissorIndexedOES;
+extern RGLSYMGLSCISSORINDEXEDVOESPROC __rglgen_glScissorIndexedvOES;
+extern RGLSYMGLDEPTHRANGEARRAYFVOESPROC __rglgen_glDepthRangeArrayfvOES;
+extern RGLSYMGLDEPTHRANGEINDEXEDFOESPROC __rglgen_glDepthRangeIndexedfOES;
+extern RGLSYMGLGETFLOATI_VOESPROC __rglgen_glGetFloati_vOES;
 extern RGLSYMGLDRAWARRAYSINSTANCEDBASEINSTANCEEXTPROC __rglgen_glDrawArraysInstancedBaseInstanceEXT;
 extern RGLSYMGLDRAWELEMENTSINSTANCEDBASEINSTANCEEXTPROC __rglgen_glDrawElementsInstancedBaseInstanceEXT;
 extern RGLSYMGLDRAWELEMENTSINSTANCEDBASEVERTEXBASEINSTANCEEXTPROC __rglgen_glDrawElementsInstancedBaseVertexBaseInstanceEXT;
@@ -473,6 +520,8 @@ extern RGLSYMGLBINDFRAGDATALOCATIONEXTPROC __rglgen_glBindFragDataLocationEXT;
 extern RGLSYMGLGETPROGRAMRESOURCELOCATIONINDEXEXTPROC __rglgen_glGetProgramResourceLocationIndexEXT;
 extern RGLSYMGLGETFRAGDATAINDEXEXTPROC __rglgen_glGetFragDataIndexEXT;
 extern RGLSYMGLBUFFERSTORAGEEXTPROC __rglgen_glBufferStorageEXT;
+extern RGLSYMGLCLEARTEXIMAGEEXTPROC __rglgen_glClearTexImageEXT;
+extern RGLSYMGLCLEARTEXSUBIMAGEEXTPROC __rglgen_glClearTexSubImageEXT;
 extern RGLSYMGLCOPYIMAGESUBDATAEXTPROC __rglgen_glCopyImageSubDataEXT;
 extern RGLSYMGLLABELOBJECTEXTPROC __rglgen_glLabelObjectEXT;
 extern RGLSYMGLGETOBJECTLABELEXTPROC __rglgen_glGetObjectLabelEXT;
@@ -489,6 +538,8 @@ extern RGLSYMGLQUERYCOUNTEREXTPROC __rglgen_glQueryCounterEXT;
 extern RGLSYMGLGETQUERYIVEXTPROC __rglgen_glGetQueryivEXT;
 extern RGLSYMGLGETQUERYOBJECTIVEXTPROC __rglgen_glGetQueryObjectivEXT;
 extern RGLSYMGLGETQUERYOBJECTUIVEXTPROC __rglgen_glGetQueryObjectuivEXT;
+extern RGLSYMGLGETQUERYOBJECTI64VEXTPROC __rglgen_glGetQueryObjecti64vEXT;
+extern RGLSYMGLGETQUERYOBJECTUI64VEXTPROC __rglgen_glGetQueryObjectui64vEXT;
 extern RGLSYMGLDRAWBUFFERSEXTPROC __rglgen_glDrawBuffersEXT;
 extern RGLSYMGLENABLEIEXTPROC __rglgen_glEnableiEXT;
 extern RGLSYMGLDISABLEIEXTPROC __rglgen_glDisableiEXT;
@@ -517,6 +568,7 @@ extern RGLSYMGLFRAMEBUFFERTEXTURE2DMULTISAMPLEEXTPROC __rglgen_glFramebufferText
 extern RGLSYMGLREADBUFFERINDEXEDEXTPROC __rglgen_glReadBufferIndexedEXT;
 extern RGLSYMGLDRAWBUFFERSINDEXEDEXTPROC __rglgen_glDrawBuffersIndexedEXT;
 extern RGLSYMGLGETINTEGERI_VEXTPROC __rglgen_glGetIntegeri_vEXT;
+extern RGLSYMGLPOLYGONOFFSETCLAMPEXTPROC __rglgen_glPolygonOffsetClampEXT;
 extern RGLSYMGLPRIMITIVEBOUNDINGBOXEXTPROC __rglgen_glPrimitiveBoundingBoxEXT;
 extern RGLSYMGLRASTERSAMPLESEXTPROC __rglgen_glRasterSamplesEXT;
 extern RGLSYMGLGETGRAPHICSRESETSTATUSEXTPROC __rglgen_glGetGraphicsResetStatusEXT;
@@ -567,6 +619,9 @@ extern RGLSYMGLPROGRAMUNIFORMMATRIX2X4FVEXTPROC __rglgen_glProgramUniformMatrix2
 extern RGLSYMGLPROGRAMUNIFORMMATRIX4X2FVEXTPROC __rglgen_glProgramUniformMatrix4x2fvEXT;
 extern RGLSYMGLPROGRAMUNIFORMMATRIX3X4FVEXTPROC __rglgen_glProgramUniformMatrix3x4fvEXT;
 extern RGLSYMGLPROGRAMUNIFORMMATRIX4X3FVEXTPROC __rglgen_glProgramUniformMatrix4x3fvEXT;
+extern RGLSYMGLFRAMEBUFFERPIXELLOCALSTORAGESIZEEXTPROC __rglgen_glFramebufferPixelLocalStorageSizeEXT;
+extern RGLSYMGLGETFRAMEBUFFERPIXELLOCALSTORAGESIZEEXTPROC __rglgen_glGetFramebufferPixelLocalStorageSizeEXT;
+extern RGLSYMGLCLEARPIXELLOCALSTORAGEUIEXTPROC __rglgen_glClearPixelLocalStorageuiEXT;
 extern RGLSYMGLTEXPAGECOMMITMENTEXTPROC __rglgen_glTexPageCommitmentEXT;
 extern RGLSYMGLPATCHPARAMETERIEXTPROC __rglgen_glPatchParameteriEXT;
 extern RGLSYMGLTEXPARAMETERIIVEXTPROC __rglgen_glTexParameterIivEXT;
