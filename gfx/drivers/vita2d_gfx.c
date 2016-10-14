@@ -99,13 +99,8 @@ static void *vita2d_gfx_init(const video_info_t *video,
 #ifdef HAVE_OVERLAY
    vita->overlay_enable     = false;
 #endif
-   if (!font_driver_init_first(NULL, NULL, vita, *settings->path.font 
-          ? settings->path.font : NULL, settings->video.font_size, false,
-          FONT_DRIVER_RENDER_VITA2D))
-   {
-      RARCH_ERR("Font: Failed to initialize font renderer.\n");
-        return false;
-   }
+
+   font_set_api(FONT_DRIVER_RENDER_VITA2D);
    return vita;
 }
 

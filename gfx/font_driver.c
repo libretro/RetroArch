@@ -61,8 +61,6 @@ typedef struct {
 } fcache_t;
 
 static font_t *g_fonts = NULL;
-static const font_renderer_t *font_osd_driver = NULL;
-static void *font_osd_data = NULL;
 
 static enum font_driver_render_api g_font_api = FONT_DRIVER_RENDER_DONT_CARE;
 static fcache_t *g_fcache         = NULL;
@@ -254,26 +252,10 @@ static bool ctr_font_init_first(
 }
 #endif
 
-static bool font_init_first(
-      const void **font_driver, void **font_handle,
+static bool font_init_first(const void **font_driver, void **font_handle,
       void *video_data, const font_t *font,
       enum font_driver_render_api api)
 {
-
-   if (font_osd_driver)
-   {
-      void *data = font_osd_driver->init(video_data, font);
-
-      if (data)
-      {
-         *font_driver = font_osd_driver;
-         *font_handle = data;
-         return true;
-      }
-
-      RARCH_WARN("[font] Failed to reuse renderer.\n");
-   }
-
    switch (api)
    {
 #ifdef HAVE_D3D
@@ -310,59 +292,6 @@ static bool font_init_first(
 
    return false;
 }
-
-bool font_driver_has_render_msg(void)
-{
-   if (!font_osd_driver || !font_osd_driver->render_msg)
-      return false;
-   return true;
-}
-
-void font_driver_render_msg(void *font_data,
-      const char *msg, const struct font_params *params)
-{
-
-   if (font_osd_driver && font_osd_driver->render_msg)
-      font_osd_driver->render_msg(font_data 
-            ? font_data : font_osd_data, msg, params);
-}
-
-void font_driver_bind_block(void *font_data, void *block)
-{
-   void             *new_font_data = font_data 
-      ? font_data : font_osd_data;
-
-   if (font_osd_driver && font_osd_driver->bind_block)
-      font_osd_driver->bind_block(new_font_data, block);
-}
-
-void font_driver_flush(void *data)
-{
-   if (font_osd_driver && font_osd_driver->flush)
-      font_osd_driver->flush(data);
-}
-
-int font_driver_get_message_width(void *data,
-      const char *msg, unsigned len, float scale)
-{
-
-   if (!font_osd_driver || !font_osd_driver->get_message_width)
-      return -1;
-   return font_osd_driver->get_message_width(data, msg, len, scale);
-}
-
-void font_driver_free(void *data)
-{
-   if (font_osd_driver && font_osd_driver->free)
-      font_osd_driver->free(data ? data : font_osd_data);
-
-   if (data)
-      return;
-
-   font_osd_data   = NULL;
-   font_osd_driver = NULL;
-}
-
 
 static fcache_t *fcache_find(const font_t *font)
 {
@@ -458,45 +387,6 @@ static const fcache_t *fcache_find_or_create(const font_t *font, bool video_thre
    return cached;
 }
 
-bool font_driver_init_first(
-      const void **font_driver, void **font_handle,
-      void *data, const char *font_path, float font_size,
-      bool threading_hint,
-      enum font_driver_render_api api)
-{
-   const void **new_font_driver = font_driver ? font_driver 
-      : (const void**)&font_osd_driver;
-   void **new_font_handle        = font_handle ? font_handle 
-      : (void**)&font_osd_data;
-
-   /* FIXME: check PSP, PS3(LIBDBG), Vita and D3D. */
-   const font_t *font;
-   bool result = false;
-
-   /* TODO: font_load() and font_unref() should be handled by the caller */
-   font = font_load(font_path, font_size);
-
-   if (!font)
-      return false;
-
-#ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-
-   if (threading_hint 
-         && settings->video.threaded 
-         && !video_driver_is_hw_context())
-      result = video_thread_font_init(new_font_driver, new_font_handle,
-            data, font, api, font_init_first);
-#endif
-
-   result = font_init_first(new_font_driver, new_font_handle,
-         data, font, api);
-
-   font_unref(font);
-
-   return result;
-}
-
 static font_t *find_font_instance(unsigned hash, float size)
 {
    font_t *font = g_fonts;
@@ -514,6 +404,7 @@ static font_t *create_font_instance(const char *filename, float size)
 {
    font_t *font = NULL;
    const font_backend_t **backend;
+
    for (backend = font_backends; *backend; ++backend)
    {
       const char *path = filename;
@@ -672,15 +563,15 @@ void font_set_api(enum font_driver_render_api api)
       g_font_api = api;
 }
 
-void font_render_full(const font_t *font, bool video_thread, const char *text, const font_params_t *params)
+void font_render_full(const font_t *font, const char *text, const font_params_t *params)
 {
-   const fcache_t *cached = fcache_find_or_create(font, video_thread);
+   const fcache_t *cached = fcache_find_or_create(font, true);
 
    if (cached)
       cached->renderer->render_msg(cached->data, text, params);
 }
 
-void font_render(const font_t *font, bool video_thread, const char *text, float x, float y, enum text_alignment align, uint32_t color)
+void font_render(const font_t *font, const char *text, float x, float y, enum text_alignment align, uint32_t color)
 {
    font_params_t params;
 
@@ -694,12 +585,12 @@ void font_render(const font_t *font, bool video_thread, const char *text, float 
    params.full_screen = true;
    params.text_align  = align;
 
-   font_render_full(font, video_thread, text, &params);
+   font_render_full(font, text, &params);
 }
 
-int font_width(const font_t *font, bool video_thread, const char *text, unsigned len, float scale)
+int font_width(const font_t *font, const char *text, unsigned len, float scale)
 {
-   const fcache_t *cache = fcache_find_or_create(font, video_thread);
+   const fcache_t *cache = fcache_find_or_create(font, true);
 
    if (cache && cache->renderer->get_message_width)
       return cache->renderer->get_message_width(cache->data, text, len, scale);
@@ -723,4 +614,20 @@ void font_invalidate_caches(void)
 
       g_fcache_entries = 0;
    }
+}
+
+void font_bind_block(const font_t *font, void *block)
+{
+   const fcache_t *cache = fcache_find_or_create(font, true);
+
+   if (cache && cache->renderer->bind_block)
+      cache->renderer->bind_block(cache->data, block);
+}
+
+void font_flush(const font_t *font)
+{
+   const fcache_t *cache = fcache_find_or_create(font, true);
+
+   if (cache && cache->renderer->flush)
+      cache->renderer->flush(cache->data);
 }

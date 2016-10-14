@@ -251,14 +251,6 @@ static void menu_display_vk_blend_end(void)
    vk->display.blend = false;
 }
 
-static bool menu_display_vk_font_init_first(
-      void **font_handle, void *video_data, const char *font_path,
-      float font_size)
-{
-   return font_driver_init_first(NULL, font_handle, video_data,
-         font_path, font_size, true, FONT_DRIVER_RENDER_VULKAN_API);
-}
-
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {
    menu_display_vk_draw,
    menu_display_vk_draw_pipeline,
@@ -270,7 +262,7 @@ menu_display_ctx_driver_t menu_display_ctx_vulkan = {
    menu_display_vk_get_default_mvp,
    menu_display_vk_get_default_vertices,
    menu_display_vk_get_default_tex_coords,
-   menu_display_vk_font_init_first,
+   NULL,
    MENU_VIDEO_DRIVER_VULKAN,
    "menu_display_vulkan",
 };

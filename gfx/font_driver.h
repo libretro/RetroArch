@@ -133,23 +133,6 @@ typedef struct
 int font_renderer_create_default(const void **driver,
       void **handle, const char *font_path, unsigned font_size);
       
-bool font_driver_has_render_msg(void);
-
-void font_driver_render_msg(void *data, const char *msg, const struct font_params *params);
-
-void font_driver_bind_block(void *font_data, void *block);
-
-int font_driver_get_message_width(void *data, const char *msg, unsigned len, float scale);
-
-void font_driver_flush(void *data);
-
-void font_driver_free(void *data);
-
-bool font_driver_init_first(const void **font_driver, void **font_handle,
-      void *data, const char *font_path, float font_size,
-      bool threading_hint, enum font_driver_render_api api);
-
-
 /**
  * @brief Loads a font file
  *
@@ -189,9 +172,17 @@ float font_get_size(const font_t *font);
 const struct font_atlas *font_get_atlas(const font_t *font);
 const struct font_glyph *font_get_glyph(const font_t *font, uint32_t codepoint);
 int font_get_line_height(const font_t *font);
-int font_width(const font_t *font, bool video_thread, const char *text, unsigned len, float scale);
-
+int font_width(const font_t *font, const char *text, unsigned len, float scale);
 void font_set_api(enum font_driver_render_api api);
+
+
+/**
+ * @brief Instructs
+ * @param font
+ * @param queue
+ */
+void font_bind_block(const font_t *font, void *block);
+void font_flush(const font_t *font);
 
 /**
  * @brief Render text on the screen
@@ -200,8 +191,18 @@ void font_set_api(enum font_driver_render_api api);
  * @param text
  * @param params
  */
-void font_render_full(const font_t *font, bool video_thread, const char *text, const font_params_t *params);
-void font_render(const font_t *font, bool video_thread, const char *text, float x, float y, enum text_alignment align, uint32_t color);
+void font_render_full(const font_t *font, const char *text, const font_params_t *params);
+void font_render(const font_t *font, const char *text, float x, float y, enum text_alignment align, uint32_t color);
+
+
+
+/**
+ * @brief Invalidates font caches
+ *
+ * This function should be called before video contexts or drivers get
+ * deinitialized or destroyed.
+ */
+void font_invalidate_caches(void);
 
 extern font_renderer_t gl_font_renderer;
 extern font_renderer_t libdbg_font;
