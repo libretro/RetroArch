@@ -607,7 +607,9 @@ void font_invalidate_caches(void)
 
       for (entry = g_fcache; entry < end; ++entry)
       {
-         entry->renderer->free(entry->data);
+         if (entry->data)
+            entry->renderer->free(entry->data);
+
          entry->renderer = NULL;
          entry->data     = NULL;
       }
