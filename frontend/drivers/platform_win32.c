@@ -323,8 +323,11 @@ static uint64_t frontend_win32_get_mem_used(void)
 static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
-   AllocConsole();
-   AttachConsole( GetCurrentProcessId()) ;
+   if (!AttachConsole(ATTACH_PARENT_PROCESS))
+   {
+      AllocConsole();
+      AttachConsole( GetCurrentProcessId()) ;
+   }
    freopen( "CON", "w", stdout );
    freopen( "CON", "w", stderr );
 #endif
