@@ -3,8 +3,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef khronos_int64_t  GLint64;
-typedef khronos_uint64_t GLuint64;
 #ifdef GL_APIENTRY
 typedef void (GL_APIENTRY *RGLGENGLDEBUGPROC)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
 typedef void (GL_APIENTRY *RGLGENGLDEBUGPROCKHR)(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, GLvoid*);
@@ -24,11 +22,15 @@ typedef void *GLeglImageOES;
 #if !defined(GL_OES_fixed_point) && !defined(HAVE_OPENGLES2)
 typedef GLint GLfixed;
 #endif
-#if defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
+
+#if defined(__STDC_VERSION__ <= 199409L) || defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
 typedef long long int GLint64;
 typedef unsigned long long int GLuint64;
 typedef unsigned long long int GLuint64EXT;
 typedef struct __GLsync *GLsync;
+#else
+typedef int64_t  GLint64;
+typedef uint64_t GLuint64;
 #endif
 typedef void (GL_APIENTRYP RGLSYMGLBLENDBARRIERKHRPROC) (void);
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGECONTROLKHRPROC) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
