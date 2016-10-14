@@ -23,7 +23,7 @@ typedef void *GLeglImageOES;
 typedef GLint GLfixed;
 #endif
 
-#if defined(__STDC_VERSION__ <= 199409L) || defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
+#if (__STDC_VERSION__ <= 199409L) || (OSX && !MAC_OS_X_VERSION_10_7)
 typedef long long int GLint64;
 typedef unsigned long long int GLuint64;
 typedef unsigned long long int GLuint64EXT;
