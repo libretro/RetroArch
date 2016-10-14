@@ -182,7 +182,8 @@ static bool menu_init(menu_handle_t *menu_data)
    {
       menu_dialog_push_pending(true, MENU_DIALOG_WELCOME);
       settings->menu_show_start_screen   = false;
-      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+      if (settings->config_save_on_exit)
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
 
    if (      settings->bundle_assets_extract_enable
