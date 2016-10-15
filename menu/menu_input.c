@@ -458,8 +458,8 @@ static int menu_input_pointer_post_iterate(
 void menu_input_post_iterate(int *ret, unsigned action)
 {
    size_t selection;
+   menu_entry_t entry;
    menu_file_list_cbs_t *cbs  = NULL;
-   menu_entry_t entry         = {{0}};
    settings_t *settings       = config_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
@@ -468,6 +468,16 @@ void menu_input_post_iterate(int *ret, unsigned action)
 
    if (selection_buf)
       cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
 
    menu_entry_get(&entry, 0, selection, NULL, false);
 
