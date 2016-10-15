@@ -1472,7 +1472,6 @@ void general_read_handler(void *data)
 void general_write_handler(void *data)
 {
    enum event_command rarch_cmd = CMD_EVENT_NONE;
-   menu_displaylist_info_t info = {0};
    rarch_setting_t *setting     = (rarch_setting_t*)data;
    settings_t *settings         = config_get_ptr();
    global_t *global             = global_get_ptr();
@@ -1532,6 +1531,7 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_HELP:
          if (*setting->value.target.boolean)
          {
+            menu_displaylist_info_t info = {0};
             info.list          = menu_stack;
             info.type          = 0; 
             info.directory_ptr = 0;

@@ -773,7 +773,10 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    if (tmp)
    {
-      char tmp_new[PATH_MAX_LENGTH] = {0};
+      char tmp_new[PATH_MAX_LENGTH];
+
+      tmp_new[0] = '\0';
+
       fill_pathname_join(tmp_new, xmb->thumbnail_file_path, tmp, sizeof(tmp_new));
       strlcpy(xmb->thumbnail_file_path, tmp_new, sizeof(xmb->thumbnail_file_path));
       free(tmp);
@@ -2188,8 +2191,8 @@ static void xmb_frame(void *data)
    float item_color[16], coord_black[16], coord_white[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
    char msg[PATH_MAX_LENGTH];
-   char title_msg[256]                     = {0};
-   char title_truncated[256]               = {0};
+   char title_msg[256];
+   char title_truncated[256];
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    file_list_t *menu_stack                 = NULL;
@@ -2289,7 +2292,9 @@ static void xmb_frame(void *data)
    if (settings->menu.timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
-      char timedate[256] = {0};
+      char timedate[256];
+
+      timedate[0]        = '\0';
 
       datetime.s         = timedate;
       datetime.len       = sizeof(timedate);
@@ -2953,8 +2958,10 @@ static void xmb_context_reset_textures(
 
 static void xmb_context_reset_background(const char *iconpath)
 {
-   char path[PATH_MAX_LENGTH]  = {0};
+   char path[PATH_MAX_LENGTH];
    settings_t *settings        = config_get_ptr();
+
+   path[0] = '\0';
 
    fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
 
@@ -2970,10 +2977,12 @@ static void xmb_context_reset_background(const char *iconpath)
 
 static void xmb_context_reset(void *data)
 {
-   char iconpath[PATH_MAX_LENGTH]  = {0};
+   char iconpath[PATH_MAX_LENGTH];
    xmb_handle_t *xmb               = (xmb_handle_t*)data;
    if (!xmb)
       return;
+
+   iconpath[0] = '\0';
 
    fill_pathname_application_special(xmb->background_file_path,
          sizeof(xmb->background_file_path),
