@@ -1379,10 +1379,12 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
-   char application_data[PATH_MAX_LENGTH] = {0};
-   char conf_path[PATH_MAX_LENGTH]        = {0};
-   char app_path[PATH_MAX_LENGTH]         = {0};
+   char application_data[PATH_MAX_LENGTH];
+   char conf_path[PATH_MAX_LENGTH];
+   char app_path[PATH_MAX_LENGTH];
    config_file_t *conf                    = NULL;
+
+   application_data[0] = conf_path[0] = app_path[0] = '\0';
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
@@ -1490,7 +1492,9 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf && has_application_data)
    {
-      char basedir[PATH_MAX_LENGTH] = {0};
+      char basedir[PATH_MAX_LENGTH];
+
+      basedir[0] = '\0';
 
       /* Try to create a new config file. */
 
@@ -1503,8 +1507,10 @@ static config_file_t *open_default_config_file(void)
 
       if (path_mkdir(basedir))
       {
+         char skeleton_conf[PATH_MAX_LENGTH];
          bool saved                          = false;
-         char skeleton_conf[PATH_MAX_LENGTH] = {0};
+
+         skeleton_conf[0] = '\0';
 
 #if defined(__HAIKU__)
          fill_pathname_join(skeleton_conf, "/system/settings",
@@ -1699,7 +1705,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    bool ret                                        = false;
    bool tmp_bool                                   = false;
    char *save                                      = NULL;
-   char tmp_str[PATH_MAX_LENGTH]                   = {0};
+   char tmp_str[PATH_MAX_LENGTH];
    unsigned msg_color                              = 0;
    config_file_t *conf                             = NULL;
    struct config_int_setting       *int_settings   = NULL;
@@ -1717,6 +1723,8 @@ static bool config_load_file(const char *path, bool set_defaults,
    int int_settings_size                           = populate_settings_int   (settings, &int_settings);
    int array_settings_size                         = populate_settings_array (settings, &array_settings);
    int path_settings_size                          = populate_settings_path  (settings, &path_settings);
+
+   tmp_str[0] = '\0';
 
    if (path)
    {
