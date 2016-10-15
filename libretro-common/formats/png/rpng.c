@@ -918,7 +918,9 @@ error:
 static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
 {
    unsigned i;
-   uint8_t dword[4] = {0};
+   uint8_t dword[4];
+
+   dword[0] = '\0';
 
    for (i = 0; i < 4; i++)
       dword[i] = buf[i];
@@ -953,8 +955,12 @@ static bool png_parse_ihdr(uint8_t *buf,
 bool rpng_iterate_image(rpng_t *rpng)
 {
    unsigned i;
-   struct png_chunk chunk = {0};
+   struct png_chunk chunk;
    uint8_t *buf           = (uint8_t*)rpng->buff_data;
+
+   chunk.size             = 0;
+   chunk.type[0]          = 0;
+   chunk.data             = NULL;
 
    if (!read_chunk_header(buf, &chunk))
       return false;
@@ -1135,10 +1141,12 @@ void rpng_free(rpng_t *rpng)
 bool rpng_start(rpng_t *rpng)
 {
    unsigned i;
-   char header[8] = {0};
+   char header[8];
 
    if (!rpng)
       return false;
+
+   header[0] = '\0';
    
    for (i = 0; i < 8; i++)
       header[i] = rpng->buff_data[i];
