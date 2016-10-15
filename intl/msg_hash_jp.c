@@ -1509,10 +1509,10 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
-         snprintf(s, len, "Enable touch support");
+         snprintf(s, len, "Enable touch support.");
          break;
       case MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH:
-         snprintf(s, len, "Use front instead of back touch");
+         snprintf(s, len, "Use front instead of back touch.");
          break;
       case MENU_ENUM_LABEL_MOUSE_ENABLE:
          snprintf(s, len, "Enable mouse input inside the menu.");
