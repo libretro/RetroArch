@@ -80,7 +80,18 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 
 void menu_entry_get_path(uint32_t i, char *s, size_t len)
 {
-   menu_entry_t entry = {{0}};
+   menu_entry_t entry;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
    menu_entry_get(&entry, 0, i, NULL, true);
 
    strlcpy(s, entry.path, len);
@@ -88,7 +99,18 @@ void menu_entry_get_path(uint32_t i, char *s, size_t len)
 
 void menu_entry_get_rich_label(uint32_t i, char *s, size_t len)
 {
-   menu_entry_t entry = {{0}};
+   menu_entry_t entry;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
    menu_entry_get(&entry, 0, i, NULL, true);
 
    if (!string_is_empty(entry.rich_label))
@@ -99,7 +121,18 @@ void menu_entry_get_rich_label(uint32_t i, char *s, size_t len)
 
 void menu_entry_get_label(uint32_t i, char *s, size_t len)
 {
-   menu_entry_t entry = {{0}};
+   menu_entry_t entry;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
    menu_entry_get(&entry, 0, i, NULL, true);
 
    strlcpy(s, entry.label, len);
@@ -107,7 +140,18 @@ void menu_entry_get_label(uint32_t i, char *s, size_t len)
 
 unsigned menu_entry_get_spacing(uint32_t i)
 {
-   menu_entry_t entry = {{0}};
+   menu_entry_t entry;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
    menu_entry_get(&entry, 0, i, NULL, true);
 
    return entry.spacing;
@@ -115,7 +159,18 @@ unsigned menu_entry_get_spacing(uint32_t i)
 
 unsigned menu_entry_get_type_new(uint32_t i)
 {
-   menu_entry_t entry = {{0}};
+   menu_entry_t entry;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
    menu_entry_get(&entry, 0, i, NULL, true);
 
    return entry.type;
@@ -209,7 +264,18 @@ uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 
 void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 {
-   menu_entry_t entry = {{0}};
+   menu_entry_t entry;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
    menu_entry_get(&entry, 0, i, NULL, true);
    strlcpy(s, entry.value, len);
 }
@@ -227,7 +293,18 @@ void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 
 void menu_entry_reset(uint32_t i)
 {
-   menu_entry_t entry = {{0}};
+   menu_entry_t entry;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
    menu_entry_get(&entry, 0, i, NULL, true);
 
    menu_entry_action(&entry, i, MENU_ACTION_START);
@@ -235,8 +312,18 @@ void menu_entry_reset(uint32_t i)
 
 void menu_entry_get_value(uint32_t i, void *data, char *s, size_t len)
 {
+   menu_entry_t entry;
    file_list_t *list  = (file_list_t*)data;
-   menu_entry_t entry = {{0}};
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
 
    menu_entry_get(&entry, 0, i, list, true);
    strlcpy(s, entry.value, len);
@@ -340,7 +427,17 @@ bool menu_entry_is_currently_selected(unsigned id)
  * currently displayed menu. */
 int menu_entry_select(uint32_t i)
 {
-   menu_entry_t     entry = {{0}};
+   menu_entry_t     entry;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
     
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &i);
 
