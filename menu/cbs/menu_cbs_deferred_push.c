@@ -398,7 +398,7 @@ static int deferred_archive_action(menu_displaylist_info_t *info)
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
-   char rdb_path[PATH_MAX_LENGTH] = {0};
+   char rdb_path[PATH_MAX_LENGTH];
    int ret                        = -1;
    char *query                    = NULL;
    char *rdb                      = NULL;
@@ -413,6 +413,8 @@ static int deferred_push_cursor_manager_list_deferred(
 
    if (!config_get_string(conf, "rdb", &rdb))
       goto end;
+
+   rdb_path[0] = '\0';
 
    fill_pathname_join(rdb_path, settings->path.content_database,
          rdb, sizeof(rdb_path));

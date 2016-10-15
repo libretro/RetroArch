@@ -156,7 +156,9 @@ static const char *mui_texture_path(unsigned id)
 static void mui_context_reset_textures(mui_handle_t *mui)
 {
    unsigned i;
-   char iconpath[PATH_MAX_LENGTH] = {0};
+   char iconpath[PATH_MAX_LENGTH];
+
+   iconpath[0] = '\0';
 
    fill_pathname_application_special(iconpath, sizeof(iconpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
@@ -823,6 +825,10 @@ static void mui_frame(void *data)
    menu_display_ctx_clearcolor_t clearcolor;
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
+   char msg[256];
+   char title[256];
+   char title_buf[256];
+   char title_msg[256];
 
 #ifdef VITA
    uint32_t black_opaque_54        = 0x8a000000;
@@ -860,10 +866,6 @@ static void mui_frame(void *data)
    mui_handle_t *mui               = (mui_handle_t*)data;
    uint64_t *frame_count           = video_driver_get_frame_count_ptr();
    settings_t *settings            = config_get_ptr();
-   char msg[256]                   = {0};
-   char title[256]                 = {0};
-   char title_buf[256]             = {0};
-   char title_msg[256]             = {0};
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
 
@@ -881,6 +883,8 @@ static void mui_frame(void *data)
 
    if (!mui)
       return;
+
+   msg[0] = title[0] = title_buf[0] = title_msg[0] = '\0';
 
    switch (settings->menu.materialui.menu_color_theme)
    {
@@ -1190,9 +1194,11 @@ static void mui_frame(void *data)
    if (mui_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
       int ticker_limit, value_len;
-      char title_buf_msg_tmp[256] = {0};
-      char title_buf_msg[256]     = {0};
+      char title_buf_msg_tmp[256];
+      char title_buf_msg[256];
       size_t         usable_width = width - (mui->margin * 2);
+
+      title_buf_msg_tmp[0] = title_buf_msg[0] = '\0';
       
       snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)",
             title_buf, title_msg);
