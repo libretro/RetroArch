@@ -98,7 +98,9 @@ unsigned menu_event(retro_input_t input,
 
       if (delay_count >= delay_timer)
       {
-         retro_input_t input_repeat = {0};
+         retro_input_t input_repeat;
+         input_repeat.type  = 0;
+         input_repeat.state = 0;
          BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_UP);
          BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_DOWN);
          BIT32_SET(input_repeat.state, RETRO_DEVICE_ID_JOYPAD_LEFT);
