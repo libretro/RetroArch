@@ -601,13 +601,8 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound)
 {
-   const char *name;
-   menu_displaylist_info_t  info = {0};
-
    if (!setting)
       return -1;
-
-   name         = menu_setting_get_name(setting);
 
    switch (setting_get_type(setting))
    {
@@ -615,7 +610,9 @@ int menu_action_handle_setting(rarch_setting_t *setting,
          if (action == MENU_ACTION_OK)
          {
             size_t selection;
-            file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr(0);
+            menu_displaylist_info_t  info = {0};
+            file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
+            const char      *name         = menu_setting_get_name(setting);
 
             if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
                return -1;
