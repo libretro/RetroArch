@@ -2043,6 +2043,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "çheévós_enable";
       case MENU_ENUM_LABEL_INPUT_BACKTOUCH_ENABLE:
          return "iñput_bâçktõüçh_ènable";
+      case MENU_ENUM_LABEL_VALUE_INPUT_BACKTOUCH_TOGGLE_ENABLE:
+         return "iñput_bâçktõüçh_toggle";
       case MENU_ENUM_LABEL_INPUT_ICADE_ENABLE:
          return "iñput_îçâde_ènable";
       case MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:

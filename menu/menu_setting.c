@@ -4107,7 +4107,24 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_BACKTOUCH_ENABLE);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->input.backtouch_toggle,
+                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BACKTOUCH_TOGGLE_ENABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BACKTOUCH_TOGGLE_ENABLE),
+                  input_backtouch_toggle,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE
+                  );
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_BACKTOUCH_TOGGLE_ENABLE);
 #endif
 
 #if TARGET_OS_IPHONE

@@ -603,7 +603,8 @@ static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_NONE;
 #endif
 
 #if defined(VITA)
-static unsigned input_backtouch_enable    = false;
+static unsigned input_backtouch_enable       = false;
+static unsigned input_backtouch_toggle       = false;
 #endif
 
 #ifdef ANDROID

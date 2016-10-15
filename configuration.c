@@ -750,6 +750,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("camera_allow",                  &settings->camera.allow, true, false, false);
 #if defined(VITA)
    SETTING_BOOL("input_backtouch_enable",         &settings->input.backtouch_enable, false, false, false);
+   SETTING_BOOL("input_backtouch_toggle",         &settings->input.backtouch_toggle, false, false, false);
 #endif
 #if TARGET_OS_IPHONE
    SETTING_BOOL("small_keyboard_enable",         &settings->input.small_keyboard_enable, true, false, false);

@@ -296,6 +296,7 @@ typedef struct settings
       bool all_users_control_menu;
 #if defined(VITA)
       bool backtouch_enable;
+      bool backtouch_toggle;
 #endif
 #if TARGET_OS_IPHONE
       bool small_keyboard_enable;

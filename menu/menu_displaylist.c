@@ -5228,6 +5228,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE,
                PARSE_ONLY_BOOL, false);
 #endif
+#ifdef VITA
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_BACKTOUCH_ENABLE,
+               PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_BACKTOUCH_TOGGLE_ENABLE,
+               PARSE_ONLY_BOOL, false);
+#endif
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO, PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,

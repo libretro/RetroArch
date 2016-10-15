@@ -97,6 +97,7 @@ static bool psp_joypad_init(void *data)
    psp2_model = sceKernelGetModelForCDialog();
    if (psp2_model != SCE_KERNEL_MODEL_VITATV) {
       sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, SCE_TOUCH_SAMPLING_STATE_START);
+      sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
       players_count = 1;
    }
    sceCtrlGetControllerPortInfo(&curr_ctrl_info);
@@ -238,7 +239,7 @@ static void psp_joypad_poll(void)
          && !menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)
          && settings->input.backtouch_enable) {
          SceTouchData back = {0};
-         sceTouchPeek(SCE_TOUCH_PORT_BACK, &back, 1);
+         sceTouchPeek(settings->input.backtouch_toggle ? SCE_TOUCH_PORT_FRONT : SCE_TOUCH_PORT_BACK, &back, 1);
          for (int i = 0; i < back.reportNum; i++) {
             int x = LERP(back.report[i].x, TOUCH_MAX_WIDTH, SCREEN_WIDTH);
             int y = LERP(back.report[i].y, TOUCH_MAX_HEIGHT, SCREEN_HEIGHT);
