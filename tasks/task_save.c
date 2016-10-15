@@ -549,7 +549,9 @@ static void task_save_handler(retro_task_t *task)
 
    if (task->cancelled || written != remaining)
    {
-      char err[PATH_MAX_LENGTH] = {0};
+      char err[PATH_MAX_LENGTH];
+
+      err[0] = '\0';
 
       if (state->undo_save)
       {
@@ -571,8 +573,10 @@ static void task_save_handler(retro_task_t *task)
 
    if (state->written == state->size)
    {
+      char msg[1024];
       settings_t *settings = config_get_ptr();
-      char msg[1024] = {0};
+
+      msg[0] = '\0';
 
       if (task->title)
          free(task->title);
@@ -733,7 +737,10 @@ static void task_load_handler(retro_task_t *task)
    {
       if (state->autoload)
       {
-         char msg[1024] = {0};
+         char msg[1024];
+
+         msg[0] = '\0';
+
          snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" failed.",
                state->path);
          task->error = strdup(msg);
@@ -751,8 +758,10 @@ static void task_load_handler(retro_task_t *task)
 
    if (state->bytes_read == state->size)
    {
+      char msg[1024];
       settings_t *settings = config_get_ptr();
-      char msg[1024] = {0};
+
+      msg[0] = '\0';
 
       if (task->title)
          free(task->title);
@@ -799,16 +808,18 @@ error:
 static void content_load_state_cb(void *task_data,
                            void *user_data, const char *error)
 {
-   load_task_data_t *load_data = (load_task_data_t*)task_data;
+   retro_ctx_serialize_info_t serial_info;
    unsigned i;
    bool ret;
-   ssize_t size = load_data->size;
-   retro_ctx_serialize_info_t serial_info;
-   unsigned num_blocks       = 0;
-   void *buf                 = load_data->data;
-   struct sram_block *blocks = NULL;
-   settings_t *settings      = config_get_ptr();
-   char err_buf[1024] = {0};
+   char err_buf[1024];
+   load_task_data_t *load_data = (load_task_data_t*)task_data;
+   ssize_t size                = load_data->size;
+   unsigned num_blocks         = 0;
+   void *buf                   = load_data->data;
+   struct sram_block *blocks   = NULL;
+   settings_t *settings        = config_get_ptr();
+
+   err_buf[0] = '\0';
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),

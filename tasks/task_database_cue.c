@@ -149,13 +149,14 @@ static int detect_ps1_game_sub(const char *track_path,
    uint8_t* tmp;
    uint8_t* boot_file;
    int skip, frame_size, is_mode1, cd_sector;
-   uint8_t buffer[2048 * 2] = {0};
+   uint8_t buffer[2048 * 2];
    RFILE                *fp = 
       filestream_open(track_path, RFILE_MODE_READ, -1);
    if (!fp)
       return 0;
 
-   is_mode1 = 0;
+   buffer[0] = '\0';
+   is_mode1  = 0;
    filestream_seek(fp, 0, SEEK_END);
 
    if (!sub_channel_mixed)

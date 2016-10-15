@@ -42,8 +42,10 @@ static int file_decompressed_subdir(const char *name,
       unsigned cmode, uint32_t csize,uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   char path_dir[PATH_MAX_LENGTH]  = {0};
-   char path[PATH_MAX_LENGTH]      = {0};
+   char path_dir[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+
+   path_dir[0] = path[0] = '\0';
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
@@ -251,9 +253,11 @@ bool task_push_decompress(
       retro_task_callback_t cb,
       void *user_data)
 {
-   char tmp[PATH_MAX_LENGTH]  = {0};
+   char tmp[PATH_MAX_LENGTH];
    decompress_state_t *s      = NULL;
    retro_task_t *t            = NULL;
+
+   tmp[0] = '\0';
 
    if (string_is_empty(target_dir) || string_is_empty(source_file))
    {

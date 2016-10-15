@@ -103,19 +103,22 @@ static bool task_overlay_load_desc(
    float width_mod, height_mod;
    float tmp_float;
    uint32_t box_hash, key_hash;
+   char overlay_desc_key[64];
+   char conf_key[64];
+   char overlay_desc_normalized_key[64];
+   char overlay[256];
    bool tmp_bool                        = false;
    bool ret                             = true;
    bool by_pixel                        = false;
-   char overlay_desc_key[64]            = {0};
-   char conf_key[64]                    = {0};
-   char overlay_desc_normalized_key[64] = {0};
-   char overlay[256]                    = {0};
    char *key                            = NULL;
    struct string_list *list             = NULL;
    const char *x                        = NULL;
    const char *y                        = NULL;
    const char *box                      = NULL;
    config_file_t *conf                  = loader->conf;
+
+   overlay_desc_key[0] = conf_key[0] = 
+      overlay_desc_normalized_key[0] = overlay[0] = '\0';
 
    snprintf(overlay_desc_key, sizeof(overlay_desc_key),
          "overlay%u_desc%u", ol_idx, desc_idx);
@@ -239,7 +242,9 @@ static bool task_overlay_load_desc(
       case OVERLAY_TYPE_ANALOG_LEFT:
       case OVERLAY_TYPE_ANALOG_RIGHT:
          {
-            char overlay_analog_saturate_key[64] = {0};
+            char overlay_analog_saturate_key[64];
+
+            overlay_analog_saturate_key[0] = '\0';
 
             if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
             {
@@ -480,10 +485,10 @@ static void task_overlay_deferred_load(retro_task_t *task)
    for (i = 0; i < loader->pos_increment; i++, loader->pos++)
    {
       char tmp_str[PATH_MAX_LENGTH];
+      char conf_key[64];
+      char overlay_full_screen_key[64];
       float tmp_float                   = 0.0;
       bool tmp_bool                     = false;
-      char conf_key[64]                 = {0};
-      char overlay_full_screen_key[64]  = {0};
       struct texture_image *texture_img = NULL;
       struct overlay_desc *overlay_desc = NULL;
       struct overlay          *overlay  = NULL;
@@ -496,7 +501,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
          break;
       }
 
-      tmp_str[0] = '\0';
+      tmp_str[0] = conf_key[0] = overlay_full_screen_key[0] = '\0';
 
       overlay = &loader->overlays[loader->pos];
 
