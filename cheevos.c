@@ -1381,9 +1381,9 @@ static void cheevos_url_encode(const char *str, char *encoded, size_t len)
 static int cheevos_login(retro_time_t *timeout)
 {
    int res;
-   char urle_user[64]           = {0};
-   char urle_pwd[64]            = {0};
-   char request[256]            = {0};
+   char urle_user[64];
+   char urle_pwd[64];
+   char request[256];
    const char *json             = NULL;
    const char *username         = NULL;
    const char *password         = NULL;
@@ -1391,6 +1391,10 @@ static int cheevos_login(retro_time_t *timeout)
 
    if (cheevos_locals.token[0])
       return 0;
+
+   urle_user[0]                 = '\0';
+   urle_pwd[0]                  = '\0';
+   request[0]                   = '\0';
    
    username = settings->cheevos.username;
    password = settings->cheevos.password;
@@ -1465,7 +1469,9 @@ static void cheevos_unlocked(void *task_data, void *user_data, const char *error
    }
    else
    {
-      char url[256] = {0};
+      char url[256];
+
+      url[0] = '\0';
 
       RARCH_ERR("CHEEVOS error awarding achievement %u, retrying\n", cheevo->id);
 
@@ -1483,7 +1489,9 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
    {
       if (cheevo->active && cheevos_test_cheevo(cheevo))
       {
-         char url[256] = {0};
+         char url[256];
+
+         url[0] = '\0';
 
          cheevo->active = 0;
 
@@ -1543,7 +1551,10 @@ static int cheevos_get_by_game_id(const char **json,
 
    if (!cheevos_login(timeout))
    {
-      char request[256] = {0};
+      char request[256];
+
+      request[0] = '\0';
+
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=patch&u=%s&g=%u&f=3&l=1&t=%s",
@@ -1571,9 +1582,12 @@ static int cheevos_get_by_game_id(const char **json,
 static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
 {
    int res;
-   char request[256] = {0};
-   char game_id[16]  = {0};
+   char request[256];
+   char game_id[16];
    const char* json  = NULL;
+
+   request[0] = '\0';
+   game_id[0] = '\0';
    
    RARCH_LOG(
       "CHEEVOS getting game id for hash %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
@@ -1643,7 +1657,9 @@ static void cheevos_playing(void *task_data, void *user_data, const char *error)
    }
    else
    {
-      char url[256] = {0};
+      char url[256];
+
+      url[0] = '\0';
 
       RARCH_ERR("CHEEVOS error posting playing game %u activity, will retry\n", game_id);
 
@@ -1738,8 +1754,10 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
    
    if (!cheevos_login(timeout))
    {
-      char request[256]    = {0};
+      char request[256];
       settings_t *settings = config_get_ptr();
+
+      request[0] = '\0';
 
       snprintf(
          request, sizeof(request),
@@ -1830,8 +1848,10 @@ static size_t cheevos_eval_md5(
 
 static void cheevos_fill_md5(size_t size, size_t total, MD5_CTX *ctx)
 {
-   char buffer[4096] = {0};
+   char buffer[4096];
    ssize_t fill      = total - size;
+
+   buffer[0] = '\0';
    
    while (fill > 0)
    {
@@ -1851,8 +1871,10 @@ static unsigned cheevos_find_game_id_generic(
 {
    MD5_CTX ctx;
    retro_time_t to;
-   uint8_t hash[16] = {0};
+   uint8_t hash[16];
    size_t size      = cheevos_eval_md5(info, &ctx);
+
+   hash[0] = '\0';
 
    MD5_Final(hash, &ctx);
    
@@ -1869,8 +1891,10 @@ static unsigned cheevos_find_game_id_snes(
 {
    MD5_CTX ctx;
    retro_time_t to;
-   uint8_t hash[16] = {0};
+   uint8_t hash[16];
    size_t size      = cheevos_eval_md5(info, &ctx);
+
+   hash[0] = '\0';
    
    if (!size)
    {
@@ -2083,12 +2107,14 @@ bool cheevos_load(const void *data)
    
    struct retro_system_info sysinfo;
    unsigned i;
+   char url[256];
    const char *json     = NULL;
    retro_time_t timeout = 5000000;
    unsigned game_id     = 0;
-   char url[256]        = {0};
    settings_t *settings = config_get_ptr();
    const struct retro_game_info *info = (const struct retro_game_info*)data;
+
+   url[0]                = '\0';
    
    cheevos_locals.loaded = 0;
    
