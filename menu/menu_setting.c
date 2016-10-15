@@ -4095,7 +4095,7 @@ static bool setting_append_list(
             CONFIG_BOOL(
                   list, list_info,
                   &settings->input.backtouch_enable,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BACKTOUCH_ENABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BACKTOUCH_ENABLE),
                   input_backtouch_enable,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
@@ -4107,12 +4107,12 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_BACKTOUCH_ENABLE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE);
 
             CONFIG_BOOL(
                   list, list_info,
                   &settings->input.backtouch_toggle,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BACKTOUCH_TOGGLE_ENABLE),
+                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BACKTOUCH_TOGGLE_ENABLE),
                   input_backtouch_toggle,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
@@ -4124,7 +4124,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_BACKTOUCH_TOGGLE_ENABLE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH);
 #endif
 
 #if TARGET_OS_IPHONE
