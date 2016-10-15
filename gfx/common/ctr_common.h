@@ -2,6 +2,7 @@
 #define CTR_COMMON_H__
 
 #include <retro_inline.h>
+#include "../font_driver.h"
 
 #define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
 
@@ -99,6 +100,8 @@ typedef struct ctr_video
       ctr_vertex_t* current;
       int size;
    }vertex_cache;
+
+   const font_t *osd_font;
 
 } ctr_video_t;
 

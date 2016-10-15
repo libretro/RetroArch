@@ -434,6 +434,8 @@ static void* ctr_init(const video_info_t* video,
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
    font_set_api(FONT_DRIVER_RENDER_CTR);
+   ctr->osd_font = font_load(*settings->path.font ? settings->path.font : NULL,
+                        settings->video.font_size);
 
    ctr->msg_rendering_enabled = false;
    ctr->menu_texture_frame_enable = false;
@@ -758,9 +760,9 @@ static bool ctr_frame(void* data, const void* frame,
    }
 
    if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
+      font_render_full(ctr->osd_font, msg, NULL);
 
-//   font_driver_render_msg(NULL, "TEST: 123 ABC àüî", NULL);
+//   font_render_full(ctr->osd_font, "TEST: 123 ABC àüî", NULL);
 
 
 
@@ -859,6 +861,8 @@ static void ctr_free(void* data)
 
    if (!ctr)
       return;
+
+   font_unref(ctr->osd_font);
 
    aptUnhook(&ctr->lcd_aptHook);
    gspSetEventCallback(GSPGPU_EVENT_VBlank0, NULL, NULL, true);
