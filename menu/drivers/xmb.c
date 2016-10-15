@@ -741,12 +741,22 @@ end:
 
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
-   menu_entry_t entry   = {{0}};
+   menu_entry_t entry;
    char         *tmp    = NULL;
    settings_t *settings = config_get_ptr();
    xmb_handle_t *xmb    = (xmb_handle_t*)data;
    if (!xmb)
       return;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
 
    menu_entry_get(&entry, 0, i, NULL, true);
 
@@ -1788,7 +1798,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       char name[PATH_MAX_LENGTH];
       char value[PATH_MAX_LENGTH];
       char entry_value[PATH_MAX_LENGTH];
-      menu_entry_t entry                = {{0}};
+      menu_entry_t entry;
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;
       xmb_node_t *   node               = (xmb_node_t*)
@@ -1798,6 +1808,16 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       if (!node)
          continue;
+
+      entry.path[0]       = '\0';
+      entry.label[0]      = '\0';
+      entry.value[0]      = '\0';
+      entry.rich_label[0] = '\0';
+      entry.enum_idx      = MSG_UNKNOWN;
+      entry.entry_idx     = 0;
+      entry.idx           = 0;
+      entry.type          = 0;
+      entry.spacing       = 0;
 
       ticker_str[0] = name[0] = value[0] = entry_value[0] = '\0';
 
