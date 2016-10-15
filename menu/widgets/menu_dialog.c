@@ -98,7 +98,10 @@ int menu_dialog_iterate(char *s, size_t len, const char *label)
                RETRO_DEVICE_ID_JOYPAD_X,
                RETRO_DEVICE_ID_JOYPAD_Y,
             };
-            char desc[ARRAY_SIZE(binds)][64] = {{0}};
+            char desc[ARRAY_SIZE(binds)][64];
+
+            for (i = 0; i < ARRAY_SIZE(binds); i++)
+               desc[i][0] = '\0';
 
             for (i = 0; i < ARRAY_SIZE(binds); i++)
             {
