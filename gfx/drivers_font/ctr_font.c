@@ -52,7 +52,7 @@ static void* ctr_font_init_font(void* data, const font_t* font)
    if (!self)
       return NULL;
 
-   self->font = font_ref(font);
+   self->font = font;
 
    atlas = font_get_atlas(font);
 
@@ -94,10 +94,8 @@ static void ctr_font_free_font(void* data)
    if (!self)
       return;
 
-   font_unref(self->font);
-
 #ifdef FONT_TEXTURE_IN_VRAM
-   vramFree(font->texture.data);
+   vramFree(self->texture.data);
 #else
    linearFree(self->texture.data);
 #endif
