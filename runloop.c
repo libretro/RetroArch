@@ -930,8 +930,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             }
             else
             {
-               char buf[PATH_MAX_LENGTH]         = {0};
+               char buf[PATH_MAX_LENGTH];
                const char *options_path          = NULL;
+
+               buf[0] = '\0';
 
                if (settings)
                   options_path = settings->path.core_options;
@@ -1048,19 +1050,21 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
  * Aborts core shutdown if invoked. */
 static int runloop_iterate_time_to_exit_load_dummy(void)
 {
-   content_ctx_info_t content_info = {0};
    settings_t *settings            = config_get_ptr();
 
    if (!settings->load_dummy_on_core_shutdown)
       return -1;
 
-   if (!task_push_content_load_default(
-         NULL, NULL,
-         &content_info,
-         CORE_TYPE_DUMMY,
-         CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-         NULL, NULL))
-      return -1;
+   {
+      content_ctx_info_t content_info = {0};
+      if (!task_push_content_load_default(
+               NULL, NULL,
+               &content_info,
+               CORE_TYPE_DUMMY,
+               CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+               NULL, NULL))
+         return -1;
+   }
 
    runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);
    runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
