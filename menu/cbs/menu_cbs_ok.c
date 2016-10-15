@@ -2066,16 +2066,13 @@ static int generic_action_ok_network(const char *path,
 
    url_path[0] = '\0';
 
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
-
-   if (string_is_empty(settings->network.buildbot_url))
-      return menu_cbs_exit();
-
-   command_event(CMD_EVENT_NETWORK_INIT, NULL);
-
    switch (enum_idx)
    {
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DIRS_LIST:
+
+         if (string_is_empty(settings->network.buildbot_assets_url))
+            return menu_cbs_exit();
+
          fill_pathname_join(url_path, settings->network.buildbot_assets_url,
                "cores/.index-dirs", sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
@@ -2092,6 +2089,10 @@ static int generic_action_ok_network(const char *path,
          suppress_msg = true;
          break;
       case MENU_ENUM_LABEL_CB_CORE_UPDATER_LIST:
+
+         if (string_is_empty(settings->network.buildbot_url))
+            return menu_cbs_exit();
+
          fill_pathname_join(url_path, settings->network.buildbot_url,
                file_path_str(FILE_PATH_INDEX_EXTENDED_URL), sizeof(url_path));
          url_label = msg_hash_to_str(enum_idx);
@@ -2123,6 +2124,10 @@ static int generic_action_ok_network(const char *path,
       default:
          break;
    }
+   
+   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+
+   command_event(CMD_EVENT_NETWORK_INIT, NULL);
 
    transf           = (menu_file_transfer_t*)calloc(1, sizeof(*transf));
    strlcpy(transf->path, url_path, sizeof(transf->path));

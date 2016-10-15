@@ -101,6 +101,8 @@ static void *vita2d_gfx_init(const video_info_t *video,
 #endif
 
    font_set_api(FONT_DRIVER_RENDER_VITA2D);
+   vita->osd_font = font_load(*settings->path.font ? settings->path.font : NULL,
+                        settings->video.font_size);
    return vita;
 }
 
@@ -254,7 +256,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    
    
    if(!string_is_empty(msg))
-     font_driver_render_msg(NULL, msg, NULL);
+     font_render_full(vita->osd_font, msg, NULL);
    
    vita2d_end_drawing();
    vita2d_swap_buffers();
@@ -316,7 +318,7 @@ static void vita2d_gfx_free(void *data)
       vita->texture = NULL;
    }
 
-   font_driver_free(NULL);
+   font_unref(vita->osd_font);
 
    RARCH_LOG("vita2d_gfx_free() done\n");
 }
@@ -734,8 +736,8 @@ static void vita_unload_texture(void *data, uintptr_t handle)
 static void vita_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
-   (void)data;
-   font_driver_render_msg(font, msg, params);
+  vita_video_t *vita = (vita_video_t*)data;
+   font_render_full(vita->osd_font, msg, params);
 }
 
 static bool vita_get_current_sw_framebuffer(void *data,
