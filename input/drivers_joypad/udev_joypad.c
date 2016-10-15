@@ -362,7 +362,9 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
       default:
          if (hotplugged)
          {
-            char msg[PATH_MAX_LENGTH] = {0};
+            char msg[PATH_MAX_LENGTH];
+
+            msg[0] = '\0';
 
             snprintf(msg, sizeof(msg), "Device #%u (%s) connected.", pad, path);
             runloop_msg_queue_push(msg, 0, 60, false);

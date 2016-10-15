@@ -39,15 +39,19 @@ void x11_handle_key_event(XEvent *event, XIC ic, bool filter)
    int i;
    unsigned state, key;
    uint16_t mod = 0;
-   uint32_t chars[32] = {0};
+   uint32_t chars[32];
 
    bool down     = event->type == KeyPress;
    int num       = 0;
    KeySym keysym = 0;
+   
+   chars[0] = '\0';
 
    if (down && !filter)
    {
-      char keybuf[32] = {0};
+      char keybuf[32];
+
+      keybuf[0] = '\0';
 #ifdef X_HAVE_UTF8_STRING
       Status status = 0;
 

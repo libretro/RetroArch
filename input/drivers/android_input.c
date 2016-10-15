@@ -640,13 +640,15 @@ static void handle_hotplug(android_input_data_t *android_data,
       struct android_app *android_app, int *port, int id,
       int source)
 {
-   char device_name[256]        = {0};
-   char device_model[256]       = {0};
-   char name_buf[256]           = {0};
+   char device_name[256];
+   char device_model[256];
+   char name_buf[256];
    int vendorId                 = 0;
    int productId                = 0;
    bool back_mapped             = false;
    settings_t         *settings = config_get_ptr();
+
+   device_name[0] = device_model[0] = name_buf[0] = '\0';
 
    frontend_android_get_name(device_model, sizeof(device_model));
 
