@@ -308,7 +308,7 @@ static void xdg_screensaver_inhibit(Window wnd)
 
 void x11_suspend_screensaver_xdg_screensaver(Window wnd, bool enable)
 {
-   // Check if screensaver suspend is enabled in config
+   /* Check if screensaver suspend is enabled in config */
    if (!enable)
       return;
 
