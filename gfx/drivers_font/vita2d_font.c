@@ -37,7 +37,7 @@ static void *vita2d_font_init_font(void *gl_data, const font_t *font)
    if (!self)
       return NULL;
 
-   self->font = font_ref(font);
+   self->font = font;
 
    atlas = font_get_atlas(self->font);
 

@@ -81,6 +81,8 @@ typedef struct vita_video
    bool overlay_enable;
    bool overlay_full_screen;
 #endif
+
+   const font_t *osd_font;
    
 } vita_video_t;
 
