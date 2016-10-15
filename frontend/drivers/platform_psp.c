@@ -138,6 +138,8 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
          "temp", sizeof(g_defaults.dir.cache));
    fill_pathname_join(g_defaults.dir.overlay, user_path,
          "overlays", sizeof(g_defaults.dir.overlay));
+   fill_pathname_join(g_defaults.dir.thumbnails, user_path,
+         "thumbnails", sizeof(g_defaults.dir.thumbnails));
    strlcpy(g_defaults.dir.content_history,
          user_path, sizeof(g_defaults.dir.content_history));
    fill_pathname_join(g_defaults.path.config, user_path,
@@ -210,8 +212,9 @@ static void frontend_psp_get_environment_settings(int *argc, char *argv[],
    path_mkdir(g_defaults.dir.screenshot);
    path_mkdir(g_defaults.dir.sram);
    path_mkdir(g_defaults.dir.system);
-   /* path_mkdir(g_defaults.dir.thumbnails); */
-
+#ifdef VITA
+   path_mkdir(g_defaults.dir.thumbnails);
+#endif
    /* create cache dir */
    path_mkdir(g_defaults.dir.cache);
 
@@ -466,6 +469,8 @@ static int frontend_psp_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
 #ifdef VITA
+   menu_entries_append_enum(list,
+         "app0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          "ur0:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
