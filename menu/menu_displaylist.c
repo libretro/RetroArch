@@ -2914,11 +2914,13 @@ static int menu_displaylist_parse_options(
          MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
          MENU_SETTING_ACTION, 0, 0);
 #else
+#if !defined(VITA)
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
          msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
          MENU_ENUM_LABEL_CORE_UPDATER_LIST,
          MENU_SETTING_ACTION, 0, 0);
+#endif
 
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
@@ -2926,11 +2928,13 @@ static int menu_displaylist_parse_options(
          MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
          MENU_SETTING_ACTION, 0, 0);
 
+#if !defined(VITA)
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
          msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES),
          MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
          MENU_SETTING_ACTION, 0, 0);
+#endif
 
 #ifdef HAVE_UPDATE_ASSETS
    menu_entries_append_enum(info->list,
@@ -2953,11 +2957,13 @@ static int menu_displaylist_parse_options(
          MENU_SETTING_ACTION, 0, 0);
 
 #ifdef HAVE_LIBRETRODB
+#if !defined(VITA)
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES),
          msg_hash_to_str(MENU_ENUM_LABEL_UPDATE_DATABASES),
          MENU_ENUM_LABEL_UPDATE_DATABASES,
          MENU_SETTING_ACTION, 0, 0);
+#endif
 #endif
 
    menu_entries_append_enum(info->list,
