@@ -949,7 +949,8 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
 static void gl_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
-   font_driver_render_msg(font, msg, params);
+   gl_t *gl                     = (gl_t*)data;
+   font_render_full(gl->osd_font, msg, params);
 }
 
 static void gl_show_mouse(void *data, bool state)
@@ -1273,8 +1274,8 @@ static bool gl_frame(void *data, const void *frame,
    }
 #endif
 
-   if (font_driver_has_render_msg() && msg)
-      font_driver_render_msg(NULL, msg, NULL);
+   if (msg)
+      font_render_full(gl->osd_font, msg, NULL);
 
 #ifdef HAVE_OVERLAY
    gl_render_overlay(gl);
@@ -1397,6 +1398,8 @@ static void gl_free(void *data)
 
    context_bind_hw_render(false);
 
+   font_unref(gl->osd_font);
+
 #ifdef HAVE_GL_SYNC
    if (gl->have_sync)
    {
@@ -1412,8 +1415,6 @@ static void gl_free(void *data)
    }
 #endif
 
-   if (font_driver_has_render_msg())
-      font_driver_free(NULL);
    video_shader_driver_deinit();
 
 #ifndef NO_GL_FF_VERTEX
@@ -2082,13 +2083,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    video_context_driver_input_driver(&inp);
 
-   if (settings->video.font_enable)
-   {
-      if (!font_driver_init_first(NULL, NULL, gl, *settings->path.font
-            ? settings->path.font : NULL, settings->video.font_size, false,
-            FONT_DRIVER_RENDER_OPENGL_API))
-         RARCH_ERR("[GL]: Failed to initialize font renderer.\n");
-   }
+   font_set_api(FONT_DRIVER_RENDER_OPENGL_API);
+   gl->osd_font = font_load(*settings->path.font ? settings->path.font : NULL,
+                        settings->video.font_size);
 
 #ifdef HAVE_GL_ASYNC_READBACK
    gl_init_pbo_readback(gl);
@@ -2102,6 +2099,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    context_bind_hw_render(true);
+
    return gl;
 
 error:

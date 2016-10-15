@@ -31,15 +31,14 @@ typedef struct
 } xfonts_t;
 
 static void *xfonts_init_font(void *video_data,
-      const char *font_path, float font_size)
+      const font_t *font)
 {
    xfonts_t *xfont = (xfonts_t*)calloc(1, sizeof(*xfont));
 
    if (!xfont)
       return NULL;
 
-   (void)font_path;
-   (void)font_size;
+   (void)font;
 
    xfont->d3d = (d3d_video_t*)video_data;
 

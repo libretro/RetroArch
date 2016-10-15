@@ -281,6 +281,8 @@ typedef struct xmb_handle
 
    unsigned tabs[8];
    unsigned system_tab_end;
+
+   const font_t *font;
 } xmb_handle_t;
 
 float gradient_dark_purple[16] = {
@@ -666,7 +668,10 @@ static void xmb_draw_text(xmb_handle_t *xmb,
       params.drop_alpha  = 0.35f;
    }
 
-   menu_display_draw_text(str, width, height, &params);
+   menu_display_draw_text(xmb->font, str, width, height, &params);
+
+   /* FIXME: why is this needed? */
+   /* menu_display_blend_begin(); */
 }
 
 static void xmb_messagebox(void *data, const char *message)
@@ -686,7 +691,6 @@ static void xmb_render_messagebox_internal(
    unsigned i;
    unsigned width, height;
    struct string_list *list = NULL;
-   void *fb_buf;
 
    if (!xmb)
       return;
@@ -705,8 +709,6 @@ static void xmb_render_messagebox_internal(
    x = width  / 2;
    y = height / 2 - (list->size-1) * font_size / 2;
 
-   fb_buf = menu_display_get_font_buffer();
-
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
    {
@@ -715,7 +717,7 @@ static void xmb_render_messagebox_internal(
       if (len > longest)
       {
          longest = len;
-         longest_width = font_driver_get_message_width(fb_buf, msg, len, 1);
+         longest_width = font_width(xmb->font, msg, len, 1);
       }
    }
 
@@ -2185,7 +2187,7 @@ static void xmb_frame(void *data)
 
    video_driver_get_size(&width, &height);
 
-   menu_display_font_bind_block(&xmb->raster_block);
+   font_bind_block(xmb->font, &xmb->raster_block);
 
    xmb->raster_block.carr.coords.vertices = 0;
 
@@ -2380,7 +2382,8 @@ static void xmb_frame(void *data)
          width,
          height);
 
-   menu_display_font_flush_block();
+   font_flush(xmb->font);
+   font_bind_block(xmb->font, NULL);
 
    if (menu_input_dialog_get_display_kb())
    {
@@ -2703,7 +2706,7 @@ static void *xmb_init(void **userdata)
    menu_display_allocate_white_texture();
 
    xmb_init_horizontal_list(xmb);
-   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
+//   xmb->font = menu_display_font2(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
    xmb_init_ribbon(xmb);
 
    return menu;
@@ -2747,7 +2750,8 @@ static void xmb_free(void *data)
       video_coord_array_free(&xmb->raster_block.carr);
    }
 
-   font_driver_bind_block(NULL, NULL);
+   font_bind_block(xmb->font, NULL);
+   font_unref(xmb->font);
 
 }
 
@@ -2963,7 +2967,7 @@ static void xmb_context_reset(void *data)
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
    xmb_layout(xmb);
-   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
+   xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb);
@@ -3255,8 +3259,6 @@ static void xmb_context_destroy(void *data)
 
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
-
-   menu_display_font_main_deinit();
 }
 
 static void xmb_toggle(void *userdata, bool menu_on)

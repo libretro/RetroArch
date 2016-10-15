@@ -75,7 +75,7 @@ struct font_atlas
    unsigned height;
 };
 
-struct font_params
+typedef struct font_params
 {
    float x;
    float y;
@@ -91,11 +91,14 @@ struct font_params
    uint32_t color;
    bool full_screen;
    enum text_alignment text_align;
-};
+} font_params_t;
 
-typedef struct font_renderer
+/** Don't free() it. Use font_load() and font_unref() to manage. */
+typedef struct font_t font_t;
+
+typedef struct
 {
-   void *(*init)(void *data, const char *font_path, float font_size);
+   void *(*init)(void *data, const font_t *font);
    void (*free)(void *data);
    void (*render_msg)(void *data, const char *msg,
          const void *params);
@@ -108,7 +111,7 @@ typedef struct font_renderer
    int (*get_message_width)(void *data, const char *msg, unsigned msg_len_full, float scale);
 } font_renderer_t;
 
-typedef struct font_renderer_driver
+typedef struct
 {
    void *(*init)(const char *font_path, float font_size);
 
@@ -124,41 +127,96 @@ typedef struct font_renderer_driver
    const char *ident;
    
    int (*get_line_height)(void* data);
-} font_renderer_driver_t;
+} font_backend_t;
 
 /* font_path can be NULL for default font. */
 int font_renderer_create_default(const void **driver,
       void **handle, const char *font_path, unsigned font_size);
       
-bool font_driver_has_render_msg(void);
+/**
+ * @brief Loads a font file
+ *
+ * The returned pointer must be freed using font_unref().
+ *
+ * @param filename
+ * @param size
+ * @return pointer to a font_t structure
+ * @see font_unref()
+ */
+const font_t *font_load(const char *filename, float size);
 
-void font_driver_render_msg(void *data, const char *msg, const struct font_params *params);
+/**
+ * @brief Increments the font refcount
+ *
+ * Use this function if you want to tie the font lifetime to a certain piece of
+ * code's lifetime e.g. a menu driver or a font renderer.
+ *
+ * All font_ref() calls must have a matching font_unref() call otherwise the
+ * program leaks.
+ *
+ * @param font
+ * @return the font itself
+ */
+const font_t *font_ref(const font_t *font);
 
-void font_driver_bind_block(void *font_data, void *block);
+/**
+ * @brief Decrements the font refcount and/or deallocates it
+ *
+ * @param font
+ * @return the font itself or NULL
+ */
+const font_t *font_unref(const font_t *font);
 
-int font_driver_get_message_width(void *data, const char *msg, unsigned len, float scale);
+const char *font_get_filename(const font_t *font);
+float font_get_size(const font_t *font);
+const struct font_atlas *font_get_atlas(const font_t *font);
+const struct font_glyph *font_get_glyph(const font_t *font, uint32_t codepoint);
+int font_get_line_height(const font_t *font);
+int font_width(const font_t *font, const char *text, unsigned len, float scale);
+void font_set_api(enum font_driver_render_api api);
 
-void font_driver_flush(void *data);
 
-void font_driver_free(void *data);
+/**
+ * @brief Instructs
+ * @param font
+ * @param queue
+ */
+void font_bind_block(const font_t *font, void *block);
+void font_flush(const font_t *font);
 
-bool font_driver_init_first(const void **font_driver, void **font_handle,
-      void *data, const char *font_path, float font_size,
-      bool threading_hint, enum font_driver_render_api api);
+/**
+ * @brief Render text on the screen
+ * @param font
+ * @param video_thread whether the caller is in the video thread
+ * @param text
+ * @param params
+ */
+void font_render_full(const font_t *font, const char *text, const font_params_t *params);
+void font_render(const font_t *font, const char *text, float x, float y, enum text_alignment align, uint32_t color);
 
-extern font_renderer_t gl_raster_font;
+
+
+/**
+ * @brief Invalidates font caches
+ *
+ * This function should be called before video contexts or drivers get
+ * deinitialized or destroyed.
+ */
+void font_invalidate_caches(void);
+
+extern font_renderer_t gl_font_renderer;
 extern font_renderer_t libdbg_font;
 extern font_renderer_t d3d_xbox360_font;
 extern font_renderer_t d3d_xdk1_font;
 extern font_renderer_t d3d_win32_font;
 extern font_renderer_t vita2d_vita_font;
 extern font_renderer_t ctr_font;
-extern font_renderer_t vulkan_raster_font;
+extern font_renderer_t vulkan_font_renderer;
 
-extern font_renderer_driver_t stb_font_renderer;
-extern font_renderer_driver_t freetype_font_renderer;
-extern font_renderer_driver_t coretext_font_renderer;
-extern font_renderer_driver_t bitmap_font_renderer;
+extern font_backend_t stb_font_backend;
+extern font_backend_t freetype_font_backend;
+extern font_backend_t coretext_font_backend;
+extern font_backend_t bitmap_font_backend;
 
 RETRO_END_DECLS
 

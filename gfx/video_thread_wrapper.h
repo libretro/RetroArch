@@ -29,8 +29,8 @@ RETRO_BEGIN_DECLS
 typedef int (*custom_command_method_t)(void*);
 
 typedef bool (*custom_font_command_method_t)(const void **font_driver,
-      void **font_handle, void *video_data, const char *font_path,
-      float font_size, enum font_driver_render_api api);
+      void **font_handle, void *video_data, const font_t *font,
+      enum font_driver_render_api api);
 
 typedef struct thread_packet thread_packet_t;
 
@@ -71,12 +71,10 @@ void *video_thread_get_ptr(const video_driver_t **drv);
 
 const char *video_thread_get_ident(void);
 
-bool video_thread_font_init(
-      const void **font_driver,
+bool video_thread_font_init(const void **font_driver,
       void **font_handle,
       void *data,
-      const char *font_path,
-      float font_size,
+      const font_t *font,
       enum font_driver_render_api api,
       custom_font_command_method_t func);
 

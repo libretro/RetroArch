@@ -788,7 +788,7 @@ typedef struct omap_video
    omapfb_data_t *omap;
 
    void *font;
-   const font_renderer_driver_t *font_driver;
+   const font_backend_t *font_driver;
    uint8_t font_rgb[4];
 
    unsigned bytes_per_pixel;

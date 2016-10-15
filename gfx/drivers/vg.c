@@ -63,7 +63,7 @@ typedef struct
    uint32_t mFontHeight;
    VGFont mFont;
    void *mFontRenderer;
-   const font_renderer_driver_t *font_driver;
+   const font_backend_t *font_driver;
    bool mFontsOn;
    VGuint mMsgLength;
    VGuint mGlyphIndices[1024];

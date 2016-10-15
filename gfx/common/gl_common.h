@@ -148,6 +148,8 @@ typedef struct gl
 #endif
 
    GLuint vao;
+
+   const font_t *osd_font;
 } gl_t;
 
 bool gl_load_luts(const struct video_shader *generic_shader,

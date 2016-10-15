@@ -1182,6 +1182,8 @@ static void *d3d_init(const video_info_t *info,
    video_input_ctl(RARCH_INPUT_CTL_SET_OWN_DRIVER, NULL);
 #endif
 
+   font_set_api(FONT_DRIVER_RENDER_DIRECT3D_API);
+
    return d3d;
 
 error:
@@ -1516,7 +1518,7 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   if (font_driver_has_render_msg() && msg)
+   if (msg)
    {
       struct font_params font_parms = {0};
 #ifdef _XBOX
@@ -1531,7 +1533,7 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.y                  = msg_height;
       font_parms.scale              = 21;
 #endif
-      font_driver_render_msg(NULL, msg, &font_parms);
+      font_render_full(d3d->osd_font, true, msg, &font_parms);
    }
 
 #ifdef HAVE_MENU

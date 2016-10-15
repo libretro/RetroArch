@@ -61,13 +61,12 @@ typedef struct _sdl2_video
 
    sdl2_tex_t frame;
    sdl2_tex_t menu;
-   sdl2_tex_t font;
+   sdl2_tex_t font_tex;
 
    bool gl;
    bool quitting;
 
-   void *font_data;
-   const font_renderer_driver_t *font_driver;
+   const font_t *font;
    uint8_t font_r;
    uint8_t font_g;
    uint8_t font_b;
@@ -105,8 +104,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
    if (!settings->video.font_enable)
       return;
 
-   if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font_data,
-                                    *font_path ? font_path : NULL, font_size))
+   if ((vid->font = font_load(*font_path ? font_path : NULL, font_size)) == NULL)
    {
       RARCH_WARN("[SDL]: Could not initialize fonts.\n");
       return;
@@ -124,7 +122,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
    vid->font_g = g;
    vid->font_b = b;
 
-   atlas = vid->font_driver->get_atlas(vid->font_data);
+   atlas = font_get_atlas(vid->font);
 
    tmp = SDL_CreateRGBSurfaceFrom(atlas->buffer, atlas->width,
          atlas->height, 8, atlas->width,
@@ -141,15 +139,15 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
    SDL_SetSurfacePalette(tmp, pal);
    SDL_SetColorKey(tmp, SDL_TRUE, 0);
 
-   vid->font.tex  = SDL_CreateTextureFromSurface(vid->renderer, tmp);
+   vid->font_tex.tex  = SDL_CreateTextureFromSurface(vid->renderer, tmp);
 
-   if (vid->font.tex)
+   if (vid->font_tex.tex)
    {
-      vid->font.w      = atlas->width;
-      vid->font.h      = atlas->height;
-      vid->font.active = true;
+      vid->font_tex.w      = atlas->width;
+      vid->font_tex.h      = atlas->height;
+      vid->font_tex.active = true;
 
-      SDL_SetTextureBlendMode(vid->font.tex, SDL_BLENDMODE_ADD);
+      SDL_SetTextureBlendMode(vid->font_tex.tex, SDL_BLENDMODE_ADD);
    }
    else
       RARCH_WARN("[SDL]: Failed to initialize font texture: %s\n", SDL_GetError());
@@ -165,7 +163,7 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
    unsigned height = vid->vp.height;
    settings_t *settings = config_get_ptr();
 
-   if (!vid->font_data)
+   if (!vid->font)
       return;
 
    x       = settings->video.msg_pos_x * width;
@@ -173,17 +171,13 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
    delta_x = 0;
    delta_y = 0;
 
-   SDL_SetTextureColorMod(vid->font.tex, vid->font_r, vid->font_g, vid->font_b);
+   SDL_SetTextureColorMod(vid->font_tex.tex, vid->font_r, vid->font_g, vid->font_b);
 
    for (; *msg; msg++)
    {
       SDL_Rect src_rect, dst_rect;
       int off_x, off_y, tex_x, tex_y;
-      const struct font_glyph *gly = 
-         vid->font_driver->get_glyph(vid->font_data, (uint8_t)*msg);
-
-      if (!gly)
-         gly = vid->font_driver->get_glyph(vid->font_data, '?');
+      const struct font_glyph *gly = font_get_glyph(vid->font, (uint8_t)*msg);
 
       if (!gly)
          continue;
@@ -203,7 +197,7 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
       dst_rect.w = (int)gly->width;
       dst_rect.h = (int)gly->height;
 
-      SDL_RenderCopyEx(vid->renderer, vid->font.tex,
+      SDL_RenderCopyEx(vid->renderer, vid->font_tex.tex,
             &src_rect, &dst_rect, 0, NULL, SDL_FLIP_NONE);
 
       delta_x += gly->advance_x;
@@ -601,8 +595,8 @@ static void sdl2_gfx_free(void *data)
 
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
-   if (vid->font_data)
-      vid->font_driver->free(vid->font_data);
+   if (vid->font)
+      font_unref(vid->font);
 
    free(vid);
 }

@@ -54,8 +54,7 @@ typedef struct sdl_video
    SDL_Surface *screen;
    bool quitting;
 
-   void *font;
-   const font_renderer_driver_t *font_driver;
+   const font_t *font;
    uint8_t font_r;
    uint8_t font_g;
    uint8_t font_b;
@@ -77,7 +76,7 @@ static void sdl_gfx_free(void *data)
    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
    if (vid->font)
-      vid->font_driver->free(vid->font);
+      font_unref(vid->font);
 
    scaler_ctx_gen_reset(&vid->scaler);
    scaler_ctx_gen_reset(&vid->menu.scaler);
@@ -93,9 +92,7 @@ static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font
    if (!settings->video.font_enable)
       return;
 
-   if (!font_renderer_create_default((const void**)&vid->font_driver, &vid->font,
-            *settings->path.font ? settings->path.font : NULL,
-            settings->video.font_size))
+   if ((vid->font = font_load(*font_path ? font_path : NULL, font_size)) == NULL)
    {
       RARCH_LOG("[SDL]: Could not initialize fonts.\n");
       return;
@@ -125,7 +122,7 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
    if (!vid->font)
       return;
 
-   atlas = vid->font_driver->get_atlas(vid->font);
+   atlas = font_get_atlas(vid->font);
 
    msg_base_x = settings->video.msg_pos_x * width;
    msg_base_y = (1.0f - settings->video.msg_pos_y) * height;
@@ -140,7 +137,7 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       int base_x, base_y, max_width, max_height;
       uint32_t *out      = NULL;
       const uint8_t *src = NULL;
-      const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
+      const struct font_glyph *glyph = font_get_glyph(vid->font, (uint8_t)*msg);
       if (!glyph)
          continue;
 

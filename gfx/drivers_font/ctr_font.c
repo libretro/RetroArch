@@ -39,48 +39,41 @@ typedef struct
 {
    ctr_texture_t texture;
    ctr_scale_vector_t scale_vector;
-   const font_renderer_driver_t* font_driver;
+   const font_t* font;
    void* font_data;
 } ctr_font_t;
 
-static void* ctr_font_init_font(void* data, const char* font_path, float font_size)
+static void* ctr_font_init_font(void* data, const font_t* font)
 {
    const struct font_atlas* atlas = NULL;
-   ctr_font_t* font = (ctr_font_t*)calloc(1, sizeof(*font));
+   ctr_font_t* self= (ctr_font_t*)calloc(1, sizeof(*self));
    ctr_video_t* ctr = (ctr_video_t*)data;
 
-   if (!font)
+   if (!self)
       return NULL;
 
-   font_size = 10;
-   if (!font_renderer_create_default((const void**)&font->font_driver,
-                                     &font->font_data, font_path, font_size))
-   {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
-      free(font);
-      return NULL;
-   }
+   self->font = font_ref(font);
 
-   atlas = font->font_driver->get_atlas(font->font_data);
+   atlas = font_get_atlas(font);
 
-   font->texture.width = next_pow2(atlas->width);
-   font->texture.height = next_pow2(atlas->height);
+   self->texture.width = next_pow2(atlas->width);
+   self->texture.height = next_pow2(atlas->height);
 #if FONT_TEXTURE_IN_VRAM
    font->texture.data = vramAlloc(font->texture.width * font->texture.height);
    uint8_t* tmp = linearAlloc(font->texture.width * font->texture.height);
 #else
-   font->texture.data = linearAlloc(font->texture.width * font->texture.height);
-   uint8_t* tmp = font->texture.data;
+   self->texture.data = linearAlloc(self->texture.width * self->texture.height);
+   uint8_t* tmp = self->texture.data;
 #endif
 
    int i, j;
    const uint8_t*     src = atlas->buffer;
 
-   for (j = 0; (j < atlas->height) && (j < font->texture.height); j++)
-      for (i = 0; (i < atlas->width) && (i < font->texture.width); i++)
-         tmp[ctrgu_swizzle_coords(i, j, font->texture.width)] = src[i + j * atlas->width];
+   for (j = 0; (j < atlas->height) && (j < self->texture.height); j++)
+      for (i = 0; (i < atlas->width) && (i < self->texture.width); i++)
+         tmp[ctrgu_swizzle_coords(i, j, self->texture.width)] = src[i + j * atlas->width];
 
-   GSPGPU_FlushDataCache(tmp, font->texture.width * font->texture.height);
+   GSPGPU_FlushDataCache(tmp, self->texture.width * self->texture.height);
 
 #if FONT_TEXTURE_IN_VRAM
    ctrGuCopyImage(true, tmp, font->texture.width >> 2, font->texture.height, CTRGU_RGBA8, true,
@@ -89,38 +82,37 @@ static void* ctr_font_init_font(void* data, const char* font_path, float font_si
    linearFree(tmp);
 #endif
 
-   ctr_set_scale_vector(&font->scale_vector, 400, 240, font->texture.width, font->texture.height);
+   ctr_set_scale_vector(&self->scale_vector, 400, 240, self->texture.width, self->texture.height);
 
-   return font;
+   return self;
 }
 
 static void ctr_font_free_font(void* data)
 {
-   ctr_font_t* font = (ctr_font_t*)data;
+   ctr_font_t* self = (ctr_font_t*)data;
 
-   if (!font)
+   if (!self)
       return;
 
-   if (font->font_driver && font->font_data)
-      font->font_driver->free(font->font_data);
+   font_unref(self->font);
 
 #ifdef FONT_TEXTURE_IN_VRAM
    vramFree(font->texture.data);
 #else
-   linearFree(font->texture.data);
+   linearFree(self->texture.data);
 #endif
-   free(font);
+   free(self);
 }
 
 static int ctr_font_get_message_width(void* data, const char* msg,
                                       unsigned msg_len, float scale)
 {
-   ctr_font_t* font = (ctr_font_t*)data;
+   ctr_font_t* self = (ctr_font_t*)data;
 
    unsigned i;
    int delta_x = 0;
 
-   if (!font)
+   if (!self)
       return 0;
 
    for (i = 0; i < msg_len; i++)
@@ -132,23 +124,17 @@ static int ctr_font_get_message_width(void* data, const char* msg,
       if (skip > 1)
          i += skip - 1;
 
-      const struct font_glyph* glyph =
-         font->font_driver->get_glyph(font->font_data, code);
+      const struct font_glyph* glyph = font_get_glyph(self->font, code);
 
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-
-      if (!glyph)
-         continue;
-
-      delta_x += glyph->advance_x;
+      if (glyph)
+         delta_x += glyph->advance_x;
    }
 
    return delta_x * scale;
 }
 
 static void ctr_font_render_line(
-   ctr_font_t* font, const char* msg, unsigned msg_len,
+   ctr_font_t* self, const char* msg, unsigned msg_len,
    float scale, const unsigned int color, float pos_x,
    float pos_y, unsigned text_align)
 {
@@ -169,11 +155,11 @@ static void ctr_font_render_line(
    switch (text_align)
    {
    case TEXT_ALIGN_RIGHT:
-      x -= ctr_font_get_message_width(font, msg, msg_len, scale);
+      x -= ctr_font_get_message_width(self, msg, msg_len, scale);
       break;
 
    case TEXT_ALIGN_CENTER:
-      x -= ctr_font_get_message_width(font, msg, msg_len, scale) / 2;
+      x -= ctr_font_get_message_width(self, msg, msg_len, scale) / 2;
       break;
    }
 
@@ -192,11 +178,7 @@ static void ctr_font_render_line(
       if (skip > 1)
          i += skip - 1;
 
-      const struct font_glyph* glyph =
-         font->font_driver->get_glyph(font->font_data, code);
-
-      if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+      const struct font_glyph* glyph = font_get_glyph(self->font, code);
 
       if (!glyph)
          continue;
@@ -226,7 +208,7 @@ static void ctr_font_render_line(
    if (v == ctr->vertex_cache.current)
       return;
 
-   ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector, 1);
+   ctrGuSetVertexShaderFloatUniform(0, (float*)&self->scale_vector, 1);
    GSPGPU_FlushDataCache(ctr->vertex_cache.current, (v - ctr->vertex_cache.current) * sizeof(ctr_vertex_t));
    ctrGuSetAttributeBuffers(2,
                             VIRT_TO_PHYS(ctr->vertex_cache.current),
@@ -244,7 +226,7 @@ static void ctr_font_render_line(
 //   printf("%s\n", msg);
 //   DEBUG_VAR(color);
 //   GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, GPU_TEVOPERANDS(GPU_TEVOP_RGB_SRC_R, 0, 0), GPU_REPLACE, GPU_REPLACE, 0);
-   ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(font->texture.data), font->texture.width, font->texture.height,
+   ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(self->texture.data), self->texture.width, self->texture.height,
                    GPU_TEXTURE_MAG_FILTER(GPU_NEAREST)  | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST) |
                    GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                    GPU_L8);
@@ -292,7 +274,7 @@ static void ctr_font_render_line(
 }
 
 static void ctr_font_render_message(
-   ctr_font_t* font, const char* msg, float scale,
+   ctr_font_t* self, const char* msg, float scale,
    const unsigned int color, float pos_x, float pos_y,
    unsigned text_align)
 {
@@ -303,14 +285,14 @@ static void ctr_font_render_message(
       return;
 
    /* If the font height is not supported just draw as usual */
-   if (!font->font_driver->get_line_height)
+   if (font_get_line_height(self->font) <= 0)
    {
-      ctr_font_render_line(font, msg, strlen(msg),
+      ctr_font_render_line(self, msg, strlen(msg),
                            scale, color, pos_x, pos_y, text_align);
       return;
    }
 
-   line_height = scale / font->font_driver->get_line_height(font->font_data);
+   line_height = scale / font_get_line_height(self->font);
 
    for (;;)
    {
@@ -320,7 +302,7 @@ static void ctr_font_render_message(
       if (delim)
       {
          unsigned msg_len = delim - msg;
-         ctr_font_render_line(font, msg, msg_len,
+         ctr_font_render_line(self, msg, msg_len,
                               scale, color, pos_x, pos_y - (float)lines * line_height,
                               text_align);
          msg += msg_len + 1;
@@ -329,7 +311,7 @@ static void ctr_font_render_message(
       else
       {
          unsigned msg_len = strlen(msg);
-         ctr_font_render_line(font, msg, msg_len,
+         ctr_font_render_line(self, msg, msg_len,
                               scale, color, pos_x, pos_y - (float)lines * line_height,
                               text_align);
          break;
@@ -417,15 +399,12 @@ static void ctr_font_render_msg(void* data, const char* msg,
 static const struct font_glyph* ctr_font_get_glyph(
    void* data, uint32_t code)
 {
-   ctr_font_t* font = (ctr_font_t*)data;
+   ctr_font_t* self = (ctr_font_t*)data;
 
-   if (!font || !font->font_driver)
+   if (!self)
       return NULL;
 
-   if (!font->font_driver->ident)
-      return NULL;
-
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return font_get_glyph(self->font, code);
 }
 
 static void ctr_font_flush_block(void* data)

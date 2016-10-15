@@ -391,6 +391,8 @@ typedef struct vk
    } tracker;
 
    void *filter_chain;
+
+   const font_t *osd_font;
 } vk_t;
 
 uint32_t vulkan_find_memory_type(
