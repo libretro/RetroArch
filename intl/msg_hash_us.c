@@ -2098,8 +2098,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "cheevos_test_unofficial";
       case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
          return "cheevos_enable";
-      case MENU_ENUM_LABEL_INPUT_BACKTOUCH_ENABLE:
-         return "input_backtouch_enable";
+      case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
+         return "input_touch_enable";
+      case MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH:
+         return "input_prefer_front_touch";
       case MENU_ENUM_LABEL_INPUT_ICADE_ENABLE:
          return "input_icade_enable";
       case MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
@@ -3516,7 +3518,9 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retro Achievements";
       case MENU_ENUM_LABEL_VALUE_INPUT_BACKTOUCH_ENABLE:
-         return "Backtouch Enable";
+         return "Touch Enable";
+      case MENU_ENUM_LABEL_VALUE_INPUT_BACKTOUCH_TOGGLE_ENABLE:
+         return "Prefer Front Touch";
       case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Keyboard Gamepad Mapping Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:

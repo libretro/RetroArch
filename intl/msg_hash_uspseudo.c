@@ -2041,8 +2041,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "cheëvòs_tëst_ünõffìçial";
       case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
          return "çheévós_enable";
-      case MENU_ENUM_LABEL_INPUT_BACKTOUCH_ENABLE:
-         return "iñput_bâçktõüçh_ènable";
+      case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
+         return "iñput_tõüçh_ènable";
+      case MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH:
+         return "iñput_prefer_front_tõüçh";
       case MENU_ENUM_LABEL_INPUT_ICADE_ENABLE:
          return "iñput_îçâde_ènable";
       case MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:

@@ -1508,6 +1508,12 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Numbers are described in frames."
                );
          break;
+      case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
+         snprintf(s, len, "Enable touch support");
+         break;
+      case MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH:
+         snprintf(s, len, "Use front instead of back touch");
+         break;
       case MENU_ENUM_LABEL_MOUSE_ENABLE:
          snprintf(s, len, "Enable mouse input inside the menu.");
          break;
@@ -2036,8 +2042,10 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "cheevos_test_unofficial";
       case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
          return "cheevos_enable";
-      case MENU_ENUM_LABEL_INPUT_BACKTOUCH_ENABLE:
-         return "input_backtouch_enable";
+      case MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE:
+         return "input_touch_enable";
+      case MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH:
+         return "input_prefer_front_touch";
       case MENU_ENUM_LABEL_INPUT_ICADE_ENABLE:
          return "input_icade_enable";
       case MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:

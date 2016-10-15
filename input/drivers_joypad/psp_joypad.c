@@ -97,6 +97,7 @@ static bool psp_joypad_init(void *data)
    psp2_model = sceKernelGetModelForCDialog();
    if (psp2_model != SCE_KERNEL_MODEL_VITATV) {
       sceTouchSetSamplingState(SCE_TOUCH_PORT_BACK, SCE_TOUCH_SAMPLING_STATE_START);
+      sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
       players_count = 1;
    }
    sceCtrlGetControllerPortInfo(&curr_ctrl_info);
@@ -237,11 +238,11 @@ static void psp_joypad_poll(void)
       if (psp2_model == SCE_KERNEL_MODEL_VITA 
          && !menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL)
          && settings->input.backtouch_enable) {
-         SceTouchData back = {0};
-         sceTouchPeek(SCE_TOUCH_PORT_BACK, &back, 1);
-         for (int i = 0; i < back.reportNum; i++) {
-            int x = LERP(back.report[i].x, TOUCH_MAX_WIDTH, SCREEN_WIDTH);
-            int y = LERP(back.report[i].y, TOUCH_MAX_HEIGHT, SCREEN_HEIGHT);
+         SceTouchData touch_surface = {0};
+         sceTouchPeek(settings->input.backtouch_toggle ? SCE_TOUCH_PORT_FRONT : SCE_TOUCH_PORT_BACK, &touch_surface, 1);
+         for (int i = 0; i < touch_surface.reportNum; i++) {
+            int x = LERP(touch_surface.report[i].x, TOUCH_MAX_WIDTH, SCREEN_WIDTH);
+            int y = LERP(touch_surface.report[i].y, TOUCH_MAX_HEIGHT, SCREEN_HEIGHT);
             if (NW_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_L2;
             if (NE_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_R2;
             if (SW_AREA(x, y)) state_tmp.buttons |= PSP_CTRL_L3;
