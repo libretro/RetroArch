@@ -3517,9 +3517,9 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Test unofficial";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retro Achievements";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACKTOUCH_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE:
          return "Touch Enable";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACKTOUCH_TOGGLE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH:
          return "Prefer Front Touch";
       case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Keyboard Gamepad Mapping Enable";
