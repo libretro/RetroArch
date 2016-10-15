@@ -757,7 +757,7 @@ static bool ctr_frame(void* data, const void* frame,
 
    }
 
-   if (font_driver_has_render_msg() && msg)
+   if (msg)
       font_driver_render_msg(NULL, msg, NULL);
 
 //   font_driver_render_msg(NULL, "TEST: 123 ABC àüî", NULL);
