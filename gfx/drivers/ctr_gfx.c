@@ -1099,7 +1099,7 @@ static void ctr_set_osd_msg(void *data, const char *msg,
    ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(font, msg, params);
+      font_render_full(font, msg, params);
 }
 
 
