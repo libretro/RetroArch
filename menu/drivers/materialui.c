@@ -824,9 +824,15 @@ static void mui_frame(void *data)
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
 
+#ifdef VITA
+   uint32_t black_opaque_54        = 0x8a000000;
+   uint32_t black_opaque_87        = 0xde000000;
+   uint32_t white_opaque_70        = 0xb3ffffff;
+#else
    uint32_t black_opaque_54        = 0x0000008a;
    uint32_t black_opaque_87        = 0x000000de;
    uint32_t white_opaque_70        = 0xffffffb3;
+#endif
    /* https://material.google.com/style/color.html#color-color-palette */
    /* Hex values converted to RGB normalized decimals, alpha set to 1 */
    float blue_500[16]              = {0};
