@@ -56,6 +56,7 @@ static const SceGxmProgram *const textureTintFragmentProgramGxp = &texture_tint_
 
 static int vita2d_initialized = 0;
 static float clear_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+static unsigned int clear_color_u = 0xff000000;
 static int vblank_wait = 1;
 
 static SceUID vdmRingBufferUid;
@@ -765,6 +766,11 @@ void vita2d_set_clear_color(unsigned int color)
 	clear_color[1] = ((color >> 8*1) & 0xFF)/255.0f;
 	clear_color[2] = ((color >> 8*2) & 0xFF)/255.0f;
 	clear_color[3] = ((color >> 8*3) & 0xFF)/255.0f;
+	clear_color_u = color;
+}
+
+unsigned int vita2d_get_clear_color(){
+	return clear_color_u;
 }
 
 void vita2d_set_vblank_wait(int enable)

@@ -54,6 +54,8 @@ void vita2d_end_drawing();
 int vita2d_common_dialog_update();
 
 void vita2d_set_clear_color(unsigned int color);
+unsigned int vita2d_get_clear_color();
+
 void vita2d_set_vblank_wait(int enable);
 void *vita2d_get_current_fb();
 

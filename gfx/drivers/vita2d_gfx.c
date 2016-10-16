@@ -188,7 +188,8 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       vita2d_gfx_update_viewport(vita);
 
    vita2d_start_drawing();
-   vita2d_clear_screen();
+   
+   vita2d_draw_rectangle(0,0,PSP_FB_WIDTH,PSP_FB_HEIGHT,vita2d_get_clear_color());
    
    if (vita->texture)
    {
@@ -224,6 +225,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
 
    if (vita->menu.active)
    {
+     menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
     
      if(vita->menu.texture){
        if (vita->fullscreen)
@@ -252,7 +254,6 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
        }
      }
      
-     menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
 
       
    }
