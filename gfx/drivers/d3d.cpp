@@ -957,7 +957,7 @@ static void d3d_apply_state_changes(void *data)
 }
 
 static void d3d_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const struct font_params *params, const font_t *font)
 {
    d3d_video_t          *d3d = (d3d_video_t*)data;
 

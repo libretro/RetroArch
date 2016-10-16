@@ -734,7 +734,7 @@ static void vita_unload_texture(void *data, uintptr_t handle)
 }
 
 static void vita_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const struct font_params *params, const font_t *font)
 {
    (void)data;
    font_driver_render_msg(font, msg, params);

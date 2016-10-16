@@ -176,7 +176,7 @@ typedef struct video_poke_interface
    /* Enable or disable rendering. */
    void (*set_texture_enable)(void *data, bool enable, bool full_screen);
    void (*set_osd_msg)(void *data, const char *msg,
-         const struct font_params *params, void *font);
+         const struct font_params *params, const font_t *font);
 
    void (*show_mouse)(void *data, bool state);
    void (*grab_mouse_toggle)(void *data);
@@ -423,7 +423,7 @@ bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height);
 
 void video_driver_set_osd_msg(const char *msg,
-      const struct font_params *params, void *font);
+      const struct font_params *params, const font_t *font);
 
 void video_driver_set_texture_enable(bool enable, bool full_screen);
 

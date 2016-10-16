@@ -524,7 +524,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 }
 
 static void *xdk360_init_font(void *video_data,
-      const char *font_path, float font_size)
+      const font_t *font_drive)
 {
    uint32_t dwFileVersion;
    const void *pFontData      = NULL;
@@ -546,7 +546,7 @@ static void *xdk360_init_font(void *video_data,
    font->m_TranslatorTable    = NULL;
 
    /* Create the font. */
-   if (FAILED( m_xprResource.Create(font_path)))
+   if (FAILED( m_xprResource.Create(font_driver_get_path(font))))
       goto error;
 
    pFontTexture               = m_xprResource.GetTexture( "FontTexture" );

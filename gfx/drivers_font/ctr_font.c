@@ -39,11 +39,10 @@ typedef struct
 {
    ctr_texture_t texture;
    ctr_scale_vector_t scale_vector;
-   const font_renderer_driver_t* font_driver;
-   void* font_data;
+   const font_t* font_data;
 } ctr_font_t;
 
-static void* ctr_font_init_font(void* data, const char* font_path, float font_size)
+static void* ctr_font_init_font(void* data, const font_t* font_data)
 {
    const struct font_atlas* atlas = NULL;
    ctr_font_t* font = (ctr_font_t*)calloc(1, sizeof(*font));
@@ -53,15 +52,9 @@ static void* ctr_font_init_font(void* data, const char* font_path, float font_si
       return NULL;
 
    font_size = 10;
-   if (!font_renderer_create_default((const void**)&font->font_driver,
-                                     &font->font_data, font_path, font_size))
-   {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
-      free(font);
-      return NULL;
-   }
+   font->font_data = font_data;
 
-   atlas = font->font_driver->get_atlas(font->font_data);
+   atlas = font_driver_get_atlas(font->font_data);
 
    font->texture.width = next_pow2(atlas->width);
    font->texture.height = next_pow2(atlas->height);
@@ -101,9 +94,6 @@ static void ctr_font_free_font(void* data)
    if (!font)
       return;
 
-   if (font->font_driver && font->font_data)
-      font->font_driver->free(font->font_data);
-
 #ifdef FONT_TEXTURE_IN_VRAM
    vramFree(font->texture.data);
 #else
@@ -133,10 +123,10 @@ static int ctr_font_get_message_width(void* data, const char* msg,
          i += skip - 1;
 
       const struct font_glyph* glyph =
-         font->font_driver->get_glyph(font->font_data, code);
+         font_driver_get_glyph(font->font_data, code);
 
       if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+         glyph = font_driver_get_glyph(font->font_data, '?');
 
       if (!glyph)
          continue;
@@ -193,10 +183,10 @@ static void ctr_font_render_line(
          i += skip - 1;
 
       const struct font_glyph* glyph =
-         font->font_driver->get_glyph(font->font_data, code);
+         font_driver_get_glyph(font->font_data, code);
 
       if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+         glyph = font_driver_get_glyph(font->font_data, '?');
 
       if (!glyph)
          continue;
@@ -303,14 +293,14 @@ static void ctr_font_render_message(
       return;
 
    /* If the font height is not supported just draw as usual */
-   if (!font->font_driver->get_line_height)
+   if (font_driver_get_line_height(font->font_data) <= 0)
    {
       ctr_font_render_line(font, msg, strlen(msg),
                            scale, color, pos_x, pos_y, text_align);
       return;
    }
 
-   line_height = scale / font->font_driver->get_line_height(font->font_data);
+   line_height = scale / font_driver_get_line_height(font->font_data);
 
    for (;;)
    {
@@ -419,13 +409,10 @@ static const struct font_glyph* ctr_font_get_glyph(
 {
    ctr_font_t* font = (ctr_font_t*)data;
 
-   if (!font || !font->font_driver)
+   if (!font)
       return NULL;
 
-   if (!font->font_driver->ident)
-      return NULL;
-
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return font_driver_get_glyph(font->font_data, code);
 }
 
 static void ctr_font_flush_block(void* data)

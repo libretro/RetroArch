@@ -1095,7 +1095,7 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
 }
 
 static void ctr_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const struct font_params *params, const font_t *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 

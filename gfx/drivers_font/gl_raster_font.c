@@ -49,8 +49,7 @@ typedef struct
    GLuint tex;
    unsigned tex_width, tex_height;
 
-   const font_renderer_driver_t *font_driver;
-   void *font_data;
+   const font_t *font_data;
 
    video_font_raster_block_t *block;
 } gl_raster_t;
@@ -144,8 +143,7 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    return true;
 }
 
-static void *gl_raster_font_init_font(void *data,
-      const char *font_path, float font_size)
+static void *gl_raster_font_init_font(void *data, const font_t *font_data)
 {
    const struct font_atlas *atlas = NULL;
    gl_raster_t   *font = (gl_raster_t*)calloc(1, sizeof(*font));
@@ -155,14 +153,7 @@ static void *gl_raster_font_init_font(void *data,
       return NULL;
 
    font->gl = (gl_t*)data;
-
-   if (!font_renderer_create_default((const void**)&font->font_driver,
-            &font->font_data, font_path, font_size))
-   {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
-      free(font);
-      return NULL;
-   }
+   font->font_data = font_data;
 
    if (settings->video.threaded)
       video_context_driver_make_current(false);
@@ -174,7 +165,7 @@ static void *gl_raster_font_init_font(void *data,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-   atlas            = font->font_driver->get_atlas(font->font_data);
+   atlas            = font_driver_get_atlas(font->font_data);
    font->tex_width  = next_pow2(atlas->width);
    font->tex_height = next_pow2(atlas->height);
 
@@ -200,9 +191,6 @@ static void gl_raster_font_free_font(void *data)
    if (!font)
       return;
 
-   if (font->font_driver && font->font_data)
-      font->font_driver->free(font->font_data);
-
    if (settings->video.threaded)
       video_context_driver_make_current(true);
 
@@ -222,12 +210,6 @@ static int gl_get_message_width(void *data, const char *msg,
    if (!font)
       return 0;
 
-   if (
-            !font->font_driver
-         || !font->font_driver->get_glyph
-         || !font->font_data )
-      return 0;
-
    while (msg_len_full)
    {
       for (i = 0; i < msg_len; i++)
@@ -240,10 +222,10 @@ static int gl_get_message_width(void *data, const char *msg,
          if (skip > 1)
             i += skip - 1;
 
-         glyph = font->font_driver->get_glyph(font->font_data, code);
+         glyph = font_driver_get_glyph(font->font_data, code);
 
          if (!glyph) /* Do something smarter here ... */
-            glyph = font->font_driver->get_glyph(font->font_data, '?');
+            glyph = font_driver_get_glyph(font->font_data, '?');
          if (!glyph)
             continue;
 
@@ -334,10 +316,10 @@ static void gl_raster_font_render_line(
                break;
          }
 
-         glyph = font->font_driver->get_glyph(font->font_data, code);
+         glyph = font_driver_get_glyph(font->font_data, code);
 
          if (!glyph) /* Do something smarter here ... */
-            glyph = font->font_driver->get_glyph(font->font_data, '?');
+            glyph = font_driver_get_glyph(font->font_data, '?');
          if (!glyph)
             continue;
 
@@ -388,14 +370,11 @@ static void gl_raster_font_render_message(
    if (!font)
       return;
 
-   if (     string_is_empty(msg)
-         || !font->gl
-         || !font->font_data
-         || !font->font_driver)
+   if (string_is_empty(msg))
       return;
 
    /* If the font height is not supported just draw as usual */
-   if (!font->font_driver->get_line_height)
+   if (font_driver_get_line_height(font->font_data) <= 0)
    {
       gl_raster_font_render_line(font, msg, strlen(msg),
             scale, color, pos_x, pos_y, text_align);
@@ -403,7 +382,7 @@ static void gl_raster_font_render_message(
    }
 
    line_height = 1 /
-      (scale * (float) font->font_driver->get_line_height(font->font_data));
+      (scale * (float) font_driver_get_line_height(font->font_data));
 
    for (;;)
    {
@@ -552,11 +531,9 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 {
    gl_raster_t *font = (gl_raster_t*)data;
 
-   if (!font || !font->font_driver)
-      return NULL;
-   if (!font->font_driver->ident)
+   if (!font)
        return NULL;
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return font_driver_get_glyph(font->font_data, code);
 }
 
 static void gl_raster_font_flush_block(void *data)

@@ -67,7 +67,7 @@ static void *font_osd_data;
 static font_t *g_fonts              = NULL;
 static font_t *g_last_font          = NULL;
 static const font_t *g_default_font = NULL;
-static enum font_driver_render_api g_api = FONT_DRIVER_RENDER_DONT_CARE;
+static enum font_driver_render_api g_renderer_api = FONT_DRIVER_RENDER_DONT_CARE;
 
 
 int font_renderer_create_default(const void **data, void **handle,
@@ -118,8 +118,8 @@ static const font_renderer_t *d3d_font_backends[] = {
 };
 
 static bool d3d_font_init_first(
-      const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      const font_renderer_t **font_driver, void **font_handle,
+      void *video_data, const font_t *font_data)
 {
    unsigned i;
 
@@ -151,15 +151,14 @@ static const font_renderer_t *gl_font_backends[] = {
 };
 
 static bool gl_font_init_first(
-      const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      const font_renderer_t **font_driver, void **font_handle,
+      void *video_data, const font_t *font_data)
 {
    unsigned i;
 
    for (i = 0; gl_font_backends[i]; i++)
    {
-      void *data = gl_font_backends[i]->init(
-            video_data, font_path, font_size);
+      void *data = gl_font_backends[i]->init(video_data, font_data);
 
       if (!data)
          continue;
@@ -180,14 +179,14 @@ static const font_renderer_t *vulkan_font_backends[] = {
 };
 
 static bool vulkan_font_init_first(
-      const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      const font_renderer_t **font_driver, void **font_handle,
+      void *video_data, const font_t *font_data)
 {
    unsigned i;
 
    for (i = 0; vulkan_font_backends[i]; i++)
    {
-      void *data = vulkan_font_backends[i]->init(video_data, font_path, font_size);
+      void *data = vulkan_font_backends[i]->init(video_data, font_data);
 
       if (!data)
          continue;
@@ -207,15 +206,14 @@ static const font_renderer_t *vita2d_font_backends[] = {
 };
 
 static bool vita2d_font_init_first(
-      const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      const font_renderer_t **font_driver, void **font_handle,
+      void *video_data, const font_t *font_data)
 {
    unsigned i;
 
    for (i = 0; vita2d_font_backends[i]; i++)
    {
-      void *data = vita2d_font_backends[i]->init(
-            video_data, font_path, font_size);
+      void *data = vita2d_font_backends[i]->init(video_data, font_data);
 
       if (!data)
          continue;
@@ -235,15 +233,14 @@ static const font_renderer_t *ctr_font_backends[] = {
 };
 
 static bool ctr_font_init_first(
-      const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size)
+      const font_renderer_t **font_driver, void **font_handle,
+      void *video_data, const font_t *font_data)
 {
    unsigned i;
 
    for (i = 0; ctr_font_backends[i]; i++)
    {
-      void *data = ctr_font_backends[i]->init(
-            video_data, font_path, font_size);
+      void *data = ctr_font_backends[i]->init(video_data, font_data);
 
       if (!data)
          continue;
@@ -258,39 +255,35 @@ static bool ctr_font_init_first(
 #endif
 
 static bool font_init_first(
-      const void **font_driver, void **font_handle,
-      void *video_data, const char *font_path, float font_size,
-      enum font_driver_render_api api)
+      const font_renderer_t **font_driver, void **font_handle,
+      void *video_data, const font_t *font_data)
 {
-   if (font_path && !font_path[0])
-      font_path = NULL;
-
-   switch (api)
+   switch (g_renderer_api)
    {
 #ifdef HAVE_D3D
       case FONT_DRIVER_RENDER_DIRECT3D_API:
          return d3d_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font);
 #endif
 #ifdef HAVE_OPENGL
       case FONT_DRIVER_RENDER_OPENGL_API:
          return gl_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_data);
 #endif
 #ifdef HAVE_VULKAN
       case FONT_DRIVER_RENDER_VULKAN_API:
          return vulkan_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_data);
 #endif
 #ifdef HAVE_VITA2D
       case FONT_DRIVER_RENDER_VITA2D:
          return vita2d_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_data);
 #endif
 #ifdef _3DS
       case FONT_DRIVER_RENDER_CTR:
          return ctr_font_init_first(font_driver, font_handle,
-               video_data, font_path, font_size);
+               video_data, font_data);
 #endif
       case FONT_DRIVER_RENDER_DONT_CARE:
          /* TODO/FIXME - lookup graphics driver's 'API' */
@@ -304,50 +297,101 @@ static bool font_init_first(
 
 bool font_driver_has_render_msg(void)
 {
-   if (!font_osd_driver || !font_osd_driver->render_msg)
-      return false;
    return true;
 }
 
-void font_driver_render_msg(void *font_data,
+static INLINE font_t *font_check(const font_t *font, bool need_renderer)
+{
+   font_t *f = (font_t*)font;
+
+   if (f == NULL)
+      f = (font_t*)g_default_font;
+
+   if (need_renderer && f)
+   {
+      if (!f->renderer)
+         font_init_first(&f->renderer, &f->renderer_data, video_driver_get_ptr(false), f);
+
+      return f->renderer ? f : NULL;
+   }
+
+   return f;
+}
+
+bool font_driver_render_msg(const font_t *font,
       const char *msg, const struct font_params *params)
 {
-   font_driver_render((const font_t*)font_data, msg, params);
+   font_t *f;
+
+   retro_assert(font || g_default_font);
+
+   f = font_check(font, true);
+
+   if (!f)
+      return false;
+
+   f->renderer->render_msg(f->renderer_data, msg, params);
+
+   return true;
 }
+
 
 void font_driver_bind_block(const font_t *font, void *block)
 {
-   if (font == NULL)
-      font = g_default_font;
-
-   if (font->renderer && font->renderer->bind_block)
+   font = font_check(font, true);
+   if (font && font->renderer->bind_block)
       font->renderer->bind_block(font->renderer_data, block);
 }
 
 void font_driver_flush(const font_t *font)
 {
-   if (font == NULL)
-      font = g_default_font;
-
-   if (font->renderer && font->renderer->flush)
+   font = font_check(font, true);
+   if (font && font->renderer->flush)
       font->renderer->flush(font->renderer_data);
 }
 
 int font_driver_get_message_width(const font_t *font,
       const char *msg, unsigned len, float scale)
 {
-   if (font == NULL)
-      font = g_default_font;
-
-   if (font->renderer && font->renderer->get_message_width)
+   font = font_check(font, true);
+   if (font && font->renderer->get_message_width)
       return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
 
    return -1;
 }
 
+const char *font_driver_get_path(const font_t *font)
+{
+   font = font_check(font, false);
+   return font->path;
+}
+
 float font_driver_get_size(const font_t *font)
 {
+   font = font_check(font, false);
    return font->size;
+}
+
+
+const struct font_atlas *font_driver_get_atlas(const font_t *font)
+{
+   font = font_check(font, false);
+   return font->backend->get_atlas(font->backend_data);
+}
+
+const struct font_glyph *font_driver_get_glyph(const font_t *font, unsigned codepoint)
+{
+   font = font_check(font, false);
+   return font->backend->get_glyph(font->backend_data, codepoint);
+}
+
+int font_driver_get_line_height(const font_t *font)
+{
+   font = font_check(font, false);
+   if (font->backend->get_line_height)
+      return font->backend->get_line_height(font->backend_data);
+
+   return -1;
 }
 
 void font_driver_free(void *data)
@@ -364,35 +408,11 @@ void font_driver_free(void *data)
 #endif
 }
 
-bool font_driver_init_first(
-      const void **font_driver, void **font_handle,
-      void *data, const char *font_path, float font_size,
-      bool threading_hint,
-      enum font_driver_render_api api)
-{
-   const void **new_font_driver = font_driver ? font_driver 
-      : (const void**)&font_osd_driver;
-   void **new_font_handle        = font_handle ? font_handle 
-      : (void**)&font_osd_data;
-#ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-
-   if (threading_hint 
-         && settings->video.threaded 
-         && !video_driver_is_hw_context())
-      return video_thread_font_init(new_font_driver, new_font_handle,
-            data, font_path, font_size, api, font_init_first);
-#endif
-
-   return font_init_first(new_font_driver, new_font_handle,
-         data, font_path, font_size, api);
-}
-
 void font_driver_set_api(enum font_driver_render_api api)
 {
-   if (g_api == FONT_DRIVER_RENDER_DONT_CARE)
+   if (g_renderer_api == FONT_DRIVER_RENDER_DONT_CARE)
    {
-      g_api = api;
+      g_renderer_api = api;
       RARCH_LOG("[font] Using font api %i\n", api);
    }
 }
@@ -538,28 +558,11 @@ void font_driver_unload(const font_t *font)
 
    f->path = NULL;
 
-   free(f);
-
    if (f == g_default_font)
       g_default_font = NULL;
-}
 
-bool font_driver_render(const font_t *font, const char *msg, const struct font_params *params)
-{
-   retro_assert(font || g_default_font);
+   if (f == g_fonts)
+       g_fonts = NULL;
 
-   if (font == NULL)
-      font = g_default_font;
-
-#if 0
-   if (!font->renderer)
-      font_driver_init_renderer(font);
-
-   if (font->renderer)
-      font->renderer->render_msg(font->renderer_data, msg, params);
-   else
-      return false;
-#endif
-
-   return true;
+   free(f);
 }

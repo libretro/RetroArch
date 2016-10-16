@@ -97,7 +97,7 @@ typedef struct font_t font_t;
 
 typedef struct font_renderer
 {
-   void *(*init)(void *data, const char *font_path, float font_size);
+   void *(*init)(void *data, const font_t *font_data);
    void (*free)(void *data);
    void (*render_msg)(void *data, const char *msg,
          const void *params);
@@ -134,21 +134,21 @@ int font_renderer_create_default(const void **driver,
       
 bool font_driver_has_render_msg(void);
 
-void font_driver_render_msg(void *data, const char *msg, const struct font_params *params);
+bool font_driver_render_msg(const font_t *font, const char *msg, const struct font_params *params);
 
 void font_driver_bind_block(const font_t *font, void *block);
 
 int font_driver_get_message_width(const font_t *font, const char *msg, unsigned len, float scale);
 
+const char *font_driver_get_path(const font_t *font);
 float font_driver_get_size(const font_t *font);
+const struct font_atlas *font_driver_get_atlas(const font_t *font);
+const struct font_glyph *font_driver_get_glyph(const font_t *font, unsigned codepoint);
+int font_driver_get_line_height(const font_t *font);
 
 void font_driver_flush(const font_t *font);
 
 void font_driver_free(void *data);
-
-bool font_driver_init_first(const void **font_driver, void **font_handle,
-      void *data, const char *font_path, float font_size,
-      bool threading_hint, enum font_driver_render_api api);
 
 void font_driver_set_api(enum font_driver_render_api api);
 
@@ -157,8 +157,6 @@ void font_driver_deinit_default(void);
 
 const font_t *font_driver_load(const char *filename, float size);
 void font_driver_unload(const font_t *font);
-
-bool font_driver_render(const font_t *font, const char *msg, const struct font_params *params);
 
 extern font_renderer_t gl_raster_font;
 extern font_renderer_t libdbg_font;
