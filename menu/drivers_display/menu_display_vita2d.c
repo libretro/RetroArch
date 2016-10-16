@@ -29,6 +29,7 @@
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/video_shader_driver.h"
 #include "../../gfx/common/vita2d_common.h"
+#include "../../defines/psp_defines.h"
 
 static const float vita2d_vertexes[] = {
    0, 0,
@@ -218,7 +219,10 @@ static void menu_display_vita2d_clear_color(menu_display_ctx_clearcolor_t *clear
                                 (int)(clearcolor->g*255.f), 
                                 (int)(clearcolor->b*255.f), 
                                 (int)(clearcolor->a*255.f)));
-   vita2d_clear_screen();
+   vita2d_draw_rectangle(0,0,PSP_FB_WIDTH,PSP_FB_HEIGHT,RGBA8((int)(clearcolor->r*255.f), 
+                                (int)(clearcolor->g*255.f), 
+                                (int)(clearcolor->b*255.f), 
+                                (int)(clearcolor->a*255.f)));
 }
 
 static bool menu_display_vita2d_font_init_first(
