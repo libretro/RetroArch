@@ -23,13 +23,12 @@
 typedef struct
 {
    vita2d_texture *texture;
-   const font_renderer_driver_t *font_driver;
-   void *font_data;
+   const font_t *font_data;
 
 } vita_font_t;
 
 
-static void *vita2d_font_init_font(void *gl_data, const char *font_path, float font_size)
+static void *vita2d_font_init_font(void *gl_data, const font_t *font_data)
 {
 	 unsigned int stride, pitch, j, k;
    const struct font_atlas *atlas = NULL;
@@ -38,15 +37,9 @@ static void *vita2d_font_init_font(void *gl_data, const char *font_path, float f
 	 if (!font)
 	 	 return NULL;
 
-	 if (!font_renderer_create_default((const void**)&font->font_driver,
-	 				 &font->font_data, font_path, font_size))
-	 {
-	 	 RARCH_WARN("Couldn't initialize font renderer.\n");
-	 	 free(font);
-	 	 return NULL;
-	 }
+    font->font_data = fontdata;
 
-	 atlas = font->font_driver->get_atlas(font->font_data);
+    atlas = font_driver_get_atlas(font->font_data);
 
 	 font->texture = vita2d_create_empty_texture_format(atlas->width,atlas->height,SCE_GXM_TEXTURE_FORMAT_U8_R111);
 
@@ -76,9 +69,6 @@ static void vita2d_font_free_font(void *data)
 	 if (!font)
 			return;
 
-	 if (font->font_driver && font->font_data)
-			font->font_driver->free(font->font_data);
-
 	 //vita2d_wait_rendering_done();
    vita2d_free_texture(font->texture);
 
@@ -106,9 +96,9 @@ static int vita2d_font_get_message_width(void *data, const char *msg,
          i += skip - 1;
          
 			const struct font_glyph *glyph =
-				 font->font_driver->get_glyph(font->font_data, code);
+             font_driver_get_glyph(font->font_data, code);
 			if (!glyph) /* Do something smarter here ... */
-				 glyph = font->font_driver->get_glyph(font->font_data, '?');
+             glyph = font_driver_get_glyph(font->font_data, '?');
 			if (!glyph)
 				 continue;
 
@@ -156,10 +146,10 @@ static void vita2d_font_render_line(
          i += skip - 1;
          
       const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, code);
+         font_driver_get_glyph(font->font_data, code);
 
       if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+         glyph = font_driver_get_glyph(font->font_data, '?');
       if (!glyph)
          continue;
 
@@ -195,14 +185,14 @@ static void vita2d_font_render_message(
       return;
 
    /* If the font height is not supported just draw as usual */
-   if (!font->font_driver->get_line_height)
+   if (font_driver_get_line_height(font->font_data) <= 0)
    {
       vita2d_font_render_line(font, msg, strlen(msg),
             scale, color, pos_x, pos_y, text_align);
       return;
    }
 
-   line_height = scale / font->font_driver->get_line_height(font->font_data);
+   line_height = scale / font_driver_get_line_height(font->font_data);
 
    for (;;)
    {
@@ -308,11 +298,9 @@ static const struct font_glyph *vita2d_font_get_glyph(
 {
    vita_font_t *font = (vita_font_t*)data;
 
-   if (!font || !font->font_driver)
-      return NULL;
-   if (!font->font_driver->ident)
+   if (!font)
        return NULL;
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return font_driver_get_glyph(font->font_data, code);
 }
 
 static void vita2d_font_flush_block(void *data)
