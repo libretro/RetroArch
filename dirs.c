@@ -108,8 +108,7 @@ bool dir_free_shader(void)
  **/
 void dir_check_shader(bool pressed_next, bool pressed_prev)
 {
-
-   char msg[128]                   = {0};
+   char msg[128];
    const char *shader              = NULL;
    enum rarch_shader_type type     = RARCH_SHADER_NONE;
    struct rarch_dir_list *dir_list = (struct rarch_dir_list*)&dir_shader_list;
@@ -152,6 +151,8 @@ void dir_check_shader(bool pressed_next, bool pressed_prev)
       default:
          return;
    }
+
+   msg[0] = '\0';
 
    snprintf(msg, sizeof(msg), "%s #%u: \"%s\".",
          msg_hash_to_str(MSG_SHADER),
@@ -336,7 +337,8 @@ void dir_set(enum rarch_dir_type type, const char *path)
 
 static void check_defaults_dir_create_dir(const char *path)
 {
-   char new_path[PATH_MAX_LENGTH] = {0};
+   char new_path[PATH_MAX_LENGTH];
+   new_path[0] = '\0';
    fill_pathname_expand_special(new_path,
          path, sizeof(new_path));
 

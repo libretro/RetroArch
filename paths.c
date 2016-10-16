@@ -61,14 +61,16 @@ static char path_core_options_file[PATH_MAX_LENGTH]     = {0};
 
 void path_set_redirect(void)
 {
-   char new_savefile_dir[PATH_MAX_LENGTH]      = {0};
-   char new_savestate_dir[PATH_MAX_LENGTH]     = {0};
+   char new_savefile_dir[PATH_MAX_LENGTH];
+   char new_savestate_dir[PATH_MAX_LENGTH];
    uint32_t library_name_hash                  = 0;
    bool check_library_name_hash                = false;
    rarch_system_info_t      *info              = NULL;
    global_t                *global             = global_get_ptr();
    const char *old_savefile_dir                = dir_get(RARCH_DIR_SAVEFILE);
    const char *old_savestate_dir               = dir_get(RARCH_DIR_SAVESTATE);
+
+   new_savefile_dir[0] = new_savestate_dir[0]  = '\0';
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
@@ -321,11 +323,13 @@ static bool path_init_subsystem(void)
          for (j = 0; j < info->roms[i].num_memory; j++)
          {
             union string_list_elem_attr attr;
-            char path[PATH_MAX_LENGTH] = {0};
-            char ext[32] = {0};
+            char path[PATH_MAX_LENGTH];
+            char ext[32];
             const struct retro_subsystem_memory_info *mem =
                (const struct retro_subsystem_memory_info*)
                &info->roms[i].memory[j];
+
+            path[0] = ext[0] = '\0';
 
             snprintf(ext, sizeof(ext), ".%s", mem->extension);
 
@@ -693,7 +697,9 @@ void path_clear_all(void)
 
 enum rarch_content_type path_is_media_type(const char *path)
 {
-   char ext_lower[PATH_MAX_LENGTH] = {0};
+   char ext_lower[PATH_MAX_LENGTH];
+
+   ext_lower[0] = '\0';
 
    strlcpy(ext_lower, path_get_extension(path), sizeof(ext_lower));
 

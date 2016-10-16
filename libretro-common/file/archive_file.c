@@ -274,8 +274,10 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
 static int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
+   char path[PATH_MAX_LENGTH];
    char *last                 = NULL;
-   char path[PATH_MAX_LENGTH] = {0};
+
+   path[0] = '\0';
 
    strlcpy(path, file, sizeof(path));
 
@@ -796,11 +798,11 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
 uint32_t file_archive_get_file_crc32(const char *path)
 {
    const struct file_archive_file_backend *backend = file_archive_get_file_backend(path);
-   file_archive_transfer_t state = {0};
-   struct archive_extract_userdata userdata = {{0}};
-   bool returnerr = false;
-   bool contains_compressed = false;
-   const char *archive_path = NULL;
+   file_archive_transfer_t state                   = {0};
+   struct archive_extract_userdata userdata        = {{0}};
+   bool returnerr                                  = false;
+   bool contains_compressed                        = false;
+   const char *archive_path                        = NULL;
 
    if (!backend)
       return 0;
