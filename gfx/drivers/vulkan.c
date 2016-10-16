@@ -841,12 +841,14 @@ static void vulkan_free(void *data)
 
    if (vk->context && vk->context->device)
    {
+      if (vk->osd_font)
+         font_unref(vk->osd_font);
+
       vkQueueWaitIdle(vk->context->queue);
       vulkan_deinit_resources(vk);
 
       /* No need to init this since textures are create on-demand. */
       vulkan_deinit_menu(vk);
-      font_driver_free(NULL);
 
       vulkan_deinit_static_resources(vk);
       vulkan_overlay_free(vk);
@@ -1112,15 +1114,11 @@ static void *vulkan_init(const video_info_t *video,
    inp.input_data = input_data;
    video_context_driver_input_driver(&inp);
 
-   if (settings->video.font_enable)
-   {
-      if (!font_driver_init_first(NULL, NULL, vk, *settings->path.font 
-            ? settings->path.font : NULL, settings->video.font_size, false,
-            FONT_DRIVER_RENDER_VULKAN_API))
-         RARCH_ERR("[Vulkan]: Failed to initialize font renderer.\n");
-   }
+   font_set_api(FONT_DRIVER_RENDER_VULKAN_API);
+   vk->osd_font = font_load(*settings->path.font ? settings->path.font : NULL, settings->video.font_size);
 
    vulkan_init_readback(vk);
+
    return vk;
 
 error:
@@ -1781,7 +1779,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(NULL, msg, NULL);
+      font_render_full(vk->osd_font, msg, NULL);
 
 #ifdef HAVE_OVERLAY
    if (vk->overlay.enable)
@@ -2144,8 +2142,8 @@ static void vulkan_set_texture_enable(void *data, bool state, bool full_screen)
 static void vulkan_set_osd_msg(void *data, const char *msg,
       const struct font_params *params, void *font)
 {
-   (void)data;
-   font_driver_render_msg(font, msg, params);
+   vk_t *vk                    = (vk_t*)data;
+   font_render_full(vk->osd_font, msg, params);
 }
 #endif
 

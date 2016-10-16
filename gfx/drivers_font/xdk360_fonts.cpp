@@ -524,36 +524,34 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 }
 
 static void *xdk360_init_font(void *video_data,
-      const char *font_path, float font_size)
+      const font_t *font)
 {
    uint32_t dwFileVersion;
    const void *pFontData      = NULL;
    D3DTexture *pFontTexture   = NULL;
    const uint8_t * pData      = NULL;
-   xdk360_video_font_t *font  = (xdk360_video_font_t*)calloc(1, sizeof(*font));
+   xdk360_video_font_t *self= (xdk360_video_font_t*)calloc(1, sizeof(*self));
 
-   if (!font)
+   if (!self)
       return NULL;
 
-   (void)font_size;
+   self->d3d                  = (d3d_video_t*)video_data;
 
-   font->d3d                  = (d3d_video_t*)video_data;
-
-   font->m_pFontTexture       = NULL;
-   font->m_dwNumGlyphs        = 0L;
-   font->m_Glyphs             = NULL;
-   font->m_cMaxGlyph          = 0;
-   font->m_TranslatorTable    = NULL;
+   self->m_pFontTexture       = NULL;
+   self->m_dwNumGlyphs        = 0L;
+   self->m_Glyphs             = NULL;
+   self->m_cMaxGlyph          = 0;
+   self->m_TranslatorTable    = NULL;
 
    /* Create the font. */
-   if (FAILED( m_xprResource.Create(font_path)))
+   if (FAILED( m_xprResource.Create(font_get_filename(font))))
       goto error;
 
    pFontTexture               = m_xprResource.GetTexture( "FontTexture" );
    pFontData                  = m_xprResource.GetData( "FontData"); 
 
    /* Save a copy of the texture. */
-   font->m_pFontTexture       = pFontTexture;
+   self->m_pFontTexture       = pFontTexture;
 
    /* Check version of file (to make sure it matches up with the FontMaker tool). */
    pData                      = (const uint8_t*)pFontData;
@@ -565,34 +563,34 @@ static void *xdk360_init_font(void *video_data,
       goto error;
    }
 
-   font->m_fFontHeight        = ((const FontFileHeaderImage_t *)pData)->m_fFontHeight;
-   font->m_fFontTopPadding    = ((const FontFileHeaderImage_t *)pData)->m_fFontTopPadding;
-   font->m_fFontBottomPadding = ((const FontFileHeaderImage_t *)pData)->m_fFontBottomPadding;
-   font->m_fFontYAdvance      = ((const FontFileHeaderImage_t *)pData)->m_fFontYAdvance;
+   self->m_fFontHeight        = ((const FontFileHeaderImage_t *)pData)->m_fFontHeight;
+   self->m_fFontTopPadding    = ((const FontFileHeaderImage_t *)pData)->m_fFontTopPadding;
+   self->m_fFontBottomPadding = ((const FontFileHeaderImage_t *)pData)->m_fFontBottomPadding;
+   self->m_fFontYAdvance      = ((const FontFileHeaderImage_t *)pData)->m_fFontYAdvance;
 
    /* Point to the translator string which immediately follows the 4 floats. */
-   font->m_cMaxGlyph          = ((const FontFileHeaderImage_t *)pData)->m_cMaxGlyph;
-   font->m_TranslatorTable    = const_cast<FontFileHeaderImage_t*>((const FontFileHeaderImage_t *)pData)->m_TranslatorTable;
+   self->m_cMaxGlyph          = ((const FontFileHeaderImage_t *)pData)->m_cMaxGlyph;
+   self->m_TranslatorTable    = const_cast<FontFileHeaderImage_t*>((const FontFileHeaderImage_t *)pData)->m_TranslatorTable;
 
-   pData += CALCFONTFILEHEADERSIZE( font->m_cMaxGlyph + 1 );
+   pData += CALCFONTFILEHEADERSIZE( self->m_cMaxGlyph + 1 );
 
    /* Read the glyph attributes from the file. */
-   font->m_dwNumGlyphs        = ((const FontFileStrikesImage_t *)pData)->m_dwNumGlyphs;
-   font->m_Glyphs             = ((const FontFileStrikesImage_t *)pData)->m_Glyphs;
+   self->m_dwNumGlyphs        = ((const FontFileStrikesImage_t *)pData)->m_dwNumGlyphs;
+   self->m_Glyphs             = ((const FontFileStrikesImage_t *)pData)->m_Glyphs;
 
    /* Create the vertex and pixel shaders for rendering the font */
-   if (FAILED(xdk360_video_font_create_shaders(font)))
+   if (FAILED(xdk360_video_font_create_shaders(self)))
    {
       RARCH_ERR( "Could not create font shaders.\n" );
       goto error;
    }
 
    RARCH_LOG("Successfully initialized D3D9 HLSL fonts.\n");
-   return font;
+   return self;
 error:
    RARCH_ERR("Could not initialize D3D9 HLSL fonts.\n");
-   if (font)
-      free(font);
+   if (self)
+      free(self);
    return NULL;
 }
 

@@ -169,7 +169,6 @@ static bool menu_display_msg_force               = false;
 static bool menu_display_font_alloc_framebuf     = false;
 static bool menu_display_framebuf_dirty          = false;
 static const uint8_t *menu_display_font_framebuf = NULL;
-static void *menu_display_font_buf               = NULL;
 static msg_queue_t *menu_display_msg_queue       = NULL;
 static menu_display_ctx_driver_t *menu_disp      = NULL;
 
@@ -187,65 +186,13 @@ void menu_display_blend_end(void)
    menu_disp->blend_end();
 }
 
-void menu_display_font_main_deinit(void)
+const font_t *menu_display_font(enum application_special_type type)
 {
-   if (menu_display_font_buf)
-      font_driver_free(menu_display_font_buf);
-   menu_display_font_buf  = NULL;
-   menu_display_font_size = 0;
-}
-
-bool menu_display_font(enum application_special_type type)
-{
-   menu_display_ctx_font_t font_info;
    char fontpath[PATH_MAX_LENGTH]  = {0};
-   int                   font_size = menu_display_get_font_size();
 
    fill_pathname_application_special(fontpath, sizeof(fontpath), type);
 
-   font_info.path = fontpath;
-   font_info.size = font_size;
-
-   if (!menu_display_font_main_init(&font_info))
-   {
-      RARCH_WARN("Failed to load font.");
-      return false;
-   }
-
-   return true;
-}
-
-bool menu_display_font_main_init(menu_display_ctx_font_t *font)
-{
-   menu_display_font_main_deinit();
-   if (!font || !menu_disp)
-      return false;
-
-   if (!menu_disp->font_init_first)
-      return false;
-
-   if (!menu_disp->font_init_first(&menu_display_font_buf,
-            video_driver_get_ptr(false),
-            font->path, font->size))
-      return false;
-
-   menu_display_font_size = font->size;
-   return true;
-}
-
-void menu_display_font_bind_block(void *block)
-{
-   font_driver_bind_block(menu_display_font_buf, block);
-}
-
-bool menu_display_font_flush_block(void)
-{
-   if (!menu_display_font_buf)
-      return false;
-
-   font_driver_flush(menu_display_font_buf);
-   font_driver_bind_block(menu_display_font_buf, NULL);
-   return true;
+   return font_load(fontpath, menu_display_get_font_size());
 }
 
 void menu_display_framebuffer_deinit(void)
@@ -284,16 +231,6 @@ void menu_display_coords_array_reset(void)
 video_coord_array_t *menu_display_get_coords_array(void)
 {
    return &menu_disp_ca;
-}
-
-void *menu_display_get_font_buffer(void)
-{
-   return menu_display_font_buf;
-}
-
-void menu_display_set_font_buffer(void *buffer)
-{
-   menu_display_font_buf = buffer;
 }
 
 const uint8_t *menu_display_get_font_framebuffer(void)
@@ -827,11 +764,10 @@ void menu_display_snow(int width, int height)
    }
 }
 
-void menu_display_draw_text(const char *msg,
-      int width, int height, struct font_params *params)
+void menu_display_draw_text(const font_t *font, const char *msg, int width, int height,
+      struct font_params *params)
 {
-   void *fb_buf = menu_display_get_font_buffer();
-   video_driver_set_osd_msg(msg, params, fb_buf);
+   font_render_full(font, msg, params);
 }
 
 void menu_display_set_alpha(float *color, float alpha_value)

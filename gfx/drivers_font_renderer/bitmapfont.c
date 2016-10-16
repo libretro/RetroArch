@@ -88,6 +88,10 @@ static void *font_renderer_bmp_init(const char *font_path, float font_size)
 
    (void)font_path;
 
+#ifdef _3DS
+   font_size = 10;
+#endif
+
    handle->scale_factor = (unsigned)roundf(font_size / FONT_HEIGHT);
    if (!handle->scale_factor)
       handle->scale_factor = 1;
@@ -140,7 +144,7 @@ static int font_renderer_bmp_get_line_height(void* data)
     return FONT_HEIGHT * handle->scale_factor;
 }
 
-font_renderer_driver_t bitmap_font_renderer = {
+font_backend_t bitmap_font_backend = {
    font_renderer_bmp_init,
    font_renderer_bmp_get_atlas,
    font_renderer_bmp_get_glyph,

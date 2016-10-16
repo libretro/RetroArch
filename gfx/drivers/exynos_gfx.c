@@ -1021,7 +1021,7 @@ struct exynos_video
    struct exynos_data *data;
 
    void *font;
-   const font_renderer_driver_t *font_driver;
+   const font_backend_t *font_driver;
    uint16_t font_color; /* ARGB4444 */
 
    unsigned bytes_per_pixel;

@@ -107,6 +107,7 @@ typedef struct d3d_video
 
    RECT font_rect;
    RECT font_rect_shifted;
+   const font_t *osd_font;
 
 #ifdef HAVE_OVERLAY
    bool overlays_enabled;

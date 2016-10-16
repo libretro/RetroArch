@@ -60,8 +60,7 @@ typedef struct xv
    uint8_t *utable;
    uint8_t *vtable;
 
-   void *font;
-   const font_renderer_driver_t *font_driver;
+   const font_t *font;
 
    unsigned luma_index[2];
    unsigned chroma_u_index;
@@ -130,9 +129,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
    if (!settings->video.font_enable)
       return;
 
-   if (font_renderer_create_default((const void**)&xv->font_driver, 
-            &xv->font, *settings->path.font 
-            ? settings->path.font : NULL, settings->video.font_size))
+   if ((xv->font = font_load(*font_path ? font_path : NULL, font_size)) == NULL)
    {
       int r, g, b;
       r = settings->video.msg_color_r * 255;
@@ -676,7 +673,7 @@ static void xv_render_msg(xv_t *xv, const char *msg,
    if (!xv->font)
       return;
 
-   atlas          = xv->font_driver->get_atlas(xv->font);
+   atlas          = font_get_atlas(xv->font);
 
    msg_base_x     = settings->video.msg_pos_x * width;
    msg_base_y     = height * (1.0f - settings->video.msg_pos_y);
@@ -694,8 +691,7 @@ static void xv_render_msg(xv_t *xv, const char *msg,
       int base_x, base_y, glyph_width, glyph_height, max_width, max_height;
       const uint8_t *src             = NULL;
       uint8_t *out                   = NULL;
-      const struct font_glyph *glyph = 
-         xv->font_driver->get_glyph(xv->font, (uint8_t)*msg);
+      const struct font_glyph *glyph = font_get_glyph(xv->font, (uint8_t)*msg);
 
       if (!glyph)
          continue;
@@ -856,7 +852,7 @@ static void xv_free(void *data)
    free(xv->vtable);
 
    if (xv->font)
-      xv->font_driver->free(xv->font);
+      font_unref(xv->font);
 
    free(xv);
 }

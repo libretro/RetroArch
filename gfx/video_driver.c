@@ -1558,6 +1558,7 @@ void video_driver_destroy_data(void)
 
 void video_driver_deinit(void)
 {
+   font_invalidate_caches();
    uninit_video_input();
    video_driver_lock_free();
    video_driver_data = NULL;

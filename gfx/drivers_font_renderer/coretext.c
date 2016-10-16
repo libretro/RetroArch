@@ -306,7 +306,7 @@ static const char *font_renderer_ct_get_default_font(void)
   return default_font;
 }
 
-font_renderer_driver_t coretext_font_renderer = {
+font_backend_t coretext_font_backend = {
   font_renderer_ct_init,
   font_renderer_ct_get_atlas,
   font_renderer_ct_get_glyph,

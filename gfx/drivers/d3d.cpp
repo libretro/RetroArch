@@ -487,7 +487,7 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    if (!d3d)
       return;
 
-   font_driver_free(NULL);
+   font_unref(d3d->osd_font);
    d3d_deinit_chain(d3d);
 }
 
@@ -815,13 +815,10 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    strlcpy(settings->path.font, "game:\\media\\Arial_12.xpr",
          sizeof(settings->path.font));
 #endif
-   if (!font_driver_init_first(NULL, NULL,
-            d3d, settings->path.font, 0, false,
-            FONT_DRIVER_RENDER_DIRECT3D_API))
-   {
-      RARCH_ERR("[D3D]: Failed to initialize font renderer.\n");
-      return false;
-   }
+
+   font_set_api(FONT_DRIVER_RENDER_DIRECT3D_API);
+   d3d->osd_font = font_load(*settings->path.font ? settings->path.font : NULL,
+                           settings->video.font_size);
 
    return true;
 }
@@ -969,7 +966,7 @@ static void d3d_set_osd_msg(void *data, const char *msg,
    if (d3d->renderchain_driver->set_font_rect && params)
       d3d->renderchain_driver->set_font_rect(d3d, params);
 
-   font_driver_render_msg(NULL, msg, params);
+   font_render_full(d3d->osd_font, msg, params);
 }
 
 /* Delay constructor due to lack of exceptions. */
@@ -1516,7 +1513,7 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   if (font_driver_has_render_msg() && msg)
+   if (msg)
    {
       struct font_params font_parms = {0};
 #ifdef _XBOX
@@ -1531,7 +1528,7 @@ static bool d3d_frame(void *data, const void *frame,
       font_parms.y                  = msg_height;
       font_parms.scale              = 21;
 #endif
-      font_driver_render_msg(NULL, msg, &font_parms);
+      font_render_full(d3d->osd_font, msg, &font_parms);
    }
 
 #ifdef HAVE_MENU
