@@ -249,14 +249,6 @@ static void menu_display_d3d_clear_color(menu_display_ctx_clearcolor_t *clearcol
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
 
-static bool menu_display_d3d_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float font_size)
-{
-   return font_driver_init_first(NULL, font_handle, video_data,
-         font_path, font_size, true, FONT_DRIVER_RENDER_DIRECT3D_API);
-}
-
 menu_display_ctx_driver_t menu_display_ctx_d3d = {
    menu_display_d3d_draw,
    menu_display_d3d_draw_pipeline,
@@ -268,7 +260,7 @@ menu_display_ctx_driver_t menu_display_ctx_d3d = {
    menu_display_d3d_get_default_mvp,
    menu_display_d3d_get_default_vertices,
    menu_display_d3d_get_default_tex_coords,
-   menu_display_d3d_font_init_first,
+   NULL,
    MENU_VIDEO_DRIVER_DIRECT3D,
    "menu_display_d3d",
 };

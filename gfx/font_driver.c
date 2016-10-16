@@ -24,6 +24,28 @@
 #include "../config.h"
 #endif
 
+#include <rhash.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <retro_assert.h>
+
+struct font_t
+{
+   const font_renderer_driver_t *backend;
+   void *backend_data;
+
+   const font_renderer_t *renderer;
+   void *renderer_data;
+
+   unsigned path_hash;
+   char *path;
+   float size;
+
+   font_t *next;
+   unsigned refcount;
+};
+
 static const font_renderer_driver_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
    &freetype_font_renderer,
@@ -41,6 +63,12 @@ static const font_renderer_driver_t *font_backends[] = {
 static const struct font_renderer *font_osd_driver;
 
 static void *font_osd_data;
+
+static font_t *g_fonts              = NULL;
+static font_t *g_last_font          = NULL;
+static const font_t *g_default_font = NULL;
+static enum font_driver_render_api g_api = FONT_DRIVER_RENDER_DONT_CARE;
+
 
 int font_renderer_create_default(const void **data, void **handle,
       const char *font_path, unsigned font_size)
@@ -284,38 +312,47 @@ bool font_driver_has_render_msg(void)
 void font_driver_render_msg(void *font_data,
       const char *msg, const struct font_params *params)
 {
-
-   if (font_osd_driver && font_osd_driver->render_msg)
-      font_osd_driver->render_msg(font_data 
-            ? font_data : font_osd_data, msg, params);
+   font_driver_render((const font_t*)font_data, msg, params);
 }
 
-void font_driver_bind_block(void *font_data, void *block)
+void font_driver_bind_block(const font_t *font, void *block)
 {
-   void             *new_font_data = font_data 
-      ? font_data : font_osd_data;
+   if (font == NULL)
+      font = g_default_font;
 
-   if (font_osd_driver && font_osd_driver->bind_block)
-      font_osd_driver->bind_block(new_font_data, block);
+   if (font->renderer && font->renderer->bind_block)
+      font->renderer->bind_block(font->renderer_data, block);
 }
 
-void font_driver_flush(void *data)
+void font_driver_flush(const font_t *font)
 {
-   if (font_osd_driver && font_osd_driver->flush)
-      font_osd_driver->flush(data);
+   if (font == NULL)
+      font = g_default_font;
+
+   if (font->renderer && font->renderer->flush)
+      font->renderer->flush(font->renderer_data);
 }
 
-int font_driver_get_message_width(void *data,
+int font_driver_get_message_width(const font_t *font,
       const char *msg, unsigned len, float scale)
 {
+   if (font == NULL)
+      font = g_default_font;
 
-   if (!font_osd_driver || !font_osd_driver->get_message_width)
-      return -1;
-   return font_osd_driver->get_message_width(data, msg, len, scale);
+   if (font->renderer && font->renderer->get_message_width)
+      return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
+
+   return -1;
+}
+
+float font_driver_get_size(const font_t *font)
+{
+   return font->size;
 }
 
 void font_driver_free(void *data)
 {
+#if 0
    if (font_osd_driver && font_osd_driver->free)
       font_osd_driver->free(data ? data : font_osd_data);
 
@@ -324,6 +361,7 @@ void font_driver_free(void *data)
 
    font_osd_data   = NULL;
    font_osd_driver = NULL;
+#endif
 }
 
 bool font_driver_init_first(
@@ -350,3 +388,178 @@ bool font_driver_init_first(
          data, font_path, font_size, api);
 }
 
+void font_driver_set_api(enum font_driver_render_api api)
+{
+   if (g_api == FONT_DRIVER_RENDER_DONT_CARE)
+   {
+      g_api = api;
+      RARCH_LOG("[font] Using font api %i\n", api);
+   }
+}
+
+void font_driver_init_default(void)
+{
+   const settings_t *settings = config_get_ptr();
+   const char *filename = *settings->path.font ? settings->path.font : NULL;
+
+   g_default_font = font_driver_load(filename, settings->video.font_size);
+}
+
+void font_driver_deinit_default(void)
+{
+   font_driver_unload(g_default_font);
+   g_default_font = NULL;
+}
+
+const font_t *font_driver_load(const char *filename, float size)
+{
+   const unsigned path_hash = djb2_calculate(filename ? filename : "");
+   font_t *font             = NULL;
+   int i;
+
+   if (fabs(size) < 1.f)
+   {
+      const float FALLBACK = 10.0f;
+
+      RARCH_WARN("[font] Requested font size for %s is too small: %.2f. "
+             "Using %.2f.\n", filename ? filename : "", size, FALLBACK);
+
+      size = FALLBACK;
+   }
+
+   if (g_fonts) /* search existing instance */
+   {
+      for (font = g_fonts; font; font = font->next)
+      {
+         if (font->path_hash == path_hash && fabs(font->size - size) <= 0.001f)
+         {
+            font->refcount += 1;
+            return font;
+         }
+      }
+
+      font = NULL;
+   }
+
+   /* create new instance */
+   for (i = 0; font_backends[i]; ++i)
+   {
+      const font_renderer_driver_t *backend = font_backends[i];
+      const char *path = filename;
+      void *data;
+
+      if (!path || !*path)
+         path = backend->get_default_font();
+
+      if (!path)
+         continue;
+
+      data = backend->init(path, size);
+
+      if (!data)
+         continue;
+
+      font = (font_t*)calloc(1, sizeof(*font));
+
+      if (!font)
+      {
+         RARCH_ERR("[font] Allocation failed "
+                   "(path=%s size=%.2f backend=%s): %s\n",
+                   path, backend->ident, size, strerror(errno));
+
+         return NULL;
+      }
+
+      font->path         = strdup(path);
+      font->path_hash    = path_hash;
+      font->size         = size;
+      font->backend      = backend;
+      font->backend_data = data;
+
+      font->refcount = 1;
+
+      font->next = g_fonts;
+      g_fonts    = font->next;
+
+      RARCH_LOG("[font] Loaded %s (size=%.2f backend=%s)\n",
+                font->path, font->size, font->backend->ident);
+
+      return font;
+   }
+
+   RARCH_WARN("[font] Failed to load %s (size=%.2f): no working backend.\n",
+       filename, size);
+
+   return NULL;
+}
+
+void font_driver_unload(const font_t *font)
+{
+   font_t *f = (font_t *)font; /* yes */
+
+   retro_assert(font != NULL);
+   retro_assert(font->refcount > 0);
+
+   if (--f->refcount)
+      return;
+
+   if (g_fonts)
+   {
+      font_t *entry = g_fonts;
+      font_t *prev  = NULL;
+
+      while (entry)
+      {
+         if (entry == f)
+         {
+            if (prev)
+               prev->next = entry->next;
+            break;
+         }
+
+         prev  = entry;
+         entry = entry->next;
+      }
+   }
+
+   if (f->renderer_data)
+      f->renderer->free(f->renderer_data);
+
+   f->backend->free(f->backend_data);
+
+   if (f->path)
+      free(f->path);
+
+   f->renderer      = NULL;
+   f->renderer_data = NULL;
+
+   f->backend      = NULL;
+   f->backend_data = NULL;
+
+   f->path = NULL;
+
+   free(f);
+
+   if (f == g_default_font)
+      g_default_font = NULL;
+}
+
+bool font_driver_render(const font_t *font, const char *msg, const struct font_params *params)
+{
+   retro_assert(font || g_default_font);
+
+   if (font == NULL)
+      font = g_default_font;
+
+#if 0
+   if (!font->renderer)
+      font_driver_init_renderer(font);
+
+   if (font->renderer)
+      font->renderer->render_msg(font->renderer_data, msg, params);
+   else
+      return false;
+#endif
+
+   return true;
+}

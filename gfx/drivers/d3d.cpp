@@ -815,13 +815,8 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    strlcpy(settings->path.font, "game:\\media\\Arial_12.xpr",
          sizeof(settings->path.font));
 #endif
-   if (!font_driver_init_first(NULL, NULL,
-            d3d, settings->path.font, 0, false,
-            FONT_DRIVER_RENDER_DIRECT3D_API))
-   {
-      RARCH_ERR("[D3D]: Failed to initialize font renderer.\n");
-      return false;
-   }
+   font_driver_set_api(FONT_DRIVER_RENDER_DIRECT3D_API);
+   font_driver_init_default();
 
    return true;
 }
