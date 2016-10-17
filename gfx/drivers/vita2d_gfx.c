@@ -33,6 +33,9 @@
 #include "../../runloop.h"
 #include "../video_coord_array.h"
 
+extern void *memcpy_neon(void *dst, const void *src, size_t n);
+
+
 static void vita2d_gfx_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);
       
@@ -135,7 +138,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
    if (frame)
    {
       if(!(vita->texture&&vita2d_texture_get_datap(vita->texture)==frame)){
-        unsigned i, j;
+        unsigned i;
         unsigned int stride;
 
         if ((width != vita->width || height != vita->height) && vita->texture)
@@ -163,8 +166,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
            const uint32_t     *frame32 = frame;
 
            for (i = 0; i < height; i++)
-              for (j = 0; j < width; j++)
-                 tex32[j + i*stride] = frame32[j + i*pitch];
+              memcpy_neon(&tex32[i*stride],&frame32[i*pitch],pitch*sizeof(uint32_t));
         }
         else
         {
@@ -174,8 +176,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
            const uint16_t *frame16 = frame;
 
            for (i = 0; i < height; i++)
-              for (j = 0; j < width; j++)
-                 tex16[j + i*stride] = frame16[j + i*pitch];
+              memcpy_neon(&tex16[i*stride],&frame16[i*pitch],width*sizeof(uint16_t));
         }
       }
    }
@@ -696,7 +697,7 @@ static void vita_set_texture_enable(void *data, bool state, bool full_screen)
 static uintptr_t vita_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   unsigned int stride, pitch, j, k;
+   unsigned int stride, pitch, j;
    struct texture_image *image = (struct texture_image*)data;
    struct vita2d_texture *texture = vita2d_create_empty_texture_format(image->width, 
      image->height,SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB);
@@ -713,8 +714,7 @@ static uintptr_t vita_load_texture(void *video_data, void *data,
    const uint32_t     *frame32 = image->pixels;
    pitch = image->width;
    for (j = 0; j < image->height; j++)
-      for (k = 0; k < image->width; k++)
-         tex32[k + j*stride] = frame32[k + j*pitch];
+         memcpy_neon(&tex32[j*stride],&frame32[j*pitch],pitch*sizeof(uint32_t));
 
    return (uintptr_t)texture;
 }

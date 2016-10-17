@@ -65,7 +65,7 @@ void convert_s16_to_float_SSE2(float *out,
 void convert_s16_to_float_altivec(float *out,
       const int16_t *in, size_t samples, float gain);
 
-#elif defined(__ARM_NEON__) && !defined(VITA)
+#elif defined(__ARM_NEON__)
 #define convert_s16_to_float convert_s16_to_float_arm
 
 void (*convert_s16_to_float_arm)(float *out,
