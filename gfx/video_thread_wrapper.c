@@ -137,13 +137,11 @@ struct thread_packet
       struct
       {
          custom_font_command_method_t method;
-         const void **font_driver;
+         const font_renderer_t **font_driver;
          void **font_handle;
          void *video_data;
-         const char *font_path;
-         float font_size;
+         const font_t *font_data;
          bool return_value;
-         enum font_driver_render_api api;
       } font_init;
    } data;
 };
@@ -222,6 +220,21 @@ struct thread_video
    video_driver_t video_thread;
 
 };
+
+static
+#ifdef HAVE_THREADS
+#if defined(__GNUC__) && (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)  >= 30301
+__thread
+#elif defined(_MSC_VER) && _MSC_VER >= 1300
+__declspec(thread)
+#endif
+#endif
+bool g_is_video_thread = false;
+
+bool video_thread_is_video_thread(void)
+{
+   return g_is_video_thread;
+}
 
 static void *video_thread_init_never_call(const video_info_t *video,
       const input_driver_t **input, void **input_data)
@@ -535,9 +548,7 @@ static bool video_thread_handle_packet(
                   (pkt.data.font_init.font_driver,
                      pkt.data.font_init.font_handle,
                      pkt.data.font_init.video_data,
-                     pkt.data.font_init.font_path,
-                     pkt.data.font_init.font_size,
-                     pkt.data.font_init.api);
+                     pkt.data.font_init.font_data);
          video_thread_reply(thr, &pkt);
          break;
 
@@ -564,6 +575,7 @@ static bool video_thread_handle_packet(
 static void video_thread_loop(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   g_is_video_thread = true;
 
    for (;;)
    {
@@ -627,6 +639,8 @@ static void video_thread_loop(void *data)
          slock_unlock(thr->lock);
       }
    }
+
+   g_is_video_thread = false;
 }
 
 static bool video_thread_alive(void *data)
@@ -1394,9 +1408,8 @@ static void video_thread_send_and_wait(thread_video_t *thr,
    thr->send_and_wait(thr, pkt);
 }
 
-bool video_thread_font_init(const void **font_driver, void **font_handle,
-      void *data, const char *font_path, float font_size,
-      enum font_driver_render_api api, custom_font_command_method_t func)
+bool video_thread_font_init(const font_renderer_t **font_driver, void **font_handle,
+      void *data, const font_t *font_data, custom_font_command_method_t func)
 {
    thread_packet_t pkt;
    thread_video_t *thr = (thread_video_t*)video_driver_get_ptr(true);
@@ -1409,9 +1422,7 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    pkt.data.font_init.font_driver = font_driver;
    pkt.data.font_init.font_handle = font_handle;
    pkt.data.font_init.video_data  = data;
-   pkt.data.font_init.font_path   = font_path;
-   pkt.data.font_init.font_size   = font_size;
-   pkt.data.font_init.api         = api;
+   pkt.data.font_init.font_data   = font_data;
 
    video_thread_send_and_wait(thr, &pkt);
 

@@ -158,6 +158,8 @@ void font_driver_deinit_default(void);
 const font_t *font_driver_load(const char *filename, float size);
 void font_driver_unload(const font_t *font);
 
+void font_driver_context_reseted(void);
+
 extern font_renderer_t gl_raster_font;
 extern font_renderer_t libdbg_font;
 extern font_renderer_t d3d_xbox360_font;
