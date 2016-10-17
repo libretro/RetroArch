@@ -122,7 +122,7 @@ void convert_float_to_s16_altivec(int16_t *out,
    }
    convert_float_to_s16_C(out, in, samples_in);
 }
-#elif defined(__ARM_NEON__) && !defined(VITA)
+#elif defined(__ARM_NEON__)
 void convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
 /**
  * convert_float_to_s16_neon:
@@ -210,7 +210,7 @@ void convert_float_to_s16_init_simd(void)
    unsigned cpu = cpu_features_get();
 
    (void)cpu;
-#if defined(__ARM_NEON__) && !defined(VITA)
+#if defined(__ARM_NEON__)
    convert_float_to_s16_arm = (cpu & RETRO_SIMD_NEON) ?
       convert_float_to_s16_neon : convert_float_to_s16_C;
 #endif
