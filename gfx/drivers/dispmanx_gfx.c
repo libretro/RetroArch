@@ -302,12 +302,17 @@ static void dispmanx_surface_update(void *data, const void *frame,
    struct dispmanx_video *_dispvars = data;
    struct dispmanx_page       *page = NULL;
 
-   /* Wait until last issued flip completes to get a free page. Also, 
-      dispmanx doesn't support issuing more than one pageflip.*/
-   slock_lock(_dispvars->pending_mutex);
-   if (_dispvars->pageflip_pending > 0)
-      scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-   slock_unlock(_dispvars->pending_mutex);
+   settings_t *settings = config_get_ptr();
+
+   if (settings->video.max_swapchain_images >= 3)
+   {
+      /* Wait until last issued flip completes to get a free page. Also, 
+       * dispmanx doesn't support issuing more than one pageflip. */
+      slock_lock(_dispvars->pending_mutex);
+      if (_dispvars->pageflip_pending > 0)
+         scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+      slock_unlock(_dispvars->pending_mutex);
+   }
 
    page = dispmanx_get_free_page(_dispvars, surface);
 
@@ -324,8 +329,19 @@ static void dispmanx_surface_update(void *data, const void *frame,
    vc_dispmanx_update_submit(_dispvars->update, dispmanx_vsync_callback, (void*)page);
 
    slock_lock(_dispvars->pending_mutex);
-   _dispvars->pageflip_pending++;	
+   _dispvars->pageflip_pending++;
    slock_unlock(_dispvars->pending_mutex);
+
+   if (settings->video.max_swapchain_images <= 2)
+   {
+      /* Wait for page flip before continuing, i.e. do not allow core to run 
+       * ahead. This reduces input lag, but is less forgiving performance-
+       * wise. */
+      slock_lock(_dispvars->pending_mutex);
+      if (_dispvars->pageflip_pending > 0)
+         scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+      slock_unlock(_dispvars->pending_mutex);
+   }
 }
 
 /* Enable/disable bilinear filtering. */
