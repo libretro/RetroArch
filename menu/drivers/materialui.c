@@ -94,7 +94,7 @@ typedef struct mui_handle
       int size;
    } cursor;
 
-   struct 
+   struct
    {
       struct
       {
@@ -338,7 +338,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
          &active_tab_marker_color[0]);
 }
 
-static void mui_draw_scrollbar(mui_handle_t *mui, 
+static void mui_draw_scrollbar(mui_handle_t *mui,
       unsigned width, unsigned height, float *coord_color)
 {
    unsigned header_height;
@@ -475,7 +475,7 @@ static void mui_render(void *data)
    {
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       float    old_accel_val, new_accel_val;
-      unsigned new_pointer_val = 
+      unsigned new_pointer_val =
          (pointer_y - mui->line_height + mui->scroll_y - 16)
          / mui->line_height;
 
@@ -493,7 +493,7 @@ static void mui_render(void *data)
    {
       int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      unsigned new_pointer_val = 
+      unsigned new_pointer_val =
          (mouse_y - mui->line_height + mui->scroll_y - 16)
          / mui->line_height;
 
@@ -692,12 +692,12 @@ static void mui_render_menu_list(mui_handle_t *mui,
          width,
          height,
          *frame_count / 20,
-         entry_selected ? font_hover_color : font_normal_color, 
+         entry_selected ? font_hover_color : font_normal_color,
          entry_selected,
-         rich_label, 
-         entry_value, 
+         rich_label,
+         entry_value,
          menu_list_color
-      ); 
+      );
    }
 }
 
@@ -727,12 +727,12 @@ static int mui_get_core_title(char *s, size_t len)
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
          &system);
-   
+
    core_name    = system->library_name;
    core_version = system->library_version;
 
    if (!settings->menu.core_enable)
-      return -1; 
+      return -1;
 
    if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info))
    {
@@ -1104,12 +1104,12 @@ static void mui_frame(void *data)
 
    /* highlighted entry */
    mui_render_quad(
-      mui, 
+      mui,
       0,
       header_height - mui->scroll_y + mui->line_height *selection,
       width,
       mui->line_height,
-      width, 
+      width,
       height,
       &highlighted_entry_color[0]
    );
@@ -1117,11 +1117,11 @@ static void mui_frame(void *data)
    menu_display_font_bind_block(&mui->list_block);
 
    mui_render_menu_list(
-      mui, 
-      width, 
+      mui,
+      width,
       height,
-      font_normal_color, 
-      font_hover_color, 
+      font_normal_color,
+      font_hover_color,
       &active_tab_marker_color[0]
    );
 
@@ -1131,11 +1131,11 @@ static void mui_frame(void *data)
    /* header */
    mui_render_quad(
       mui,
-      0, 
-      0, 
-      width, 
+      0,
+      0,
+      width,
       header_height,
-      width, 
+      width,
       height,
       &header_bg_color[0]);
 
@@ -1154,11 +1154,11 @@ static void mui_frame(void *data)
 
    mui_render_quad(
       mui,
-      0, 
-      header_height, 
+      0,
+      header_height,
       width,
       mui->shadow_height,
-      width, 
+      width,
       height,
       &shadow_bg[0]);
 
@@ -1199,7 +1199,7 @@ static void mui_frame(void *data)
       size_t         usable_width = width - (mui->margin * 2);
 
       title_buf_msg_tmp[0] = title_buf_msg[0] = '\0';
-      
+
       snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)",
             title_buf, title_msg);
       value_len = utf8len(title_buf);
@@ -1260,8 +1260,8 @@ static void mui_layout(mui_handle_t *mui)
 
    video_driver_get_size(&width, &height);
 
-   /* Mobiles platforms may have very small display metrics 
-    * coupled to a high resolution, so we should be DPI aware 
+   /* Mobiles platforms may have very small display metrics
+    * coupled to a high resolution, so we should be DPI aware
     * to ensure the entries hitboxes are big enough.
     *
     * On desktops, we just care about readability, with every widget
@@ -1290,7 +1290,7 @@ static void mui_layout(mui_handle_t *mui)
 
    if (fb_buf) /* calculate a more realistic ticker_limit */
    {
-      unsigned m_width = 
+      unsigned m_width =
          font_driver_get_message_width(fb_buf, "a", 1, 1);
 
       if (m_width)
@@ -1316,9 +1316,6 @@ static void *mui_init(void **userdata)
       goto error;
 
    *userdata = mui;
-
-   mui_layout(mui);
-   menu_display_allocate_white_texture();
 
    mui->cursor.size  = 64.0;
 
@@ -1472,13 +1469,12 @@ static void mui_context_reset(void *data)
    if (!mui || !settings)
       return;
 
-
    mui_layout(mui);
    mui_context_bg_destroy(mui);
    menu_display_allocate_white_texture();
    mui_context_reset_textures(mui);
 
-   task_push_image_load(settings->path.menu_wallpaper, 
+   task_push_image_load(settings->path.menu_wallpaper,
          MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
          menu_display_handle_wallpaper_upload, NULL);
 }
@@ -1516,21 +1512,21 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
    switch (mui->categories.selection_ptr)
    {
       case MUI_SYSTEM_TAB_MAIN:
-         menu_stack->list[stack_size - 1].label = 
+         menu_stack->list[stack_size - 1].label =
             strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
-         menu_stack->list[stack_size - 1].type = 
+         menu_stack->list[stack_size - 1].type =
             MENU_SETTINGS;
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
-         menu_stack->list[stack_size - 1].label = 
+         menu_stack->list[stack_size - 1].label =
             strdup(msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
-         menu_stack->list[stack_size - 1].type = 
+         menu_stack->list[stack_size - 1].type =
             MENU_PLAYLISTS_TAB;
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
-         menu_stack->list[stack_size - 1].label = 
+         menu_stack->list[stack_size - 1].label =
             strdup(msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
-         menu_stack->list[stack_size - 1].type = 
+         menu_stack->list[stack_size - 1].type =
             MENU_SETTINGS;
          break;
    }
@@ -1693,7 +1689,7 @@ static int mui_list_push(void *data, void *userdata,
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
          entry.enum_idx      = MENU_ENUM_LABEL_START_NET_RETROPAD;
-         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry); 
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
          entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
@@ -1723,7 +1719,7 @@ static size_t mui_list_get_selection(void *data)
 }
 
 static int mui_pointer_tap(void *userdata,
-      unsigned x, unsigned y, 
+      unsigned x, unsigned y,
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {

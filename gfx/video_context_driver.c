@@ -397,6 +397,7 @@ bool video_context_driver_has_windowed(void)
 
 void video_context_driver_free(void)
 {
+   font_driver_context_reseted();
    if (current_video_context->destroy)
       current_video_context->destroy(video_context_data);
    current_video_context = NULL;

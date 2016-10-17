@@ -807,7 +807,7 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
 }
 
 void video_driver_set_osd_msg(const char *msg,
-      const struct font_params *params, void *font)
+      const struct font_params *params, const font_t *font)
 {
    if (video_driver_poke && video_driver_poke->set_osd_msg)
       video_driver_poke->set_osd_msg(video_driver_data, msg, params, font);

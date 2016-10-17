@@ -27,8 +27,7 @@ typedef struct
 {
    vk_t *vk;
    struct vk_texture texture;
-   const font_renderer_driver_t *font_driver;
-   void *font_data;
+   const font_t *font_data;
 
    struct vk_vertex *pv;
    struct vk_buffer_range range;
@@ -37,8 +36,7 @@ typedef struct
 
 static void vulkan_raster_font_free_font(void *data);
 
-static void *vulkan_raster_font_init_font(void *data,
-      const char *font_path, float font_size)
+static void *vulkan_raster_font_init_font(void *data, const font_t *font_data)
 {
    const struct font_atlas *atlas = NULL;
    vulkan_raster_t *font = (vulkan_raster_t*)calloc(1, sizeof(*font));
@@ -56,16 +54,9 @@ static void *vulkan_raster_font_init_font(void *data,
       return NULL;
 
    font->vk = (vk_t*)data;
+   font->font_data = font_data;
 
-   if (!font_renderer_create_default((const void**)&font->font_driver,
-            &font->font_data, font_path, font_size))
-   {
-      RARCH_WARN("Couldn't initialize font renderer.\n");
-      free(font);
-      return NULL;
-   }
-
-   atlas = font->font_driver->get_atlas(font->font_data);
+   atlas = font_driver_get_atlas(font->font_data);
    font->texture = vulkan_create_texture(font->vk, NULL,
          atlas->width, atlas->height, VK_FORMAT_R8_UNORM, atlas->buffer,
          NULL /*&swizzle*/, VULKAN_TEXTURE_STATIC);
@@ -78,9 +69,6 @@ static void vulkan_raster_font_free_font(void *data)
    vulkan_raster_t *font = (vulkan_raster_t*)data;
    if (!font)
       return;
-
-   if (font->font_driver && font->font_data)
-      font->font_driver->free(font->font_data);
 
    vkQueueWaitIdle(font->vk->context->queue);
    vulkan_destroy_texture( 
@@ -102,10 +90,9 @@ static int vulkan_get_message_width(void *data, const char *msg,
 
    for (i = 0; i < msg_len; i++)
    {
-      const struct font_glyph *glyph = 
-         font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+      const struct font_glyph *glyph = font_driver_get_glyph(font->font_data, (uint8_t)msg[i]);
       if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+         glyph = font_driver_get_glyph(font->font_data, '?');
       if (!glyph)
          continue;
 
@@ -158,10 +145,10 @@ static void vulkan_raster_font_render_line(
    {
       int off_x, off_y, tex_x, tex_y, width, height;
       const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)msg[i]);
+         font_driver_get_glyph(font->font_data, (uint8_t)msg[i]);
 
       if (!glyph) /* Do something smarter here ... */
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
+         glyph = font_driver_get_glyph(font->font_data, '?');
       if (!glyph)
          continue;
 
@@ -201,14 +188,14 @@ static void vulkan_raster_font_render_message(
       return;
 
    /* If the font height is not supported just draw as usual */
-   if (!font->font_driver->get_line_height)
+   if (font_driver_get_line_height(font->font_data) <= 0)
    {
       vulkan_raster_font_render_line(font, msg, strlen(msg),
             scale, color, pos_x, pos_y, text_align);
       return;
    }
 
-   line_height = scale / font->font_driver->get_line_height(font->font_data);
+   line_height = scale / font_driver_get_line_height(font->font_data);
 
    for (;;)
    {
@@ -352,11 +339,9 @@ static const struct font_glyph *vulkan_raster_font_get_glyph(
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
 
-   if (!font || !font->font_driver)
-      return NULL;
-   if (!font->font_driver->ident)
+   if (!font)
        return NULL;
-   return font->font_driver->get_glyph((void*)font->font_driver, code);
+   return font_driver_get_glyph(font->font_data, code);
 }
 
 static void vulkan_raster_font_flush_block(void *data)

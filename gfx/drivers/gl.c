@@ -947,7 +947,7 @@ static void gl_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void gl_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const struct font_params *params, const font_t *font)
 {
    font_driver_render_msg(font, msg, params);
 }
@@ -2084,10 +2084,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (settings->video.font_enable)
    {
-      if (!font_driver_init_first(NULL, NULL, gl, *settings->path.font
-            ? settings->path.font : NULL, settings->video.font_size, false,
-            FONT_DRIVER_RENDER_OPENGL_API))
-         RARCH_ERR("[GL]: Failed to initialize font renderer.\n");
+      font_driver_set_api(FONT_DRIVER_RENDER_OPENGL_API);
+      font_driver_init_default();
    }
 
 #ifdef HAVE_GL_ASYNC_READBACK
