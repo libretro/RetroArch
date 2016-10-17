@@ -60,12 +60,13 @@ static const font_renderer_driver_t *font_backends[] = {
    NULL
 };
 
+#if 0
 static const struct font_renderer *font_osd_driver;
-
 static void *font_osd_data;
+static font_t *g_last_font          = NULL;
+#endif
 
 static font_t *g_fonts              = NULL;
-static font_t *g_last_font          = NULL;
 static const font_t *g_default_font = NULL;
 static enum font_driver_render_api g_renderer_api = FONT_DRIVER_RENDER_DONT_CARE;
 

@@ -285,7 +285,7 @@ video_coord_array_t *menu_display_get_coords_array(void)
 
 void *menu_display_get_font_buffer(void)
 {
-   return menu_display_font_buf;
+   return (void*)menu_display_font_buf;
 }
 
 void menu_display_set_font_buffer(void *buffer)
