@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -75,7 +75,7 @@ int font_renderer_create_default(const void **data, void **handle,
 {
 
    unsigned i;
-   const font_renderer_driver_t **drv = 
+   const font_renderer_driver_t **drv =
       (const font_renderer_driver_t**)data;
 
    for (i = 0; font_backends[i]; i++)
@@ -310,7 +310,15 @@ static INLINE font_t *font_check(const font_t *font, bool need_renderer)
    if (need_renderer && f)
    {
       if (!f->renderer)
-         font_init_first(&f->renderer, &f->renderer_data, video_driver_get_ptr(false), f);
+      {
+         const settings_t *settings = config_get_ptr();
+         bool is_video_thread = video_thread_is_video_thread();
+
+         if (!is_video_thread && settings->video.threaded && !video_driver_is_hw_context())
+            video_thread_font_init(&f->renderer, &f->renderer_data, video_driver_get_ptr(false), f, font_init_first);
+         else
+            font_init_first(&f->renderer, &f->renderer_data, video_driver_get_ptr(false), f);
+      }
 
       return f->renderer ? f : NULL;
    }
@@ -565,4 +573,19 @@ void font_driver_unload(const font_t *font)
        g_fonts = NULL;
 
    free(f);
+}
+
+void font_driver_context_reseted(void)
+{
+   font_t *font;
+   for (font = g_fonts; font; font = font->next)
+   {
+      if (font->renderer)
+      {
+         font->renderer->free(font->renderer_data);
+
+         font->renderer      = NULL;
+         font->renderer_data = NULL;
+      }
+   }
 }
