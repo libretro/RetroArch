@@ -35,6 +35,7 @@ RETRO_BEGIN_DECLS
 typedef struct sthread sthread_t;
 typedef struct slock slock_t;
 typedef struct scond scond_t;
+typedef unsigned sthread_tls_t;
 
 /**
  * sthread_create:
@@ -177,6 +178,46 @@ int scond_broadcast(scond_t *cond);
  * on the specified condition variable @cond. 
  **/
 void scond_signal(scond_t *cond);
+
+/**
+ * @brief Creates a thread local storage key
+ *
+ * This function shall create thread-specific data key visible to all threads in
+ * the process. The same key can be used by multiple threads to store
+ * thread-local data.
+ *
+ * When the key is created NULL shall be associated with it in all active
+ * threads. Whenever a new thread is spawned the all defined keys will be
+ * associated with NULL on that thread.
+ *
+ * @param tls
+ * @return whether the operation suceeded or not
+ */
+bool sthread_tls_create(sthread_tls_t *tls);
+
+/**
+ * @brief Deletes a thread local storage
+ * @param tls
+ * @return whether the operation suceeded or not
+ */
+bool sthread_tls_delete(sthread_tls_t *tls);
+
+/**
+ * @brief Retrieves thread specific data associated with a key
+ *
+ * There is no way to tell whether this function failed.
+ *
+ * @param tls
+ * @return
+ */
+void *sthread_tls_get(sthread_tls_t *tls);
+
+/**
+ * @brief Binds thread specific data to a key
+ * @param tls
+ * @return whether the operation suceeded or not
+ */
+bool sthread_tls_set(sthread_tls_t *tls, const void *data);
 
 RETRO_END_DECLS
 
