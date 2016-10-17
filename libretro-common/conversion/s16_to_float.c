@@ -122,7 +122,7 @@ void convert_s16_to_float_altivec(float *out,
    convert_s16_to_float_C(out, in, samples_in, gain);
 }
 
-#elif defined(__ARM_NEON__) && !defined(VITA)
+#elif defined(__ARM_NEON__)
 /* Avoid potential hard-float/soft-float ABI issues. */
 void convert_s16_float_asm(float *out, const int16_t *in,
       size_t samples, const float *gain);
@@ -235,7 +235,7 @@ void convert_s16_to_float_init_simd(void)
    unsigned cpu = cpu_features_get();
 
    (void)cpu;
-#if defined(__ARM_NEON__) && !defined(VITA)
+#if defined(__ARM_NEON__)
    convert_s16_to_float_arm = (cpu & RETRO_SIMD_NEON) ?
       convert_s16_to_float_neon : convert_s16_to_float_C;
 #endif

@@ -66,7 +66,7 @@ vita2d_texture *vita2d_create_empty_texture_format(unsigned int w, unsigned int 
 	}
 
 	/* Clear the texture */
-	memset(texture_data, 0, tex_size);
+	//memset(texture_data, 0, tex_size);
 
 	/* Create the gxm texture */
 	sceGxmTextureInitLinear(
@@ -94,7 +94,7 @@ vita2d_texture *vita2d_create_empty_texture_format(unsigned int w, unsigned int 
 			return NULL;
 		}
 
-		memset(texture_palette, 0, pal_size);
+		//memset(texture_palette, 0, pal_size);
 
 		sceGxmTextureSetPalette(&texture->gxm_tex, texture_palette);
 	} else {
