@@ -2192,10 +2192,6 @@ bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
       uintptr_t *id)
 {
-#ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-#endif
-
    if (!id || !video_driver_poke || !video_driver_poke->load_texture)
       return false;
 
