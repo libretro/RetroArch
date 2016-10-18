@@ -704,7 +704,7 @@ uint64_t cpu_features_get(void)
    if (check_arm_cpu_feature("vfpv4"))
       cpu |= RETRO_SIMD_VFPV4;
 
-   if (check_arm_cpu_feature("asymd"))
+   if (check_arm_cpu_feature("asimd"))
    {
       cpu |= RETRO_SIMD_ASIMD;
 #ifdef __ARM_NEON__
