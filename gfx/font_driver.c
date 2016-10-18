@@ -313,15 +313,18 @@ int font_driver_get_message_width(void *font_data,
 
 void font_driver_free(void *font_data)
 {
-   font_data_t *font = (font_data_t*)(font_data ? font_data : g_osd_font);
-   if (font->renderer && font->renderer->free)
-      font->renderer->free(font->renderer_data);
+   font_data_t *font = (font_data_t*)font_data;
 
-   if (font_data)
-      return;
+   if (font)
+   {
+      if (font->renderer && font->renderer->free)
+         font->renderer->free(font->renderer_data);
 
-   font->renderer      = NULL;
-   font->renderer_data = NULL;
+      font->renderer      = NULL;
+      font->renderer_data = NULL;
+
+      free(font);
+   }
 }
 
 font_data_t *font_driver_init_first(
