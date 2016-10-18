@@ -433,13 +433,8 @@ static void* ctr_init(const video_info_t* video,
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
-   if (!font_driver_init_first(NULL, NULL, ctr, *settings->path.font
-          ? settings->path.font : NULL, settings->video.font_size, false,
-          FONT_DRIVER_RENDER_CTR))
-   {
-      RARCH_ERR("Font: Failed to initialize font renderer.\n");
-        return false;
-   }
+   font_driver_set_api(FONT_DRIVER_RENDER_CTR);
+   font_driver_init_default();
 
    ctr->msg_rendering_enabled = false;
    ctr->menu_texture_frame_enable = false;
@@ -1100,7 +1095,7 @@ static void ctr_unload_texture(void *data, uintptr_t handle)
 }
 
 static void ctr_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params, void *font)
+      const struct font_params *params, const font_t *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 

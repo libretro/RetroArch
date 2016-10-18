@@ -169,7 +169,7 @@ static bool menu_display_msg_force               = false;
 static bool menu_display_font_alloc_framebuf     = false;
 static bool menu_display_framebuf_dirty          = false;
 static const uint8_t *menu_display_font_framebuf = NULL;
-static void *menu_display_font_buf               = NULL;
+static const font_t  *menu_display_font_buf      = NULL;
 static msg_queue_t *menu_display_msg_queue       = NULL;
 static menu_display_ctx_driver_t *menu_disp      = NULL;
 
@@ -190,7 +190,7 @@ void menu_display_blend_end(void)
 void menu_display_font_main_deinit(void)
 {
    if (menu_display_font_buf)
-      font_driver_free(menu_display_font_buf);
+      font_driver_unload(menu_display_font_buf);
    menu_display_font_buf  = NULL;
    menu_display_font_size = 0;
 }
@@ -221,12 +221,9 @@ bool menu_display_font_main_init(menu_display_ctx_font_t *font)
    if (!font || !menu_disp)
       return false;
 
-   if (!menu_disp->font_init_first)
-      return false;
+   menu_display_font_buf = font_driver_load(font->path, font->size);
 
-   if (!menu_disp->font_init_first(&menu_display_font_buf,
-            video_driver_get_ptr(false),
-            font->path, font->size))
+   if (!menu_display_font_buf)
       return false;
 
    menu_display_font_size = font->size;
@@ -288,7 +285,7 @@ video_coord_array_t *menu_display_get_coords_array(void)
 
 void *menu_display_get_font_buffer(void)
 {
-   return menu_display_font_buf;
+   return (void*)menu_display_font_buf;
 }
 
 void menu_display_set_font_buffer(void *buffer)
@@ -830,8 +827,7 @@ void menu_display_snow(int width, int height)
 void menu_display_draw_text(const char *msg,
       int width, int height, struct font_params *params)
 {
-   void *fb_buf = menu_display_get_font_buffer();
-   video_driver_set_osd_msg(msg, params, fb_buf);
+   video_driver_set_osd_msg(msg, params, menu_display_font_buf);
 }
 
 void menu_display_set_alpha(float *color, float alpha_value)

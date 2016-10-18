@@ -1068,21 +1068,11 @@ static bool zarch_load_image(void *userdata,
 
 static void zarch_context_reset(void *data)
 {
-   menu_display_ctx_font_t font_info;
    settings_t *settings  = config_get_ptr();
    zui_t          *zui   = (zui_t*)data;
 
    if (!zui || !settings)
       return;
-
-   font_info.path    = NULL;
-   font_info.size    = zui->font_size;
-
-   if (settings->video.font_enable)
-      font_info.path = settings->path.font;
-
-   if (!menu_display_font_main_init(&font_info))
-      RARCH_WARN("Failed to load font.");
 
    zarch_context_bg_destroy(zui);
 

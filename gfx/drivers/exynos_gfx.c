@@ -1473,11 +1473,12 @@ static void exynos_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void exynos_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params)
+      const struct font_params *params, const font_t *font)
 {
    (void)data;
    (void)msg;
    (void)params;
+   (void)font;
 }
 
 static void exynos_show_mouse(void *data, bool state)
