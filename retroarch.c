@@ -1108,7 +1108,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    static bool rarch_ips_pref              = false;
    static bool rarch_patch_blocked         = false;
    settings_t *settings                    = config_get_ptr();
-#ifdef HAVE_THREADS
+#ifdef HAVE_THREAD_STORAGE
    static sthread_tls_t rarch_tls;
    const void *MAGIC_POINTER = (void*)0xB16B00B5;
 #endif
@@ -1223,13 +1223,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
 
-#ifdef HAVE_THREADS
+#ifdef HAVE_THREAD_STORAGE
          sthread_tls_delete(&rarch_tls);
 #endif
          break;
       case RARCH_CTL_INIT:
          rarch_ctl(RARCH_CTL_DEINIT, NULL);
-#ifdef HAVE_THREADS
+#ifdef HAVE_THREAD_STORAGE
          sthread_tls_create(&rarch_tls);
          sthread_tls_set(&rarch_tls, MAGIC_POINTER);
 #endif
@@ -1319,7 +1319,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          break;
       case RARCH_CTL_IS_MAIN_THREAD:
-#ifdef HAVE_THREADS
+#ifdef HAVE_THREAD_STORAGE
          return sthread_tls_get(&rarch_tls) == MAGIC_POINTER;
 #else
          return true;
