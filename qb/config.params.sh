@@ -1,6 +1,6 @@
 HAVE_LIBRETRODB=yes        # Libretrodb support
 HAVE_RGUI=yes              # RGUI menu
-HAVE_MATERIALUI=auto       # MaterialUI menu 
+HAVE_MATERIALUI=auto       # MaterialUI menu
 HAVE_XMB=auto              # XMB menu
 HAVE_ZARCH=no              # Zarch menu
 HAVE_NUKLEAR=no            # Nuklear menu
@@ -20,6 +20,7 @@ HAVE_MAN_DIR=              # Manpage install directory
 HAVE_OPENGLES_LIBS=        # Link flags for custom GLES library
 HAVE_OPENGLES_CFLAGS=      # C-flags for custom GLES library
 HAVE_THREADS=auto          # Threading support
+HAVE_THREAD_STORAGE=auto   # Thread Local Storage support
 HAVE_FFMPEG=auto           # FFmpeg recording support
 C89_FFMPEG=no
 HAVE_SSA=auto              # SSA/ASS for FFmpeg subtitle support

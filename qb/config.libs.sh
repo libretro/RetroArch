@@ -150,9 +150,17 @@ fi
 
 if [ "$OS" = 'Win32' ]; then
    HAVE_THREADS=yes
+   HAVE_THREAD_STORAGE=yes
    HAVE_DYLIB=yes
 else
    check_lib THREADS "$PTHREADLIB" pthread_create
+
+   if [ "$HAVE_THREADS" = 'yes' ]; then
+      check_lib THREAD_STORAGE "$PTHREADLIB" pthread_key_create
+   else
+      HAVE_THREAD_STORAGE=no
+   fi
+
    check_lib DYLIB "$DYLIB" dlopen
 fi
 

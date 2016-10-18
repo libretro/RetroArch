@@ -106,8 +106,9 @@ enum rarch_ctl_state
    /* Username */
    RARCH_CTL_HAS_SET_USERNAME,
    RARCH_CTL_USERNAME_SET,
-   RARCH_CTL_USERNAME_UNSET
+   RARCH_CTL_USERNAME_UNSET,
 
+   RARCH_CTL_IS_MAIN_THREAD
 };
 
 enum rarch_capabilities
