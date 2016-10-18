@@ -1450,7 +1450,7 @@ static void xmb_context_reset_horizontal_list(
       char sysname[PATH_MAX_LENGTH];
       char texturepath[PATH_MAX_LENGTH];
       char content_texturepath[PATH_MAX_LENGTH];
-      struct texture_image ti                   = {0};
+      struct texture_image ti;
       const char *path                          = NULL;
       xmb_node_t *node                          =
          xmb_get_userdata_from_horizontal_list(xmb, i);
@@ -1482,6 +1482,10 @@ static void xmb_context_reset_horizontal_list(
       fill_pathname_join_concat(texturepath, iconpath, sysname,
             file_path_str(FILE_PATH_PNG_EXTENSION),
             sizeof(texturepath));
+
+      ti.width    = 0;
+      ti.height   = 0;
+      ti.pixels   = NULL;
 
       if (image_texture_load(&ti, texturepath))
       {

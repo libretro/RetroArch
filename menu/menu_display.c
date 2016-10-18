@@ -844,10 +844,16 @@ void menu_display_set_alpha(float *color, float alpha_value)
 void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
       uintptr_t *item)
 {
-   struct texture_image ti     = {0};
-   char path[PATH_MAX_LENGTH]  = {0};
+   struct texture_image ti;
+   char path[PATH_MAX_LENGTH];
 
-   if (texture_path != NULL)
+   path[0]                     = '\0';
+
+   ti.width                    = 0;
+   ti.height                   = 0;
+   ti.pixels                   = NULL;
+
+   if (!string_is_empty(texture_path))
       fill_pathname_join(path, iconpath, texture_path, sizeof(path));
 
    if (string_is_empty(path) || !path_file_exists(path))

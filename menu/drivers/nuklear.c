@@ -128,8 +128,13 @@ static void nk_menu_context_reset_textures(nk_menu_handle_t *nk,
 
    for (i = 0; i < NK_TEXTURE_LAST; i++)
    {
-      struct texture_image ti     = {0};
-      char path[PATH_MAX_LENGTH]  = {0};
+      struct texture_image ti;
+      char path[PATH_MAX_LENGTH];
+
+      ti.width    = 0;
+      ti.height   = 0;
+      ti.pixels   = NULL;
+      path[0]     = '\0';
 
       switch(i)
       {
