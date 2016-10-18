@@ -1561,6 +1561,8 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
                strlcat(s, "VMX ", len);
             if (cpu & RETRO_SIMD_VMX128)
                strlcat(s, "VMX128 ", len);
+            if (cpu & RETRO_SIMD_ASIMD)
+               strlcat(s, "ASIMD ", len);
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:

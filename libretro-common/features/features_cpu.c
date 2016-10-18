@@ -704,6 +704,15 @@ uint64_t cpu_features_get(void)
    if (check_arm_cpu_feature("vfpv4"))
       cpu |= RETRO_SIMD_VFPV4;
 
+   if (check_arm_cpu_feature("asimd"))
+   {
+      cpu |= RETRO_SIMD_ASIMD;
+#ifdef __ARM_NEON__
+      cpu |= RETRO_SIMD_NEON;
+      arm_enable_runfast_mode();
+#endif
+   }
+
 #if 0
     check_arm_cpu_feature("swp");
     check_arm_cpu_feature("half");
@@ -748,6 +757,7 @@ uint64_t cpu_features_get(void)
    if (cpu & RETRO_SIMD_VMX128) strlcat(buf, " VMX128", sizeof(buf));
    if (cpu & RETRO_SIMD_VFPU)   strlcat(buf, " VFPU", sizeof(buf));
    if (cpu & RETRO_SIMD_PS)     strlcat(buf, " PS", sizeof(buf));
+   if (cpu & RETRO_SIMD_ASIMD)  strlcat(buf, " ASIMD", sizeof(buf));
 
    return cpu;
 }

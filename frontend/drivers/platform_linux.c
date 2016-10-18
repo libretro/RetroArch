@@ -1117,6 +1117,7 @@ static enum frontend_powerstate frontend_linux_get_powerstate(
 #define LINUX_ARCH_PPC64      0x1028cf52U
 #define LINUX_ARCH_MIPS       0x7c9aa25eU
 #define LINUX_ARCH_TILE       0x7c9e7873U
+#define LINUX_ARCH_AARCH64    0x191bfc0eU
 #define LINUX_ARCH_ARMV7B     0xf27015f4U
 #define LINUX_ARCH_ARMV7L     0xf27015feU
 #define LINUX_ARCH_ARMV6L     0xf27015ddU
@@ -1138,6 +1139,8 @@ static enum frontend_architecture frontend_linux_get_architecture(void)
 
    switch (buffer_hash)
    {
+      case LINUX_ARCH_AARCH64:
+         return FRONTEND_ARCH_ARMV8;
       case LINUX_ARCH_ARMV7L:
       case LINUX_ARCH_ARMV7B:
          return FRONTEND_ARCH_ARMV7;

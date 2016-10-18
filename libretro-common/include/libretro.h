@@ -1316,6 +1316,7 @@ struct retro_log_callback
 #define RETRO_SIMD_POPCNT   (1 << 18)
 #define RETRO_SIMD_MOVBE    (1 << 19)
 #define RETRO_SIMD_CMOV     (1 << 20)
+#define RETRO_SIMD_ASIMD    (1 << 21)
 
 typedef uint64_t retro_perf_tick_t;
 typedef int64_t retro_time_t;
