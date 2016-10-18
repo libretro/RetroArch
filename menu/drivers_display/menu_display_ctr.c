@@ -175,8 +175,10 @@ static bool menu_display_ctr_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size)
 {
-   return font_driver_init_first(NULL, font_handle, video_data,
+   font_data_t **handle = (font_data_t**)font_handle;
+   *handle = font_driver_init_first(video_data,
          font_path, font_size, true, FONT_DRIVER_RENDER_CTR);
+   return *handle;
 }
 
 menu_display_ctx_driver_t menu_display_ctx_ctr = {

@@ -681,7 +681,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 #ifdef HAVE_VULKAN
          {
             bool quit, resize;
-            unsigned width, height;
+            unsigned width = 0, height = 0;
             x11_check_window(x, &quit, &resize, &width, &height, 0);
 
             /* Use XCB surface since it's the most supported WSI.
