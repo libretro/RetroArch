@@ -558,6 +558,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          case FRONTEND_ARCH_ARMV7:
             strlcpy(cpu_arch_str, "ARMv7", sizeof(cpu_arch_str));
             break;
+         case FRONTEND_ARCH_ARMV8:
+            strlcpy(cpu_arch_str, "ARMv8", sizeof(cpu_arch_str));
+            break;
          case FRONTEND_ARCH_MIPS:
             strlcpy(cpu_arch_str, "MIPS", sizeof(cpu_arch_str));
             break;
