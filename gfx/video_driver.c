@@ -274,7 +274,7 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
    return false;
 }
 
-static bool video_driver_is_threaded(void)
+bool video_driver_is_threaded(void)
 {
 #ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
