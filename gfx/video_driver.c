@@ -274,6 +274,17 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
    return false;
 }
 
+static bool video_driver_is_threaded(void)
+{
+#ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
+   return settings->video.threaded
+      && !video_driver_is_hw_context();
+#else
+   return false;
+#endif
+}
+
 /**
  * video_driver_get_ptr:
  *
@@ -285,11 +296,7 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 void *video_driver_get_ptr(bool force_nonthreaded_data)
 {
 #ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-
-   if (settings->video.threaded
-         && !video_driver_is_hw_context()
-         && !force_nonthreaded_data)
+   if (video_driver_is_threaded() && !force_nonthreaded_data)
       return video_thread_get_ptr(NULL);
 #endif
 
@@ -696,8 +703,7 @@ static bool init_video(void)
    video_driver_find_driver();
 
 #ifdef HAVE_THREADS
-   if (settings->video.threaded 
-         && !video_driver_is_hw_context())
+   if (video_driver_is_threaded())
    {
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
@@ -1601,9 +1607,9 @@ void video_driver_set_nonblock_state(bool toggle)
 
 bool video_driver_find_driver(void)
 {
-   settings_t *settings = config_get_ptr();
    int i;
    driver_ctx_info_t drv;
+   settings_t *settings = config_get_ptr();
 
    if (video_driver_is_hw_context())
    {
@@ -2194,12 +2200,7 @@ bool video_driver_texture_load(void *data,
       return false;
 
    *id = video_driver_poke->load_texture(video_driver_data, data,
-#ifdef HAVE_THREADS
-         settings->video.threaded
-         && !video_driver_is_hw_context(),
-#else
-         false,
-#endif
+         video_driver_is_threaded(),
          filter_type);
 
    return true;
