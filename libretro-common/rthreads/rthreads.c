@@ -475,6 +475,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 #endif
 }
 
+#ifdef HAVE_THREAD_STORAGE
 bool sthread_tls_create(sthread_tls_t *tls)
 {
 #ifdef USE_WIN32_THREADS
@@ -510,3 +511,4 @@ bool sthread_tls_set(sthread_tls_t *tls, const void *data)
    return pthread_setspecific(*tls, data) == 0;
 #endif
 }
+#endif

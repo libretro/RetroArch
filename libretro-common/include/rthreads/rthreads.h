@@ -35,7 +35,10 @@ RETRO_BEGIN_DECLS
 typedef struct sthread sthread_t;
 typedef struct slock slock_t;
 typedef struct scond scond_t;
+
+#ifdef HAVE_THREAD_STORAGE
 typedef unsigned sthread_tls_t;
+#endif
 
 /**
  * sthread_create:
@@ -179,6 +182,7 @@ int scond_broadcast(scond_t *cond);
  **/
 void scond_signal(scond_t *cond);
 
+#ifdef HAVE_THREAD_STORAGE
 /**
  * @brief Creates a thread local storage key
  *
@@ -218,6 +222,7 @@ void *sthread_tls_get(sthread_tls_t *tls);
  * @return whether the operation suceeded or not
  */
 bool sthread_tls_set(sthread_tls_t *tls, const void *data);
+#endif
 
 RETRO_END_DECLS
 

@@ -575,6 +575,10 @@ ifeq ($(HAVE_THREADS), 1)
    endif
 endif
 
+ifeq ($(HAVE_THREAD_STORAGE), 1)
+   DEFINES += -DHAVE_THREAD_STORAGE
+endif
+
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o
  DEFINES += $(WAYLAND_CFLAGS)
@@ -1064,7 +1068,7 @@ OBJ += $(ZLIB_OBJS)
 endif
 endif
 
-# Video4Linux 2 
+# Video4Linux 2
 
 ifeq ($(HAVE_V4L2),1)
    OBJ += camera/drivers/video4linux2.o
