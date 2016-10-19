@@ -846,7 +846,8 @@ static void vulkan_free(void *data)
 
       /* No need to init this since textures are create on-demand. */
       vulkan_deinit_menu(vk);
-      font_driver_free(NULL);
+
+      font_driver_free_osd();
 
       vulkan_deinit_static_resources(vk);
       vulkan_overlay_free(vk);

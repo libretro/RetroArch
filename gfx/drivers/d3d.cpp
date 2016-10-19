@@ -487,7 +487,8 @@ static void d3d_deinitialize(d3d_video_t *d3d)
    if (!d3d)
       return;
 
-   font_driver_free(NULL);
+   font_driver_free_osd();
+
    d3d_deinit_chain(d3d);
 }
 
