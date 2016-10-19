@@ -277,6 +277,8 @@ typedef struct xmb_handle
    xmb_node_t history_tab_node;
    xmb_node_t add_tab_node;
 
+   font_data_t *font;
+   float font_size;
    video_font_raster_block_t raster_block;
 
    unsigned tabs[8];
@@ -666,7 +668,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
       params.drop_alpha  = 0.35f;
    }
 
-   menu_display_draw_text(str, width, height, &params);
+   menu_display_draw_text(xmb->font, str, width, height, &params);
 }
 
 static void xmb_messagebox(void *data, const char *message)
@@ -682,11 +684,10 @@ static void xmb_messagebox(void *data, const char *message)
 static void xmb_render_messagebox_internal(
       xmb_handle_t *xmb, const char *message)
 {
-   int x, y, font_size, longest = 0, longest_width = 0;
+   int x, y, longest = 0, longest_width = 0;
    unsigned i;
    unsigned width, height;
    struct string_list *list = NULL;
-   void *fb_buf;
 
    if (!xmb)
       return;
@@ -700,12 +701,8 @@ static void xmb_render_messagebox_internal(
    if (list->elems == 0)
       goto end;
 
-   font_size = menu_display_get_font_size();
-
    x = width  / 2;
-   y = height / 2 - (list->size-1) * font_size / 2;
-
-   fb_buf = menu_display_get_font_buffer();
+   y = height / 2 - (list->size-1) * xmb->font->size / 2;
 
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
@@ -715,7 +712,7 @@ static void xmb_render_messagebox_internal(
       if (len > longest)
       {
          longest = len;
-         longest_width = font_driver_get_message_width(fb_buf, msg, len, 1);
+         longest_width = font_driver_get_message_width(xmb->font, msg, len, 1);
       }
    }
 
@@ -727,7 +724,7 @@ static void xmb_render_messagebox_internal(
          xmb_draw_text(
                xmb, msg,
                x - longest_width/2.0,
-               y + i * font_size,
+               y + i * xmb->font->size,
                1,
                1,
                TEXT_ALIGN_LEFT,
@@ -2212,7 +2209,7 @@ static void xmb_frame(void *data)
 
    video_driver_get_size(&width, &height);
 
-   menu_display_font_bind_block(&xmb->raster_block);
+   menu_display_font_bind_block(xmb->font, &xmb->raster_block);
 
    xmb->raster_block.carr.coords.vertices = 0;
 
@@ -2409,7 +2406,7 @@ static void xmb_frame(void *data)
          width,
          height);
 
-   menu_display_font_flush_block();
+   menu_display_font_flush_block(xmb->font);
 
    if (menu_input_dialog_get_display_kb())
    {
@@ -2492,8 +2489,8 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->margins.label.top        = new_font_size / 3.0;
    xmb->margins.setting.left     = 600.0 * scale_factor;
    xmb->icon.size                = 128.0 * scale_factor;
+   xmb->font_size                = new_font_size;
 
-   menu_display_set_font_size(new_font_size);
    menu_display_set_header_height(new_header_height);
 }
 
@@ -2543,8 +2540,8 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->margins.label.top        = new_font_size / 3.0;
    xmb->margins.setting.left     = 600.0 * scale_factor;
    xmb->icon.size                = 128.0 * scale_factor;
+   xmb->font_size                = new_font_size;
 
-   menu_display_set_font_size(new_font_size);
    menu_display_set_header_height(new_header_height);
 }
 
@@ -2732,7 +2729,8 @@ static void *xmb_init(void **userdata)
    menu_display_allocate_white_texture();
 
    xmb_init_horizontal_list(xmb);
-   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
+   /* FIXME: remove this? */
+   xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font_size);
    xmb_init_ribbon(xmb);
 
    return menu;
@@ -2996,7 +2994,7 @@ static void xmb_context_reset(void *data)
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
    xmb_layout(xmb);
-   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
+   xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font_size);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb);
@@ -3289,7 +3287,7 @@ static void xmb_context_destroy(void *data)
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
 
-   menu_display_font_main_deinit();
+   menu_display_font_free(xmb->font);
 }
 
 static void xmb_toggle(void *userdata, bool menu_on)

@@ -1113,12 +1113,7 @@ static void *vulkan_init(const video_info_t *video,
    video_context_driver_input_driver(&inp);
 
    if (settings->video.font_enable)
-   {
-      if (!font_driver_init_first(NULL, NULL, vk, *settings->path.font 
-            ? settings->path.font : NULL, settings->video.font_size, false,
-            FONT_DRIVER_RENDER_VULKAN_API))
-         RARCH_ERR("[Vulkan]: Failed to initialize font renderer.\n");
-   }
+      font_driver_init_osd(vk, false, FONT_DRIVER_RENDER_VULKAN_API);
 
    vulkan_init_readback(vk);
    return vk;

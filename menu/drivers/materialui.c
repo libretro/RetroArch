@@ -118,6 +118,7 @@ typedef struct mui_handle
       size_t selection_ptr;
    } categories;
 
+   font_data_t *font;
    video_font_raster_block_t list_block;
    float scroll_y;
 } mui_handle_t;
@@ -250,16 +251,13 @@ static void mui_draw_tab(mui_handle_t *mui,
          &tab_color[0]);
 }
 
-static void mui_draw_text(float x, float y, unsigned width, unsigned height,
+static void mui_draw_text(font_data_t *font, float x, float y, unsigned width, unsigned height,
       const char *msg, uint32_t color, enum text_alignment text_align)
 {
-   int font_size;
    struct font_params params;
 
-   font_size = menu_display_get_font_size();
-
    params.x           = x / width;
-   params.y           = 1.0f - (y + font_size / 3) / height;
+   params.y           = 1.0f - (y + font->size / 3) / height;
    params.scale       = 1.0f;
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
@@ -268,7 +266,7 @@ static void mui_draw_text(float x, float y, unsigned width, unsigned height,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   menu_display_draw_text(msg, width, height, &params);
+   menu_display_draw_text(font, msg, width, height, &params);
 }
 
 static void mui_render_quad(mui_handle_t *mui,
@@ -393,7 +391,6 @@ static void mui_render_messagebox(mui_handle_t *mui,
    int x, y, line_height, longest = 0, longest_width = 0;
    struct string_list *list = (struct string_list*)
       string_split(message, "\n");
-   void *fb_buf;
 
    if (!list)
       return;
@@ -402,12 +399,10 @@ static void mui_render_messagebox(mui_handle_t *mui,
 
    video_driver_get_size(&width, &height);
 
-   line_height = menu_display_get_font_size() * 1.2;
+   line_height = mui->font->size * 1.2;
 
    x = width  / 2;
    y = height / 2 - (list->size-1) * line_height / 2;
-
-   fb_buf = menu_display_get_font_buffer();
 
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
@@ -417,7 +412,7 @@ static void mui_render_messagebox(mui_handle_t *mui,
       if (len > longest)
       {
          longest = len;
-         longest_width = font_driver_get_message_width(fb_buf, msg, len, 1);
+         longest_width = font_driver_get_message_width(mui->font, msg, len, 1);
       }
    }
 
@@ -437,7 +432,7 @@ static void mui_render_messagebox(mui_handle_t *mui,
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         mui_draw_text(x - longest_width/2.0, y + i * line_height,
+         mui_draw_text(mui->font, x - longest_width/2.0, y + i * line_height,
                width, height,
                msg, font_color, TEXT_ALIGN_LEFT);
    }
@@ -564,7 +559,7 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
-   mui_draw_text(mui->margin, y + mui->line_height / 2,
+   mui_draw_text(mui->font, mui->margin, y + mui->line_height / 2,
          width, height, label_str, color, TEXT_ALIGN_LEFT);
 
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
@@ -623,7 +618,7 @@ static void mui_render_label_value(mui_handle_t *mui,
    }
 
    if (do_draw_text)
-      mui_draw_text(width - mui->margin,
+      mui_draw_text(mui->font, width - mui->margin,
             y + mui->line_height / 2,
             width, height, value_str, color, TEXT_ALIGN_RIGHT);
 
@@ -1114,7 +1109,7 @@ static void mui_frame(void *data)
       &highlighted_entry_color[0]
    );
 
-   menu_display_font_bind_block(&mui->list_block);
+   menu_display_font_bind_block(mui->font, &mui->list_block);
 
    mui_render_menu_list(
       mui, 
@@ -1125,7 +1120,7 @@ static void mui_frame(void *data)
       &active_tab_marker_color[0]
    );
 
-   menu_display_font_flush_block();
+   menu_display_font_flush_block(mui->font);
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
@@ -1216,7 +1211,7 @@ static void mui_frame(void *data)
       strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }
 
-   mui_draw_text(title_margin, header_height / 2, width, height,
+   mui_draw_text(mui->font, title_margin, header_height / 2, width, height,
          title_buf, font_header_color, TEXT_ALIGN_LEFT);
 
    mui_draw_scrollbar(mui, width, height, &grey_bg[0]);
@@ -1253,7 +1248,6 @@ static void mui_frame(void *data)
 
 static void mui_layout(mui_handle_t *mui)
 {
-   void *fb_buf;
    float scale_factor;
    int new_font_size;
    unsigned width, height, new_header_height;
@@ -1279,19 +1273,17 @@ static void mui_layout(mui_handle_t *mui)
    mui->icon_size       = scale_factor / 3;
 
    menu_display_set_header_height(new_header_height);
-   menu_display_set_font_size(new_font_size);
 
    /* we assume the average glyph aspect ratio is close to 3:4 */
    mui->glyph_width = new_font_size * 3/4;
 
-   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT);
+   mui->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
+         new_font_size);
 
-   fb_buf = menu_display_get_font_buffer();
-
-   if (fb_buf) /* calculate a more realistic ticker_limit */
+   if (mui->font) /* calculate a more realistic ticker_limit */
    {
       unsigned m_width = 
-         font_driver_get_message_width(fb_buf, "a", 1, 1);
+         font_driver_get_message_width(mui->font, "a", 1, 1);
 
       if (m_width)
          mui->glyph_width = m_width;
@@ -1316,9 +1308,6 @@ static void *mui_init(void **userdata)
       goto error;
 
    *userdata = mui;
-
-   mui_layout(mui);
-   menu_display_allocate_white_texture();
 
    mui->cursor.size  = 64.0;
 
@@ -1361,7 +1350,7 @@ static void mui_context_destroy(void *data)
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
       video_driver_texture_unload(&mui->textures.list[i]);
 
-   menu_display_font_main_deinit();
+   menu_display_font_free(mui->font);
 
    mui_context_bg_destroy(mui);
 }
