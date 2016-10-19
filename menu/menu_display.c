@@ -210,13 +210,14 @@ font_data_t *menu_display_font_main_init(menu_display_ctx_font_t *font)
    font_data_t *font_data = NULL;
 
    if (!font || !menu_disp)
-      return false;
+      return NULL;
 
-   if (menu_disp->font_init_first((void**)&font_data,
+   if (!menu_disp->font_init_first((void**)&font_data,
             video_driver_get_ptr(false),
             font->path, font->size))
-      return font_data;
-   return NULL;
+      return NULL;
+
+   return font_data;
 }
 
 void menu_display_font_bind_block(font_data_t *font, void *block)
@@ -242,6 +243,7 @@ void menu_display_deinit(void)
 {
    if (menu_display_msg_queue)
       msg_queue_free(menu_display_msg_queue);
+
    video_coord_array_free(&menu_disp_ca);
    menu_display_msg_queue       = NULL;
    menu_display_msg_force       = false;
