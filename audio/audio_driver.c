@@ -518,23 +518,32 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
-   static struct retro_perf_counter audio_convert_s16 = {0};
+   static struct retro_perf_counter audio_convert_s16   = {0};
    static struct retro_perf_counter audio_convert_float = {0};
-   static struct retro_perf_counter audio_dsp         = {0};
-   struct resampler_data src_data              = {0};
-   struct rarch_dsp_data dsp_data              = {0};
+   static struct retro_perf_counter audio_dsp           = {0};
+   struct resampler_data src_data;
+   struct rarch_dsp_data dsp_data;
    const void *output_data                     = NULL;
    unsigned output_frames                      = 0;
    size_t   output_size                        = sizeof(float);
    settings_t *settings                        = config_get_ptr();
 
+   src_data.data_in                            = NULL;
+   src_data.data_out                           = NULL;
+   src_data.input_frames                       = 0;
+   src_data.output_frames                      = 0;
+   src_data.ratio                              = 0.0f;
+
+   dsp_data.input                              = NULL;
+   dsp_data.input_frames                       = 0;
+   dsp_data.output                             = NULL;
+   dsp_data.output_frames                      = 0;
+
    recording_push_audio(data, samples);
 
    if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
       return true;
-   if (!audio_driver_is_active())
-      return false;
-   if (!audio_driver_input_data)
+   if (!audio_driver_is_active() || !audio_driver_input_data)
       return false;
 
    performance_counter_init(&audio_convert_s16, "audio_convert_s16");
