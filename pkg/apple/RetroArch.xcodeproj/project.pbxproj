@@ -383,6 +383,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_UPDATE_ASSETS",
                "-DHAVE_LANGEXTRA",
                "-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -448,6 +449,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_UPDATE_ASSETS",
                "-DHAVE_LANGEXTRA",
                "-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -515,6 +517,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_UPDATE_ASSETS",
                "-DHAVE_LANGEXTRA",
                "-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -579,6 +582,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				OTHER_CFLAGS = (
 					"-DHAVE_GRIFFIN",
+               "-DHAVE_UPDATE_ASSETS",
                "-DHAVE_LANGEXTRA",
                "-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
