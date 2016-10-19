@@ -688,7 +688,6 @@ static void xmb_render_messagebox_internal(
    unsigned i;
    unsigned width, height;
    struct string_list *list = NULL;
-   void *fb_buf;
 
    if (!xmb)
       return;

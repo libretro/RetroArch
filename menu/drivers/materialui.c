@@ -391,7 +391,6 @@ static void mui_render_messagebox(mui_handle_t *mui,
    int x, y, line_height, longest = 0, longest_width = 0;
    struct string_list *list = (struct string_list*)
       string_split(message, "\n");
-   void *fb_buf;
 
    if (!list)
       return;
@@ -1249,7 +1248,6 @@ static void mui_frame(void *data)
 
 static void mui_layout(mui_handle_t *mui)
 {
-   void *fb_buf;
    float scale_factor;
    int new_font_size;
    unsigned width, height, new_header_height;
