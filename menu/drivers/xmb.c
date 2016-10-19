@@ -3079,7 +3079,7 @@ static void xmb_list_clear(file_list_t *list)
    for (i = 0; i < size; ++i)
    {
       menu_animation_ctx_subject_t subject;
-      float *subjects[5] = {NULL};
+      float *subjects[5];
       xmb_node_t *node = (xmb_node_t*)
          menu_entries_get_userdata_at_offset(list, i);
 
@@ -3114,7 +3114,7 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
       if (node)
       {
          menu_animation_ctx_subject_t subject;
-         float *subjects[5] = {NULL};
+         float *subjects[5];
 
          subjects[0]   = &node->alpha;
          subjects[1]   = &node->label_alpha;
