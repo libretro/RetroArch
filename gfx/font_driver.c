@@ -283,7 +283,7 @@ void font_driver_render_msg(void *font_data,
       const char *msg, const struct font_params *params)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : g_osd_font);
-   if (font && font->renderer->render_msg)
+   if (font && font->renderer && font->renderer->render_msg)
       font->renderer->render_msg(font->renderer_data, msg, params);
 }
 
@@ -291,14 +291,14 @@ void font_driver_bind_block(void *font_data, void *block)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : g_osd_font);
 
-   if (font->renderer && font->renderer->bind_block)
+   if (font && font->renderer && font->renderer->bind_block)
       font->renderer->bind_block(font->renderer_data, block);
 }
 
 void font_driver_flush(void *font_data)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : g_osd_font);
-   if (font->renderer && font->renderer->flush)
+   if (font && font->renderer && font->renderer->flush)
       font->renderer->flush(font->renderer_data);
 }
 
@@ -306,9 +306,9 @@ int font_driver_get_message_width(void *font_data,
       const char *msg, unsigned len, float scale)
 {
    font_data_t *font = (font_data_t*)(font_data ? font_data : g_osd_font);
-   if (!font->renderer || !font->renderer->get_message_width)
-      return -1;
-   return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
+   if (font && font->renderer && font->renderer->get_message_width)
+      return font->renderer->get_message_width(font->renderer_data, msg, len, scale);
+   return -1;
 }
 
 void font_driver_free(void *font_data)
