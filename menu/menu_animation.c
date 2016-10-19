@@ -370,11 +370,9 @@ static void menu_animation_push_internal(menu_animation_t *anim,
    *target = *t;
 }
 
-static bool menu_animation_push(menu_animation_t *anim, void *data)
+static bool menu_animation_push(menu_animation_t *anim, menu_animation_ctx_entry_t *entry)
 {
    struct tween t;
-   menu_animation_ctx_entry_t *entry = 
-      (menu_animation_ctx_entry_t*)data;
 
    if (!entry || !entry->subject)
       return false;
@@ -698,7 +696,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
          }
          break;
       case MENU_ANIMATION_CTL_PUSH:
-         return menu_animation_push(&anim, data);
+         return menu_animation_push(&anim, (menu_animation_ctx_entry_t *)data);
       case MENU_ANIMATION_CTL_NONE:
       default:
          break;
