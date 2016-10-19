@@ -158,13 +158,8 @@ static void menu_display_gl_draw(void *data)
 static void menu_display_gl_draw_pipeline(void *data)
 {
 #ifdef HAVE_SHADERPIPELINE
-   video_shader_ctx_info_t shader_info;
-   menu_display_ctx_draw_t *draw     = (menu_display_ctx_draw_t*)data;
-   struct uniform_info uniform_param = {0};
-   static float t                    = 0;
-   video_coord_array_t *ca             = NULL;
-
-   ca = menu_display_get_coords_array();
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   video_coord_array_t *ca       = menu_display_get_coords_array();
 
    draw->x           = 0;
    draw->y           = 0;
@@ -175,24 +170,30 @@ static void menu_display_gl_draw_pipeline(void *data)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_SEC:
-         shader_info.data       = NULL;
-         shader_info.idx        = draw->pipeline.id;
-         shader_info.set_active = true;
+         {
+            static float t                    = 0;
+            video_shader_ctx_info_t shader_info;
+            struct uniform_info uniform_param = {0};
 
-         video_shader_driver_use(&shader_info);
+            shader_info.data       = NULL;
+            shader_info.idx        = draw->pipeline.id;
+            shader_info.set_active = true;
 
-         t += 0.01;
+            video_shader_driver_use(&shader_info);
 
-         uniform_param.enabled           = true;
-         uniform_param.lookup.enable     = true;
-         uniform_param.lookup.add_prefix = true;
-         uniform_param.lookup.idx        = draw->pipeline.id;
-         uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
-         uniform_param.type              = UNIFORM_1F;
-         uniform_param.lookup.ident      = "time";
-         uniform_param.result.f.v0       = t;
+            t += 0.01;
 
-         video_shader_driver_set_parameter(&uniform_param);
+            uniform_param.enabled           = true;
+            uniform_param.lookup.enable     = true;
+            uniform_param.lookup.add_prefix = true;
+            uniform_param.lookup.idx        = draw->pipeline.id;
+            uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
+            uniform_param.type              = UNIFORM_1F;
+            uniform_param.lookup.ident      = "time";
+            uniform_param.result.f.v0       = t;
+
+            video_shader_driver_set_parameter(&uniform_param);
+         }
          break;
    }
 #endif

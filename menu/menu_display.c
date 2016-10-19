@@ -193,7 +193,9 @@ void menu_display_font_free(font_data_t *font)
 font_data_t *menu_display_font(enum application_special_type type, float font_size)
 {
    menu_display_ctx_font_t font_info;
-   char fontpath[PATH_MAX_LENGTH]  = {0};
+   char fontpath[PATH_MAX_LENGTH];
+
+   fontpath[0] = '\0';
 
    fill_pathname_application_special(fontpath, sizeof(fontpath), type);
 
