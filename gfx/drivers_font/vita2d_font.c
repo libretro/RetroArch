@@ -31,91 +31,101 @@ typedef struct
 
 static void *vita2d_font_init_font(void *gl_data, const char *font_path, float font_size)
 {
-	 unsigned int stride, pitch, j, k;
+   unsigned int stride, pitch, j, k;
+   const uint8_t         *frame32 = NULL;    
+   uint8_t                 *tex32 = NULL;
    const struct font_atlas *atlas = NULL;
-	 vita_font_t *font = (vita_font_t*)calloc(1, sizeof(*font));
+   vita_font_t *font = (vita_font_t*)calloc(1, sizeof(*font));
 
-	 if (!font)
-	 	 return NULL;
+   if (!font)
+      return NULL;
 
-	 if (!font_renderer_create_default((const void**)&font->font_driver,
-	 				 &font->font_data, font_path, font_size))
-	 {
-	 	 RARCH_WARN("Couldn't initialize font renderer.\n");
-	 	 free(font);
-	 	 return NULL;
-	 }
+   if (!font_renderer_create_default((const void**)&font->font_driver,
+            &font->font_data, font_path, font_size))
+      goto error;
 
-	 atlas = font->font_driver->get_atlas(font->font_data);
+   atlas = font->font_driver->get_atlas(font->font_data);
 
-	 font->texture = vita2d_create_empty_texture_format(atlas->width,atlas->height,SCE_GXM_TEXTURE_FORMAT_U8_R111);
+   if (!atlas)
+      goto error;
 
-	 if (!font->texture) {
- 		free(font);
- 		return NULL;
- 	 }
+   font->texture = vita2d_create_empty_texture_format(
+         atlas->width,
+         atlas->height,
+         SCE_GXM_TEXTURE_FORMAT_U8_R111);
 
-	 vita2d_texture_set_filters(font->texture,
- 				   SCE_GXM_TEXTURE_FILTER_POINT,
- 				   SCE_GXM_TEXTURE_FILTER_LINEAR);
+   if (!font->texture)
+      goto error;
 
-	 stride = vita2d_texture_get_stride(font->texture);
-   uint8_t             *tex32 = vita2d_texture_get_datap(font->texture);
-   const uint8_t     *frame32 = atlas->buffer;
-   pitch = atlas->width;
+   vita2d_texture_set_filters(font->texture,
+         SCE_GXM_TEXTURE_FILTER_POINT,
+         SCE_GXM_TEXTURE_FILTER_LINEAR);
+
+   stride  = vita2d_texture_get_stride(font->texture);
+   tex32   = vita2d_texture_get_datap(font->texture);
+   frame32 = atlas->buffer;
+   pitch   = atlas->width;
+
    for (j = 0; j < atlas->height; j++)
       for (k = 0; k < atlas->width; k++)
          tex32[k + j*stride] = frame32[k + j*pitch];
 
    return font;
+
+error:
+   RARCH_WARN("Couldn't initialize font renderer.\n");
+   free(font);
+   return NULL;
 }
 
 static void vita2d_font_free_font(void *data)
 {
-	 vita_font_t *font = (vita_font_t*)data;
-	 if (!font)
-			return;
+   vita_font_t *font = (vita_font_t*)data;
+   if (!font)
+      return;
 
-	 if (font->font_driver && font->font_data)
-			font->font_driver->free(font->font_data);
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
 
-	 //vita2d_wait_rendering_done();
+#if 0
+   vita2d_wait_rendering_done();
+#endif
    vita2d_free_texture(font->texture);
 
-	 free(font);
+   free(font);
 }
 
 static int vita2d_font_get_message_width(void *data, const char *msg,
       unsigned msg_len, float scale)
 {
-	 vita_font_t *font = (vita_font_t*)data;
+   unsigned i;
+   int delta_x       = 0;
+   vita_font_t *font = (vita_font_t*)data;
 
-	 unsigned i;
-	 int delta_x = 0;
+   if (!font)
+      return 0;
 
-	 if (!font)
-			return 0;
-
-	 for (i = 0; i < msg_len; i++)
-	 {
+   for (i = 0; i < msg_len; i++)
+   {
       const char *msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
       unsigned skip                  = msg_tmp - &msg[i];
 
       if (skip > 1)
          i += skip - 1;
-         
-			const struct font_glyph *glyph =
-				 font->font_driver->get_glyph(font->font_data, code);
-			if (!glyph) /* Do something smarter here ... */
-				 glyph = font->font_driver->get_glyph(font->font_data, '?');
-			if (!glyph)
-				 continue;
 
-			delta_x += glyph->advance_x;
-	 }
+      const struct font_glyph *glyph =
+         font->font_driver->get_glyph(font->font_data, code);
+      if (!glyph) /* Do something smarter here ... */
+         glyph = font->font_driver->get_glyph(font->font_data, '?');
 
-	 return delta_x * scale;
+      if (!glyph)
+         continue;
+
+      delta_x += glyph->advance_x;
+   }
+
+   return delta_x * scale;
 }
 
 static void vita2d_font_render_line(
@@ -124,16 +134,15 @@ static void vita2d_font_render_line(
       float pos_y, unsigned text_align)
 {
    int x, y, delta_x, delta_y;
-	 unsigned width, height;
+   unsigned width, height;
    unsigned i;
 
-	 video_driver_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
    x       = roundf(pos_x * width);
    y       = roundf((1.0f - pos_y) * height);
    delta_x = 0;
    delta_y = 0;
-
 
    switch (text_align)
    {
@@ -154,7 +163,7 @@ static void vita2d_font_render_line(
 
       if (skip > 1)
          i += skip - 1;
-         
+
       const struct font_glyph *glyph =
          font->font_driver->get_glyph(font->font_data, code);
 
@@ -170,13 +179,13 @@ static void vita2d_font_render_line(
       width  = glyph->width;
       height = glyph->height;
 
-			vita2d_draw_texture_tint_part_scale(font->texture,
-				x + off_x + delta_x * scale,
-				y + off_y + delta_y * scale,
-				tex_x, tex_y, width, height,
-				scale,
-				scale,
-				color);
+      vita2d_draw_texture_tint_part_scale(font->texture,
+            x + off_x + delta_x * scale,
+            y + off_y + delta_y * scale,
+            tex_x, tex_y, width, height,
+            scale,
+            scale,
+            color);
 
       delta_x += glyph->advance_x;
       delta_y += glyph->advance_y;
@@ -232,75 +241,75 @@ static void vita2d_font_render_message(
 static void vita2d_font_render_msg(void *data, const char *msg,
       const void *userdata)
 {
-	 float x, y, scale, drop_mod, drop_alpha;
+   float x, y, scale, drop_mod, drop_alpha;
    unsigned color, color_dark, r, g, b, alpha, r_dark, g_dark, b_dark, alpha_dark;
-	 unsigned width, height;
-	 int drop_x, drop_y;
-	 unsigned max_glyphs;
-	 enum text_alignment text_align;
+   unsigned width, height;
+   int drop_x, drop_y;
+   unsigned max_glyphs;
+   enum text_alignment text_align;
    settings_t *settings = config_get_ptr();
    vita_font_t *font = (vita_font_t *)data;
    const struct font_params *params = (const struct font_params*)userdata;
 
-	 if (!font || !msg || !*msg)
+   if (!font || !msg || !*msg)
       return;
 
-	 video_driver_get_size(&width, &height);
+   video_driver_get_size(&width, &height);
 
-	 if (params)
-	 {
-			x           = params->x;
-			y           = params->y;
-			scale       = params->scale;
-			text_align  = params->text_align;
-			drop_x      = params->drop_x;
-			drop_y      = params->drop_y;
-			drop_mod    = params->drop_mod;
-			drop_alpha  = params->drop_alpha;
-			r    				= FONT_COLOR_GET_RED(params->color);
+   if (params)
+   {
+      x           = params->x;
+      y           = params->y;
+      scale       = params->scale;
+      text_align  = params->text_align;
+      drop_x      = params->drop_x;
+      drop_y      = params->drop_y;
+      drop_mod    = params->drop_mod;
+      drop_alpha  = params->drop_alpha;
+      r    				= FONT_COLOR_GET_RED(params->color);
       g    				= FONT_COLOR_GET_GREEN(params->color);
       b    				= FONT_COLOR_GET_BLUE(params->color);
       alpha    		= FONT_COLOR_GET_ALPHA(params->color);
-			color    		= params->color;
-	 }
-	 else
-	 {
-			x           = settings->video.msg_pos_x;
-			y           = settings->video.msg_pos_y;
-			scale       = 1.0f;
-			text_align  = TEXT_ALIGN_LEFT;
+      color    		= params->color;
+   }
+   else
+   {
+      x           = settings->video.msg_pos_x;
+      y           = settings->video.msg_pos_y;
+      scale       = 1.0f;
+      text_align  = TEXT_ALIGN_LEFT;
 
-			r           = (settings->video.msg_color_r * 255);
-	    g           = (settings->video.msg_color_g * 255);
-	    b           = (settings->video.msg_color_b * 255);
-			alpha				= 255;
-			color 			= RGBA8(r,g,b,alpha);
+      r           = (settings->video.msg_color_r * 255);
+      g           = (settings->video.msg_color_g * 255);
+      b           = (settings->video.msg_color_b * 255);
+      alpha				= 255;
+      color 			= RGBA8(r,g,b,alpha);
 
-			drop_x = -2;
-			drop_y = -2;
-			drop_mod = 0.3f;
-			drop_alpha = 1.0f;
-	 }
+      drop_x = -2;
+      drop_y = -2;
+      drop_mod = 0.3f;
+      drop_alpha = 1.0f;
+   }
 
-	 max_glyphs = strlen(msg);
-	 if (drop_x || drop_y)
-			max_glyphs *= 2;
+   max_glyphs = strlen(msg);
+   if (drop_x || drop_y)
+      max_glyphs *= 2;
 
-	 if (drop_x || drop_y)
-	 {
-			r_dark        = r * drop_mod;
-			g_dark        = g * drop_mod;
-			b_dark        = b * drop_mod;
-			alpha_dark		= alpha * drop_alpha;
-			color_dark = RGBA8(r_dark,g_dark,b_dark,alpha_dark);
+   if (drop_x || drop_y)
+   {
+      r_dark        = r * drop_mod;
+      g_dark        = g * drop_mod;
+      b_dark        = b * drop_mod;
+      alpha_dark		= alpha * drop_alpha;
+      color_dark = RGBA8(r_dark,g_dark,b_dark,alpha_dark);
 
-			vita2d_font_render_message(font, msg, scale, color_dark,
-						x + scale * drop_x / width, y +
-						scale * drop_y / height, text_align);
-	 }
+      vita2d_font_render_message(font, msg, scale, color_dark,
+            x + scale * drop_x / width, y +
+            scale * drop_y / height, text_align);
+   }
 
-	 vita2d_font_render_message(font, msg, scale,
-				 color, x, y, text_align);
+   vita2d_font_render_message(font, msg, scale,
+         color, x, y, text_align);
 }
 
 static const struct font_glyph *vita2d_font_get_glyph(
@@ -308,9 +317,7 @@ static const struct font_glyph *vita2d_font_get_glyph(
 {
    vita_font_t *font = (vita_font_t*)data;
 
-   if (!font || !font->font_driver)
-      return NULL;
-   if (!font->font_driver->ident)
+   if (!font || !font->font_driver || !font->font_driver->ident)
        return NULL;
    return font->font_driver->get_glyph((void*)font->font_driver, code);
 }
@@ -324,7 +331,6 @@ static void vita2d_font_bind_block(void *data, void *userdata)
 {
    (void)data;
 }
-
 
 font_renderer_t vita2d_vita_font = {
    vita2d_font_init_font,
