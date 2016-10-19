@@ -181,10 +181,10 @@ void menu_display_toggle_set_reason(enum menu_toggle_reason reason);
 void menu_display_blend_begin(void);
 void menu_display_blend_end(void);
 
-void menu_display_font_main_deinit(void);
-bool menu_display_font_main_init(menu_display_ctx_font_t *font);
-void menu_display_font_bind_block(void *block);
-bool menu_display_font_flush_block(void);
+void menu_display_font_free(font_data_t *font);
+font_data_t *menu_display_font_main_init(menu_display_ctx_font_t *font);
+void menu_display_font_bind_block(font_data_t *font, void *block);
+bool menu_display_font_flush_block(font_data_t *font);
 
 void menu_display_framebuffer_deinit(void);
 
@@ -193,8 +193,6 @@ bool menu_display_init(void);
 
 void menu_display_coords_array_reset(void);
 video_coord_array_t *menu_display_get_coords_array(void);
-void *menu_display_get_font_buffer(void);
-void menu_display_set_font_buffer(void *buffer);
 const uint8_t *menu_display_get_font_framebuffer(void);
 void menu_display_set_font_framebuffer(const uint8_t *buffer);
 bool menu_display_libretro_running(void);
@@ -206,8 +204,6 @@ void menu_display_set_height(unsigned height);
 unsigned menu_display_get_height(void);
 void menu_display_set_header_height(unsigned height);
 unsigned menu_display_get_header_height(void);
-unsigned menu_display_get_font_size(void);
-void menu_display_set_font_size(unsigned size);
 size_t menu_display_get_framebuffer_pitch(void);
 void menu_display_set_framebuffer_pitch(size_t pitch);
 
@@ -254,14 +250,14 @@ void menu_display_draw_cursor(
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height);
 
-void menu_display_draw_text(const char *msg, int width, int height,
+void menu_display_draw_text(const font_data_t *font, const char *msg, int width, int height,
       struct font_params *params);
 
 bool menu_display_shader_pipeline_active(void);
 
 void menu_display_set_alpha(float *color, float alpha_value);
 
-bool menu_display_font(enum application_special_type type);
+font_data_t *menu_display_font(enum application_special_type type, float font_size);
 
 void menu_display_reset_textures_list(const char *texture_path, const char *iconpath,
       uintptr_t *item);
