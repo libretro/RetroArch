@@ -437,7 +437,7 @@ bool netplay_ad_server(netplay_t *netplay, int ad_fd)
          break;
 
       /* Somebody queried, so check that it's valid */
-      if (recvfrom(ad_fd, ad_packet_buffer, AD_PACKET_MAX_SIZE, 0,
+      if (recvfrom(ad_fd, (char*)ad_packet_buffer, AD_PACKET_MAX_SIZE, 0,
                    &their_addr, &addr_size) >= (ssize_t) (2*sizeof(uint32_t)))
       {
          /* Make sure it's a valid query */
@@ -479,7 +479,7 @@ bool netplay_ad_server(netplay_t *netplay, int ad_fd)
          }
 
          /* And send it */
-         sendto(ad_fd, ad_packet_buffer, bufloc*sizeof(uint32_t), 0,
+         sendto(ad_fd, (const char*)ad_packet_buffer, bufloc*sizeof(uint32_t), 0,
                 &their_addr, addr_size);
       }
    }
