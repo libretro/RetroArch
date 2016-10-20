@@ -102,7 +102,61 @@ static int action_bind_sublabel_netplay_settings(
       const char *label, const char *path,
       char *s, size_t len)
 {
+
    strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_NETPLAY), len);
+   return 0;
+}
+
+static int action_bind_sublabel_user_bind_settings(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS), len);
+   return 0;
+}
+
+static int action_bind_sublabel_input_hotkey_settings(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS), len);
+   return 0;
+}
+
+static int action_bind_sublabel_add_content_list(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST), len);
+   return 0;
+}
+
+static int action_bind_sublabel_video_frame_delay(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY), len);
+   return 0;
+}
+
+static int action_bind_sublabel_video_black_frame_insertion(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION), len);
    return 0;
 }
 
@@ -118,6 +172,36 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_black_frame_insertion);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_frame_delay);
+            break;
+         case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_add_content_list);
+            break;
+         case MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_hotkey_settings);
+            break;
+         case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_3_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_4_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_5_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_6_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_7_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_8_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_9_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_10_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_11_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_12_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_13_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
+         case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_bind_settings);
+            break;
          case MENU_ENUM_LABEL_NETPLAY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_settings);
             break;

@@ -3023,6 +3023,12 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:
+         return "Inserts a black frame inbetween frames. Useful for 120 Hz monitors who want to play 60 Hz material with eliminated ghosting.";
+      case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
+         return "Reduces latency at cost of higher risk of video stuttering by adding a delay after V-Sync (in ms).";
+      case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
+         return "Download and/or scan content, and add it to your collection.";
       case MENU_ENUM_SUBLABEL_NETPLAY:
          return "Join or host a netplay session.";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
@@ -3034,9 +3040,13 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
          return "Prevents your system's screensaver from becoming active.";
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
-         return "Tell the video driver to explicitly use a specified buffering mode.";
+         return "Tells the video driver to explicitly use a specified buffering mode.";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
          return "Download and update add-ons and components for RetroArch.";
+      case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
+         return "Configure controls for this user.";
+      case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
+         return "Configure hotkey settings.";
       case MSG_VALUE_SHUTTING_DOWN:
          return "Shutting down...";
       case MSG_VALUE_REBOOTING:
