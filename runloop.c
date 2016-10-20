@@ -998,33 +998,6 @@ static void runloop_iterate_linefeed_overlay(void)
 }
 #endif
 
-
-/* Loads dummy core instead of exiting RetroArch completely.
- * Aborts core shutdown if invoked. */
-static int runloop_iterate_time_to_exit_load_dummy(void)
-{
-   settings_t *settings            = config_get_ptr();
-
-   if (!settings->load_dummy_on_core_shutdown)
-      return -1;
-
-   {
-      content_ctx_info_t content_info = {0};
-      if (!task_push_content_load_default(
-               NULL, NULL,
-               &content_info,
-               CORE_TYPE_DUMMY,
-               CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-               NULL, NULL))
-         return -1;
-   }
-
-   runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);
-   runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
-
-   return 1;
-}
-
 bool runloop_is_quit_confirm(void)
 {
    return runloop_quit_confirm;
@@ -1045,6 +1018,7 @@ void runloop_set_quit_confirm(bool on)
  */
 static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 {
+   settings_t *settings          = config_get_ptr();
    bool time_to_exit             = runloop_shutdown_initiated;
    time_to_exit                  = time_to_exit || quit_key_pressed;
    time_to_exit                  = time_to_exit || !video_driver_is_alive();
@@ -1058,8 +1032,6 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 #ifdef HAVE_MENU
    if (!runloop_is_quit_confirm())
    {
-      settings_t *settings = config_get_ptr();
-
       if (settings && settings->confirm_on_exit)
       {
          if (menu_dialog_is_active())
@@ -1084,8 +1056,27 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    if (!runloop_core_shutdown_initiated)
       return -1;
 
+   if (settings->load_dummy_on_core_shutdown)
+   {
+      content_ctx_info_t content_info = {0};
+      if (!task_push_content_load_default(
+               NULL, NULL,
+               &content_info,
+               CORE_TYPE_DUMMY,
+               CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+               NULL, NULL))
+         return -1;
+
+      /* Loads dummy core instead of exiting RetroArch completely.
+       * Aborts core shutdown if invoked. */
+      runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);
+      runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
+
+      return 1;
+   }
+
    /* Quits out of RetroArch main loop. */
-   return runloop_iterate_time_to_exit_load_dummy();
+   return -1;
 }
 
 #ifdef HAVE_MENU
