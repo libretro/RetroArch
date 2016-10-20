@@ -195,29 +195,6 @@ char* runloop_msg_queue_pull(void)
    return strdup(msg_info.msg);
 }
 
-/* Checks if slowmotion toggle/hold was being pressed and/or held. */
-static bool runloop_check_slowmotion(bool *ptr)
-{
-   settings_t *settings  = config_get_ptr();
-
-   if (!ptr)
-      return false;
-
-   runloop_slowmotion   = *ptr;
-
-   if (!runloop_slowmotion)
-      return false;
-
-   if (settings && settings->video.black_frame_insertion)
-      video_driver_cached_frame_render();
-
-   if (state_manager_frame_is_reversed())
-      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
-   else
-      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
-   return true;
-}
-
 #ifdef HAVE_MENU
 static bool runloop_cmd_get_state_menu_toggle_button_combo(
       settings_t *settings,
@@ -504,9 +481,21 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
 #endif
       state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
 
-   tmp = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
+   runloop_slowmotion = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
 
-   runloop_check_slowmotion(&tmp);
+
+   if (runloop_slowmotion)
+   {
+      /* Checks if slowmotion toggle/hold was being pressed and/or held. */
+
+      if (settings && settings->video.black_frame_insertion)
+         video_driver_cached_frame_render();
+
+      if (state_manager_frame_is_reversed())
+         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
+      else
+         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
+   }
 
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
       bsv_movie_check();
