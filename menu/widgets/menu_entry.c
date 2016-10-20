@@ -121,6 +121,29 @@ void menu_entry_get_rich_label(uint32_t i, char *s, size_t len)
       strlcpy(s, entry.path, len);
 }
 
+void menu_entry_get_sublabel(uint32_t i, char *s, size_t len)
+{
+   menu_entry_t entry;
+
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
+   menu_entry_get(&entry, 0, i, NULL, true);
+
+   if (!string_is_empty(entry.sublabel))
+      strlcpy(s, entry.sublabel, len);
+   else
+      strlcpy(s, entry.path, len);
+}
+
 void menu_entry_get_label(uint32_t i, char *s, size_t len)
 {
    menu_entry_t entry;
