@@ -504,8 +504,9 @@ void d3d_make_d3dpp(void *data,
 
    memset(d3dpp, 0, sizeof(*d3dpp));
 
+#ifdef _XBOX
    d3dpp->Windowed             = false;
-#ifndef _XBOX
+#else
    d3dpp->Windowed             = settings->video.windowed_fullscreen 
       || !info->fullscreen;
 #endif
@@ -1514,18 +1515,6 @@ static bool d3d_frame(void *data, const void *frame,
    if (font_driver_has_render_msg() && msg)
    {
       struct font_params font_parms = {0};
-#ifdef _XBOX
-#if defined(_XBOX1)
-      float msg_width               = 60;
-      float msg_height              = 365;
-#elif defined(_XBOX360)
-      float msg_width               = d3d->resolution_hd_enable ? 160 : 100;
-      float msg_height              = 120;
-#endif
-      font_parms.x                  = msg_width;
-      font_parms.y                  = msg_height;
-      font_parms.scale              = 21;
-#endif
       font_driver_render_msg(NULL, msg, &font_parms);
    }
 
