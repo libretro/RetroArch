@@ -1012,7 +1012,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
 
 #ifdef HAVE_OVERLAY
-static void runloop_iterate_linefeed_overlay(settings_t *settings)
+static void runloop_iterate_linefeed_overlay(void)
 {
    static char prev_overlay_restore = false;
    bool osk_enable = input_driver_is_onscreen_keyboard_enabled();
@@ -1033,6 +1033,7 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
    }
    else if (prev_overlay_restore)
    {
+      settings_t *settings = config_get_ptr();
       if (!settings->input.overlay_hide_in_menu)
          command_event(CMD_EVENT_OVERLAY_INIT, NULL);
       prev_overlay_restore = false;
@@ -1285,7 +1286,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 #endif
 
 #ifdef HAVE_OVERLAY
-   runloop_iterate_linefeed_overlay(settings);
+   runloop_iterate_linefeed_overlay();
 #endif
 
    if (runloop_iterate_time_to_exit(
