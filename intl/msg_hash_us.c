@@ -3030,9 +3030,9 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
          return "Prevents your system's screensaver from becoming active.";
       case MSG_VALUE_SHUTTING_DOWN:
-         return "Shutting down";
+         return "Shutting down...";
       case MSG_VALUE_REBOOTING:
-         return "Rebooting";
+         return "Rebooting...";
       case MSG_VALUE_FAILED_TO_START_AUDIO_DRIVER:
          return "Failed to start audio driver. Will continue without audio.";
       case MSG_VALUE_FOUND_LAST_STATE_SLOT:
