@@ -66,6 +66,26 @@ static int action_bind_sublabel_audio_settings_list(
    return 0;
 }
 
+static int action_bind_sublabel_max_swapchain_images(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES), len);
+   return 0;
+}
+
+static int action_bind_sublabel_online_updater(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ONLINE_UPDATER), len);
+   return 0;
+}
+
 static int action_bind_sublabel_fps_show(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -88,6 +108,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_ONLINE_UPDATER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_online_updater);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_max_swapchain_images);
+            break;
          case MENU_ENUM_LABEL_FPS_SHOW:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_fps_show);
             break;

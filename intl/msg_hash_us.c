@@ -3031,6 +3031,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Adjusts settings for audio output.";
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
          return "Prevents your system's screensaver from becoming active.";
+      case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
+         return "Tell the video driver to explicitly use a specified buffering mode.";
+      case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
+         return "Download and update add-ons and components for RetroArch.";
       case MSG_VALUE_SHUTTING_DOWN:
          return "Shutting down...";
       case MSG_VALUE_REBOOTING:
