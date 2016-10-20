@@ -294,11 +294,9 @@ static void xdk_renderchain_free(void *data)
    xdk_renderchain_deinit(chain->renderchain_data);
    xdk_renderchain_clear(chain->renderchain_data);
 
-#ifndef DONT_HAVE_STATE_TRACKER
 #ifndef _XBOX
    if (chain->tracker)
       state_tracker_free(chain->tracker);
-#endif
 #endif
 }
 

@@ -90,7 +90,6 @@ static bool d3d_init_luts(d3d_video_t *d3d)
    return true;
 }
 
-#ifndef DONT_HAVE_STATE_TRACKER
 static bool d3d_init_imports(d3d_video_t *d3d)
 {
    retro_ctx_memory_info_t    mem_info;
@@ -133,7 +132,6 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 
    return true;
 }
-#endif
 
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
@@ -212,14 +210,11 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       return false;
    }
 
-#ifndef DONT_HAVE_STATE_TRACKER
    if (!d3d_init_imports(d3d))
    {
       RARCH_ERR("[D3D9]: Failed to init imports.\n");
       return false;
    }
-#endif
-
 #endif
 
    return true;
