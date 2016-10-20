@@ -284,42 +284,6 @@ static bool runloop_check_pause(
 }
 
 /**
- * runloop_check_fast_forward_button:
- * @fastforward_pressed  : is fastforward key pressed?
- * @hold_pressed         : is fastforward key pressed and held?
- * @old_hold_pressed     : was fastforward key pressed and held the last frame?
- *
- * Checks if the fast forward key has been pressed for this frame.
- *
- **/
-static void runloop_check_fast_forward_button(bool fastforward_pressed,
-      bool hold_pressed, bool old_hold_pressed)
-{
-   /* To avoid continous switching if we hold the button down, we require
-    * that the button must go from pressed to unpressed back to pressed
-    * to be able to toggle between then.
-    */
-   if (fastforward_pressed)
-   {
-      if (input_driver_is_nonblock_state())
-         input_driver_unset_nonblock_state();
-      else
-         input_driver_set_nonblock_state();
-   }
-   else if (old_hold_pressed != hold_pressed)
-   {
-      if (hold_pressed)
-         input_driver_set_nonblock_state();
-      else
-         input_driver_unset_nonblock_state();
-   }
-   else
-      return;
-
-   driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
-}
-
-/**
  * runloop_check_stateslots:
  * @pressed_increase     : is state slot increase key pressed?
  * @pressed_decrease     : is state slot decrease key pressed?
@@ -408,28 +372,18 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
    return true;
 }
 
-static bool runloop_check_idle_state(event_cmd_state_t *cmd)
-{
-   settings_t *settings      = config_get_ptr();
-   bool focused              = (settings && 
-         settings->pause_nonactive) ? video_driver_is_focused() : true;
-
-   runloop_check_pause(focused,
-         runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
-         runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
-
-   if (!runloop_check_pause_state(cmd) || !focused)
-      return false;
-   return true;
-}
-
 static bool runloop_check_state(event_cmd_state_t *cmd)
 {
    bool tmp                  = false;
+   bool focused              = true;
    settings_t *settings      = config_get_ptr();
+   
 
    if (!cmd || runloop_idle)
       return false;
+
+   if (settings->pause_nonactive)
+      focused = video_driver_is_focused();
 
    if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
       command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
@@ -459,13 +413,36 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
    tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
 #endif
-   if (!runloop_check_idle_state(cmd))
+
+   runloop_check_pause(focused,
+         runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
+         runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
+
+   if (!runloop_check_pause_state(cmd) || !focused)
       return false;
 
-   runloop_check_fast_forward_button(
-         runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY),
-         runloop_cmd_press    (cmd, RARCH_FAST_FORWARD_HOLD_KEY),
-         runloop_cmd_pressed  (cmd, RARCH_FAST_FORWARD_HOLD_KEY));
+   /* To avoid continous switching if we hold the button down, we require
+    * that the button must go from pressed to unpressed back to pressed
+    * to be able to toggle between then.
+    */
+   if (runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY))
+   {
+      if (input_driver_is_nonblock_state())
+         input_driver_unset_nonblock_state();
+      else
+         input_driver_set_nonblock_state();
+      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+   }
+   else if ((runloop_cmd_pressed(cmd, RARCH_FAST_FORWARD_HOLD_KEY) 
+         != runloop_cmd_press(cmd, RARCH_FAST_FORWARD_HOLD_KEY)))
+   {
+      if (runloop_cmd_press(cmd, RARCH_FAST_FORWARD_HOLD_KEY))
+         input_driver_set_nonblock_state();
+      else
+         input_driver_unset_nonblock_state();
+      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+   }
+
    runloop_check_stateslots(settings,
          runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS),
          runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS)
@@ -483,12 +460,10 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
 
    runloop_slowmotion = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
 
-
    if (runloop_slowmotion)
    {
       /* Checks if slowmotion toggle/hold was being pressed and/or held. */
-
-      if (settings && settings->video.black_frame_insertion)
+      if (settings->video.black_frame_insertion)
          video_driver_cached_frame_render();
 
       if (state_manager_frame_is_reversed())
