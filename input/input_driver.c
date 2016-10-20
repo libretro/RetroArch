@@ -567,7 +567,8 @@ retro_input_t input_keys_pressed(void)
 
    key = RARCH_ENABLE_HOTKEY;
    
-   if (check_input_driver_block_hotkey(input_driver_key_pressed(&key)))
+   if (current_input->key_pressed &&
+         check_input_driver_block_hotkey(current_input->key_pressed(current_input_data, key)))
       input_driver_block_libretro_input = true;
    else
       input_driver_block_libretro_input = false;
@@ -593,9 +594,9 @@ retro_input_t input_keys_pressed(void)
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
-      if ((!input_driver_is_libretro_input_blocked() && ((key < RARCH_FIRST_META_KEY)))
-            || !input_driver_is_hotkey_blocked())
-         state = input_driver_key_pressed(&key);
+      if (((!input_driver_is_libretro_input_blocked() && ((key < RARCH_FIRST_META_KEY)))
+            || !input_driver_is_hotkey_blocked()) && current_input->key_pressed)
+         state = current_input->key_pressed(current_input_data, key);
 
       if (key >= RARCH_FIRST_META_KEY)
          state |= current_input->meta_key_pressed(current_input_data, key);
