@@ -3113,6 +3113,12 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Loading";
       case MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT:
          return "Per-Game Options: game-specific core options found at";
+      case MSG_RESTORING_DEFAULT_SHADER_PRESET_TO:
+         return "Shaders: restoring default shader preset to";
+      case  MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY:
+         return "Sorry, unimplemented: cores that don't demand content cannot participate in netplay.";
+      case MSG_FOUND_AUTO_SAVESTATE_IN:
+         return "Found auto savestate in";
       case MSG_AUTOLOADING_SAVESTATE_FROM:
          return "Auto-loading savestate from";
       case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT:
@@ -3397,6 +3403,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Audio unmuted.";
       case MSG_RESET:
          return "Reset";
+      case MSG_AUTO_SAVE_STATE_TO:
+         return "Auto save state to";
       case MSG_FAILED_TO_LOAD_STATE:
          return "Failed to load state from";
       case MSG_FAILED_TO_SAVE_STATE_TO:
@@ -4483,6 +4491,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "No";
       case MENU_ENUM_LABEL_VALUE_BACK:
          return "BACK";
+      case MSG_FAILED_TO_BIND_SOCKET:
+         return "Failed to bind socket.";
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
          return "Screen Resolution";
       case MENU_ENUM_LABEL_VALUE_DISABLED:

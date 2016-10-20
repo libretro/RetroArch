@@ -403,7 +403,8 @@ static bool command_network_init(command_t *handle, uint16_t port)
 
    if (!socket_bind(handle->net_fd, (void*)res))
    {
-      RARCH_ERR("Failed to bind socket.\n");
+      RARCH_ERR("%s.\n",
+            msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
       goto error;
    }
 
@@ -1231,7 +1232,8 @@ static void command_event_load_auto_state(void)
 
    ret = content_load_state(savestate_name_auto, false, true);
 
-   RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
+   RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_FOUND_AUTO_SAVESTATE_IN),
+         savestate_name_auto);
 
    snprintf(msg, sizeof(msg), "%s \"%s\" %s.",
          msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
@@ -1315,7 +1317,7 @@ static bool event_init_content(void)
    {
 #ifdef HAVE_NETWORKING
       if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-         RARCH_ERR("sorry, unimplemented: cores that don't demand content cannot participate in netplay\n");
+         RARCH_ERR("%s\n", msg_hash_to_str(MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY));
 #endif
       return true;
    }
@@ -1400,7 +1402,8 @@ static void command_event_restore_default_shader_preset(void)
       /* auto shader preset: reload the original shader */
       settings_t *settings = config_get_ptr();
 
-      RARCH_LOG("Shaders: restoring default shader preset to %s\n",
+      RARCH_LOG("%s %s\n",
+            msg_hash_to_str(MSG_RESTORING_DEFAULT_SHADER_PRESET_TO),
             path_get(RARCH_PATH_DEFAULT_SHADER_PRESET));
       strlcpy(settings->path.shader,
             path_get(RARCH_PATH_DEFAULT_SHADER_PRESET),
@@ -1436,7 +1439,9 @@ static bool command_event_save_auto_state(void)
          sizeof(savestate_name_auto));
 
    ret = content_save_state((const char*)savestate_name_auto, true, true);
-   RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ?
+   RARCH_LOG("%s \"%s\" %s.\n", 
+         msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
+         savestate_name_auto, ret ?
          "succeeded" : "failed");
 
    return true;
@@ -1757,9 +1762,12 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_set_video_mode(width, height, true);
 
                if (width == 0 || height == 0)
-                  strlcpy(msg, "Resolution: DEFAULT", sizeof(msg));
+                  snprintf(msg, sizeof(msg), "%s: DEFAULT", 
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION));
                else
-                  snprintf(msg, sizeof(msg),"Resolution: %dx%d",width, height);
+                  snprintf(msg, sizeof(msg),"%s: %dx%d",
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION),
+                        width, height);
                runloop_msg_queue_push(msg, 1, 100, true);
             }
          }
