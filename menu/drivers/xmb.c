@@ -1761,6 +1761,56 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
 
+char* word_wrap (char* buffer, char* string, int line_width) {
+   int i = 0;
+   int k, counter;
+
+   while(i < strlen( string ) ) 
+   {
+      // copy string until the end of the line is reached
+      for ( counter = 1; counter <= line_width; counter++ ) 
+      {
+         // check if end of string reached
+         if ( i == strlen( string ) ) 
+         {
+            buffer[ i ] = 0;
+            return buffer;
+         }
+         buffer[ i ] = string[ i ];
+         // check for newlines embedded in the original input 
+         // and reset the index
+         if ( buffer[ i ] == '\n' )
+         {
+            counter = 1; 
+         }
+         i++;
+      }
+      // check for whitespace
+      if ( isspace( string[ i ] ) ) 
+      {
+         buffer[i] = '\n';
+         i++;
+      } 
+      else
+      {
+         // check for nearest whitespace back in string
+         for ( k = i; k > 0; k--) 
+         {
+            if ( isspace( string[ k ] ) ) 
+            {
+               buffer[ k ] = '\n';
+               // set string index back to character after this one
+               i = k + 1;
+               break;
+            }
+         }
+      }
+   }
+   buffer[ i ] = 0;
+
+   return buffer;
+}
+
 static void xmb_draw_items(xmb_handle_t *xmb,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr, float *color,
@@ -1927,10 +1977,12 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       {
          label_offset = - xmb->margins.label.top;
 
+         word_wrap(entry_sublabel, entry_sublabel, 50);
+
          xmb_draw_text(xmb, entry_sublabel,
                node->x + xmb->margins.screen.left +
                xmb->icon.spacing.horizontal + xmb->margins.label.left,
-               xmb->margins.screen.top + node->y + xmb->margins.label.top*3.0,
+               xmb->margins.screen.top + node->y + xmb->margins.label.top*3.5,
                1, node->label_alpha, TEXT_ALIGN_LEFT,
                width, height, xmb->font2);
       }
