@@ -71,20 +71,18 @@ static bool d3d_init_luts(d3d_video_t *d3d)
    unsigned i;
    settings_t *settings = config_get_ptr();
 
-   if (!d3d->renderchain_driver->add_lut)
+   if (!d3d->renderchain_driver || !d3d->renderchain_driver->add_lut)
       return true;
 
    for (i = 0; i < d3d->shader.luts; i++)
    {
-      bool ret = d3d->renderchain_driver->add_lut(
+      if (!d3d->renderchain_driver->add_lut(
             d3d->renderchain_data,
             d3d->shader.lut[i].id, d3d->shader.lut[i].path,
             d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
             settings->video.smooth :
-            (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
-
-      if (!ret)
-         return ret;
+            (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
+         return false;
    }
 
    return true;
@@ -98,7 +96,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 
    if (!d3d->shader.variables)
       return true;
-   if (!d3d->renderchain_driver->add_state_tracker)
+   if (!d3d->renderchain_driver || !d3d->renderchain_driver->add_state_tracker)
       return true;
 
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
@@ -203,19 +201,18 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
          return false;
       }
    }
+#endif
 
    if (!d3d_init_luts(d3d))
    {
       RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
       return false;
    }
-
    if (!d3d_init_imports(d3d))
    {
       RARCH_ERR("[D3D9]: Failed to init imports.\n");
       return false;
    }
-#endif
 
    return true;
 }
