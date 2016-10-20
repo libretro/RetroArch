@@ -3023,6 +3023,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
+         return "Gamepad button combination to toggle menu.";
+      case MENU_ENUM_SUBLABEL_CPU_CORES:
+         return "Amount of cores that the CPU has.";
       case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:
          return "Inserts a black frame inbetween frames. Useful for users of 120 Hz monitors who want to play 60 Hz material with eliminated ghosting.";
       case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
