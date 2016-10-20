@@ -557,9 +557,6 @@ retro_input_t input_keys_pressed(void)
    ret.type  = 0;
    ret.state = 0;
 
-   for (i = 0; i < MAX_USERS; i++)
-      binds[i] = settings->input.binds[i];
-
    if (!current_input || !current_input_data)
       return ret;
 
@@ -575,6 +572,8 @@ retro_input_t input_keys_pressed(void)
 
    for (i = 0; i < settings->input.max_users; i++)
    {
+      binds[i] = settings->input.binds[i];
+
       input_push_analog_dpad(settings->input.binds[i],
             settings->input.analog_dpad_mode[i]);
       input_push_analog_dpad(settings->input.autoconf_binds[i],
