@@ -278,8 +278,11 @@ typedef struct xmb_handle
    xmb_node_t add_tab_node;
 
    font_data_t *font;
+   font_data_t *font2;
    float font_size;
+   float font2_size;
    video_font_raster_block_t raster_block;
+   video_font_raster_block_t raster_block2;
 
    unsigned tabs[8];
    unsigned system_tab_end;
@@ -633,7 +636,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
       const char *str, float x,
       float y, float scale_factor, float alpha,
       enum text_alignment text_align,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height, font_data_t* font)
 {
    settings_t *settings = config_get_ptr();
    struct font_params params;
@@ -668,7 +671,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
       params.drop_alpha  = 0.35f;
    }
 
-   menu_display_draw_text(xmb->font, str, width, height, &params);
+   menu_display_draw_text(font, str, width, height, &params);
 }
 
 static void xmb_messagebox(void *data, const char *message)
@@ -729,7 +732,8 @@ static void xmb_render_messagebox_internal(
                1,
                TEXT_ALIGN_LEFT,
                width,
-               height);
+               height,
+               xmb->font);
    }
 
 end:
@@ -1915,12 +1919,33 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
-      xmb_draw_text(xmb, name,
-            node->x + xmb->margins.screen.left +
-            xmb->icon.spacing.horizontal + xmb->margins.label.left,
-            xmb->margins.screen.top + node->y + xmb->margins.label.top,
-            1, node->label_alpha, TEXT_ALIGN_LEFT,
-            width, height);
+
+#if 0
+      if (i == current)
+      {
+         xmb_draw_text(xmb, name,
+               node->x + xmb->margins.screen.left +
+               xmb->icon.spacing.horizontal + xmb->margins.label.left,
+               xmb->margins.screen.top + node->y - xmb->margins.label.top,
+               1, node->label_alpha, TEXT_ALIGN_LEFT,
+               width, height, xmb->font);
+
+         xmb_draw_text(xmb, "Adjust settings for video output",
+               node->x + xmb->margins.screen.left +
+               xmb->icon.spacing.horizontal + xmb->margins.label.left,
+               xmb->margins.screen.top + node->y + xmb->margins.label.top*3.0,
+               1, node->label_alpha, TEXT_ALIGN_LEFT,
+               width, height, xmb->font2);
+
+      }
+      else
+#endif
+         xmb_draw_text(xmb, name,
+               node->x + xmb->margins.screen.left +
+               xmb->icon.spacing.horizontal + xmb->margins.label.left,
+               xmb->margins.screen.top + node->y + xmb->margins.label.top,
+               1, node->label_alpha, TEXT_ALIGN_LEFT,
+               width, height, xmb->font);
 
       ticker.s        = value;
       ticker.len      = 35;
@@ -1941,7 +1966,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                1,
                node->label_alpha,
                TEXT_ALIGN_LEFT,
-               width, height);
+               width, height, xmb->font);
 
 
       menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
@@ -2210,8 +2235,10 @@ static void xmb_frame(void *data)
    video_driver_get_size(&width, &height);
 
    menu_display_font_bind_block(xmb->font, &xmb->raster_block);
+   menu_display_font_bind_block(xmb->font2, &xmb->raster_block2);
 
    xmb->raster_block.carr.coords.vertices = 0;
+   xmb->raster_block2.carr.coords.vertices = 0;
 
    for (i = 0; i < 16; i++)
    {
@@ -2244,7 +2271,7 @@ static void xmb_frame(void *data)
    xmb_draw_text(xmb,
          title_truncated, xmb->margins.title.left,
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
-         width, height);
+         width, height, xmb->font);
 
 /* uncomment to print the messages on the XMB status line
    if (string_is_empty(runloop_msg_queue_pull()))
@@ -2252,7 +2279,7 @@ static void xmb_frame(void *data)
       if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
          xmb_draw_text(xmb, title_msg, xmb->margins.title.left,
                height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
-               width, height);
+               width, height, xmb->font);
 /*   }
    else
       xmb_draw_text(xmb, runloop_msg_queue_pull(), xmb->margins.title.left,
@@ -2306,7 +2333,7 @@ static void xmb_frame(void *data)
       xmb_draw_text(xmb, timedate,
             width - xmb->margins.title.left - xmb->icon.size / 4,
             xmb->margins.title.top, 1, 1, TEXT_ALIGN_RIGHT,
-            width, height);
+            width, height, xmb->font);
    }
 
    /* Arrow image */
@@ -2407,6 +2434,7 @@ static void xmb_frame(void *data)
          height);
 
    menu_display_font_flush_block(xmb->font);
+   menu_display_font_flush_block(xmb->font2);
 
    if (menu_input_dialog_get_display_kb())
    {
@@ -2472,6 +2500,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->shadow_offset            = 2.0;
 
    new_font_size                 = 32.0  * scale_factor;
+   xmb->font2_size               = 24.0  * scale_factor;
    new_header_height             = 128.0 * scale_factor;
    xmb->margins.screen.top       = (256+32) * scale_factor;
 
@@ -2523,6 +2552,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->shadow_offset            = 1.0;
 
    new_font_size                 = 32.0  * scale_factor;
+   xmb->font2_size               = 24.0  * scale_factor;
    new_header_height             = 128.0 * scale_factor;
    xmb->margins.screen.top       = (256+32) * scale_factor;
 
@@ -2731,6 +2761,7 @@ static void *xmb_init(void **userdata)
    xmb_init_horizontal_list(xmb);
    /* FIXME: remove this? */
    xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font_size);
+   xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font2_size);
    xmb_init_ribbon(xmb);
 
    return menu;
@@ -2772,6 +2803,7 @@ static void xmb_free(void *data)
       xmb->horizontal_list = NULL;
 
       video_coord_array_free(&xmb->raster_block.carr);
+      video_coord_array_free(&xmb->raster_block2.carr);
    }
 
    font_driver_bind_block(NULL, NULL);
@@ -2995,6 +3027,7 @@ static void xmb_context_reset(void *data)
 
    xmb_layout(xmb);
    xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font_size);
+   xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font2_size);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb);
@@ -3288,6 +3321,7 @@ static void xmb_context_destroy(void *data)
    xmb_context_bg_destroy(xmb);
 
    menu_display_font_free(xmb->font);
+   menu_display_font_free(xmb->font2);
 }
 
 static void xmb_toggle(void *userdata, bool menu_on)
