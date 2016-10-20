@@ -613,9 +613,9 @@ retro_input_t input_keys_pressed(void)
    key = RARCH_ENABLE_HOTKEY;
    
    if (check_input_driver_block_hotkey(input_driver_key_pressed(&key)))
-      input_driver_set_libretro_input_blocked();
+      input_driver_block_libretro_input = true;
    else
-      input_driver_unset_libretro_input_blocked();
+      input_driver_block_libretro_input = false;
 
    for (i = 0; i < settings->input.max_users; i++)
    {
