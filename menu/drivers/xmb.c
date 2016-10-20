@@ -1807,6 +1807,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       char name[PATH_MAX_LENGTH];
       char value[PATH_MAX_LENGTH];
       char entry_value[PATH_MAX_LENGTH];
+      char entry_sublabel[PATH_MAX_LENGTH];
       menu_entry_t entry;
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;
@@ -1820,6 +1821,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       entry.path[0]       = '\0';
       entry.label[0]      = '\0';
+      entry.sublabel[0]   = '\0';
       entry.value[0]      = '\0';
       entry.rich_label[0] = '\0';
       entry.enum_idx      = MSG_UNKNOWN;
@@ -1828,7 +1830,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       entry.type          = 0;
       entry.spacing       = 0;
 
-      ticker_str[0] = name[0] = value[0] = entry_value[0] = '\0';
+      ticker_str[0] = name[0] = value[0] = entry_sublabel[0] = entry_value[0] = '\0';
 
       icon_y = xmb->margins.screen.top + node->y + half_size;
 
@@ -1920,33 +1922,20 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
+      xmb_draw_text(xmb, name,
+            node->x + xmb->margins.screen.left +
+            xmb->icon.spacing.horizontal + xmb->margins.label.left,
+            xmb->margins.screen.top + node->y - xmb->margins.label.top,
+            1, node->label_alpha, TEXT_ALIGN_LEFT,
+            width, height, xmb->font);
 
-#if 0
-      if (i == current)
-      {
-         xmb_draw_text(xmb, name,
-               node->x + xmb->margins.screen.left +
-               xmb->icon.spacing.horizontal + xmb->margins.label.left,
-               xmb->margins.screen.top + node->y - xmb->margins.label.top,
-               1, node->label_alpha, TEXT_ALIGN_LEFT,
-               width, height, xmb->font);
-
-         xmb_draw_text(xmb, "Adjust settings for video output",
+      if (i == current && menu_entry_get_sublabel(i, entry_sublabel, sizeof(entry_sublabel)))
+         xmb_draw_text(xmb, entry_sublabel,
                node->x + xmb->margins.screen.left +
                xmb->icon.spacing.horizontal + xmb->margins.label.left,
                xmb->margins.screen.top + node->y + xmb->margins.label.top*3.0,
                1, node->label_alpha, TEXT_ALIGN_LEFT,
                width, height, xmb->font2);
-
-      }
-      else
-#endif
-         xmb_draw_text(xmb, name,
-               node->x + xmb->margins.screen.left +
-               xmb->icon.spacing.horizontal + xmb->margins.label.left,
-               xmb->margins.screen.top + node->y + xmb->margins.label.top,
-               1, node->label_alpha, TEXT_ALIGN_LEFT,
-               width, height, xmb->font);
 
       ticker.s        = value;
       ticker.len      = 35;

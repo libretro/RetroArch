@@ -3023,6 +3023,9 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_VIDEO_SETTINGS:
+         return "Adjust settings for video output";
+
       case MSG_VALUE_SHUTTING_DOWN:
          return "Shutting down";
       case MSG_VALUE_REBOOTING:

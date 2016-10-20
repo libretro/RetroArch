@@ -36,17 +36,15 @@ static int action_bind_sublabel_generic(
    return 0;
 }
 
-#if 0
-static int action_bind_sublabel_information(
+static int action_bind_sublabel_video_settings_list(
       file_list_t *list,
       unsigned type, unsigned i,
       const char *label, const char *path,
       char *s, size_t len)
 {
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INFORMATION), len);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS), len);
    return 0;
 }
-#endif
 
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
@@ -60,16 +58,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
-#if 0
-         case MENU_ENUM_LABEL_INFORMATION:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_information);
+         case MENU_ENUM_LABEL_VIDEO_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_settings_list);
             break;
-#endif
          default:
          case MSG_UNKNOWN:
-            break;
+            return -1;
       }
    }
 
-   return -1;
+   return 0;
 }

@@ -95,7 +95,7 @@ void menu_entry_reset(uint32_t i);
 
 void menu_entry_get_rich_label(uint32_t i, char *s, size_t len);
 
-void menu_entry_get_sublabel(uint32_t i, char *s, size_t len);
+bool menu_entry_get_sublabel(uint32_t i, char *s, size_t len);
 
 void menu_entry_get_value(uint32_t i, void *data, char *s, size_t len);
 
