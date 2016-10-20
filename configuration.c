@@ -2354,9 +2354,9 @@ bool config_unload_override(void)
  */
 bool config_load_remap(void)
 {
-   char remap_directory[PATH_MAX_LENGTH]   = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
-   char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
-   char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
+   char remap_directory[PATH_MAX_LENGTH];    /* path to the directory containing retroarch.cfg (prefix)    */
+   char core_path[PATH_MAX_LENGTH];          /* final path for core-specific configuration (prefix+suffix) */
+   char game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
    config_file_t *new_conf                 = NULL;
    const char *core_name                   = NULL;
    const char *game_name                   = NULL;
@@ -2377,6 +2377,8 @@ bool config_load_remap(void)
     * Try remap directory setting, no fallbacks defined */
    if (string_is_empty(settings->directory.input_remapping))
       return false;
+
+   remap_directory[0] = core_path[0] = game_path[0] = '\0';
 
    strlcpy(remap_directory,
          settings->directory.input_remapping,
@@ -2477,9 +2479,9 @@ static bool check_shader_compatibility(enum file_path_enum enum_idx)
 bool config_load_shader_preset(void)
 {
    unsigned idx;
-   char shader_directory[PATH_MAX_LENGTH]  = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
-   char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
-   char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
+   char shader_directory[PATH_MAX_LENGTH];    /* path to the directory containing retroarch.cfg (prefix)    */
+   char core_path[PATH_MAX_LENGTH];          /* final path for core-specific configuration (prefix+suffix) */
+   char game_path[PATH_MAX_LENGTH];          /* final path for game-specific configuration (prefix+suffix) */
    const char *core_name                   = NULL;
    const char *game_name                   = NULL;
    settings_t *settings                    = config_get_ptr();
@@ -2499,6 +2501,8 @@ bool config_load_shader_preset(void)
     * Try shader directory setting, no fallbacks defined */
    if (string_is_empty(settings->directory.video_shader))
       return false;
+
+   shader_directory[0] = core_path[0] = game_path[0] = '\0';
 
    fill_pathname_join (shader_directory, settings->directory.video_shader,
        "presets", sizeof(shader_directory));
