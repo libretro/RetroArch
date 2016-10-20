@@ -630,7 +630,8 @@ retro_input_t input_keys_pressed(void)
    if (!input_driver_is_libretro_input_blocked())
    {
       for (i = 0; i < settings->input.max_users; i++)
-         input_driver_turbo_btns.frame_enable[i] = input_driver_state(binds,
+         input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
+               current_input_data, binds,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
