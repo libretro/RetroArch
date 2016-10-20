@@ -29,12 +29,6 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct retro_input
-{
-   unsigned type;
-   uint64_t state;
-} retro_input_t;
-
 enum input_device_type
 {
    INPUT_DEVICE_TYPE_NONE = 0,

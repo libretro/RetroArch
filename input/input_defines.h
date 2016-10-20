@@ -96,6 +96,12 @@ enum analog_dpad_mode
    ANALOG_DPAD_LAST
 };
 
+typedef struct retro_input
+{
+   unsigned type;
+   uint64_t state;
+} retro_input_t;
+
 /* Specialized _MOUSE that targets the full screen regardless of viewport.
  */
 #define RARCH_DEVICE_MOUSE_SCREEN      (RETRO_DEVICE_MOUSE | 0x10000)

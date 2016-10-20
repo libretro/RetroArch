@@ -99,11 +99,6 @@
                                             cmd->state[1], cmd->state[2]))
 #endif
 
-typedef struct event_cmd_state
-{
-   retro_input_t state[3];
-} event_cmd_state_t;
-
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
 static retro_keyboard_event_t runloop_key_event            = NULL;
@@ -1167,6 +1162,16 @@ static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
 }
 #endif
 
+void runloop_poll(event_cmd_state_t *cmd)
+{
+   static retro_input_t last_input              = {0};
+   cmd->state[1]                                = last_input;
+   cmd->state[0]                                = input_keys_pressed();
+   cmd->state[2].state                          = cmd->state[0].state 
+                                                  & ~cmd->state[1].state;
+   last_input                                   = cmd->state[0];
+}
+
 /**
  * runloop_iterate:
  *
@@ -1176,20 +1181,13 @@ static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
  * button input in order to wake up the loop,
  * -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
-int runloop_iterate(unsigned *sleep_ms)
+int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 {
    unsigned i;
-   event_cmd_state_t    cmd;
    retro_time_t current, target, to_sleep_ms;
-   static retro_input_t last_input              = {0};
-   event_cmd_state_t   *cmd_ptr                 = &cmd;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
-
-   cmd.state[1]                                 = last_input;
-   cmd.state[0]                                 = input_keys_pressed();
-   last_input                                   = cmd.state[0];
 
    runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_TIME_LAST, NULL);
 
@@ -1211,14 +1209,14 @@ int runloop_iterate(unsigned *sleep_ms)
    if (input_driver_is_flushing_input())
    {
       input_driver_unset_flushing_input();
-      if (cmd.state[0].state)
+      if (cmd->state[0].state)
       {
-         cmd.state[0].state = 0;
+         cmd->state[0].state = 0;
 
          /* If core was paused before entering menu, evoke
           * pause toggle to wake it up. */
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
-            BIT64_SET(cmd.state[0].state, RARCH_PAUSE_TOGGLE);
+            BIT64_SET(cmd->state[0].state, RARCH_PAUSE_TOGGLE);
          input_driver_set_flushing_input();
       }
    }
@@ -1249,12 +1247,11 @@ int runloop_iterate(unsigned *sleep_ms)
       runloop_frame_time.callback(delta);
    }
 
-   cmd.state[2].state      = cmd.state[0].state & ~cmd.state[1].state;  /* trigger  */
 
-   if (runloop_cmd_triggered(cmd_ptr, RARCH_OVERLAY_NEXT))
+   if (runloop_cmd_triggered(cmd, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
 
-   if (runloop_cmd_triggered(cmd_ptr, RARCH_FULLSCREEN_TOGGLE_KEY))
+   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
       bool fullscreen_toggled = !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 #ifdef HAVE_MENU
@@ -1266,11 +1263,11 @@ int runloop_iterate(unsigned *sleep_ms)
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
    }
 
-   if (runloop_cmd_triggered(cmd_ptr, RARCH_GRAB_MOUSE_TOGGLE))
+   if (runloop_cmd_triggered(cmd, RARCH_GRAB_MOUSE_TOGGLE))
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
 
 #ifdef HAVE_MENU
-   if (runloop_cmd_menu_press(cmd_ptr) ||
+   if (runloop_cmd_menu_press(cmd) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
@@ -1292,7 +1289,7 @@ int runloop_iterate(unsigned *sleep_ms)
 #endif
 
    if (runloop_iterate_time_to_exit(
-            runloop_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
+            runloop_cmd_press(cmd, RARCH_QUIT_KEY)) != 1)
    {
       frame_limit_last_time = 0.0;
       command_event(CMD_EVENT_QUIT, NULL);
@@ -1306,7 +1303,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
       core_poll();
       ret = runloop_iterate_menu((enum menu_action)
-            menu_event(cmd.state[0], cmd.state[2]),
+            menu_event(cmd->state[0], cmd->state[2]),
             sleep_ms);
 
 #ifdef HAVE_NETWORKING
@@ -1321,7 +1318,7 @@ int runloop_iterate(unsigned *sleep_ms)
    }
 #endif
 
-   if (!runloop_check_state(&cmd))
+   if (!runloop_check_state(cmd))
    {
       /* RetroArch has been paused. */
       core_poll();

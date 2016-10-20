@@ -232,11 +232,15 @@ static char** waiting_argv;
     do
     {
        int ret;
+       event_cmd_state_t cmd;
        unsigned sleep_ms = 0;
        const ui_application_t *application = ui_companion_driver_get_application_ptr();
        if (application)
           application->process_events();
-       ret = runloop_iterate(&sleep_ms);
+
+       runloop_poll(&cmd);
+
+       ret = runloop_iterate(&cmd, &sleep_ms);
        if (ret == 1 && sleep_ms > 0)
           retro_sleep(sleep_ms);
        task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);

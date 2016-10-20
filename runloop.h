@@ -203,7 +203,14 @@ typedef struct runloop_ctx_msg_info
    bool flush;
 } runloop_ctx_msg_info_t;
 
+typedef struct event_cmd_state
+{
+   retro_input_t state[3];
+} event_cmd_state_t;
+
 global_t *global_get_ptr(void);
+
+void runloop_poll(event_cmd_state_t *cmd);
 
 /**
  * runloop_iterate:
@@ -216,7 +223,7 @@ global_t *global_get_ptr(void);
  * Returns -1 if we forcibly quit out of the 
  * RetroArch iteration loop. 
  **/
-int runloop_iterate(unsigned *sleep_ms);
+int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms);
 
 void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
