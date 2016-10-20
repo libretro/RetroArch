@@ -1209,7 +1209,8 @@ static void command_event_load_auto_state(void)
    global_t   *global   = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) && !settings->netplay.is_spectate)
+   if (     netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) 
+         && !settings->netplay.is_spectate)
       return;
 #endif
 
@@ -1232,7 +1233,8 @@ static void command_event_load_auto_state(void)
 
    RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
 
-   snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" %s.",
+   snprintf(msg, sizeof(msg), "%s \"%s\" %s.",
+         msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
          savestate_name_auto, ret ? "succeeded" : "failed");
    RARCH_LOG("%s\n", msg);
 }
@@ -1575,7 +1577,7 @@ static void command_event_save_current_config(int override_type)
    {
       if (config_save_overrides(override_type))
       {
-         snprintf(msg, sizeof(msg), "Overrides saved successfully");
+         strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
          RARCH_LOG("[overrides] %s\n", msg);
 
          /* set overrides to active so the original config can be
@@ -1584,7 +1586,7 @@ static void command_event_save_current_config(int override_type)
       }
       else
       {
-         snprintf(msg, sizeof(msg), "Error saving overrides");
+         strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
          RARCH_ERR("[overrides] %s\n", msg);
       }
    }
