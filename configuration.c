@@ -2200,10 +2200,10 @@ end:
  */
 bool config_load_override(void)
 {
-   char buf[PATH_MAX_LENGTH]              = {0};
-   char config_directory[PATH_MAX_LENGTH] = {0};
-   char core_path[PATH_MAX_LENGTH]        = {0};
-   char game_path[PATH_MAX_LENGTH]        = {0};
+   char buf[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH];
+   char game_path[PATH_MAX_LENGTH];
    config_file_t *new_conf                = NULL;
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
@@ -2218,6 +2218,8 @@ bool config_load_override(void)
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
+
+   config_directory[0] = core_path[0] = game_path[0] = '\0';
 
    fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
@@ -2283,6 +2285,7 @@ bool config_load_override(void)
       return false;
 
    /* Re-load the configuration with any overrides that might have been found */
+   buf[0] = '\0';
 
    /* Store the libretro_path we're using since it will be 
     * overwritten by the override when reloading. */
@@ -3059,6 +3062,10 @@ bool config_save_file(const char *path)
  **/
 bool config_save_overrides(int override_type)
 {
+   char config_directory[PATH_MAX_LENGTH];
+   char override_directory[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH];
+   char game_path[PATH_MAX_LENGTH];
    unsigned i                                  = 0;
    int bool_settings_size                      = 0;
    int int_settings_size                       = 0;
@@ -3066,10 +3073,6 @@ bool config_save_overrides(int override_type)
    int array_settings_size                     = 0;
    int path_settings_size                      = 0;
    bool ret                                    = false;
-   char config_directory[PATH_MAX_LENGTH]      = {0};
-   char override_directory[PATH_MAX_LENGTH]    = {0};
-   char core_path[PATH_MAX_LENGTH]             = {0};
-   char game_path[PATH_MAX_LENGTH]             = {0};
    const char *core_name                       = NULL;
    const char *game_name                       = NULL;
    config_file_t *conf                         = NULL;
@@ -3098,6 +3101,8 @@ bool config_save_overrides(int override_type)
       return false;
 
    settings  = (settings_t*)calloc(1, sizeof(settings_t));
+
+   config_directory[0] = override_directory[0] = core_path[0] = game_path[0] = '\0';
 
    fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
