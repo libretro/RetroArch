@@ -347,23 +347,8 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    unsigned i;
    float vert[4][9];
    float overlay_width, overlay_height;
-#ifndef _XBOX1
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
-   /* set vertex declaration for overlay. */
-   D3DVERTEXELEMENT vElems[4] = {
-      {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
-         D3DDECLUSAGE_POSITION, 0},
-      {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
-         D3DDECLUSAGE_TEXCOORD, 0},
-      {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT,
-         D3DDECLUSAGE_COLOR, 0},
-      D3DDECL_END()
-   };
-#endif
 
-   if (!d3d)
-      return;
-   if (!overlay || !overlay->tex)
+   if (!d3d || !overlay || !overlay->tex)
       return;
 
    if (!overlay->vert_buf)
@@ -386,8 +371,8 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    
    d3d_viewport_info(d3d, &vp);
 
-   overlay_width  = vp.width;
-   overlay_height = vp.height;
+   overlay_width   = vp.width;
+   overlay_height  = vp.height;
 
    vert[0][0]      = overlay->vert_coords[0] * overlay_width;
    vert[1][0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
@@ -425,19 +410,33 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    d3d_enable_blend_func(d3d->dev);
 
 #ifndef _XBOX1
-   d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
-   d3d_set_vertex_declaration(d3d->dev, vertex_decl);
-   vertex_decl->Release();
+   {
+      LPDIRECT3DVERTEXDECLARATION vertex_decl;
+      /* set vertex declaration for overlay. */
+      D3DVERTEXELEMENT vElems[4] = {
+         {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
+            D3DDECLUSAGE_POSITION, 0},
+         {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
+            D3DDECLUSAGE_TEXCOORD, 0},
+         {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT,
+            D3DDECLUSAGE_COLOR, 0},
+         D3DDECL_END()
+      };
+      d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
+      d3d_set_vertex_declaration(d3d->dev, vertex_decl);
+      vertex_decl->Release();
+   }
 #endif
 
    d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
          0, sizeof(*vert));
 
-   video_driver_get_size(&width, &height);
 
    if (overlay->fullscreen)
    {
       D3DVIEWPORT vp_full;
+
+      video_driver_get_size(&width, &height);
 
       vp_full.X      = 0;
       vp_full.Y      = 0;
