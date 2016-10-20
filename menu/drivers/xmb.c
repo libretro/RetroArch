@@ -1801,7 +1801,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
    for (; i < end; i++)
    {
-      float icon_x, icon_y;
+      float icon_x, icon_y, label_offset;
       menu_animation_ctx_ticker_t ticker;
       char ticker_str[PATH_MAX_LENGTH];
       char name[PATH_MAX_LENGTH];
@@ -1922,20 +1922,25 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
-      xmb_draw_text(xmb, name,
-            node->x + xmb->margins.screen.left +
-            xmb->icon.spacing.horizontal + xmb->margins.label.left,
-            xmb->margins.screen.top + node->y - xmb->margins.label.top,
-            1, node->label_alpha, TEXT_ALIGN_LEFT,
-            width, height, xmb->font);
-
+      label_offset = xmb->margins.label.top;
       if (i == current && menu_entry_get_sublabel(i, entry_sublabel, sizeof(entry_sublabel)))
+      {
+         label_offset = - xmb->margins.label.top;
+
          xmb_draw_text(xmb, entry_sublabel,
                node->x + xmb->margins.screen.left +
                xmb->icon.spacing.horizontal + xmb->margins.label.left,
                xmb->margins.screen.top + node->y + xmb->margins.label.top*3.0,
                1, node->label_alpha, TEXT_ALIGN_LEFT,
                width, height, xmb->font2);
+      }
+
+      xmb_draw_text(xmb, name,
+            node->x + xmb->margins.screen.left +
+            xmb->icon.spacing.horizontal + xmb->margins.label.left,
+            xmb->margins.screen.top + node->y + label_offset,
+            1, node->label_alpha, TEXT_ALIGN_LEFT,
+            width, height, xmb->font);
 
       ticker.s        = value;
       ticker.len      = 35;
