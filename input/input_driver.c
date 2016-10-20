@@ -256,51 +256,6 @@ float input_sensor_get_input(unsigned port, unsigned id)
    return 0.0f;
 }
 
-static retro_input_t input_driver_keys_pressed(void)
-{
-   unsigned key;
-   retro_input_t                ret;
-
-   ret.type     = 0;
-   ret.state    = 0;
-
-   for (key = 0; key < RARCH_BIND_LIST_END; key++)
-   {
-      bool state = false;
-      if ((!input_driver_is_libretro_input_blocked() && ((key < RARCH_FIRST_META_KEY)))
-            || !input_driver_is_hotkey_blocked())
-         state = input_driver_key_pressed(&key);
-
-      if (key >= RARCH_FIRST_META_KEY)
-         state |= current_input->meta_key_pressed(current_input_data, key);
-
-#ifdef HAVE_OVERLAY
-      state |= input_overlay_key_pressed(key);
-#endif
-
-#ifdef HAVE_COMMAND
-      if (input_driver_command)
-      {
-         command_handle_t handle;
-
-         handle.handle = input_driver_command;
-         handle.id     = key;
-
-         state |= command_get(&handle);
-      }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-      if (input_driver_remote)
-         state |= input_remote_key_pressed(key,0);
-#endif
-
-      if (state)
-         ret.state |= (UINT64_C(1) << key);
-   }
-   return ret;
-}
-
 /**
  * input_push_analog_dpad:
  * @binds                          : Binds to modify.
@@ -635,7 +590,40 @@ retro_input_t input_keys_pressed(void)
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
    }
 
-   ret = input_driver_keys_pressed();
+   for (key = 0; key < RARCH_BIND_LIST_END; key++)
+   {
+      bool state = false;
+      if ((!input_driver_is_libretro_input_blocked() && ((key < RARCH_FIRST_META_KEY)))
+            || !input_driver_is_hotkey_blocked())
+         state = input_driver_key_pressed(&key);
+
+      if (key >= RARCH_FIRST_META_KEY)
+         state |= current_input->meta_key_pressed(current_input_data, key);
+
+#ifdef HAVE_OVERLAY
+      state |= input_overlay_key_pressed(key);
+#endif
+
+#ifdef HAVE_COMMAND
+      if (input_driver_command)
+      {
+         command_handle_t handle;
+
+         handle.handle = input_driver_command;
+         handle.id     = key;
+
+         state |= command_get(&handle);
+      }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+      if (input_driver_remote)
+         state |= input_remote_key_pressed(key,0);
+#endif
+
+      if (state)
+         ret.state |= (UINT64_C(1) << key);
+   }
 
    for (i = 0; i < settings->input.max_users; i++)
    {
