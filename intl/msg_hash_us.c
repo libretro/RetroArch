@@ -3024,7 +3024,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
    switch (msg)
    {
       case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:
-         return "Inserts a black frame inbetween frames. Useful for 120 Hz monitors who want to play 60 Hz material with eliminated ghosting.";
+         return "Inserts a black frame inbetween frames. Useful for users of 120 Hz monitors who want to play 60 Hz material with eliminated ghosting.";
       case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
          return "Reduces latency at cost of higher risk of video stuttering. Adds a delay after V-Sync (in ms).";
       case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
