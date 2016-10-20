@@ -1183,7 +1183,11 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
 
-   runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_TIME_LAST, NULL);
+   if (runloop_frame_time_last_enable)
+   {
+      runloop_frame_time_last        = 0;
+      runloop_frame_time_last_enable = false;
+   }
 
    if (runloop_set_frame_limit)
    {
