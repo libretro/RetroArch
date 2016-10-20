@@ -451,7 +451,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
    bool tmp                  = false;
    settings_t *settings      = config_get_ptr();
 
-   if (!cmd || runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (!cmd || runloop_idle)
       return false;
 
    if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
@@ -500,7 +500,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
       command_event(CMD_EVENT_LOAD_STATE, NULL);
 
 #ifdef HAVE_CHEEVOS
-   if(!settings->cheevos.hardcore_mode_enable)
+   if (!settings->cheevos.hardcore_mode_enable)
 #endif
       state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
 
@@ -1131,7 +1131,7 @@ static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
    settings_t *settings    = config_get_ptr();
    bool focused            = (settings && 
          settings->pause_nonactive) ? video_driver_is_focused() : true;
-   bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
+   bool is_idle            = runloop_idle;
 
    focused                 = focused && !ui_companion_is_on_foreground();
 
