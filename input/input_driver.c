@@ -446,8 +446,8 @@ int16_t input_state(unsigned port, unsigned device,
    if (settings->input.remap_binds_enable)
       input_remapping_state(port, &device, &idx, &id);
 
-   if (!input_driver_is_flushing_input() 
-         && !input_driver_is_libretro_input_blocked())
+   if (!input_driver_flushing_input 
+         && !input_driver_block_libretro_input)
    {
       if (((id < RARCH_FIRST_META_KEY) || (device == RETRO_DEVICE_KEYBOARD)))
          res = current_input->input_state(
@@ -582,7 +582,7 @@ retro_input_t input_keys_pressed(void)
       input_driver_turbo_btns.frame_enable[i] = 0;
    }
 
-   if (!input_driver_is_libretro_input_blocked())
+   if (!input_driver_block_libretro_input)
    {
       for (i = 0; i < settings->input.max_users; i++)
          input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
@@ -593,8 +593,8 @@ retro_input_t input_keys_pressed(void)
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
    {
       bool state = false;
-      if (((!input_driver_is_libretro_input_blocked() && ((key < RARCH_FIRST_META_KEY)))
-            || !input_driver_is_hotkey_blocked()) && current_input->key_pressed)
+      if (((!input_driver_block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
+            || !input_driver_block_hotkey) && current_input->key_pressed)
          state = current_input->key_pressed(current_input_data, key);
 
       if (key >= RARCH_FIRST_META_KEY)
