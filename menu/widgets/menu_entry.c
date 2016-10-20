@@ -84,6 +84,7 @@ void menu_entry_get_path(uint32_t i, char *s, size_t len)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;
@@ -103,6 +104,7 @@ void menu_entry_get_rich_label(uint32_t i, char *s, size_t len)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;
@@ -125,6 +127,7 @@ void menu_entry_get_label(uint32_t i, char *s, size_t len)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;
@@ -144,6 +147,7 @@ unsigned menu_entry_get_spacing(uint32_t i)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;
@@ -163,6 +167,7 @@ unsigned menu_entry_get_type_new(uint32_t i)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;
@@ -268,6 +273,7 @@ void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;
@@ -297,6 +303,7 @@ void menu_entry_reset(uint32_t i)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;
@@ -317,6 +324,7 @@ void menu_entry_get_value(uint32_t i, void *data, char *s, size_t len)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;
@@ -431,6 +439,7 @@ int menu_entry_select(uint32_t i)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;

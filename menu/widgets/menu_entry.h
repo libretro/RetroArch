@@ -47,6 +47,7 @@ typedef struct menu_entry
 {
    char  path[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
+   char sublabel[PATH_MAX_LENGTH];
    char rich_label[PATH_MAX_LENGTH];
    char value[PATH_MAX_LENGTH];
    size_t entry_idx;

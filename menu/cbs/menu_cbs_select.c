@@ -41,6 +41,17 @@ static int action_select_default(const char *path, const char *label, unsigned t
    menu_file_list_cbs_t *cbs  = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
+   entry.path[0]       = '\0';
+   entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
+   entry.value[0]      = '\0';
+   entry.rich_label[0] = '\0';
+   entry.enum_idx      = MSG_UNKNOWN;
+   entry.entry_idx     = 0;
+   entry.idx           = 0;
+   entry.type          = 0;
+   entry.spacing       = 0;
+
    menu_entry_get(&entry, 0, idx, NULL, false);
 
    cbs = menu_entries_get_actiondata_at_offset(selection_buf, idx);

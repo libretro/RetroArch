@@ -751,6 +751,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    entry.path[0]       = '\0';
    entry.label[0]      = '\0';
+   entry.sublabel[0]   = '\0';
    entry.value[0]      = '\0';
    entry.rich_label[0] = '\0';
    entry.enum_idx      = MSG_UNKNOWN;
