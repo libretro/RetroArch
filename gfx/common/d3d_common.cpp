@@ -141,8 +141,9 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
    return buf;
 }
 
-void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf)
+void d3d_vertex_buffer_unlock(void *vertbuf_ptr)
 {
+   LPDIRECT3DVERTEXBUFFER vertbuf = (LPDIRECT3DVERTEXBUFFER)vertbuf_ptr;
    /* This is a stub on Xbox 1, see docs. */
 #ifndef _XBOX1
 
@@ -159,9 +160,10 @@ void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf)
 #endif
 }
 
-void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf)
+void *d3d_vertex_buffer_lock(void *vertbuf_ptr)
 {
    void *buf;
+   LPDIRECT3DVERTEXBUFFER vertbuf = (LPDIRECT3DVERTEXBUFFER)vertbuf_ptr;
 
 #if defined(_XBOX1)
    buf = (void*)D3DVertexBuffer_Lock2(vertbuf, 0);
@@ -197,9 +199,10 @@ void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration)
 }
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
-      LPDIRECT3DVERTEXBUFFER stream_vertbuf, unsigned offset_bytes,
+      void *stream_vertbuf_ptr, unsigned offset_bytes,
       unsigned stride)
 {
+	LPDIRECT3DVERTEXBUFFER stream_vertbuf = (LPDIRECT3DVERTEXBUFFER)stream_vertbuf_ptr;
 #if defined(HAVE_D3D8)
    IDirect3DDevice8_SetStreamSource(dev, stream_no, stream_vertbuf, stride);
 #elif defined(_XBOX360)

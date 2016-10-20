@@ -403,7 +403,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
       vert[i][1]  += 0.5f;
    }
 
-   overlay->vert_buf->Lock(0, sizeof(vert), &verts, 0);
+   verts = d3d_vertex_buffer_lock(overlay->vert_buf);
    memcpy(verts, vert, sizeof(vert));
    d3d_vertex_buffer_unlock(overlay->vert_buf);
 

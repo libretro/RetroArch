@@ -30,8 +30,8 @@ LPDIRECT3DVERTEXBUFFER d3d_vertex_buffer_new(LPDIRECT3DDEVICE dev,
       unsigned length, unsigned usage, unsigned fvf,
       D3DPOOL pool, void *handle);
 
-void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf);
-void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf);
+void *d3d_vertex_buffer_lock(void *data);
+void d3d_vertex_buffer_unlock(void *data);
 
 void d3d_vertex_buffer_free(void *vertex_data, void *vertex_declaration);
 
@@ -43,7 +43,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       PALETTEENTRY *palette);
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,
-      LPDIRECT3DVERTEXBUFFER stream_vertbuf, unsigned offset_bytes,
+      void *stream_vertbuf, unsigned offset_bytes,
       unsigned stride);
 
 void d3d_texture_free(LPDIRECT3DTEXTURE tex);
