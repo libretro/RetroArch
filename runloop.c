@@ -535,13 +535,6 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
    return true;
 }
 
-static bool runloop_is_frame_count_end(void)
-{
-   uint64_t *frame_count =
-      video_driver_get_frame_count_ptr();
-   return runloop_max_frames && (*frame_count >= runloop_max_frames);
-}
-
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
 
@@ -1088,12 +1081,12 @@ void runloop_set_quit_confirm(bool on)
  */
 static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 {
-   bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
+   bool time_to_exit             = runloop_shutdown_initiated;
    time_to_exit                  = time_to_exit || quit_key_pressed;
    time_to_exit                  = time_to_exit || !video_driver_is_alive();
    time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
-   time_to_exit                  = time_to_exit || runloop_is_frame_count_end();
-   time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL);
+   time_to_exit                  = time_to_exit || (runloop_max_frames && (*(video_driver_get_frame_count_ptr()) >= runloop_max_frames));
+   time_to_exit                  = time_to_exit || runloop_exec;
 
    if (!time_to_exit)
       return 1;
