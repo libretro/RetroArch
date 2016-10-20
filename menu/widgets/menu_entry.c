@@ -430,6 +430,13 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                label, path, 
                entry->rich_label,
                sizeof(entry->rich_label));
+
+      if (cbs->action_sublabel)
+         cbs->action_sublabel(list,
+               entry->type, i,
+               label, path, 
+               entry->sublabel,
+               sizeof(entry->sublabel));
    }
 
    entry->idx         = i;

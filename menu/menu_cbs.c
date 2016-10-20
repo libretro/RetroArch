@@ -130,6 +130,10 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "LABEL", cbs->action_label_ident);
 
+   menu_cbs_init_bind_sublabel(cbs, path, label, type, idx);
+
+   menu_cbs_init_log(repr_label, "SUBLABEL", cbs->action_sublabel_ident);
+
    bind_info.cbs             = cbs;
    bind_info.path            = path;
    bind_info.label           = label;
