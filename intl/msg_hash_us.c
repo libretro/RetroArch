@@ -3023,6 +3023,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_LOG_VERBOSITY:
+         return "Enable or disable logging to the terminal.";
+      case MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES:
+         return "Show hidden files/directories inside the file browser.";
       case MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "Gamepad button combination to toggle menu.";
       case MENU_ENUM_SUBLABEL_CPU_CORES:

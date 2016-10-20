@@ -180,6 +180,26 @@ static int action_bind_sublabel_toggle_gamepad_combo(
    return 0;
 }
 
+static int action_bind_sublabel_show_hidden_files(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES), len);
+   return 0;
+}
+
+static int action_bind_sublabel_log_verbosity(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_LOG_VERBOSITY), len);
+   return 0;
+}
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -192,6 +212,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_LOG_VERBOSITY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_log_verbosity);
+            break;
+         case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_hidden_files);
+            break;
          case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_toggle_gamepad_combo);
             break;
