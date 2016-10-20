@@ -96,6 +96,16 @@ static int action_bind_sublabel_fps_show(
    return 0;
 }
 
+static int action_bind_sublabel_netplay_settings(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_NETPLAY), len);
+   return 0;
+}
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -108,6 +118,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_NETPLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_settings);
+            break;
          case MENU_ENUM_LABEL_ONLINE_UPDATER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_online_updater);
             break;

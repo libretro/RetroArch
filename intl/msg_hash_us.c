@@ -3023,6 +3023,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_NETPLAY:
+         return "Join and/or host a netplay session.";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
          return "Displays the current framerate per second onscreen.";
       case MENU_ENUM_SUBLABEL_VIDEO_SETTINGS:
