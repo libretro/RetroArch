@@ -502,12 +502,13 @@ int16_t input_state(unsigned port, unsigned device,
 static bool check_input_driver_block_hotkey(bool enable_hotkey)
 {
    bool use_hotkey_enable;
-   settings_t *settings          = config_get_ptr();
-   const struct retro_keybind *bind =
+   settings_t *settings                      = config_get_ptr();
+   const struct retro_keybind *bind          =
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *autoconf_bind =
       &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   bool kb_mapping_is_blocked = input_driver_keyboard_mapping_is_blocked();
+   bool kb_mapping_is_blocked                = 
+      input_driver_keyboard_mapping_is_blocked();
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
@@ -519,11 +520,11 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
    /* If we haven't bound anything to this,
     * always allow hotkeys. */
    use_hotkey_enable          =
-         (bind->key != RETROK_UNKNOWN)
-      || (bind->joykey != NO_BTN)
-      || (bind->joyaxis != AXIS_NONE)
-      || (autoconf_bind->key != RETROK_UNKNOWN )
-      || (autoconf_bind->joykey != NO_BTN)
+         (bind->key              != RETROK_UNKNOWN)
+      || (bind->joykey           != NO_BTN)
+      || (bind->joyaxis          != AXIS_NONE)
+      || (autoconf_bind->key     != RETROK_UNKNOWN )
+      || (autoconf_bind->joykey  != NO_BTN)
       || (autoconf_bind->joyaxis != AXIS_NONE);
 
    if (kb_mapping_is_blocked || (use_hotkey_enable && !enable_hotkey))
@@ -565,7 +566,8 @@ retro_input_t input_keys_pressed(void)
    key = RARCH_ENABLE_HOTKEY;
    
    if (current_input->key_pressed &&
-         check_input_driver_block_hotkey(current_input->key_pressed(current_input_data, key)))
+         check_input_driver_block_hotkey(
+            current_input->key_pressed(current_input_data, key)))
       input_driver_block_libretro_input = true;
    else
       input_driver_block_libretro_input = false;
