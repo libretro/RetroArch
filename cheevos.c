@@ -321,7 +321,7 @@ static int cheevos_http_get(const char **result, size_t *size,
          break;
    }
    
-   RARCH_ERR("CHEEVOS error getting %s: %s\n", url, msg);
+   RARCH_ERR("CHEEVOS error getting %s: %s.\n", url, msg);
    return ret;
 }
 
@@ -596,7 +596,7 @@ static unsigned cheevos_parse_operator(const char **memaddr)
    }
    else
    {
-      RARCH_ERR("CHEEVOS Unknown operator %c\n", *str);
+      RARCH_ERR("CHEEVOS Unknown operator %c\n.", *str);
       op = CHEEVOS_COND_OP_EQUALS;
    }
 
@@ -1401,9 +1401,9 @@ static int cheevos_login(retro_time_t *timeout)
    
    if (!username || !*username || !password || !*password)
    {
-      runloop_msg_queue_push("Missing Retro Achievements account information", 0, 5 * 60, false);
-      runloop_msg_queue_push("Please fill in your account information in Settings", 0, 5 * 60, false);
-      RARCH_ERR("CHEEVOS username and/or password not informed\n");
+      runloop_msg_queue_push("Missing Retro Achievements account information.", 0, 5 * 60, false);
+      runloop_msg_queue_push("Please fill in your account information in Settings.", 0, 5 * 60, false);
+      RARCH_ERR("CHEEVOS username and/or password not informed.\n");
       return -1;
    }
    
@@ -1419,7 +1419,7 @@ static int cheevos_login(retro_time_t *timeout)
    request[sizeof(request) - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-   RARCH_LOG("CHEEVOS url to login: %s\n", request);
+   RARCH_LOG("CHEEVOS url to login: %s.\n", request);
 #endif
    
    if (!cheevos_http_get(&json, NULL, request, timeout))
@@ -1433,10 +1433,10 @@ static int cheevos_login(retro_time_t *timeout)
          return 0;
    }
 
-   runloop_msg_queue_push("Retro Achievements login error",
+   runloop_msg_queue_push("Retro Achievements login error.",
          0, 5 * 60, false);
    runloop_msg_queue_push(
-         "Please make sure your account information is correct",
+         "Please make sure your account information is correct.",
          0, 5 * 60, false);
    RARCH_ERR("CHEEVOS error getting user token.\n");
    return -1;
@@ -1455,7 +1455,7 @@ static void cheevos_make_unlock_url(const cheevo_t *cheevo, char* url, size_t ur
    url[url_size - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-   RARCH_LOG("CHEEVOS url to award the cheevo: %s\n", url);
+   RARCH_LOG("CHEEVOS url to award the cheevo: %s.\n", url);
 #endif
 }
 
@@ -1465,7 +1465,7 @@ static void cheevos_unlocked(void *task_data, void *user_data, const char *error
 
    if (error == NULL)
    {
-      RARCH_LOG("CHEEVOS awarded achievement %u\n", cheevo->id);
+      RARCH_LOG("CHEEVOS awarded achievement %u.\n", cheevo->id);
    }
    else
    {
@@ -1473,7 +1473,7 @@ static void cheevos_unlocked(void *task_data, void *user_data, const char *error
 
       url[0] = '\0';
 
-      RARCH_ERR("CHEEVOS error awarding achievement %u, retrying\n", cheevo->id);
+      RARCH_ERR("CHEEVOS error awarding achievement %u, retrying...\n", cheevo->id);
 
       cheevos_make_unlock_url(cheevo, url, sizeof(url));
       task_push_http_transfer(url, true, NULL, cheevos_unlocked, cheevo);
@@ -1495,7 +1495,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
 
          cheevo->active = 0;
 
-         RARCH_LOG("CHEEVOS awarding cheevo %u: %s (%s)\n",
+         RARCH_LOG("CHEEVOS awarding cheevo %u: %s (%s).\n",
                cheevo->id, cheevo->title, cheevo->description);
 
          runloop_msg_queue_push(cheevo->title, 0, 3 * 60, false);
@@ -1564,16 +1564,16 @@ static int cheevos_get_by_game_id(const char **json,
       request[sizeof(request) - 1] = 0;
       
 #ifdef CHEEVOS_LOG_URLS
-      RARCH_LOG("CHEEVOS url to get the list of cheevos: %s\n", request);
+      RARCH_LOG("CHEEVOS url to get the list of cheevos: %s.\n", request);
 #endif
 
       if (!cheevos_http_get(json, NULL, request, timeout))
       {
-         RARCH_LOG("CHEEVOS got achievements for game id %u\n", game_id);
+         RARCH_LOG("CHEEVOS got achievements for game id %u.\n", game_id);
          return 0;
       }
 
-      RARCH_ERR("CHEEVOS error getting achievements for game id %u\n", game_id);
+      RARCH_ERR("CHEEVOS error getting achievements for game id %u.\n", game_id);
    }
 
    return -1;
@@ -1609,7 +1609,7 @@ static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
    request[sizeof(request) - 1] = 0;
    
 #ifdef CHEEVOS_LOG_URLS
-   RARCH_LOG("CHEEVOS url to get the game's id: %s\n", request);
+   RARCH_LOG("CHEEVOS url to get the game's id: %s.\n", request);
 #endif
 
    if (!cheevos_http_get(&json, NULL, request, timeout))
@@ -1621,12 +1621,12 @@ static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
 
       if (!res)
       {
-         RARCH_LOG("CHEEVOS got game id %s\n", game_id);
+         RARCH_LOG("CHEEVOS got game id %s.\n", game_id);
          return strtoul(game_id, NULL, 10);
       }
    }
 
-   RARCH_ERR("CHEEVOS error getting game_id\n");
+   RARCH_ERR("CHEEVOS error getting game_id.\n");
    return 0;
 }
 
@@ -1643,7 +1643,7 @@ static void cheevos_make_playing_url(unsigned game_id, char* url, size_t url_siz
    url[url_size - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-   RARCH_LOG("CHEEVOS url to post the 'playing' activity: %s\n", url);
+   RARCH_LOG("CHEEVOS url to post the 'playing' activity: %s.\n", url);
 #endif
 }
 
@@ -1653,7 +1653,7 @@ static void cheevos_playing(void *task_data, void *user_data, const char *error)
 
    if (error == NULL)
    {
-      RARCH_LOG("CHEEVOS posted playing game %u activity\n", game_id);
+      RARCH_LOG("CHEEVOS posted playing game %u activity.\n", game_id);
    }
    else
    {
@@ -1661,7 +1661,7 @@ static void cheevos_playing(void *task_data, void *user_data, const char *error)
 
       url[0] = '\0';
 
-      RARCH_ERR("CHEEVOS error posting playing game %u activity, will retry\n", game_id);
+      RARCH_ERR("CHEEVOS error posting playing game %u activity, will retry...\n", game_id);
 
       cheevos_make_playing_url(game_id, url, sizeof(url));
       task_push_http_transfer(url, true, NULL, cheevos_playing, (void*)(uintptr_t)game_id);
@@ -1718,9 +1718,9 @@ static int cheevos_deactivate__json_number(void *userdata,
          }
       }
       if (found)
-         RARCH_LOG("CHEEVOS deactivated unlocked cheevo %s\n", cheevo->title);
+         RARCH_LOG("CHEEVOS deactivated unlocked cheevo %s.\n", cheevo->title);
       else
-         RARCH_ERR("CHEEVOS unknown cheevo to deactivate: %u\n", id);
+         RARCH_ERR("CHEEVOS unknown cheevo to deactivate: %u.\n", id);
    }
    
    return 0;
@@ -1768,7 +1768,7 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
       request[sizeof(request) - 1] = 0;
       
 #ifdef CHEEVOS_LOG_URLS
-      RARCH_LOG("CHEEVOS url to get the list of unlocked cheevos: %s\n", request);
+      RARCH_LOG("CHEEVOS url to get the list of unlocked cheevos: %s.\n", request);
 #endif
 
       if (!cheevos_http_get(&json, NULL, request, timeout))
@@ -1779,13 +1779,13 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
          
          if (res == JSONSAX_OK)
          {
-            RARCH_LOG("CHEEVOS deactivated unlocked achievements\n");
+            RARCH_LOG("CHEEVOS deactivated unlocked achievements.\n");
             return 0;
          }
       }
    }
    
-   RARCH_ERR("CHEEVOS error deactivating unlocked achievements\n");
+   RARCH_ERR("CHEEVOS error deactivating unlocked achievements.\n");
    return -1;
 #else
    RARCH_LOG("CHEEVOS cheevo deactivation is disabled\n");
@@ -2170,7 +2170,7 @@ bool cheevos_load(const void *data)
             {
                if (finders[i].ext_hashes[j] == hash)
                {
-                  RARCH_LOG("CHEEVOS testing %s\n", finders[i].name);
+                  RARCH_LOG("CHEEVOS testing %s.\n", finders[i].name);
                   
                   game_id = finders[i].finder(info, 5000000);
                   
@@ -2190,7 +2190,7 @@ bool cheevos_load(const void *data)
       if (finders[i].ext_hashes)
          continue;
 
-      RARCH_LOG("CHEEVOS testing %s\n", finders[i].name);
+      RARCH_LOG("CHEEVOS testing %s.\n", finders[i].name);
 
       game_id = finders[i].finder(info, 5000000);
 
@@ -2198,7 +2198,7 @@ bool cheevos_load(const void *data)
          goto found;
    }
 
-   RARCH_LOG("CHEEVOS this game doesn't feature achievements\n");
+   RARCH_LOG("CHEEVOS this game doesn't feature achievements.\n");
    return false;
    
 found:
@@ -2219,8 +2219,8 @@ found:
       free((void*)json);
    }
    
-   runloop_msg_queue_push("Error loading achievements", 0, 5 * 60, false);
-   RARCH_ERR("CHEEVOS error loading achievements\n", 0, 5 * 60, false);
+   runloop_msg_queue_push("Error loading achievements.", 0, 5 * 60, false);
+   RARCH_ERR("CHEEVOS error loading achievements.\n", 0, 5 * 60, false);
    return false;
 }
 
