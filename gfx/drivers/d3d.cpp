@@ -351,6 +351,15 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    if (!d3d || !overlay || !overlay->tex)
       return;
 
+   if (!overlay->vert_buf)
+   {
+      overlay->vert_buf = d3d_vertex_buffer_new(
+      d3d->dev, sizeof(vert), 0, 0, D3DPOOL_MANAGED, NULL);
+
+	  if (!overlay->vert_buf)
+		  return;
+   }
+
    for (i = 0; i < 4; i++)
    {
       vert[i][2]   = 0.5f;
@@ -1511,18 +1520,8 @@ static bool d3d_frame(void *data, const void *frame,
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
    {
-      void *vert_buf = d3d->menu->vert_buf;
-
-      if (!vert_buf)
-         vert_buf = d3d_vertex_buffer_new(
-               d3d->dev, sizeof(vert), 0, 0, D3DPOOL_MANAGED, NULL);
-
-      if (vert_buf)
-      {
-         d3d->menu->vert_buf = vert_buf;
-         d3d_overlay_render(d3d, d3d->menu);
-         menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
-      }
+      d3d_overlay_render(d3d, d3d->menu);
+      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
    }
 #endif
 
@@ -1530,19 +1529,7 @@ static bool d3d_frame(void *data, const void *frame,
    if (d3d->overlays_enabled)
    {
       for (i = 0; i < d3d->overlays.size(); i++)
-      {
-         void *vert_buf = d3d->overlays[i].vert_buf;
-
-         if (!vert_buf)
-            vert_buf = d3d_vertex_buffer_new(
-                  d3d->dev, sizeof(vert), 0, 0, D3DPOOL_MANAGED, NULL);
-
-         if (vert_buf)
-         {
-            d3d->overlays[i].vert_buf = vert_buf;
-            d3d_overlay_render(d3d, &d3d->overlays[i]);
-         }
-      }
+         d3d_overlay_render(d3d, &d3d->overlays[i]);
    }
 #endif
 
