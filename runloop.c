@@ -283,7 +283,7 @@ static bool runloop_check_pause(
 {
    static bool old_focus    = true;
    enum event_command cmd   = CMD_EVENT_NONE;
-   bool old_is_paused       = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+   bool old_is_paused       = runloop_paused;
 
    /* FRAMEADVANCE will set us into pause mode. */
    pause_pressed |= !old_is_paused && frameadvance_pressed;
@@ -300,7 +300,7 @@ static bool runloop_check_pause(
    if (cmd != CMD_EVENT_NONE)
       command_event(cmd, NULL);
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) == old_is_paused)
+   if (runloop_paused == old_is_paused)
       return false;
 
    return true;
@@ -416,7 +416,7 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
          RARCH_FRAMEADVANCE)
       || runloop_cmd_press(cmd, RARCH_REWIND);
 
-   if (!runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+   if (!runloop_paused)
       return true;
 
    if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
@@ -1114,10 +1114,10 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    }
 #endif
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL))
+   if (runloop_exec)
       runloop_ctl(RUNLOOP_CTL_UNSET_EXEC, NULL);
 
-   if (!runloop_ctl(RUNLOOP_CTL_IS_CORE_SHUTDOWN, NULL))
+   if (!runloop_core_shutdown_initiated)
       return -1;
 
    /* Quits out of RetroArch main loop. */
@@ -1185,7 +1185,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 
    runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_TIME_LAST, NULL);
 
-   if (runloop_ctl(RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT, NULL))
+   if (runloop_set_frame_limit)
    {
       struct retro_system_av_info *av_info =
          video_viewport_get_system_av_info();
@@ -1197,7 +1197,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
       frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
             / (av_info->timing.fps * fastforward_ratio));
 
-      runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_LIMIT, NULL);
+      runloop_set_frame_limit = false;
    }
 
    if (input_driver_is_flushing_input())
@@ -1209,7 +1209,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 
          /* If core was paused before entering menu, evoke
           * pause toggle to wake it up. */
-         if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+         if (runloop_paused)
             BIT64_SET(cmd->state[0].state, RARCH_PAUSE_TOGGLE);
          input_driver_set_flushing_input();
       }
@@ -1222,7 +1222,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 
       retro_time_t current     = cpu_features_get_time_usec();
       retro_time_t delta       = current - runloop_frame_time_last;
-      bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
+      bool is_locked_fps       = (runloop_paused ||
                                   input_driver_is_nonblock_state()) |
                                   !!recording_driver_get_data_ptr();
 
@@ -1230,7 +1230,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
       if (!runloop_frame_time_last || is_locked_fps)
          delta = runloop_frame_time.reference;
 
-      if (!is_locked_fps && runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
+      if (!is_locked_fps && runloop_slowmotion)
          delta /= settings->slowmotion_ratio;
 
       runloop_frame_time_last = current;
@@ -1247,7 +1247,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 
    if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
-      bool fullscreen_toggled = !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+      bool fullscreen_toggled = !runloop_paused;
 #ifdef HAVE_MENU
       fullscreen_toggled = fullscreen_toggled ||
          menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
