@@ -115,12 +115,13 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
 static bool video_shader_parse_pass(config_file_t *conf,
       struct video_shader_pass *pass, unsigned i)
 {
-   char shader_name[64]         = {0};
-   char filter_name_buf[64]     = {0};
-   char wrap_name_buf[64]       = {0};
-   char wrap_mode[64]           = {0};
-   char frame_count_mod_buf[64] = {0};
-   char srgb_output_buf[64]     = {0};
+   char tmp_str[PATH_MAX_LENGTH];
+   char shader_name[64];
+   char filter_name_buf[64];
+   char wrap_name_buf[64];
+   char wrap_mode[64];
+   char frame_count_mod_buf[64];
+   char srgb_output_buf[64];
    char fp_fbo_buf[64]          = {0};
    char mipmap_buf[64]          = {0};
    char alias_buf[64]           = {0};
@@ -132,9 +133,12 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char frame_count_mod[64]     = {0};
    struct gfx_fbo_scale *scale  = NULL;
    bool tmp_bool                = false;
-   char tmp_str[PATH_MAX_LENGTH]= {0};
    float fattr                  = 0.0f;
    int iattr                    = 0;
+
+   tmp_str[0] = shader_name[0] = filter_name_buf[0] = 
+      wrap_name_buf[0] = wrap_mode[0] = frame_count_mod_buf[0] = '\0';
+   srgb_output_buf[0] = '\0';
 
    /* Source */
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
@@ -316,9 +320,11 @@ static bool video_shader_parse_pass(config_file_t *conf,
 static bool video_shader_parse_textures(config_file_t *conf,
       struct video_shader *shader)
 {
+   char textures[1024];
    const char *id       = NULL;
    char *save           = NULL;
-   char textures[1024]  = {0};
+
+   textures[0] = '\0';
 
    if (!config_get_array(conf, "textures", textures, sizeof(textures)))
       return true;
@@ -327,12 +333,14 @@ static bool video_shader_parse_textures(config_file_t *conf,
          id && shader->luts < GFX_MAX_TEXTURES;
          shader->luts++, id = strtok_r(NULL, ";", &save))
    {
-      char id_filter[64]  = {0};
-      char id_wrap[64]    = {0};
-      char wrap_mode[64]  = {0};
-      char id_mipmap[64]  = {0};
+      char id_filter[64];
+      char id_wrap[64];
+      char wrap_mode[64];
+      char id_mipmap[64];
       bool mipmap         = false;
       bool smooth         = false;
+
+      id_filter[0] = id_wrap[0] = wrap_mode[0] = id_mipmap[0] = '\0';
 
       if (!config_get_array(conf, id, shader->lut[shader->luts].path,
                sizeof(shader->lut[shader->luts].path)))
@@ -402,12 +410,14 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
 bool video_shader_resolve_current_parameters(config_file_t *conf,
       struct video_shader *shader)
 {
-   char parameters[4096] = {0};
+   char parameters[4096];
    const char *id        = NULL;
    char *save            = NULL;
 
    if (!conf)
       return false;
+
+   parameters[0] = '\0';
 
    /* Read in parameters which override the defaults. */
    if (!config_get_array(conf, "parameters",
@@ -453,11 +463,13 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      char line[4096] = {0};
+      char line[4096];
       RFILE *file = filestream_open(shader->pass[i].source.path, RFILE_MODE_READ_TEXT, -1);
 
       if (!file)
          continue;
+
+      line[0] = '\0';
 
       while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
             && filestream_gets(file, line, sizeof(line)))
@@ -506,10 +518,12 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 static bool video_shader_parse_imports(config_file_t *conf,
       struct video_shader *shader)
 {
+   char imports[1024];
+   char tmp_str[PATH_MAX_LENGTH];
    const char *id     = NULL;
    char *save         = NULL;
-   char imports[1024] = {0};
-   char tmp_str[PATH_MAX_LENGTH]= {0};
+
+   imports[0] = tmp_str[0] = '\0';
 
    if (!config_get_array(conf, "imports", imports, sizeof(imports)))
       return true;
@@ -519,17 +533,20 @@ static bool video_shader_parse_imports(config_file_t *conf,
          shader->variables++, id = strtok_r(NULL, ";", &save))
    {
       uint32_t semantic_hash;
-      char semantic_buf[64]   = {0};
-      char wram_buf[64]       = {0};
-      char input_slot_buf[64] = {0};
-      char mask_buf[64]       = {0};
-      char equal_buf[64]      = {0};
-      char semantic[64]       = {0};
+      char semantic_buf[64];
+      char wram_buf[64];
+      char input_slot_buf[64];
+      char mask_buf[64];
+      char equal_buf[64];
+      char semantic[64];
       unsigned addr           = 0;
       unsigned mask           = 0;
       unsigned equal          = 0;
       struct state_tracker_uniform_info *var = 
          &shader->variable[shader->variables];
+
+      semantic_buf[0] = wram_buf[0] = input_slot_buf[0] = 
+         mask_buf[0] = equal_buf[0] = semantic[0] = '\0';
 
       strlcpy(var->id, id, sizeof(var->id));
 
@@ -691,7 +708,9 @@ static const char *scale_type_to_str(enum gfx_scale_type type)
 static void shader_write_scale_dim(config_file_t *conf, const char *dim,
       enum gfx_scale_type type, float scale, unsigned absolute, unsigned i)
 {
-   char key[64] = {0};
+   char key[64];
+
+   key[0] = '\0';
 
    snprintf(key, sizeof(key), "scale_type_%s%u", dim, i);
    config_set_string(conf, key, scale_type_to_str(type));
@@ -706,7 +725,9 @@ static void shader_write_scale_dim(config_file_t *conf, const char *dim,
 static void shader_write_fbo(config_file_t *conf,
       const struct gfx_fbo_scale *fbo, unsigned i)
 {
-   char key[64] = {0};
+   char key[64];
+
+   key[0] = '\0';
 
    snprintf(key, sizeof(key), "float_framebuffer%u", i);
    config_set_bool(conf, key, fbo->fp_fbo);
@@ -761,12 +782,15 @@ static const char *import_semantic_to_str(enum state_tracker_type type)
 static void shader_write_variable(config_file_t *conf,
       const struct state_tracker_uniform_info *info)
 {
-   char semantic_buf[64]   = {0};
-   char wram_buf[64]       = {0};
-   char input_slot_buf[64] = {0};
-   char mask_buf[64]       = {0};
-   char equal_buf[64]      = {0};
+   char semantic_buf[64];
+   char wram_buf[64];
+   char input_slot_buf[64];
+   char mask_buf[64];
+   char equal_buf[64];
    const char *id          = info->id;
+
+   semantic_buf[0] = wram_buf[0] = input_slot_buf[0] =
+      mask_buf[0] = equal_buf[0] = '\0';
 
    snprintf(semantic_buf, sizeof(semantic_buf), "%s_semantic", id);
    snprintf(wram_buf, sizeof(wram_buf), "%s_wram", id);
@@ -817,8 +841,10 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
    for (i = 0; i < shader->passes; i++)
    {
-      char key[64] = {0};
+      char key[64];
       const struct video_shader_pass *pass = &shader->pass[i];
+
+      key[0] = '\0';
 
       snprintf(key, sizeof(key), "shader%u", i);
       config_set_string(conf, key, pass->source.path);
@@ -849,7 +875,9 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
    if (shader->num_parameters)
    {
-      char parameters[4096] = {0};
+      char parameters[4096];
+
+      parameters[0] = '\0';
 
       strlcpy(parameters, shader->parameters[0].id, sizeof(parameters));
 
@@ -869,7 +897,9 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
    if (shader->luts)
    {
-      char textures[4096] = {0};
+      char textures[4096];
+
+      textures[0] = '\0';
 
       strlcpy(textures, shader->lut[0].id, sizeof(textures));
       for (i = 1; i < shader->luts; i++)
@@ -883,7 +913,9 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
       for (i = 0; i < shader->luts; i++)
       {
-         char key[64] = {0};
+         char key[64];
+
+         key[0] = '\0';
 
          config_set_string(conf, shader->lut[i].id, shader->lut[i].path);
 
@@ -909,7 +941,9 @@ void video_shader_write_conf_cgp(config_file_t *conf,
 
    if (shader->variables)
    {
-      char variables[4096] = {0};
+      char variables[4096];
+
+      variables[0] = '\0';
 
       strlcpy(variables, shader->variable[0].id, sizeof(variables));
 
@@ -973,7 +1007,9 @@ void video_shader_resolve_relative(struct video_shader *shader,
       const char *ref_path)
 {
    unsigned i;
-   char tmp_path[4096] = {0};
+   char tmp_path[4096];
+   
+   tmp_path[0] = '\0';
 
    for (i = 0; i < shader->passes; i++)
    {
