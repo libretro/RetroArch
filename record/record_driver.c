@@ -302,7 +302,7 @@ void recording_push_audio(const int16_t *data, size_t samples)
  **/
 bool recording_init(void)
 {
-   char recording_file[PATH_MAX_LENGTH] = {0};
+   char recording_file[PATH_MAX_LENGTH];
    struct ffemu_params params           = {0};
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
    bool *recording_enabled              = recording_is_enabled();
@@ -311,6 +311,8 @@ bool recording_init(void)
 
    if (!*recording_enabled)
       return false;
+
+   recording_file[0] = '\0';
 
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {

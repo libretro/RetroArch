@@ -969,8 +969,11 @@ void gl_renderchain_bind_prev_texture(
 bool gl_renderchain_add_lut(const struct video_shader *shader,
       unsigned i, GLuint *textures_lut)
 {
-   struct texture_image img = {0};
+   struct texture_image img;
    enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
+
+   img.width  = img.height = 0;
+   img.pixels = NULL;
 
    if (!image_texture_load(&img, shader->lut[i].path))
    {
