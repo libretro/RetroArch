@@ -1348,7 +1348,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Attempts to hard-synchronize \n"
                "CPU and GPU.\n"
                " \n"
-               "Can reduce latency at cost of \n"
+               "Can reduce latency at the cost of \n"
                "performance.");
          break;
       case MENU_ENUM_LABEL_REWIND_GRANULARITY:
@@ -1369,7 +1369,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Sets how many milliseconds to delay\n"
                "after VSync before running the core.\n"
                "\n"
-               "Can reduce latency at cost of\n"
+               "Can reduce latency at the cost of\n"
                "higher risk of stuttering.\n"
                " \n"
                "Maximum is 15.");
@@ -3040,7 +3040,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:
          return "Inserts a black frame inbetween frames. Useful for users of 120 Hz monitors who want to play 60 Hz material with eliminated ghosting.";
       case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
-         return "Reduces latency at cost of higher risk of video stuttering. Adds a delay after V-Sync (in ms).";
+         return "Reduces latency at the cost of higher risk of video stuttering. Adds a delay after V-Sync (in ms).";
       case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
          return "Download and/or scan content, and add it to your collection.";
       case MENU_ENUM_SUBLABEL_NETPLAY:
