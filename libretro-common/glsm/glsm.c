@@ -46,6 +46,7 @@ struct gl_cached_state
       GLboolean normalized[MAX_ATTRIB];
       GLsizei stride[MAX_ATTRIB];
       const GLvoid *pointer[MAX_ATTRIB];
+      GLuint buffer[MAX_ATTRIB];
    } attrib_pointer;
 
 #ifndef HAVE_OPENGLES
@@ -187,6 +188,7 @@ struct gl_cached_state
 
    GLuint vao;
    GLuint framebuf;
+   GLuint array_buffer;
    GLuint program; 
    GLenum active_texture;
    int cap_state[SGL_CAP_MAX];
@@ -630,6 +632,8 @@ void rglBufferSubData(GLenum target, GLintptr offset,
  */
 void rglBindBuffer(GLenum target, GLuint buffer)
 {
+   if (target == GL_ARRAY_BUFFER)
+      gl_state.array_buffer = buffer;
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
    glBindBuffer(target, buffer);
 }
@@ -1228,6 +1232,7 @@ void rglVertexAttribPointer(GLuint name, GLint size,
    gl_state.attrib_pointer.normalized[name] = normalized;
    gl_state.attrib_pointer.stride[name] = stride;
    gl_state.attrib_pointer.pointer[name] = pointer;
+   gl_state.attrib_pointer.buffer[name] = gl_state.array_buffer;
    glVertexAttribPointer(name, size, type, normalized, stride, pointer);
 }
 
@@ -1994,6 +1999,10 @@ static void glsm_state_setup(void)
 static void glsm_state_bind(void)
 {
    unsigned i;
+#ifdef CORE
+   glBindVertexArray(gl_state.vao);
+#endif
+   glBindBuffer(GL_ARRAY_BUFFER, gl_state.array_buffer);
 
    for (i = 0; i < MAX_ATTRIB; i++)
    {
@@ -2002,7 +2011,7 @@ static void glsm_state_bind(void)
       else
          glDisableVertexAttribArray(i);
 
-      if (gl_state.attrib_pointer.used[i])
+      if (gl_state.attrib_pointer.used[i] && gl_state.attrib_pointer.buffer[i] == gl_state.array_buffer)
       {
          glVertexAttribPointer(
                i,
@@ -2070,9 +2079,7 @@ static void glsm_state_bind(void)
          gl_state.viewport.y,
          gl_state.viewport.w,
          gl_state.viewport.h);
-#ifdef CORE
-   glBindVertexArray(gl_state.vao);
-#endif
+
    for(i = 0; i < SGL_CAP_MAX; i ++)
    {
       if (gl_state.cap_state[i])
@@ -2103,8 +2110,6 @@ static void glsm_state_bind(void)
    }
 
    glActiveTexture(GL_TEXTURE0 + gl_state.active_texture);
-
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 static void glsm_state_unbind(void)
