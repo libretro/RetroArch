@@ -131,20 +131,6 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
-static void runloop_msg_queue_lock(void)
-{
-#ifdef HAVE_THREADS
-   slock_lock(_runloop_msg_queue_lock);
-#endif
-}
-
-static void runloop_msg_queue_unlock(void)
-{
-#ifdef HAVE_THREADS
-   slock_unlock(_runloop_msg_queue_lock);
-#endif
-}
-
 static bool runloop_msg_queue_push_internal(runloop_ctx_msg_info_t *msg_info)
 {
    if (!msg_info || !runloop_msg_queue)
@@ -172,7 +158,9 @@ void runloop_msg_queue_push(const char *msg,
    if (!settings || !settings->video.font_enable)
       return;
 
-   runloop_msg_queue_lock();
+#ifdef HAVE_THREADS
+   slock_lock(_runloop_msg_queue_lock);
+#endif
 
    if (flush)
       runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_CLEAR, NULL);
@@ -184,7 +172,9 @@ void runloop_msg_queue_push(const char *msg,
 
    runloop_msg_queue_push_internal(&msg_info);
 
-   runloop_msg_queue_unlock();
+#ifdef HAVE_THREADS
+   slock_unlock(_runloop_msg_queue_lock);
+#endif
 }
 
 char* runloop_msg_queue_pull(void)
@@ -747,14 +737,18 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
       case RUNLOOP_CTL_MSG_QUEUE_PULL:
-         runloop_msg_queue_lock();
+#ifdef HAVE_THREADS
+         slock_lock(_runloop_msg_queue_lock);
+#endif
          {
             const char **ret = (const char**)data;
             if (!ret)
                return false;
             *ret = msg_queue_pull(runloop_msg_queue);
          }
-         runloop_msg_queue_unlock();
+#ifdef HAVE_THREADS
+         slock_unlock(_runloop_msg_queue_lock);
+#endif
          break;
       case RUNLOOP_CTL_MSG_QUEUE_CLEAR:
          msg_queue_clear(runloop_msg_queue);
@@ -763,11 +757,15 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (!runloop_msg_queue)
             return true;
 
-         runloop_msg_queue_lock();
+#ifdef HAVE_THREADS
+         slock_lock(_runloop_msg_queue_lock);
+#endif
 
          msg_queue_free(runloop_msg_queue);
 
-         runloop_msg_queue_unlock();
+#ifdef HAVE_THREADS
+         slock_unlock(_runloop_msg_queue_lock);
+#endif
 
 #ifdef HAVE_THREADS
          slock_free(_runloop_msg_queue_lock);
