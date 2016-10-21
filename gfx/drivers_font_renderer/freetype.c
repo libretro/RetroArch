@@ -216,14 +216,14 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
    /* TODO: find a better way to determine onmax_glyph_width/height */
    handle->max_glyph_width  = font_size;
    handle->max_glyph_height = font_size;
-   handle->atlas.width      = handle->max_glyph_width * 2 * FT_ATLAS_COLS;
+   handle->atlas.width      = handle->max_glyph_width  * 2 * FT_ATLAS_COLS;
    handle->atlas.height     = handle->max_glyph_height * 2 * FT_ATLAS_ROWS;
 
    handle->atlas.buffer     = (uint8_t*)
       calloc(handle->atlas.width * handle->atlas.height, 1);
 
    if (!handle->atlas.buffer)
-      return false;
+      goto error;
 
    if (!font_renderer_create_atlas(handle))
       goto error;

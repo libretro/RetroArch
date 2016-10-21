@@ -879,7 +879,7 @@ static void zarch_frame(void *data)
 
    zui->tmp_block.carr.coords.vertices = 0;
 
-   menu_display_font_bind_block(zui->font, &zui->tmp_block);
+   menu_display_font_bind_block((font_data_t*)zui->font, &zui->tmp_block);
 
    menu_display_push_quad(zui->width, zui->height, zui_bg_screen,
          0, 0, zui->width, zui->height);
@@ -957,7 +957,7 @@ static void zarch_frame(void *data)
 
    zui->rendering = false;
 
-   menu_display_font_flush_block(zui->font);
+   menu_display_font_flush_block((font_data_t*)zui->font);
    menu_display_unset_viewport();
 }
 
@@ -1026,7 +1026,7 @@ static void zarch_context_destroy(void *data)
    if (!zui)
       return;
 
-   menu_display_font_free(zui->font);
+   menu_display_font_free((font_data_t*)zui->font);
    zarch_context_bg_destroy(data);
 
    zui->font = NULL;
