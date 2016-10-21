@@ -220,7 +220,9 @@ void image_texture_free(struct texture_image *img)
 
    if (img->pixels)
       free(img->pixels);
-   memset(img, 0, sizeof(*img));
+   img->width  = 0;
+   img->height = 0;
+   img->pixels = NULL;
 }
 
 static enum video_image_format image_texture_get_type(const char *path)

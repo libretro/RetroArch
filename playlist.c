@@ -152,29 +152,28 @@ static void playlist_free_entry(struct playlist_entry *entry)
 
    if (entry->path)
       free(entry->path);
-   entry->path = NULL;
 
    if (entry->label)
       free(entry->label);
-   entry->label = NULL;
 
    if (entry->core_path)
       free(entry->core_path);
-   entry->core_path = NULL;
 
    if (entry->core_name)
       free(entry->core_name);
-   entry->core_name = NULL;
 
    if (entry->db_name)
       free(entry->db_name);
-   entry->core_name = NULL;
 
    if (entry->crc32)
       free(entry->crc32);
-   entry->crc32 = NULL;
 
-   memset(entry, 0, sizeof(*entry));
+   entry->path      = NULL;
+   entry->label     = NULL;
+   entry->core_path = NULL;
+   entry->core_name = NULL;
+   entry->db_name   = NULL;
+   entry->crc32     = NULL;
 }
 
 void playlist_update(playlist_t *playlist, size_t idx,

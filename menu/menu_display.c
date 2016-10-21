@@ -723,16 +723,9 @@ void menu_display_snow(int width, int height)
       float alpha;
       bool alive;
    };
-   static struct display_particle particles[PARTICLES_COUNT];
-   static bool initialized = false;
+   static struct display_particle particles[PARTICLES_COUNT] = {0};
    static int timeout      = 0;
    unsigned i, max_gen     = 2;
-
-   if (!initialized)
-   {
-      memset(particles, 0, sizeof(particles));
-      initialized = true;
-   }
 
    for (i = 0; i < PARTICLES_COUNT; ++i)
    {
