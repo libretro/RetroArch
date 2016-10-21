@@ -745,34 +745,6 @@ enum  runloop_state
    RUNLOOP_STATE_QUIT
 };
 
-#ifdef HAVE_MENU
-static enum runloop_state runloop_iterate_menu(settings_t *settings,
-      enum menu_action action, unsigned *sleep_ms)
-{
-   menu_ctx_iterate_t iter;
-   bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
-   bool is_idle            = runloop_idle;
-
-   focused                 = focused && !ui_companion_is_on_foreground();
-
-   iter.action             = action;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-      rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-
-   if (focused || !is_idle)
-      menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
-
-   if (!focused || is_idle)
-      return RUNLOOP_STATE_SLEEP;
-
-   if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
-      return RUNLOOP_STATE_MENU_ITERATE;
-
-   return RUNLOOP_STATE_END;
-}
-#endif
-
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -858,10 +830,30 @@ static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *
 
 #ifdef HAVE_MENU
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-      return runloop_iterate_menu(settings,
-            (enum menu_action)
-            menu_event(cmd->state[0], cmd->state[2]),
-            sleep_ms);
+   {
+      menu_ctx_iterate_t iter;
+      enum menu_action action = (enum menu_action)menu_event(cmd->state[0], cmd->state[2]);
+      bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
+      bool is_idle            = runloop_idle;
+
+      focused                 = focused && !ui_companion_is_on_foreground();
+
+      iter.action             = action;
+
+      if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+
+      if (focused || !is_idle)
+         menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+
+      if (!focused || is_idle)
+         return RUNLOOP_STATE_SLEEP;
+
+      if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
+         return RUNLOOP_STATE_MENU_ITERATE;
+
+      return RUNLOOP_STATE_END;
+   }
 #endif
    
    if (runloop_idle)
@@ -1043,7 +1035,6 @@ static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *
    return RUNLOOP_STATE_ITERATE;
 
 sleep:
-   *sleep_ms = 10;
 
    return RUNLOOP_STATE_SLEEP;
 }
@@ -1210,6 +1201,8 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
+         if (runloop_status == RUNLOOP_STATE_SLEEP)
+            *sleep_ms = 10;
          if (runloop_status == RUNLOOP_STATE_END)
             goto end;
          if (runloop_status == RUNLOOP_STATE_MENU_ITERATE)
