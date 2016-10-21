@@ -39,12 +39,12 @@ static bool netplay_spectate_pre_frame(netplay_t *netplay)
    if (netplay_is_server(netplay))
    {
       fd_set fds;
-      struct timeval tmp_tv = {0};
       int new_fd, idx, i;
       struct sockaddr_storage their_addr;
       socklen_t addr_size;
       retro_ctx_serialize_info_t serial_info;
       uint32_t header[3];
+      struct timeval tmp_tv = {0};
 
       netplay->can_poll = true;
       input_poll_net();

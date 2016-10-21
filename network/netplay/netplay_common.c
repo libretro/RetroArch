@@ -159,15 +159,17 @@ static bool netplay_endian_mismatch(uint32_t pma, uint32_t pmb)
 
 bool netplay_handshake(netplay_t *netplay)
 {
+   size_t i;
+   uint32_t local_pmagic, remote_pmagic;
    unsigned sram_size, remote_sram_size;
    retro_ctx_memory_info_t mem_info;
-   char msg[512]             = {0};
+   char msg[512];
    uint32_t *content_crc_ptr = NULL;
    void *sram                = NULL;
    uint32_t header[4]        = {0};
-   size_t i;
-   uint32_t local_pmagic, remote_pmagic;
-   bool is_server = netplay->is_server;
+   bool is_server            = netplay->is_server;
+
+   msg[0] = '\0';
 
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
 

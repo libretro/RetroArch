@@ -121,11 +121,13 @@ end:
 static bool init_tcp_socket(netplay_t *netplay, const char *server,
       uint16_t port, bool spectate)
 {
-   char port_buf[16]               = {0};
+   char port_buf[16];
    bool ret                        = false;
    const struct addrinfo *tmp_info = NULL;
    struct addrinfo *res            = NULL;
    struct addrinfo hints           = {0};
+
+   port_buf[0] = '\0';
 
    hints.ai_socktype = SOCK_STREAM;
    if (!server)
@@ -943,7 +945,9 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
    const char *str               = NULL;
    char buf_v4[INET_ADDRSTRLEN]  = {0};
    char buf_v6[INET6_ADDRSTRLEN] = {0};
-   char msg[512] = {0};
+   char msg[512];
+
+   msg[0] = '\0';
 
    u.storage = their_addr;
 
@@ -1002,7 +1006,9 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 void netplay_log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick)
 {
-   char msg[512] = {0};
+   char msg[512];
+
+   msg[0] = '\0';
 
    snprintf(msg, sizeof(msg), "Got connection from: \"%s\"",
          nick);
@@ -1473,10 +1479,10 @@ void deinit_netplay(void)
 
 bool init_netplay(bool is_spectate, const char *server, unsigned port)
 {
-   struct retro_callbacks cbs = {0};
-   settings_t *settings = config_get_ptr();
+   struct retro_callbacks cbs    = {0};
+   settings_t *settings          = config_get_ptr();
    uint64_t serialization_quirks = 0;
-   uint64_t quirks      = 0;
+   uint64_t quirks               = 0;
 
    if (!netplay_enabled)
       return false;
