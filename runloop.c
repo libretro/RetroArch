@@ -274,41 +274,6 @@ static bool runloop_check_pause(
 }
 
 /**
- * runloop_check_stateslots:
- * @pressed_increase     : is state slot increase key pressed?
- * @pressed_decrease     : is state slot decrease key pressed?
- *
- * Checks if the state increase/decrease keys have been pressed
- * for this frame.
- **/
-static void runloop_check_stateslots(settings_t *settings,
-      bool pressed_increase, bool pressed_decrease)
-{
-   char msg[128];
-
-   msg[0] = '\0';
-
-   /* Save state slots */
-   if (pressed_increase)
-      settings->state_slot++;
-   else if (pressed_decrease)
-   {
-      if (settings->state_slot > 0)
-         settings->state_slot--;
-   }
-   else
-      return;
-
-   snprintf(msg, sizeof(msg), "%s: %d",
-         msg_hash_to_str(MSG_STATE_SLOT),
-         settings->state_slot);
-
-   runloop_msg_queue_push(msg, 2, 180, true);
-
-   RARCH_LOG("%s\n", msg);
-}
-
-/**
  * rarch_game_specific_options:
  *
  * Returns: true (1) if a game specific core
@@ -338,12 +303,7 @@ static bool rarch_game_specific_options(char **output)
 
 static bool runloop_check_pause_state(event_cmd_state_t *cmd)
 {
-   bool check_is_oneshot = false;
-
-   if (!cmd)
-      return false;
-
-   check_is_oneshot      = runloop_cmd_triggered(cmd,
+   bool check_is_oneshot      = runloop_cmd_triggered(cmd,
          RARCH_FRAMEADVANCE)
       || runloop_cmd_press(cmd, RARCH_REWIND);
 
@@ -368,8 +328,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
    bool focused              = true;
    settings_t *settings      = config_get_ptr();
    
-
-   if (!cmd || runloop_idle)
+   if (runloop_idle)
       return false;
 
    if (settings->pause_nonactive)
@@ -433,10 +392,42 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
       driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
    }
 
-   runloop_check_stateslots(settings,
-         runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS),
-         runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS)
-         );
+   /* Checks if the state increase/decrease keys have been pressed 
+    * for this frame. */
+
+   if (runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS))
+   {
+      char msg[128];
+
+      msg[0] = '\0';
+
+      settings->state_slot++;
+
+      snprintf(msg, sizeof(msg), "%s: %d",
+            msg_hash_to_str(MSG_STATE_SLOT),
+            settings->state_slot);
+
+      runloop_msg_queue_push(msg, 2, 180, true);
+
+      RARCH_LOG("%s\n", msg);
+   }
+   else if (runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS))
+   {
+      char msg[128];
+
+      msg[0] = '\0';
+
+      if (settings->state_slot > 0)
+         settings->state_slot--;
+
+      snprintf(msg, sizeof(msg), "%s: %d",
+            msg_hash_to_str(MSG_STATE_SLOT),
+            settings->state_slot);
+
+      runloop_msg_queue_push(msg, 2, 180, true);
+
+      RARCH_LOG("%s\n", msg);
+   }
 
    if (runloop_cmd_triggered(cmd, RARCH_SAVE_STATE_KEY))
       command_event(CMD_EVENT_SAVE_STATE, NULL);
