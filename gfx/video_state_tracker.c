@@ -256,64 +256,7 @@ static void state_tracker_update_element(
    }
 }
 
-static const unsigned buttons[] = {
-   RETRO_DEVICE_ID_JOYPAD_R,
-   RETRO_DEVICE_ID_JOYPAD_L,
-   RETRO_DEVICE_ID_JOYPAD_X,
-   RETRO_DEVICE_ID_JOYPAD_A,
-   RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_LEFT,
-   RETRO_DEVICE_ID_JOYPAD_DOWN,
-   RETRO_DEVICE_ID_JOYPAD_UP,
-   RETRO_DEVICE_ID_JOYPAD_START,
-   RETRO_DEVICE_ID_JOYPAD_SELECT,
-   RETRO_DEVICE_ID_JOYPAD_Y,
-   RETRO_DEVICE_ID_JOYPAD_B,
-};
-
-/**
- * state_tracker_update_input:
- * @tracker                      : State tracker handle.
- *
- * Updates 16-bit input in same format as libretro API itself.
- **/
-static void state_tracker_update_input(state_tracker_t *tracker)
-{
-   unsigned i;
-   const struct retro_keybind *binds[MAX_USERS];
-   settings_t *settings = config_get_ptr();
-   uint16_t state[2]    = {0};
-
-   /* Only bind for up to two players for now. */
-   for (i = 0; i < MAX_USERS; i++)
-      binds[i] = settings->input.binds[i];
-
-   for (i = 0; i < 2; i++)
-      input_push_analog_dpad(settings->input.binds[i],
-            settings->input.analog_dpad_mode[i]);
-   for (i = 0; i < MAX_USERS; i++)
-      input_push_analog_dpad(settings->input.autoconf_binds[i],
-            settings->input.analog_dpad_mode[i]);
-
-   if (!input_driver_is_libretro_input_blocked())
-   {
-      for (i = 4; i < 16; i++)
-      {
-         state[0] |= (input_driver_state(
-                  binds, 0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-         state[1] |= (input_driver_state(
-                  binds, 1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-      }
-   }
-
-   for (i = 0; i < 2; i++)
-      input_pop_analog_dpad(settings->input.binds[i]);
-   for (i = 0; i < MAX_USERS; i++)
-      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
-
-   for (i = 0; i < 2; i++)
-      tracker->input_state[i] = state[i];
-}
+void state_tracker_update_input(uint16_t *input1, uint16_t *input2);
 
 /**
  * state_tracker_get_uniform:
@@ -337,7 +280,8 @@ unsigned state_tracker_get_uniform(state_tracker_t *tracker,
    if (tracker->info_elem < elem)
       elems = tracker->info_elem;
 
-   state_tracker_update_input(tracker);
+   state_tracker_update_input(&tracker->input_state[0], &tracker->input_state[1]);
+
 
    for (i = 0; i < elems; i++)
       state_tracker_update_element(
