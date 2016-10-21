@@ -834,7 +834,6 @@ static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *
       menu_ctx_iterate_t iter;
       enum menu_action action = (enum menu_action)menu_event(cmd->state[0], cmd->state[2]);
       bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
-      bool is_idle            = runloop_idle;
 
       focused                 = focused && !ui_companion_is_on_foreground();
 
@@ -843,10 +842,10 @@ static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *
       if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
-      if (focused || !is_idle)
+      if (focused || !runloop_idle)
          menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
-      if (!focused || is_idle)
+      if (!focused || runloop_idle)
          return RUNLOOP_STATE_SLEEP;
 
       if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
@@ -857,7 +856,7 @@ static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *
 #endif
    
    if (runloop_idle)
-      goto sleep;
+      return RUNLOOP_STATE_SLEEP;
 
    if (settings->pause_nonactive)
       focused                = video_driver_is_focused();
@@ -907,7 +906,7 @@ static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *
    old_focus = focused;
 
    if (!focused)
-      goto sleep;
+      return RUNLOOP_STATE_SLEEP;
 
    if (runloop_paused)
    {
@@ -923,7 +922,7 @@ static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *
       }
 
       if (!check_is_oneshot)
-         goto sleep;
+         return RUNLOOP_STATE_SLEEP;
    }
 
    /* To avoid continous switching if we hold the button down, we require
@@ -1033,10 +1032,6 @@ static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *
          runloop_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
 
    return RUNLOOP_STATE_ITERATE;
-
-sleep:
-
-   return RUNLOOP_STATE_SLEEP;
 }
 
 
