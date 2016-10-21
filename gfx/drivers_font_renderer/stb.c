@@ -38,7 +38,7 @@ typedef struct
    struct font_glyph glyphs[256];
 } stb_font_renderer_t;
 
-static const struct font_atlas *font_renderer_stb_get_atlas(void *data)
+static struct font_atlas *font_renderer_stb_get_atlas(void *data)
 {
    stb_font_renderer_t *self = (stb_font_renderer_t*)data;
    return &self->atlas;
@@ -88,6 +88,8 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
 
    stbtt_PackFontRange(&pc, font_data, 0, font_size, 0, 256, chardata);
    stbtt_PackEnd(&pc);
+
+   self->atlas.dirty = true;
 
    for (i = 0; i < 256; ++i)
    {

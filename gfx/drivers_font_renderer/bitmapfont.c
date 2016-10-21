@@ -76,6 +76,7 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
                dst[xo + yo * handle->atlas.width] = col;
       }
    }
+   handle->atlas.dirty = true;
 }
 
 static void *font_renderer_bmp_init(const char *font_path, float font_size)

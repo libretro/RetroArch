@@ -73,6 +73,7 @@ struct font_atlas
    uint8_t *buffer; /* Alpha channel. */
    unsigned width;
    unsigned height;
+   bool dirty;
 };
 
 struct font_params
@@ -112,7 +113,7 @@ typedef struct font_renderer_driver
 {
    void *(*init)(const char *font_path, float font_size);
 
-   const struct font_atlas *(*get_atlas)(void *data);
+   struct font_atlas *(*get_atlas)(void *data);
 
    /* Returns NULL if no glyph for this code is found. */
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
