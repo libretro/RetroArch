@@ -550,9 +550,10 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
  */
 retro_input_t input_keys_pressed(void)
 {
-   unsigned i, key;
+   unsigned i;
    retro_input_t             ret;
    const struct retro_keybind *binds[MAX_USERS];
+   unsigned key                  = RARCH_ENABLE_HOTKEY;
    settings_t *settings          = config_get_ptr();
 
    ret.type  = 0;
@@ -563,8 +564,6 @@ retro_input_t input_keys_pressed(void)
 
    input_driver_turbo_btns.count++;
 
-   key = RARCH_ENABLE_HOTKEY;
-   
    if (current_input->key_pressed &&
          check_input_driver_block_hotkey(
             current_input->key_pressed(current_input_data, key)))
@@ -582,14 +581,14 @@ retro_input_t input_keys_pressed(void)
             settings->input.analog_dpad_mode[i]);
 
       input_driver_turbo_btns.frame_enable[i] = 0;
-   }
 
-   if (!input_driver_block_libretro_input)
-   {
-      for (i = 0; i < settings->input.max_users; i++)
+      if (!input_driver_block_libretro_input)
          input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
                current_input_data, binds,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+
+      input_pop_analog_dpad(settings->input.binds[i]);
+      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
    }
 
    for (key = 0; key < RARCH_BIND_LIST_END; key++)
@@ -625,12 +624,6 @@ retro_input_t input_keys_pressed(void)
 
       if (state)
          ret.state |= (UINT64_C(1) << key);
-   }
-
-   for (i = 0; i < settings->input.max_users; i++)
-   {
-      input_pop_analog_dpad(settings->input.binds[i]);
-      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
    }
 
    return ret;
