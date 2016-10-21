@@ -818,11 +818,89 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 
 static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *sleep_ms)
 {
-   static bool old_focus     = true;
-   bool tmp                  = false;
-   bool focused              = true;
-   bool pause_pressed        = runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE);
-   settings_t *settings      = config_get_ptr();
+   static bool old_focus            = true;
+#ifdef HAVE_OVERLAY
+   static char prev_overlay_restore = false;
+   bool osk_enable                  = input_driver_is_onscreen_keyboard_enabled();
+#endif
+   bool tmp                         = false;
+   bool focused                     = true;
+   bool pause_pressed               = runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE);
+   settings_t *settings             = config_get_ptr();
+
+   if (input_driver_is_flushing_input())
+   {
+      input_driver_unset_flushing_input();
+      if (cmd->state[0].state)
+      {
+         cmd->state[0].state = 0;
+
+         /* If core was paused before entering menu, evoke
+          * pause toggle to wake it up. */
+         if (runloop_paused)
+            BIT64_SET(cmd->state[0].state, RARCH_PAUSE_TOGGLE);
+         input_driver_set_flushing_input();
+      }
+   }
+
+   if (runloop_cmd_triggered(cmd, RARCH_OVERLAY_NEXT))
+      command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
+
+   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
+   {
+      bool fullscreen_toggled = !runloop_paused;
+#ifdef HAVE_MENU
+      fullscreen_toggled = fullscreen_toggled ||
+         menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
+#endif
+
+      if (fullscreen_toggled)
+         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+   }
+
+   if (runloop_cmd_triggered(cmd, RARCH_GRAB_MOUSE_TOGGLE))
+      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+
+#ifdef HAVE_MENU
+   if (runloop_cmd_menu_press(cmd) ||
+         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   {
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      {
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
+               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+      }
+      else
+      {
+         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
+         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      }
+   }
+#endif
+
+#ifdef HAVE_OVERLAY
+   if (osk_enable && !input_keyboard_ctl(
+            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+   {
+      input_driver_unset_onscreen_keyboard_enabled();
+      prev_overlay_restore  = true;
+      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+   }
+   else if (!osk_enable && input_keyboard_ctl(
+            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+   {
+      input_driver_set_onscreen_keyboard_enabled();
+      prev_overlay_restore  = false;
+      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+   }
+   else if (prev_overlay_restore)
+   {
+      if (!settings->input.overlay_hide_in_menu)
+         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+      prev_overlay_restore = false;
+   }
+#endif
 
    if (runloop_iterate_time_to_exit(
             runloop_cmd_press(cmd, RARCH_QUIT_KEY)) != 1)
@@ -1049,10 +1127,6 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
    enum runloop_state runloop_status            = RUNLOOP_STATE_NONE;
-#ifdef HAVE_OVERLAY
-   static char prev_overlay_restore             = false;
-   bool osk_enable                              = input_driver_is_onscreen_keyboard_enabled();
-#endif
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
@@ -1076,21 +1150,6 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
             / (av_info->timing.fps * fastforward_ratio));
 
       runloop_set_frame_limit = false;
-   }
-
-   if (input_driver_is_flushing_input())
-   {
-      input_driver_unset_flushing_input();
-      if (cmd->state[0].state)
-      {
-         cmd->state[0].state = 0;
-
-         /* If core was paused before entering menu, evoke
-          * pause toggle to wake it up. */
-         if (runloop_paused)
-            BIT64_SET(cmd->state[0].state, RARCH_PAUSE_TOGGLE);
-         input_driver_set_flushing_input();
-      }
    }
 
    if (runloop_frame_time.callback)
@@ -1119,65 +1178,6 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
       runloop_frame_time.callback(delta);
    }
 
-   if (runloop_cmd_triggered(cmd, RARCH_OVERLAY_NEXT))
-      command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
-
-   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
-   {
-      bool fullscreen_toggled = !runloop_paused;
-#ifdef HAVE_MENU
-      fullscreen_toggled = fullscreen_toggled ||
-         menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
-#endif
-
-      if (fullscreen_toggled)
-         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-   }
-
-   if (runloop_cmd_triggered(cmd, RARCH_GRAB_MOUSE_TOGGLE))
-      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-
-#ifdef HAVE_MENU
-   if (runloop_cmd_menu_press(cmd) ||
-         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-   {
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-      {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
-               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-      }
-      else
-      {
-         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
-         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      }
-   }
-#endif
-
-#ifdef HAVE_OVERLAY
-   if (osk_enable && !input_keyboard_ctl(
-            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-   {
-      input_driver_unset_onscreen_keyboard_enabled();
-      prev_overlay_restore  = true;
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-   }
-   else if (!osk_enable && input_keyboard_ctl(
-            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-   {
-      input_driver_set_onscreen_keyboard_enabled();
-      prev_overlay_restore  = false;
-      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-   }
-   else if (prev_overlay_restore)
-   {
-      if (!settings->input.overlay_hide_in_menu)
-         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-      prev_overlay_restore = false;
-   }
-#endif
-
    runloop_status = runloop_check_state(cmd, sleep_ms);
 
    switch (runloop_status)
@@ -1186,8 +1186,6 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
          frame_limit_last_time = 0.0;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
-      case RUNLOOP_STATE_ITERATE:
-         break;
       case RUNLOOP_STATE_SLEEP:
       case RUNLOOP_STATE_END:
       case RUNLOOP_STATE_MENU_ITERATE:
@@ -1203,6 +1201,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
          if (runloop_status == RUNLOOP_STATE_MENU_ITERATE)
             return 0;
          return 1;
+      case RUNLOOP_STATE_ITERATE:
       case RUNLOOP_STATE_NONE:
       default:
          break;
@@ -1253,9 +1252,8 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 
    if (!settings->fastforward_ratio)
       return 0;
-#ifdef HAVE_MENU
+
 end:
-#endif
 
    current                        = cpu_features_get_time_usec();
    target                         = frame_limit_last_time +
