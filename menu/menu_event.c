@@ -226,7 +226,17 @@ unsigned menu_event(retro_input_t input,
    if (settings->menu.pointer.enable)
       menu_event_pointer(&ret);
    else
-      memset(&menu_input->pointer, 0, sizeof(menu_input->pointer));
+   {
+      menu_input->pointer.x          = 0;
+      menu_input->pointer.y          = 0;
+      menu_input->pointer.dx         = 0;
+      menu_input->pointer.dy         = 0;
+      menu_input->pointer.accel      = 0;
+      menu_input->pointer.pressed[0] = false;
+      menu_input->pointer.pressed[1] = false;
+      menu_input->pointer.back       = false;
+      menu_input->pointer.ptr        = 0;
+   }
 
    return ret;
 }
