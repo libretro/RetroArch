@@ -766,7 +766,7 @@ static int runloop_iterate_menu(settings_t *settings,
 }
 #endif
 
-static bool runloop_check_state(event_cmd_state_t *cmd)
+static bool runloop_check_state(event_cmd_state_t *cmd, unsigned *sleep_ms)
 {
    static bool old_focus     = true;
    bool tmp                  = false;
@@ -775,7 +775,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
    settings_t *settings      = config_get_ptr();
    
    if (runloop_idle)
-      return false;
+      goto sleep;
 
    if (settings->pause_nonactive)
       focused                = video_driver_is_focused();
@@ -825,7 +825,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
    old_focus = focused;
 
    if (!focused)
-      return false;
+      goto sleep;
 
    if (runloop_paused)
    {
@@ -841,7 +841,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
       }
 
       if (!check_is_oneshot)
-         return false;
+         goto sleep;
    }
 
    /* To avoid continous switching if we hold the button down, we require
@@ -951,6 +951,11 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
          runloop_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
 
    return true;
+
+sleep:
+   *sleep_ms = 10;
+
+   return false;
 }
 
 /* Time to exit out of the main loop?
@@ -1198,7 +1203,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
    }
 #endif
 
-   if (!runloop_check_state(cmd))
+   if (!runloop_check_state(cmd, sleep_ms))
    {
       /* RetroArch has been paused. */
       core_poll();
@@ -1206,7 +1211,6 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
       /* FIXME: This is an ugly way to tell Netplay this... */
       netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
-      *sleep_ms = 10;
       return 1;
    }
 
