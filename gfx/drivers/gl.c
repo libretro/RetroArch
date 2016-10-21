@@ -2160,12 +2160,15 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    unsigned i, mip_level;
    GLenum wrap_mode;
    GLuint new_filt;
-   video_shader_ctx_wrap_t wrap_info = {0};
+   video_shader_ctx_wrap_t wrap_info;
    bool smooth                       = false;
    settings_t *settings              = config_get_ptr();
 
    if (!gl)
       return;
+
+   wrap_info.idx  = 0;
+   wrap_info.type = RARCH_WRAP_BORDER;
 
    context_bind_hw_render(false);
 
