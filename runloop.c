@@ -1205,7 +1205,6 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
       case RUNLOOP_STATE_SLEEP:
       case RUNLOOP_STATE_END:
       case RUNLOOP_STATE_MENU_ITERATE:
-         /* RetroArch has been paused. */
          core_poll();
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
