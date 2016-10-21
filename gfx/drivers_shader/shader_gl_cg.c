@@ -848,7 +848,9 @@ static void gl_cg_set_pass_attrib(
       struct cg_fbo_params *fbo,
       const char *attr)
 {
-   char attr_buf[64] = {0};
+   char attr_buf[64];
+
+   attr_buf[0] = '\0';
 
    snprintf(attr_buf, sizeof(attr_buf), "%s.texture", attr);
    if (!fbo->tex)
@@ -920,7 +922,9 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
 
    if (i > 1)
    {
-      char pass_str[64] = {0};
+      char pass_str[64];
+
+      pass_str[0] = '\0';
 
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i);
       gl_cg_set_pass_attrib(&cg->prg[i], &cg->prg[i].orig, pass_str);
@@ -928,10 +932,10 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
 
    for (j = 0; j < PREV_TEXTURES; j++)
    {
-      char attr_buf_tex[64]      = {0};
-      char attr_buf_vid_size[64] = {0};
-      char attr_buf_tex_size[64] = {0};
-      char attr_buf_coord[64]    = {0};
+      char attr_buf_tex[64];
+      char attr_buf_vid_size[64];
+      char attr_buf_tex_size[64];
+      char attr_buf_coord[64];
       static const char *prev_names[PREV_TEXTURES] = {
          "PREV",
          "PREV1",
@@ -941,6 +945,9 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
          "PREV5",
          "PREV6",
       };
+
+      attr_buf_tex[0] = attr_buf_vid_size[0] = attr_buf_tex_size[0] =
+         attr_buf_coord[0] = '\0';
 
       snprintf(attr_buf_tex,      sizeof(attr_buf_tex),     
             "%s.texture", prev_names[j]);
@@ -970,7 +977,9 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
 
    for (j = 0; j + 1 < i; j++)
    {
-      char pass_str[64] = {0};
+      char pass_str[64];
+
+      pass_str[0] = '\0';
 
       snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
       gl_cg_set_pass_attrib(&cg->prg[i], &cg->prg[i].fbo[j], pass_str);

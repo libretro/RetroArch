@@ -446,13 +446,16 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       bool fullscreen)
 {
    XEvent event;
-   bool true_full = false, windowed_full;
-   int val, x_off = 0, y_off = 0;
-   XVisualInfo *vi = NULL;
-   XSetWindowAttributes swa = {0};
+   bool true_full            = false;
+   bool windowed_full        = false;
+   int val                   = 0;
+   int x_off                 = 0;
+   int y_off                 = 0;
+   XVisualInfo *vi           = NULL;
+   XSetWindowAttributes swa  = {0};
    int (*old_handler)(Display*, XErrorEvent*) = NULL;
-   settings_t *settings    = config_get_ptr();
-   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   settings_t *settings      = config_get_ptr();
+   gfx_ctx_x_data_t *x       = (gfx_ctx_x_data_t*)data;
 
    frontend_driver_install_signal_handler();
 

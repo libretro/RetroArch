@@ -228,7 +228,9 @@ static void retroarch_print_features(void)
 
 static void retroarch_print_version(void)
 {
-   char str[PATH_MAX_LENGTH] = {0};
+   char str[PATH_MAX_LENGTH];
+
+   str[0] = '\0';
 
    fprintf(stderr, "%s: %s -- v%s",
          msg_hash_to_str(MSG_PROGRAM),
@@ -895,8 +897,8 @@ static bool retroarch_init_state(void)
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
-   char core_path[PATH_MAX_LENGTH]        = {0};
-   char config_directory[PATH_MAX_LENGTH] = {0};
+   char core_path[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
    rarch_system_info_t *system            = NULL;
@@ -910,6 +912,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
+
+   config_directory[0] = core_path[0] = '\0';
 
    fill_pathname_application_special(config_directory, sizeof(config_directory),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
@@ -1022,7 +1026,9 @@ bool retroarch_main_init(int argc, char *argv[])
 
    if (verbosity_is_enabled())
    {
-      char str[PATH_MAX_LENGTH] = {0};
+      char str[PATH_MAX_LENGTH];
+
+      str[0] = '\0';
 
       RARCH_LOG_OUTPUT("=== Build =======================================\n");
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));

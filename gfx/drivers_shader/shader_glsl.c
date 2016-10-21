@@ -158,7 +158,9 @@ static GLint gl_glsl_get_uniform(glsl_shader_data_t *glsl,
 {
    unsigned i;
    GLint loc;
-   char buf[64] = {0};
+   char buf[64];
+
+   buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "%s%s", glsl->shader->prefix, base);
    loc = glGetUniformLocation(prog, buf);
@@ -181,7 +183,9 @@ static GLint gl_glsl_get_attrib(glsl_shader_data_t *glsl,
 {
    unsigned i;
    GLint loc;
-   char buf[64] = {0};
+   char buf[64];
+
+   buf[0] = '\0';
 
    snprintf(buf, sizeof(buf), "%s%s", glsl->shader->prefix, base);
    loc = glGetUniformLocation(prog, buf);
@@ -249,7 +253,9 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
 {
    GLint status;
    const char *source[4];
-   char version[32] = {0};
+   char version[32];
+
+   version[0] = '\0';
 
    if (glsl_core && !strstr(program, "#version"))
    {
@@ -544,10 +550,12 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
       GLuint prog,
       struct shader_uniforms_frame *frame, const char *base)
 {
-   char texture[64]      = {0};
-   char texture_size[64] = {0};
-   char input_size[64]   = {0};
-   char tex_coord[64]    = {0};
+   char texture[64];
+   char texture_size[64];
+   char input_size[64];
+   char tex_coord[64];
+
+   texture[0] = texture_size[0] = input_size[0] = tex_coord[0] = '\0';
 
    snprintf(texture, sizeof(texture), "%s%s", base, "Texture");
    snprintf(texture_size, sizeof(texture_size), "%s%s", base, "TextureSize");
@@ -569,7 +577,9 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
       struct shader_uniforms *uni)
 {
    unsigned i;
-   char frame_base[64] = {0};
+   char frame_base[64];
+
+   frame_base[0] = '\0';
 
    glUseProgram(prog);
 
@@ -828,7 +838,9 @@ static void *gl_glsl_init(void *data, const char *path)
    {
       if (*glsl->shader->pass[i].alias)
       {
-         char define[128] = {0};
+         char define[128];
+
+         define[0] = '\0';
 
          snprintf(define, sizeof(define), "#define %s_ALIAS\n",
                glsl->shader->pass[i].alias);

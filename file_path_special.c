@@ -76,7 +76,9 @@ void fill_pathname_expand_special(char *out_path,
             )
    {
       size_t src_size;
-      char application_dir[PATH_MAX_LENGTH] = {0};
+      char application_dir[PATH_MAX_LENGTH];
+
+      application_dir[0] = '\0';
 
       fill_pathname_application_path(application_dir, sizeof(application_dir));
       path_basedir(application_dir);
@@ -101,8 +103,10 @@ void fill_pathname_abbreviate_special(char *out_path,
    unsigned i;
    const char *candidates[3];
    const char *notations[3];
-   char application_dir[PATH_MAX_LENGTH] = {0};
+   char application_dir[PATH_MAX_LENGTH];
    const char                      *home = getenv("HOME");
+
+   application_dir[0] = '\0';
 
    /* application_dir could be zero-string. Safeguard against this.
     *
@@ -238,9 +242,9 @@ void fill_pathname_application_path(char *s, size_t len)
    {
       pid_t pid;
       static const char *exts[] = { "exe", "file", "path/a.out" };
-      char link_path[PATH_MAX_LENGTH] = {0};
+      char link_path[PATH_MAX_LENGTH];
 
-      *s        = '\0';
+      link_path[0] = *s = '\0';
       pid       = getpid(); 
 
       /* Linux, BSD and Solaris paths. Not standardized. */
@@ -303,7 +307,9 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT:
 #ifdef HAVE_ZARCH
          {
-            char s1[PATH_MAX_LENGTH] = {0};
+            char s1[PATH_MAX_LENGTH];
+            s1[0] = '\0';
+
             fill_pathname_application_special(s1, sizeof(s1),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH);
             fill_pathname_join(s,
@@ -325,8 +331,11 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {
-            char s1[PATH_MAX_LENGTH] = {0};
-            char s2[PATH_MAX_LENGTH] = {0};
+            char s1[PATH_MAX_LENGTH];
+            char s2[PATH_MAX_LENGTH];
+
+            s1[0] = s2[0] = '\0';
+
             fill_pathname_application_special(s1, sizeof(s1),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
             fill_pathname_join(s2, s1, "png",
@@ -345,7 +354,10 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
                strlcpy(s, settings->path.menu_wallpaper, len);
             else
             {
-               char s1[PATH_MAX_LENGTH] = {0};
+               char s1[PATH_MAX_LENGTH];
+
+               s1[0] = '\0';
+
                fill_pathname_application_special(s1, sizeof(s1),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
                fill_pathname_join(s, s1,
@@ -358,9 +370,11 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB:
 #ifdef HAVE_XMB
          {
-            char s1[PATH_MAX_LENGTH] = {0};
-            char s2[PATH_MAX_LENGTH] = {0};
+            char s1[PATH_MAX_LENGTH];
+            char s2[PATH_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
+
+            s1[0] = s2[0] = '\0';
 
             fill_pathname_join(
                   s1,
@@ -389,7 +403,10 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS:
 #ifdef HAVE_MATERIALUI
          {
-            char s1[PATH_MAX_LENGTH] = {0};
+            char s1[PATH_MAX_LENGTH];
+
+            s1[0] = '\0';
+
             fill_pathname_application_special(s1,
                   sizeof(s1), APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
             fill_pathname_slash(s1, sizeof(s1));
@@ -400,7 +417,10 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT:
 #ifdef HAVE_MATERIALUI
          {
-            char s1[PATH_MAX_LENGTH] = {0};
+            char s1[PATH_MAX_LENGTH];
+
+            s1[0] = '\0';
+
             fill_pathname_application_special(s1, sizeof(s1),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
             fill_pathname_join(s, s1, "Roboto-Regular.ttf", len);
@@ -416,7 +436,10 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
                strlcpy(s, settings->menu.xmb.font, len);
             else
             {
-               char s1[PATH_MAX_LENGTH] = {0};
+               char s1[PATH_MAX_LENGTH];
+
+               s1[0] = '\0';
+
                fill_pathname_application_special(s1, sizeof(s1),
                      APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
                fill_pathname_join(s, s1,

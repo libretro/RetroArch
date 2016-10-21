@@ -1327,9 +1327,11 @@ static bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
    time_t time_;
-   char timebuf[256]                      = {0};
-   char application_data[PATH_MAX_LENGTH] = {0};
-   char path[PATH_MAX_LENGTH]             = {0};
+   char timebuf[256];
+   char application_data[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+
+   timebuf[0] = application_data[0] = path[0] = '\0';
 
    if (!fill_pathname_application_data(application_data,
             sizeof(application_data)))
@@ -1425,8 +1427,10 @@ bool event_load_save_files(void)
 void path_init_savefile_rtc(void)
 {
    union string_list_elem_attr attr;
-   char savefile_name_rtc[PATH_MAX_LENGTH] = {0};
+   char savefile_name_rtc[PATH_MAX_LENGTH];
    global_t                        *global = global_get_ptr();
+
+   savefile_name_rtc[0] = '\0';
 
    attr.i = RETRO_MEMORY_SAVE_RAM;
    string_list_append(task_save_files, global->name.savefile, attr);

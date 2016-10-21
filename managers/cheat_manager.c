@@ -125,11 +125,13 @@ bool cheat_manager_save(const char *path)
 {
    bool ret;
    unsigned i;
+   char buf[PATH_MAX_LENGTH];
+   char cheats_file[PATH_MAX_LENGTH];
    config_file_t *conf               = NULL;
-   char buf[PATH_MAX_LENGTH]         = {0};
-   char cheats_file[PATH_MAX_LENGTH] = {0};
    settings_t              *settings = config_get_ptr();
-   cheat_manager_t *handle = cheat_manager_state;
+   cheat_manager_t *handle           = cheat_manager_state;
+
+   buf[0] = cheats_file[0] = '\0';
 
    fill_pathname_join(buf, settings->path.cheat_database,
          path, sizeof(buf));
@@ -154,10 +156,12 @@ bool cheat_manager_save(const char *path)
 
    for (i = 0; i < handle->size; i++)
    {
-      char key[64]         = {0};
-      char desc_key[256]   = {0};
-      char code_key[256]   = {0};
-      char enable_key[256] = {0};
+      char key[64];
+      char desc_key[256];
+      char code_key[256];
+      char enable_key[256];
+
+      key[0] = desc_key[0] = code_key[0] = enable_key[0] = '\0';
 
       snprintf(key,        sizeof(key),        "cheat%u",        i);
       snprintf(desc_key,   sizeof(desc_key),   "cheat%u_desc",   i);
@@ -231,12 +235,14 @@ bool cheat_manager_load(const char *path)
 
    for (i = 0; i < cheats; i++)
    {
-      char key[64]         = {0};
-      char desc_key[256]   = {0};
-      char code_key[256]   = {0};
-      char enable_key[256] = {0};
+      char key[64];
+      char desc_key[256];
+      char code_key[256];
+      char enable_key[256];
       char *tmp            = NULL;
       bool tmp_bool        = false;
+
+      key[0] = desc_key[0] = code_key[0] = enable_key[0] = '\0';
 
       snprintf(key,        sizeof(key),        "cheat%u",        i);
       snprintf(desc_key,   sizeof(desc_key),   "cheat%u_desc",   i);

@@ -35,12 +35,14 @@ using namespace std;
 static bool read_shader_file(const char *path, vector<string> *output, bool root_file)
 {
    vector<const char *> lines;
+   char include_path[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH];
    char                          *ptr = NULL;
    char                          *buf = nullptr;
    ssize_t                        len = 0;
-   char include_path[PATH_MAX_LENGTH] = {0};
-   char tmp[PATH_MAX_LENGTH]          = {0};
    const char *basename               = path_basename(path);
+
+   include_path[0] = tmp[0] = '\0';
 
    if (!filestream_read_file(path, (void**)&buf, &len))
    {

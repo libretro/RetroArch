@@ -55,13 +55,15 @@
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
-   char ext_shaders[PATH_MAX_LENGTH] = {0};
-   char ext_name[PATH_MAX_LENGTH]    = {0};
+   char ext_shaders[PATH_MAX_LENGTH];
+   char ext_name[PATH_MAX_LENGTH];
    const char *dir                   = NULL;
    const char *exts                  = NULL;
    bool include_dirs                 = false;
    bool recursive                    = false;
    settings_t *settings              = config_get_ptr();
+
+   ext_shaders[0] = ext_name[0] = '\0';
 
    (void)input_dir;
 

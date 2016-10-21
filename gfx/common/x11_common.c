@@ -284,7 +284,9 @@ void x11_set_window_attr(Display *dpy, Window win)
 static void xdg_screensaver_inhibit(Window wnd)
 {
    int ret;
-   char               cmd[64] = {0};
+   char               cmd[64];
+
+   cmd[0] = '\0';
 
    if (!xdg_screensaver_available)
       return;
@@ -719,9 +721,11 @@ bool x11_connect(void)
 
 void x11_update_window_title(void *data)
 {
-   char buf[128]           = {0};
-   char buf_fps[128]       = {0};
+   char buf[128];
+   char buf_fps[128];
    settings_t *settings    = config_get_ptr();
+
+   buf[0] = buf_fps[0] = '\0';
 
    if (video_monitor_get_fps(buf, sizeof(buf), buf_fps, sizeof(buf_fps)))
       XStoreName(g_x11_dpy, g_x11_win, buf);
