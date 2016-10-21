@@ -256,28 +256,6 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
-
-static bool runloop_check_pause_state(event_cmd_state_t *cmd)
-{
-   bool check_is_oneshot      = runloop_cmd_triggered(cmd,
-         RARCH_FRAMEADVANCE)
-      || runloop_cmd_press(cmd, RARCH_REWIND);
-
-   if (!runloop_paused)
-      return true;
-
-   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
-   {
-      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-      video_driver_cached_frame_render();
-   }
-
-   if (!check_is_oneshot)
-      return false;
-
-   return true;
-}
-
 static bool runloop_check_state(event_cmd_state_t *cmd)
 {
    static bool old_focus     = true;
@@ -337,8 +315,25 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
 
    old_focus = focused;
 
-   if (!runloop_check_pause_state(cmd) || !focused)
+   if (!focused)
       return false;
+
+   if (runloop_paused)
+   {
+      /* check pause state */
+
+      bool check_is_oneshot = runloop_cmd_triggered(cmd,
+            RARCH_FRAMEADVANCE)
+         || runloop_cmd_press(cmd, RARCH_REWIND);
+      if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
+      {
+         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+         video_driver_cached_frame_render();
+      }
+
+      if (!check_is_oneshot)
+         return false;
+   }
 
    /* To avoid continous switching if we hold the button down, we require
     * that the button must go from pressed to unpressed back to pressed
