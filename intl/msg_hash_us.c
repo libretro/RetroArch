@@ -3023,6 +3023,10 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO:
+         return "The accurate estimated refresh rate of the monitor in Hz.";
+      case MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX:
+         return "Selects which display monitor to use.";
       case MENU_ENUM_SUBLABEL_LOG_VERBOSITY:
          return "Enable or disable logging to the terminal.";
       case MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES:
