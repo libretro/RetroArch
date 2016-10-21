@@ -107,7 +107,14 @@ static unsigned font_renderer_update_atlas(ft_font_renderer_t *handle, FT_ULong 
 
    glyph                      = &handle->glyphs[id];
 
-   memset(glyph, 0, sizeof(*glyph)) ;
+   glyph->width               = 0;
+   glyph->height              = 0;
+   glyph->atlas_offset_x      = 0;
+   glyph->atlas_offset_y      = 0;
+   glyph->draw_offset_x       = 0;
+   glyph->draw_offset_y       = 0;
+   glyph->advance_x           = 0;
+   glyph->advance_y           = 0;
 
    if (FT_Load_Char(handle->face, charcode, FT_LOAD_RENDER))
       return -1;
