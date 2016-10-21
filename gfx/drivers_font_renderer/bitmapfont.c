@@ -34,7 +34,7 @@ typedef struct bm_renderer
    struct font_atlas atlas;
 } bm_renderer_t;
 
-static const struct font_atlas *font_renderer_bmp_get_atlas(void *data)
+static struct font_atlas *font_renderer_bmp_get_atlas(void *data)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
    if (!handle)
