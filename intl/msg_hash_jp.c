@@ -3314,21 +3314,21 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_COULD_NOT_OPEN_DATA_TRACK:
          return "could not open data track";
       case MSG_MEMORY:
-         return "Memory";
+         return "メモリ";
       case MSG_FRAMES:
-         return "Frames";
+         return "フレーム";
       case MSG_IN_BYTES:
-         return "in bytes";
+         return "(バイトで)";
       case MSG_IN_MEGABYTES:
-         return "in megabytes";
+         return "(メガバイトで)";
       case MSG_IN_GIGABYTES:
-         return "in gigabytes";
+         return "(ギガバイトで)";
       case MSG_INTERFACE:
-         return "Interface";
+         return "インターフェース";
       case MSG_FAILED_TO_PATCH:
-         return "Failed to patch";
+         return "パッチに失敗しました";
       case MSG_CONTENT_PATCHED_SUCCESSFULLY_IN:
-         return "Content patched successfully";
+         return "コンテンツをパッチが成功しました";
       case MSG_FATAL_ERROR_RECEIVED_IN:
          return "Fatal error received in";
       case MSG_MOVIE_RECORD_STOPPED:
@@ -3524,9 +3524,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING:
          return "TGDB Rating";
       case MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE:
-         return "CPU Architecture:";
+         return "CPUアーキテクチャ:";
       case MENU_ENUM_LABEL_VALUE_CPU_CORES:
-         return "CPU Cores:";
+         return "CPUコア数:";
       case MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS:
          return "Internal storage status";
       case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
@@ -3638,9 +3638,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD:
          return "キーボードに切り替え";
       case MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE:
-         return "Open Archive As Folder";
+         return "フォルダでアーカイブを開く";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
-         return "Load Archive With Core";
+         return "コアでアーカイブをロード";
       case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
          return "Back As Menu Toggle Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
@@ -3650,11 +3650,11 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
          return "Hide Overlay In Menu";
       case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
-         return "Polish";
+         return "ポーランド語";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
          return "Autoload Preferred Overlay";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
-         return "Update Core Info Files";
+         return "コアの情報ファイルをアップデート";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
          return "コンテンツをダウンロード";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE:
@@ -4112,11 +4112,11 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Rewind Enable";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
-         return "Collections";
+         return "コレクション";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "Select File And Detect Core";
+         return "ファイルをセレクトとコア検出";
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return "Downloads Dir";
+         return "ダウンロードのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Load Recent";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
@@ -4178,21 +4178,21 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS:
          return "Disk Cycle Tray Status";
       case MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE:
-         return "No playlist entries available.";
+         return "プレイリストのエントリーはありません。";
       case MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE:
-         return "No history available.";
+         return "履歴はありません。";
       case MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE:
-         return "No core information available.";
+         return "コア情報はありません。";
       case MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE:
-         return "No core options available.";
+         return "コア設定はありません。";
       case MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE:
-         return "No cores available.";
+         return "コアはありません。";
       case MENU_ENUM_LABEL_VALUE_NO_CORE:
          return "コアはありません";
       case MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER:
-         return "Database Manager";
+         return "データーベースマネージャー";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
-         return "Cursor Manager";
+         return "カーソルマネージャー";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
          return "メインメニュー";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
@@ -4218,7 +4218,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navigation Wrap-Around";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
-         return "Filter unknown extensions";
+         return "不明な拡張子を隠す";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Automatically extract downloaded archive";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
@@ -4278,21 +4278,21 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER:
          return "ロケーションのドライバ";
       case MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
-         return "Unable to read compressed file.";
+         return "圧縮ファイルの読み込みは失敗しました。";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE:
-         return "Overlay Scale";
+         return "オーバーレイのスケール";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
-         return "Overlay Preset";
+         return "オーバーレイのプリセット";
       case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
-         return "Audio Latency (ms)";
+         return "オーディオの遅延 (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
          return "オーディオのデバイス";
       case MENU_ENUM_LABEL_VALUE_OVERLAY:
          return "オーバーレイ";
       case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Keyboard Overlay Preset";
+         return "キーボードのオーバーレイプリセット";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
-         return "Overlay Opacity";
+         return "オーバーレイの不透明性";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:
          return "メニューの壁紙";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
@@ -4304,25 +4304,25 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS:
          return "シェーダー";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
-         return "Preview Shader Parameters";
+         return "シェーダーのパラメータをプレビュー";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:
-         return "Menu Shader Parameters";
+         return "メニューのシェーダーパラメータ";
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO:
-         return "Shader Preset";
+         return "シェーダーのプリセット";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
-         return "Save Shader Preset As";
+         return "シェーダーのプリセットを名前を付けて保存";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE:
-         return "Save Core Preset";
+         return "コアのプリセットを保存";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME:
-         return "Save Game Preset";
+         return "ゲームのプリセットを保存";
       case MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS:
-         return "No shader parameters.";
+         return "シェーダーのパラメータはありません。";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET:
-         return "Load Shader Preset";
+         return "シェーダーのプリセットをロード";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
          return "ビデオのフィルター";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
+         return "オーディオのDSPプラグイン";
       case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
          return "ダウンロードを開始しています: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
@@ -4332,231 +4332,231 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ON:
          return "オン";
       case MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS:
-         return "Update Assets";
+         return "資産をアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA:
-         return "Update Lakka";
+         return "Lakkaをアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS:
-         return "Update Cheats";
+         return "チーとをアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
-         return "Update Autoconfig Profiles";
+         return "自動コンフィグプロファイルをアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "Update Autoconfig Profiles (HID)";
+         return "自動コンフィグプロファイルをアップデート (HID)";
       case MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES:
-         return "Update Databases";
+         return "データベースをアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS:
-         return "Update Overlays";
+         return "オーバーレイをアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS:
-         return "Update Cg Shaders";
+         return "Cgシェーダーをアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS:
-         return "Update GLSL Shaders";
+         return "GLSLシェーダーをアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS:
-         return "Update Slang Shaders";
+         return "Slangシェーダーをアップデート";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
-         return "Core name";
+         return "コアの名前";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL:
-         return "Core label";
+         return "コアのラベル";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME:
-         return "System name";
+         return "システム名";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER:
-         return "System manufacturer";
+         return "システムのメーカー";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES:
-         return "Categories";
+         return "カテゴリー";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS:
-         return "Authors";
+         return "作家";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS:
-         return "Permissions";
+         return "許可";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:
-         return "License(s)";
+         return "ライセンス";
       case MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES:
-         return "Supported cores";
+         return "対応するコア";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS:
-         return "Supported extensions";
+         return "対応する拡張子";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
-         return "Firmware";
+         return "ファームウェア";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Core notes";
+         return "コアのメモ";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
-         return "Build date";
+         return "ビルド日付";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
-         return "Git version";
+         return "Gitバージョン";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES:
-         return "CPU Features";
+         return "CPU機能";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER:
-         return "Frontend identifier";
+         return "フロントエンド識別名";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME:
-         return "Frontend name";
+         return "フロントエンド名";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS:
-         return "Frontend OS";
+         return "フロントエンドOS";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL:
          return "RetroRating level";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE:
-         return "Power source";
+         return "パワーソース";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE:
-         return "No source";
+         return "ソースはありません";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING:
-         return "Charging";
+         return "充電中";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED:
-         return "Charged";
+         return "充電完了";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING:
-         return "Discharging";
+         return "放電";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER:
-         return "Video context driver";
+         return "ビデオのコンテクストドライバ";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH:
-         return "Display metric width (mm)";
+         return "ディスプレイの軽量横幅 (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT:
-         return "Display metric height (mm)";
+         return "ディスプレイの軽量縦幅 (mm)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI:
-         return "Display metric DPI";
+         return "ディスプレイの軽量DPI";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBRETRODB_SUPPORT:
-         return "LibretroDB support";
+         return "LibretroDB対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OVERLAY_SUPPORT:
-         return "Overlay support";
+         return "オーバーレイ対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT:
-         return "Command interface support";
+         return "コマンドインターフェース対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT:
-         return "Network Gamepad support";
+         return "ネットワークゲームパッド対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT:
-         return "Network Command interface support";
+         return "ネットワークコマンドインターフェース対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT:
-         return "Cocoa support";
+         return "Cocoa対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT:
-         return "PNG support (RPNG)";
+         return "PNG対応 (RPNG)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT:
-         return "JPEG support (RJPEG)";
+         return "JPEG対応 (RJPEG)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT:
-         return "BMP support (RBMP)";
+         return "BMP対応 (RBMP)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT:
-         return "RTGA support (RTGA)";
+         return "TGA対応 (RTGA)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT:
-         return "SDL1.2 support";
+         return "SDL1.2対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:
-         return "SDL2 support";
+         return "SDL2対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT:
-         return "Vulkan support";
+         return "Vulkan対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT:
-         return "OpenGL support";
+         return "OpenGL対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT:
-         return "OpenGL ES support";
+         return "OpenGL ES対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT:
-         return "Threading support";
+         return "スレッド対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_KMS_SUPPORT:
-         return "KMS/EGL support";
+         return "KMS/EGL対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_UDEV_SUPPORT:
-         return "Udev support";
+         return "Udev対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENVG_SUPPORT:
-         return "OpenVG support";
+         return "OpenVG対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_EGL_SUPPORT:
-         return "EGL support";
+         return "EGL対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_X11_SUPPORT:
-         return "X11 support";
+         return "X11対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_WAYLAND_SUPPORT:
-         return "Wayland support";
+         return "Wayland対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XVIDEO_SUPPORT:
-         return "XVideo support";
+         return "XVideo対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ALSA_SUPPORT:
-         return "ALSA support";
+         return "ALSA対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OSS_SUPPORT:
-         return "OSS support";
+         return "OSS対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENAL_SUPPORT:
-         return "OpenAL support";
+         return "OpenAL対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENSL_SUPPORT:
-         return "OpenSL support";
+         return "OpenSL対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RSOUND_SUPPORT:
-         return "RSound support";
+         return "RSound対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ROARAUDIO_SUPPORT:
-         return "RoarAudio support";
+         return "RoarAudio対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_JACK_SUPPORT:
-         return "JACK support";
+         return "JACK対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT:
-         return "PulseAudio support";
+         return "PulseAudio対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DSOUND_SUPPORT:
-         return "DirectSound support";
+         return "DirectSound対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_XAUDIO2_SUPPORT:
-         return "XAudio2 support";
+         return "XAudio2対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_ZLIB_SUPPORT:
-         return "Zlib support";
+         return "Zlib対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
-         return "7zip support";
+         return "7zip対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYLIB_SUPPORT:
-         return "Dynamic library support";
+         return "ダイナミックライブラリー対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CG_SUPPORT:
-         return "Cg support";
+         return "Cg対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
-         return "GLSL support";
+         return "GLSL対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT:
-         return "Slang support";
+         return "Slang対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT:
-         return "HLSL support";
+         return "HLSL対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:
-         return "libxml2 XML parsing support";
+         return "libxml2 XMLパース対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT:
-         return "SDL image support";
+         return "SDLイメージ対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
-         return "OpenGL/Direct3D render-to-texture (multi-pass shaders) support";
+         return "OpenGL/Direct3Dテクスチャーにレンダリング (マルチパスシェーダー)対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT:
-         return "Dynamic run-time loading of libretro library";
+         return "ダイナミックlibretroライブラリーのランタイム時にロード対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
-         return "FFmpeg support";
+         return "FFmpeg対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT:
-         return "CoreText support";
+         return "CoreText対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FREETYPE_SUPPORT:
-         return "FreeType support";
+         return "FreeType対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT:
-         return "Netplay (peer-to-peer) support";
+         return "ネットプレイ(ピアツーピア)対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PYTHON_SUPPORT:
-         return "Python (script support in shaders) support";
+         return "Python(シェーダーにスクリプト)対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT:
-         return "Video4Linux2 support";
+         return "Video4Linux2対応";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT:
-         return "Libusb support";
+         return "Libusb対応";
       case MENU_ENUM_LABEL_VALUE_YES:
-         return "Yes";
+         return "はい";
       case MENU_ENUM_LABEL_VALUE_NO:
-         return "No";
+         return "いいえ";
       case MENU_ENUM_LABEL_VALUE_BACK:
-         return "BACK";
+         return "戻る";
       case MSG_FAILED_TO_BIND_SOCKET:
          return "Failed to bind socket.";
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
-         return "Screen Resolution";
+         return "スクリーン解像度";
       case MENU_ENUM_LABEL_VALUE_DISABLED:
-         return "Disabled";
+         return "無効";
       case MENU_ENUM_LABEL_VALUE_PORT:
-         return "Port";
+         return "ポート";
       case MENU_ENUM_LABEL_VALUE_NONE:
-         return "None";
+         return "無し";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER:
-         return "Developer";
+         return "開発者";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER:
-         return "Publisher";
+         return "出版社";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION:
-         return "Description";
+         return "記述";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE:
-         return "Genre";
+         return "ジャンル";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME:
-         return "Name";
+         return "名前";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN:
-         return "Origin";
+         return "元";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE:
-         return "Franchise";
+         return "フランチャイズ";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH:
-         return "Releasedate Month";
+         return "発売月";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR:
-         return "Releasedate Year";
+         return "発売年";
       case MENU_ENUM_LABEL_VALUE_TRUE:
-         return "True";
+         return "真";
       case MENU_ENUM_LABEL_VALUE_FALSE:
-         return "False";
+         return "偽";
       case MENU_ENUM_LABEL_VALUE_MISSING:
-         return "Missing";
+         return "欠測";
       case MENU_ENUM_LABEL_VALUE_PRESENT:
-         return "Present";
+         return "現在";
       case MENU_ENUM_LABEL_VALUE_OPTIONAL:
-         return "Optional";
+         return "任意";
       case MENU_ENUM_LABEL_VALUE_REQUIRED:
-         return "Required";
+         return "必要";
       case MENU_ENUM_LABEL_VALUE_STATUS:
-         return "Status";
+         return "ステータス";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
          return "オーディオ";
       case MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS:
@@ -4572,7 +4572,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS:
          return "マルチメディア";
       case MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS:
-         return "ユーザーインタフェース";
+         return "ユーザーインターフェース";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "メニューファイルブラウザー";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS:
@@ -4648,25 +4648,25 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
          return "Confirm";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
-         return "Back";
+         return "戻る";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
          return "スタート";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
          return "情報";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
-         return "Toggle Menu";
+         return "メニューに切り替え";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT:
          return "終了";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
-         return "Toggle Keyboard";
+         return "キーボードに切り替え";
       case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS:
-         return "Screenshots";
+         return "スクリーンショット";
       case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS:
          return "Title Screens";
       case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS:
          return "Boxarts";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
-         return "Wallpaper opacity";
+         return "壁紙の不透明性";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

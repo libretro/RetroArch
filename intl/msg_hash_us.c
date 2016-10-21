@@ -4434,7 +4434,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT:
          return "BMP support (RBMP)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT:
-         return "RTGA support (RTGA)";
+         return "TGA support (RTGA)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT:
          return "SDL1.2 support";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:
