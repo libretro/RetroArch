@@ -736,12 +736,11 @@ void runloop_poll(event_cmd_state_t *cmd)
 }
 
 #ifdef HAVE_MENU
-static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
+static int runloop_iterate_menu(settings_t *settings,
+      enum menu_action action, unsigned *sleep_ms)
 {
    menu_ctx_iterate_t iter;
-   settings_t *settings    = config_get_ptr();
-   bool focused            = (settings && 
-         settings->pause_nonactive) ? video_driver_is_focused() : true;
+   bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
    bool is_idle            = runloop_idle;
 
    focused                 = focused && !ui_companion_is_on_foreground();
@@ -1182,7 +1181,8 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
       int ret;
 
       core_poll();
-      ret = runloop_iterate_menu((enum menu_action)
+      ret = runloop_iterate_menu(settings,
+            (enum menu_action)
             menu_event(cmd->state[0], cmd->state[2]),
             sleep_ms);
 
