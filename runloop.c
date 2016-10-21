@@ -735,8 +735,18 @@ void runloop_poll(event_cmd_state_t *cmd)
    last_input                                   = cmd->state[0];
 }
 
+enum  runloop_state
+{
+   RUNLOOP_STATE_NONE = 0,
+   RUNLOOP_STATE_ITERATE,
+   RUNLOOP_STATE_SLEEP,
+   RUNLOOP_STATE_MENU_ITERATE,
+   RUNLOOP_STATE_END,
+   RUNLOOP_STATE_QUIT
+};
+
 #ifdef HAVE_MENU
-static int runloop_iterate_menu(settings_t *settings,
+static enum runloop_state runloop_iterate_menu(settings_t *settings,
       enum menu_action action, unsigned *sleep_ms)
 {
    menu_ctx_iterate_t iter;
@@ -754,25 +764,105 @@ static int runloop_iterate_menu(settings_t *settings,
       menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
    if (!focused || is_idle)
-   {
-      *sleep_ms = 10;
-      return 1;
-   }
+      return RUNLOOP_STATE_SLEEP;
 
    if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
-      return 0;
+      return RUNLOOP_STATE_MENU_ITERATE;
 
-   return -1;
+   return RUNLOOP_STATE_END;
 }
 #endif
 
-static bool runloop_check_state(event_cmd_state_t *cmd, unsigned *sleep_ms)
+/* Time to exit out of the main loop?
+ * Reasons for exiting:
+ * a) Shutdown environment callback was invoked.
+ * b) Quit key was pressed.
+ * c) Frame count exceeds or equals maximum amount of frames to run.
+ * d) Video driver no longer alive.
+ * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
+ */
+static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
+{
+   settings_t *settings          = config_get_ptr();
+   bool time_to_exit             = runloop_shutdown_initiated;
+   time_to_exit                  = time_to_exit || quit_key_pressed;
+   time_to_exit                  = time_to_exit || !video_driver_is_alive();
+   time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
+   time_to_exit                  = time_to_exit || (runloop_max_frames && 
+                                   (*(video_driver_get_frame_count_ptr()) 
+                                    >= runloop_max_frames));
+   time_to_exit                  = time_to_exit || runloop_exec;
+
+   if (!time_to_exit)
+      return 1;
+
+#ifdef HAVE_MENU
+   if (!runloop_is_quit_confirm())
+   {
+      if (settings && settings->confirm_on_exit)
+      {
+         if (menu_dialog_is_active())
+            return 1;
+
+         if (content_is_inited())
+         {
+            if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
+               menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
+            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+         }
+
+         menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+         return 1;
+      }
+   }
+#endif
+
+   if (runloop_exec)
+      runloop_exec = false;
+
+   if (runloop_core_shutdown_initiated &&
+         settings->load_dummy_on_core_shutdown)
+   {
+      content_ctx_info_t content_info = {0};
+      if (!task_push_content_load_default(
+               NULL, NULL,
+               &content_info,
+               CORE_TYPE_DUMMY,
+               CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+               NULL, NULL))
+         return -1;
+
+      /* Loads dummy core instead of exiting RetroArch completely.
+       * Aborts core shutdown if invoked. */
+      runloop_shutdown_initiated      = false;
+      runloop_core_shutdown_initiated = false;
+
+      return 1;
+   }
+
+   /* Quits out of RetroArch main loop. */
+   return -1;
+}
+
+static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *sleep_ms)
 {
    static bool old_focus     = true;
    bool tmp                  = false;
    bool focused              = true;
    bool pause_pressed        = runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE);
    settings_t *settings      = config_get_ptr();
+
+   if (runloop_iterate_time_to_exit(
+            runloop_cmd_press(cmd, RARCH_QUIT_KEY)) != 1)
+      return RUNLOOP_STATE_QUIT;
+
+#ifdef HAVE_MENU
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      return runloop_iterate_menu(settings,
+            (enum menu_action)
+            menu_event(cmd->state[0], cmd->state[2]),
+            sleep_ms);
+#endif
    
    if (runloop_idle)
       goto sleep;
@@ -950,84 +1040,14 @@ static bool runloop_check_state(event_cmd_state_t *cmd, unsigned *sleep_ms)
          runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_MINUS),
          runloop_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
 
-   return true;
+   return RUNLOOP_STATE_ITERATE;
 
 sleep:
    *sleep_ms = 10;
 
-   return false;
+   return RUNLOOP_STATE_SLEEP;
 }
 
-/* Time to exit out of the main loop?
- * Reasons for exiting:
- * a) Shutdown environment callback was invoked.
- * b) Quit key was pressed.
- * c) Frame count exceeds or equals maximum amount of frames to run.
- * d) Video driver no longer alive.
- * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
- */
-static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
-{
-   settings_t *settings          = config_get_ptr();
-   bool time_to_exit             = runloop_shutdown_initiated;
-   time_to_exit                  = time_to_exit || quit_key_pressed;
-   time_to_exit                  = time_to_exit || !video_driver_is_alive();
-   time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
-   time_to_exit                  = time_to_exit || (runloop_max_frames && 
-                                   (*(video_driver_get_frame_count_ptr()) 
-                                    >= runloop_max_frames));
-   time_to_exit                  = time_to_exit || runloop_exec;
-
-   if (!time_to_exit)
-      return 1;
-
-#ifdef HAVE_MENU
-   if (!runloop_is_quit_confirm())
-   {
-      if (settings && settings->confirm_on_exit)
-      {
-         if (menu_dialog_is_active())
-            return 1;
-
-         if (content_is_inited())
-         {
-            if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
-               menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-         }
-
-         menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
-         return 1;
-      }
-   }
-#endif
-
-   if (runloop_exec)
-      runloop_exec = false;
-
-   if (runloop_core_shutdown_initiated &&
-         settings->load_dummy_on_core_shutdown)
-   {
-      content_ctx_info_t content_info = {0};
-      if (!task_push_content_load_default(
-               NULL, NULL,
-               &content_info,
-               CORE_TYPE_DUMMY,
-               CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-               NULL, NULL))
-         return -1;
-
-      /* Loads dummy core instead of exiting RetroArch completely.
-       * Aborts core shutdown if invoked. */
-      runloop_shutdown_initiated      = false;
-      runloop_core_shutdown_initiated = false;
-
-      return 1;
-   }
-
-   /* Quits out of RetroArch main loop. */
-   return -1;
-}
 
 /**
  * runloop_iterate:
@@ -1042,6 +1062,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 {
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
+   enum runloop_state runloop_status            = RUNLOOP_STATE_NONE;
 #ifdef HAVE_OVERLAY
    static char prev_overlay_restore             = false;
    bool osk_enable                              = input_driver_is_onscreen_keyboard_enabled();
@@ -1112,7 +1133,6 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
       runloop_frame_time.callback(delta);
    }
 
-
    if (runloop_cmd_triggered(cmd, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
 
@@ -1172,46 +1192,33 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
    }
 #endif
 
-   if (runloop_iterate_time_to_exit(
-            runloop_cmd_press(cmd, RARCH_QUIT_KEY)) != 1)
+   runloop_status = runloop_check_state(cmd, sleep_ms);
+
+   switch (runloop_status)
    {
-      frame_limit_last_time = 0.0;
-      command_event(CMD_EVENT_QUIT, NULL);
-      return -1;
-   }
-
-#ifdef HAVE_MENU
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-   {
-      int ret;
-
-      core_poll();
-      ret = runloop_iterate_menu(settings,
-            (enum menu_action)
-            menu_event(cmd->state[0], cmd->state[2]),
-            sleep_ms);
-
+      case RUNLOOP_STATE_QUIT:
+         frame_limit_last_time = 0.0;
+         command_event(CMD_EVENT_QUIT, NULL);
+         return -1;
+      case RUNLOOP_STATE_ITERATE:
+         break;
+      case RUNLOOP_STATE_SLEEP:
+      case RUNLOOP_STATE_END:
+      case RUNLOOP_STATE_MENU_ITERATE:
+         /* RetroArch has been paused. */
+         core_poll();
 #ifdef HAVE_NETWORKING
-      /* FIXME: This is an ugly way to tell Netplay this... */
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+         /* FIXME: This is an ugly way to tell Netplay this... */
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
-
-      if (ret == -1)
-         goto end;
-
-      return ret;
-   }
-#endif
-
-   if (!runloop_check_state(cmd, sleep_ms))
-   {
-      /* RetroArch has been paused. */
-      core_poll();
-#ifdef HAVE_NETWORKING
-      /* FIXME: This is an ugly way to tell Netplay this... */
-      netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
-#endif
-      return 1;
+         if (runloop_status == RUNLOOP_STATE_END)
+            goto end;
+         if (runloop_status == RUNLOOP_STATE_MENU_ITERATE)
+            return 0;
+         return 1;
+      case RUNLOOP_STATE_NONE:
+      default:
+         break;
    }
 
    autosave_lock();
