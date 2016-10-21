@@ -3971,6 +3971,7 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW);
 
+#ifdef RARCH_MOBILE
          CONFIG_UINT(
                list, list_info,
                &settings->audio.block_frames,
@@ -3984,6 +3985,7 @@ static bool setting_append_list(
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
 
