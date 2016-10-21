@@ -163,6 +163,8 @@ static void gl_cg_set_uniform_parameter(
       char ident[64];
       CGprogram prog = 0;
 
+      ident[0] = '\0';
+
       switch (param->lookup.type)
       {
          case SHADER_PROGRAM_VERTEX:
