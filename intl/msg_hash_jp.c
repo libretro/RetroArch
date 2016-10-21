@@ -3034,9 +3034,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
          return "Reduces latency at cost of higher risk of video stuttering. Adds a delay after V-Sync (in ms).";
       case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
-         return "Download and/or scan content, and add it to your collection.";
+         return "コンテンツをスキャンしたり、ダウンロードしたりすると、コレクションに入れる。";
       case MENU_ENUM_SUBLABEL_NETPLAY:
-         return "Join or host a netplay session.";
+         return "ネットプレイのセッションを参加やホストする。";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
          return "Displays the current framerate per second onscreen.";
       case MENU_ENUM_SUBLABEL_VIDEO_SETTINGS:
@@ -3048,7 +3048,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "Tells the video driver to explicitly use a specified buffering mode.";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
-         return "Download and update add-ons and components for RetroArch.";
+         return "RetroArchにアドオンとコンポーネントをダウンロードとアップデートする。";
       case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
          return "Configure controls for this user.";
       case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
@@ -4096,9 +4096,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
          return "Autoconfig Enable";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Audio Output Rate (KHz)";
+         return "オーディオの出力レート(KHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
-         return "Audio Maximum Timing Skew";
+         return "オーディオの最高タイミングスキュー";
       case MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES:
          return "Cheat Passes";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
@@ -4118,21 +4118,21 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
          return "ダウンロードのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Load Recent";
+         return "最近のものをロード";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
-         return "Audio Enable";
+         return "オーディオを有効";
       case MENU_ENUM_LABEL_VALUE_FPS_SHOW:
          return "フレームレートを表示";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
-         return "Audio Mute";
+         return "オーディオの消音";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
-         return "Audio Volume Level (dB)";
+         return "オーディオの音量 (dB)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Audio Sync Enable";
+         return "オーディオの同期を有効";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
-         return "Audio Rate Control Delta";
+         return "オーディオのレートコントロールデルタ";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
-         return "Shader Passes";
+         return "シェーダーのパス数";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
