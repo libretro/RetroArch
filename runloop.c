@@ -261,7 +261,6 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
    static bool old_focus     = true;
    bool tmp                  = false;
    bool focused              = true;
-   bool old_is_paused        = runloop_paused;
    bool pause_pressed        = runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE);
    settings_t *settings      = config_get_ptr();
    
@@ -269,7 +268,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
       return false;
 
    if (settings->pause_nonactive)
-      focused = video_driver_is_focused();
+      focused                = video_driver_is_focused();
 
    if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
       command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
@@ -304,7 +303,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
     * unpause the libretro core. */
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !old_is_paused && runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE);
+   pause_pressed |= !runloop_paused && runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE);
 
    if (focused && pause_pressed)
       command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
