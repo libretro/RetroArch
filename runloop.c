@@ -816,7 +816,9 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    return -1;
 }
 
-static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *sleep_ms)
+static enum runloop_state runloop_check_state(
+      settings_t *settings,
+      event_cmd_state_t *cmd, unsigned *sleep_ms)
 {
    static bool old_focus            = true;
 #ifdef HAVE_OVERLAY
@@ -826,7 +828,6 @@ static enum runloop_state runloop_check_state(event_cmd_state_t *cmd, unsigned *
    bool tmp                         = false;
    bool focused                     = true;
    bool pause_pressed               = runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE);
-   settings_t *settings             = config_get_ptr();
 
    if (input_driver_is_flushing_input())
    {
@@ -1178,7 +1179,7 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
       runloop_frame_time.callback(delta);
    }
 
-   runloop_status = runloop_check_state(cmd, sleep_ms);
+   runloop_status = runloop_check_state(settings, cmd, sleep_ms);
 
    switch (runloop_status)
    {
