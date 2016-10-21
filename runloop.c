@@ -256,192 +256,6 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
-static bool runloop_check_state(event_cmd_state_t *cmd)
-{
-   static bool old_focus     = true;
-   bool tmp                  = false;
-   bool focused              = true;
-   bool pause_pressed        = runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE);
-   settings_t *settings      = config_get_ptr();
-   
-   if (runloop_idle)
-      return false;
-
-   if (settings->pause_nonactive)
-      focused                = video_driver_is_focused();
-
-   if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
-      command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
-
-   if (runloop_cmd_triggered(cmd, RARCH_MUTE))
-      command_event(CMD_EVENT_AUDIO_MUTE_TOGGLE, NULL);
-
-   if (runloop_cmd_triggered(cmd, RARCH_OSK))
-   {
-      if (input_keyboard_ctl(
-               RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-         input_keyboard_ctl(
-               RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
-      else
-         input_keyboard_ctl(
-               RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
-   }
-
-   if (runloop_cmd_press(cmd, RARCH_VOLUME_UP))
-      command_event(CMD_EVENT_VOLUME_UP, NULL);
-   else if (runloop_cmd_press(cmd, RARCH_VOLUME_DOWN))
-      command_event(CMD_EVENT_VOLUME_DOWN, NULL);
-
-#ifdef HAVE_NETWORKING
-   tmp = runloop_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
-   tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
-#endif
-
-   /* Check if libretro pause key was pressed. If so, pause or
-    * unpause the libretro core. */
-
-   /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !runloop_paused && runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE);
-
-   if (focused && pause_pressed)
-      command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
-   else if (focused && !old_focus)
-      command_event(CMD_EVENT_UNPAUSE, NULL);
-   else if (!focused && old_focus)
-      command_event(CMD_EVENT_PAUSE, NULL);
-
-   old_focus = focused;
-
-   if (!focused)
-      return false;
-
-   if (runloop_paused)
-   {
-      /* check pause state */
-
-      bool check_is_oneshot = runloop_cmd_triggered(cmd,
-            RARCH_FRAMEADVANCE)
-         || runloop_cmd_press(cmd, RARCH_REWIND);
-      if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
-      {
-         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-         video_driver_cached_frame_render();
-      }
-
-      if (!check_is_oneshot)
-         return false;
-   }
-
-   /* To avoid continous switching if we hold the button down, we require
-    * that the button must go from pressed to unpressed back to pressed
-    * to be able to toggle between then.
-    */
-   if (runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY))
-   {
-      if (input_driver_is_nonblock_state())
-         input_driver_unset_nonblock_state();
-      else
-         input_driver_set_nonblock_state();
-      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
-   }
-   else if ((runloop_cmd_pressed(cmd, RARCH_FAST_FORWARD_HOLD_KEY) 
-         != runloop_cmd_press(cmd, RARCH_FAST_FORWARD_HOLD_KEY)))
-   {
-      if (runloop_cmd_press(cmd, RARCH_FAST_FORWARD_HOLD_KEY))
-         input_driver_set_nonblock_state();
-      else
-         input_driver_unset_nonblock_state();
-      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
-   }
-
-   /* Checks if the state increase/decrease keys have been pressed 
-    * for this frame. */
-   if (runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS))
-   {
-      char msg[128];
-
-      msg[0] = '\0';
-
-      settings->state_slot++;
-
-      snprintf(msg, sizeof(msg), "%s: %d",
-            msg_hash_to_str(MSG_STATE_SLOT),
-            settings->state_slot);
-
-      runloop_msg_queue_push(msg, 2, 180, true);
-
-      RARCH_LOG("%s\n", msg);
-   }
-   else if (runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS))
-   {
-      char msg[128];
-
-      msg[0] = '\0';
-
-      if (settings->state_slot > 0)
-         settings->state_slot--;
-
-      snprintf(msg, sizeof(msg), "%s: %d",
-            msg_hash_to_str(MSG_STATE_SLOT),
-            settings->state_slot);
-
-      runloop_msg_queue_push(msg, 2, 180, true);
-
-      RARCH_LOG("%s\n", msg);
-   }
-
-   if (runloop_cmd_triggered(cmd, RARCH_SAVE_STATE_KEY))
-      command_event(CMD_EVENT_SAVE_STATE, NULL);
-   else if (runloop_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
-      command_event(CMD_EVENT_LOAD_STATE, NULL);
-
-#ifdef HAVE_CHEEVOS
-   if (!settings->cheevos.hardcore_mode_enable)
-#endif
-      state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
-
-   runloop_slowmotion = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
-
-   if (runloop_slowmotion)
-   {
-      /* Checks if slowmotion toggle/hold was being pressed and/or held. */
-      if (settings->video.black_frame_insertion)
-         video_driver_cached_frame_render();
-
-      if (state_manager_frame_is_reversed())
-         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
-      else
-         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
-   }
-
-   if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
-      bsv_movie_check();
-
-   if (runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT) ||
-      runloop_cmd_triggered(cmd, RARCH_SHADER_PREV))
-      dir_check_shader(
-            runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
-            runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
-
-   if (runloop_cmd_triggered(cmd, RARCH_DISK_EJECT_TOGGLE))
-      command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
-   else if (runloop_cmd_triggered(cmd, RARCH_DISK_NEXT))
-      command_event(CMD_EVENT_DISK_NEXT, NULL);
-   else if (runloop_cmd_triggered(cmd, RARCH_DISK_PREV))
-      command_event(CMD_EVENT_DISK_PREV, NULL);
-
-   if (runloop_cmd_triggered(cmd, RARCH_RESET))
-      command_event(CMD_EVENT_RESET, NULL);
-
-   cheat_manager_state_checks(
-         runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_PLUS),
-         runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_MINUS),
-         runloop_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
-
-   return true;
-}
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
@@ -901,37 +715,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    return true;
 }
 
-
-#ifdef HAVE_OVERLAY
-static void runloop_iterate_linefeed_overlay(void)
-{
-   static char prev_overlay_restore = false;
-   bool osk_enable = input_driver_is_onscreen_keyboard_enabled();
-
-   if (osk_enable && !input_keyboard_ctl(
-            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-   {
-      input_driver_unset_onscreen_keyboard_enabled();
-      prev_overlay_restore  = true;
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-   }
-   else if (!osk_enable && input_keyboard_ctl(
-            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-   {
-      input_driver_set_onscreen_keyboard_enabled();
-      prev_overlay_restore  = false;
-      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-   }
-   else if (prev_overlay_restore)
-   {
-      settings_t *settings = config_get_ptr();
-      if (!settings->input.overlay_hide_in_menu)
-         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-      prev_overlay_restore = false;
-   }
-}
-#endif
-
 bool runloop_is_quit_confirm(void)
 {
    return runloop_quit_confirm;
@@ -940,6 +723,235 @@ bool runloop_is_quit_confirm(void)
 void runloop_set_quit_confirm(bool on)
 {
    runloop_quit_confirm = on;
+}
+
+void runloop_poll(event_cmd_state_t *cmd)
+{
+   static retro_input_t last_input              = {0};
+   cmd->state[1]                                = last_input;
+   cmd->state[0]                                = input_keys_pressed();
+   cmd->state[2].state                          = cmd->state[0].state 
+                                                  & ~cmd->state[1].state;
+   last_input                                   = cmd->state[0];
+}
+
+#ifdef HAVE_MENU
+static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
+{
+   menu_ctx_iterate_t iter;
+   settings_t *settings    = config_get_ptr();
+   bool focused            = (settings && 
+         settings->pause_nonactive) ? video_driver_is_focused() : true;
+   bool is_idle            = runloop_idle;
+
+   focused                 = focused && !ui_companion_is_on_foreground();
+
+   iter.action             = action;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+      rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+
+   if (focused || !is_idle)
+      menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+
+   if (!focused || is_idle)
+   {
+      *sleep_ms = 10;
+      return 1;
+   }
+
+   if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
+      return 0;
+
+   return -1;
+}
+#endif
+
+static bool runloop_check_state(event_cmd_state_t *cmd)
+{
+   static bool old_focus     = true;
+   bool tmp                  = false;
+   bool focused              = true;
+   bool pause_pressed        = runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE);
+   settings_t *settings      = config_get_ptr();
+   
+   if (runloop_idle)
+      return false;
+
+   if (settings->pause_nonactive)
+      focused                = video_driver_is_focused();
+
+   if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
+      command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
+
+   if (runloop_cmd_triggered(cmd, RARCH_MUTE))
+      command_event(CMD_EVENT_AUDIO_MUTE_TOGGLE, NULL);
+
+   if (runloop_cmd_triggered(cmd, RARCH_OSK))
+   {
+      if (input_keyboard_ctl(
+               RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+         input_keyboard_ctl(
+               RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
+      else
+         input_keyboard_ctl(
+               RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+   }
+
+   if (runloop_cmd_press(cmd, RARCH_VOLUME_UP))
+      command_event(CMD_EVENT_VOLUME_UP, NULL);
+   else if (runloop_cmd_press(cmd, RARCH_VOLUME_DOWN))
+      command_event(CMD_EVENT_VOLUME_DOWN, NULL);
+
+#ifdef HAVE_NETWORKING
+   tmp = runloop_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
+   tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
+#endif
+
+   /* Check if libretro pause key was pressed. If so, pause or
+    * unpause the libretro core. */
+
+   /* FRAMEADVANCE will set us into pause mode. */
+   pause_pressed |= !runloop_paused && runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE);
+
+   if (focused && pause_pressed)
+      command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
+   else if (focused && !old_focus)
+      command_event(CMD_EVENT_UNPAUSE, NULL);
+   else if (!focused && old_focus)
+      command_event(CMD_EVENT_PAUSE, NULL);
+
+   old_focus = focused;
+
+   if (!focused)
+      return false;
+
+   if (runloop_paused)
+   {
+      /* check pause state */
+
+      bool check_is_oneshot = runloop_cmd_triggered(cmd,
+            RARCH_FRAMEADVANCE)
+         || runloop_cmd_press(cmd, RARCH_REWIND);
+      if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
+      {
+         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+         video_driver_cached_frame_render();
+      }
+
+      if (!check_is_oneshot)
+         return false;
+   }
+
+   /* To avoid continous switching if we hold the button down, we require
+    * that the button must go from pressed to unpressed back to pressed
+    * to be able to toggle between then.
+    */
+   if (runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY))
+   {
+      if (input_driver_is_nonblock_state())
+         input_driver_unset_nonblock_state();
+      else
+         input_driver_set_nonblock_state();
+      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+   }
+   else if ((runloop_cmd_pressed(cmd, RARCH_FAST_FORWARD_HOLD_KEY) 
+         != runloop_cmd_press(cmd, RARCH_FAST_FORWARD_HOLD_KEY)))
+   {
+      if (runloop_cmd_press(cmd, RARCH_FAST_FORWARD_HOLD_KEY))
+         input_driver_set_nonblock_state();
+      else
+         input_driver_unset_nonblock_state();
+      driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
+   }
+
+   /* Checks if the state increase/decrease keys have been pressed 
+    * for this frame. */
+   if (runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS))
+   {
+      char msg[128];
+
+      msg[0] = '\0';
+
+      settings->state_slot++;
+
+      snprintf(msg, sizeof(msg), "%s: %d",
+            msg_hash_to_str(MSG_STATE_SLOT),
+            settings->state_slot);
+
+      runloop_msg_queue_push(msg, 2, 180, true);
+
+      RARCH_LOG("%s\n", msg);
+   }
+   else if (runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS))
+   {
+      char msg[128];
+
+      msg[0] = '\0';
+
+      if (settings->state_slot > 0)
+         settings->state_slot--;
+
+      snprintf(msg, sizeof(msg), "%s: %d",
+            msg_hash_to_str(MSG_STATE_SLOT),
+            settings->state_slot);
+
+      runloop_msg_queue_push(msg, 2, 180, true);
+
+      RARCH_LOG("%s\n", msg);
+   }
+
+   if (runloop_cmd_triggered(cmd, RARCH_SAVE_STATE_KEY))
+      command_event(CMD_EVENT_SAVE_STATE, NULL);
+   else if (runloop_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
+      command_event(CMD_EVENT_LOAD_STATE, NULL);
+
+#ifdef HAVE_CHEEVOS
+   if (!settings->cheevos.hardcore_mode_enable)
+#endif
+      state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
+
+   runloop_slowmotion = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
+
+   if (runloop_slowmotion)
+   {
+      /* Checks if slowmotion toggle/hold was being pressed and/or held. */
+      if (settings->video.black_frame_insertion)
+         video_driver_cached_frame_render();
+
+      if (state_manager_frame_is_reversed())
+         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
+      else
+         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
+   }
+
+   if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
+      bsv_movie_check();
+
+   if (runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT) ||
+      runloop_cmd_triggered(cmd, RARCH_SHADER_PREV))
+      dir_check_shader(
+            runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
+            runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
+
+   if (runloop_cmd_triggered(cmd, RARCH_DISK_EJECT_TOGGLE))
+      command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
+   else if (runloop_cmd_triggered(cmd, RARCH_DISK_NEXT))
+      command_event(CMD_EVENT_DISK_NEXT, NULL);
+   else if (runloop_cmd_triggered(cmd, RARCH_DISK_PREV))
+      command_event(CMD_EVENT_DISK_PREV, NULL);
+
+   if (runloop_cmd_triggered(cmd, RARCH_RESET))
+      command_event(CMD_EVENT_RESET, NULL);
+
+   cheat_manager_state_checks(
+         runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_PLUS),
+         runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_MINUS),
+         runloop_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
+
+   return true;
 }
 
 /* Time to exit out of the main loop?
@@ -957,7 +969,9 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    time_to_exit                  = time_to_exit || quit_key_pressed;
    time_to_exit                  = time_to_exit || !video_driver_is_alive();
    time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
-   time_to_exit                  = time_to_exit || (runloop_max_frames && (*(video_driver_get_frame_count_ptr()) >= runloop_max_frames));
+   time_to_exit                  = time_to_exit || (runloop_max_frames && 
+                                   (*(video_driver_get_frame_count_ptr()) 
+                                    >= runloop_max_frames));
    time_to_exit                  = time_to_exit || runloop_exec;
 
    if (!time_to_exit)
@@ -1011,48 +1025,6 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    return -1;
 }
 
-#ifdef HAVE_MENU
-static int runloop_iterate_menu(enum menu_action action, unsigned *sleep_ms)
-{
-   menu_ctx_iterate_t iter;
-   settings_t *settings    = config_get_ptr();
-   bool focused            = (settings && 
-         settings->pause_nonactive) ? video_driver_is_focused() : true;
-   bool is_idle            = runloop_idle;
-
-   focused                 = focused && !ui_companion_is_on_foreground();
-
-   iter.action             = action;
-
-   if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-      rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-
-   if (focused || !is_idle)
-      menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
-
-   if (!focused || is_idle)
-   {
-      *sleep_ms = 10;
-      return 1;
-   }
-
-   if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
-      return 0;
-
-   return -1;
-}
-#endif
-
-void runloop_poll(event_cmd_state_t *cmd)
-{
-   static retro_input_t last_input              = {0};
-   cmd->state[1]                                = last_input;
-   cmd->state[0]                                = input_keys_pressed();
-   cmd->state[2].state                          = cmd->state[0].state 
-                                                  & ~cmd->state[1].state;
-   last_input                                   = cmd->state[0];
-}
-
 /**
  * runloop_iterate:
  *
@@ -1066,6 +1038,10 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 {
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
+#ifdef HAVE_OVERLAY
+   static char prev_overlay_restore             = false;
+   bool osk_enable                              = input_driver_is_onscreen_keyboard_enabled();
+#endif
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
@@ -1170,7 +1146,26 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
 #endif
 
 #ifdef HAVE_OVERLAY
-   runloop_iterate_linefeed_overlay();
+   if (osk_enable && !input_keyboard_ctl(
+            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+   {
+      input_driver_unset_onscreen_keyboard_enabled();
+      prev_overlay_restore  = true;
+      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+   }
+   else if (!osk_enable && input_keyboard_ctl(
+            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+   {
+      input_driver_set_onscreen_keyboard_enabled();
+      prev_overlay_restore  = false;
+      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+   }
+   else if (prev_overlay_restore)
+   {
+      if (!settings->input.overlay_hide_in_menu)
+         command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+      prev_overlay_restore = false;
+   }
 #endif
 
    if (runloop_iterate_time_to_exit(
