@@ -95,7 +95,7 @@ static unsigned font_renderer_update_atlas(ft_font_renderer_t *handle, FT_ULong 
    uint8_t *dst             = NULL;
    struct font_glyph *glyph = NULL;
 
-   if(charcode > 0x10000)
+   if(charcode > 0xFFFF)
       return 0;
    if(handle->uc_to_id[charcode])
       return handle->uc_to_id[charcode];
@@ -153,7 +153,6 @@ static unsigned font_renderer_update_atlas(ft_font_renderer_t *handle, FT_ULong 
             dst[c] = src[c];
    }
 
-   handle->usage_counter++;
    return id;
 }
 
@@ -166,7 +165,7 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    if (!handle)
       return NULL;
 
-   if(code > 0x10000)
+   if(code > 0xFFFF)
       return NULL;
 
    id = handle->uc_to_id[code];
@@ -179,18 +178,32 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    return &handle->glyphs[id];
 }
 
-static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
+static bool font_renderer_create_atlas(ft_font_renderer_t *handle, int max_glyph_width, int max_glyph_height)
 {
-   unsigned i;
+   unsigned i, id;
+   handle->max_glyph_width  = max_glyph_width;
+   handle->max_glyph_height = max_glyph_height;
+   handle->atlas.width      = handle->max_glyph_width  * FT_ATLAS_COLS;
+   handle->atlas.height     = handle->max_glyph_height * FT_ATLAS_ROWS;
 
+   handle->atlas.buffer     = (uint8_t*)
+      calloc(handle->atlas.width * handle->atlas.height, 1);
+
+   if (!handle->atlas.buffer)
+      return false;
+
+
+   handle->usage_counter = 1;
    for (i = 0; i < 256; i++)
-      if(font_renderer_update_atlas(handle, i) < 0)
-         return false;
+   {
+      id = font_renderer_update_atlas(handle, i);
+      if(id)
+         handle->last_used[id] = handle->usage_counter++;
+   }
 
    return true;
 }
 
-#include "locale.h"
 static void *font_renderer_ft_init(const char *font_path, float font_size)
 {
    FT_Error err;
@@ -220,19 +233,8 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
    if (err)
       goto error;
 
-   /* TODO: find a better way to determine onmax_glyph_width/height */
-   handle->max_glyph_width  = font_size;
-   handle->max_glyph_height = font_size;
-   handle->atlas.width      = handle->max_glyph_width  * 2 * FT_ATLAS_COLS;
-   handle->atlas.height     = handle->max_glyph_height * 2 * FT_ATLAS_ROWS;
-
-   handle->atlas.buffer     = (uint8_t*)
-      calloc(handle->atlas.width * handle->atlas.height, 1);
-
-   if (!handle->atlas.buffer)
-      goto error;
-
-   if (!font_renderer_create_atlas(handle))
+   /* TODO: find a better way to determine nmax_glyph_width/height */
+   if (!font_renderer_create_atlas(handle, font_size, font_size))
       goto error;
 
    return handle;
