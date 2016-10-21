@@ -241,10 +241,8 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
  *
  * Check if libretro pause key was pressed. If so, pause or
  * unpause the libretro core.
- *
- * Returns: true if libretro pause key was toggled, otherwise false.
  **/
-static bool runloop_check_pause(
+static void runloop_check_pause(
       bool focus, bool pause_pressed,
       bool frameadvance_pressed)
 {
@@ -266,11 +264,6 @@ static bool runloop_check_pause(
 
    if (cmd != CMD_EVENT_NONE)
       command_event(cmd, NULL);
-
-   if (runloop_paused == old_is_paused)
-      return false;
-
-   return true;
 }
 
 /**
@@ -394,7 +387,6 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
 
    /* Checks if the state increase/decrease keys have been pressed 
     * for this frame. */
-
    if (runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS))
    {
       char msg[128];
