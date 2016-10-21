@@ -545,12 +545,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
          runloop_frame_time_last_enable = true;
          break;
-      case RUNLOOP_CTL_UNSET_FRAME_TIME_LAST:
-         if (!runloop_ctl(RUNLOOP_CTL_IS_FRAME_TIME_LAST, NULL))
-            return false;
-         runloop_frame_time_last        = 0;
-         runloop_frame_time_last_enable = false;
-         break;
       case RUNLOOP_CTL_SET_OVERRIDES_ACTIVE:
          runloop_overrides_active = true;
          break;
@@ -571,9 +565,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          return runloop_frame_time_last_enable;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
          runloop_set_frame_limit = true;
-         break;
-      case RUNLOOP_CTL_UNSET_FRAME_LIMIT:
-         runloop_set_frame_limit = false;
          break;
       case RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT:
          return runloop_set_frame_limit;
@@ -782,24 +773,15 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
          runloop_core_shutdown_initiated = true;
          break;
-      case RUNLOOP_CTL_UNSET_CORE_SHUTDOWN:
-         runloop_core_shutdown_initiated = false;
-         break;
       case RUNLOOP_CTL_IS_CORE_SHUTDOWN:
          return runloop_core_shutdown_initiated;
       case RUNLOOP_CTL_SET_SHUTDOWN:
          runloop_shutdown_initiated = true;
          break;
-      case RUNLOOP_CTL_UNSET_SHUTDOWN:
-         runloop_shutdown_initiated = false;
-         break;
       case RUNLOOP_CTL_IS_SHUTDOWN:
          return runloop_shutdown_initiated;
       case RUNLOOP_CTL_SET_EXEC:
          runloop_exec = true;
-         break;
-      case RUNLOOP_CTL_UNSET_EXEC:
-         runloop_exec = false;
          break;
       case RUNLOOP_CTL_IS_EXEC:
          return runloop_exec;
@@ -1032,7 +1014,7 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 #endif
 
    if (runloop_exec)
-      runloop_ctl(RUNLOOP_CTL_UNSET_EXEC, NULL);
+      runloop_exec = false;
 
    if (runloop_core_shutdown_initiated &&
          settings->load_dummy_on_core_shutdown)
@@ -1048,8 +1030,8 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 
       /* Loads dummy core instead of exiting RetroArch completely.
        * Aborts core shutdown if invoked. */
-      runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);
-      runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
+      runloop_shutdown_initiated      = false;
+      runloop_core_shutdown_initiated = false;
 
       return 1;
    }
