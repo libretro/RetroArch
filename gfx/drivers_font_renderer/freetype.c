@@ -206,7 +206,6 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, int max_glyph
 
 static void *font_renderer_ft_init(const char *font_path, float font_size)
 {
-   int i;
    FT_Error err;
 
    ft_font_renderer_t *handle = (ft_font_renderer_t*)
