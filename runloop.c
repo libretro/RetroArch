@@ -131,23 +131,6 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
-static bool runloop_msg_queue_push_internal(runloop_ctx_msg_info_t *msg_info)
-{
-   if (!msg_info || !runloop_msg_queue)
-      return false;
-   msg_queue_push(runloop_msg_queue, msg_info->msg,
-         msg_info->prio, msg_info->duration);
-
-   if (ui_companion_is_on_foreground())
-   {
-      const ui_companion_driver_t *ui = ui_companion_get_ptr();
-      if (ui->msg_queue_push)
-         ui->msg_queue_push(msg_info->msg,
-               msg_info->prio, msg_info->duration, msg_info->flush);
-   }
-   return true;
-}
-
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
@@ -170,7 +153,19 @@ void runloop_msg_queue_push(const char *msg,
    msg_info.duration = duration;
    msg_info.flush    = flush;
 
-   runloop_msg_queue_push_internal(&msg_info);
+   if (runloop_msg_queue)
+   {
+      msg_queue_push(runloop_msg_queue, msg_info.msg,
+            msg_info.prio, msg_info.duration);
+
+      if (ui_companion_is_on_foreground())
+      {
+         const ui_companion_driver_t *ui = ui_companion_get_ptr();
+         if (ui->msg_queue_push)
+            ui->msg_queue_push(msg_info.msg,
+                  msg_info.prio, msg_info.duration, msg_info.flush);
+      }
+   }
 
 #ifdef HAVE_THREADS
    slock_unlock(_runloop_msg_queue_lock);
