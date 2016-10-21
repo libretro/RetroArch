@@ -991,6 +991,13 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
                );
          break;
+      case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
+         snprintf(s, len, "Are you sure you want to quit?");
+         break;
+      case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
+         snprintf(s, len, "Show hidden files\n"
+               "and folders.");
+         break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
          snprintf(s, len,
                "Hardware filter for this pass. \n"
@@ -1557,6 +1564,22 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Increasing this value will increase \n"
                "performance, but introduce more latency.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
+         snprintf(s, len,
+               "The frequency in frames with which netplay \n"
+               "will verify that the host and client are in \n"
+               "sync. \n"
+               " \n"
+               "With most cores, this value will have no \n"
+               "visible effect and can be ignored. With \n"
+               "nondeterminstic cores, this value determines \n"
+               "how often the netplay peers will be brought \n"
+               "into sync. With buggy cores, setting this \n"
+               "to any non-zero value will cause severe \n"
+               "performance issues. Set to zero to perform \n"
+               "no checks. This value is only used on the \n"
+               "netplay host. \n");
+         break;
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          snprintf(s, len,
                "Maximum amount of swapchain images. This \n"
@@ -1582,6 +1605,22 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_CORE_ENABLE:
          snprintf(s, len,
                "Shows current core inside menu.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
+         snprintf(s, len,
+               "Enables Netplay in host (server) mode.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
+         snprintf(s, len,
+               "Enables Netplay in client mode.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
+         snprintf(s, len,
+               "Disconnects an active Netplay connection.");
+         break;
+      case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
+         snprintf(s, len,
+               "Setting related to Netplay.");
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
@@ -1672,6 +1711,9 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "simultaneously. \n"
                "2 - Press L3 + R3 simultaneously. \n"
                "3 - Press Start + Select simultaneously.");
+         break;
+      case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
+         snprintf(s, len, "Allow any RetroPad to control the menu.");
          break;
       case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
@@ -1872,6 +1914,22 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_SHUTTING_DOWN:
+         return "shutting_down";
+      case MSG_REBOOTING:
+         return "rebooting";
+      case MSG_FAILED_TO_START_AUDIO_DRIVER:
+         return "failed_to_start_audio_driver";
+      case MSG_FOUND_LAST_STATE_SLOT:
+         return "found_last_state_slot";
+      case MSG_CONNECT_DEVICE_FROM_A_VALID_PORT:
+         return "connect_device_from_a_valid_port";
+      case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
+         return "disconnect_device_from_a_valid_port";
+      case MSG_DISCONNECTING_DEVICE_FROM_PORT:
+         return "disconnecting_device_from_port";
+      case MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
+         return "bringing_up_command_interface_at_port";
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "video_max_swapchain_images";
       case MENU_ENUM_LABEL_CORE_SETTINGS:
@@ -2058,6 +2116,10 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "input_small_keyboard_enable";
       case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
          return "save_current_config";
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+         return "save_current_config_override_core";
+      case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+         return "save_current_config_override_game";
       case MENU_ENUM_LABEL_STATE_SLOT:
          return "state_slot";
       case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
@@ -2134,6 +2196,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "deferred_retro_achievements_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_UPDATER_SETTINGS_LIST:
          return "deferred_updater_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST:
+         return "deferred_wifi_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_NETWORK_SETTINGS_LIST:
          return "deferred_network_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST:
@@ -2156,8 +2220,12 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "input_settings_begin";
       case MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN:
          return "playlist_settings_begin";
+      case MENU_ENUM_LABEL_RECORDING_SETTINGS:
+         return "recording_settings";
       case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
          return "playlist_settings";
+      case MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
+         return "deferred_recording_settings";
       case MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST:
          return "deferred_playlist_settings";
       case MENU_ENUM_LABEL_INPUT_SETTINGS:
@@ -2194,6 +2262,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "updater_settings";
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
          return "network_settings";
+      case MENU_ENUM_LABEL_WIFI_SETTINGS:
+         return "wifi_settings";
       case MENU_ENUM_LABEL_USER_SETTINGS:
          return "user_settings";
       case MENU_ENUM_LABEL_LAKKA_SERVICES:
@@ -2240,6 +2310,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "back_as_menu_toggle_enable";
       case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "input_menu_toggle_gamepad_combo";
+      case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
+         return "all_users_control_menu";
       case MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU:
          return "overlay_hide_in_menu";
       case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
@@ -2270,6 +2342,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "scan_directory";
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
          return "add_content";
+      case MENU_ENUM_LABEL_CONNECT_WIFI:
+         return "connect_wifi";
       case MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
          return "overlay_autoload_preferred";
       case MENU_ENUM_LABEL_INFORMATION:
@@ -2402,6 +2476,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "bluetooth_enable";
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
          return "netplay_delay_frames";
+      case MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES:
+         return "netplay_check_frames";
       case MENU_ENUM_LABEL_NETPLAY_MODE:
          return "netplay_mode";
       case MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN:
@@ -2424,6 +2500,14 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "menu_pointer_enable";
       case MENU_ENUM_LABEL_CORE_ENABLE:
          return "menu_core_enable";
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
+         return "menu_netplay_enable_host";
+      case MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT:
+         return "menu_netplay_enable_client";
+      case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
+         return "menu_netplay_disconnect";
+      case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
+         return "menu_netplay_settings";
       case MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE:
          return "dpi_override_enable";
       case MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE:
@@ -2508,6 +2592,10 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "auto_overrides_enable";
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          return "config_save_on_exit";
+      case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
+         return "confirm_on_exit";
+      case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
+         return "show_hidden_files";
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
          return "video_smooth";
       case MENU_ENUM_LABEL_VIDEO_GAMMA:
@@ -2780,6 +2868,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "restart_content";
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          return "take_screenshot";
+      case MENU_ENUM_LABEL_DELETE_ENTRY:
+         return "delete_entry";
       case MENU_ENUM_LABEL_CORE_UPDATER_LIST:
          return "core_updater_list";
       case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
@@ -2806,6 +2896,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "network_information";
       case MENU_ENUM_LABEL_ONLINE_UPDATER:
          return "online_updater";
+      case MENU_ENUM_LABEL_NETPLAY:
+         return "netplay";
       case MENU_ENUM_LABEL_CORE_INFORMATION:
          return "core_information";
       case MENU_ENUM_LABEL_CORE_LIST:
@@ -2840,6 +2932,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "menu_driver";
       case MENU_ENUM_LABEL_CAMERA_DRIVER:
          return "camera_driver";
+      case MENU_ENUM_LABEL_WIFI_DRIVER:
+         return "wifi_driver";
       case MENU_ENUM_LABEL_LOCATION_DRIVER:
          return "location_driver";
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
@@ -2900,6 +2994,8 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "update_cg_shaders";
       case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
          return "update_glsl_shaders";
+      case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
+         return "update_slang_shaders";
       case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
          return "screen_resolution";
       case MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER:
@@ -2927,6 +3023,54 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_LOG_VERBOSITY:
+         return "Enable or disable logging to the terminal.";
+      case MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES:
+         return "Show hidden files/directories inside the file browser.";
+      case MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
+         return "Gamepad button combination to toggle menu.";
+      case MENU_ENUM_SUBLABEL_CPU_CORES:
+         return "Amount of cores that the CPU has.";
+      case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:
+         return "Inserts a black frame inbetween frames. Useful for users of 120 Hz monitors who want to play 60 Hz material with eliminated ghosting.";
+      case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
+         return "Reduces latency at cost of higher risk of video stuttering. Adds a delay after V-Sync (in ms).";
+      case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
+         return "Download and/or scan content, and add it to your collection.";
+      case MENU_ENUM_SUBLABEL_NETPLAY:
+         return "Join or host a netplay session.";
+      case MENU_ENUM_SUBLABEL_FPS_SHOW:
+         return "Displays the current framerate per second onscreen.";
+      case MENU_ENUM_SUBLABEL_VIDEO_SETTINGS:
+         return "Adjusts settings for video output.";
+      case MENU_ENUM_SUBLABEL_AUDIO_SETTINGS:
+         return "Adjusts settings for audio output.";
+      case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
+         return "Prevents your system's screensaver from becoming active.";
+      case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
+         return "Tells the video driver to explicitly use a specified buffering mode.";
+      case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
+         return "Download and update add-ons and components for RetroArch.";
+      case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
+         return "Configure controls for this user.";
+      case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
+         return "Configure hotkey settings.";
+      case MSG_VALUE_SHUTTING_DOWN:
+         return "Shutting down...";
+      case MSG_VALUE_REBOOTING:
+         return "Rebooting...";
+      case MSG_VALUE_FAILED_TO_START_AUDIO_DRIVER:
+         return "Failed to start audio driver. Will continue without audio.";
+      case MSG_VALUE_FOUND_LAST_STATE_SLOT:
+         return "Found last state slot";
+      case MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT:
+         return "Connect device from a valid port.";
+      case MSG_VALUE_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
+         return "Disconnect device from a valid port.";
+      case MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT:
+         return "Disconnecting device from port";
+      case MSG_VALUE_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
+         return "Bringing up command interface on port";
       case MSG_LOADING_HISTORY_FILE:
          return "Loading history file";
       case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED:
@@ -2995,10 +3139,22 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Loading";
       case MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT:
          return "Per-Game Options: game-specific core options found at";
+      case MSG_RESTORING_DEFAULT_SHADER_PRESET_TO:
+         return "Shaders: restoring default shader preset to";
+      case  MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY:
+         return "Sorry, unimplemented: cores that don't demand content cannot participate in netplay.";
+      case MSG_FOUND_AUTO_SAVESTATE_IN:
+         return "Found auto savestate in";
+      case MSG_AUTOLOADING_SAVESTATE_FROM:
+         return "Auto-loading savestate from";
       case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT:
          return "Network Remote Base Port";
+      case MSG_OVERRIDES_SAVED_SUCCESSFULLY:
+         return "Overrides saved successfully.";
       case MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY:
          return "Autoconfig file saved successfully.";
+      case MSG_OVERRIDES_ERROR_SAVING:
+         return "Error saving overrides.";
       case MSG_AUTOCONFIG_FILE_ERROR_SAVING:
          return "Error saving autoconf file.";
       case MSG_DOWNLOAD_FAILED:
@@ -3245,6 +3401,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "to";
       case MSG_SAVING_RAM_TYPE:
          return "Saving RAM type";
+      case MSG_UNDOING_SAVE_STATE:
+         return "Undoing save state";
       case MSG_SAVING_STATE:
          return "Saving state";
       case MSG_LOADING_STATE:
@@ -3271,6 +3429,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Audio unmuted.";
       case MSG_RESET:
          return "Reset";
+      case MSG_AUTO_SAVE_STATE_TO:
+         return "Auto save state to";
       case MSG_FAILED_TO_LOAD_STATE:
          return "Failed to load state from";
       case MSG_FAILED_TO_SAVE_STATE_TO:
@@ -3409,12 +3569,20 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Test unofficial";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retro Achievements";
+      case MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE:
+         return "Touch Enable";
+      case MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH:
+         return "Prefer Front Touch";
       case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Keyboard Gamepad Mapping Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
          return "Keyboard Gamepad Mapping Type";
       case MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
          return "Small Keyboard Enable";
+      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
+         return "Save Core Overrides";
+      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+         return "Save Game Overrides";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
          return "現在の設定を保存";
       case MENU_ENUM_LABEL_VALUE_STATE_SLOT:
@@ -3479,6 +3647,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Back As Menu Toggle Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "Menu Toggle Gamepad Combo";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU:
+         return "All Users Control Menu";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
          return "Hide Overlay In Menu";
       case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
@@ -3697,6 +3867,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Bluetooth Enable";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Netplay Delay Frames";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES:
+         return "Netplay Check Frames";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_MODE:
          return "Netplay Client Enable";
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
@@ -3719,6 +3891,14 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Touch Support";
       case MENU_ENUM_LABEL_VALUE_CORE_ENABLE:
          return "Display core name";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST:
+         return "Start hosting";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT:
+         return "Connect to Netplay host";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT:
+         return "Disconnect";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS:
+         return "Netplay settings";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
          return "DPI Override Enable";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
@@ -3809,6 +3989,10 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Load Override Files Automatically";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Save Configuration On Exit";
+      case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
+         return "Ask For Confirmation On Exit";
+      case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
+         return "Show Hidden Files and Folders";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "HW Bilinear Filtering";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA:
@@ -3929,8 +4113,12 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Apply Shader Changes";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Rewind Enable";
+      case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
+         return "Collections";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
          return "Select File And Detect Core";
+      case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
+         return "Downloads Dir";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
          return "Load Recent";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
@@ -3979,6 +4167,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Core Counters";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
          return "スクリーンショットを撮る";
+      case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
+         return "削除";
       case MENU_ENUM_LABEL_VALUE_RESUME:
          return "再開";
       case MENU_ENUM_LABEL_VALUE_DISK_INDEX:
@@ -4029,6 +4219,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Buildbot Assets URL";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
          return "Navigation Wrap-Around";
+      case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
+         return "Filter unknown extensions";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
          return "Automatically extract downloaded archive";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
@@ -4039,6 +4231,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Achievement List";
       case MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER:
          return "オンラインアップデーター";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY:
+         return "ネットプレイ";
       case MENU_ENUM_LABEL_VALUE_CORE_INFORMATION:
          return "コアの情報";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND:
@@ -4081,6 +4275,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "メニューのドライバ";
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
          return "カメラのドライバ";
+      case MENU_ENUM_LABEL_VALUE_WIFI_DRIVER:
+         return "Wi-Fiのドライバ";
       case MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER:
          return "ロケーションのドライバ";
       case MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE:
@@ -4155,6 +4351,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Update Cg Shaders";
       case MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS:
          return "Update GLSL Shaders";
+      case MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS:
+         return "Update Slang Shaders";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Core name";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL:
@@ -4287,6 +4485,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Cg support";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GLSL_SUPPORT:
          return "GLSL support";
+      case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT:
+         return "Slang support";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT:
          return "HLSL support";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBXML2_SUPPORT:
@@ -4317,6 +4517,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "No";
       case MENU_ENUM_LABEL_VALUE_BACK:
          return "BACK";
+      case MSG_FAILED_TO_BIND_SOCKET:
+         return "Failed to bind socket.";
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
          return "Screen Resolution";
       case MENU_ENUM_LABEL_VALUE_DISABLED:
@@ -4381,6 +4583,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Updater";
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
          return "Network";
+      case MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS:
+         return "Wi-Fi";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
          return "Lakka Services";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
