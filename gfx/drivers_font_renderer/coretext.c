@@ -44,7 +44,7 @@ typedef struct coretext_renderer
   struct font_glyph glyphs[CT_ATLAS_SIZE];
 } ct_font_renderer_t;
 
-static const struct font_atlas *font_renderer_ct_get_atlas(void *data)
+static struct font_atlas *font_renderer_ct_get_atlas(void *data)
 {
   ct_font_renderer_t *handle = (ct_font_renderer_t*)data;
   if (!handle)
