@@ -34,7 +34,7 @@ typedef struct bm_renderer
    struct font_atlas atlas;
 } bm_renderer_t;
 
-static const struct font_atlas *font_renderer_bmp_get_atlas(void *data)
+static struct font_atlas *font_renderer_bmp_get_atlas(void *data)
 {
    bm_renderer_t *handle = (bm_renderer_t*)data;
    if (!handle)
@@ -76,6 +76,7 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
                dst[xo + yo * handle->atlas.width] = col;
       }
    }
+   handle->atlas.dirty = true;
 }
 
 static void *font_renderer_bmp_init(const char *font_path, float font_size)
