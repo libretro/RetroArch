@@ -628,20 +628,12 @@ retro_input_t input_keys_pressed(void)
    {
       binds[i] = settings->input.binds[i];
 
-      input_push_analog_dpad(settings->input.binds[i],
-            settings->input.analog_dpad_mode[i]);
-      input_push_analog_dpad(settings->input.autoconf_binds[i],
-            settings->input.analog_dpad_mode[i]);
-
       input_driver_turbo_btns.frame_enable[i] = 0;
 
       if (!input_driver_block_libretro_input)
          input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
                current_input_data, binds,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
-
-      input_pop_analog_dpad(settings->input.binds[i]);
-      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
    }
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
