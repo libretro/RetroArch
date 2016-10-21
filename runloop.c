@@ -230,38 +230,6 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
 #endif
 
 /**
- * runloop_check_pause:
- * @pressed              : was libretro pause key pressed?
- * @frameadvance_pressed : was frameadvance key pressed?
- *
- * Check if libretro pause key was pressed. If so, pause or
- * unpause the libretro core.
- **/
-static void runloop_check_pause(
-      bool focus, bool pause_pressed,
-      bool frameadvance_pressed)
-{
-   static bool old_focus    = true;
-   enum event_command cmd   = CMD_EVENT_NONE;
-   bool old_is_paused       = runloop_paused;
-
-   /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !old_is_paused && frameadvance_pressed;
-
-   if (focus && pause_pressed)
-      cmd = CMD_EVENT_PAUSE_TOGGLE;
-   else if (focus && !old_focus)
-      cmd = CMD_EVENT_UNPAUSE;
-   else if (!focus && old_focus)
-      cmd = CMD_EVENT_PAUSE;
-
-   old_focus = focus;
-
-   if (cmd != CMD_EVENT_NONE)
-      command_event(cmd, NULL);
-}
-
-/**
  * rarch_game_specific_options:
  *
  * Returns: true (1) if a game specific core
@@ -312,8 +280,11 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
 
 static bool runloop_check_state(event_cmd_state_t *cmd)
 {
+   static bool old_focus     = true;
    bool tmp                  = false;
    bool focused              = true;
+   bool old_is_paused        = runloop_paused;
+   bool pause_pressed        = runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE);
    settings_t *settings      = config_get_ptr();
    
    if (runloop_idle)
@@ -351,9 +322,20 @@ static bool runloop_check_state(event_cmd_state_t *cmd)
    netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
 #endif
 
-   runloop_check_pause(focused,
-         runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
-         runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
+   /* Check if libretro pause key was pressed. If so, pause or
+    * unpause the libretro core. */
+
+   /* FRAMEADVANCE will set us into pause mode. */
+   pause_pressed |= !old_is_paused && runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE);
+
+   if (focused && pause_pressed)
+      command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
+   else if (focused && !old_focus)
+      command_event(CMD_EVENT_UNPAUSE, NULL);
+   else if (!focused && old_focus)
+      command_event(CMD_EVENT_PAUSE, NULL);
+
+   old_focus = focused;
 
    if (!runloop_check_pause_state(cmd) || !focused)
       return false;
