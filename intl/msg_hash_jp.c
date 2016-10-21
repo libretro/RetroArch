@@ -3970,7 +3970,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO:
          return "Maximum Run Speed";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
-         return "Load Remap Files Automatically";
+         return "リマップファイルを自動的にロードする";
       case MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE:
          return "Load Shader Presets Automatically";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
@@ -3978,13 +3978,13 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "コア特定の設定";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
-         return "Load Content-specific core options automatically";
+         return "コンテンツ特定のコア設定を自動的にロードする";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
          return "Create game-options file";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
          return "Game-options file";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "Load Override Files Automatically";
+         return "オーバーライドファイルを自動的にロードする";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "終了前に設定を自動保存する";
       case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
