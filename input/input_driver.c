@@ -553,7 +553,6 @@ retro_input_t input_keys_pressed(void)
    unsigned i;
    retro_input_t             ret;
    const struct retro_keybind *binds[MAX_USERS];
-   unsigned key                  = RARCH_ENABLE_HOTKEY;
    settings_t *settings          = config_get_ptr();
 
    ret.type  = 0;
@@ -566,7 +565,7 @@ retro_input_t input_keys_pressed(void)
 
    if (current_input->key_pressed &&
          check_input_driver_block_hotkey(
-            current_input->key_pressed(current_input_data, key)))
+            current_input->key_pressed(current_input_data, RARCH_ENABLE_HOTKEY)))
       input_driver_block_libretro_input = true;
    else
       input_driver_block_libretro_input = false;
@@ -591,18 +590,18 @@ retro_input_t input_keys_pressed(void)
       input_pop_analog_dpad(settings->input.autoconf_binds[i]);
    }
 
-   for (key = 0; key < RARCH_BIND_LIST_END; key++)
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
       bool state = false;
-      if (((!input_driver_block_libretro_input && ((key < RARCH_FIRST_META_KEY)))
+      if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
             || !input_driver_block_hotkey) && current_input->key_pressed)
-         state = current_input->key_pressed(current_input_data, key);
+         state = current_input->key_pressed(current_input_data, i);
 
-      if (key >= RARCH_FIRST_META_KEY)
-         state |= current_input->meta_key_pressed(current_input_data, key);
+      if (i >= RARCH_FIRST_META_KEY)
+         state |= current_input->meta_key_pressed(current_input_data, i);
 
 #ifdef HAVE_OVERLAY
-      state |= input_overlay_key_pressed(key);
+      state |= input_overlay_key_pressed(i);
 #endif
 
 #ifdef HAVE_COMMAND
@@ -611,7 +610,7 @@ retro_input_t input_keys_pressed(void)
          command_handle_t handle;
 
          handle.handle = input_driver_command;
-         handle.id     = key;
+         handle.id     = i;
 
          state |= command_get(&handle);
       }
@@ -619,11 +618,11 @@ retro_input_t input_keys_pressed(void)
 
 #ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote)
-         state |= input_remote_key_pressed(key,0);
+         state |= input_remote_key_pressed(i, 0);
 #endif
 
       if (state)
-         ret.state |= (UINT64_C(1) << key);
+         ret.state |= (UINT64_C(1) << i);
    }
 
    return ret;
