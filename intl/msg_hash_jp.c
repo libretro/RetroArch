@@ -4474,3 +4474,4 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
 
    return "null";
 }
+#endif
