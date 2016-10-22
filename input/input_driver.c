@@ -618,7 +618,6 @@ retro_input_t input_keys_pressed(void)
 {
    unsigned i;
    retro_input_t             ret;
-   settings_t *settings          = config_get_ptr();
 
    ret.type  = 0;
    ret.state = 0;
