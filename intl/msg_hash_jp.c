@@ -3021,6 +3021,12 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES:
+         return "Sets how many frames the CPU can run ahead of the GPU when using 'Hard GPU Sync'.";
+      case MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO:
+         return "The accurate estimated refresh rate of the monitor in Hz.";
+      case MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX:
+         return "Selects which display monitor to use.";
       case MENU_ENUM_SUBLABEL_LOG_VERBOSITY:
          return "Enable or disable logging to the terminal.";
       case MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES:
@@ -3492,7 +3498,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_FAILED_TO_START_MOVIE_RECORD:
          return "Failed to start movie record.";
       case MSG_STATE_SLOT:
-         return "ステートのスロット";
+         return "保存状態のスロット";
       case MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT:
          return "Restarting recording due to driver reinit.";
       case MSG_SLOW_MOTION:
@@ -3560,15 +3566,15 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER:
          return "メニューのリニアフィルター";
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE:
-         return "Throttle Menu Framerate";
+         return "メニューのフレームレートを減速";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Hardcore Mode";
+         return "ハードコアモード";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
-         return "Test unofficial";
+         return "非公式をテスト";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "レトロ";
       case MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE:
-         return "Touch Enable";
+         return "タッチを有効";
       case MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH:
          return "Prefer Front Touch";
       case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
@@ -3584,7 +3590,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
          return "現在の設定を保存";
       case MENU_ENUM_LABEL_VALUE_STATE_SLOT:
-         return "ステートのスロット";
+         return "保存状態のスロット";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
          return "Accounts Cheevos";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
@@ -3644,15 +3650,15 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
          return "Back As Menu Toggle Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
-         return "Menu Toggle Gamepad Combo";
+         return "ゲームパッドのメニュー切り替えコンボ";
       case MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU:
-         return "All Users Control Menu";
+         return "すべてのユーザーがメニューを操作できる";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
-         return "Hide Overlay In Menu";
+         return "メニューにオーバーレイを隠す";
       case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
          return "ポーランド語";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
-         return "Autoload Preferred Overlay";
+         return "優先オーバーレイを自動ロード";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
          return "コアの情報ファイルをアップデート";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
@@ -3686,7 +3692,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
          return "プライバシー";
       case MENU_ENUM_LABEL_VALUE_MUSIC_TAB:
-         return "ミュージック";
+         return "音楽";
       case MENU_ENUM_LABEL_VALUE_VIDEO_TAB:
          return "ビデオ";
       case MENU_ENUM_LABEL_VALUE_IMAGES_TAB:
@@ -3736,19 +3742,19 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_MODE:
          return "Bind Mode";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
-         return "Display Input Descriptor Labels";
+         return "入力の識別子ラベルを表示";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
-         return "Hide Unbound Core Input Descriptors";
+         return "未定義のコア入力の識別子を隠す";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE:
-         return "Display OSD Message";
+         return "OSDメッセージを表示";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH:
-         return "OSD Message Font";
+         return "OSDメッセージのフォント";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE:
-         return "OSD Message Size";
+         return "OSDメッセージのサイズ";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
-         return "OSD Message X Position";
+         return "OSDメッセージのX位置";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
-         return "OSD Message Y Position";
+         return "OSDメッセージのY位置";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:
          return "Soft Filter Enable";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
@@ -3772,123 +3778,123 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION:
          return "Database Selection";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR:
-         return "Core Assets Dir";
+         return "コアの資産ディレクトリー";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DIR:
-         return "Content Dir";
+         return "コンテンツのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Input Remapping Dir";
+         return "入力リマップのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Input Device Autoconfig Dir";
+         return "入力デバイスの自動設定ディレクトリー";
       case MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
-         return "Recording Config Dir";
+         return "録画設定のディレクトリー";
       case MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
-         return "Recording Output Dir";
+         return "録画の出力ディレクトリー";
       case MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY:
-         return "Screenshot Dir";
+         return "スクリーンショットのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
-         return "Playlist Dir";
+         return "プレイリストのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY:
-         return "Savefile Dir";
+         return "セーブファイルのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY:
-         return "Savestate Dir";
+         return "保存状態のディレクトリー";
       case MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE:
-         return "stdin Commands";
+         return "stdinコマンド";
       case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE:
-         return "Network Gamepad";
+         return "ネットワークゲームパッド";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER:
          return "ビデオのドライバ";
       case MENU_ENUM_LABEL_VALUE_RECORD_ENABLE:
-         return "Record Enable";
+         return "録画を有効";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD:
-         return "GPU Record Enable";
+         return "GPUの録画を有効";
       case MENU_ENUM_LABEL_VALUE_RECORD_PATH:
-         return "Output File";
+         return "出力ファイル";
       case MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
-         return "Use Output Dir";
+         return "出力ディレクトリーを使用";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
-         return "Record Config";
+         return "録画設定ファイル";
       case MENU_ENUM_LABEL_VALUE_CONFIG:
          return "Config";
       case MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
-         return "Post filter record Enable";
+         return "事後フィルターの録画を有効";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Downloads Dir";
+         return "ダウンロードのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
-         return "Assets Dir";
+         return "資産のディレクトリー";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Dynamic Wallpapers Dir";
+         return "ダイナミック壁紙のディレクトリー";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY:
-         return "Thumbnails Dir";
+         return "サムネイルのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
-         return "File Browser Dir";
+         return "ファイルブラウザーのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
-         return "Config Dir";
+         return "設定のディレクトリー";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH:
-         return "Core Info Dir";
+         return "コア情報のディレクトリー";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH:
-         return "Core Dir";
+         return "コアのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY:
-         return "Cursor Dir";
+         return "カーソルのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
-         return "Content Database Dir";
+         return "コンテンツデータベースのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "System/BIOS Dir";
+         return "システム/BIOSのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH:
-         return "Cheat File Dir";
+         return "チートファイルのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:
-         return "Cache Dir";
+         return "キャッシュのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
-         return "Audio Filter Dir";
+         return "オーディオフィルターのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR:
-         return "Video Shader Dir";
+         return "ビデオシェーダーのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
-         return "Video Filter Dir";
+         return "ビデオフィルターのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Overlay Dir";
+         return "オーバーレイのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "OSK Overlay Dir";
+         return "OSKオーバーレイのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
-         return "Netplay P2 Uses C1";
+         return "ネットプレイのP2がC1を使用";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
-         return "Netplay Spectator Enable";
+         return "ネットプレイの観覧者を有効";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
-         return "Server Address";
+         return "サーバーのアドレス";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
-         return "Netplay TCP/UDP Port";
+         return "ネットプレイのTCP/UDPポート";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
-         return "Netplay Enable";
+         return "ネットプレイを有効";
       case MENU_ENUM_LABEL_VALUE_SSH_ENABLE:
-         return "SSH Enable";
+         return "SSHを有効";
       case MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE:
-         return "SAMBA Enable";
+         return "SAMBAを有効";
       case MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE:
-         return "Bluetooth Enable";
+         return "Bluetoothを有効";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
-         return "Netplay Delay Frames";
+         return "ネットプレイの延期フレーム";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES:
-         return "Netplay Check Frames";
+         return "ネットプレイのチェックフレーム";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_MODE:
-         return "Netplay Client Enable";
+         return "ネットプレイのクライアントを有効";
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
-         return "Show Start Screen";
+         return "スタート画面を表示";
       case MENU_ENUM_LABEL_VALUE_TITLE_COLOR:
          return "Menu title color";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Menu entry hover color";
       case MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE:
-         return "Display time / date";
+         return "日付と時刻を表示";
       case MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE:
-         return "Threaded data runloop";
+         return "データループをスレッド化";
       case MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR:
          return "Menu entry normal color";
       case MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
-         return "Show Advanced Settings";
+         return "詳細設定を表示";
       case MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE:
-         return "Mouse Support";
+         return "マウス対応";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
-         return "Touch Support";
+         return "タッチ対応";
       case MENU_ENUM_LABEL_VALUE_CORE_ENABLE:
-         return "Display core name";
+         return "コアの名前を表示";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST:
          return "Start hosting";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT:
@@ -3902,31 +3908,31 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
          return "DPI Override";
       case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
-         return "Menu Scale Factor";
+         return "メニューの倍率";
       case MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR:
-         return "Menu Alpha Factor";
+         return "メニューの透明性";
       case MENU_ENUM_LABEL_VALUE_XMB_FONT:
-         return "Menu Font";
+         return "メニューのフォント";
       case MENU_ENUM_LABEL_VALUE_XMB_THEME:
-         return "Menu Icon Theme";
+         return "メニューのアイコンテーマ";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
-         return "Menu Color Theme";
+         return "メニューの色テーマ";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME:
-         return "Menu Color Theme";
+         return "メニューの色テーマ";
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
-         return "Icon Shadows Enable";
+         return "アイコンの影を有効";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS:
-         return "Show Settings Tab";
+         return "設定タブを表示";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES:
-         return "Show Images Tab";
+         return "画像タブを表示";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC:
-         return "Show Music Tab";
+         return "音楽タブを表示";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_VIDEO:
-         return "Show Video Tab";
+         return "ビデオタブを表示";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_HISTORY:
-         return "Show History Tab";
+         return "履歴タブを表示";
       case MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE:
-         return "Menu Shader Pipeline";
+         return "メニューのシェーダーパイプライン";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
          return "Monochrome";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI:
@@ -3940,9 +3946,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "スクリーンセーバーをサスペンド";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
-         return "Disable Desktop Composition";
+         return "デスクトップのコンポジットを無効";
       case MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE:
-         return "Don't run in background";
+         return "バックグラウンドで実行しない";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "UI Companion Start On Boot";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE:
@@ -3952,45 +3958,45 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
          return "Archive File Association Action";
       case MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE:
-         return "Network Commands";
+         return "ネットワークコマンドを有効";
       case MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT:
-         return "Network Command Port";
+         return "ネットワークコマンドのポート";
       case MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE:
-         return "History List Enable";
+         return "履歴リストを有効";
       case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
-         return "History List Size";
+         return "履歴リストのサイズ";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
          return "モニタの予想フレームレート";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
-         return "Dummy On Core Shutdown";
+         return "コアをシャットダウンでダミー";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
-         return "Automatically start a core";
+         return "自動的にコアをスタート";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
-         return "Limit Maximum Run Speed";
+         return "フレームの減速度";
       case MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO:
-         return "Maximum Run Speed";
+         return "早送り比";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
-         return "リマップファイルを自動的にロードする";
+         return "リマップファイルを自動的にロード";
       case MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE:
          return "Load Shader Presets Automatically";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
-         return "Slow-Motion Ratio";
+         return "スローモーション比";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "コア特定の設定";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
-         return "コンテンツ特定のコア設定を自動的にロードする";
+         return "コンテンツ特定のコア設定を自動的にロード";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
          return "Create game-options file";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
          return "Game-options file";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "オーバーライドファイルを自動的にロードする";
+         return "オーバーライドファイルを自動的にロード";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "終了前に設定を自動保存する";
+         return "終了前に設定を自動保存";
       case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "終了前に確認する";
+         return "終了前に確認";
       case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
-         return "隠しファイルとフォルダを表示する";
+         return "隠しファイルとフォルダを表示";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "ハードウェアのバイリニアフィルター";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA:
@@ -4014,9 +4020,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
          return "アスペクト比のインデックス";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
-         return "Auto Aspect Ratio";
+         return "自動アスペクト比";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT:
-         return "Force aspect ratio";
+         return "アスペクト比を強制";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE:
          return "リフレッシュレート";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
@@ -4030,13 +4036,13 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH:
          return "Set VI Screen Width";
       case MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION:
-         return "黒いフレームを挿入する";
+         return "黒いフレームを挿入";
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES:
          return "強制GPU同期フレーム";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
-         return "Sort Saves In Folders";
+         return "フォルダでセーブを並び替え";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
-         return "Sort Savestates In Folders";
+         return "フォルダで保存状態を並び替え";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN:
          return "フルスクリーンモード";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SCALE:
@@ -4044,25 +4050,25 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER:
          return "整数スケール";
       case MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE:
-         return "Performance Counters";
+         return "パフォーマンスカウンター";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
-         return "Core Logging Level";
+         return "コアのログ出力レベル";
       case MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY:
-         return "Logging Verbosity";
+         return "ログの出力レベル";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
-         return "Auto Load State";
+         return "自動的に保存状態をロード";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
-         return "Save State Auto Index";
+         return "保存状態の自動インデックス";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
-         return "Auto Save State";
+         return "自動的に状態を保存";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
-         return "SaveRAM Autosave Interval";
+         return "セーブRAMの自動保存期間";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
-         return "Don't overwrite SaveRAM on loading savestate";
+         return "保存状態をロード時にセーブRAMを置き換えない";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-         return "HW Shared Context Enable";
+         return "ハードウェアの共有コンテキストを有効";
       case MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH:
-         return "Restart RetroArch";
+         return "RetroArchを再起動";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME:
          return "ユーザー名";
       case MENU_ENUM_LABEL_VALUE_USER_LANGUAGE:
@@ -4072,29 +4078,29 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW:
          return "ロケーションを許す";
       case MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO:
-         return "Pause when menu activated";
+         return "メニューが表示時に一時停止";
       case MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
          return "Display Keyboard Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
-         return "Display Overlay";
+         return "ディスプレイのオーバーレイ";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "モニタのインデックス";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY:
          return "フレームの遅れ";
       case MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE:
-         return "Duty Cycle";
+         return "デューティー比";
       case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD:
-         return "Turbo Period";
+         return "ターボの期間";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT:
-         return "Bind Timeout";
+         return "バインドのタイムアウト";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
-         return "Input Axis Threshold";
+         return "入力軸のしきい値";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
-         return "Remap Binds Enable";
+         return "リマップバインドを有効";
       case MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS:
-         return "Max Users";
+         return "最高のユーザー数";
       case MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
-         return "Autoconfig Enable";
+         return "自動コンフィグを有効";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "オーディオの出力レート(KHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
@@ -4110,7 +4116,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES:
          return "Apply Shader Changes";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
-         return "Rewind Enable";
+         return "巻き戻しを有効";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "コレクション";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
@@ -4138,7 +4144,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
          return "設定をロード";
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
-         return "Rewind Granularity";
+         return "巻き戻しの粒状度";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
          return "Load Remap File";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
@@ -4212,15 +4218,15 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST:
          return "コアのアップデーター";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
-         return "Buildbot Cores URL";
+         return "BuildbotのコアURL";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:
-         return "Buildbot Assets URL";
+         return "Buildbotの資産URL";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND:
-         return "Navigation Wrap-Around";
+         return "ナビゲーションの回り込み";
       case MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
          return "不明な拡張子を隠す";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
-         return "Automatically extract downloaded archive";
+         return "ダウンロードしたアーカイブを自動解凍";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "システム情報";
       case MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION:
@@ -4248,15 +4254,15 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MANAGEMENT:
          return "データベースの設定";
       case MENU_ENUM_LABEL_VALUE_SAVE_STATE:
-         return "ステートを保存";
+         return "状態保存";
       case MENU_ENUM_LABEL_VALUE_LOAD_STATE:
-         return "ステートをロード";
+         return "保存状態をロード";
       case MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE:
-         return "ステートのロードを前に戻す";
+         return "保存状態のロードを前に戻す";
       case MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE:
-         return "ステートの保存を前に戻す";
+         return "状態の保存を前に戻す";
       case MSG_UNDID_LOAD_STATE:
-         return "ステートのロードを前に戻した。";
+         return "保存状態のロードを前に戻した。";
       case MENU_ENUM_LABEL_VALUE_RESUME_CONTENT:
          return "再開";
       case MENU_ENUM_LABEL_VALUE_INPUT_DRIVER:
@@ -4596,7 +4602,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
          return "情報はありません。";
       case MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS:
-         return "Input User %u Binds";
+         return "入力ユーザー%uのバインド";
       case MENU_ENUM_LABEL_VALUE_LANG_ENGLISH:
          return "英語";
       case MENU_ENUM_LABEL_VALUE_LANG_JAPANESE:
@@ -4628,9 +4634,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
          return "右のアナログ";
       case MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS:
-         return "Input Hotkey Binds";
+         return "入力のホットキーバインド";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
-         return "フレームのスロットル";
+         return "フレームの減速度";
       case MENU_ENUM_LABEL_VALUE_SEARCH:
          return "検索:";
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
@@ -4640,13 +4646,13 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_START_CORE:
          return "コアをスタート";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
-         return "Poll Type Behavior";
+         return "ポールタイプの行動";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
-         return "Scroll Up";
+         return "上にスクロール";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN:
-         return "Scroll Down";
+         return "下にスクロール";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
-         return "Confirm";
+         return "確認";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
          return "戻る";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
