@@ -99,6 +99,11 @@
                                             cmd->state[1], cmd->state[2]))
 #endif
 
+typedef struct event_cmd_state
+{
+   retro_input_t state[3];
+} event_cmd_state_t;
+
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
 static retro_keyboard_event_t runloop_key_event            = NULL;
@@ -725,16 +730,6 @@ void runloop_set_quit_confirm(bool on)
    runloop_quit_confirm = on;
 }
 
-void runloop_poll(event_cmd_state_t *cmd)
-{
-   static retro_input_t last_input              = {0};
-   cmd->state[1]                                = last_input;
-   cmd->state[0]                                = input_keys_pressed();
-   cmd->state[2].state                          = cmd->state[0].state 
-                                                  & ~cmd->state[1].state;
-   last_input                                   = cmd->state[0];
-}
-
 enum  runloop_state
 {
    RUNLOOP_STATE_NONE = 0,
@@ -1123,14 +1118,20 @@ static enum runloop_state runloop_check_state(
  * button input in order to wake up the loop,
  * -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
-int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
+int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
+   event_cmd_state_t cmd;
+   static retro_input_t last_input              = {0};
    enum runloop_state runloop_status            = RUNLOOP_STATE_NONE;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
+
+   cmd.state[1]                                 = last_input;
+   cmd.state[0]                                 = input_keys_pressed();
+   last_input                                   = cmd.state[0];
 
    if (runloop_frame_time_last_enable)
    {
@@ -1179,7 +1180,9 @@ int runloop_iterate(event_cmd_state_t *cmd, unsigned *sleep_ms)
       runloop_frame_time.callback(delta);
    }
 
-   runloop_status = runloop_check_state(settings, cmd, sleep_ms);
+   cmd.state[2].state = cmd.state[0].state & ~cmd.state[1].state;
+
+   runloop_status = runloop_check_state(settings, &cmd, sleep_ms);
 
    switch (runloop_status)
    {
