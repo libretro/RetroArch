@@ -378,8 +378,10 @@ bool content_undo_load_state(void)
          undo_load_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
-     /* TODO/FIXME - This checking of SRAM overwrite, the backing up of it and
-   its flushing could all be in their own functions... */
+   /* TODO/FIXME - This checking of SRAM overwrite, 
+    * the backing up of it and
+    * its flushing could all be in their 
+    * own functions... */
    if (settings->block_sram_overwrite && task_save_files
          && task_save_files->size)
    {
@@ -452,7 +454,7 @@ bool content_undo_load_state(void)
       if (blocks[i].data)
       {
          retro_ctx_memory_info_t    mem_info;
-         void *ptr = NULL;
+         void *ptr   = NULL;
 
          mem_info.id = blocks[i].type;
 
@@ -527,9 +529,9 @@ static void task_save_handler_finished(retro_task_t *task,
  **/
 static void task_save_handler(retro_task_t *task)
 {
-   save_task_state_t *state = (save_task_state_t*)task->state;
    int written;
    ssize_t remaining;
+   save_task_state_t *state = (save_task_state_t*)task->state;
 
    if (!state->file)
    {
@@ -539,13 +541,13 @@ static void task_save_handler(retro_task_t *task)
          return;
    }
 
-   remaining = MIN(state->size - state->written, SAVE_STATE_CHUNK);
-
-   written = filestream_write(state->file, (uint8_t*)state->data + state->written, remaining);
+   remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
+   written         = filestream_write(state->file,
+         (uint8_t*)state->data + state->written, remaining);
 
    state->written += written;
 
-   task->progress = (state->written / (float)state->size) * 100;
+   task->progress  = (state->written / (float)state->size) * 100;
 
    if (task->cancelled || written != remaining)
    {
@@ -673,7 +675,8 @@ static void task_load_handler_finished(retro_task_t *task,
       save_task_state_t *state)
 {
    load_task_data_t *task_data = NULL;
-   task->finished = true;
+
+   task->finished              = true;
 
    if (state->file)
       filestream_close(state->file);
@@ -697,9 +700,8 @@ static void task_load_handler_finished(retro_task_t *task,
  **/
 static void task_load_handler(retro_task_t *task)
 {
+   ssize_t remaining, bytes_read;
    save_task_state_t *state = (save_task_state_t*)task->state;
-   ssize_t remaining;
-   ssize_t bytes_read;
 
    if (!state->file)
    {
@@ -724,14 +726,13 @@ static void task_load_handler(retro_task_t *task)
          goto error;
    }
 
-   remaining = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
-
-   bytes_read = filestream_read(state->file, (uint8_t*)state->data + state->bytes_read, remaining);
-
+   remaining          = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
+   bytes_read         = filestream_read(state->file,
+         (uint8_t*)state->data + state->bytes_read, remaining);
    state->bytes_read += bytes_read;
 
    if (state->size > 0)
-      task->progress = (state->bytes_read / (float)state->size) * 100;
+      task->progress  = (state->bytes_read / (float)state->size) * 100;
 
    if (task->cancelled || bytes_read != remaining)
    {
@@ -1126,8 +1127,8 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
             /* Before overwritting the savestate file, load it into a buffer
             to allow undo_save_state() to work */
             /* TODO/FIXME - Use msg_hash_to_str here */
-            RARCH_LOG("%s\n",
-               "File already exists. Saving to backup buffer...");
+            RARCH_LOG("%s ...\n",
+                  msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
 
             task_push_load_and_save_state(path, data, info.size, true, autosave);
          }

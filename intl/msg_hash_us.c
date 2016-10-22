@@ -1926,6 +1926,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "succeeded";
       case MSG_FAILED:
          return "failed";
+      case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
+         return "File already exists. Saving to backup buffer";
       case MSG_AUTOLOADING_SAVESTATE_FROM:
          return "Auto-loading savestate from";
       case MSG_REBOOTING:
