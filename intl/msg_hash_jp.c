@@ -3618,9 +3618,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
          return "Small Keyboard Enable";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
-         return "Save Core Overrides";
+         return "コアの優先を保存";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
-         return "Save Game Overrides";
+         return "ゲームの優先を保存";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
          return "現在の設定を保存";
       case MENU_ENUM_LABEL_VALUE_STATE_SLOT:
@@ -4140,15 +4140,15 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
          return "オーディオの最高タイミングスキュー";
       case MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES:
-         return "Cheat Passes";
+         return "チートのパス";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE:
-         return "Save Core Remap File";
+         return "コアリマップファイルを保存";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME:
-         return "Save Game Remap File";
+         return "ゲームリマップファイルを保存";
       case MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES:
-         return "Apply Cheat Changes";
+         return "チートの変更点を適用";
       case MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES:
-         return "Apply Shader Changes";
+         return "シェーダーの変更点を適用";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "巻き戻しを有効";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
