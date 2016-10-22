@@ -614,13 +614,10 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
  *
  * Returns: Input sample containg a mask of all pressed keys.
  */
-retro_input_t input_keys_pressed(void)
+uint64_t input_keys_pressed(void)
 {
    unsigned i;
-   retro_input_t             ret;
-
-   ret.type  = 0;
-   ret.state = 0;
+   uint64_t             ret = 0;
 
    if (!current_input || !current_input_data)
       return ret;
@@ -664,7 +661,7 @@ retro_input_t input_keys_pressed(void)
 #endif
 
       if (state)
-         ret.state |= (UINT64_C(1) << i);
+         ret |= (UINT64_C(1) << i);
    }
 
    return ret;

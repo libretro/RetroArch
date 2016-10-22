@@ -17,6 +17,8 @@
 #ifndef _MENU_EVENT_H
 #define _MENU_EVENT_H
 
+#include <stdint.h>
+
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -28,7 +30,7 @@ RETRO_BEGIN_DECLS
  * entire button state either but do a separate event per button
  * state.
  */
-unsigned menu_event(retro_input_t input, retro_input_t trigger_state);
+unsigned menu_event(uint64_t input, uint64_t trigger_state);
 
 RETRO_END_DECLS
 

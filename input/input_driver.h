@@ -220,7 +220,7 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-retro_input_t input_keys_pressed(void);
+uint64_t input_keys_pressed(void);
 
 void *input_driver_get_data(void);
 

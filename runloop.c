@@ -88,21 +88,15 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2].state, id)
+#define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
 
-#define runloop_cmd_press(cmd, id)     BIT64_GET(cmd->state[0].state, id)
-#define runloop_cmd_pressed(cmd, id)   BIT64_GET(cmd->state[1].state, id)
+#define runloop_cmd_press(current_input, id)     BIT64_GET(current_input, id)
+#define runloop_cmd_pressed(old_input, id)   BIT64_GET(old_input, id)
 #ifdef HAVE_MENU
-#define runloop_cmd_menu_press(cmd)   (BIT64_GET(cmd->state[2].state, RARCH_MENU_TOGGLE) || \
+#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || \
                                       runloop_cmd_get_state_menu_toggle_button_combo( \
-                                            settings, cmd->state[0], \
-                                            cmd->state[1], cmd->state[2]))
+                                            settings, current_input, old_input, trigger_input))
 #endif
-
-typedef struct event_cmd_state
-{
-   retro_input_t state[3];
-} event_cmd_state_t;
 
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
@@ -188,43 +182,43 @@ char* runloop_msg_queue_pull(void)
 #ifdef HAVE_MENU
 static bool runloop_cmd_get_state_menu_toggle_button_combo(
       settings_t *settings,
-      retro_input_t input, retro_input_t old_input,
-      retro_input_t trigger_input)
+      uint64_t current_input, uint64_t old_input,
+      uint64_t trigger_input)
 {
    switch (settings->input.menu_toggle_gamepad_combo)
    {
       case INPUT_TOGGLE_NONE:
          return false;
       case INPUT_TOGGLE_DOWN_Y_L_R:
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_DOWN))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
             return false;
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_Y))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_Y))
             return false;
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_L3_R3:
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_L3))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_L3))
             return false;
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_R3))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_R3))
             return false;
          break;
       case INPUT_TOGGLE_L1_R1_START_SELECT:
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_L))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_L))
             return false;
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_R))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_R))
             return false;
          break;
       case INPUT_TOGGLE_START_SELECT:
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_START))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_START))
             return false;
-         if (!BIT64_GET(input.state, RETRO_DEVICE_ID_JOYPAD_SELECT))
+         if (!BIT64_GET(current_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
             return false;
          break;
    }
@@ -813,7 +807,9 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 
 static enum runloop_state runloop_check_state(
       settings_t *settings,
-      event_cmd_state_t *cmd, unsigned *sleep_ms)
+      uint64_t current_input,
+      uint64_t old_input,
+      unsigned *sleep_ms)
 {
    static bool old_focus            = true;
 #ifdef HAVE_OVERLAY
@@ -822,27 +818,28 @@ static enum runloop_state runloop_check_state(
 #endif
    bool tmp                         = false;
    bool focused                     = true;
-   bool pause_pressed               = runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE);
+   uint64_t trigger_input           = current_input & ~old_input;
+   bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
 
    if (input_driver_is_flushing_input())
    {
       input_driver_unset_flushing_input();
-      if (cmd->state[0].state)
+      if (current_input)
       {
-         cmd->state[0].state = 0;
+         current_input = 0;
 
          /* If core was paused before entering menu, evoke
           * pause toggle to wake it up. */
          if (runloop_paused)
-            BIT64_SET(cmd->state[0].state, RARCH_PAUSE_TOGGLE);
+            BIT64_SET(current_input, RARCH_PAUSE_TOGGLE);
          input_driver_set_flushing_input();
       }
    }
 
-   if (runloop_cmd_triggered(cmd, RARCH_OVERLAY_NEXT))
+   if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
 
-   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
+   if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
       bool fullscreen_toggled = !runloop_paused;
 #ifdef HAVE_MENU
@@ -854,11 +851,11 @@ static enum runloop_state runloop_check_state(
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
    }
 
-   if (runloop_cmd_triggered(cmd, RARCH_GRAB_MOUSE_TOGGLE))
+   if (runloop_cmd_triggered(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
 
 #ifdef HAVE_MENU
-   if (runloop_cmd_menu_press(cmd) ||
+   if (runloop_cmd_menu_press(current_input, old_input, trigger_input) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
@@ -899,14 +896,14 @@ static enum runloop_state runloop_check_state(
 #endif
 
    if (runloop_iterate_time_to_exit(
-            runloop_cmd_press(cmd, RARCH_QUIT_KEY)) != 1)
+            runloop_cmd_press(current_input, RARCH_QUIT_KEY)) != 1)
       return RUNLOOP_STATE_QUIT;
 
 #ifdef HAVE_MENU
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       menu_ctx_iterate_t iter;
-      enum menu_action action = (enum menu_action)menu_event(cmd->state[0], cmd->state[2]);
+      enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
       bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
 
       focused                 = focused && !ui_companion_is_on_foreground();
@@ -935,13 +932,13 @@ static enum runloop_state runloop_check_state(
    if (settings->pause_nonactive)
       focused                = video_driver_is_focused();
 
-   if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
+   if (runloop_cmd_triggered(trigger_input, RARCH_SCREENSHOT))
       command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
 
-   if (runloop_cmd_triggered(cmd, RARCH_MUTE))
+   if (runloop_cmd_triggered(trigger_input, RARCH_MUTE))
       command_event(CMD_EVENT_AUDIO_MUTE_TOGGLE, NULL);
 
-   if (runloop_cmd_triggered(cmd, RARCH_OSK))
+   if (runloop_cmd_triggered(trigger_input, RARCH_OSK))
    {
       if (input_keyboard_ctl(
                RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
@@ -952,15 +949,15 @@ static enum runloop_state runloop_check_state(
                RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
    }
 
-   if (runloop_cmd_press(cmd, RARCH_VOLUME_UP))
+   if (runloop_cmd_press(current_input, RARCH_VOLUME_UP))
       command_event(CMD_EVENT_VOLUME_UP, NULL);
-   else if (runloop_cmd_press(cmd, RARCH_VOLUME_DOWN))
+   else if (runloop_cmd_press(current_input, RARCH_VOLUME_DOWN))
       command_event(CMD_EVENT_VOLUME_DOWN, NULL);
 
 #ifdef HAVE_NETWORKING
-   tmp = runloop_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
+   tmp = runloop_cmd_triggered(trigger_input, RARCH_NETPLAY_FLIP);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
-   tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
+   tmp = runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
 #endif
 
@@ -968,7 +965,7 @@ static enum runloop_state runloop_check_state(
     * unpause the libretro core. */
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !runloop_paused && runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE);
+   pause_pressed |= !runloop_paused && runloop_cmd_triggered(trigger_input, RARCH_FRAMEADVANCE);
 
    if (focused && pause_pressed)
       command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
@@ -986,10 +983,10 @@ static enum runloop_state runloop_check_state(
    {
       /* check pause state */
 
-      bool check_is_oneshot = runloop_cmd_triggered(cmd,
+      bool check_is_oneshot = runloop_cmd_triggered(trigger_input,
             RARCH_FRAMEADVANCE)
-         || runloop_cmd_press(cmd, RARCH_REWIND);
-      if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
+         || runloop_cmd_press(current_input, RARCH_REWIND);
+      if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
       {
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
          video_driver_cached_frame_render();
@@ -1003,7 +1000,7 @@ static enum runloop_state runloop_check_state(
     * that the button must go from pressed to unpressed back to pressed
     * to be able to toggle between then.
     */
-   if (runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY))
+   if (runloop_cmd_triggered(trigger_input, RARCH_FAST_FORWARD_KEY))
    {
       if (input_driver_is_nonblock_state())
          input_driver_unset_nonblock_state();
@@ -1011,10 +1008,10 @@ static enum runloop_state runloop_check_state(
          input_driver_set_nonblock_state();
       driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
    }
-   else if ((runloop_cmd_pressed(cmd, RARCH_FAST_FORWARD_HOLD_KEY) 
-         != runloop_cmd_press(cmd, RARCH_FAST_FORWARD_HOLD_KEY)))
+   else if ((runloop_cmd_pressed(old_input, RARCH_FAST_FORWARD_HOLD_KEY) 
+         != runloop_cmd_press(current_input, RARCH_FAST_FORWARD_HOLD_KEY)))
    {
-      if (runloop_cmd_press(cmd, RARCH_FAST_FORWARD_HOLD_KEY))
+      if (runloop_cmd_press(current_input, RARCH_FAST_FORWARD_HOLD_KEY))
          input_driver_set_nonblock_state();
       else
          input_driver_unset_nonblock_state();
@@ -1023,7 +1020,7 @@ static enum runloop_state runloop_check_state(
 
    /* Checks if the state increase/decrease keys have been pressed 
     * for this frame. */
-   if (runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS))
+   if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_PLUS))
    {
       char msg[128];
 
@@ -1039,7 +1036,7 @@ static enum runloop_state runloop_check_state(
 
       RARCH_LOG("%s\n", msg);
    }
-   else if (runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS))
+   else if (runloop_cmd_triggered(trigger_input, RARCH_STATE_SLOT_MINUS))
    {
       char msg[128];
 
@@ -1057,17 +1054,17 @@ static enum runloop_state runloop_check_state(
       RARCH_LOG("%s\n", msg);
    }
 
-   if (runloop_cmd_triggered(cmd, RARCH_SAVE_STATE_KEY))
+   if (runloop_cmd_triggered(trigger_input, RARCH_SAVE_STATE_KEY))
       command_event(CMD_EVENT_SAVE_STATE, NULL);
-   else if (runloop_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
+   else if (runloop_cmd_triggered(trigger_input, RARCH_LOAD_STATE_KEY))
       command_event(CMD_EVENT_LOAD_STATE, NULL);
 
 #ifdef HAVE_CHEEVOS
    if (!settings->cheevos.hardcore_mode_enable)
 #endif
-      state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
+      state_manager_check_rewind(runloop_cmd_press(current_input, RARCH_REWIND));
 
-   runloop_slowmotion = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
+   runloop_slowmotion = runloop_cmd_press(current_input, RARCH_SLOWMOTION);
 
    if (runloop_slowmotion)
    {
@@ -1081,29 +1078,29 @@ static enum runloop_state runloop_check_state(
          runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
    }
 
-   if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
+   if (runloop_cmd_triggered(trigger_input, RARCH_MOVIE_RECORD_TOGGLE))
       bsv_movie_check();
 
-   if (runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT) ||
-      runloop_cmd_triggered(cmd, RARCH_SHADER_PREV))
+   if (runloop_cmd_triggered(trigger_input, RARCH_SHADER_NEXT) ||
+      runloop_cmd_triggered(trigger_input, RARCH_SHADER_PREV))
       dir_check_shader(
-            runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
-            runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
+            runloop_cmd_triggered(trigger_input, RARCH_SHADER_NEXT),
+            runloop_cmd_triggered(trigger_input, RARCH_SHADER_PREV));
 
-   if (runloop_cmd_triggered(cmd, RARCH_DISK_EJECT_TOGGLE))
+   if (runloop_cmd_triggered(trigger_input, RARCH_DISK_EJECT_TOGGLE))
       command_event(CMD_EVENT_DISK_EJECT_TOGGLE, NULL);
-   else if (runloop_cmd_triggered(cmd, RARCH_DISK_NEXT))
+   else if (runloop_cmd_triggered(trigger_input, RARCH_DISK_NEXT))
       command_event(CMD_EVENT_DISK_NEXT, NULL);
-   else if (runloop_cmd_triggered(cmd, RARCH_DISK_PREV))
+   else if (runloop_cmd_triggered(trigger_input, RARCH_DISK_PREV))
       command_event(CMD_EVENT_DISK_PREV, NULL);
 
-   if (runloop_cmd_triggered(cmd, RARCH_RESET))
+   if (runloop_cmd_triggered(trigger_input, RARCH_RESET))
       command_event(CMD_EVENT_RESET, NULL);
 
    cheat_manager_state_checks(
-         runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_PLUS),
-         runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_MINUS),
-         runloop_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
+         runloop_cmd_triggered(trigger_input, RARCH_CHEAT_INDEX_PLUS),
+         runloop_cmd_triggered(trigger_input, RARCH_CHEAT_INDEX_MINUS),
+         runloop_cmd_triggered(trigger_input, RARCH_CHEAT_TOGGLE));
 
    return RUNLOOP_STATE_ITERATE;
 }
@@ -1122,16 +1119,15 @@ int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
-   event_cmd_state_t cmd;
-   static retro_input_t last_input              = {0};
+   static uint64_t last_input                   = {0};
    enum runloop_state runloop_status            = RUNLOOP_STATE_NONE;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
+   uint64_t current_input                       = input_keys_pressed();
+   uint64_t old_input                           = last_input;
 
-   cmd.state[1]                                 = last_input;
-   cmd.state[0]                                 = input_keys_pressed();
-   last_input                                   = cmd.state[0];
+   last_input                                   = current_input;
 
    if (runloop_frame_time_last_enable)
    {
@@ -1180,9 +1176,8 @@ int runloop_iterate(unsigned *sleep_ms)
       runloop_frame_time.callback(delta);
    }
 
-   cmd.state[2].state = cmd.state[0].state & ~cmd.state[1].state;
-
-   runloop_status = runloop_check_state(settings, &cmd, sleep_ms);
+   runloop_status = runloop_check_state(settings, current_input,
+         old_input, sleep_ms);
 
    switch (runloop_status)
    {
