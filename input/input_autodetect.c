@@ -309,9 +309,9 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
    if (input_autoconfigure_joypad_from_conf_internal(params))
       return true;
 
-   RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)\n",
+   RARCH_LOG("Autodetect: no profiles found for %s (%d/%d).\n",
          params->name, params->vid, params->pid);
-   snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured",
+   snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured.",
          params->name, (long)params->vid, (long)params->pid);
    runloop_msg_queue_push(msg, 2, 60, false);
 
@@ -338,7 +338,7 @@ void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 
    msg[0] = '\0';
 
-   snprintf(msg, sizeof(msg), "Device #%u (%s) disconnected.", i, ident);
+   snprintf(msg, sizeof(msg), "Device disconnected: #%u (%s).", i, ident);
    runloop_msg_queue_push(msg, 2, 60, false);
    RARCH_LOG("Autodetect: %s\n", msg);
 }
