@@ -617,7 +617,6 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 retro_input_t input_keys_pressed(void)
 {
    unsigned i;
-   bool states[RARCH_BIND_LIST_END];
    retro_input_t             ret;
 
    ret.type  = 0;
@@ -633,50 +632,38 @@ retro_input_t input_keys_pressed(void)
    else
       input_driver_block_libretro_input = false;
 
-   if (current_input->key_pressed)
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      for (i = 0; i < RARCH_BIND_LIST_END; i++)
-      {
-         if ((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-                  || !input_driver_block_hotkey)
-            states[i] = current_input->key_pressed(current_input_data, i);
-      }
-   }
+      bool state = false;
+      if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+            || !input_driver_block_hotkey) && current_input->key_pressed)
+         state = current_input->key_pressed(current_input_data, i);
+
+      if (i >= RARCH_FIRST_META_KEY)
+         state |= current_input->meta_key_pressed(current_input_data, i);
 
 #ifdef HAVE_OVERLAY
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-      states[i] |= input_overlay_key_pressed(i);
+      state |= input_overlay_key_pressed(i);
 #endif
 
 #ifdef HAVE_COMMAND
-   if (input_driver_command)
-   {
-      for (i = 0; i < RARCH_BIND_LIST_END; i++)
+      if (input_driver_command)
       {
          command_handle_t handle;
 
          handle.handle = input_driver_command;
          handle.id     = i;
 
-         states[i] |= command_get(&handle);
+         state |= command_get(&handle);
       }
-   }
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
-   if (input_driver_remote)
-   {
-      for (i = 0; i < RARCH_BIND_LIST_END; i++)
-         states[i] |= input_remote_key_pressed(i, 0);
-   }
+      if (input_driver_remote)
+         state |= input_remote_key_pressed(i, 0);
 #endif
 
-   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
-      states[i] |= current_input->meta_key_pressed(current_input_data, i);
-
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-   {
-      if (states[i])
+      if (state)
          ret.state |= (UINT64_C(1) << i);
    }
 
