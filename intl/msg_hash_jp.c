@@ -1914,6 +1914,10 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
    {
       case MSG_CONNECTION_SLOT:
          return "Connection slot";
+      case MSG_WAITING_FOR_CLIENT:
+         return "Waiting for client ...";
+      case MSG_CONNECTING_TO_NETPLAY_HOST:
+         return "Connecting to netplay host";
       case MSG_GOT_CONNECTION_FROM:
          return "Got connection from";
       case MSG_SHUTTING_DOWN:
@@ -1924,6 +1928,10 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "succeeded";
       case MSG_FAILED:
          return "failed";
+      case MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED:
+         return "Unknown netplay command received";
+      case MSG_NETPLAY_USERS_HAS_FLIPPED:
+         return "Netplay users has flipped";
       case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
          return "File already exists. Saving to backup buffer";
       case MSG_AUTOLOADING_SAVESTATE_FROM:
@@ -3730,7 +3738,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "履歴";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
-         return "Import content";
+         return "コンテンツをインポート";
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "プレイリスト";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
