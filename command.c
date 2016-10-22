@@ -911,7 +911,7 @@ static void command_event_disk_control_set_index(unsigned idx)
    if (control->set_image_index(idx))
    {
       if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "Setting disk %u of %u in tray.",
+         snprintf(msg, sizeof(msg), "Setting disk %u/%u in tray.",
                idx + 1, num_disks);
       else
          strlcpy(msg,
@@ -921,7 +921,7 @@ static void command_event_disk_control_set_index(unsigned idx)
    else
    {
       if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "Failed to set disk %u of %u.",
+         snprintf(msg, sizeof(msg), "Failed to set disk %u/%u.",
                idx + 1, num_disks);
       else
          strlcpy(msg,
