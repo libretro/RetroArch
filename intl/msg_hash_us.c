@@ -1914,6 +1914,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_CONNECTION_SLOT:
+         return "Connection slot";
       case MSG_GOT_CONNECTION_FROM:
          return "Got connection from";
       case MSG_SHUTTING_DOWN:

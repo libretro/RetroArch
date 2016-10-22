@@ -1017,7 +1017,8 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
          nick);
    runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
-   RARCH_LOG("Connection slot %u\n", slot);
+   RARCH_LOG("%s %u\n",
+         msg_hash_to_str(MSG_CONNECTION_SLOT), slot);
 }
 
 #endif
