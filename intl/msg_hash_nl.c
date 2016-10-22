@@ -125,10 +125,18 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Horizontal Menu";
       case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
          return "Instellingen";
+      case MENU_ENUM_LABEL_VALUE_MUSIC_TAB:
+         return "Muziek";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_TAB:
+         return "Video";
+      case MENU_ENUM_LABEL_VALUE_IMAGES_TAB:
+         return "Afbeeldingen";
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "Afspeellijsten";
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "Geschiedenis";
+      case MENU_ENUM_LABEL_VALUE_ADD_TAB:
+         return "Importeer inhoud";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Geen instellingen gevonden.";
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
