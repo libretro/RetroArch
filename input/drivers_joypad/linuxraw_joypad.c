@@ -102,9 +102,11 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
 
          if (g_hotplug)
          {
-            char msg[512] = {0};
+            char msg[512];
 
-            snprintf(msg, sizeof(msg), "Device #%u (%s) connected.",
+            msg[0] = '\0';
+
+            snprintf(msg, sizeof(msg), "Device connected. #%u (%s).",
                   (unsigned)(pad - linuxraw_pads), pad->ident);
             runloop_msg_queue_push(msg, 0, 60, false);
          }

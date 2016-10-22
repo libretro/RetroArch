@@ -338,7 +338,7 @@ void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 
    msg[0] = '\0';
 
-   snprintf(msg, sizeof(msg), "Device disconnected: #%u (%s).", i, ident);
+   snprintf(msg, sizeof(msg), "Device disconnected from port #%u (%s).", i, ident);
    runloop_msg_queue_push(msg, 2, 60, false);
    RARCH_LOG("Autodetect: %s\n", msg);
 }
