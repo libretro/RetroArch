@@ -1119,7 +1119,7 @@ int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
-   static uint64_t last_input                   = {0};
+   static uint64_t last_input                   = 0;
    enum runloop_state runloop_status            = RUNLOOP_STATE_NONE;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
