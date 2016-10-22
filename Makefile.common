@@ -510,12 +510,6 @@ ifeq ($(HAVE_LAKKA), 1)
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
-   ifeq ($(PSEUDOLOC), 1)
-      PSEUDO_NS := pseudo
-   else
-      PSEUDO_NS :=
-   endif
-
    OBJ += menu/menu_driver.o \
           menu/menu_content.o \
           menu/menu_input.o \
