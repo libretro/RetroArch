@@ -394,7 +394,7 @@ void input_poll(void)
    const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings           = config_get_ptr();
 
-   input_driver_poll();
+   current_input->poll(current_input_data);
 
    input_driver_turbo_btns.count++;
 
