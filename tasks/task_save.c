@@ -741,8 +741,10 @@ static void task_load_handler(retro_task_t *task)
 
          msg[0] = '\0';
 
-         snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" failed.",
-               state->path);
+         snprintf(msg, sizeof(msg), "%s \"%s\" %s.",
+               msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
+               state->path,
+               msg_hash_to_str(MSG_FAILED));
          task->error = strdup(msg);
       }
       else
@@ -770,8 +772,10 @@ static void task_load_handler(retro_task_t *task)
 
       if (state->autoload)
       {
-         snprintf(msg, sizeof(msg), "Auto-loading savestate from \"%s\" succeeded.",
-               state->path);
+         snprintf(msg, sizeof(msg), "%s \"%s\" %s.",
+               msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
+               state->path,
+               msg_hash_to_str(MSG_SUCCEEDED));
          if (!task->mute)
             runloop_msg_queue_push(msg, 1, 180, true);
       }
@@ -945,8 +949,11 @@ static void content_load_state_cb(void *task_data,
 
 error:
    if (load_data->autoload)
-      snprintf(err_buf, sizeof(err_buf), "Auto-loading savestate from \"%s\" failed.",
-            load_data->path);
+      snprintf(err_buf, sizeof(err_buf), "%s \"%s\" %s.",
+            msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FROM),
+            load_data->path,
+            msg_hash_to_str(MSG_FAILED)
+            );
    else
       snprintf(err_buf, sizeof(err_buf), "%s \"%s\".\n",
                           msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
@@ -980,16 +987,16 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
       goto error;
 
    strlcpy(state->path, path, sizeof(state->path));
-   state->data = data;
-   state->size = size;
+   state->data     = data;
+   state->size     = size;
    state->autosave = autosave;
-   state->mute = autosave; /* don't show OSD messages if we are auto-saving */
+   state->mute     = autosave; /* don't show OSD messages if we are auto-saving */
 
-   task->type = TASK_TYPE_BLOCKING;
-   task->state = state;
-   task->handler = task_save_handler;
-   task->title = strdup(msg_hash_to_str(MSG_SAVING_STATE));
-   task->mute = state->mute;
+   task->type      = TASK_TYPE_BLOCKING;
+   task->state     = state;
+   task->handler   = task_save_handler;
+   task->title     = strdup(msg_hash_to_str(MSG_SAVING_STATE));
+   task->mute      = state->mute;
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
@@ -1036,7 +1043,8 @@ static void content_load_and_save_state_cb(void *task_data,
  * Create a new task to load current state first into a backup buffer (for undo)
  * and then save the content state.
  **/
-static void task_push_load_and_save_state(const char *path, void *data, size_t size, bool load_to_backup_buffer, bool autosave)
+static void task_push_load_and_save_state(const char *path, void *data,
+      size_t size, bool load_to_backup_buffer, bool autosave)
 {
    retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
@@ -1048,8 +1056,8 @@ static void task_push_load_and_save_state(const char *path, void *data, size_t s
    state->load_to_backup_buffer = load_to_backup_buffer;
    state->undo_size = size;
    state->undo_data = data;
-   state->autosave = autosave;
-   state->mute = autosave; /* don't show OSD messages if we are auto-saving */
+   state->autosave  = autosave;
+   state->mute      = autosave; /* don't show OSD messages if we are auto-saving */
 
    task->state      = state;
    task->type       = TASK_TYPE_BLOCKING;
@@ -1172,7 +1180,8 @@ bool content_save_state(const char *path, bool save_to_disk, bool autosave)
  *
  *
  **/
-bool content_load_state(const char *path, bool load_to_backup_buffer, bool autoload)
+bool content_load_state(const char *path,
+      bool load_to_backup_buffer, bool autoload)
 {
    retro_task_t       *task = (retro_task_t*)calloc(1, sizeof(*task));
    save_task_state_t *state = (save_task_state_t*)calloc(1, sizeof(*state));
@@ -1182,13 +1191,13 @@ bool content_load_state(const char *path, bool load_to_backup_buffer, bool autol
 
    strlcpy(state->path, path, sizeof(state->path));
    state->load_to_backup_buffer = load_to_backup_buffer;
-   state->autoload = autoload;
+   state->autoload              = autoload;
 
-   task->type = TASK_TYPE_BLOCKING;
-   task->state = state;
-   task->handler = task_load_handler;
+   task->type     = TASK_TYPE_BLOCKING;
+   task->state    = state;
+   task->handler  = task_load_handler;
    task->callback = content_load_state_cb;
-   task->title = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+   task->title    = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 

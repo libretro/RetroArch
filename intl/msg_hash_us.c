@@ -1922,6 +1922,12 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "shutting_down";
       case MSG_AUTODETECT:
          return "Autodetect";
+      case MSG_SUCCEEDED:
+         return "succeeded";
+      case MSG_FAILED:
+         return "failed";
+      case MSG_AUTOLOADING_SAVESTATE_FROM:
+         return "Auto-loading savestate from";
       case MSG_REBOOTING:
          return "rebooting";
       case MSG_CONNECTING_TO_PORT:
@@ -3171,8 +3177,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Sorry, unimplemented: cores that don't demand content cannot participate in netplay.";
       case MSG_FOUND_AUTO_SAVESTATE_IN:
          return "Found auto savestate in";
-      case MSG_AUTOLOADING_SAVESTATE_FROM:
-         return "Auto-loading savestate from";
       case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT:
          return "Network Remote Base Port";
       case MSG_OVERRIDES_SAVED_SUCCESSFULLY:
