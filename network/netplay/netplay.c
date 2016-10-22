@@ -497,8 +497,9 @@ static bool netplay_get_cmd(netplay_t *netplay)
          if (flip_frame < netplay->self_frame_count)
             netplay->force_rewind = true;
 
-         RARCH_LOG("Netplay users are flipped.\n");
-         runloop_msg_queue_push("Netplay users are flipped.", 1, 180, false);
+         RARCH_LOG("%s.\n", msg_hash_to_str(MSG_NETPLAY_USERS_HAS_FLIPPED));
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_NETPLAY_USERS_HAS_FLIPPED), 1, 180, false);
 
          return true;
 
@@ -646,15 +647,15 @@ static bool netplay_get_cmd(netplay_t *netplay)
                 * load into. If we refer directly to read_ptr, then we'll end
                 * up never reading the input for read_frame_count itself, which
                 * will make the other side unhappy. */
-               netplay->self_ptr = PREV_PTR(netplay->read_ptr);
+               netplay->self_ptr         = PREV_PTR(netplay->read_ptr);
                netplay->self_frame_count = frame - 1;
             }
 
             /* And force rewind to it */
-            netplay->force_rewind = true;
+            netplay->force_rewind                  = true;
             netplay->savestate_request_outstanding = false;
-            netplay->other_ptr = netplay->read_ptr;
-            netplay->other_frame_count = frame;
+            netplay->other_ptr                     = netplay->read_ptr;
+            netplay->other_frame_count             = frame;
             return true;
          }
 
@@ -670,7 +671,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
          break;
    }
 
-   RARCH_ERR("Unknown netplay command received.\n");
+   RARCH_ERR("%s.\n", msg_hash_to_str(MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED));
    return netplay_cmd_nak(netplay);
 }
 
@@ -1001,7 +1002,8 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
       runloop_msg_queue_push(msg, 1, 180, false);
       RARCH_LOG("%s\n", msg);
    }
-   RARCH_LOG("Connection slot %u\n", slot);
+   RARCH_LOG("%s %u\n", msg_hash_to_str(MSG_CONNECTION_SLOT), 
+         slot);
 }
 
 #else
@@ -1142,7 +1144,8 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * Returns: new netplay handle.
  **/
 netplay_t *netplay_new(const char *server, uint16_t port,
-      unsigned frames, unsigned check_frames, const struct retro_callbacks *cb,
+      unsigned frames, unsigned check_frames,
+      const struct retro_callbacks *cb,
       bool spectate, const char *nick, uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
@@ -1155,10 +1158,11 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
    netplay->is_server         = server == NULL;
+   netplay->stall_frames      = frames;
+   netplay->check_frames      = check_frames;
+   netplay->quirks            = quirks;
+
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
-   netplay->stall_frames = frames;
-   netplay->check_frames = check_frames;
-   netplay->quirks = quirks;
 
    if (!netplay_init_buffers(netplay, frames))
    {
@@ -1250,7 +1254,8 @@ error:
  **/
 static void netplay_flip_users(netplay_t *netplay)
 {
-   /* Must be in the future because we may have already sent this frame's data */
+   /* Must be in the future because we may have 
+    * already sent this frame's data */
    uint32_t     flip_frame = netplay->self_frame_count + 1;
    uint32_t flip_frame_net = htonl(flip_frame);
    bool            command = netplay_command(
@@ -1336,7 +1341,8 @@ bool netplay_pre_frame(netplay_t *netplay)
    if (!netplay->net_cbs->pre_frame(netplay))
       return false;
 
-   return (!netplay->has_connection || (!netplay->stall && !netplay->remote_paused));
+   return (!netplay->has_connection || 
+          (!netplay->stall && !netplay->remote_paused));
 }
 
 /**
@@ -1375,12 +1381,15 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
 /**
  * netplay_load_savestate
  * @netplay              : pointer to netplay object
- * @serial_info          : the savestate being loaded, NULL means "load it yourself"
- * @save                 : whether to save the provided serial_info into the frame buffer
+ * @serial_info          : the savestate being loaded, NULL means 
+ *                         "load it yourself"
+ * @save                 : Whether to save the provided serial_info 
+ *                         into the frame buffer
  *
  * Inform Netplay of a savestate load and send it to the other side
  **/
-void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info, bool save)
+void netplay_load_savestate(netplay_t *netplay,
+      retro_ctx_serialize_info_t *serial_info, bool save)
 {
    uint32_t header[3];
    retro_ctx_serialize_info_t tmp_serial_info;
@@ -1414,7 +1423,8 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
       }
    }
 
-   /* We need to ignore any intervening data from the other side, and never rewind past this */
+   /* We need to ignore any intervening data from the other side, 
+    * and never rewind past this */
    if (netplay->read_frame_count < netplay->self_frame_count)
    {
       netplay->read_ptr = netplay->self_ptr;
@@ -1427,7 +1437,9 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
    }
 
    /* If we can't send it to the peer, loading a state was a bad idea */
-   if (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION))
+   if (netplay->quirks & (
+              NETPLAY_QUIRK_NO_SAVESTATES
+            | NETPLAY_QUIRK_NO_TRANSMISSION))
       return;
 
    /* And send it to the peer (FIXME: this is an ugly way to do this) */
@@ -1441,7 +1453,8 @@ void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *seri
       return;
    }
 
-   if (!socket_send_all_blocking(netplay->fd, serial_info->data_const, serial_info->size, false))
+   if (!socket_send_all_blocking(netplay->fd,
+            serial_info->data_const, serial_info->size, false))
    {
       hangup(netplay);
       return;
@@ -1520,13 +1533,13 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
 
    if (netplay_is_client)
    {
-      RARCH_LOG("Connecting to netplay host...\n");
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_CONNECTING_TO_NETPLAY_HOST));
    }
    else
    {
-      RARCH_LOG("Waiting for client...\n");
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_WAITING_FOR_CLIENT));
       runloop_msg_queue_push(
-         "Waiting for client...",
+         msg_hash_to_str(MSG_WAITING_FOR_CLIENT),
          0, 180, false);
    }
 
