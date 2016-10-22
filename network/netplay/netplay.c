@@ -987,14 +987,16 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
    if (str)
    {
-      snprintf(msg, sizeof(msg), "Got connection from: \"%s (%s)\"",
+      snprintf(msg, sizeof(msg), "%s: \"%s (%s)\"",
+            msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
             nick, str);
       runloop_msg_queue_push(msg, 1, 180, false);
       RARCH_LOG("%s\n", msg);
    }
    else
    {
-      snprintf(msg, sizeof(msg), "Got connection from: \"%s\"",
+      snprintf(msg, sizeof(msg), "%s: \"%s\"",
+            msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
             nick);
       runloop_msg_queue_push(msg, 1, 180, false);
       RARCH_LOG("%s\n", msg);
@@ -1010,7 +1012,8 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
    msg[0] = '\0';
 
-   snprintf(msg, sizeof(msg), "Got connection from: \"%s\"",
+   snprintf(msg, sizeof(msg), "%s: \"%s\"",
+         msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
          nick);
    runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
