@@ -96,7 +96,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
          return "Update Core Info Bestanden";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
-         return "Download Content";
+         return "Download Inhoud";
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
          return "<Scan Deze Map>";
       case MENU_ENUM_LABEL_VALUE_SCAN_FILE:
@@ -116,7 +116,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5:
          return "MD5";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:
-         return "Laad Content";
+         return "Laad Inhoud";
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Keuze";
       case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
