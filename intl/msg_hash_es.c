@@ -540,15 +540,6 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "la carpeta Shader."
                );
          break;
-      case MENU_ENUM_LABEL_INPUT_BIND_DEVICE_ID:
-         snprintf(s, len,
-               "Dispositivo de entrada. \n"
-               " \n"
-               "Selecciona el mando a utilizar por \n"
-               "el usuario N. \n"
-               "El nombre del mando está disponible."
-               );
-         break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
                "Muestra u oculta el menú.");
@@ -2058,8 +2049,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Filtro de vídeo";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Plugin DSP de sonido";
-      case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "Iniciando descarga: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "segundos";
       case MENU_ENUM_LABEL_VALUE_OFF: /* Not changed. Would be "SÍ" */
@@ -2074,8 +2063,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Actualizar trucos";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
          return "Actualizar perfiles de autoconfiguración";
-      case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "Actualizar perfiles de autoconfiguración (HID)";
       case MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES:
          return "Actualizar bases de datos";
       case MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS:

@@ -1065,14 +1065,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "säved to Shâder Ðirëçtorý."
                );
          break;
-      case MENU_ENUM_LABEL_INPUT_BIND_DEVICE_ID:
-         snprintf(s, len,
-               "Iñpüt Ðevïce. \n"
-               " \n"
-               "Piçks whích gåmepad to use for user Ñ. \n"
-               "The nâmë of the pàd is available."
-               );
-         break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
                "Toggles menu.");
@@ -1955,8 +1947,6 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "çheevos_locked_eñtry";
       case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          return "çheévos_unloçkêd_eñtry";
-      case MENU_ENUM_LABEL_FILEBROWSER_ENTRY:
-         return "filebrôwser_eñtry";
       case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
          return "çore_info_entrý";
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
@@ -2709,8 +2699,6 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "rdb_êntrÿ_sërial";
       case MENU_ENUM_LABEL_CONFIGURATIONS:
          return "çõñfigùratioñs";
-      case MENU_ENUM_LABEL_LOAD_OPEN_ZIP:
-         return "lóad_øpén_zip";
       case MENU_ENUM_LABEL_REWIND_GRANULARITY:
          return "rewind_grânuláríty";
       case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
@@ -2885,8 +2873,6 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "updåte_cheats";
       case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
          return "update_äutoconfig_pröfiles";
-      case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "update_äutocönfig_prõfílês_hid";
       case MENU_ENUM_LABEL_UPDATE_DATABASES:
          return "ûpdãte_dâtabàsès";
       case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
@@ -3050,8 +3036,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Failëd tö get nicknàme from clieñt.";
       case MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT:
          return "Fâiled to sênd nicknämë tø çlieñt.";
-      case MSG_FAILED_TO_GENERATE_BSV_HEADER:
-         return "Failed to gënèráte BSV hèader.";
       case MSG_USING_CORE_NAME_FOR_NEW_CONFIG:
          return "Usiñg çôre ñame for ñëw confíg.";
       case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
@@ -3446,8 +3430,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Bãsíc mêñu çoñtrols";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP:
          return "Scroll Up";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_DOWN:
-         return "Sçroll Down";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM:
          return "Confîrm/OK";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_BACK:
@@ -4126,8 +4108,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Vídeo Fîltèr";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Audiò ÐSP Plúgiñ";
-      case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "Starting download: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "seçónds";
       case MENU_ENUM_LABEL_VALUE_OFF:
@@ -4142,8 +4122,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Updàte Cheàts";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
          return "Updáte Autøcônfig Profiles";
-      case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "Updàte Aûtoconfìg Profilës (HID)";
       case MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES:
          return "Üpdatê Datàbases";
       case MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS:

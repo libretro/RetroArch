@@ -484,14 +484,6 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "salvato alla Directory Shader."
                );
          break;
-      case MENU_ENUM_LABEL_INPUT_BIND_DEVICE_ID:
-         snprintf(s, len,
-               "Dispositivo di input. \n"
-               " \n"
-               "Scegli quale gamepad usare per l'utente N. \n"
-               "Il nome del pad è disponibile."
-               );
-         break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
                "Attiva menù.");
@@ -1841,8 +1833,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Filtro Video";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Plugin audio DSP";
-      case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "Avviando il download: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "secondi";
       case MENU_ENUM_LABEL_VALUE_OFF:
@@ -1855,8 +1845,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Aggiorna Trucchi";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
          return "Aggiorna profili di autoconfigurazione";
-      case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "Aggiorna i profili di autoconfigurazione (HID)";
       case MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES:
          return "Aggiorna Database";
       case MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS:

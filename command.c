@@ -388,7 +388,7 @@ static bool command_network_init(command_t *handle, uint16_t port)
    struct addrinfo *res  = NULL;
 
    RARCH_LOG("%s %hu.\n",
-         msg_hash_to_str(MSG_VALUE_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
+         msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
          (unsigned short)port);
 
    fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);

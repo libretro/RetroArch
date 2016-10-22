@@ -956,8 +956,6 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
          return "Videofilter";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Audio-DSP-Plugin";
-      case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "Starte Download: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "Sekunden";
       case MENU_ENUM_LABEL_VALUE_OFF: /* Don't change. Needed for XMB atm. (Would be: "AN") */

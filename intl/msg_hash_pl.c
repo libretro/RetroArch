@@ -734,8 +734,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Filtr obrazu";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Wtyczki audio DSP";
-      case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "Rozpoczynanie pobierania: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "sekund";
       case MENU_ENUM_LABEL_VALUE_ON: /* Don't change. Needed for XMB atm. (Would be: "W£¡CZONE") */
@@ -748,8 +746,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Aktualizuj cheaty";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
          return "Aktualizuj profile autokonfiguracji";
-      case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "Aktualizuj profile autokonfiguracji (HID)";
       case MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES:
          return "Aktualizuj bazy danych";
       case MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS:

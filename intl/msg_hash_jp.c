@@ -1069,14 +1069,6 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "saved to Shader Directory."
                );
          break;
-      case MENU_ENUM_LABEL_INPUT_BIND_DEVICE_ID:
-         snprintf(s, len,
-               "Input Device. \n"
-               " \n"
-               "Picks which gamepad to use for user N. \n"
-               "The name of the pad is available."
-               );
-         break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
                "Toggles menu.");
@@ -2052,8 +2044,6 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "cheevos_locked_entry";
       case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          return "cheevos_unlocked_entry";
-      case MENU_ENUM_LABEL_FILEBROWSER_ENTRY:
-         return "filebrowser_entry";
       case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
          return "core_info_entry";
       case MENU_ENUM_LABEL_NETWORK_INFO_ENTRY:
@@ -2836,8 +2826,6 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "rdb_entry_serial";
       case MENU_ENUM_LABEL_CONFIGURATIONS:
          return "configurations";
-      case MENU_ENUM_LABEL_LOAD_OPEN_ZIP:
-         return "load_open_zip";
       case MENU_ENUM_LABEL_REWIND_GRANULARITY:
          return "rewind_granularity";
       case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
@@ -3018,8 +3006,6 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "update_cheats";
       case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
          return "update_autoconfig_profiles";
-      case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "update_autoconfig_profiles_hid";
       case MENU_ENUM_LABEL_UPDATE_DATABASES:
          return "update_databases";
       case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
@@ -3109,7 +3095,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Disconnect device from a valid port.";
       case MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT:
          return "Disconnecting device from port";
-      case MSG_VALUE_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
+      case MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
          return "Bringing up command interface on port";
       case MSG_LOADING_HISTORY_FILE:
          return "Loading history file";
@@ -3249,8 +3235,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Failed to get nickname from client.";
       case MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT:
          return "Failed to send nickname to client.";
-      case MSG_FAILED_TO_GENERATE_BSV_HEADER:
-         return "Failed to generate BSV header.";
       case MSG_USING_CORE_NAME_FOR_NEW_CONFIG:
          return "Using core name for new config.";
       case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
@@ -3657,8 +3641,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Basic menu controls";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP:
          return "Scroll Up";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_DOWN:
-         return "Scroll Down";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM:
          return "確認/了承";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_BACK:
@@ -4359,8 +4341,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "ビデオのフィルター";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "オーディオのDSPプラグイン";
-      case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "ダウンロードを開始しています: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "秒";
       case MENU_ENUM_LABEL_VALUE_OFF:
@@ -4375,8 +4355,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "チーとをアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
          return "自動コンフィグプロファイルをアップデート";
-      case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "自動コンフィグプロファイルをアップデート (HID)";
       case MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES:
          return "データベースをアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS:

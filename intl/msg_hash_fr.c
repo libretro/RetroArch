@@ -761,8 +761,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Filtre vidéo";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Module DSP";
-      case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "Téléchargement de : ";
       case MENU_ENUM_LABEL_VALUE_OFF:
          return "OFF";
       case MENU_ENUM_LABEL_VALUE_ON:
@@ -773,8 +771,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Mettre à jour les codes de triche";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
          return "Mettre à jour les profils d'autoconfiguration";
-      case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES_HID:
-         return "Mettre à jour les profils d'autoconfiguration (HID)";
       case MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES:
          return "Mettre à jour les bases de données";
       case MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS:

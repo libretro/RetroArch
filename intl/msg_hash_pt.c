@@ -402,14 +402,6 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                "no Diretório de Shaders."
                );
          break;
-      case MENU_ENUM_LABEL_INPUT_BIND_DEVICE_ID:
-         snprintf(s, len,
-               "Dispositivo de Entrada. \n"
-               " \n"
-               "Escolhe um gamepad para o usuário N. \n"
-               "O nome do pad está disponível."
-               );
-         break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
                "Alterna menu.");
@@ -1640,8 +1632,6 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Filtro de Vídeo";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Plugin de DSP de Áudio";
-      case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "Iniciando download: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "segundos";
       case MENU_ENUM_LABEL_VALUE_OFF:

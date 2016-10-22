@@ -639,8 +639,6 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Video Filter";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Audio DSP Plugin";
-      case MENU_ENUM_LABEL_VALUE_STARTING_DOWNLOAD:
-         return "Download starten: ";
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "secondes";
       case MENU_ENUM_LABEL_VALUE_OFF:
