@@ -434,8 +434,8 @@ void input_poll(void)
  *
  * Input state callback function.
  *
- * Returns: Non-zero if the given key (identified by @id) was pressed by the user
- * (assigned to @port).
+ * Returns: Non-zero if the given key (identified by @id) 
+ * was pressed by the user (assigned to @port).
  **/
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
@@ -493,7 +493,8 @@ int16_t input_state(unsigned port, unsigned device,
       if (input_driver_turbo_btns.enable[port] & (1 << id))
       {
          /* if turbo button is enabled for this key ID */
-         res = res && ((input_driver_turbo_btns.count % settings->input.turbo_period)
+         res = res && ((input_driver_turbo_btns.count 
+                  % settings->input.turbo_period)
                < settings->input.turbo_duty_cycle);
       }
    }
@@ -893,21 +894,17 @@ bool input_driver_init_command(void)
 
    input_driver_command = command_new(false);
    
-   if (!command_network_new(
+   if (command_network_new(
             input_driver_command,
             settings->stdin_cmd_enable
             && !input_driver_grab_stdin(),
             settings->network_cmd_enable,
             settings->network_cmd_port))
-   {
-      RARCH_ERR("Failed to initialize command interface.\n");
-      return false;
-   }
+      return true;
 
-   return true;
-#else
-   return false;
+   RARCH_ERR("Failed to initialize command interface.\n");
 #endif
+   return false;
 }
 
 void input_driver_deinit_command(void)
@@ -938,16 +935,12 @@ bool input_driver_init_remote(void)
 
    input_driver_remote = input_remote_new(settings->network_remote_base_port);
 
-   if (!input_driver_remote)
-   {
-      RARCH_ERR("Failed to initialize remote gamepad interface.\n");
-      return false;
-   }
+   if (input_driver_remote)
+      return true;
 
-   return true;
-#else
-   return false;
+   RARCH_ERR("Failed to initialize remote gamepad interface.\n");
 #endif
+   return false;
 }
 
 bool input_driver_grab_mouse(void)
