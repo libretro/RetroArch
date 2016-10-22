@@ -619,6 +619,9 @@ uint64_t input_keys_pressed(void)
    unsigned i;
    uint64_t             ret = 0;
 
+   if (!current_input || !current_input_data)
+      return ret;
+
    if (current_input->key_pressed &&
          check_input_driver_block_hotkey(
             current_input->key_pressed(current_input_data, RARCH_ENABLE_HOTKEY)))
