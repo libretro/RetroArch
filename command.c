@@ -558,6 +558,8 @@ static void command_network_poll(command_t *handle)
       ssize_t ret;
       char buf[1024];
 
+      buf[0] = '\0';
+
       lastcmd_net_fd = handle->net_fd;
       lastcmd_net_source_len = sizeof(lastcmd_net_source);
       ret = recvfrom(handle->net_fd, buf,
@@ -650,8 +652,9 @@ static size_t read_stdin(char *buf, size_t size)
    if (!PeekNamedPipe(hnd, NULL, 0, NULL, &avail, NULL))
    {
       INPUT_RECORD recs[256];
-      bool has_key = false;
-      DWORD mode = 0, has_read = 0;
+      bool has_key   = false;
+      DWORD mode     = 0;
+      DWORD has_read = 0;
 
       if (!GetConsoleMode(hnd, &mode))
          return 0;
@@ -720,6 +723,7 @@ static size_t read_stdin(char *buf, size_t size)
 static size_t read_stdin(char *buf, size_t size)
 {
    size_t has_read = 0;
+
    while (size)
    {
       ssize_t ret = read(STDIN_FILENO, buf, size);
@@ -738,9 +742,9 @@ static size_t read_stdin(char *buf, size_t size)
 
 static void command_stdin_poll(command_t *handle)
 {
-   char *last_newline;
    ssize_t ret;
    ptrdiff_t msg_len;
+   char *last_newline = NULL;
 
    if (!handle->stdin_enable)
       return;
@@ -843,10 +847,12 @@ bool command_free(command_t *handle)
  **/
 static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 {
-   char msg[128]                                     = {0};
+   char msg[128];
    bool error                                        = false;
    rarch_system_info_t *info                         = NULL;
    const struct retro_disk_control_callback *control = NULL;
+
+   msg[0] = '\0';
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
@@ -893,10 +899,12 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 static void command_event_disk_control_set_index(unsigned idx)
 {
    unsigned num_disks;
+   char msg[128];
    bool error                                        = false;
-   char msg[128]                                     = {0};
    rarch_system_info_t                      *info    = NULL;
    const struct retro_disk_control_callback *control = NULL;
+
+   msg[0] = '\0';
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
@@ -911,7 +919,8 @@ static void command_event_disk_control_set_index(unsigned idx)
    if (control->set_image_index(idx))
    {
       if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "Setting disk %u/%u in tray.",
+         snprintf(msg, sizeof(msg), "%s: %u/%u.",
+               msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY),
                idx + 1, num_disks);
       else
          strlcpy(msg,
@@ -921,7 +930,8 @@ static void command_event_disk_control_set_index(unsigned idx)
    else
    {
       if (idx < num_disks)
-         snprintf(msg, sizeof(msg), "Failed to set disk %u/%u.",
+         snprintf(msg, sizeof(msg), "%s %u/%u.",
+               msg_hash_to_str(MSG_FAILED_TO_SET_DISK),
                idx + 1, num_disks);
       else
          strlcpy(msg,
@@ -949,10 +959,12 @@ static void command_event_disk_control_set_index(unsigned idx)
 static bool command_event_disk_control_append_image(const char *path)
 {
    unsigned new_idx;
-   char msg[128]                                      = {0};
+   char msg[128];
    struct retro_game_info info                        = {0};
    const struct retro_disk_control_callback *control  = NULL;
    rarch_system_info_t                       *sysinfo = NULL;
+
+   msg[0] = '\0';
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sysinfo);
 
@@ -1081,7 +1093,9 @@ static void command_event_set_volume(float gain)
    settings->audio.volume  = MAX(settings->audio.volume, -80.0f);
    settings->audio.volume  = MIN(settings->audio.volume, 12.0f);
 
-   snprintf(msg, sizeof(msg), "Volume: %.1f dB", settings->audio.volume);
+   snprintf(msg, sizeof(msg), "%s: %.1f dB", 
+         msg_hash_to_str(MSG_AUDIO_VOLUME),
+         settings->audio.volume);
    runloop_msg_queue_push(msg, 1, 180, true);
    RARCH_LOG("%s\n", msg);
 
@@ -1151,8 +1165,9 @@ static void command_event_init_controllers(void)
             /* Some cores do not properly range check port argument.
              * This is broken behavior of course, but avoid breaking
              * cores needlessly. */
-            RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident,
-                  device, i + 1);
+            RARCH_LOG("%s %u : %s (ID: %u).\n", i + 1,
+                  msg_hash_to_str(MSG_CONNECTING_TO_PORT),
+                  ident, device, i + 1);
             set_controller = true;
             break;
       }

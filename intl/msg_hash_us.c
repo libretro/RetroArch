@@ -1924,6 +1924,14 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "Autodetect";
       case MSG_REBOOTING:
          return "rebooting";
+      case MSG_CONNECTING_TO_PORT:
+         return "Connecting to port";
+      case MSG_SETTING_DISK_IN_TRAY:
+         return "Setting disk in tray";
+      case MSG_AUDIO_VOLUME:
+         return "Audio volume";
+      case MSG_FAILED_TO_SET_DISK:
+         return "Failed to set disk";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
          return "failed_to_start_audio_driver";
       case MSG_FOUND_LAST_STATE_SLOT:
