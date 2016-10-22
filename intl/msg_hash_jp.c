@@ -1912,14 +1912,42 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_CONNECTION_SLOT:
+         return "Connection slot";
+      case MSG_GOT_CONNECTION_FROM:
+         return "Got connection from";
       case MSG_SHUTTING_DOWN:
          return "shutting_down";
+      case MSG_AUTODETECT:
+         return "Autodetect";
+      case MSG_SUCCEEDED:
+         return "succeeded";
+      case MSG_FAILED:
+         return "failed";
+      case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
+         return "File already exists. Saving to backup buffer";
+      case MSG_AUTOLOADING_SAVESTATE_FROM:
+         return "Auto-loading savestate from";
       case MSG_REBOOTING:
          return "rebooting";
+      case MSG_CONNECTING_TO_PORT:
+         return "Connecting to port";
+      case MSG_SETTING_DISK_IN_TRAY:
+         return "Setting disk in tray";
+      case MSG_AUDIO_VOLUME:
+         return "Audio volume";
+      case MSG_FAILED_TO_SET_DISK:
+         return "Failed to set disk";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
          return "failed_to_start_audio_driver";
       case MSG_FOUND_LAST_STATE_SLOT:
          return "found_last_state_slot";
+      case MSG_DEVICE_CONFIGURED_IN_PORT:
+         return "configured in port";
+      case MSG_DEVICE_NOT_CONFIGURED:
+         return "not configured";
+      case MSG_DEVICE_DISCONNECTED_FROM_PORT:
+        return "Device disconnected from port";
       case MSG_CONNECT_DEVICE_FROM_A_VALID_PORT:
          return "connect_device_from_a_valid_port";
       case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
@@ -3149,8 +3177,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Sorry, unimplemented: cores that don't demand content cannot participate in netplay.";
       case MSG_FOUND_AUTO_SAVESTATE_IN:
          return "Found auto savestate in";
-      case MSG_AUTOLOADING_SAVESTATE_FROM:
-         return "Auto-loading savestate from";
       case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT:
          return "Network Remote Base Port";
       case MSG_OVERRIDES_SAVED_SUCCESSFULLY:
