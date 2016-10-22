@@ -69,8 +69,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Échec de l'initialisation du jeu en réseau";
       case MSG_LIBRETRO_ABI_BREAK:
          return "est compilé avec une version différente de la bibliothèque libretro actuelle.";
-      case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
-         return "L'implémentation ne supporte pas la sauvegarde d'état. Impossible d'activer le retour rapide.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
          return "L'implémentation utilise audio thread. Impossible d'activer le retour rapide.";
       case MSG_REWIND_INIT_FAILED:

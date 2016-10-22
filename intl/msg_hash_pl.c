@@ -50,8 +50,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Nie udaÅo siÄ zainicjalizowaÄ gry sieciowej.";
       case MSG_LIBRETRO_ABI_BREAK:
          return "zostaÅ skompilowany dla innej wersji libretro, rÃ³Å¼nej od obecnie uÅ¼ywanej.";
-      case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
-         return "Implementacja nie wspiera zapisywania stanu. Przewijanie nie jest moÅ¼liwe.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
          return "Implementacja uÅ¼ywa osobnego wÄtku do przetwarzania dÅºwiÄku. Przewijanie nie jest moÅ¼liwe.";
       case MSG_REWIND_INIT_FAILED:

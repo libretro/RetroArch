@@ -34,8 +34,6 @@ const char *msg_hash_to_str_ru(enum msg_hash_enums msg)
          return "Ошибка запуска сетевой игры.";
       case MSG_LIBRETRO_ABI_BREAK:
          return "скомпилировано для другой версии libretro.";
-      case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
-         return "Ядро не поддерживает сохранения. Перемотка невозможна.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
          return "Ядро использует многопоточный звук. Перемотка невозможна.";
       case MSG_REWIND_INIT_FAILED:

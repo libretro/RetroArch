@@ -3168,8 +3168,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Interfaçe";
       case MSG_FAILED_TO_PATCH:
          return "Fåilêd tò pätch";
-      case MSG_CONTENT_PATCHED_SUCCESSFULLY_IN:
-         return "Cõntent patchëd successfully";
       case MSG_FATAL_ERROR_RECEIVED_IN:
          return "Fãtal error receïved iñ";
       case MSG_MOVIE_RECORD_STOPPED:
@@ -3184,8 +3182,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Fäìled to iñïtializê netplày.";
       case MSG_LIBRETRO_ABI_BREAK:
          return "is compíled àgainst ä different version óf librètro thañ this librêtro implemeñtätîòn.";
-      case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
-         return "Impleméntatión does nôt support sàvê státes. Canñõt ûse rewind.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
          return "Ìmplemeñtätíôn ûsës threaded audiõ. Çannot use réwiñd.";
       case MSG_REWIND_INIT_FAILED:

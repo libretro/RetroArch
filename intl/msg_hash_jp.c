@@ -3099,13 +3099,13 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "シャットダウンしています。。。";
       case MSG_VALUE_REBOOTING:
          return "再起動しています。。。";
-      case MSG_VALUE_FAILED_TO_START_AUDIO_DRIVER:
+      case MSG_FAILED_TO_START_AUDIO_DRIVER:
          return "Failed to start audio driver. Will continue without audio.";
-      case MSG_VALUE_FOUND_LAST_STATE_SLOT:
+      case MSG_FOUND_LAST_STATE_SLOT:
          return "Found last state slot";
       case MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT:
          return "Connect device from a valid port.";
-      case MSG_VALUE_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
+      case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
          return "Disconnect device from a valid port.";
       case MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT:
          return "Disconnecting device from port";
@@ -3367,8 +3367,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "インターフェース";
       case MSG_FAILED_TO_PATCH:
          return "パッチに失敗しました";
-      case MSG_CONTENT_PATCHED_SUCCESSFULLY_IN:
-         return "コンテンツをパッチが成功しました";
       case MSG_FATAL_ERROR_RECEIVED_IN:
          return "Fatal error received in";
       case MSG_MOVIE_RECORD_STOPPED:
@@ -3383,8 +3381,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Failed to initialize netplay.";
       case MSG_LIBRETRO_ABI_BREAK:
          return "is compiled against a different version of libretro than this libretro implementation.";
-      case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
-         return "Implementation does not support save states. Cannot use rewind.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
          return "Implementation uses threaded audio. Cannot use rewind.";
       case MSG_REWIND_INIT_FAILED:

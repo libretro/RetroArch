@@ -1253,8 +1253,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Error al iniciar el juego en red.";
       case MSG_LIBRETRO_ABI_BREAK:
          return "se ha compilado con una versión distinta a esta implementación de libretro.";
-      case MSG_REWIND_INIT_FAILED_NO_SAVESTATES:
-         return "Esta implementación no admite guardados rápidos. No se puede utilizar el rebobinado.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
          return "La implementación utiliza sonido multinúcleo. No se puede utilizar el rebobinado.";
       case MSG_REWIND_INIT_FAILED:

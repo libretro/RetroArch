@@ -1309,7 +1309,7 @@ static void command_event_set_savestate_auto_index(void)
 
    settings->state_slot = max_idx;
    RARCH_LOG("%s: #%d\n",
-         msg_hash_to_str(MSG_VALUE_FOUND_LAST_STATE_SLOT),
+         msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          settings->state_slot);
 }
 
@@ -2041,7 +2041,7 @@ bool command_event(enum event_command cmd, void *data)
          if (!settings->audio.mute_enable && !audio_driver_start())
          {
             RARCH_ERR("%s\n",
-                  msg_hash_to_str(MSG_VALUE_FAILED_TO_START_AUDIO_DRIVER));
+                  msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
             audio_driver_unset_active();
          }
          break;
