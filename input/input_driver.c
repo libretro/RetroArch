@@ -391,12 +391,24 @@ const struct retro_keybind *libretro_input_binds[MAX_USERS];
 void input_poll(void)
 {
    size_t i;
+   const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings           = config_get_ptr();
 
    input_driver_poll();
 
-   for (i = 0; i < MAX_USERS; i++)
-      libretro_input_binds[i] = settings->input.binds[i];
+   input_driver_turbo_btns.count++;
+
+   for (i = 0; i < settings->input.max_users; i++)
+   {
+      libretro_input_binds[i]                 = settings->input.binds[i];
+      binds[i]                                = settings->input.binds[i];
+      input_driver_turbo_btns.frame_enable[i] = 0;
+
+      if (!input_driver_block_libretro_input)
+         input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
+               current_input_data, binds,
+               i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+   }
 
 #ifdef HAVE_OVERLAY
    input_poll_overlay(NULL, settings->input.overlay_opacity);
@@ -430,7 +442,6 @@ int16_t input_state(unsigned port, unsigned device,
 {
    int16_t res                     = 0;
    settings_t *settings            = config_get_ptr();
-   
 
    device &= RETRO_DEVICE_MASK;
 
@@ -606,7 +617,6 @@ retro_input_t input_keys_pressed(void)
 {
    unsigned i;
    retro_input_t             ret;
-   const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings          = config_get_ptr();
 
    ret.type  = 0;
@@ -615,26 +625,12 @@ retro_input_t input_keys_pressed(void)
    if (!current_input || !current_input_data)
       return ret;
 
-   input_driver_turbo_btns.count++;
-
    if (current_input->key_pressed &&
          check_input_driver_block_hotkey(
             current_input->key_pressed(current_input_data, RARCH_ENABLE_HOTKEY)))
       input_driver_block_libretro_input = true;
    else
       input_driver_block_libretro_input = false;
-
-   for (i = 0; i < settings->input.max_users; i++)
-   {
-      binds[i] = settings->input.binds[i];
-
-      input_driver_turbo_btns.frame_enable[i] = 0;
-
-      if (!input_driver_block_libretro_input)
-         input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
-               current_input_data, binds,
-               i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
-   }
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
