@@ -28,6 +28,7 @@
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
+#include "../msg_hash.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 
@@ -144,7 +145,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
    if (string_is_equal(device_type, "remote"))
    {
-      snprintf(msg, sizeof(msg), "%s configured",
+      snprintf(msg, sizeof(msg), "%s configured.",
             string_is_empty(display_name) ? params->name : display_name);
 
       if(!remote_is_bound)
@@ -153,8 +154,9 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    }
    else
    {
-      snprintf(msg, sizeof(msg), "%s configured in port #%u.",
+      snprintf(msg, sizeof(msg), "%s %s #%u.",
             string_is_empty(display_name) ? params->name : display_name,
+            msg_hash_to_str(MSG_DEVICE_CONFIGURED_IN_PORT),
             params->idx);
 
       if (!block_osd_spam)
@@ -207,7 +209,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    if(!list)
       return false;
 
-   RARCH_LOG("Autodetect: %d profiles found\n", list->size);
+   RARCH_LOG("Autodetect: %d profiles found.\n", list->size);
 
    for (i = 0; i < list->size; i++)
    {
@@ -311,8 +313,9 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 
    RARCH_LOG("Autodetect: no profiles found for %s (%d/%d).\n",
          params->name, params->vid, params->pid);
-   snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured.",
-         params->name, (long)params->vid, (long)params->pid);
+   snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
+         params->name, (long)params->vid, (long)params->pid,
+         msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
    runloop_msg_queue_push(msg, 2, 60, false);
 
 error:
@@ -338,7 +341,10 @@ void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 
    msg[0] = '\0';
 
-   snprintf(msg, sizeof(msg), "Device disconnected from port #%u (%s).", i, ident);
+   snprintf(msg, sizeof(msg), "%s #%u (%s).", 
+         msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
+         i, ident);
    runloop_msg_queue_push(msg, 2, 60, false);
-   RARCH_LOG("Autodetect: %s\n", msg);
+   RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), 
+         msg);
 }
