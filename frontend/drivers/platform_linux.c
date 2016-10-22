@@ -378,7 +378,7 @@ static void android_app_entry(void *data)
    do
    {
       unsigned sleep_ms = 0;
-      int           ret = runloop_iterate(&cmd, &sleep_ms);
+      int           ret = runloop_iterate(&sleep_ms);
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
