@@ -1489,6 +1489,21 @@ static void menu_action_setting_disp_set_label_achievement_information(
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_no_items(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   *s = '\0';
+   *w = 19;
+
+   strlcpy(s2, path, len2);
+}
+
 static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1759,6 +1774,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
          case MENU_SETTING_ACTION:
          case MENU_SETTING_ACTION_LOADSTATE:
+         case 117: /* Netplay settings */
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_more);
             break;
@@ -1772,6 +1788,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case 25: /* URL directory entries */
          case 26: /* URL entries */
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry);
+            break;
+         case 100: /* No items */
+            BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_no_items);
             break;
          case 32: /* Recent history entry */
          case 65535: /* System info entry */
