@@ -149,8 +149,9 @@ static int16_t rwebinput_input_state(void *data, const struct retro_keybind **bi
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return rwebinput_is_pressed(rwebinput, binds[port], id);
-
+         if (binds[port][id].valid)
+            return rwebinput_is_pressed(rwebinput, binds[port], id);
+         break;
       case RETRO_DEVICE_ANALOG:
          return rwebinput_analog_pressed(rwebinput, binds[port], idx, id);
 

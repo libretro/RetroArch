@@ -59,7 +59,9 @@ static int16_t xdk_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(xdk->joypad, port, binds[port], id);
+         if (binds[port][id].valid)
+            return input_joypad_pressed(xdk->joypad, port, binds[port], id);
+         break;
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(xdk->joypad, port, index, id, binds[port]);
    }
@@ -101,12 +103,14 @@ static bool xdk_input_key_pressed(void *data, int key)
    if (settings->input.all_users_control_menu)
    {
       for (port = 0; port < MAX_USERS; port++)
-         if (input_joypad_pressed(xdk->joypad,
+         if (settings->input.binds[0][key].valid &&
+               input_joypad_pressed(xdk->joypad,
                port, settings->input.binds[0], key))
             return true;
    }
    else
-      if (input_joypad_pressed(xdk->joypad,
+      if (settings->input.binds[0][key].valid &&
+            input_joypad_pressed(xdk->joypad,
             0, settings->input.binds[0], key))
          return true;
 

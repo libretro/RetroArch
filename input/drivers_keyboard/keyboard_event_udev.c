@@ -69,7 +69,7 @@ bool udev_input_is_pressed(const struct retro_keybind *binds, unsigned id)
    {
       const struct retro_keybind *bind = &binds[id];
       unsigned bit = input_keymaps_translate_rk_to_keysym(binds[id].key);
-      return bind->valid && BIT_GET(udev_key_state, bit);
+      return BIT_GET(udev_key_state, bit);
    }
    return false;
 }

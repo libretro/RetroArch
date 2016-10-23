@@ -277,12 +277,16 @@ static int16_t cocoa_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return apple_input_is_pressed(port, binds[port], id) ||
-            input_joypad_pressed(apple->joypad, port, binds[port], id)
+         if (binds[port][id].valid)
+         {
+            return apple_input_is_pressed(port, binds[port], id) ||
+               input_joypad_pressed(apple->joypad, port, binds[port], id)
 #ifdef HAVE_MFI
-           || input_joypad_pressed(apple->sec_joypad, port, binds[port], id)
+               || input_joypad_pressed(apple->sec_joypad, port, binds[port], id)
 #endif
-           ;
+               ;
+         }
+         break;
       case RETRO_DEVICE_ANALOG:
 #ifdef HAVE_MFI
          ret = input_joypad_analog(apple->sec_joypad, port,
@@ -319,25 +323,33 @@ static bool cocoa_input_key_pressed(void *data, int key)
    {
       for (port = 0; port < MAX_USERS; port++)
       {
+         if (settings->input.binds[0][key].valid)
+         {
+            if (input_joypad_pressed(apple->joypad,
+                     port, settings->input.binds[0], key))
+               return true;
+
+#ifdef HAVE_MFI
+            if (input_joypad_pressed(apple->sec_joypad, port, settings->input.binds[0], key))
+               return true;
+#endif
+         }
+      }
+   }
+   else
+   {
+      if (settings->input.binds[0][key].valid)
+      {
          if (input_joypad_pressed(apple->joypad,
-               port, settings->input.binds[0], key))
+                  0, settings->input.binds[0], key))
             return true;
 
 #ifdef HAVE_MFI
-         if (input_joypad_pressed(apple->sec_joypad, port, settings->input.binds[0], key))
+         if (input_joypad_pressed(apple->sec_joypad, 0, settings->input.binds[0], key))
             return true;
 #endif
       }
    }
-   else
-      if (input_joypad_pressed(apple->joypad,
-            0, settings->input.binds[0], key))
-         return true;
-
-#ifdef HAVE_MFI
-      if (input_joypad_pressed(apple->sec_joypad, 0, settings->input.binds[0], key))
-         return true;
-#endif
 
    return false;
 }

@@ -780,7 +780,9 @@ static int16_t qnx_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(qnx->joypad, port, binds[port], id);
+         if (binds[port][id].valid)
+            return input_joypad_pressed(qnx->joypad, port, binds[port], id);
+         break;
       case RETRO_DEVICE_ANALOG:
          return qnx_analog_input_state(qnx, port, idx, id);
       case RARCH_DEVICE_POINTER_SCREEN:

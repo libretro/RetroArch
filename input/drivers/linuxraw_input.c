@@ -119,12 +119,14 @@ static bool linuxraw_input_key_pressed(void *data, int key)
    if (settings->input.all_users_control_menu)
    {
       for (port = 0; port < MAX_USERS; port++)
-         if (input_joypad_pressed(linuxraw->joypad,
+         if (settings->input.binds[0][key].valid &&
+               input_joypad_pressed(linuxraw->joypad,
                port, settings->input.binds[0], key))
             return true;
    }
    else
-      if (input_joypad_pressed(linuxraw->joypad,
+      if (settings->input.binds[0][key].valid &&
+            input_joypad_pressed(linuxraw->joypad,
             0, settings->input.binds[0], key))
          return true;
 
@@ -146,9 +148,10 @@ static int16_t linuxraw_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return linuxraw_is_pressed(linuxraw, binds[port], id) ||
-            input_joypad_pressed(linuxraw->joypad, port, binds[port], id);
-
+         if (binds[port][id].valid)
+            return linuxraw_is_pressed(linuxraw, binds[port], id) ||
+               input_joypad_pressed(linuxraw->joypad, port, binds[port], id);
+         break;
       case RETRO_DEVICE_ANALOG:
          ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
          if (!ret)

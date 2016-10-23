@@ -281,7 +281,7 @@ static bool dinput_is_pressed(struct dinput_input *di,
 
    if (!di->blocked && dinput_keyboard_pressed(di, bind->key))
       return true;
-   if (input_joypad_pressed(di->joypad, port, binds, id))
+   if (binds[port][id].valid && input_joypad_pressed(di->joypad, port, binds, id))
       return true;
 
    return false;

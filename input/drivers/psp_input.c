@@ -74,7 +74,9 @@ static int16_t psp_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(psp->joypad, port, binds[port], id);
+         if (binds[port][id].valid)
+            return input_joypad_pressed(psp->joypad, port, binds[port], id);
+         break;
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(psp->joypad, port, idx, id, binds[port]);
    }

@@ -121,12 +121,14 @@ static bool sdl_input_key_pressed(void *data, int key)
       if (settings->input.all_users_control_menu)
       {
          for (port = 0; port < MAX_USERS; port++)
-            if (input_joypad_pressed(sdl->joypad,
+            if (settings->input.binds[0][key].valid && 
+                  input_joypad_pressed(sdl->joypad,
                   port, settings->input.binds[0], key))
                return true;
       }
       else
-         if (input_joypad_pressed(sdl->joypad,
+         if (settings->input.binds[0][key].valid &&
+               input_joypad_pressed(sdl->joypad,
                0, settings->input.binds[0], key))
             return true;
    }
