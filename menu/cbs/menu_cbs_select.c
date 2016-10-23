@@ -59,7 +59,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
    if (!cbs)
       return -1;
     
-   switch (setting_get_type(cbs->setting))
+   switch (cbs->setting->type)
    {
       case ST_BOOL:
       case ST_INT:

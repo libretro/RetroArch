@@ -604,7 +604,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    if (!setting)
       return -1;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_PATH:
          if (action == MENU_ACTION_OK)
@@ -688,9 +688,9 @@ static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
 {
    uint32_t needle = msg_hash_calculate(label);
 
-   for (; setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
+   for (; setting->type != ST_NONE; menu_settings_list_increment(&setting))
    {
-      if (needle == setting->name_hash && setting_get_type(setting) <= ST_GROUP)
+      if (needle == setting->name_hash && setting->type <= ST_GROUP)
       {
          const char *name              = menu_setting_get_name(setting);
          const char *short_description = menu_setting_get_short_description(setting);
@@ -714,9 +714,9 @@ static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
 static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting, 
      enum msg_hash_enums enum_idx)
 {
-   for (; setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
+   for (; setting->type != ST_NONE; menu_settings_list_increment(&setting))
    {
-      if (setting->enum_idx == enum_idx && setting_get_type(setting) <= ST_GROUP)
+      if (setting->enum_idx == enum_idx && setting->type <= ST_GROUP)
       {
          const char *short_description = menu_setting_get_short_description(setting);
          if (string_is_empty(short_description))
@@ -770,7 +770,7 @@ int menu_setting_set_flags(rarch_setting_t *setting)
    if (!setting)
       return 0;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_STRING_OPTIONS:
          return MENU_SETTING_STRING_OPTIONS;
@@ -818,7 +818,7 @@ void *setting_get_ptr(rarch_setting_t *setting)
    if (!setting)
       return NULL;
 
-   switch (setting_get_type(setting))
+   switch (setting->type)
    {
       case ST_BOOL:
          return setting->value.target.boolean;
@@ -6710,7 +6710,7 @@ bool menu_setting_free(void *data)
       return false;
 
    /* Free data which was previously tagged */
-   for (; setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
+   for (; setting->type != ST_NONE; menu_settings_list_increment(&setting))
       for (values = setting->free_flags, n = 0; values != 0; values >>= 1, n++)
          if (values & 1)
             switch (1 << n)
@@ -6852,7 +6852,7 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
 
             flags                    = setting_get_flags(setting);
 
-            if (setting_get_type(setting) != ST_ACTION)
+            if (setting->type != ST_ACTION)
                return false;
 
             if (!setting->change_handler)

@@ -349,8 +349,6 @@ double setting_get_max(rarch_setting_t *setting);
 
 unsigned setting_get_bind_type(rarch_setting_t *setting);
 
-enum setting_type setting_get_type(rarch_setting_t *setting);
-
 int setting_string_action_start_generic(void *data);
 
 int setting_generic_action_ok_default(void *data, bool wraparound);

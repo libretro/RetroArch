@@ -480,7 +480,7 @@ static void *xmb_list_get_entry(void *data, enum menu_list_type type, unsigned i
    return NULL;
 }
 
-static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
+static INLINE float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 {
    float iy = xmb->icon.spacing.vertical;
 
