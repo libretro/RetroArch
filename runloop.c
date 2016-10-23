@@ -787,7 +787,7 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
       runloop_exec = false;
 
    if (runloop_core_shutdown_initiated &&
-         settings->load_dummy_on_core_shutdown)
+         settings && settings->load_dummy_on_core_shutdown)
    {
       content_ctx_info_t content_info = {0};
       if (!task_push_content_load_default(
