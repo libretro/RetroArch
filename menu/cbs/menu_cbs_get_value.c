@@ -624,7 +624,7 @@ static void menu_action_setting_disp_set_label_db_entry(
    strlcpy(s2, path, len2);
 }
 
-static void menu_action_setting_disp_set_label_system_info_entry(
+static void menu_action_setting_disp_set_label_entry(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1768,8 +1768,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case 31: /* Database entry */
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_db_entry);
             break;
+         case 32: /* Recent history entry */
          case 65535: /* System info entry */
-            BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_system_info_entry);
+            BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry);
             break;
          default:
 #if 0
