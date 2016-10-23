@@ -341,12 +341,6 @@ unsigned setting_get_index_offset(rarch_setting_t *setting);
 
 uint32_t setting_get_index(rarch_setting_t *setting);
 
-uint64_t setting_get_flags(rarch_setting_t *setting);
-
-double setting_get_min(rarch_setting_t *setting);
-
-double setting_get_max(rarch_setting_t *setting);
-
 unsigned setting_get_bind_type(rarch_setting_t *setting);
 
 int setting_string_action_start_generic(void *data);

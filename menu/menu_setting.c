@@ -530,7 +530,7 @@ void menu_settings_list_current_add_enum_idx(
 
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
 {
-   uint64_t flags = setting_get_flags(setting);
+   uint64_t flags = setting->flags;
    if (setting_generic_action_ok_default(setting, wraparound) != 0)
       return -1;
 
@@ -604,7 +604,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
             size_t selection;
             menu_displaylist_info_t  info = {0};
             file_list_t       *menu_stack = menu_entries_get_menu_stack_ptr(0);
-            const char      *name         = menu_setting_get_name(setting);
+            const char      *name         = setting->name;
 
             if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
                return -1;
@@ -640,34 +640,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return -1;
 }
 
-const char *menu_setting_get_values(rarch_setting_t *setting)
-{
-   if (!setting)
-      return NULL;
-   return setting->values;
-}
-
-enum msg_hash_enums menu_setting_get_enum_idx(rarch_setting_t *setting)
-{
-   if (!setting)
-      return MSG_UNKNOWN;
-   return setting->enum_idx;
-}
-
-const char *menu_setting_get_name(rarch_setting_t *setting)
-{
-   if (!setting)
-      return NULL;
-   return setting->name;
-}
-
-const char *menu_setting_get_parent_group(rarch_setting_t *setting)
-{
-   if (!setting)
-      return NULL;
-   return setting->parent_group;
-}
-
 static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting, 
       const char *label)
 {
@@ -678,7 +650,7 @@ static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
    {
       if (needle == setting->name_hash && setting->type <= ST_GROUP)
       {
-         const char *name              = menu_setting_get_name(setting);
+         const char *name              = setting->name;
          const char *short_description = setting->short_description;
          /* make sure this isn't a collision */
          if (!string_is_equal(label, name))
@@ -1469,7 +1441,7 @@ void general_write_handler(void *data)
 
    if (setting->cmd_trigger.idx != CMD_EVENT_NONE)
    {
-      uint64_t flags = setting_get_flags(setting);
+      uint64_t flags = setting->flags;
 
       if (flags & SD_FLAG_EXIT)
       {
@@ -6838,7 +6810,7 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
             if (!setting)
                return false;
 
-            flags                    = setting_get_flags(setting);
+            flags                    = setting->flags;
 
             if (setting->type != ST_ACTION)
                return false;

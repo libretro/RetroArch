@@ -414,7 +414,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
 
    if (cbs->setting)
    {
-      const char *parent_group   = menu_setting_get_parent_group(cbs->setting);
+      const char *parent_group   = cbs->setting->parent_group;
 
       if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) 
                && (cbs->setting->type == ST_GROUP))

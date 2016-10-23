@@ -101,13 +101,6 @@ bool settings_list_append(rarch_setting_t **list,
    return true;
 }
 
-uint64_t setting_get_flags(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0;
-   return setting->flags;
-}
-
 uint32_t setting_get_index(rarch_setting_t *setting)
 {
    if (!setting)
@@ -144,11 +137,14 @@ static int setting_bind_action_ok(void *data, bool wraparound)
 static int setting_int_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               min = setting_get_min(setting);
-   double               max = setting_get_max(setting);
-
+   double               min = 0.0f;
+   double               max = 0.0f;
+   
    if (!setting)
       return -1;
+
+   min = setting->min;
+   max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
@@ -222,10 +218,12 @@ static void setting_get_string_representation_uint(void *data,
 static int setting_uint_action_left_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               min = setting_get_min(setting);
-
+   double               min = 0.0f;
+   
    if (!setting)
       return -1;
+
+   min = setting->min;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
@@ -246,13 +244,17 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
 static int setting_uint_action_right_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               min = setting_get_min(setting);
-   double               max = setting_get_max(setting);
-
+   double               min = 0.0f;
+   double               max = 0.0f;
+   
    if (!setting)
       return -1;
 
+   min = setting->min;
+   max = setting->max;
+
    (void)wraparound; /* TODO/FIXME - handle this */
+
 
    *setting->value.target.unsigned_integer =
       *setting->value.target.unsigned_integer + setting->step;
@@ -299,20 +301,6 @@ static void setting_get_string_representation_int(void *data,
       snprintf(s, len, "%d", *setting->value.target.integer);
 }
 
-double setting_get_min(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0.0f;
-   return setting->min;
-}
-
-double setting_get_max(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0.0f;
-   return setting->max;
-}
-
 /**
  * setting_set_with_string_representation:
  * @setting            : pointer to setting
@@ -329,13 +317,13 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
    if (!setting || !value)
       return -1;
 
-   min          = setting_get_min(setting);
-   max          = setting_get_max(setting);
+   min          = setting->min;
+   max          = setting->max;
+   flags        = setting->flags;
 
    switch (setting->type)
    {
       case ST_INT:
-         flags = setting_get_flags(setting);
          sscanf(value, "%d", setting->value.target.integer);
          if (flags & SD_FLAG_HAS_RANGE)
          {
@@ -355,7 +343,6 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          }
          break;
       case ST_UINT:
-         flags = setting_get_flags(setting);
          sscanf(value, "%u", setting->value.target.unsigned_integer);
          if (flags & SD_FLAG_HAS_RANGE)
          {
@@ -375,7 +362,6 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
          }
          break;      
       case ST_FLOAT:
-         flags = setting_get_flags(setting);
          sscanf(value, "%f", setting->value.target.fraction);
          if (flags & SD_FLAG_HAS_RANGE)
          {
@@ -421,10 +407,12 @@ static int setting_fraction_action_left_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               min = setting_get_min(setting);
-
+   double               min = 0.0f;
+   
    if (!setting)
       return -1;
+
+   min = setting->min;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
@@ -444,11 +432,14 @@ static int setting_fraction_action_right_default(
       void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   double               min = setting_get_min(setting);
-   double               max = setting_get_max(setting);
+   double               min = 0.0f;
+   double               max = 0.0f;
 
    if (!setting)
       return -1;
+
+   min = setting->min;
+   max = setting->min;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
@@ -1056,11 +1047,13 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
 static int setting_int_action_left_default(void *data, bool wraparound)
 {
+   double min               = 0.0f;
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   double min               = setting_get_min(setting);
 
    if (!setting)
       return -1;
+
+   min               = setting->min;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 

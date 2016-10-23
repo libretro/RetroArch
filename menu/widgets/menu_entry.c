@@ -215,7 +215,7 @@ uint32_t menu_entry_get_bool_value(uint32_t i)
 struct string_list *menu_entry_enum_values(uint32_t i)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   const char      *values  = menu_setting_get_values(setting);
+   const char      *values  = setting->values;
 
    if (!values)
       return NULL;
@@ -276,7 +276,7 @@ void menu_entry_pathdir_selected(uint32_t i)
 bool menu_entry_pathdir_allow_empty(uint32_t i)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   uint64_t           flags = setting_get_flags(setting);
+   uint64_t           flags = setting->flags;
 
    return flags & SD_FLAG_ALLOW_EMPTY;
 }
@@ -284,7 +284,7 @@ bool menu_entry_pathdir_allow_empty(uint32_t i)
 uint32_t menu_entry_pathdir_for_directory(uint32_t i)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   uint64_t           flags = setting_get_flags(setting);
+   uint64_t           flags = setting->flags;
 
    return flags & SD_FLAG_PATH_DIR;
 }
@@ -311,7 +311,7 @@ void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   const char      *values  = menu_setting_get_values(setting);
+   const char      *values  = setting->values;
 
    if (!values)
       return;
@@ -368,7 +368,7 @@ void menu_entry_set_value(uint32_t i, const char *s)
 uint32_t menu_entry_num_has_range(uint32_t i)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   uint64_t           flags = setting_get_flags(setting);
+   uint64_t           flags = setting->flags;
 
    return (flags & SD_FLAG_HAS_RANGE);
 }
@@ -376,14 +376,14 @@ uint32_t menu_entry_num_has_range(uint32_t i)
 float menu_entry_num_min(uint32_t i)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   double               min = setting_get_min(setting);
+   double               min = setting->min;
    return (float)min;
 }
 
 float menu_entry_num_max(uint32_t i)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   double               max = setting_get_max(setting);
+   double               max = setting->max;
    return (float)max;
 }
 

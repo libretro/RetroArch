@@ -2160,11 +2160,13 @@ static int menu_displaylist_parse_settings_internal(void *data,
 {
    enum setting_type precond;
    size_t             count  = 0;
+   uint64_t flags            = 0;
    settings_t *settings      = config_get_ptr();
-   uint64_t flags            = setting_get_flags(setting);
 
    if (!setting)
       return -1;
+
+   flags = setting->flags;
 
    switch (parse_type)
    {
@@ -2215,7 +2217,7 @@ static int menu_displaylist_parse_settings_internal(void *data,
    {
       bool time_to_exit             = false;
       const char *short_description = setting->short_description;
-      const char *name              = menu_setting_get_name(setting);
+      const char *name              = setting->name;
       enum setting_type type        = setting->type;
       rarch_setting_t **list        = &setting;
 
@@ -2345,11 +2347,13 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
 {
    enum setting_type precond;
    size_t             count  = 0;
+   uint64_t flags            = 0;
    settings_t *settings      = config_get_ptr();
-   uint64_t flags            = setting_get_flags(setting);
 
    if (!setting)
       return -1;
+
+   flags            = setting->flags;
 
    switch (parse_type)
    {
@@ -2400,7 +2404,7 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
    {
       bool time_to_exit             = false;
       const char *short_description = setting->short_description;
-      const char *name              = menu_setting_get_name(setting);
+      const char *name              = setting->name;
       enum setting_type type        = setting->type;
       rarch_setting_t **list        = &setting;
 

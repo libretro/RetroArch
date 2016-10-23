@@ -212,7 +212,7 @@ int menu_cbs_init_bind_select(menu_file_list_cbs_t *cbs,
 
    if (cbs->setting)
    {
-      uint64_t flags = setting_get_flags(cbs->setting);
+      uint64_t flags = cbs->setting->flags;
 
       if (flags & SD_FLAG_IS_DRIVER)
       {
