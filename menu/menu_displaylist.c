@@ -162,7 +162,8 @@ static void print_buf_lines(file_list_t *list, char *buf,
                   fill_pathname_join_noext(
                         core_path,
                         settings->path.libretro_info,
-                        extended ? core_pathname : line_start,
+                        (extended && !string_is_empty(core_pathname))
+                        ? core_pathname : line_start,
                         sizeof(core_path));
                   path_remove_extension(core_path);
 
