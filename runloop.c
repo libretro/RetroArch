@@ -501,7 +501,12 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          {
             const char **ret = (const char**)data;
             if (!ret)
+            {
+#ifdef HAVE_THREADS
+               slock_unlock(_runloop_msg_queue_lock);
+#endif
                return false;
+            }
             *ret = msg_queue_pull(runloop_msg_queue);
          }
 #ifdef HAVE_THREADS
