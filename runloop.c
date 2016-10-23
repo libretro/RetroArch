@@ -642,7 +642,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                if (settings)
                   options_path = settings->path.core_options;
 
-               if (options_path && string_is_empty(options_path) && !path_is_empty(RARCH_PATH_CONFIG))
+               if (string_is_empty(options_path) && !path_is_empty(RARCH_PATH_CONFIG))
                {
                   fill_pathname_resolve_relative(buf, path_get(RARCH_PATH_CONFIG),
                         file_path_str(FILE_PATH_CORE_OPTIONS_CONFIG), sizeof(buf));
