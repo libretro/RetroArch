@@ -1772,7 +1772,13 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_disk_index);
             break;
+         case MENU_SETTING_ACTION:
+            BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_menu_more);
+            break;
          default:
+#if 0
+            RARCH_LOG("type: %d\n", type);
+#endif
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
             break;
       }
@@ -1786,6 +1792,10 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
 {
    if (!cbs)
       return -1;
+
+#if 0
+   RARCH_LOG("MENU_SETTINGS_NONE: %d\n", MENU_SETTINGS_NONE);
+#endif
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
