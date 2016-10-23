@@ -148,8 +148,6 @@ const char *msg_hash_to_str_ru(enum msg_hash_enums msg)
          return "Загружено сохранение из слота";
       case MSG_DOWNLOADING:
          return "Прогресс загрузки";
-      case MSG_COULD_NOT_PROCESS_ZIP_FILE:
-         return "Ошибка обработки ZIP-архива.";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
          return "Сканирование папки завершено";
       case MSG_SCANNING:

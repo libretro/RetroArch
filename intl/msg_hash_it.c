@@ -1299,8 +1299,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "RetroTastiera";
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Blocco fotogrammi";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Modalità di collegamento";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "Mostra le etichette descrittive degli input del core";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:

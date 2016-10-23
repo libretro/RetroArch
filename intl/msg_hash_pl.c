@@ -162,8 +162,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Usuwanie tymczasowego pliku treÅci";
       case MSG_LOADED_STATE_FROM_SLOT:
          return "Wczytano stan ze slotu";
-      case MSG_COULD_NOT_PROCESS_ZIP_FILE:
-         return "Nie udaÅo siÄ przetworzyÄ pliku ZIP.";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
          return "ZakoÅczono skanowanie katalogu";
       case MSG_SCANNING:

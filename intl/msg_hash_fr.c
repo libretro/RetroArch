@@ -185,8 +185,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Suppression du fichier temporaire";
       case MSG_LOADED_STATE_FROM_SLOT:
          return "Chargement du savestate à partir du slot";
-      case MSG_COULD_NOT_PROCESS_ZIP_FILE:
-         return "Impossible de traiter le fichier ZIP.";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
          return "Analyse des dossiers terminée";
       case MSG_SCANNING:
@@ -221,8 +219,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Atteinte de la fin du tampon de rembobinage.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
          return "Mode matériel activé : savestate et rembobinage sont désactivés.";
-      case MSG_TASK_FAILED:
-         return "Échec";
       case MSG_DOWNLOADING:
          return "Téléchargement";
       case MSG_EXTRACTING:

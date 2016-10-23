@@ -1356,8 +1356,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Borrando archivo temporal de contenido";
       case MSG_LOADED_STATE_FROM_SLOT:
          return "Carga rápida desde la ranura";
-      case MSG_COULD_NOT_PROCESS_ZIP_FILE:
-         return "No se ha podido procesar el archivo ZIP.";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
          return "Escaneado de carpetas terminado";
       case MSG_SCANNING:
@@ -1392,8 +1390,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Se ha llegado al final del búfer de rebobinado.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
          return "Modo Extremo Activado: guardar estado y reboninar se han desactivado.";
-      case MSG_TASK_FAILED:
-        return "Error";
       case MSG_DOWNLOADING:
         return "Descargando";
       case MSG_EXTRACTING:
@@ -1555,8 +1551,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "RetroKeyboard";
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Bloquear fotogramas";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Modo de asignación";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "Mostrar etiquetas de descripción de la entrada";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:

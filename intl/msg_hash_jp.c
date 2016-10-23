@@ -1908,8 +1908,6 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "Connecting to netplay host";
       case MSG_GOT_CONNECTION_FROM:
          return "Got connection from";
-      case MSG_SHUTTING_DOWN:
-         return "shutting_down";
       case MSG_AUTODETECT:
          return "Autodetect";
       case MSG_SUCCEEDED:
@@ -1924,8 +1922,6 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "File already exists. Saving to backup buffer";
       case MSG_AUTOLOADING_SAVESTATE_FROM:
          return "Auto-loading savestate from";
-      case MSG_REBOOTING:
-         return "rebooting";
       case MSG_CONNECTING_TO_PORT:
          return "Connecting to port";
       case MSG_SETTING_DISK_IN_TRAY:
@@ -2148,8 +2144,6 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "cheevos_password";
       case MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME:
          return "accounts_cheevos_username";
-      case MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_PASSWORD:
-         return "accounts_cheevos_password";
       case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
          return "retro_achievements";
       case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
@@ -3245,8 +3239,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Saved new config to";
       case MSG_FAILED_SAVING_CONFIG_TO:
          return "Failed saving config to";
-      case MSG_FAILED_TO_SEND_HEADER_TO_CLIENT:
-         return "Failed to send header to client.";
       case MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST:
          return "Failed to receive nickname size from host.";
       case MSG_FAILED_TO_RECEIVE_NICKNAME:
@@ -3485,8 +3477,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Removing temporary content file";
       case MSG_LOADED_STATE_FROM_SLOT:
          return "Loaded state from slot";
-      case MSG_COULD_NOT_PROCESS_ZIP_FILE:
-         return "Could not process ZIP file.";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
          return "Scanning of directory finished";
       case MSG_SCANNING:
@@ -3521,8 +3511,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Reached end of rewind buffer.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
          return "Hardcore Mode Enabled: savestate & rewind were disabled.";
-      case MSG_TASK_FAILED:
-         return "失敗";
       case MSG_DOWNLOADING:
          return "ダウンロード中";
       case MSG_EXTRACTING:
@@ -3747,8 +3735,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "RetroKeyboard";
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BIND_MODE:
-         return "Bind Mode";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "入力の識別子ラベルを表示";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
