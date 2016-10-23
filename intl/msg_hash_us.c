@@ -98,10 +98,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Enable other hotkeys. \n"
                   " \n"
-                  "If this hotkey is bound to \n"
-                  "either keyboard, joybutton or joyaxis, \n"
-                  "all other hotkeys will be disabled unless \n"
-                  "this hotkey is also held at the same time. \n"
+                  "If this hotkey is bound to either\n"
+                  "a keyboard, joybutton or joyaxis, \n"
+                  "all other hotkeys will be enabled only \n"
+                  "if this one is held at the same time. \n"
                   " \n"
                   "This is useful for RETRO_KEYBOARD centric \n"
                   "implementations which query a large area of \n"
@@ -121,7 +121,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_OVERLAY_NEXT:
             snprintf(s, len,
-                  "Toggles to next overlay. Wraps around.");
+                  "Switches to next overlay. Wraps around.");
             break;
          case RARCH_DISK_EJECT_TOGGLE:
             snprintf(s, len,
@@ -240,16 +240,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "for the Onscreen Display text.");
          break;
       case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
-         snprintf(s, len, "Load content-specific core options \n"
-               "automatically if found.");
+         snprintf(s, len, "Automatically load content-specific core options.");
          break;
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
-         snprintf(s, len, "Load override configurations \n"
-               "automatically if found.");
+         snprintf(s, len, "Automatically load override configurations.");
          break;
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
-         snprintf(s, len, "Load input remapping files \n"
-               "automatically if found.");
+         snprintf(s, len, "Automatically load input remapping files.");
          break;
       case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
          snprintf(s, len, "Sort save states in folders \n"
@@ -271,12 +268,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "memory.");
          break;
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
-         snprintf(s, len, "If a state was loaded, will roll it back  \n"
-               "in memory to prior state.");
+         snprintf(s, len, "If a state was loaded, content will \n"
+               "go back to the state prior to loading.");
          break;
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
-         snprintf(s, len, "If a state was saved, will roll it back  \n"
-               "in memory to prior state.");
+         snprintf(s, len, "If a state was overwritten, it will \n"
+               "roll back to the previous save state.");
          break;
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          snprintf(s, len, "Create a screenshot. \n"
@@ -288,7 +285,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Start the content.");
          break;
       case MENU_ENUM_LABEL_INFORMATION:
-         snprintf(s, len, "Show additional metatadata information \n"
+         snprintf(s, len, "Show additional metadata information \n"
                "about the content.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CONFIG:
