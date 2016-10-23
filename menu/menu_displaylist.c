@@ -2214,10 +2214,10 @@ static int menu_displaylist_parse_settings_internal(void *data,
    for (;;)
    {
       bool time_to_exit             = false;
-      const char *short_description =
-         menu_setting_get_short_description(setting);
+      const char *short_description = setting->short_description;
       const char *name              = menu_setting_get_name(setting);
       enum setting_type type        = setting->type;
+      rarch_setting_t **list        = &setting;
 
       switch (parse_type)
       {
@@ -2322,7 +2322,7 @@ loop:
 
       if (time_to_exit)
          break;
-      menu_settings_list_increment(&setting);
+      (*list = *list + 1);
    }
 
    if (count == 0 && add_empty_entry)
@@ -2399,10 +2399,10 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
    for (;;)
    {
       bool time_to_exit             = false;
-      const char *short_description =
-         menu_setting_get_short_description(setting);
+      const char *short_description = setting->short_description;
       const char *name              = menu_setting_get_name(setting);
       enum setting_type type        = setting->type;
+      rarch_setting_t **list        = &setting;
 
       switch (parse_type)
       {
@@ -2507,7 +2507,7 @@ loop:
 
       if (time_to_exit)
          break;
-      menu_settings_list_increment(&setting);
+      (*list = *list + 1);
    }
 
    if (count == 0)

@@ -483,14 +483,6 @@ static void menu_settings_info_list_free(rarch_setting_info_t *list_info)
       free(list_info);
 }
 
-void menu_settings_list_increment(rarch_setting_t **list)
-{
-   if (!list || !*list)
-      return;
-
-   *list = *list + 1;
-}
-
 void menu_settings_list_current_add_range(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -676,24 +668,18 @@ const char *menu_setting_get_parent_group(rarch_setting_t *setting)
    return setting->parent_group;
 }
 
-const char *menu_setting_get_short_description(rarch_setting_t *setting)
-{
-   if (!setting)
-      return NULL;
-   return setting->short_description;
-}
-
 static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting, 
       const char *label)
 {
-   uint32_t needle = msg_hash_calculate(label);
+   uint32_t needle        = msg_hash_calculate(label);
+   rarch_setting_t **list = &setting;
 
-   for (; setting->type != ST_NONE; menu_settings_list_increment(&setting))
+   for (; setting->type != ST_NONE; (*list = *list + 1))
    {
       if (needle == setting->name_hash && setting->type <= ST_GROUP)
       {
          const char *name              = menu_setting_get_name(setting);
-         const char *short_description = menu_setting_get_short_description(setting);
+         const char *short_description = setting->short_description;
          /* make sure this isn't a collision */
          if (!string_is_equal(label, name))
             continue;
@@ -714,11 +700,12 @@ static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
 static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting, 
      enum msg_hash_enums enum_idx)
 {
-   for (; setting->type != ST_NONE; menu_settings_list_increment(&setting))
+   rarch_setting_t **list = &setting;
+   for (; setting->type != ST_NONE; (*list = *list + 1))
    {
       if (setting->enum_idx == enum_idx && setting->type <= ST_GROUP)
       {
-         const char *short_description = menu_setting_get_short_description(setting);
+         const char *short_description = setting->short_description;
          if (string_is_empty(short_description))
             return NULL;
 
@@ -6705,12 +6692,13 @@ bool menu_setting_free(void *data)
 {
    unsigned values, n;
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   rarch_setting_t **list = &setting;
 
    if (!setting)
       return false;
 
    /* Free data which was previously tagged */
-   for (; setting->type != ST_NONE; menu_settings_list_increment(&setting))
+   for (; setting->type != ST_NONE; (*list = *list + 1))
       for (values = setting->free_flags, n = 0; values != 0; values >>= 1, n++)
          if (values & 1)
             switch (1 << n)

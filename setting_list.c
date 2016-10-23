@@ -1820,8 +1820,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 {
    menu_input_ctx_line_t line;
    input_keyboard_line_complete_t cb = NULL;
-   rarch_setting_t      *setting = (rarch_setting_t*)data;
-   const char *short_description = menu_setting_get_short_description(setting);
+   rarch_setting_t      *setting     = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
@@ -1844,7 +1843,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
          break;
    }
 
-   line.label         = short_description;
+   line.label         = setting->short_description;
    line.label_setting = setting->name;
    line.type          = 0;
    line.idx           = 0;

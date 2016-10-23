@@ -131,15 +131,11 @@ const char *menu_setting_get_values(rarch_setting_t *setting);
 
 const char *menu_setting_get_name(rarch_setting_t *setting);
 
-const char *menu_setting_get_short_description(rarch_setting_t *setting);
-
 const char *menu_setting_get_parent_group(rarch_setting_t *setting);
 
 uint32_t menu_setting_get_index(rarch_setting_t *setting);
 
 void *setting_get_ptr(rarch_setting_t *setting);
-
-void menu_settings_list_increment(rarch_setting_t **list);
 
 void general_write_handler(void *data);
 
