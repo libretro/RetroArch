@@ -316,7 +316,7 @@ static bool cocoa_input_key_pressed(void *data, int key)
    settings_t *settings      = config_get_ptr();
    int port                  = 0;
 
-   if (apple_input_is_pressed(0, settings->input.binds[0], key))
+   if (settings->input.binds[0][key].valid && apple_input_is_pressed(0, settings->input.binds[0], key))
       return true;
 
    if (settings->input.all_users_control_menu)

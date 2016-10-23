@@ -313,7 +313,7 @@ int16_t apple_input_is_pressed(unsigned port_num,
    {
       const struct retro_keybind *bind = &binds[id];
       unsigned bit = input_keymaps_translate_rk_to_keysym(bind->key);
-      return bind->valid && apple_key_state[bit];
+      return apple_key_state[bit];
    }
    return 0;
 }
