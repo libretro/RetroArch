@@ -1457,24 +1457,6 @@ static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
    strlcpy(s2, path, len2);
 }
 
-static void menu_action_setting_disp_set_label_system_information(
-      file_list_t* list,
-      unsigned *w, unsigned type, unsigned i,
-      const char *label,
-      char *s, size_t len,
-      const char *entry_label,
-      const char *path,
-      char *s2, size_t len2)
-{
-   *s = '\0';
-   *w = 2;
-
-   menu_setting_get_label(list, s,
-         len, w, type, label, entry_label, i);
-
-   strlcpy(s2, path, len2);
-}
-
 static void menu_action_setting_disp_set_label_achievement_information(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1809,12 +1791,9 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
                   menu_action_setting_disp_set_label_cheevos_locked_entry);
             return 0;
          case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_menu_more);
-            return 0;
          case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
             BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_system_information);
+                  menu_action_setting_disp_set_label_menu_more);
             return 0;
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
             BIND_ACTION_GET_VALUE(cbs,
