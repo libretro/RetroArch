@@ -32,7 +32,7 @@ bool android_keyboard_port_input_pressed(const struct retro_keybind *binds, unsi
    {
       const struct retro_keybind *bind = &binds[id];
       unsigned bit = input_keymaps_translate_rk_to_keysym(binds[id].key);
-      return bind->valid && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], bit);
+      return BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], bit);
    }
    return false;
 }
