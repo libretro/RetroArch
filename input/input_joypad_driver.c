@@ -243,31 +243,24 @@ bool input_joypad_pressed(
    int16_t  axis;
    uint32_t joyaxis;
    uint64_t joykey;
-   const struct retro_keybind *auto_binds = NULL;
-   const struct retro_keybind *binds = (const struct retro_keybind*)
+   settings_t *settings                   = config_get_ptr();
+   const struct retro_keybind *binds      = (const struct retro_keybind*)
       binds_data;
-   settings_t *settings = config_get_ptr();
-   unsigned joy_idx = settings->input.joypad_map[port];
+   unsigned joy_idx                       = settings->input.joypad_map[port];
+   /* Auto-binds are per joypad, not per user. */
+   const struct retro_keybind *auto_binds = settings->input.autoconf_binds[joy_idx];
 
-   if (joy_idx >= MAX_USERS)
-      return false;
    if (!drv || !binds[key].valid)
       return false;
 
-   /* Auto-binds are per joypad, not per user. */
-   auto_binds = settings->input.autoconf_binds[joy_idx];
-
-   joykey = binds[key].joykey;
-   if (joykey == NO_BTN)
-      joykey = auto_binds[key].joykey;
+   joykey = (binds[key].joykey != NO_BTN)
+      ? binds[key].joykey : auto_binds[key].joykey;
 
    if (drv->button(joy_idx, (uint16_t)joykey))
       return true;
 
-   joyaxis = binds[key].joyaxis;
-   if (joyaxis == AXIS_NONE)
-      joyaxis = auto_binds[key].joyaxis;
-
+   joyaxis     = (binds[key].joyaxis != AXIS_NONE) 
+      ? binds[key].joyaxis : auto_binds[key].joyaxis;
    axis        = drv->axis(joy_idx, joyaxis);
    scaled_axis = (float)abs(axis) / 0x8000;
    return scaled_axis > settings->input.axis_threshold;
