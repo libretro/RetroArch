@@ -1758,6 +1758,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case MENU_SETTINGS_CUSTOM_BIND_ALL:
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
          case MENU_SETTING_ACTION:
+         case MENU_SETTING_ACTION_LOADSTATE:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_more);
             break;
