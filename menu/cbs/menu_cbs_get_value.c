@@ -624,6 +624,20 @@ static void menu_action_setting_disp_set_label_db_entry(
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_system_info_entry(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   *s = '\0';
+   *w = 8;
+   strlcpy(s2, path, len2);
+}
+
 static void menu_action_setting_disp_set_label_state(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1753,6 +1767,9 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
             break;
          case 31: /* Database entry */
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_db_entry);
+            break;
+         case 65535: /* System info entry */
+            BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_system_info_entry);
             break;
          default:
 #if 0
