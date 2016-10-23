@@ -650,8 +650,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                }
 
                runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
-               runloop_core_options =
-                  core_option_manager_new(options_path, vars);
+
+               if (!string_is_empty(options_path))
+                  runloop_core_options =
+                     core_option_manager_new(options_path, vars);
             }
 
          }
