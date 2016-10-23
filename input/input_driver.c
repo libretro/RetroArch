@@ -104,8 +104,8 @@ static command_t *input_driver_command            = NULL;
 #ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_remote        = NULL;
 #endif
-static const input_driver_t *current_input        = NULL;
-static void *current_input_data                   = NULL;
+const input_driver_t *current_input               = NULL;
+void *current_input_data                          = NULL;
 static bool input_driver_block_hotkey             = false;
 static bool input_driver_block_libretro_input     = false;
 static bool input_driver_osk_enabled              = false;
@@ -181,13 +181,6 @@ bool input_driver_set_rumble_state(unsigned port,
       return false;
    return current_input->set_rumble(current_input_data,
          port, effect, strength);
-}
-
-int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
-      unsigned port, unsigned device, unsigned index, unsigned id)
-{
-   return current_input->input_state(current_input_data, retro_keybinds,
-         port, device, index, id);
 }
 
 const input_device_driver_t *input_driver_get_joypad_driver(void)
@@ -590,10 +583,10 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    {
       for (i = 4; i < 16; i++)
       {
-         *input1 |= (input_driver_state(
-                  binds, 0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
-         *input2 |= (input_driver_state(
-                  binds, 1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+         *input1 |= (current_input->input_state(current_input_data, binds,
+                  0, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
+         *input2 |= (current_input->input_state(current_input_data, binds,
+                  1, RETRO_DEVICE_JOYPAD, 0, buttons[i - 4]) ? 1 : 0) << i;
       }
    }
 

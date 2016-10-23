@@ -93,6 +93,9 @@ typedef struct input_driver
    void (*keyboard_mapping_set_block)(void *data, bool value);
 } input_driver_t;
 
+extern const input_driver_t *current_input;
+extern void *current_input_data;
+
 /**
  * input_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -131,9 +134,6 @@ const char* config_get_input_driver_options(void);
  **/
 bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
-
-int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
-      unsigned port, unsigned device, unsigned index, unsigned id);
 
 uint64_t input_driver_get_capabilities(void);
 

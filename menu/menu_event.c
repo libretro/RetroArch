@@ -46,20 +46,18 @@ static int menu_event_pointer(unsigned *action)
       menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
    int pointer_x                                =
-      input_driver_state(binds, 0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_X);
+      current_input->input_state(current_input_data, binds,
+            0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_X);
    int pointer_y                                =
-      input_driver_state(binds, 0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_Y);
+      current_input->input_state(current_input_data, binds,
+            0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_Y);
 
-   menu_input->pointer.pressed[0]  = input_driver_state(binds,
-         0, pointer_device,
-         0, RETRO_DEVICE_ID_POINTER_PRESSED);
-   menu_input->pointer.pressed[1]  = input_driver_state(binds,
-         0, pointer_device,
-         1, RETRO_DEVICE_ID_POINTER_PRESSED);
-   menu_input->pointer.back  = input_driver_state(binds, 0, pointer_device,
-         0, RARCH_DEVICE_ID_POINTER_BACK);
+   menu_input->pointer.pressed[0]  = current_input->input_state(current_input_data, binds,
+         0, pointer_device, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
+   menu_input->pointer.pressed[1]  = current_input->input_state(current_input_data, binds,
+         0, pointer_device, 1, RETRO_DEVICE_ID_POINTER_PRESSED);
+   menu_input->pointer.back        = current_input->input_state(current_input_data, binds,
+            0, pointer_device, 0, RARCH_DEVICE_ID_POINTER_BACK);
 
    menu_input->pointer.x = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
    menu_input->pointer.y = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;

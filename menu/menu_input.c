@@ -331,7 +331,8 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
          return 0;
    }
 
-   return input_driver_state(NULL, 0, device, 0, type);
+   return current_input->input_state(current_input_data, NULL,
+         0, device, 0, type);
 }
 
 static int menu_input_pointer_post_iterate(

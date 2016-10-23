@@ -216,8 +216,8 @@ static void menu_input_key_bind_poll_bind_state(
       return;
 
    memset(state->state, 0, sizeof(state->state));
-   state->skip = timed_out || input_driver_state(NULL, 0,
-         RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
+   state->skip = timed_out || current_input->input_state(current_input_data, NULL,
+         0, RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
 
    menu_input_key_bind_poll_bind_state_internal(
          joypad, state, port, timed_out);

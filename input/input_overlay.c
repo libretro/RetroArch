@@ -639,15 +639,15 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
-         input_driver_state(NULL, 0, device, i,
-            RETRO_DEVICE_ID_POINTER_PRESSED);
+         current_input->input_state(current_input_data, NULL,
+            0, device, i, RETRO_DEVICE_ID_POINTER_PRESSED);
          i++)
    {
       input_overlay_state_t polled_data;
-      int16_t x = input_driver_state(NULL, 0,
-            device, i, RETRO_DEVICE_ID_POINTER_X);
-      int16_t y = input_driver_state(NULL, 0,
-            device, i, RETRO_DEVICE_ID_POINTER_Y);
+      int16_t x = current_input->input_state(current_input_data, NULL,
+            0, device, i, RETRO_DEVICE_ID_POINTER_X);
+      int16_t y = current_input->input_state(current_input_data, NULL,
+            0, device, i, RETRO_DEVICE_ID_POINTER_Y);
 
       input_overlay_poll(ol, &polled_data, x, y);
 
