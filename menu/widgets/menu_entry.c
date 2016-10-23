@@ -231,10 +231,9 @@ void menu_entry_enum_set_value_with_string(uint32_t i, const char *s)
 int32_t menu_entry_bind_index(uint32_t i)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   uint32_t          index  = setting_get_index(setting);
 
-   if (index)
-      return index - 1;
+   if (setting)
+      return setting->index - 1;
    return 0;
 }
 

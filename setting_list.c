@@ -101,20 +101,6 @@ bool settings_list_append(rarch_setting_t **list,
    return true;
 }
 
-uint32_t setting_get_index(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0;
-   return setting->index;
-}
-
-unsigned setting_get_index_offset(rarch_setting_t *setting)
-{
-   if (!setting)
-      return 0;
-   return setting->index_offset;
-}
-
 unsigned setting_get_bind_type(rarch_setting_t *setting)
 {
    if (!setting)
@@ -612,7 +598,7 @@ static void setting_get_string_representation_st_bind(void *data,
    if (!setting)
       return;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = setting->index_offset;
    keybind      = (const struct retro_keybind*)setting->value.target.keybind;
    auto_bind    = (const struct retro_keybind*)
       input_get_auto_bind(index_offset, keybind->id);

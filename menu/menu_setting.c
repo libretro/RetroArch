@@ -350,7 +350,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    if (!setting)
       return;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = setting->index_offset;
 
    if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system)
          && system)
@@ -403,7 +403,7 @@ static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
 
    if (setting)
    {
-      unsigned index_offset = setting_get_index_offset(setting);
+      unsigned index_offset = setting->index_offset;
       strlcpy(s, modes[settings->input.analog_dpad_mode
             [index_offset] % ANALOG_DPAD_LAST], len);
    }
@@ -838,7 +838,7 @@ static int setting_action_start_bind_device(void *data)
    if (!setting || !settings)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = setting->index_offset;
 
    settings->input.joypad_map[index_offset] = index_offset;
    return 0;
@@ -924,8 +924,8 @@ static int setting_action_start_libretro_device_type(void *data)
    if (setting_generic_action_start_default(setting) != 0)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
-   port         = index_offset;
+   index_offset     = setting->index_offset;
+   port             = index_offset;
 
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
@@ -1159,7 +1159,7 @@ static int setting_action_left_bind_device(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = setting->index_offset;
 
    p = &settings->input.joypad_map[index_offset];
 
@@ -1181,7 +1181,7 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = setting->index_offset;
 
    p = &settings->input.joypad_map[index_offset];
 
@@ -1216,7 +1216,7 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
    if (!settings || !setting)
       return -1;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = setting->index_offset;
 
    if(config_save_autoconf_profile(
             settings->input.device_names[index_offset], index_offset))
@@ -1322,7 +1322,7 @@ static void get_string_representation_bind_device(void * data, char *s,
    if (!setting)
       return;
 
-   index_offset = setting_get_index_offset(setting);
+   index_offset = setting->index_offset;
    map          = settings->input.joypad_map[index_offset];
 
    if (map < settings->input.max_users)
