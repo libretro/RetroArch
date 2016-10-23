@@ -1774,8 +1774,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case MENU_SETTINGS_CUSTOM_BIND_DEFAULT_ALL:
          case MENU_SETTING_ACTION:
          case MENU_SETTING_ACTION_LOADSTATE:
+         case 7:   /* Run */
+         case MENU_SETTING_ACTION_DELETE_ENTRY:
          case 117: /* Netplay settings */
-         case 109: /* Disk Control settings */
+         case MENU_SETTING_ACTION_CORE_DISK_OPTIONS:
             BIND_ACTION_GET_VALUE(cbs,
                menu_action_setting_disp_set_label_menu_more);
             break;
@@ -1790,7 +1792,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
          case 26: /* URL entries */
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry);
             break;
-         case 100: /* No items */
+         case MENU_SETTING_NO_ITEM:
             BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_no_items);
             break;
          case 32: /* Recent history entry */
@@ -1817,6 +1819,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
 
 #if 0
    RARCH_LOG("MENU_SETTINGS_NONE: %d\n", MENU_SETTINGS_NONE);
+   RARCH_LOG("MENU_SETTINGS_LAST: %d\n", MENU_SETTINGS_LAST);
 #endif
 
    if (cbs->enum_idx != MSG_UNKNOWN)
