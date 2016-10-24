@@ -718,8 +718,6 @@ static void xmb_render_quad(xmb_handle_t *xmb,
 static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid, unsigned id)
 {
    unsigned i, width, height;
-   video_driver_get_size(&width, &height);
-
    float dark[16]=  {
       0.00, 0.00, 0.00, 0.5,
       0.00, 0.00, 0.00, 0.5,
@@ -734,16 +732,20 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid, unsigned id)
       1.00, 1.00, 1.00, 0.5,
    };
 
+   video_driver_get_size(&width, &height);
+
    xmb_render_quad(xmb, 0, height/2.0, width, height/2.0,
          width, height,
          &dark[0]);
 
    for (i = 0; i <= 40; i++)
    {
+      int foo;
       char letter[2];
+
       letter[0] = grid[i];
       letter[1] = '\0';
-      int foo = (i / 10)*height/10.0;
+      foo       = (i / 10)*height/10.0;
 
       if (i == id)
          xmb_render_quad(xmb,
