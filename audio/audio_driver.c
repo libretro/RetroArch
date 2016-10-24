@@ -152,7 +152,6 @@ static void *audio_driver_resampler_data                 = NULL;
 static const audio_driver_t *current_audio               = NULL;
 static void *audio_driver_context_audio_data             = NULL;
 
-static struct retro_perf_counter resampler_proc          = {0};
 static bool audio_driver_use_float                       = false;
 static bool audio_driver_active                          = false;
 static bool audio_driver_data_own                        = false;
@@ -485,6 +484,7 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
+   static struct retro_perf_counter resampler_proc      = {0};
    static struct retro_perf_counter audio_convert_s16   = {0};
    struct resampler_data src_data;
    const void *output_data                     = NULL;
@@ -575,7 +575,11 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
       src_data.ratio *= settings->slowmotion_ratio;
 
-   audio_driver_process_resampler(&src_data);
+   performance_counter_init(&resampler_proc, "resampler_proc");
+   performance_counter_start(&resampler_proc);
+
+   audio_driver_resampler->process(audio_driver_resampler_data, &src_data);
+   performance_counter_stop(&resampler_proc);
 
    output_data   = audio_driver_output_samples_buf;
    output_frames = src_data.output_frames;
@@ -839,16 +843,6 @@ bool audio_driver_init_resampler(void)
          &audio_driver_resampler,
          settings->audio.resampler,
          audio_driver_data.source_ratio.original);
-}
-
-void audio_driver_process_resampler(void *data)
-{
-   struct resampler_data *resampler = (struct resampler_data*)data;
-   performance_counter_init(&resampler_proc, "resampler_proc");
-   performance_counter_start(&resampler_proc);
-
-   audio_driver_resampler->process(audio_driver_resampler_data, resampler);
-   performance_counter_stop(&resampler_proc);
 }
 
 bool audio_driver_deinit(void)

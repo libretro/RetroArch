@@ -102,8 +102,6 @@ void audio_driver_deinit_resampler(void);
 
 bool audio_driver_init_resampler(void);
 
-void audio_driver_process_resampler(void *data);
-
 bool audio_driver_free_devices_list(void);
 
 bool audio_driver_new_devices_list(void);
