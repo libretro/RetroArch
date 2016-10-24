@@ -819,7 +819,6 @@ void setting_get_string_representation(void *data, char *s, size_t len)
       setting->get_string_representation(setting, s, len);
 }
 
-
 /**
  * setting_action_start_savestates:
  * @data               : pointer to setting
@@ -1372,8 +1371,8 @@ void menu_setting_get_label(void *data, char *s,
 
    setting = menu_setting_find(list->list[idx].label);
 
-   if (setting)
-      setting_get_string_representation(setting, s, len);
+   if (setting && setting->get_string_representation)
+      setting->get_string_representation(setting, s, len);
 }
 
 void general_read_handler(void *data)
