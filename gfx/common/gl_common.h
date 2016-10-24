@@ -32,7 +32,7 @@
 #include "../font_driver.h"
 #include "../video_coord_array.h"
 #include "../video_context_driver.h"
-#include "../drivers/gl_capabilities.h"
+#include "../drivers/gl_symlinks.h"
 
 typedef struct gl
 {

@@ -22,6 +22,8 @@
 
 #include <boolean.h>
 
+#include <glsym/glsym.h>
+
 #include "gl_capabilities.h"
 
 #ifdef RARCH_INTERNAL

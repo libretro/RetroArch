@@ -16,7 +16,7 @@
 
 #include <gfx/math/matrix_4x4.h>
 
-#include "../drivers/gl_capabilities.h"
+#include "../drivers/gl_symlinks.h"
 #include "../video_coord_array.h"
 
 void gl_ff_vertex(const struct video_coords *coords)
