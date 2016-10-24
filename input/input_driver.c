@@ -506,7 +506,7 @@ int16_t input_state(unsigned port, unsigned device,
  **/
 static bool check_input_driver_block_hotkey(bool enable_hotkey)
 {
-   bool use_hotkey_enable                    = false;;
+   bool use_hotkey_enable                    = false;
    settings_t *settings                      = config_get_ptr();
    const struct retro_keybind *bind          =
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];

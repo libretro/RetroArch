@@ -74,7 +74,7 @@ static void font_renderer_ft_free(void *data)
 
 static freetype_atlas_slot_t* font_renderer_get_slot(ft_font_renderer_t *handle)
 {
-   int i;
+   int i, map_id;
    unsigned oldest = 0;
 
    for (i = 1; i < FT_ATLAS_SIZE; i++)
@@ -83,7 +83,7 @@ static freetype_atlas_slot_t* font_renderer_get_slot(ft_font_renderer_t *handle)
          oldest = i;
 
    /* remove from map */
-   int map_id = handle->atlas_slots[oldest].charcode & 0xFF;
+   map_id = handle->atlas_slots[oldest].charcode & 0xFF;
    if(handle->uc_map[map_id] == &handle->atlas_slots[oldest])
       handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
    else if (handle->uc_map[map_id])
@@ -162,21 +162,24 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
 
 static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_size)
 {
-   unsigned i, x, y, max_width, max_height;
+   unsigned i, x, y;
+   freetype_atlas_slot_t* slot = NULL;
 
    /* TODO: find a better way to determine max_width/max_height */
-   max_width  = font_size;
-   max_height = font_size;
-   handle->atlas.width      = max_width  * FT_ATLAS_COLS;
-   handle->atlas.height     = max_height * FT_ATLAS_ROWS;
+   unsigned max_width          = font_size;
+   unsigned max_height         = font_size;
 
-   handle->atlas.buffer     = (uint8_t*)
+   handle->atlas.width         = max_width  * FT_ATLAS_COLS;
+   handle->atlas.height        = max_height * FT_ATLAS_ROWS;
+
+   handle->atlas.buffer        = (uint8_t*)
       calloc(handle->atlas.width * handle->atlas.height, 1);
 
    if (!handle->atlas.buffer)
       return false;
 
-   freetype_atlas_slot_t* slot = handle->atlas_slots;
+   slot = handle->atlas_slots;
+
    for (y = 0; y < FT_ATLAS_ROWS; y++)
    {
       for (x = 0; x < FT_ATLAS_COLS; x++)
