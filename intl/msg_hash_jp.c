@@ -97,10 +97,10 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
             snprintf(s, len,
                   "Enable other hotkeys. \n"
                   " \n"
-                  "If this hotkey is bound to \n"
-                  "either keyboard, joybutton or joyaxis, \n"
-                  "all other hotkeys will be disabled unless \n"
-                  "this hotkey is also held at the same time. \n"
+                  "If this hotkey is bound to either\n"
+                  "a keyboard, joybutton or joyaxis, \n"
+                  "all other hotkeys will be enabled only \n"
+                  "if this one is held at the same time. \n"
                   " \n"
                   "This is useful for RETRO_KEYBOARD centric \n"
                   "implementations which query a large area of \n"
@@ -120,7 +120,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_OVERLAY_NEXT:
             snprintf(s, len,
-                  "Toggles to next overlay. Wraps around.");
+                  "Switches to next overlay. Wraps around.");
             break;
          case RARCH_DISK_EJECT_TOGGLE:
             snprintf(s, len,
@@ -239,16 +239,13 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "for the Onscreen Display text.");
          break;
       case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
-         snprintf(s, len, "Load content-specific core options \n"
-               "automatically if found.");
+         snprintf(s, len, "Automatically load content-specific core options.");
          break;
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
-         snprintf(s, len, "Load override configurations \n"
-               "automatically if found.");
+         snprintf(s, len, "Automatically load override configurations.");
          break;
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
-         snprintf(s, len, "Load input remapping files \n"
-               "automatically if found.");
+         snprintf(s, len, "Automatically load input remapping files.");
          break;
       case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
          snprintf(s, len, "Sort save states in folders \n"
@@ -270,12 +267,12 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "memory.");
          break;
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
-         snprintf(s, len, "If a state was loaded, will roll it back  \n"
-               "in memory to prior state.");
+         snprintf(s, len, "If a state was loaded, content will \n"
+               "go back to the state prior to loading.");
          break;
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
-         snprintf(s, len, "If a state was saved, will roll it back  \n"
-               "in memory to prior state.");
+         snprintf(s, len, "If a state was overwritten, it will \n"
+               "roll back to the previojp save state.");
          break;
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          snprintf(s, len, "Create a screenshot. \n"
@@ -287,7 +284,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Start the content.");
          break;
       case MENU_ENUM_LABEL_INFORMATION:
-         snprintf(s, len, "Show additional metatadata information \n"
+         snprintf(s, len, "Show additional metadata information \n"
                "about the content.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CONFIG:
@@ -440,12 +437,12 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Cache Directory. \n"
                " \n"
-               "Content which is temporarily extracted \n"
-               "will be extracted to this directory.");
+               "Content decompressed by RetroArch will be \n"
+               "temporarily extracted to this directory.");
          break;
       case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
          snprintf(s, len,
-               "If enabled, every file loaded \n"
+               "If enabled, every content loaded \n"
                "in RetroArch will be automatically \n"
                "added to the recent history list.");
          break;
@@ -493,11 +490,11 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE:
          snprintf(s, len,
-               "Will enable audio or not.");
+               "Enable audio output.");
          break;
       case MENU_ENUM_LABEL_AUDIO_SYNC:
          snprintf(s, len,
-               "Will synchronize audio (recommended).");
+               "Synchronize audio (recommended).");
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
          snprintf(s, len,
@@ -507,7 +504,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE:
          snprintf(s, len,
-               "Allow games to set rotation. If false, \n"
+               "Allow cores to set rotation. If false, \n"
                "rotation requests are honored, but ignored.\n\n"
                "Used for setups where one manually rotates \n"
                "the monitor.");
@@ -533,10 +530,10 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
          snprintf(s, len,
-               "When saving savestates, state index is \n"
-               "automatically incremented before saving.\n"
-               "When the content is loaded, state index will \n"
-               "be set to the highest existing value.");
+               "Automatically increment slot index on each save, \n"
+               "generating multiple savestate files. \n"
+               "When the content is loaded, state slot will be \n"
+               "set to the highest existing value (last savestate).");
          break;
       case MENU_ENUM_LABEL_FPS_SHOW:
          snprintf(s, len,
@@ -1321,7 +1318,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Use threaded video driver.\n"
                " \n"
-               "Using this might improve performance at \n"
+               "Using this might improve performance at the \n"
                "possible cost of latency and more video \n"
                "stuttering.");
          break;
@@ -1900,6 +1897,12 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_VIDEO_THREADED:
+         return "パフォーマンスを改良するけど、ビデオの遅延と途切れが増す。フルスピードを取得しない時だけで使用する。";
+      case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC:
+         return "CPUとGPUを強制に同期する。遅延が減るけどパフォーマンスも減る。";
+      case MENU_ENUM_SUBLABEL_MENU_SETTINGS:
+         return "メニューの外観関係の設定を変更する。";
       case MSG_CONNECTION_SLOT:
          return "Connection slot";
       case MSG_WAITING_FOR_CLIENT:
@@ -3029,12 +3032,14 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
+         return "終了時に設定を自動的に保存する。";
       case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES:
-         return "Sets how many frames the CPU can run ahead of the GPU when using 'Hard GPU Sync'.";
+         return "CPUが「強制GPU同期」を使用時にGPUからの最高のフレーム前進を選択する。";
       case MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO:
-         return "The accurate estimated refresh rate of the monitor in Hz.";
+         return "モニターの正確な推定のモニターリフレッシュレート";
       case MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX:
-         return "Selects which display monitor to use.";
+         return "希望するモニターを選択する。";
       case MENU_ENUM_SUBLABEL_LOG_VERBOSITY:
          return "Enable or disable logging to the terminal.";
       case MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES:
@@ -3044,23 +3049,23 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "Amount of cores that the CPU has.";
       case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:
-         return "Inserts a black frame inbetween frames. Useful for users of 120 Hz monitors who want to play 60 Hz material with eliminated ghosting.";
+         return "フレームの間で黒フレームを挿入する。60Hzコンテンツを120Hzモニターでやることを役に立つ。";
       case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
-         return "Reduces latency at cost of higher risk of video stuttering. Adds a delay after V-Sync (in ms).";
+         return "遅延が減るけどビデオ途切れの危険率が増す。";
       case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
          return "コンテンツをスキャンしたり、ダウンロードしたりすると、コレクションに入れる。";
       case MENU_ENUM_SUBLABEL_NETPLAY:
          return "ネットプレイのセッションを参加やホストする。";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
-         return "Displays the current framerate per second onscreen.";
+         return "画面で現在のフレームレートを表示する。";
       case MENU_ENUM_SUBLABEL_VIDEO_SETTINGS:
          return "ビデオ出力の設定を変える。";
       case MENU_ENUM_SUBLABEL_AUDIO_SETTINGS:
-         return "Adjusts settings for audio output.";
+         return "オーディオ出力の設定を変更する。";
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
-         return "Prevents your system's screensaver from becoming active.";
+         return "システムのスクリーンセーバーをアクティブになることを予防する。";
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
-         return "Tells the video driver to explicitly use a specified buffering mode.";
+         return "指定するバッファーモードをビデオドライバに伝える。";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
          return "RetroArchにアドオンとコンポーネントをダウンロードとアップデートする。";
       case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
@@ -3884,13 +3889,13 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_ENABLE:
          return "コアの名前を表示";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST:
-         return "Start hosting";
+         return "ホストする";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT:
-         return "Connect to Netplay host";
+         return "ネットプレイサーバーに接続";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT:
-         return "Disconnect";
+         return "切断";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS:
-         return "Netplay settings";
+         return "ネットプレイ設定";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
          return "DPI Override Enable";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
@@ -4004,7 +4009,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
          return "GPUスクリーンショットを有効";
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
-         return "オーバースキャンをクロップ (リロード)";
+         return "オーバースキャンをクロップ (再起動が必要)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX:
          return "アスペクト比のインデックス";
       case MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_AUTO:
