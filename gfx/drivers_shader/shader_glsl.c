@@ -28,6 +28,7 @@
 #endif
 
 #ifdef HAVE_OPENGL
+#include <gfx/gl_capabilities.h>
 #include "../common/gl_common.h"
 #endif
 
