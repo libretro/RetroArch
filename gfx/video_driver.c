@@ -1112,7 +1112,7 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
  *
  * Renders the current video frame.
  **/
-static bool video_driver_cached_frame(void)
+bool video_driver_cached_frame(void)
 {
    retro_ctx_frame_info_t info;
    void *recording  = recording_driver_get_data_ptr();
@@ -1691,15 +1691,6 @@ bool video_driver_cached_frame_has_valid_framebuffer(void)
    if (!frame_cache_data)
       return false;
    return frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
-}
-
-bool video_driver_cached_frame_render(void)
-{
-   if (!current_video)
-      return false;
-   if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
-      return true; /* Maybe return false here for indication of idleness? */
-   return video_driver_cached_frame();
 }
 
 bool video_driver_is_alive(void)

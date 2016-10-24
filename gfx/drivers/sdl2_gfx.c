@@ -630,7 +630,8 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
    performance_counter_init(&sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
    performance_counter_start(&sdl2_gfx_read_viewport);
 
-   video_driver_cached_frame_render();
+   if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      video_driver_cached_frame();
 
    surf  = SDL_GetWindowSurface(vid->window);
    bgr24 = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_BGR24, 0);

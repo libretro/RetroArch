@@ -2301,7 +2301,10 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
             if (settings->video.black_frame_insertion)
-               video_driver_cached_frame_render();
+            {
+               if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+                  video_driver_cached_frame();
+            }
          }
          else
          {

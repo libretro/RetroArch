@@ -996,7 +996,8 @@ static enum runloop_state runloop_check_state(
       if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
       {
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-         video_driver_cached_frame_render();
+         if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+            video_driver_cached_frame();
       }
 
       if (!check_is_oneshot)
@@ -1077,7 +1078,10 @@ static enum runloop_state runloop_check_state(
    {
       /* Checks if slowmotion toggle/hold was being pressed and/or held. */
       if (settings->video.black_frame_insertion)
-         video_driver_cached_frame_render();
+      {
+         if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+            video_driver_cached_frame();
+      }
 
       if (state_manager_frame_is_reversed())
          runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);

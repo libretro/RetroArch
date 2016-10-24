@@ -2423,7 +2423,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          goto error;
       }
 
-      video_driver_cached_frame_render();
+      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+         video_driver_cached_frame();
 
       video_frame_convert_rgba_to_bgr(
             (const void*)gl->readback_buffer_screenshot,

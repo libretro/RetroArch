@@ -300,7 +300,8 @@ static bool take_screenshot_choice(const char *name_base)
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
-      video_driver_cached_frame_render();
+      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+         video_driver_cached_frame();
 #if defined(VITA)
       return take_screenshot_raw(name_base, NULL);
 #else
@@ -361,7 +362,10 @@ bool take_screenshot(void)
    runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
 
    if (is_paused)
-      video_driver_cached_frame_render();
+   {
+      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+         video_driver_cached_frame();
+   }
 
    return ret;
 }

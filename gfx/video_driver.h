@@ -325,7 +325,7 @@ bool video_driver_find_driver(void);
 void video_driver_apply_state_changes(void);
 bool video_driver_read_viewport(uint8_t *buffer);
 bool video_driver_cached_frame_has_valid_framebuffer(void);
-bool video_driver_cached_frame_render(void);
+bool video_driver_cached_frame(void);
 bool video_driver_is_alive(void);
 bool video_driver_is_focused(void);
 bool video_driver_has_windowed(void);

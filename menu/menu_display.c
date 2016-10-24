@@ -308,7 +308,9 @@ bool menu_display_libretro(void)
       return true;
    }
 
-   return video_driver_cached_frame_render();
+   if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      return true; /* Maybe return false here for indication of idleness? */
+   return video_driver_cached_frame();
 }
 
 void menu_display_set_width(unsigned width)

@@ -2274,7 +2274,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
        * with conversion. */
 
       vk->readback.pending = true;
-      video_driver_cached_frame_render();
+      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+         video_driver_cached_frame();
+
       vkQueueWaitIdle(vk->context->queue);
 
       if (!staging->mapped)
