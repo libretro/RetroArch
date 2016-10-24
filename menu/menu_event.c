@@ -135,40 +135,49 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
    if (menu_input_dialog_get_display_kb())
    {
-      static unsigned ti_char = 64;
-      static bool ti_next     = false;
+      if (kbd_upper)
+         strlcpy(kbd_grid, "!@#$%^&*()QWERTYUIOPASDFGHJKL:ZXCVBNM <>?", sizeof(kbd_grid));
+      else
+         strlcpy(kbd_grid, "1234567890qwertyuiopasdfghjkl:zxcvbnm ,./", sizeof(kbd_grid));
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
-         if (ti_char > 32)
-            ti_char--;
-         if (! ti_next)
-            input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-         input_keyboard_event(true, ti_char, ti_char, 0, RETRO_DEVICE_KEYBOARD);
-         ti_next = false;
+         if (kbd_index < 30)
+            kbd_index = kbd_index + 10;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       {
-         if (ti_char < 125)
-            ti_char++;
-         if (! ti_next)
-            input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-         input_keyboard_event(true, ti_char, ti_char, 0, RETRO_DEVICE_KEYBOARD);
-         ti_next = false;
+         if (kbd_index >= 10)
+            kbd_index = kbd_index - 10;
+      }
+
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      {
+         if (kbd_index < 39)
+            kbd_index = kbd_index + 1;
+      }
+
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT))
+      {
+         if (kbd_index >= 1)
+            kbd_index = kbd_index - 1;
+      }
+
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
+      {
+         kbd_upper = ! kbd_upper;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
       {
-         ti_char = 64;
-         ti_next = true;
+         input_keyboard_event(true, kbd_grid[kbd_index], kbd_grid[kbd_index],
+               0, RETRO_DEVICE_KEYBOARD);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
       {
          input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-         ti_char = 64;
-         ti_next = false;
       }
 
       /* send return key to close keyboard input window */

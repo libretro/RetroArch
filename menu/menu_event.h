@@ -18,6 +18,7 @@
 #define _MENU_EVENT_H
 
 #include <stdint.h>
+#include <compat/strl.h>
 
 #include <retro_common_api.h>
 
@@ -31,6 +32,10 @@ RETRO_BEGIN_DECLS
  * state.
  */
 unsigned menu_event(uint64_t input, uint64_t trigger_state);
+
+unsigned kbd_index;
+char kbd_grid[41];
+bool kbd_upper;
 
 RETRO_END_DECLS
 
