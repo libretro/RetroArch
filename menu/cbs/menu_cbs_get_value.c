@@ -1541,6 +1541,41 @@ static void menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_setting_string(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   rarch_setting_t *setting = menu_setting_find(list->list[i].label);
+
+   *w = 19;
+
+   strlcpy(s, setting->value.target.string, len);
+
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   rarch_setting_t *setting = menu_setting_find(list->list[i].label);
+   const char *basename     = path_basename(setting->value.target.string);
+
+   *w = 19;
+
+   strlcpy(s, basename, len);
+
+   strlcpy(s2, path, len2);
+}
+
 static int menu_cbs_init_bind_get_string_representation_compare_label(
       menu_file_list_cbs_t *cbs)
 {
@@ -1849,6 +1884,14 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
          case ST_BOOL:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_setting_bool);
+            return 0;
+         case ST_STRING:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_setting_string);
+            return 0;
+         case ST_PATH:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_setting_path);
             return 0;
          default:
             break;
