@@ -1426,8 +1426,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Cuentas";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
          return "Enlace a lista de cuentas";
-      case MENU_ENUM_LABEL_VALUE_DEBUG_PANEL_ENABLE:
-         return "Activar panel de depuración";
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Buscar contenido";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:

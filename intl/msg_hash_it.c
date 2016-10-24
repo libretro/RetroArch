@@ -1150,8 +1150,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Account";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
          return "Lista degli account";
-      case MENU_ENUM_LABEL_VALUE_DEBUG_PANEL_ENABLE:
-         return "Abilita pannello di debug";
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Scansiona per contenuto";
 	  case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:

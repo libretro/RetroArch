@@ -1045,8 +1045,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Historique";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
          return "Scanner";
-      case MENU_ENUM_LABEL_VALUE_DEBUG_PANEL_ENABLE:
-         return "Activer le panneau de débogage";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
          return "Cacher l'overlay dans le menu";
       case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:

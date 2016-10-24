@@ -2043,8 +2043,6 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "playlist_entry";
       case MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY:
          return "system_info_entry";
-      case MENU_ENUM_LABEL_DEBUG_INFO_ENTRY:
-         return "debug_info_entry";
       case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
          return "1_input_binds_list";
       case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
@@ -2285,8 +2283,6 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "directory_settings";
       case MENU_ENUM_LABEL_PRIVACY_SETTINGS:
          return "privacy_settings";
-      case MENU_ENUM_LABEL_DEBUG_PANEL_ENABLE:
-         return "debug_panel_enable";
       case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:
          return "help_scanning_content";
       case MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION:
@@ -3602,8 +3598,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Accounts";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
          return "Accounts List Endpoint";
-      case MENU_ENUM_LABEL_VALUE_DEBUG_PANEL_ENABLE:
-         return "Debug Panel Enable";
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Scanning For Content";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
