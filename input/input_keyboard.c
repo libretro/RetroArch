@@ -223,10 +223,9 @@ void input_keyboard_event(bool down, unsigned code,
       switch (device)
       {
          case RETRO_DEVICE_POINTER:
-            if (!input_keyboard_line_event(g_keyboard_line,
-                     (code != 0x12d) ? (char)code : character))
-               return;
-            break;
+            if (code != 0x12d)
+               character = (char)code;
+            /* fall-through */
          default:
             if (!input_keyboard_line_event(g_keyboard_line, character))
                return;
