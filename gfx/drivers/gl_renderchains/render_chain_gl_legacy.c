@@ -37,7 +37,7 @@
 #include <string/stdstring.h>
 #include <libretro.h>
 
-#include "../gl_capabilities.h"
+#include <gfx/gl_capabilities.h>
 
 #include "../../../driver.h"
 #include "../../../configuration.h"

@@ -37,7 +37,8 @@
 #include <string/stdstring.h>
 #include <libretro.h>
 
-#include "gl_capabilities.h"
+#include <gfx/gl_capabilities.h>
+
 #include "gl_renderchains/render_chain_gl.h"
 
 #include "../../configuration.h"
