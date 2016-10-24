@@ -166,8 +166,8 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    freetype_atlas_slot_t* slot = NULL;
 
    /* TODO: find a better way to determine max_width/max_height */
-   unsigned max_width          = font_size;
-   unsigned max_height         = font_size;
+   unsigned max_width          = font_size + 2;
+   unsigned max_height         = font_size + 2;
 
    handle->atlas.width         = max_width  * FT_ATLAS_COLS;
    handle->atlas.height        = max_height * FT_ATLAS_ROWS;
