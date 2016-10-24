@@ -42,6 +42,7 @@ typedef struct coretext_renderer
 {
   struct font_atlas atlas;
   struct font_glyph glyphs[CT_ATLAS_SIZE];
+  CGFloat metrics_height;
 } ct_font_renderer_t;
 
 static struct font_atlas *font_renderer_ct_get_atlas(void *data)
@@ -148,6 +149,9 @@ static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handl
 
    handle->atlas.width     = max_width * CT_ATLAS_COLS;
    handle->atlas.height    = max_height * CT_ATLAS_ROWS;
+   handle->metrics_height += CTFontGetAscent(face);
+   handle->metrics_height += CTFontGetDescent(face);
+   handle->metrics_height += CTFontGetLeading(face);
 
    handle->atlas.buffer    = (uint8_t*)
       calloc(handle->atlas.width * handle->atlas.height, 1);
@@ -306,6 +310,14 @@ static const char *font_renderer_ct_get_default_font(void)
   return default_font;
 }
 
+static int font_renderer_ct_get_line_height(void *data)
+{
+   ct_font_renderer_t *handle   = (ct_font_renderer_t*)data;
+   if (!handle)
+      return 0;
+   return handle->metrics_height;
+}
+
 font_renderer_driver_t coretext_font_renderer = {
   font_renderer_ct_init,
   font_renderer_ct_get_atlas,
@@ -313,5 +325,5 @@ font_renderer_driver_t coretext_font_renderer = {
   font_renderer_ct_free,
   font_renderer_ct_get_default_font,
   "coretext",
-  NULL, /*get_line_height*/
+  font_renderer_ct_get_line_height
 };
