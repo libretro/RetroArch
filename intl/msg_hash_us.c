@@ -1899,6 +1899,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_MENU_SETTINGS:
+         return "Adjusts settings related to the appearance of the menu screen.";
       case MSG_CONNECTION_SLOT:
          return "Connection slot";
       case MSG_WAITING_FOR_CLIENT:
