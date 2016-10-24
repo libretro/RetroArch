@@ -3034,6 +3034,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
+         return "Saves changes to configuration file on exit.";
       case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES:
          return "Sets how many frames the CPU can run ahead of the GPU when using 'Hard GPU Sync'.";
       case MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO:
