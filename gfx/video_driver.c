@@ -1117,9 +1117,6 @@ static bool video_driver_cached_frame(void)
    retro_ctx_frame_info_t info;
    void *recording  = recording_driver_get_data_ptr();
 
-   if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
-      return true; /* Maybe return false here for indication of idleness? */
-
    /* Cannot allow recording when pushing duped frames. */
    recording_driver_clear_data_ptr();
 
@@ -1127,13 +1124,11 @@ static bool video_driver_cached_frame(void)
     * freed the memory, but no known implementations do this.
     * It would be really stupid at any rate ...
     */
-   info.data        = NULL;
+   info.data        = (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID) 
+      ? frame_cache_data : NULL;
    info.width       = frame_cache_width;
    info.height      = frame_cache_height;
    info.pitch       = frame_cache_pitch;
-
-   if (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
-      info.data = frame_cache_data;
 
    core_frame(&info);
 
@@ -1702,6 +1697,8 @@ bool video_driver_cached_frame_render(void)
 {
    if (!current_video)
       return false;
+   if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      return true; /* Maybe return false here for indication of idleness? */
    return video_driver_cached_frame();
 }
 

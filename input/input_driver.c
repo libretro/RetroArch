@@ -506,21 +506,21 @@ int16_t input_state(unsigned port, unsigned device,
  **/
 static bool check_input_driver_block_hotkey(bool enable_hotkey)
 {
-   bool use_hotkey_enable;
+   bool use_hotkey_enable                    = false;;
    settings_t *settings                      = config_get_ptr();
    const struct retro_keybind *bind          =
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *autoconf_bind =
       &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   bool kb_mapping_is_blocked                = 
-      input_driver_keyboard_mapping_is_blocked();
+   bool kb_mapping_is_blocked                = current_input->keyboard_mapping_is_blocked(
+         current_input_data);
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
    if (kb_mapping_is_blocked)
-      input_driver_set_hotkey_block();
+      input_driver_block_hotkey = true;
    else
-      input_driver_unset_hotkey_block();
+      input_driver_block_hotkey = false;
 
    /* If we haven't bound anything to this,
     * always allow hotkeys. */
@@ -533,9 +533,9 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
       || (autoconf_bind->joyaxis != AXIS_NONE);
 
    if (kb_mapping_is_blocked || (use_hotkey_enable && !enable_hotkey))
-      input_driver_set_hotkey_block();
+      input_driver_block_hotkey = true;
    else
-      input_driver_unset_hotkey_block();
+      input_driver_block_hotkey = false;
 
    /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
     * hotkeys to be bound to same keys as RetroPad. */
@@ -732,8 +732,6 @@ bool input_driver_grab_stdin(void)
 
 bool input_driver_keyboard_mapping_is_blocked(void)
 {
-   if (!current_input->keyboard_mapping_is_blocked)
-      return false;
    return current_input->keyboard_mapping_is_blocked(
          current_input_data);
 }
