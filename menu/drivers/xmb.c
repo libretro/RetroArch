@@ -49,6 +49,7 @@
 #include "../widgets/menu_input_dialog.h"
 
 #include "../menu_cbs.h"
+#include "../menu_event.h"
 
 #include "../../verbosity.h"
 #include "../../configuration.h"
@@ -684,11 +685,86 @@ static void xmb_messagebox(void *data, const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
+static void xmb_render_quad(xmb_handle_t *xmb,
+      int x, int y, unsigned w, unsigned h,
+      unsigned width, unsigned height,
+      float *coord_color)
+{
+   menu_display_ctx_draw_t draw;
+   struct video_coords coords;
+
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = coord_color;
+
+   menu_display_blend_begin();
+
+   draw.x           = x;
+   draw.y           = (int)height - y - (int)h;
+   draw.width       = w;
+   draw.height      = h;
+   draw.coords      = &coords;
+   draw.matrix_data = NULL;
+   draw.texture     = menu_display_white_texture;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id = 0;
+
+   menu_display_draw(&draw);
+   menu_display_blend_end();
+}
+
+static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid, unsigned id)
+{
+   unsigned i, width, height;
+   video_driver_get_size(&width, &height);
+
+   float dark[16]=  {
+      0.00, 0.00, 0.00, 0.5,
+      0.00, 0.00, 0.00, 0.5,
+      0.00, 0.00, 0.00, 0.5,
+      0.00, 0.00, 0.00, 0.5,
+   };
+
+   float light[16]=  {
+      1.00, 1.00, 1.00, 0.5,
+      1.00, 1.00, 1.00, 0.5,
+      1.00, 1.00, 1.00, 0.5,
+      1.00, 1.00, 1.00, 0.5,
+   };
+
+   xmb_render_quad(xmb, 0, height/2.0, width, height/2.0,
+         width, height,
+         &dark[0]);
+
+   for (i = 0; i <= 40; i++)
+   {
+      char letter[2];
+      letter[0] = grid[i];
+      letter[1] = '\0';
+      int foo = (i / 10)*height/10.0;
+
+      if (i == id)
+         xmb_render_quad(xmb,
+               width/11.0 + (i % 10) * width/11.0 - 30,
+               height*2.5/4.0 + foo - 30 - xmb->font->size / 4,
+               60, 60,
+               width, height,
+               &light[0]);
+
+      xmb_draw_text(xmb, letter,
+            width/11.0 + (i % 10) * width/11.0,
+            height*2.5/4.0 + foo,
+            1, 1, TEXT_ALIGN_CENTER, width, height, xmb->font);
+   }
+}
+
 static void xmb_render_messagebox_internal(
       xmb_handle_t *xmb, const char *message)
 {
    int x, y, longest = 0, longest_width = 0;
-   unsigned i;
+   unsigned i, y_position;
    unsigned width, height;
    struct string_list *list = NULL;
 
@@ -704,8 +780,12 @@ static void xmb_render_messagebox_internal(
    if (list->elems == 0)
       goto end;
 
+   y_position = height / 2;
+   if (menu_input_dialog_get_display_kb())
+      y_position = height / 4;
+
    x = width  / 2;
-   y = height / 2 - (list->size-1) * xmb->font->size / 2;
+   y = y_position - (list->size-1) * xmb->font->size / 2;
 
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
@@ -735,6 +815,9 @@ static void xmb_render_messagebox_internal(
                height,
                xmb->font);
    }
+
+   if (menu_input_dialog_get_display_kb())
+      xmb_render_keyboard(xmb, kbd_grid, kbd_index);
 
 end:
    string_list_free(list);
