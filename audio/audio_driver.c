@@ -278,7 +278,7 @@ static bool uninit_audio(void)
 
    if (!settings->audio.enable)
    {
-      audio_driver_unset_active();
+      audio_driver_active = false;
       return false;
    }
 
@@ -336,7 +336,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    if (!settings->audio.enable)
    {
-      audio_driver_unset_active();
+      audio_driver_active = false;
       return false;
    }
 
@@ -368,15 +368,15 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (!audio_driver_context_audio_data)
    {
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
-      audio_driver_unset_active();
+      audio_driver_active = false;
    }
 
    audio_driver_use_float = false;
-   if (     audio_driver_is_active() 
+   if (     audio_driver_active 
          && current_audio->use_float(audio_driver_context_audio_data))
       audio_driver_use_float = true;
 
-   if (!settings->audio.sync && audio_driver_is_active())
+   if (!settings->audio.sync && audio_driver_active)
    {
       command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
       audio_driver_chunk_size = audio_driver_chunk_nonblock_size;
@@ -398,7 +398,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             settings->audio.resampler);
-      audio_driver_unset_active();
+      audio_driver_active = false;
    }
 
    audio_driver_input_data = (float*)
@@ -423,7 +423,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    audio_driver_data.control = false;
    if (
          !audio_cb_inited
-         && audio_driver_is_active() 
+         && audio_driver_active 
          && settings->audio.rate_control
          )
    {
@@ -445,7 +445,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    /* Threaded driver is initially stopped. */
    if (
-         audio_driver_is_active()
+         audio_driver_active
          && !settings->audio.mute_enable
          && audio_cb_inited
          )
@@ -457,44 +457,11 @@ error:
    return audio_driver_deinit();
 }
 
-/*
- * audio_driver_readjust_input_rate:
- *
- * Readjust the audio input rate.
- */
-static void audio_driver_readjust_input_rate(void)
-{
-   settings_t *settings = config_get_ptr();
-   unsigned write_idx   = audio_driver_free_samples_count++ &
-      (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-   int      half_size   = audio_driver_buffer_size / 2;
-   int      avail       = 
-      current_audio->write_avail(audio_driver_context_audio_data);
-   int      delta_mid   = avail - half_size;
-   double   direction   = (double)delta_mid / half_size;
-   double   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
-
-#if 0
-   RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
-         (unsigned)(100 - (avail * 100) / audio_driver_buffer_size));
-#endif
-
-   audio_driver_free_samples_buf[write_idx] = avail;
-   audio_driver_data.source_ratio.current = 
-      audio_driver_data.source_ratio.original * adjust;
-
-#if 0
-   RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
-         audio_driver_data.source_ratio.current,
-         audio_driver_data.source_ratio.original);
-#endif
-}
-
 void audio_driver_set_nonblocking_state(bool enable)
 {
    settings_t *settings = config_get_ptr();
    if (
-         audio_driver_is_active()
+         audio_driver_active
          && audio_driver_context_audio_data
       )
       current_audio->set_nonblock_state(audio_driver_context_audio_data,
@@ -519,10 +486,7 @@ void audio_driver_set_nonblocking_state(bool enable)
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
    static struct retro_perf_counter audio_convert_s16   = {0};
-   static struct retro_perf_counter audio_convert_float = {0};
-   static struct retro_perf_counter audio_dsp           = {0};
    struct resampler_data src_data;
-   struct rarch_dsp_data dsp_data;
    const void *output_data                     = NULL;
    unsigned output_frames                      = 0;
    size_t   output_size                        = sizeof(float);
@@ -534,16 +498,11 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    src_data.output_frames                      = 0;
    src_data.ratio                              = 0.0f;
 
-   dsp_data.input                              = NULL;
-   dsp_data.input_frames                       = 0;
-   dsp_data.output                             = NULL;
-   dsp_data.output_frames                      = 0;
-
    recording_push_audio(data, samples);
 
    if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
       return true;
-   if (!audio_driver_is_active() || !audio_driver_input_data)
+   if (!audio_driver_active || !audio_driver_input_data)
       return false;
 
    performance_counter_init(&audio_convert_s16, "audio_convert_s16");
@@ -555,11 +514,20 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    src_data.data_in               = audio_driver_input_data;
    src_data.input_frames          = samples >> 1;
 
-   dsp_data.input                 = audio_driver_input_data;
-   dsp_data.input_frames          = samples >> 1;
 
    if (audio_driver_dsp)
    {
+      static struct retro_perf_counter audio_dsp           = {0};
+      struct rarch_dsp_data dsp_data;
+
+      dsp_data.input                 = NULL;
+      dsp_data.input_frames          = 0;
+      dsp_data.output                = NULL;
+      dsp_data.output_frames         = 0;
+
+      dsp_data.input                 = audio_driver_input_data;
+      dsp_data.input_frames          = samples >> 1;
+
       performance_counter_init(&audio_dsp, "audio_dsp");
       performance_counter_start(&audio_dsp);
       rarch_dsp_filter_process(audio_driver_dsp, &dsp_data);
@@ -575,7 +543,32 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    src_data.data_out = audio_driver_output_samples_buf;
 
    if (audio_driver_data.control)
-      audio_driver_readjust_input_rate();
+   {
+      /* Readjust the audio input rate. */
+      unsigned write_idx   = audio_driver_free_samples_count++ &
+         (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+      int      half_size   = audio_driver_buffer_size / 2;
+      int      avail       = 
+         current_audio->write_avail(audio_driver_context_audio_data);
+      int      delta_mid   = avail - half_size;
+      double   direction   = (double)delta_mid / half_size;
+      double   adjust      = 1.0 + settings->audio.rate_control_delta * direction;
+
+#if 0
+      RARCH_LOG_OUTPUT("Audio buffer is %u%% full\n",
+            (unsigned)(100 - (avail * 100) / audio_driver_buffer_size));
+#endif
+
+      audio_driver_free_samples_buf[write_idx] = avail;
+      audio_driver_data.source_ratio.current   = 
+         audio_driver_data.source_ratio.original * adjust;
+
+#if 0
+      RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
+            audio_driver_data.source_ratio.current,
+            audio_driver_data.source_ratio.original);
+#endif
+   }
 
    src_data.ratio = audio_driver_data.source_ratio.current;
 
@@ -589,6 +582,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    if (!audio_driver_use_float)
    {
+      static struct retro_perf_counter audio_convert_float = {0};
+
       performance_counter_init(&audio_convert_float, "audio_convert_float");
       performance_counter_start(&audio_convert_float);
       convert_float_to_s16(audio_driver_output_samples_conv_buf,
@@ -602,7 +597,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (current_audio->write(audio_driver_context_audio_data,
             output_data, output_frames * output_size * 2) < 0)
    {
-      audio_driver_unset_active();
+      audio_driver_active = false;
       return false;
    }
 
@@ -932,7 +927,7 @@ bool audio_driver_toggle_mute(void)
    settings_t *settings = config_get_ptr();
    if (!audio_driver_context_audio_data)
       return false;
-   if (!audio_driver_is_active())
+   if (!audio_driver_active)
       return false;
 
    settings->audio.mute_enable = !settings->audio.mute_enable;
@@ -941,7 +936,7 @@ bool audio_driver_toggle_mute(void)
       command_event(CMD_EVENT_AUDIO_STOP, NULL);
    else if (!command_event(CMD_EVENT_AUDIO_START, NULL))
    {
-      audio_driver_unset_active();
+      audio_driver_active = false;
       return false;
    }
    return true;
