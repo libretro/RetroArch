@@ -3041,13 +3041,13 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX:
          return "希望するモニターを選択する。";
       case MENU_ENUM_SUBLABEL_LOG_VERBOSITY:
-         return "Enable or disable logging to the terminal.";
+         return "端末にログすることを有効と無効。";
       case MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES:
          return "ファイルブラウザーの中に隠しファイルとフォルダを表示する。";
       case MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
-         return "Gamepad button combination to toggle menu.";
+         return "メニューを切り替えるゲームパッドのボタンコンボ";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
-         return "Amount of cores that the CPU has.";
+         return "CPUのコア数";
       case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:
          return "フレームの間で黒フレームを挿入する。60Hzコンテンツを120Hzモニターでやることを役に立つ。";
       case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
@@ -3069,9 +3069,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
          return "RetroArchにアドオンとコンポーネントをダウンロードとアップデートする。";
       case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
-         return "Configure controls for this user.";
+         return "このユーザーの入力設定を変更する。";
       case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
-         return "Configure hotkey settings.";
+         return "ホットキー設定を変更する。";
       case MSG_VALUE_SHUTTING_DOWN:
          return "シャットダウンしています。。。";
       case MSG_VALUE_REBOOTING:
@@ -4113,7 +4113,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "コレクション";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
-         return "ファイルをセレクトとコア検出";
+         return "ファイルを選択とコア検出";
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
          return "ダウンロードのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
@@ -4139,7 +4139,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
          return "巻き戻しの粒状度";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
-         return "Load Remap File";
+         return "リマップファイルをロード";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
          return "Custom Ratio";
       case MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY:
@@ -4241,7 +4241,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_LIST:
          return "コアをロード";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
-         return "ファイルをセレクト";
+         return "ファイル選択";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "閉じる";
       case MENU_ENUM_LABEL_VALUE_MANAGEMENT:
