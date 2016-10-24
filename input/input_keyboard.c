@@ -39,6 +39,7 @@ struct input_keyboard_line
    void *userdata;
 };
 
+static bool input_driver_keyboard_linefeed_enable = false;
 static input_keyboard_line_t *g_keyboard_line;
 
 static input_keyboard_press_t g_keyboard_press_cb;
@@ -53,9 +54,9 @@ static void input_keyboard_line_toggle_osk(bool enable)
       return;
 
    if (enable)
-      input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+      input_driver_keyboard_linefeed_enable = true;
    else
-      input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
+      input_driver_keyboard_linefeed_enable = false;
 }
 
 /**
@@ -204,8 +205,10 @@ void input_keyboard_event(bool down, unsigned code,
       if (down)
          return;
 
-      input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
-      deferred_wait_keys = false;
+      g_keyboard_press_cb   = NULL;
+      g_keyboard_press_data = NULL;
+      input_driver_keyboard_mapping_set_block(false);
+      deferred_wait_keys    = false;
    }
    else if (g_keyboard_press_cb)
    {
@@ -250,7 +253,6 @@ void input_keyboard_event(bool down, unsigned code,
 
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
 {
-   static bool input_driver_keyboard_linefeed_enable = false;
 
    switch (state)
    {
