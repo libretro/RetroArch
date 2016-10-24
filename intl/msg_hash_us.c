@@ -438,12 +438,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Cache Directory. \n"
                " \n"
-               "Content which is temporarily extracted \n"
-               "will be extracted to this directory.");
+               "Content decompressed by RetroArch will be \n"
+               "temporarily extracted to this directory.");
          break;
       case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
          snprintf(s, len,
-               "If enabled, every file loaded \n"
+               "If enabled, every content loaded \n"
                "in RetroArch will be automatically \n"
                "added to the recent history list.");
          break;
@@ -491,11 +491,11 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE:
          snprintf(s, len,
-               "Will enable audio or not.");
+               "Enable audio output.");
          break;
       case MENU_ENUM_LABEL_AUDIO_SYNC:
          snprintf(s, len,
-               "Will synchronize audio (recommended).");
+               "Synchronize audio (recommended).");
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
          snprintf(s, len,
@@ -505,7 +505,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE:
          snprintf(s, len,
-               "Allow games to set rotation. If false, \n"
+               "Allow cores to set rotation. If false, \n"
                "rotation requests are honored, but ignored.\n\n"
                "Used for setups where one manually rotates \n"
                "the monitor.");
@@ -531,10 +531,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
          snprintf(s, len,
-               "When saving savestates, state index is \n"
-               "automatically incremented before saving.\n"
-               "When the content is loaded, state index will \n"
-               "be set to the highest existing value.");
+               "Automatically increment slot index on each save, \n"
+               "generating multiple savestate files. \n"
+               "When the content is loaded, state slot will be \n"
+               "set to the highest existing value (last savestate).");
          break;
       case MENU_ENUM_LABEL_FPS_SHOW:
          snprintf(s, len,
