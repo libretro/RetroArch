@@ -298,6 +298,16 @@ static bool uninit_audio(void)
    return true;
 }
 
+static bool audio_driver_init_resampler(void)
+{
+   settings_t *settings = config_get_ptr();
+   return rarch_resampler_realloc(
+         &audio_driver_resampler_data,
+         &audio_driver_resampler,
+         settings->audio.resampler,
+         audio_driver_data.source_ratio.original);
+}
+
 static bool audio_driver_init_internal(bool audio_cb_inited)
 {
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
@@ -835,15 +845,6 @@ bool audio_driver_get_devices_list(void **data)
    return true;
 }
 
-bool audio_driver_init_resampler(void)
-{
-   settings_t *settings = config_get_ptr();
-   return rarch_resampler_realloc(
-         &audio_driver_resampler_data,
-         &audio_driver_resampler,
-         settings->audio.resampler,
-         audio_driver_data.source_ratio.original);
-}
 
 bool audio_driver_deinit(void)
 {

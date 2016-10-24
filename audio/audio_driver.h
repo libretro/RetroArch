@@ -100,8 +100,6 @@ void audio_driver_destroy(void);
 
 void audio_driver_deinit_resampler(void);
 
-bool audio_driver_init_resampler(void);
-
 bool audio_driver_free_devices_list(void);
 
 bool audio_driver_new_devices_list(void);
