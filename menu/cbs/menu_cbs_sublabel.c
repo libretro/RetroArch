@@ -230,6 +230,16 @@ static int action_bind_sublabel_video_refresh_rate_auto(
    return 0;
 }
 
+static int action_bind_sublabel_video_hard_sync(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC), len);
+   return 0;
+}
+
 static int action_bind_sublabel_video_hard_sync_frames(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -237,6 +247,16 @@ static int action_bind_sublabel_video_hard_sync_frames(
       char *s, size_t len)
 {
    strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES), len);
+   return 0;
+}
+
+static int action_bind_sublabel_video_threaded(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_THREADED), len);
    return 0;
 }
 
@@ -252,6 +272,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_THREADED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_threaded);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_HARD_SYNC:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_hard_sync);
+            break;
          case MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_hard_sync_frames);
             break;

@@ -1320,7 +1320,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Use threaded video driver.\n"
                " \n"
-               "Using this might improve performance at \n"
+               "Using this might improve performance at the \n"
                "possible cost of latency and more video \n"
                "stuttering.");
          break;
@@ -1899,6 +1899,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_SUBLABEL_VIDEO_THREADED:
+         return "Improves performance at the cost of latency and more video stuttering. Use only if you cannot obtain full speed otherwise.";
+      case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC:
+         return "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance.";
       case MENU_ENUM_SUBLABEL_MENU_SETTINGS:
          return "Adjusts settings related to the appearance of the menu screen.";
       case MSG_CONNECTION_SLOT:
