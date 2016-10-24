@@ -4664,6 +4664,120 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Boxarts";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
          return "Wallpaper opacity";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B:
+         return "B button (down)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y:
+         return "Y button (left)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT:
+         return "Select button";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START:
+         return "Start button";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP:
+         return "Up D-pad";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN:
+         return "Down D-pad";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT:
+         return "Left D-pad";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT:
+         return "Right D-pad";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A:
+         return "A button (right)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X:
+         return "X button (top)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L:
+         return "L button (shoulder)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R:
+         return "R button (shoulder)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2:
+         return "L2 button (trigger)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2:
+         return "R2 button (trigger)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3:
+         return "L3 button (thumb)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3:
+         return "R3 button (thumb)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS:
+         return "Left analog X+ (right)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS:
+         return "Left analog X- (left)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS:
+         return "Left analog Y+ (down)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS:
+         return "Left analog Y- (up)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS:
+         return "Right analog X+ (right)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS:
+         return "Right analog X- (left)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS:
+         return "Right analog Y+ (down)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS:
+         return "Right analog Y- (up)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE:
+         return "Turbo enable";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY:
+         return "Fast forward toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY:
+         return "Fast forward hold";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY:
+         return "Load state";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY:
+         return "Save state";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY:
+         return "Fullscreen toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY:
+         return "Quit RetroArch";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS:
+         return "Savestate slot +";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS:
+         return "Savestate slot -";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND:
+         return "Rewind";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE:
+         return "Movie record toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE:
+         return "Pause toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE:
+         return "Frameadvance";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_RESET:
+         return "Reset game";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT:
+         return "Next shader";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV:
+         return "Previous shader";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS:
+         return "Cheat index +";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS:
+         return "Cheat index -";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE:
+         return "Cheat toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT:
+         return "Take screenshot";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE:
+         return "Audio mute toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_OSK:
+         return "On-screen keyboard toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP:
+         return "Netplay flip users";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION:
+         return "Slow motion";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY:
+         return "Enable hotkeys";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP:
+         return "Volume +";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN:
+         return "Volume -";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT:
+         return "Overlay next";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE:
+         return "Disk eject toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT:
+         return "Disk next";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV:
+         return "Disk prev";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE:
+         return "Grab mouse toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE:
+         return "Menu toggle";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
