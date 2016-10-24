@@ -3045,7 +3045,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES:
          return "ファイルブラウザーの中に隠しファイルとフォルダを表示する。";
       case MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
-         return "メニューを切り替えるゲームパッドのボタンコンボ";
+         return "メニューに切り替えるゲームパッドのボタンコンボ";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "CPUのコア数";
       case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:
@@ -4662,6 +4662,120 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Boxarts";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY:
          return "壁紙の不透明性";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B:
+         return "Bボタン(下)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y:
+         return "Yボタン(左)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT:
+         return "Select button";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START:
+         return "Start button";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP:
+         return "上 (十字キー)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN:
+         return "下 (十字キー)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT:
+         return "左 (十字キー)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT:
+         return "右 (十字キー)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A:
+         return "Aボタン(右)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X:
+         return "Xボタン(上面)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L:
+         return "Lボタン(上面)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R:
+         return "Rボタン(上面)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2:
+         return "L2ボタン(トリガー)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2:
+         return "R2ボタン(トリガー)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3:
+         return "L3ボタン(親指)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3:
+         return "R3ボタン(親指)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS:
+         return "左アナログX+ (右)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS:
+         return "左アナログX- (左)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS:
+         return "左アナログY+ (下)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS:
+         return "左アナログY- (上)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS:
+         return "右アナログX+ (右)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS:
+         return "右アナログX- (左)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS:
+         return "右アナログY+ (下)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS:
+         return "右アナログY- (上)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE:
+         return "ターボ有効";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY:
+         return "早送りを切り替え";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY:
+         return "ホールドで早送";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY:
+         return "保存状態をロード";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY:
+         return "状態保存";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY:
+         return "フルスクリーンを切り替え";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY:
+         return "RetroArchを終了";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS:
+         return "次の状態スロット";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS:
+         return "前の状態スロット";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND:
+         return "巻き戻し";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE:
+         return "録画";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE:
+         return "一時停止";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE:
+         return "コマ送り";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_RESET:
+         return "リセット";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT:
+         return "次のシェーダー";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV:
+         return "前のシェーダー";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS:
+         return "次のチートインデックス";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS:
+         return "前のチートインデックス";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE:
+         return "チートを切り替";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT:
+         return "スクリーンショット";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE:
+         return "消音";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_OSK:
+         return "ソフトウェアキーボードを切りがえ";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FLIP:
+         return "ネットプレイのユーザ交換";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION:
+         return "スローモーション";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY:
+         return "ホットキーを有効";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP:
+         return "音量を増す";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN:
+         return "音量を減る";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT:
+         return "次のオーバーレイ";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE:
+         return "ディスクを取り出し";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT:
+         return "次のディスクを切り替え";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV:
+         return "前のディスクを切り替え";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE:
+         return "マウスグラブを切り替え";
+      case MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE:
+         return "メニューに切り替え";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
