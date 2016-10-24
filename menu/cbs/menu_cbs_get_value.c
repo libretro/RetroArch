@@ -1521,6 +1521,26 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   rarch_setting_t *setting = menu_setting_find(list->list[i].label);
+
+   *w = 19;
+
+   if (*setting->value.target.boolean)
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+   else
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+
+   strlcpy(s2, path, len2);
+}
+
 static int menu_cbs_init_bind_get_string_representation_compare_label(
       menu_file_list_cbs_t *cbs)
 {
@@ -1821,6 +1841,19 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    RARCH_LOG("MENU_SETTINGS_NONE: %d\n", MENU_SETTINGS_NONE);
    RARCH_LOG("MENU_SETTINGS_LAST: %d\n", MENU_SETTINGS_LAST);
 #endif
+
+   if (cbs->setting)
+   {
+      switch (cbs->setting->type)
+      {
+         case ST_BOOL:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_setting_bool);
+            return 0;
+         default:
+            break;
+      }
+   }
 
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
