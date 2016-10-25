@@ -74,8 +74,8 @@
 #define RETRO_LBL_VOLUME_DOWN "音量を減る"
 #define RETRO_LBL_OVERLAY_NEXT "次のオーバーレイ"
 #define RETRO_LBL_DISK_EJECT_TOGGLE "ディスクを取り出し"
-#define RETRO_LBL_DISK_NEXT "次のディスクを切り替え"
-#define RETRO_LBL_DISK_PREV "前のディスクを切り替え"
+#define RETRO_LBL_DISK_NEXT "次のディスクに切り替え"
+#define RETRO_LBL_DISK_PREV "前のディスクに切り替え"
 #define RETRO_LBL_GRAB_MOUSE_TOGGLE "マウスグラブを切り替え"
 #define RETRO_LBL_MENU_TOGGLE "メニューに切り替え"
 

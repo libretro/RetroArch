@@ -4667,9 +4667,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y:
          return "Yボタン(左)";
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT:
-         return "Select button";
+         return "選択ボタン";
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START:
-         return "Start button";
+         return "スタートボタン";
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP:
          return "上 (十字キー)";
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN:
@@ -4713,7 +4713,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE:
          return "ターボ有効";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY:
-         return "早送りを切り替え";
+         return "早送りに切り替え";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY:
          return "ホールドで早送";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY:
@@ -4721,7 +4721,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY:
          return "状態保存";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY:
-         return "フルスクリーンを切り替え";
+         return "フルスクリーンに切り替え";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY:
          return "RetroArchを終了";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS:
@@ -4769,13 +4769,25 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE:
          return "ディスクを取り出し";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT:
-         return "次のディスクを切り替え";
+         return "次のディスクに切り替え";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV:
-         return "前のディスクを切り替え";
+         return "前のディスクに切り替え";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE:
          return "マウスグラブを切り替え";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE:
          return "メニューに切り替え";
+      case MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX:
+         return "デバイスインデックス";
+      case MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE:
+         return "デバイスタイプ";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE:
+         return "アナログのデジタル化のタイプ";
+      case MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL:
+         return "全てをバインド";
+      case MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL:
+         return "全てのバインドを初期化";
+      case MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG:
+         return "自動設定を保存";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);

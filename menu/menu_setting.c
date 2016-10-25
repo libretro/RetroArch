@@ -1848,17 +1848,23 @@ static bool setting_append_list_input_player_options(
             sizeof(key_bind_defaults[user]));
 
       snprintf(label[user], sizeof(label[user]),
-               "%s %u Device Index", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX));
       snprintf(label_type[user], sizeof(label_type[user]),
-               "%s %u Device Type", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE));
       snprintf(label_analog[user], sizeof(label_analog[user]),
-               "%s %u Analog To Digital Type", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE));
       snprintf(label_bind_all[user], sizeof(label_bind_all[user]),
-               "%s %u Bind All", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL));
       snprintf(label_bind_defaults[user], sizeof(label_bind_defaults[user]),
-               "%s %u Bind Default All", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL));
       snprintf(label_bind_all_save_autoconfig[user], sizeof(label_bind_all_save_autoconfig[user]),
-               "%s %u Save Autoconfig", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1);
+               "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG));
 
       CONFIG_UINT(
             list, list_info,

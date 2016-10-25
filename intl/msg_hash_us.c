@@ -4778,6 +4778,18 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Grab mouse toggle";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE:
          return "Menu toggle";
+      case MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX:
+         return "Device Index";
+      case MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE:
+         return "Device Type";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE:
+         return "Analog To Digital Type";
+      case MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL:
+         return "Bind All";
+      case MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL:
+         return "Bind Default All";
+      case MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG:
+         return "Save Autoconfig";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
