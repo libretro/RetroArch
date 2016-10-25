@@ -22,6 +22,7 @@
 
 typedef struct
 {
+   vita_video_t *vita;
    vita2d_texture *texture;
    const font_renderer_driver_t *font_driver;
    void *font_data;
@@ -29,7 +30,7 @@ typedef struct
 } vita_font_t;
 
 
-static void *vita2d_font_init_font(void *gl_data, const char *font_path, float font_size)
+static void *vita2d_font_init_font(void *data, const char *font_path, float font_size)
 {
    unsigned int stride, pitch, j, k;
    const uint8_t         *frame32 = NULL;    
@@ -39,6 +40,8 @@ static void *vita2d_font_init_font(void *gl_data, const char *font_path, float f
 
    if (!font)
       return NULL;
+      
+   font->vita = (vita_video_t*)data;
 
    if (!font_renderer_create_default((const void**)&font->font_driver,
             &font->font_data, font_path, font_size))
@@ -211,7 +214,8 @@ static void vita2d_font_render_message(
       return;
    }
 
-   line_height = scale / font->font_driver->get_line_height(font->font_data);
+   line_height = font->font_driver->get_line_height(font->font_data) *
+                     scale / font->vita->vp.height;
 
    for (;;)
    {
