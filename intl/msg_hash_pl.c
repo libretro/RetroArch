@@ -1,4 +1,3 @@
-decoded as utf8
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *
