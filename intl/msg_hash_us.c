@@ -3066,6 +3066,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Adjusts settings for audio output.";
       case MENU_ENUM_SUBLABEL_INPUT_SETTINGS:
          return "Adjusts settings for joypads, keyboard and mouse.";
+      case MENU_ENUM_SUBLABEL_WIFI_SETTINGS:
+         return "Scans for wireless networks and establishes connection.";
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
          return "Prevents your system's screensaver from becoming active.";
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:

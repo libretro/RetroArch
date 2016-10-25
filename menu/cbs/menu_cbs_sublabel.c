@@ -86,6 +86,16 @@ static int action_bind_sublabel_input_settings_list(
    return 0;
 }
 
+static int action_bind_sublabel_wifi_settings_list(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_WIFI_SETTINGS), len);
+   return 0;
+}
+
 static int action_bind_sublabel_max_swapchain_images(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -375,6 +385,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_settings_list);
+            break;
+         case MENU_ENUM_LABEL_WIFI_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_wifi_settings_list);
             break;
          case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_suspend_screensaver_enable);
