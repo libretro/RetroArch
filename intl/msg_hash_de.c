@@ -58,10 +58,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
             case MENU_LABEL_INPUT_DRIVER_UDEV:
                {
                   /* Work around C89 limitations */
-                  char u[501];
-                  char t[501];
-
-                  snprintf(t, sizeof(t),
+                  const char * t =
                         "udev-Eingabetreiber. \n"
                         " \n"
                         "Dieser Treiber kann ohne X ausgeführt werden. \n"
@@ -70,9 +67,8 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                         "für die Joystick-Unterstützung und unterstützt \n"
                         "auch Hotplugging und Force-Feedback (wenn das \n"
                         "Gerät dies unterstützt). \n"
-                        " \n"
-                        );
-                  snprintf(u, sizeof(u),
+                        " \n";
+                  const char * u =
                         "Der Treiber liest evdev-Ereignisse für die Tastatur- \n"
                         "Unterstützung und kann auch mit Tastatur-Callbacks, \n"
                         "Mäusen und Touchpads umgehen. \n"
@@ -81,7 +77,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                         "meisten Linux-Distribution nur vom Root- \n"
                         "Benutzer lesbar (mode 600). Du kannst eine udev- \n"
                         "Regel erstellen, die auch den Zugriff für andere \n"
-                        "Benutzer erlaubt.");
+                        "Benutzer erlaubt.";
                   strlcpy(s, t, len);
                   strlcat(s, u, len);
                }

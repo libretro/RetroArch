@@ -68,9 +68,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
          {
             /* Work around C89 limitations */
             char u[501];
-            char t[501];
 
-            strlcpy(t,
+            const char * t =
                   "RetroArch utiliza un formato único para \n"
                   "sincronizar vídeo y sonido que necesita \n"
                   "calibrarse con la frecuencia de \n"
@@ -80,8 +79,8 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Si notas cortes de sonido o en la imagen,\n"
                   "lo normal es que necesites calibrar estos\n"
                   "ajustes. Aquí van algunas opciones:\n"
-                  " \n", sizeof(t));
-            snprintf(u, sizeof(u),
+                  " \n";
+            snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                   "a) Ve a '%s' -> '%s' y activa\n"
                   "'Vídeo por hilos'. En este modo la tasa\n"
                   "de refresco es irrelevante, habrá más fps,\n"

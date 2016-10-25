@@ -624,9 +624,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          {
             /* Work around C89 limitations */
             char u[501];
-            char t[501];
-
-            strlcpy(t, 
+            const char * t =
                   "RetroArch relies on an unique form of\n"
                   "audio/video synchronization where it needs to be\n"
                   "calibrated against the refresh rate of your\n"
@@ -635,8 +633,8 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "If you experience any audio crackling or video\n"
                   "tearing, usually it means that you need to\n"
                   "calibrate the settings. Some choices below:\n"
-                  " \n", sizeof(t));
-            snprintf(u, sizeof(u),
+                  " \n";
+            snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                   "a) Go to '%s' -> '%s', and enable\n"
                   "'Threaded Video'. Refresh rate will not matter\n"
                   "in this mode, framerate will be higher,\n"
