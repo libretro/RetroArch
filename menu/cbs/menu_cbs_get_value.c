@@ -490,7 +490,7 @@ static void menu_action_setting_disp_set_label_input_desc(
             len);
       else
          strlcpy(s, 
-            settings->input.binds[inp_desc_user][remap_id].desc,
+            msg_hash_to_str(settings->input.binds[inp_desc_user][remap_id].enum_idx),
             len);
    }
 

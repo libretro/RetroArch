@@ -27,6 +27,8 @@
 #include "input_joypad_driver.h"
 #include "input_defines.h"
 
+#include "../msg_hash.h"
+
 RETRO_BEGIN_DECLS
 
 enum input_device_type
@@ -50,7 +52,7 @@ struct retro_keybind
 {
    bool valid;
    unsigned id;
-   const char *desc;
+   enum msg_hash_enums enum_idx;
    enum retro_key key;
 
    uint64_t joykey;
