@@ -322,11 +322,9 @@ void core_set_serialization_quirks(uint64_t quirks)
 
 void core_frame(retro_ctx_frame_info_t *info)
 {
-   if (!retro_ctx.frame_cb)
-      return;
-
-   retro_ctx.frame_cb(
-         info->data, info->width, info->height, info->pitch);
+   if (retro_ctx.frame_cb)
+      retro_ctx.frame_cb(
+            info->data, info->width, info->height, info->pitch);
 }
 
 bool core_poll(void)
