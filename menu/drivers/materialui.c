@@ -44,6 +44,7 @@
 #include "../menu_animation.h"
 #include "../menu_navigation.h"
 #include "../menu_display.h"
+#include "../menu_event.h"
 
 #include "../widgets/menu_input_dialog.h"
 
@@ -299,6 +300,53 @@ static void mui_render_quad(mui_handle_t *mui,
    menu_display_blend_end();
 }
 
+static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
+{
+   unsigned i, width, height;
+   float dark[16]=  {
+      0.00, 0.00, 0.00, 0.5,
+      0.00, 0.00, 0.00, 0.5,
+      0.00, 0.00, 0.00, 0.5,
+      0.00, 0.00, 0.00, 0.5,
+   };
+
+   float light[16]=  {
+      1.00, 1.00, 1.00, 0.5,
+      1.00, 1.00, 1.00, 0.5,
+      1.00, 1.00, 1.00, 0.5,
+      1.00, 1.00, 1.00, 0.5,
+   };
+
+   video_driver_get_size(&width, &height);
+
+   mui_render_quad(mui, 0, height/2.0, width, height/2.0,
+         width, height,
+         &dark[0]);
+
+   for (i = 0; i <= 40; i++)
+   {
+      int foo;
+      char letter[2];
+
+      letter[0] = grid[i];
+      letter[1] = '\0';
+      foo       = (i / 10)*height/10.0;
+
+      if (i == id)
+         mui_render_quad(mui,
+               width/11.0 + (i % 10) * width/11.0 - 30,
+               height*2.5/4.0 + foo - 30 - mui->font->size / 4,
+               60, 60,
+               width, height,
+               &light[0]);
+
+      mui_draw_text(mui->font,
+            width/11.0 + (i % 10) * width/11.0,
+            height*2.5/4.0 + foo,
+            width, height, letter, 0xffffffff, TEXT_ALIGN_CENTER);
+   }
+}
+
 static void mui_draw_tab_begin(mui_handle_t *mui,
       unsigned width, unsigned height,
       float *tabs_bg_color, float *tabs_separator_color)
@@ -387,7 +435,7 @@ static void mui_get_message(void *data, const char *message)
 static void mui_render_messagebox(mui_handle_t *mui,
       const char *message, float *body_bg_color, uint32_t font_color)
 {
-   unsigned i, width, height;
+   unsigned i, width, height, y_position;
    int x, y, line_height, longest = 0, longest_width = 0;
    struct string_list *list = (struct string_list*)
       string_split(message, "\n");
@@ -401,8 +449,12 @@ static void mui_render_messagebox(mui_handle_t *mui,
 
    line_height = mui->font->size * 1.2;
 
+   y_position = height / 2;
+   if (menu_input_dialog_get_display_kb())
+      y_position = height / 4;
+
    x = width  / 2;
-   y = height / 2 - (list->size-1) * line_height / 2;
+   y = y_position - (list->size-1) * line_height / 2;
 
    /* find the longest line width */
    for (i = 0; i < list->size; i++)
@@ -436,6 +488,9 @@ static void mui_render_messagebox(mui_handle_t *mui,
                width, height,
                msg, font_color, TEXT_ALIGN_LEFT);
    }
+
+   if (menu_input_dialog_get_display_kb())
+      mui_render_keyboard(mui, kbd_grid, kbd_index);
 
 end:
    string_list_free(list);
