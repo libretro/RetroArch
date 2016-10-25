@@ -325,24 +325,24 @@ static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
 
    for (i = 0; i <= 40; i++)
    {
-      int foo;
+      int line_y;
       char letter[2];
 
       letter[0] = grid[i];
       letter[1] = '\0';
-      foo       = (i / 10)*height/10.0;
+      line_y    = (i / 10)*height/10.0;
 
       if (i == id)
          mui_render_quad(mui,
                width/11.0 + (i % 10) * width/11.0 - 30,
-               height*2.5/4.0 + foo - 30 - mui->font->size / 4,
+               height*2.5/4.0 + line_y - 30 - mui->font->size / 4,
                60, 60,
                width, height,
                &light[0]);
 
       mui_draw_text(mui->font,
             width/11.0 + (i % 10) * width/11.0,
-            height*2.5/4.0 + foo,
+            height*2.5/4.0 + line_y,
             width, height, letter, 0xffffffff, TEXT_ALIGN_CENTER);
    }
 }

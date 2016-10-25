@@ -740,24 +740,24 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid, unsigned id)
 
    for (i = 0; i <= 40; i++)
    {
-      int foo;
+      int line_y;
       char letter[2];
 
       letter[0] = grid[i];
       letter[1] = '\0';
-      foo       = (i / 10)*height/10.0;
+      line_y    = (i / 10)*height/10.0;
 
       if (i == id)
          xmb_render_quad(xmb,
                width/11.0 + (i % 10) * width/11.0 - 30,
-               height*2.5/4.0 + foo - 30 - xmb->font->size / 4,
+               height*2.5/4.0 + line_y - 30 - xmb->font->size / 4,
                60, 60,
                width, height,
                &light[0]);
 
       xmb_draw_text(xmb, letter,
             width/11.0 + (i % 10) * width/11.0,
-            height*2.5/4.0 + foo,
+            height*2.5/4.0 + line_y,
             1, 1, TEXT_ALIGN_CENTER, width, height, xmb->font);
    }
 }
