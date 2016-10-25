@@ -170,7 +170,7 @@ bool core_unload_game(void);
 
 bool core_reset(void);
 
-bool core_frame(retro_ctx_frame_info_t *info);
+void core_frame(retro_ctx_frame_info_t *info);
 
 bool core_poll(void);
 
