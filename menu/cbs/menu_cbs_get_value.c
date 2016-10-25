@@ -40,7 +40,6 @@
 #include "../../performance_counters.h"
 #include "../../paths.h"
 #include "../../runloop.h"
-#include "../../intl/intl.h"
 #include "../../wifi/wifi_driver.h"
 
 #ifndef BIND_ACTION_GET_VALUE
@@ -48,13 +47,6 @@
    cbs->action_get_value = name; \
    cbs->action_get_value_ident = #name;
 #endif
-
-const char axis_labels[4][128] = {
-   RETRO_LBL_ANALOG_LEFT_X,
-   RETRO_LBL_ANALOG_LEFT_Y,
-   RETRO_LBL_ANALOG_RIGHT_X,
-   RETRO_LBL_ANALOG_RIGHT_Y
-};
 
 static void menu_action_setting_disp_set_label_cheat_num_passes(
       file_list_t* list,
@@ -497,7 +489,25 @@ static void menu_action_setting_disp_set_label_input_desc(
 
 
    else
-      strlcpy(s, axis_labels[remap_id], len);
+   {
+      const char *str = NULL;
+      switch (remap_id)
+      {
+         case 0:
+            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X);
+            break;
+         case 1:
+            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y);
+            break;
+         case 2:
+            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X);
+            break;
+         case 3:
+            str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y);
+            break;
+      }
+      strlcpy(s, str, len);
+   }
 
    *w = 19;
    strlcpy(s2, path, len2);

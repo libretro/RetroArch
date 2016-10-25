@@ -4710,6 +4710,14 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "L3 button (thumb)";
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3:
          return "R3 button (thumb)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X:
+         return "Left Analog X";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y:
+         return "Left Analog Y";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X:
+         return "Right Analog X";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y:
+         return "Right Analog Y";
       case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS:
          return "Left analog X+ (right)";
       case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS:

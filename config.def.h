@@ -882,7 +882,6 @@ static char buildbot_server_url[] = "";
 static char buildbot_assets_server_url[] = "http://buildbot.libretro.com/assets/";
 
 #ifndef IS_SALAMANDER
-#include "intl/intl.h"
 
 /* User 1 */
 static const struct retro_keybind retro_keybinds_1[] = {
