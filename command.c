@@ -2253,6 +2253,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true);
+	 command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -P now");
 #endif
@@ -2260,6 +2261,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_REBOOT:
 #if defined(__linux__) && !defined(ANDROID)
          runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true);
+	 command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
          command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -r now");
 #endif
