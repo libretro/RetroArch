@@ -4325,9 +4325,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SECONDS:
          return "秒";
       case MENU_ENUM_LABEL_VALUE_OFF:
-         return "オフ";
+         return "OFF";
       case MENU_ENUM_LABEL_VALUE_ON:
-         return "オン";
+         return "ON";
       case MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS:
          return "資産をアップデート";
       case MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA:
