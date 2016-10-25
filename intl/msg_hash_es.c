@@ -61,7 +61,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Bienvenido a RetroArch\n"
                "\n"
                "Para más información ve al menú \n"
-			   "de Ayuda.\n"
+              "de Ayuda.\n"
                );
          break;
       case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC:
@@ -97,7 +97,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO)
                      );
-            strlcat(s, t, len);
+            strlcpy(s, t, len);
             strlcat(s, u, len);
          }
          break;
@@ -166,7 +166,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                         "accesibles fuera de la raíz.", sizeof(u)
                         );
 
-                  strlcat(s, t, len);
+                  strlcpy(s, t, len);
                   strlcat(s, u, len);
                }
                break;
@@ -668,7 +668,7 @@ int menu_hash_get_help_es_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "monitor no funciona a 60Hz o similar, \n"
                   "desactiva la sincronía vertical y deja \n"
                   "esta opción en su valor predeterminado.", sizeof(u));
-            strlcat(s, t, len);
+            strlcpy(s, t, len);
             strlcat(s, u, len);
          }
          break;

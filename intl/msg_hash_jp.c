@@ -649,7 +649,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-            strlcat(s, t, len);
+            strlcpy(s, t, len);
             strlcat(s, u, len);
          }
          break;

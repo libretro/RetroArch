@@ -82,7 +82,7 @@ int menu_hash_get_help_de_enum(enum msg_hash_enums msg, char *s, size_t len)
                         "Benutzer lesbar (mode 600). Du kannst eine udev- \n"
                         "Regel erstellen, die auch den Zugriff für andere \n"
                         "Benutzer erlaubt.");
-                  strlcat(s, t, len);
+                  strlcpy(s, t, len);
                   strlcat(s, u, len);
                }
                break;

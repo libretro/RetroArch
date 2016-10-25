@@ -64,7 +64,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
             char t[501];
 
             strlcpy(t, 
-				  "RetroArch si basa su una forma unica di\n"
+                  "RetroArch si basa su una forma unica di\n"
                   "sincronizzazione audio/video che necessita essere\n"
                   "calibrata rispetto alla frequenza di aggiornamento\n"
                   "del tuo schermo per ottenere le migliori performance.\n"
@@ -86,7 +86,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-            strlcat(s, t, len);
+            strlcpy(s, t, len);
             strlcat(s, u, len);
          }
          break;
@@ -149,7 +149,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                         "Come predefinito nella maggior parte delle distribuzioni, i nodi /dev/input \n"
                         "sono only-root (modalità 600). Puoi settare una regola udev \n"
                         "che fa queste accessibili ai non-root.", sizeof(u));
-                  strlcat(s, t, len);
+                  strlcpy(s, t, len);
                   strlcat(s, u, len);
                }
                break;

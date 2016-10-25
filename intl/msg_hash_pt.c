@@ -515,7 +515,7 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "evitar grande mudanças de pitch. Se o monitor \n"
                   "não rodar a 60Hz, ou algo próximo a isso, desative\n"
                   "o VSync, e deixe-o com valores padrão.");
-            strlcat(s, u, len);
+            strlcpy(s, u, len);
             strlcat(s, t, len);
          }
          break;
