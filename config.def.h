@@ -18,7 +18,7 @@
 #define __CONFIG_DEF_H
 
 #include <boolean.h>
-#include "gfx/video_driver.h"
+#include "gfx/video_defines.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

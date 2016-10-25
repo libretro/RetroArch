@@ -33,69 +33,13 @@
 #endif
 
 #include "font_driver.h"
+#include "video_defines.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
 
 #include "../input/input_driver.h"
 
 RETRO_BEGIN_DECLS
-
-enum texture_filter_type
-{
-   TEXTURE_FILTER_LINEAR = 0,
-   TEXTURE_FILTER_NEAREST,
-   TEXTURE_FILTER_MIPMAP_LINEAR,
-   TEXTURE_FILTER_MIPMAP_NEAREST
-};
-
-enum aspect_ratio
-{
-   ASPECT_RATIO_4_3 = 0,
-   ASPECT_RATIO_16_9,
-   ASPECT_RATIO_16_10,
-   ASPECT_RATIO_16_15,
-   ASPECT_RATIO_1_1,
-   ASPECT_RATIO_2_1,
-   ASPECT_RATIO_3_2,
-   ASPECT_RATIO_3_4,
-   ASPECT_RATIO_4_1,
-   ASPECT_RATIO_4_4,
-   ASPECT_RATIO_5_4,
-   ASPECT_RATIO_6_5,
-   ASPECT_RATIO_7_9,
-   ASPECT_RATIO_8_3,
-   ASPECT_RATIO_8_7,
-   ASPECT_RATIO_19_12,
-   ASPECT_RATIO_19_14,
-   ASPECT_RATIO_30_17,
-   ASPECT_RATIO_32_9,
-   ASPECT_RATIO_CONFIG,
-   ASPECT_RATIO_SQUARE,
-   ASPECT_RATIO_CORE,
-   ASPECT_RATIO_CUSTOM,
-
-   ASPECT_RATIO_END
-};
-
-enum rotation
-{
-   ORIENTATION_NORMAL = 0,
-   ORIENTATION_VERTICAL,
-   ORIENTATION_FLIPPED,
-   ORIENTATION_FLIPPED_ROTATED,
-   ORIENTATION_END
-};
-
-enum rarch_display_type
-{
-   /* Non-bindable types like consoles, KMS, VideoCore, etc. */
-   RARCH_DISPLAY_NONE = 0,
-   /* video_display => Display*, video_window => Window */
-   RARCH_DISPLAY_X11,
-   /* video_display => N/A, video_window => HWND */
-   RARCH_DISPLAY_WIN32,
-   RARCH_DISPLAY_OSX
-};
 
 typedef struct video_info
 {
@@ -137,13 +81,6 @@ typedef struct video_info
 #endif
 } video_info_t;
 
-#define FONT_COLOR_RGBA(r, g, b, a) (((unsigned)(r) << 24) | ((g) << 16) | ((b) << 8) | ((a) << 0))
-#define FONT_COLOR_GET_RED(col)   (((col) >> 24) & 0xff)
-#define FONT_COLOR_GET_GREEN(col) (((col) >> 16) & 0xff)
-#define FONT_COLOR_GET_BLUE(col)  (((col) >>  8) & 0xff)
-#define FONT_COLOR_GET_ALPHA(col) (((col) >>  0) & 0xff)
-#define FONT_COLOR_ARGB_TO_RGBA(col) ( (((col) >> 24) & 0xff) | (((unsigned)(col) << 8) & 0xffffff00) )
-
 /* Optionally implemented interface to poke more
  * deeply into video driver. */
 
@@ -152,7 +89,8 @@ typedef struct video_poke_interface
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
    void (*unload_texture)(void *data, uintptr_t id);
-   void (*set_video_mode)(void *data, unsigned width, unsigned height, bool fullscreen);
+   void (*set_video_mode)(void *data, unsigned width,
+         unsigned height, bool fullscreen);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
    void (*get_video_output_size)(void *data,
          unsigned *width, unsigned *height);
@@ -267,23 +205,8 @@ typedef struct video_driver
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
 
-#define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
 
 extern char rotation_lut[4][32];
-
-/* ABGR color format defines */
-
-#define WHITE		  0xffffffffu
-#define RED         0xff0000ffu
-#define GREEN		  0xff00ff00u
-#define BLUE        0xffff0000u
-#define YELLOW      0xff00ffffu
-#define PURPLE      0xffff00ffu
-#define CYAN        0xffffff00u
-#define ORANGE      0xff0063ffu
-#define SILVER      0xff8c848cu
-#define LIGHTBLUE   0xFFFFE0E0U
-#define LIGHTORANGE 0xFFE0EEFFu
 
 struct aspect_ratio_elem
 {
@@ -342,8 +265,10 @@ bool video_driver_is_hw_context(void);
 bool video_driver_is_threaded(void);
 void video_driver_deinit_hw_context(void);
 struct retro_hw_render_callback *video_driver_get_hw_context(void);
-const struct retro_hw_render_context_negotiation_interface *video_driver_get_context_negotiation_interface(void);
-void video_driver_set_context_negotiation_interface(const struct retro_hw_render_context_negotiation_interface *iface);
+const struct retro_hw_render_context_negotiation_interface 
+*video_driver_get_context_negotiation_interface(void);
+void video_driver_set_context_negotiation_interface(const struct 
+      retro_hw_render_context_negotiation_interface *iface);
 void video_driver_set_video_cache_context(void);
 void video_driver_unset_video_cache_context(void);
 bool video_driver_is_video_cache_context(void);
@@ -357,8 +282,10 @@ bool video_driver_has_gpu_record(void);
 uint8_t *video_driver_get_gpu_record(void);
 bool video_driver_gpu_record_init(unsigned size);
 void video_driver_gpu_record_deinit(void);
-bool video_driver_get_current_software_framebuffer(struct retro_framebuffer *fb);
-bool video_driver_get_hw_render_interface(const struct retro_hw_render_interface **iface);
+bool video_driver_get_current_software_framebuffer(struct 
+      retro_framebuffer *fb);
+bool video_driver_get_hw_render_interface(const struct 
+      retro_hw_render_interface **iface);
 bool video_driver_get_viewport_info(struct video_viewport *viewport);
 void video_driver_set_title_buf(void);
 void video_driver_monitor_adjust_system_rates(void);
