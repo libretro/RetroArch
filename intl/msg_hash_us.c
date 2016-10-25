@@ -3076,6 +3076,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Enable or disable network sharing of your folders.";
       case MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE:
          return "Enable or disable bluetooth.";
+      case MENU_ENUM_SUBLABEL_USER_LANGUAGE:
+         return "Sets the language of the interface. Requires a restart.";
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
          return "Prevents your system's screensaver from becoming active.";
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
