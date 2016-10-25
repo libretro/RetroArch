@@ -3068,6 +3068,14 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Adjusts settings for joypads, keyboard and mouse.";
       case MENU_ENUM_SUBLABEL_WIFI_SETTINGS:
          return "Scans for wireless networks and establishes connection.";
+      case MENU_ENUM_SUBLABEL_SERVICES_SETTINGS:
+         return "Manage operating system level services.";
+      case MENU_ENUM_SUBLABEL_SSH_ENABLE:
+         return "Enable or disable remote command line access.";
+      case MENU_ENUM_SUBLABEL_SAMBA_ENABLE:
+         return "Enable or disable network sharing of your folders.";
+      case MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE:
+         return "Enable or disable bluetooth.";
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
          return "Prevents your system's screensaver from becoming active.";
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
