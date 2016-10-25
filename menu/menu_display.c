@@ -544,6 +544,36 @@ void menu_display_draw_gradient(menu_display_ctx_draw_t *draw)
    menu_display_draw(draw);
 }
 
+void menu_display_draw_quad(
+      int x, int y, unsigned w, unsigned h,
+      unsigned width, unsigned height,
+      float *color)
+{
+   menu_display_ctx_draw_t draw;
+   struct video_coords coords;
+
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = color;
+
+   menu_display_blend_begin();
+
+   draw.x           = x;
+   draw.y           = (int)height - y - (int)h;
+   draw.width       = w;
+   draw.height      = h;
+   draw.coords      = &coords;
+   draw.matrix_data = NULL;
+   draw.texture     = menu_display_white_texture;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id = 0;
+
+   menu_display_draw(&draw);
+   menu_display_blend_end();
+}
+
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
 {
 #if !defined(VITA)

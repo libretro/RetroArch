@@ -270,36 +270,6 @@ static void mui_draw_text(font_data_t *font, float x, float y, unsigned width, u
    menu_display_draw_text(font, msg, width, height, &params);
 }
 
-static void mui_render_quad(mui_handle_t *mui,
-      int x, int y, unsigned w, unsigned h,
-      unsigned width, unsigned height,
-      float *coord_color)
-{
-   menu_display_ctx_draw_t draw;
-   struct video_coords coords;
-
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = coord_color;
-
-   menu_display_blend_begin();
-
-   draw.x           = x;
-   draw.y           = (int)height - y - (int)h;
-   draw.width       = w;
-   draw.height      = h;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = menu_display_white_texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline.id = 0;
-
-   menu_display_draw(&draw);
-   menu_display_blend_end();
-}
-
 static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
 {
    unsigned i, width, height;
@@ -319,7 +289,7 @@ static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
 
    video_driver_get_size(&width, &height);
 
-   mui_render_quad(mui, 0, height/2.0, width, height/2.0,
+   menu_display_draw_quad(0, height/2.0, width, height/2.0,
          width, height,
          &dark[0]);
 
@@ -333,7 +303,7 @@ static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
       line_y    = (i / 10)*height/10.0;
 
       if (i == id)
-         mui_render_quad(mui,
+         menu_display_draw_quad(
                width/11.0 + (i % 10) * width/11.0 - 30,
                height*2.5/4.0 + line_y - 30 - mui->font->size / 4,
                60, 60,
@@ -356,13 +326,13 @@ static void mui_draw_tab_begin(mui_handle_t *mui,
    mui->tabs_height = scale_factor / 3;
 
    /* tabs background */
-   mui_render_quad(mui, 0, height - mui->tabs_height, width,
+   menu_display_draw_quad(0, height - mui->tabs_height, width,
          mui->tabs_height,
          width, height,
          tabs_bg_color);
 
    /* tabs separator */
-   mui_render_quad(mui, 0, height - mui->tabs_height, width,
+   menu_display_draw_quad(0, height - mui->tabs_height, width,
          1,
          width, height,
          tabs_separator_color);
@@ -376,7 +346,7 @@ static void mui_draw_tab_end(mui_handle_t *mui,
    /* active tab marker */
    unsigned tab_width = width / (MUI_SYSTEM_TAB_END+1);
 
-   mui_render_quad(mui, mui->categories.selection_ptr * tab_width,
+   menu_display_draw_quad(mui->categories.selection_ptr * tab_width,
          height - (header_height/16),
          tab_width,
          header_height/16,
@@ -412,8 +382,7 @@ static void mui_draw_scrollbar(mui_handle_t *mui,
       if (scrollbar_height <= mui->scrollbar_width)
          scrollbar_height = mui->scrollbar_width;
 
-      mui_render_quad(mui,
-            width - mui->scrollbar_width - scrollbar_margin,
+      menu_display_draw_quad(            width - mui->scrollbar_width - scrollbar_margin,
             header_height + y,
             mui->scrollbar_width,
             scrollbar_height,
@@ -470,8 +439,7 @@ static void mui_render_messagebox(mui_handle_t *mui,
 
    menu_display_set_alpha(body_bg_color, 1.0);
 
-   mui_render_quad(mui,
-         x - longest_width/2.0 - mui->margin*2.0,
+   menu_display_draw_quad(         x - longest_width/2.0 - mui->margin*2.0,
          y - line_height/2.0 - mui->margin*2.0,
          longest_width + mui->margin*4.0,
          line_height * list->size + mui->margin*4.0,
@@ -1153,8 +1121,7 @@ static void mui_frame(void *data)
       menu_display_set_alpha(blue_50, 1.0);
 
    /* highlighted entry */
-   mui_render_quad(
-      mui, 
+   menu_display_draw_quad(
       0,
       header_height - mui->scroll_y + mui->line_height *selection,
       width,
@@ -1179,8 +1146,7 @@ static void mui_frame(void *data)
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
-   mui_render_quad(
-      mui,
+   menu_display_draw_quad(
       0, 
       0, 
       width, 
@@ -1202,8 +1168,7 @@ static void mui_frame(void *data)
       mui_draw_tab_end(mui, width, height, header_height, &active_tab_marker_color[0]);
    }
 
-   mui_render_quad(
-      mui,
+   menu_display_draw_quad(
       0, 
       header_height, 
       width,
@@ -1276,14 +1241,14 @@ static void mui_frame(void *data)
       const char *str   = menu_input_dialog_get_buffer();
       const char *label = menu_input_dialog_get_label_buffer();
 
-      mui_render_quad(mui, 0, 0, width, height, width, height, &black_bg[0]);
+      menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
       mui_render_messagebox(mui, msg, &body_bg_color[0], font_hover_color);
    }
 
    if (!string_is_empty(mui->box_message))
    {
-      mui_render_quad(mui, 0, 0, width, height, width, height, &black_bg[0]);
+      menu_display_draw_quad(0, 0, width, height, width, height, &black_bg[0]);
       mui_render_messagebox(mui, mui->box_message, &body_bg_color[0], font_hover_color);
       mui->box_message[0] = '\0';
    }
