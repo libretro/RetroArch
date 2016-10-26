@@ -251,7 +251,7 @@ static int16_t x_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret;
+   int16_t ret      = 0;
    x11_input_t *x11 = (x11_input_t*)data;
 
    switch (device)
@@ -264,7 +264,8 @@ static int16_t x_input_state(void *data,
       case RETRO_DEVICE_KEYBOARD:
          return x_key_pressed(x11, id);
       case RETRO_DEVICE_ANALOG:
-         ret = x_pressed_analog(x11, binds[port], idx, id);
+         if (binds[port])
+            ret = x_pressed_analog(x11, binds[port], idx, id);
          if (!ret && binds[port] && binds[port])
             ret = input_joypad_analog(x11->joypad, port, idx,
                   id, binds[port]);
