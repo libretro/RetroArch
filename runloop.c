@@ -812,7 +812,9 @@ static enum runloop_state runloop_check_state(
    static char prev_overlay_restore = false;
    bool osk_enable                  = input_driver_is_onscreen_keyboard_enabled();
 #endif
+#ifdef HAVE_NETWORKING
    bool tmp                         = false;
+#endif
    bool focused                     = true;
    uint64_t trigger_input           = current_input & ~old_input;
    bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
