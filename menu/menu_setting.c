@@ -2093,7 +2093,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_START_CORE);
 
 #if defined(HAVE_VIDEO_PROCESSOR)
          CONFIG_ACTION(
@@ -2103,7 +2102,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_START_VIDEO_PROCESSOR);
 #endif
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
@@ -2114,7 +2112,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_START_NET_RETROPAD);
 #endif
 
          CONFIG_ACTION(
@@ -2124,7 +2121,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CONTENT_SETTINGS);
 
 #ifndef HAVE_DYNAMIC
          if (frontend_driver_has_fork())
@@ -2148,7 +2144,6 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].values       = ext_name;
                menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_LOAD_CORE);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
-               menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_LIST);
             }
          }
 
@@ -2159,7 +2154,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOAD_CONTENT_LIST);
 
          if (settings->history_list_enable)
          {
@@ -2170,7 +2164,6 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY);
          }
 
          CONFIG_ACTION(
@@ -2180,7 +2173,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ADD_CONTENT_LIST);
 
 #if defined(HAVE_NETWORKING)
          CONFIG_ACTION(
@@ -2190,7 +2182,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY);
 #endif
 
 #if defined(HAVE_NETWORKING)
@@ -2201,7 +2192,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ONLINE_UPDATER);
 #endif
 
          CONFIG_ACTION(
@@ -2211,7 +2201,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2220,7 +2209,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INFORMATION_LIST);
 
 #ifndef __CELLOS_LV2__
          CONFIG_ACTION(
@@ -2231,7 +2219,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_RESTART_RETROARCH);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RESTART_RETROARCH);
 #endif
 
          CONFIG_ACTION(
@@ -2241,7 +2228,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CONFIGURATIONS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2251,7 +2237,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2261,7 +2246,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CONFIG);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVE_NEW_CONFIG);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2271,7 +2255,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2281,7 +2264,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_GAME);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2290,7 +2272,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_HELP_LIST);
 
 #if !defined(IOS)
          /* Apple rejects iOS apps that lets you forcibly quit an application. */
@@ -2302,7 +2283,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_QUIT_RETROARCH);
 #endif
 
 #if defined(HAVE_LAKKA)
@@ -2314,7 +2294,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_SHUTDOWN);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SHUTDOWN);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2324,7 +2303,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REBOOT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_REBOOT);
 #endif
 
          CONFIG_ACTION(
@@ -2334,7 +2312,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2343,7 +2320,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2352,7 +2328,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2361,7 +2336,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_SETTINGS);
 
          if (settings->menu.show_advanced_settings)
          {
@@ -2372,7 +2346,6 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_SETTINGS);
          }
 
          CONFIG_ACTION(
@@ -2382,7 +2355,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CONFIGURATION_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2391,7 +2363,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVING_SETTINGS);
 
          if (settings->menu.show_advanced_settings)
          {
@@ -2402,7 +2373,6 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOGGING_SETTINGS);
          }
 
          CONFIG_ACTION(
@@ -2412,7 +2382,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2421,7 +2390,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_REWIND_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2430,7 +2398,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RECORDING_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2439,7 +2406,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2448,7 +2414,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2457,7 +2422,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_SETTINGS);
 
 #if !defined(RARCH_CONSOLE) && !defined(HAVE_LAKKA)
          CONFIG_ACTION(
@@ -2467,7 +2431,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS);
 #endif
 
          CONFIG_ACTION(
@@ -2477,7 +2440,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2486,7 +2448,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2495,7 +2456,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UPDATER_SETTINGS);
 
          if (!string_is_equal(settings->wifi.driver, "null"))
          {
@@ -2506,7 +2466,6 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_WIFI_SETTINGS);
          }
 
          CONFIG_ACTION(
@@ -2516,7 +2475,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETWORK_SETTINGS);
 
 #ifdef HAVE_LAKKA
          CONFIG_ACTION(
@@ -2526,7 +2484,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LAKKA_SERVICES);
 #endif
 
          CONFIG_ACTION(
@@ -2536,7 +2493,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PLAYLIST_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2545,7 +2501,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_USER_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2554,7 +2509,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DIRECTORY_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2563,7 +2517,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PRIVACY_SETTINGS);
 
          for (user = 0; user < MAX_USERS; user++)
             setting_append_list_input_player_options(list, list_info, parent_group, user);
@@ -4193,7 +4146,6 @@ static bool setting_append_list(
                   &group_info,
                   &subgroup_info,
                   parent_group);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS);
 
             for (user = 0; user < MAX_USERS; user++)
             {
@@ -5871,7 +5823,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ACCOUNTS_LIST);
 
          CONFIG_STRING(
                list, list_info,
@@ -5935,7 +5886,6 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS);
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);

@@ -1196,7 +1196,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          group_info,
          subgroup_info,
          parent_group);
-   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SCREEN_RESOLUTION);
 #endif
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
