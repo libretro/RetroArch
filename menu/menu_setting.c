@@ -3162,7 +3162,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 0, 0.001, true, false);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_REFRESH_RATE);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -3181,7 +3180,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
          (*list)[list_info->index - 1].get_string_representation = 
             &setting_get_string_representation_st_float_video_refresh_rate_auto;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO);
 
          if (string_is_equal(settings->video.driver, "gl"))
          {
@@ -3329,7 +3327,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SCALE);
          }
 
          CONFIG_BOOL(
@@ -3687,7 +3684,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, -80, 12, 1.0, true, true);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_VOLUME);
 
 #ifdef __CELLOS_LV2__
          CONFIG_BOOL(
@@ -3771,7 +3767,6 @@ static bool setting_append_list(
                true,
                false);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -3794,7 +3789,6 @@ static bool setting_append_list(
                true,
                true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW);
 
 #ifdef RARCH_MOBILE
          CONFIG_UINT(
@@ -4133,7 +4127,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD);
             
             CONFIG_UINT(
                   list, list_info,
@@ -4386,7 +4379,6 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_SET_FRAME_LIMIT);
          menu_settings_list_current_add_range(list, list_info, 0, 10, 1.0, true, true);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_FASTFORWARD_RATIO);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -4401,7 +4393,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 1, 10, 1.0, true, true);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SLOWMOTION_RATIO);
 
          CONFIG_BOOL(
                list, list_info,
@@ -4477,7 +4468,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 1.00, 100.00, 1.0, true, true);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -4492,7 +4482,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -4507,7 +4496,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -4620,7 +4608,6 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_OVERLAY_SET_ALPHA_MOD);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_OVERLAY_OPACITY);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -4637,7 +4624,6 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
          menu_settings_list_current_add_range(list, list_info, 0, 2, 0.01, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_OVERLAY_SCALE);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -4702,7 +4688,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY);
          }
 
 
@@ -5157,7 +5142,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MATERIALUI_MENU_HEADER_OPACITY);
 
             CONFIG_FLOAT(
                   list, list_info,
@@ -5172,7 +5156,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0.0, 1.0, 0.010, true, true);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MATERIALUI_MENU_FOOTER_OPACITY);
          }
 #endif
 
