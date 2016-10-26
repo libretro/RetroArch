@@ -2720,7 +2720,6 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler,
                      bool_entries[i].flags);
-               menu_settings_list_current_add_enum_idx(list, list_info, bool_entries[i].name_enum_idx);
             }
 
 
@@ -2798,7 +2797,6 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler,
                      bool_entries[i].flags);
-               menu_settings_list_current_add_enum_idx(list, list_info, bool_entries[i].name_enum_idx);
             }
 
             END_SUB_GROUP(list, list_info, parent_group);
@@ -2830,7 +2828,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOG_VERBOSITY);
 
             CONFIG_UINT(
                   list, list_info,
@@ -2870,7 +2867,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PERFCNT_ENABLE);
          }
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -2896,7 +2892,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -2912,7 +2907,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -2928,7 +2922,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE);
 
 #ifdef HAVE_THREADS
          CONFIG_UINT(
@@ -2964,7 +2957,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX);
 
          CONFIG_BOOL(
                list, list_info,
@@ -2980,7 +2972,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -2996,7 +2987,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -3024,7 +3014,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_CMD_APPLY_AUTO);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REWIND_TOGGLE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_REWIND_ENABLE);
 
 #if 0
          CONFIG_SIZE(
@@ -3079,7 +3068,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
 #endif
 
          CONFIG_BOOL(
@@ -3096,7 +3084,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_FPS_SHOW);
 
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Platform-specific", &group_info, &subgroup_info, parent_group);
@@ -3143,7 +3130,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_CMD_APPLY_AUTO);
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FULLSCREEN);
          }
          if (video_driver_has_windowed())
          {
@@ -3161,7 +3147,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN);
          }
 
          CONFIG_FLOAT(
@@ -3216,7 +3201,6 @@ static bool setting_append_list(
                   SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_ADVANCED
                   );
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE);
          }
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -3366,7 +3350,6 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER);
 
 #ifdef GEKKO
          CONFIG_UINT(
@@ -3397,7 +3380,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_VFILTER);
 #endif
 
          CONFIG_BOOL(
@@ -3415,7 +3397,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SMOOTH);
 
          CONFIG_UINT(
                list, list_info,
@@ -3460,7 +3441,6 @@ static bool setting_append_list(
                SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_ADVANCED
                );
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_THREADED);
 #endif
 
          CONFIG_BOOL(
@@ -3478,7 +3458,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_VSYNC);
 
          CONFIG_UINT(
                list, list_info,
@@ -3528,7 +3507,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
 
             CONFIG_UINT(
                   list, list_info,
@@ -3577,7 +3555,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(
@@ -3604,7 +3581,6 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
 
          CONFIG_BOOL(
                list, list_info,
@@ -3621,7 +3597,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -3638,7 +3613,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN);
 
          CONFIG_PATH(
                list, list_info,
@@ -3683,7 +3657,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_ENABLE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -3700,7 +3673,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_MUTE);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -3733,7 +3705,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE);
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -3763,7 +3734,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_SYNC);
 
          CONFIG_UINT(
                list, list_info,
@@ -3961,7 +3931,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -3978,7 +3947,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_PREFER_FRONT_TOUCH);
 #endif
 
 #if TARGET_OS_IPHONE
@@ -3997,7 +3965,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR);
 
             CONFIG_UINT(
                   list, list_info,
@@ -4028,7 +3995,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE);
 #endif
 
 #ifdef ANDROID
@@ -4047,7 +4013,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_BACK_AS_MENU_TOGGLE);
 #endif
 
             CONFIG_UINT(
@@ -4079,7 +4044,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -4096,7 +4060,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -4113,7 +4076,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -4130,7 +4092,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_ADVANCED
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -4147,7 +4108,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_ADVANCED
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND);
 
             END_SUB_GROUP(list, list_info, parent_group);
 
@@ -4284,7 +4244,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RECORD_ENABLE);
 
             CONFIG_PATH(
                   list, list_info,
@@ -4331,7 +4290,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RECORD_USE_OUTPUT_DIRECTORY);
 
             END_SUB_GROUP(list, list_info, parent_group);
 
@@ -4352,7 +4310,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -4369,7 +4326,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_GPU_RECORD);
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
@@ -4462,7 +4418,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -4494,7 +4449,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FONT_ENABLE);
 
          CONFIG_PATH(
                list, list_info,
@@ -4584,7 +4538,6 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -4602,7 +4555,6 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED);
 
          CONFIG_BOOL(
                list, list_info,
@@ -4620,7 +4572,6 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU);
 
          CONFIG_BOOL(
                list, list_info,
@@ -4637,7 +4588,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_OVERLAY_ENABLE);
 
          CONFIG_PATH(
                list, list_info,
@@ -4773,7 +4723,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE
                   );
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DYNAMIC_WALLPAPER);
          }
 
 
@@ -4793,7 +4742,6 @@ static bool setting_append_list(
                SD_FLAG_CMD_APPLY_AUTO
                );
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_PAUSE_LIBRETRO);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PAUSE_LIBRETRO);
 
          CONFIG_BOOL(
                list, list_info,
@@ -4810,7 +4758,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MOUSE_ENABLE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -4827,7 +4774,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_POINTER_ENABLE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -4844,7 +4790,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_LINEAR_FILTER);
 
 #ifdef RARCH_MOBILE
          /* We don't want mobile users being able to switch this off. */
@@ -4872,7 +4817,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND);
 
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Settings View", &group_info, &subgroup_info, parent_group);
@@ -4891,7 +4835,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS);
 
 #ifdef HAVE_THREADS
          CONFIG_BOOL(
@@ -4909,7 +4852,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_ADVANCED
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE);
 #endif
 
 #if 0
@@ -4981,7 +4923,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DPI_OVERRIDE_ENABLE);
 
             CONFIG_UINT(
                   list, list_info,
@@ -5072,7 +5013,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHADOWS_ENABLE);
 
 #ifdef HAVE_SHADERPIPELINE
             CONFIG_UINT(
@@ -5118,7 +5058,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_SETTINGS);
 
 #ifdef HAVE_IMAGEVIEWER
             CONFIG_BOOL(
@@ -5135,7 +5074,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_IMAGES);
 #endif
 
 #ifdef HAVE_FFMPEG
@@ -5153,7 +5091,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_MUSIC);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5169,7 +5106,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_VIDEO);
 #endif
 
             CONFIG_BOOL(
@@ -5186,7 +5122,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_SHOW_HISTORY);
          }
 
 #endif
@@ -5255,7 +5190,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RGUI_SHOW_START_SCREEN);
 
          if (string_is_equal(settings->menu.driver, "xmb"))
          {
@@ -5288,7 +5222,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_TIMEDATE_ENABLE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -5304,7 +5237,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_ENABLE);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -5332,7 +5264,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -5362,7 +5293,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_USE_BUILTIN_PLAYER);
          }
 
 
@@ -5381,7 +5311,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER);
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -5411,7 +5340,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler,
                SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PAUSE_NONACTIVE);
 
 #if !defined(RARCH_MOBILE)
          CONFIG_BOOL(
@@ -5429,7 +5357,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_CMD_APPLY_AUTO);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION);
 #endif
 
          if (!string_is_equal(ui_companion_driver_get_ident(), "null"))
@@ -5448,7 +5375,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UI_COMPANION_ENABLE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5464,7 +5390,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5480,7 +5405,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_UI_MENUBAR_ENABLE);
          }
 
 
@@ -5514,7 +5438,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_HISTORY_LIST_ENABLE);
 #endif
 
          CONFIG_UINT(
@@ -5557,7 +5480,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CHEEVOS_ENABLE);
 
          CONFIG_BOOL(
                list, list_info,
@@ -5574,7 +5496,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL);
 
          CONFIG_BOOL(
                list, list_info,
@@ -5592,7 +5513,6 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -5650,7 +5570,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -5743,7 +5662,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5759,7 +5677,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT);
 
             END_SUB_GROUP(list, list_info, parent_group);
 
@@ -5787,7 +5704,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETWORK_CMD_ENABLE);
 
             CONFIG_UINT(
                   list, list_info,
@@ -5818,7 +5734,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE);
 
             CONFIG_UINT(
                   list, list_info,
@@ -5876,7 +5791,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_ADVANCED);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_STDIN_CMD_ENABLE);
 #endif
 #endif
          }
@@ -5911,7 +5825,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = ssh_enable_toggle_change_handler;
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SSH_ENABLE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5928,7 +5841,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = samba_enable_toggle_change_handler;
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAMBA_ENABLE);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5945,7 +5857,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
             (*list)[list_info->index - 1].change_handler = bluetooth_enable_toggle_change_handler;
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_BLUETOOTH_ENABLE);
 
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
@@ -6495,7 +6406,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CAMERA_ALLOW);
          }
 
          if (!string_is_equal(settings->location.driver, "null"))
@@ -6514,7 +6424,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOCATION_ALLOW);
          }
 
          END_SUB_GROUP(list, list_info, parent_group);

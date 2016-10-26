@@ -1213,7 +1213,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          general_write_handler,
          general_read_handler,
          SD_FLAG_NONE);
-   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PAL60_ENABLE);
 #endif
 #if defined(GEKKO) || defined(_XBOX360)
    CONFIG_UINT(
@@ -1262,7 +1261,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          list,
          list_info,
          CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SOFT_FILTER);
 #endif
 #ifdef _XBOX1
    CONFIG_UINT(
