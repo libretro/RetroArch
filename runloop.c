@@ -145,7 +145,7 @@ void runloop_msg_queue_push(const char *msg,
 #endif
 
    if (flush)
-      runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_CLEAR, NULL);
+      msg_queue_clear(runloop_msg_queue);
 
    msg_info.msg      = msg;
    msg_info.prio     = prio;
@@ -508,9 +508,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #ifdef HAVE_THREADS
          slock_unlock(_runloop_msg_queue_lock);
 #endif
-         break;
-      case RUNLOOP_CTL_MSG_QUEUE_CLEAR:
-         msg_queue_clear(runloop_msg_queue);
          break;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          if (!runloop_msg_queue)
