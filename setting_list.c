@@ -1703,7 +1703,7 @@ bool CONFIG_BIND(
    return true;
 }
 
-bool CONFIG_ACTION(
+bool CONFIG_ACTION_ALT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *name, const char *SHORT,
@@ -1712,6 +1712,28 @@ bool CONFIG_ACTION(
       const char *parent_group)
 {
    rarch_setting_t value = setting_action_setting(name, SHORT,
+         group_info->name, subgroup_info->name, parent_group);
+
+   if (!settings_list_append(list, list_info))
+      return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
+   return true;
+}
+
+bool CONFIG_ACTION(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group)
+{
+   rarch_setting_t value = setting_action_setting(
+         msg_hash_to_str(name_enum_idx),
+         msg_hash_to_str(SHORT_enum_idx),
          group_info->name, subgroup_info->name, parent_group);
 
    if (!settings_list_append(list, list_info))

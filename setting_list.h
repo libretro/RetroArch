@@ -203,10 +203,19 @@ bool END_SUB_GROUP(
       rarch_setting_info_t *list_info,
       const char *parent_group);
 
-bool CONFIG_ACTION(
+bool CONFIG_ACTION_ALT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *name, const char *SHORT,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group);
+
+bool CONFIG_ACTION(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group);
