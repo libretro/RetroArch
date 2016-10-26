@@ -506,7 +506,9 @@ static void menu_action_setting_disp_set_label_input_desc(
             str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y);
             break;
       }
-      strlcpy(s, str, len);
+
+      if (!string_is_empty(str))
+         strlcpy(s, str, len);
    }
 
    *w = 19;
