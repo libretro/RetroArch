@@ -1495,6 +1495,7 @@ bool CONFIG_BOOL(
    if (flags != SD_FLAG_NONE)
       settings_data_list_current_add_flags(list, list_info, flags);
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
+   menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
    return true;
 }
 
@@ -1592,6 +1593,7 @@ bool CONFIG_FLOAT(
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
+   menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
    return true;
 }
 
@@ -1651,6 +1653,7 @@ bool CONFIG_DIR(
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
    menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
+   menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
    return true;
 }
 

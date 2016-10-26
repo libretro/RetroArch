@@ -549,6 +549,15 @@ void menu_settings_list_current_add_enum_idx(
    (*list)[idx].enum_idx = enum_idx;
 }
 
+void menu_settings_list_current_add_enum_value_idx(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum msg_hash_enums enum_idx)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].enum_value_idx = enum_idx;
+}
+
 
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
 {
