@@ -2624,7 +2624,6 @@ static bool setting_append_list(
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
                (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
                (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-               menu_settings_list_current_add_enum_idx(list, list_info, string_options_entries[i].name_enum_idx);
             }
 
             END_SUB_GROUP(list, list_info, parent_group);
