@@ -36,6 +36,8 @@
 
 #include "../configuration.h"
 
+static bool menu_keyboard_key_state[RETROK_LAST];
+
 static int menu_event_pointer(unsigned *action)
 {
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
@@ -65,8 +67,24 @@ static int menu_event_pointer(unsigned *action)
    return 0;
 }
 
+bool menu_event_keyboard_is_set(enum retro_key key)
+{
+   if (menu_keyboard_key_state[key] && key == RETROK_F1)
+   {
+      menu_keyboard_key_state[key] = false;
+      return true;
+   }
+   return menu_keyboard_key_state[key];
+}
+
+void menu_event_keyboard_set(enum retro_key key)
+{
+   menu_keyboard_key_state[key] = true;
+}
+
 unsigned menu_event(uint64_t input, uint64_t trigger_input)
 {
+   unsigned i;
    menu_animation_ctx_delta_t delta;
    float delta_time;
    /* Used for key repeat */
@@ -185,6 +203,51 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
       trigger_input = 0;
+   }
+
+   for (i = 0; i < RETROK_LAST; i++)
+   {
+      if (i == RETROK_F1)
+         continue;
+
+      if (menu_keyboard_key_state[i])
+      {
+         switch ((enum retro_key)i)
+         {
+            case RETROK_PAGEUP:
+               BIT32_SET(trigger_input, settings->menu_scroll_up_btn);
+               break;
+            case RETROK_PAGEDOWN:
+               BIT32_SET(trigger_input, settings->menu_scroll_down_btn);
+               break;
+            case RETROK_SLASH:
+               BIT32_SET(trigger_input, settings->menu_search_btn);
+               break;
+            case RETROK_LEFT:
+               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT);
+               break;
+            case RETROK_RIGHT:
+               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+               break;
+            case RETROK_UP:
+               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_UP);
+               break;
+            case RETROK_DOWN:
+               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN);
+               break;
+            case RETROK_BACKSPACE:
+               BIT32_SET(trigger_input, settings->menu_cancel_btn);
+               break;
+            case RETROK_RETURN:
+               BIT32_SET(trigger_input, settings->menu_ok_btn);
+               break;
+#if 0
+            default:
+               break;
+#endif
+         }
+         menu_keyboard_key_state[i] = false;
+      }
    }
 
    if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
