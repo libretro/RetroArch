@@ -1112,13 +1112,15 @@ static int16_t android_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port][id].valid)
+         if (binds[port] && binds[port][id].valid)
             return input_joypad_pressed(android->joypad, port, binds[port], id) ||
                android_keyboard_port_input_pressed(binds[port],id);
          break;
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(android->joypad, port, idx, id,
-               binds[port]);
+         if (binds[port])
+            return input_joypad_analog(android->joypad, port, idx, id,
+                  binds[port]);
+         break;
       case RETRO_DEVICE_POINTER:
          switch (id)
          {

@@ -147,12 +147,13 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
    if (id < RARCH_BIND_LIST_END)
    {
       const struct retro_keybind *binds = binds_[port_num];
-      if (binds[id].valid && sdl_is_pressed(sdl, port_num, binds, id))
+      if (binds && binds[id].valid && sdl_is_pressed(sdl, port_num, binds, id))
       {
          *device = INPUT_DEVICE_TYPE_KEYBOARD;
          return 1;
       }
-      if (binds[id].valid && input_joypad_pressed(sdl->joypad, 0, binds, id))
+
+      if (binds && binds[id].valid && input_joypad_pressed(sdl->joypad, 0, binds, id))
       {
          *device = INPUT_DEVICE_TYPE_JOYPAD;
          return 1;
@@ -165,7 +166,7 @@ static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keyb
       unsigned port_num, unsigned idx, unsigned id)
 {
    int16_t ret = sdl_analog_pressed(sdl, binds[port_num], idx, id);
-   if (!ret)
+   if (!ret && binds[port_num])
       ret = input_joypad_analog(sdl->joypad, port_num, idx, id, binds[port_num]);
    return ret;
 }

@@ -281,7 +281,7 @@ static bool dinput_is_pressed(struct dinput_input *di,
 
    if (!di->blocked && dinput_keyboard_pressed(di, bind->key))
       return true;
-   if (binds[id].valid && input_joypad_pressed(di->joypad, port, binds, id))
+   if (binds && binds[id].valid && input_joypad_pressed(di->joypad, port, binds, id))
       return true;
 
    return false;
@@ -486,14 +486,15 @@ static int16_t dinput_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return dinput_is_pressed(di, binds[port], port, id);
-
+         if (binds[port])
+            return dinput_is_pressed(di, binds[port], port, id);
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return dinput_keyboard_pressed(di, id);
 
       case RETRO_DEVICE_ANALOG:
          ret = dinput_pressed_analog(di, binds[port], idx, id);
-         if (!ret)
+         if (!ret && binds[port])
             ret = input_joypad_analog(di->joypad, port,
                   idx, id, settings->input.binds[port]);
          return ret;

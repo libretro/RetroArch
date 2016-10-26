@@ -57,11 +57,13 @@ static int16_t ctr_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port][id].valid)
+         if (binds[port] && binds[port][id].valid)
             return input_joypad_pressed(ctr->joypad, port, binds[port], id);
          break;
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(ctr->joypad, port, idx, id, binds[port]);
+         if (binds[port])
+            return input_joypad_analog(ctr->joypad, port, idx, id, binds[port]);
+         break;
    }
 
    return 0;
