@@ -1811,20 +1811,18 @@ static INLINE unsigned cheevos_next_power_of_2(unsigned n)
 
 static size_t cheevos_eval_md5(
       const struct retro_game_info *info,
-      size_t offset,
       MD5_CTX *ctx)
 {
    MD5_Init(ctx);
 
    if (info->data)
    {
-      MD5_Update(ctx, (void*)(uint8_t*)info->data + offset, info->size - offset);
-      return info->size - offset;
+      MD5_Update(ctx, info->data, info->size);
+      return info->size;
    }
    else
    {
       RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
-      filestream_seek(file, offset, SEEK_SET);
       size_t size = 0;
 
       if (!file)
@@ -1848,21 +1846,22 @@ static size_t cheevos_eval_md5(
    }
 }
 
-static void cheevos_fill_md5(size_t size, char fill, MD5_CTX *ctx)
+static void cheevos_fill_md5(size_t size, size_t total, MD5_CTX *ctx)
 {
    char buffer[4096];
+   ssize_t fill      = total - size;
 
-   memset((void*)buffer, fill, sizeof(buffer));
+   buffer[0] = '\0';
 
-   while (size > 0)
+   while (fill > 0)
    {
       ssize_t len = sizeof(buffer);
 
-      if (len > size)
-         len = size;
+      if (len > fill)
+         len = fill;
 
       MD5_Update(ctx, (void*)buffer, len);
-      size -= len;
+      fill -= len;
    }
 }
 
@@ -1873,7 +1872,7 @@ static unsigned cheevos_find_game_id_generic(
    MD5_CTX ctx;
    retro_time_t to;
    uint8_t hash[16];
-   size_t size      = cheevos_eval_md5(info, 0, &ctx);
+   size_t size      = cheevos_eval_md5(info, &ctx);
 
    hash[0] = '\0';
 
@@ -1891,19 +1890,23 @@ static unsigned cheevos_find_game_id_snes(
       retro_time_t timeout)
 {
    MD5_CTX ctx;
+   retro_time_t to;
    uint8_t hash[16];
-   size_t count = cheevos_eval_md5(info, 0, &ctx);
+   size_t size      = cheevos_eval_md5(info, &ctx);
 
-   if (count == 0)
+   hash[0] = '\0';
+
+   if (!size)
    {
       MD5_Final(hash, &ctx);
       return 0;
    }
 
-   cheevos_fill_md5(CHEEVOS_EIGHT_MB - count, 0, &ctx);
+   cheevos_fill_md5(size, CHEEVOS_EIGHT_MB, &ctx);
    MD5_Final(hash, &ctx);
 
-   return cheevos_get_game_id(hash, &timeout);
+   to = timeout;
+   return cheevos_get_game_id(hash, &to);
 }
 
 static unsigned cheevos_find_game_id_genesis(
@@ -1911,30 +1914,31 @@ static unsigned cheevos_find_game_id_genesis(
 {
    MD5_CTX ctx;
    uint8_t hash[16];
-   size_t count = cheevos_eval_md5(info, 0, &ctx);
+   retro_time_t to;
+   size_t size = cheevos_eval_md5(info, &ctx);
 
-   if (count == 0)
+   if (!size)
    {
       MD5_Final(hash, &ctx);
       return 0;
    }
 
-   cheevos_fill_md5(CHEEVOS_SIX_MB - count, 0, &ctx);
+   cheevos_fill_md5(size, CHEEVOS_SIX_MB, &ctx);
    MD5_Final(hash, &ctx);
 
-   return cheevos_get_game_id(hash, &timeout);
+   to = timeout;
+   return cheevos_get_game_id(hash, &to);
 }
 
 static unsigned cheevos_find_game_id_nes(
       const struct retro_game_info *info,
       retro_time_t timeout)
 {
-   /* Note about the references to the FCEU emulator below. There is no
-    * core-specific code in this function, it's rather Retro Achievements
-    * specific code that must be followed to the letter so we compute
-    * the correct ROM hash. Retro Achievements does indeed use some
-    * FCEU related method to compute the hash, since its NES emulator
-    * is based on it. */
+   static int not_power2[] =
+   {
+      53, 198, 228
+   };
+
    struct
    {
       uint8_t id[4]; /* NES^Z */
@@ -1945,15 +1949,16 @@ static unsigned cheevos_find_game_id_nes(
       uint8_t reserve[8];
    } header;
 
-   size_t rom_size, offset, count;
+   size_t rom_size;
    MD5_CTX ctx;
    uint8_t hash[16];
+   retro_time_t to;
 
-   size_t bytes;
-   RFILE *file;
+   unsigned bytes;
    ssize_t num_read;
-   int mapper_no;
-   bool round;
+   int i, mapper_no;
+   bool round = true;
+   uint8_t *data;
 
    if (info->data)
    {
@@ -1964,7 +1969,8 @@ static unsigned cheevos_find_game_id_nes(
    }
    else
    {
-      file = filestream_open(info->path, RFILE_MODE_READ, 0);
+      ssize_t num_read;
+      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
 
       if (!file)
          return 0;
@@ -1987,26 +1993,83 @@ static unsigned cheevos_find_game_id_nes(
    else
       rom_size = 256;
 
+   data = (uint8_t *) malloc(rom_size << 14);
+
+   if (!data)
+      return 0;
+
+   /* from FCEU core - need it for a correctly md5 sum */
+   memset(data, 0xFF, rom_size << 14);
+
    /* from FCEU core - compute size using the cart mapper */
-   mapper_no = (header.rom_type >> 4) | (header.rom_type2 & 0xF0);
+   mapper_no = (header.rom_type >> 4);
+   mapper_no |= (header.rom_type2 & 0xF0);
 
-   /* for games not to the power of 2, so we just read enough
-    * PRG rom from it, but we have to keep ROM_size to the power of 2
-    * since PRGCartMapping wants ROM_size to be to the power of 2
-    * so instead if not to power of 2, we just use head.ROM_size when
-    * we use FCEU_read. */
-   round = mapper_no != 53 && mapper_no != 198 && mapper_no != 228;
+   for (i = 0; i != ARRAY_SIZE(not_power2); ++i)
+   {
+      /* for games not to the power of 2, so we just read enough
+       * PRG rom from it, but we have to keep ROM_size to the power of 2
+       * since PRGCartMapping wants ROM_size to be to the power of 2
+       * so instead if not to power of 2, we just use head.ROM_size when
+       * we use FCEU_read. */
+      if (not_power2[i] == mapper_no)
+      {
+         round = false;
+         break;
+      }
+   }
+
    bytes = (round) ? rom_size : header.rom_size;
-
-   /* from FCEU core - check if Trainer included in ROM data */
-   offset = sizeof(header) + (header.rom_type & 4 ? sizeof(header) : 0);
-
    MD5_Init(&ctx);
-   count = cheevos_eval_md5(info, offset, &ctx);
-   cheevos_fill_md5(0x4000 * bytes - count, 0xff, &ctx);
-   MD5_Final(hash, &ctx);
 
-   return cheevos_get_game_id(hash, &timeout);
+   if (info->data)
+   {
+      size_t offset = sizeof(header);
+      size_t count;
+
+      /* from FCEU core - check if Trainer included in ROM data */
+      if (header.rom_type & 4)
+         offset += sizeof(header);
+
+      count = info->size - offset;
+
+      if (count > 0x4000 * bytes)
+         count = 0x4000 * bytes;
+
+      memcpy(data, (void*)(uint8_t*)info->data + offset, count);
+   }
+   else
+   {
+      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
+
+      if (!file)
+      {
+         free(data);
+         return 0;
+      }
+
+      filestream_seek(file, sizeof(header), SEEK_SET);
+
+      /* from FCEU core - check if Trainer included in ROM data */
+      if (header.rom_type & 4)
+         filestream_seek(file, sizeof(header), SEEK_CUR);
+
+      num_read = filestream_read(file, (void*)data, 0x4000 * bytes );
+      filestream_close(file);
+
+      if (num_read <= 0)
+      {
+         free(data);
+         return 0;
+      }
+   }
+
+   MD5_Update(&ctx, (void*) data, rom_size << 14);
+   MD5_Final(hash, &ctx);
+   free(data);
+
+   to = timeout;
+   return cheevos_get_game_id(hash, &to);
 }
 
 bool cheevos_load(const void *data)
