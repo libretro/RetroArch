@@ -232,8 +232,7 @@ bool menu_shader_manager_save_preset(
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
    {
-      RARCH_ERR("Cannot save shader preset, menu handle"
-            " is not initialized.\n");
+      RARCH_ERR("Cannot save shader preset.\n");
       return false;
    }
 
@@ -297,7 +296,9 @@ bool menu_shader_manager_save_preset(
             conf_path = default_cgp;
             break;
       }
-      strlcpy(buffer, conf_path, sizeof(buffer));
+
+      if (!string_is_empty(conf_path))
+         strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
@@ -355,17 +356,13 @@ bool menu_shader_manager_save_preset(
    }
 
    config_file_free(conf);
-   if (!ret)
-   {
-      RARCH_ERR("Failed to save shader preset. Make sure config directory"
-            " and/or shader dir are writable.\n");
-      return false;
-   }
-   else
+   if (ret)
       return true;
-#else
-   return false;
+
+   RARCH_ERR("Failed to save shader preset. Make sure config directory"
+         " and/or shader dir are writable.\n");
 #endif
+   return false;
 }
 
 /**
@@ -378,12 +375,11 @@ bool menu_shader_manager_save_preset(
  **/
 unsigned menu_shader_manager_get_type(const void *data)
 {
-#ifndef HAVE_SHADER_MANAGER
-   return RARCH_SHADER_NONE;
-#else
+   unsigned type                     = RARCH_SHADER_NONE;
+#ifdef HAVE_SHADER_MANAGER
    const struct video_shader *shader = (const struct video_shader*)data;
    /* All shader types must be the same, or we cannot use it. */
-   unsigned i = 0, type = 0;
+   unsigned i                        = 0;
 
    if (!shader)
       return RARCH_SHADER_NONE;
@@ -392,7 +388,7 @@ unsigned menu_shader_manager_get_type(const void *data)
    {
       enum rarch_shader_type pass_type = 
          video_shader_parse_type(shader->pass[i].source.path,
-            RARCH_SHADER_NONE);
+               RARCH_SHADER_NONE);
 
       switch (pass_type)
       {
@@ -405,12 +401,12 @@ unsigned menu_shader_manager_get_type(const void *data)
                return RARCH_SHADER_NONE;
             break;
          default:
-            return RARCH_SHADER_NONE;
+            break;
       }
    }
 
-   return type;
 #endif
+   return type;
 }
 
 /**
