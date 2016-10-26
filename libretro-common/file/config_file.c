@@ -537,7 +537,7 @@ config_file_t *config_file_new_from_string(const char *from_string)
          return NULL;
       }
 
-      if (line)
+      if (line && conf)
       {
          if (parse_line(conf, list, line))
          {
