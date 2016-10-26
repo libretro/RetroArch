@@ -481,7 +481,7 @@ bool sthread_tls_create(sthread_tls_t *tls)
 #ifdef USE_WIN32_THREADS
    return (*tls = TlsAlloc()) != TLS_OUT_OF_INDEXES;
 #else
-   return pthread_key_create(tls, NULL) == 0;
+   return pthread_key_create((pthread_key_t*)tls, NULL) == 0;
 #endif
 }
 
