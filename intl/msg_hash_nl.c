@@ -45,6 +45,8 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
+         return "Huidige configuratie opslaan";
       case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Scannen naar Content";
       case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
