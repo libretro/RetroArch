@@ -3781,7 +3781,6 @@ static bool setting_append_list(
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_ADVANCED);
          (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
          (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_DEVICE);
 #endif
 
          CONFIG_UINT(
@@ -4204,7 +4203,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RECORD_PATH);
 
             CONFIG_BOOL(
                   list, list_info,
@@ -5450,7 +5448,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL);
 
          CONFIG_STRING(
                list, list_info,
@@ -5465,7 +5462,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL);
 
          CONFIG_BOOL(
                list, list_info,
@@ -5513,7 +5509,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
 
             CONFIG_UINT(
                   list, list_info,
@@ -5801,7 +5796,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_NETPLAY_NICKNAME);
 
 #ifdef HAVE_LANGEXTRA
          CONFIG_UINT(
@@ -5877,7 +5871,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CHEEVOS_USERNAME);
 
          CONFIG_STRING(
                list, list_info,
@@ -5894,7 +5887,6 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].get_string_representation = 
             &setting_get_string_representation_cheevos_password;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CHEEVOS_PASSWORD);
 #endif
 
          END_SUB_GROUP(list, list_info, parent_group);
