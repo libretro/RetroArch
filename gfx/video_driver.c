@@ -1239,7 +1239,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          true);
    settings_data_list_current_add_flags(list, list_info,
          SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
-   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_GAMMA);
 #endif
 #if defined(_XBOX1) || defined(HW_RVL)
    CONFIG_BOOL(
@@ -1274,7 +1273,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
-   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER);
 #endif
 #endif
 }
