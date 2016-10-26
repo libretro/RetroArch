@@ -852,23 +852,6 @@ static enum runloop_state runloop_check_state(
    if (runloop_cmd_triggered(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
 
-#ifdef HAVE_MENU
-   if (runloop_cmd_menu_press(current_input, old_input, trigger_input) ||
-         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-   {
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-      {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
-               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-      }
-      else
-      {
-         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
-         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      }
-   }
-#endif
 
 #ifdef HAVE_OVERLAY
    if (osk_enable && !input_keyboard_ctl(
@@ -914,18 +897,40 @@ static enum runloop_state runloop_check_state(
       if (focused || !runloop_idle)
          menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
-      if (!focused || runloop_idle)
+      if (!focused)
          return RUNLOOP_STATE_SLEEP;
+   }
+#endif
+   
+   if (runloop_idle)
+      return RUNLOOP_STATE_SLEEP;
 
+#ifdef HAVE_MENU
+   if (  menu_event_keyboard_is_set(RETROK_F1) ||
+         runloop_cmd_menu_press(current_input, old_input, trigger_input) ||
+         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   {
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      {
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
+               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+      }
+      else
+      {
+         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
+         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      }
+   }
+
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   {
       if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
 
       return RUNLOOP_STATE_END;
    }
 #endif
-   
-   if (runloop_idle)
-      return RUNLOOP_STATE_SLEEP;
 
    if (settings->pause_nonactive)
       focused                = video_driver_is_focused();
@@ -1126,7 +1131,7 @@ int runloop_iterate(unsigned *sleep_ms)
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
-   uint64_t current_input                       = input_keys_pressed();
+   uint64_t current_input                       = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
 
    last_input                                   = current_input;

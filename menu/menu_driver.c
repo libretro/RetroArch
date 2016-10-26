@@ -28,6 +28,7 @@
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "menu_display.h"
+#include "menu_event.h"
 #include "menu_navigation.h"
 #include "widgets/menu_dialog.h"
 #include "widgets/menu_list.h"
@@ -221,8 +222,12 @@ static void menu_input_key_event(bool down, unsigned keycode,
    (void)keycode;
    (void)mod;
 
-   if (character == '/')
-      menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
+#if 1
+   RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n", down, keycode, mod, character);
+#endif
+
+   if (down)
+      menu_event_keyboard_set((enum retro_key)keycode);
 }
 
 static void menu_driver_toggle(bool latch)
