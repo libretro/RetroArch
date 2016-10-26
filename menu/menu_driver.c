@@ -221,8 +221,19 @@ static void menu_input_key_event(bool down, unsigned keycode,
    (void)keycode;
    (void)mod;
 
-   if (character == '/')
-      menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
+#if 0
+   RARCH_LOG("down: %d, keycode: %d, mod: %d\n", down, keycode, mod);
+#endif
+
+   switch (character)
+   {
+      case RETROK_SLASH:
+         menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
+         break;
+      default:
+         break;
+   }
+
 }
 
 static void menu_driver_toggle(bool latch)
