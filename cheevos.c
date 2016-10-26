@@ -1812,14 +1812,21 @@ static INLINE unsigned cheevos_next_power_of_2(unsigned n)
 static size_t cheevos_eval_md5(
       const struct retro_game_info *info,
       size_t offset,
+      size_t max_size,
       MD5_CTX *ctx)
 {
    MD5_Init(ctx);
 
    if (info->data)
    {
-      MD5_Update(ctx, (void*)(uint8_t*)info->data + offset, info->size - offset);
-      return info->size - offset;
+      if (max_size == 0)
+         max_size = info->size;
+
+      if (info->size - offset < max_size)
+         max_size = info->size - offset;
+
+      MD5_Update(ctx, (void*)(uint8_t*)info->data + offset, max_size);
+      return max_size;
    }
    else
    {
@@ -1830,17 +1837,26 @@ static size_t cheevos_eval_md5(
       if (!file)
          return 0;
 
+      if (max_size == 0)
+         max_size = (size_t)-1;
+
       for (;;)
       {
          uint8_t buffer[4096];
+         size_t to_read = sizeof(buffer);
+
+         if (to_read > max_size)
+            to_read = max_size;
+
          ssize_t num_read = filestream_read(file,
-               (void*)buffer, sizeof(buffer));
+               (void*)buffer, to_read);
 
          if (num_read <= 0)
             break;
 
          MD5_Update(ctx, (void*)buffer, num_read);
          size += num_read;
+         max_size -= num_read;
       }
 
       filestream_close(file);
@@ -1873,7 +1889,7 @@ static unsigned cheevos_find_game_id_generic(
    MD5_CTX ctx;
    retro_time_t to;
    uint8_t hash[16];
-   size_t size      = cheevos_eval_md5(info, 0, &ctx);
+   size_t size      = cheevos_eval_md5(info, 0, 0, &ctx);
 
    hash[0] = '\0';
 
@@ -1892,7 +1908,7 @@ static unsigned cheevos_find_game_id_snes(
 {
    MD5_CTX ctx;
    uint8_t hash[16];
-   size_t count = cheevos_eval_md5(info, 0, &ctx);
+   size_t count = cheevos_eval_md5(info, 0, 0, &ctx);
 
    if (count == 0)
    {
@@ -1911,7 +1927,7 @@ static unsigned cheevos_find_game_id_genesis(
 {
    MD5_CTX ctx;
    uint8_t hash[16];
-   size_t count = cheevos_eval_md5(info, 0, &ctx);
+   size_t count = cheevos_eval_md5(info, 0, 0, &ctx);
 
    if (count == 0)
    {
@@ -2002,8 +2018,9 @@ static unsigned cheevos_find_game_id_nes(
    offset = sizeof(header) + (header.rom_type & 4 ? sizeof(header) : 0);
 
    MD5_Init(&ctx);
-   count = cheevos_eval_md5(info, offset, &ctx);
-   cheevos_fill_md5(0x4000 * bytes - count, 0xff, &ctx);
+   count = cheevos_eval_md5(info, offset, 0x4000 * bytes, &ctx);
+   count = 0x4000 * bytes - count;
+   cheevos_fill_md5(count, 0xff, &ctx);
    MD5_Final(hash, &ctx);
 
    return cheevos_get_game_id(hash, &timeout);
