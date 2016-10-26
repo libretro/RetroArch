@@ -5026,8 +5026,8 @@ static bool setting_append_list(
          CONFIG_HEX(
                list, list_info,
                &settings->menu.entry_normal_color,
-               msg_hash_to_str(MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR),
+               MENU_ENUM_LABEL_ENTRY_NORMAL_COLOR,
+               MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
                menu_entry_normal_color,
                &group_info,
                &subgroup_info,
@@ -5041,8 +5041,8 @@ static bool setting_append_list(
          CONFIG_HEX(
                list, list_info,
                &settings->menu.entry_hover_color,
-               msg_hash_to_str(MENU_ENUM_LABEL_ENTRY_HOVER_COLOR),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR),
+               MENU_ENUM_LABEL_ENTRY_HOVER_COLOR,
+               MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
                menu_entry_hover_color,
                &group_info,
                &subgroup_info,
@@ -5056,8 +5056,8 @@ static bool setting_append_list(
          CONFIG_HEX(
                list, list_info,
                &settings->menu.title_color,
-               msg_hash_to_str(MENU_ENUM_LABEL_TITLE_COLOR),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TITLE_COLOR),
+               MENU_ENUM_LABEL_TITLE_COLOR,
+               MENU_ENUM_LABEL_VALUE_TITLE_COLOR,
                menu_title_color,
                &group_info,
                &subgroup_info,
