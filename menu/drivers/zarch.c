@@ -316,7 +316,7 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
 {
    menu_animation_ctx_ticker_t ticker;
    unsigned ticker_size;
-   char title_buf[PATH_MAX_LENGTH] = {0};
+   char title_buf[PATH_MAX_LENGTH];
    uint64_t *frame_count = NULL;
    unsigned           id = zarch_zui_hash(zui, label);
    int                x2 = x1 + zui->width - 290 - 40;
@@ -324,6 +324,8 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
    const float       *bg = zui_bg_panel;
    frame_count           = video_driver_get_frame_count_ptr();
+
+   title_buf[0] = '\0';
 
    if (tab->active_id != tab->prev_id)
       tab->prev_id         = tab->active_id;
@@ -512,9 +514,11 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, struct zui_tabbed *tabbe
 
       for (i = zui->recent_dlist_first; i < size; ++i)
       {
-         char rich_label[PATH_MAX_LENGTH]  = {0};
-         char entry_value[PATH_MAX_LENGTH] = {0};
+         char rich_label[PATH_MAX_LENGTH];
+         char entry_value[PATH_MAX_LENGTH];
          menu_entry_t entry                = {{0}};
+
+         rich_label[0] = entry_value[0]    = '\0';
 
          menu_entry_get(&entry, 0, i, NULL, true);
          menu_entry_get_rich_label(i, rich_label, sizeof(rich_label));
@@ -562,9 +566,11 @@ static void zarch_zui_render_lay_root_load_set_new_path(zui_t *zui,
 static int zarch_zui_render_lay_root_load(zui_t *zui,
       struct zui_tabbed *tabbed)
 {
-   char parent_dir[PATH_MAX_LENGTH] = {0};
+   char parent_dir[PATH_MAX_LENGTH];
    settings_t           *settings   = config_get_ptr();
    core_info_list_t           *list = NULL;
+
+   parent_dir[0] = '\0';
 
    if (zarch_zui_tab(zui, tabbed, "Load", 1))
    {
@@ -626,14 +632,16 @@ static int zarch_zui_render_lay_root_load(zui_t *zui,
 
             for (i = skip + zui->load_dlist_first; i < size; ++i)
             {
-               char label[PATH_MAX_LENGTH] = {0};
+               char label[PATH_MAX_LENGTH];
                const char        *path     = NULL;
                const char        *basename = NULL;
 
                if (j > 10)
                   break;
 
-               path = zui->load_dlist->elems[i].data;
+               label[0] = '\0';
+
+               path     = zui->load_dlist->elems[i].data;
                basename = path_basename(path);
 
                *label = 0;
@@ -703,7 +711,7 @@ static int zarch_zui_render_lay_root_downloads(
 
 static int zarch_zui_render_lay_root(zui_t *zui)
 {
-   char item[PATH_MAX_LENGTH]      = {0};
+   char item[PATH_MAX_LENGTH];
    static struct zui_tabbed tabbed = {~0U};
 
    zarch_zui_tabbed_begin(zui, &tabbed, 0, 0);
@@ -720,8 +728,9 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    if (zarch_zui_render_lay_root_downloads(zui, &tabbed))
       return 0;
 
-   (void)item;
 #ifdef ZARCH_DEBUG
+   item[0] = '\0';
+
    snprintf(item, sizeof(item), "item id: %d\n", zui->active_id);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 41, item); 
    snprintf(item, sizeof(item), "tab  idx: %d\n", tabbed.active_id);

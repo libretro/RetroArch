@@ -314,7 +314,9 @@ static int action_start_video_resolution(unsigned type, const char *label)
 
    if (video_driver_get_video_output_size(&width, &height))
    {
-      char msg[PATH_MAX_LENGTH] = {0};
+      char msg[PATH_MAX_LENGTH];
+
+      msg[0] = '\0';
 
       video_driver_set_video_mode(width, height, true);
 

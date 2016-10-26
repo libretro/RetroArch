@@ -3061,7 +3061,9 @@ static int menu_displaylist_parse_options_cheats(
 
    for (i = 0; i < cheat_manager_get_size(); i++)
    {
-      char cheat_label[64] = {0};
+      char cheat_label[64];
+
+      cheat_label[0] = '\0';
 
       snprintf(cheat_label, sizeof(cheat_label),
             "%s #%u: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT), i);

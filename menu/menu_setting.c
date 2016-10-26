@@ -1963,11 +1963,13 @@ static bool setting_append_list_input_player_options(
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)
    {
-      char label[PATH_MAX_LENGTH] = {0};
-      char name[PATH_MAX_LENGTH]  = {0};
+      char label[PATH_MAX_LENGTH];
+      char name[PATH_MAX_LENGTH];
 
       if (input_config_bind_map_get_meta(i))
          continue;
+
+      label[0] = name[0]          = '\0';
 
       fill_pathname_noext(label, buffer[user],
             " ",
@@ -2098,7 +2100,9 @@ static bool setting_append_list(
          if (frontend_driver_has_fork())
 #endif
          {
-            char ext_name[PATH_MAX_LENGTH] = {0};
+            char ext_name[PATH_MAX_LENGTH];
+
+            ext_name[0] = '\0';
 
             if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
             {
