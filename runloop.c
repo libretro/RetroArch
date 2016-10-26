@@ -345,13 +345,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE:
          return runloop_game_options_active;
-      case RUNLOOP_CTL_IS_FRAME_TIME_LAST:
-         return runloop_frame_time_last_enable;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
          runloop_set_frame_limit = true;
          break;
-      case RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT:
-         return runloop_set_frame_limit;
       case RUNLOOP_CTL_GET_PERFCNT:
          {
             bool **perfcnt = (bool**)data;
@@ -562,8 +558,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
          runloop_core_shutdown_initiated = true;
          break;
-      case RUNLOOP_CTL_IS_CORE_SHUTDOWN:
-         return runloop_core_shutdown_initiated;
       case RUNLOOP_CTL_SET_SHUTDOWN:
          runloop_shutdown_initiated = true;
          break;
@@ -572,8 +566,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_SET_EXEC:
          runloop_exec = true;
          break;
-      case RUNLOOP_CTL_IS_EXEC:
-         return runloop_exec;
       case RUNLOOP_CTL_DATA_DEINIT:
          task_queue_ctl(TASK_QUEUE_CTL_DEINIT, NULL);
          break;
