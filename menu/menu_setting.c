@@ -2803,128 +2803,121 @@ static bool setting_append_list(
          }
          break;
       case SETTINGS_LIST_CONFIGURATION:
-         START_GROUP(list, list_info, &group_info,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
+         {
+            unsigned i;
+            struct bool_entry bool_entries[3];
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
 
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS);
 
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
-               parent_group);
+            START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
+                  parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->config_save_on_exit,
-               MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
-               MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-               config_save_on_exit,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT);
+            bool_entries[0].target         = &settings->config_save_on_exit;
+            bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT;
+            bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT;
+            bool_entries[0].default_value  = config_save_on_exit;
+            bool_entries[0].flags          = SD_FLAG_NONE;
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->confirm_on_exit,
-               MENU_ENUM_LABEL_CONFIRM_ON_EXIT,
-               MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT,
-               confirm_on_exit,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+            bool_entries[1].target         = &settings->confirm_on_exit;
+            bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_CONFIRM_ON_EXIT;
+            bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT;
+            bool_entries[1].default_value  = confirm_on_exit;
+            bool_entries[1].flags          = SD_FLAG_NONE;
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->show_hidden_files,
-               MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,
-               MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
-               show_hidden_files,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SHOW_HIDDEN_FILES);
+            bool_entries[2].target         = &settings->show_hidden_files;
+            bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_SHOW_HIDDEN_FILES;
+            bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES;
+            bool_entries[2].default_value  = show_hidden_files;
+            bool_entries[2].flags          = SD_FLAG_NONE;
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->game_specific_options,
-               MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,
-               MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-               default_game_specific_options,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS);
+            for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
+            {
+               CONFIG_BOOL(
+                     list, list_info,
+                     bool_entries[i].target,
+                     bool_entries[i].name_enum_idx,
+                     bool_entries[i].SHORT_enum_idx,
+                     bool_entries[i].default_value,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     bool_entries[i].flags);
+               menu_settings_list_current_add_enum_idx(list, list_info, bool_entries[i].name_enum_idx);
+            }
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->auto_overrides_enable,
-               MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
-               MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-               default_auto_overrides_enable,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE);
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->game_specific_options,
+                  MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,
+                  MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
+                  default_game_specific_options,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->auto_remaps_enable,
-               MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
-               MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-               default_auto_remaps_enable,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE);
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->auto_overrides_enable,
+                  MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
+                  default_auto_overrides_enable,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->auto_shaders_enable,
-               MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE,
-               MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-               default_auto_shaders_enable,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE);
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->auto_remaps_enable,
+                  MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
+                  default_auto_remaps_enable,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE);
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->auto_shaders_enable,
+                  MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+                  default_auto_shaders_enable,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE);
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
+         }
          break;
       case SETTINGS_LIST_LOGGING:
          {
