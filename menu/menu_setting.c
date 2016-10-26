@@ -1328,7 +1328,7 @@ static void get_string_representation_bind_device(void * data, char *s,
    {
       const char *device_name = settings->input.device_names[map];
 
-      if (*device_name)
+      if (!string_is_empty(device_name))
          snprintf(s, len,
                "%s (#%u)",
                device_name,
@@ -1391,12 +1391,12 @@ void general_read_handler(void *data)
             *setting->value.target.fraction = settings->audio.rate_control_delta;
             if (*setting->value.target.fraction < 0.0005)
             {
-               settings->audio.rate_control = false;
+               settings->audio.rate_control       = false;
                settings->audio.rate_control_delta = 0.0;
             }
             else
             {
-               settings->audio.rate_control = true;
+               settings->audio.rate_control       = true;
                settings->audio.rate_control_delta = *setting->value.target.fraction;
             }
             break;
