@@ -2181,9 +2181,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-#endif
 
-#if defined(HAVE_NETWORKING)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_ONLINE_UPDATER,
