@@ -1501,15 +1501,19 @@ bool CONFIG_INT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       int *target,
-      const char *name, const char *SHORT,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
       int default_value,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t value = setting_int_setting   (name, SHORT, target, default_value,
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   rarch_setting_t value = setting_int_setting   (
+         msg_hash_to_str(name_enum_idx),
+         msg_hash_to_str(SHORT_enum_idx),
+         target, default_value,
+         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
    if (!(settings_list_append(list, list_info)))
       return false;
    if (value.name)

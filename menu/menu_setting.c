@@ -2042,8 +2042,8 @@ static bool setting_append_list(
          CONFIG_INT(
                list, list_info,
                &settings->state_slot,
-               msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+               MENU_ENUM_LABEL_STATE_SLOT,
+               MENU_ENUM_LABEL_VALUE_STATE_SLOT,
                0,
                &group_info,
                &subgroup_info,
@@ -3361,8 +3361,8 @@ static bool setting_append_list(
          CONFIG_INT(
                list, list_info,
                &settings->video_viewport_custom.x,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X),
+               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
+               MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
                0,
                &group_info,
                &subgroup_info,
@@ -3379,8 +3379,8 @@ static bool setting_append_list(
          CONFIG_INT(
                list, list_info,
                &settings->video_viewport_custom.y,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y),
+               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+               MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
                0,
                &group_info,
                &subgroup_info,
