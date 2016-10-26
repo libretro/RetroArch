@@ -1624,6 +1624,8 @@ bool CONFIG_PATH(
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
+   menu_settings_list_current_add_enum_value_idx(list, list_info, SHORT_enum_idx);
    return true;
 }
 

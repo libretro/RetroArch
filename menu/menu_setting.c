@@ -3571,7 +3571,6 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_values(list, list_info, "filt");
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FILTER);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -3807,7 +3806,6 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_values(list, list_info, "dsp");
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_DSP_FILTER_INIT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -4185,7 +4183,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_values(list, list_info, "cfg");
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RECORD_CONFIG);
 
             CONFIG_STRING(
                   list, list_info,
@@ -4386,7 +4383,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FONT_PATH);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -4524,7 +4520,6 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_values(list, list_info, "cfg");
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_OVERLAY_INIT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_OVERLAY_PRESET);
 
          CONFIG_FLOAT(
                list, list_info,
@@ -4575,7 +4570,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_values(list, list_info, "cfg");
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -4606,7 +4600,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_values(list, list_info, "png");
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_WALLPAPER);
 
             CONFIG_FLOAT(
                   list, list_info,
@@ -4898,7 +4891,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_XMB_FONT);
 
             CONFIG_UINT(
                   list, list_info,
