@@ -176,7 +176,7 @@ void string_list_set(struct string_list *list,
       unsigned idx, const char *str)
 {
    free(list->elems[idx].data);
-   retro_assert(list->elems[idx].data = strdup(str));
+   list->elems[idx].data = strdup(str);
 }
 
 /**
