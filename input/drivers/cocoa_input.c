@@ -289,10 +289,11 @@ static int16_t cocoa_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
 #ifdef HAVE_MFI
-         ret = input_joypad_analog(apple->sec_joypad, port,
+         if (binds[port])
+            ret = input_joypad_analog(apple->sec_joypad, port,
                idx, id, binds[port]);
-         if (!ret && binds[port])
 #endif
+         if (!ret && binds[port])
             ret = input_joypad_analog(apple->joypad, port,
                   idx, id, binds[port]);
          return ret;
