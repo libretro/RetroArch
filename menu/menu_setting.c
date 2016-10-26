@@ -2084,7 +2084,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, -1, 0, 1, true, false);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_STATE_SLOT);
 
          CONFIG_ACTION(
                list, list_info,
@@ -3204,7 +3203,6 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X);
 
          CONFIG_INT(
                list, list_info,
@@ -3222,7 +3220,6 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y);
 
          CONFIG_UINT(
                list, list_info,
