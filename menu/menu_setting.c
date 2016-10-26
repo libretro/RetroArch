@@ -386,7 +386,8 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
       }
    }
 
-   strlcpy(s, name, len);
+   if (!string_is_empty(name))
+      strlcpy(s, name, len);
 }
 
 static void setting_get_string_representation_uint_analog_dpad_mode(void *data,
