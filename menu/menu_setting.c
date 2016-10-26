@@ -6107,7 +6107,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SYSTEM_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6122,7 +6121,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6137,7 +6135,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_ASSETS_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6152,7 +6149,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6167,7 +6163,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6182,7 +6177,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6197,7 +6191,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY);
 
 
          CONFIG_DIR(
@@ -6214,7 +6207,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_CORE_INFO_INIT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LIBRETRO_DIR_PATH);
 
          CONFIG_DIR(
                list, list_info,
@@ -6230,7 +6222,6 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_CORE_INFO_INIT);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LIBRETRO_INFO_PATH);
 
 #ifdef HAVE_LIBRETRODB
          CONFIG_DIR(
@@ -6246,7 +6237,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6261,7 +6251,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CURSOR_DIRECTORY);
 #endif
 
          CONFIG_DIR(
@@ -6277,7 +6266,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CHEAT_DATABASE_PATH);
 
          CONFIG_DIR(
                list, list_info,
@@ -6292,7 +6280,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FILTER_DIR);
 
          CONFIG_DIR(
                list, list_info,
@@ -6307,7 +6294,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_FILTER_DIR);
 
          CONFIG_DIR(
                list, list_info,
@@ -6322,7 +6308,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SHADER_DIR);
 
          if (!string_is_equal(settings->record.driver, "null"))
          {
@@ -6339,7 +6324,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY);
 
             CONFIG_DIR(
                   list, list_info,
@@ -6354,7 +6338,6 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY);
          }
 #ifdef HAVE_OVERLAY
          CONFIG_DIR(
@@ -6370,7 +6353,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_OVERLAY_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6385,7 +6367,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY);
 #endif
 
          CONFIG_DIR(
@@ -6401,7 +6382,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6416,7 +6396,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR);
 
          CONFIG_DIR(
                list, list_info,
@@ -6431,7 +6410,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_REMAPPING_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6446,7 +6424,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PLAYLIST_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6461,7 +6438,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVEFILE_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6476,7 +6452,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SAVESTATE_DIRECTORY);
 
          CONFIG_DIR(
                list, list_info,
@@ -6491,7 +6466,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CACHE_DIRECTORY);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

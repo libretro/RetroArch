@@ -1647,6 +1647,8 @@ bool CONFIG_DIR(
          list,
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
+
+   menu_settings_list_current_add_enum_idx(list, list_info, name_enum_idx);
    return true;
 }
 
