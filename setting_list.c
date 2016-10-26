@@ -1430,13 +1430,14 @@ static rarch_setting_t setting_int_setting(const char* name,
    return result;
 }
 
-bool CONFIG_BOOL(
+bool CONFIG_BOOL_ALT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       bool *target,
       const char *name, const char *SHORT,
       bool default_value,
-      const char *off, const char *on,
+      enum msg_hash_enums off_enum_idx,
+      enum msg_hash_enums on_enum_idx,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
@@ -1445,7 +1446,44 @@ bool CONFIG_BOOL(
       uint32_t flags)
 {
    rarch_setting_t value = setting_bool_setting  (name, SHORT, target,
-         default_value, off, on,
+         default_value,
+         msg_hash_to_str(off_enum_idx), msg_hash_to_str(on_enum_idx),
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler);
+
+   if (!settings_list_append(list, list_info))
+      return false;
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
+   if (flags != SD_FLAG_NONE)
+      settings_data_list_current_add_flags(list, list_info, flags);
+   return true;
+}
+
+bool CONFIG_BOOL(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      bool *target,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
+      bool default_value,
+      enum msg_hash_enums off_enum_idx,
+      enum msg_hash_enums on_enum_idx,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler,
+      change_handler_t read_handler,
+      uint32_t flags)
+{
+   rarch_setting_t value = setting_bool_setting  (
+         msg_hash_to_str(name_enum_idx),
+         msg_hash_to_str(SHORT_enum_idx),
+         target,
+         default_value,
+         msg_hash_to_str(off_enum_idx),
+         msg_hash_to_str(on_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler);
 
