@@ -111,9 +111,9 @@ static int16_t x_pressed_analog(x11_input_t *x11,
 
    input_conv_analog_id_to_bind_id(idx, id, &id_minus, &id_plus);
 
-   if (binds[id_minus].valid && x_is_pressed(x11, binds, id_minus))
+   if (binds && binds[id_minus].valid && x_is_pressed(x11, binds, id_minus))
       pressed_minus = -0x7fff;
-   if (binds[id_plus].valid && x_is_pressed(x11, binds, id_plus))
+   if (binds && binds[id_plus].valid && x_is_pressed(x11, binds, id_plus))
       pressed_plus  =  0x7fff;
 
    return pressed_plus + pressed_minus;
@@ -257,7 +257,7 @@ static int16_t x_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port][id].valid)
+         if (binds[port] && binds[port][id].valid)
             return x_is_pressed(x11, binds[port], id) ||
                input_joypad_pressed(x11->joypad, port, binds[port], id);
          break;
@@ -265,7 +265,7 @@ static int16_t x_input_state(void *data,
          return x_key_pressed(x11, id);
       case RETRO_DEVICE_ANALOG:
          ret = x_pressed_analog(x11, binds[port], idx, id);
-         if (!ret)
+         if (!ret && binds[port] && binds[port])
             ret = input_joypad_analog(x11->joypad, port, idx,
                   id, binds[port]);
          return ret;
