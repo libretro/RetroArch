@@ -165,7 +165,7 @@ static int16_t sdl_joypad_device_state(sdl_input_t *sdl, const struct retro_keyb
 static int16_t sdl_analog_device_state(sdl_input_t *sdl, const struct retro_keybind **binds,
       unsigned port_num, unsigned idx, unsigned id)
 {
-   int16_t ret = sdl_analog_pressed(sdl, binds[port_num], idx, id);
+   int16_t ret = binds[port_num] ? sdl_analog_pressed(sdl, binds[port_num], idx, id) : 0;
    if (!ret && binds[port_num])
       ret = input_joypad_analog(sdl->joypad, port_num, idx, id, binds[port_num]);
    return ret;
@@ -272,7 +272,9 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
       case RETRO_DEVICE_JOYPAD:
          return sdl_joypad_device_state(data, binds, port, id, &type);
       case RETRO_DEVICE_ANALOG:
-         return sdl_analog_device_state(data, binds, port, idx, id);
+         {
+            return sdl_analog_device_state(data, binds, port, idx, id);
+         }
       case RETRO_DEVICE_MOUSE:
          return sdl_mouse_device_state(data, id);
       case RETRO_DEVICE_POINTER:

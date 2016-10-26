@@ -142,7 +142,7 @@ static int16_t linuxraw_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret;
+   int16_t ret                = 0;
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 
    switch (device)
@@ -153,7 +153,8 @@ static int16_t linuxraw_input_state(void *data,
                input_joypad_pressed(linuxraw->joypad, port, binds[port], id);
          break;
       case RETRO_DEVICE_ANALOG:
-         ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
+         if (binds[port])
+            ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
          if (!ret && binds[port])
             ret = input_joypad_analog(linuxraw->joypad, port, idx, id, binds[port]);
          return ret;
