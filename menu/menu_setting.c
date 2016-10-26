@@ -1866,7 +1866,7 @@ static bool setting_append_list_input_player_options(
                "%s %u %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER), user + 1,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG));
 
-      CONFIG_UINT(
+      CONFIG_UINT_ALT(
             list, list_info,
             &settings->input.libretro_device[user],
             key_type[user],
@@ -1887,7 +1887,7 @@ static bool setting_append_list_input_player_options(
          &setting_get_string_representation_uint_libretro_device;
       menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + user));
 
-      CONFIG_UINT(
+      CONFIG_UINT_ALT(
             list, list_info,
             &settings->input.analog_dpad_mode[user],
             key_analog[user],
@@ -2944,8 +2944,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->libretro_log_level,
-                  msg_hash_to_str(MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL),
+                  MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL,
+                  MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
                   libretro_log_level,
                   &group_info,
                   &subgroup_info,
@@ -3043,8 +3043,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->autosave_interval,
-               msg_hash_to_str(MENU_ENUM_LABEL_AUTOSAVE_INTERVAL),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL),
+               MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
+               MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
                autosave_interval,
                &group_info,
                &subgroup_info,
@@ -3150,8 +3150,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->rewind_granularity,
-                  msg_hash_to_str(MENU_ENUM_LABEL_REWIND_GRANULARITY),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY),
+                  MENU_ENUM_LABEL_REWIND_GRANULARITY,
+                  MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
                   rewind_granularity,
                   &group_info,
                   &subgroup_info,
@@ -3220,8 +3220,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->video.monitor_index,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX),
+               MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
                monitor_index,
                &group_info,
                &subgroup_info,
@@ -3333,8 +3333,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->video.aspect_ratio_idx,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX),
+               MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
+               MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
                aspect_ratio_idx,
                &group_info,
                &subgroup_info,
@@ -3397,8 +3397,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->video_viewport_custom.width,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH),
+               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+               MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
                0,
                &group_info,
                &subgroup_info,
@@ -3418,8 +3418,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->video_viewport_custom.height,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT),
+               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+               MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
                0,
                &group_info,
                &subgroup_info,
@@ -3481,8 +3481,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->video.viwidth,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_VI_WIDTH),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH),
+               MENU_ENUM_LABEL_VIDEO_VI_WIDTH,
+               MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
                video_viwidth,
                &group_info,
                &subgroup_info,
@@ -3529,8 +3529,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->video.rotation,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_ROTATION),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION),
+               MENU_ENUM_LABEL_VIDEO_ROTATION,
+               MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
                0,
                &group_info,
                &subgroup_info,
@@ -3592,8 +3592,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->video.swap_interval,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL),
+               MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL,
+               MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
                swap_interval,
                &group_info,
                &subgroup_info,
@@ -3608,8 +3608,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->video.max_swapchain_images,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES),
+               MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+               MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
                max_swapchain_images,
                &group_info,
                &subgroup_info,
@@ -3642,8 +3642,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->video.hard_sync_frames,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES),
+                  MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
                   hard_sync_frames,
                   &group_info,
                   &subgroup_info,
@@ -3658,8 +3658,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->video.frame_delay,
-               msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY),
+               MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
+               MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
                frame_delay,
                &group_info,
                &subgroup_info,
@@ -3877,8 +3877,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->audio.latency,
-               msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_LATENCY),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY),
+               MENU_ENUM_LABEL_AUDIO_LATENCY,
+               MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
                g_defaults.settings.out_latency ? 
                g_defaults.settings.out_latency : out_latency,
                &group_info,
@@ -3939,8 +3939,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->audio.block_frames,
-               msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES),
+               MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
+               MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
                0,
                &group_info,
                &subgroup_info,
@@ -3985,8 +3985,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->audio.out_rate,
-               msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE),
+               MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE,
+               MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
                out_rate,
                &group_info,
                &subgroup_info,
@@ -4029,8 +4029,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->input.max_users,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MAX_USERS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS),
+                  MENU_ENUM_LABEL_INPUT_MAX_USERS,
+                  MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
                   input_max_users,
                   &group_info,
                   &subgroup_info,
@@ -4043,8 +4043,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->input.poll_type_behavior,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR),
+                  MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
+                  MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
                   input_poll_type_behavior,
                   &group_info,
                   &subgroup_info,
@@ -4111,8 +4111,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->input.keyboard_gamepad_mapping_type,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE),
+                  MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
                   1,
                   &group_info,
                   &subgroup_info,
@@ -4162,8 +4162,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->input.menu_toggle_gamepad_combo,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO),
+                  MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+                  MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
                   menu_toggle_gamepad_combo,
                   &group_info,
                   &subgroup_info,
@@ -4287,8 +4287,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->input.bind_timeout,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT),
+                  MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,
+                  MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
                   input_bind_timeout,
                   &group_info,
                   &subgroup_info,
@@ -4302,8 +4302,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->input.turbo_period,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_TURBO_PERIOD),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD),
+                  MENU_ENUM_LABEL_INPUT_TURBO_PERIOD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
                   turbo_period,
                   &group_info,
                   &subgroup_info,
@@ -4317,8 +4317,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->input.turbo_duty_cycle,
-                  msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DUTY_CYCLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE),
+                  MENU_ENUM_LABEL_INPUT_DUTY_CYCLE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
                   turbo_duty_cycle,
                   &group_info,
                   &subgroup_info,
@@ -5095,8 +5095,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.dpi.override_value,
-                  msg_hash_to_str(MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE),
+                  MENU_ENUM_LABEL_DPI_OVERRIDE_VALUE,
+                  MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
                   menu_dpi_override_value,
                   &group_info,
                   &subgroup_info,
@@ -5114,8 +5114,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.xmb.alpha_factor,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_ALPHA_FACTOR),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR),
+                  MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,
+                  MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
                   xmb_alpha_factor,
                   &group_info,
                   &subgroup_info,
@@ -5128,8 +5128,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.xmb.scale_factor,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_SCALE_FACTOR),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR),
+                  MENU_ENUM_LABEL_XMB_SCALE_FACTOR,
+                  MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR,
                   xmb_scale_factor,
                   &group_info,
                   &subgroup_info,
@@ -5156,8 +5156,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.xmb.theme,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_THEME),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_THEME),
+                  MENU_ENUM_LABEL_XMB_THEME,
+                  MENU_ENUM_LABEL_VALUE_XMB_THEME,
                   xmb_icon_theme,
                   &group_info,
                   &subgroup_info,
@@ -5187,8 +5187,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.xmb.shader_pipeline,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_RIBBON_ENABLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE),
+                  MENU_ENUM_LABEL_XMB_RIBBON_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
                   menu_shader_pipeline,
                   &group_info,
                   &subgroup_info,
@@ -5202,8 +5202,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.xmb.menu_color_theme,
-                  msg_hash_to_str(MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME),
+                  MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,
+                  MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
                   xmb_theme,
                   &group_info,
                   &subgroup_info,
@@ -5307,8 +5307,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.materialui.menu_color_theme,
-                  msg_hash_to_str(MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME),
+                  MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
+                  MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
                   MATERIALUI_THEME_BLUE,
                   &group_info,
                   &subgroup_info,
@@ -5371,8 +5371,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->menu.thumbnails,
-                  msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS),
+                  MENU_ENUM_LABEL_THUMBNAILS,
+                  MENU_ENUM_LABEL_VALUE_THUMBNAILS,
                   menu_thumbnails_default,
                   &group_info,
                   &subgroup_info,
@@ -5629,8 +5629,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->content_history_size,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE),
+               MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,
+               MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
                default_content_history_size,
                &group_info,
                &subgroup_info,
@@ -5796,8 +5796,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->netplay.port,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT),
+                  MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
                   RARCH_DEFAULT_PORT,
                   &group_info,
                   &subgroup_info,
@@ -5811,8 +5811,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->netplay.sync_frames,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES),
+                  MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
                   0,
                   &group_info,
                   &subgroup_info,
@@ -5826,8 +5826,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->netplay.check_frames,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES),
+                  MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
                   0,
                   &group_info,
                   &subgroup_info,
@@ -5901,8 +5901,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->network_cmd_port,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_CMD_PORT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT),
+                  MENU_ENUM_LABEL_NETWORK_CMD_PORT,
+                  MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
                   network_cmd_port,
                   &group_info,
                   &subgroup_info,
@@ -5932,8 +5932,8 @@ static bool setting_append_list(
             CONFIG_UINT(
                   list, list_info,
                   &settings->network_remote_base_port,
-                  msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_REMOTE_PORT),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT),
+                  MENU_ENUM_LABEL_NETWORK_REMOTE_PORT,
+                  MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
                   network_remote_base_port,
                   &group_info,
                   &subgroup_info,
@@ -6098,8 +6098,8 @@ static bool setting_append_list(
          CONFIG_UINT(
                list, list_info,
                &settings->user_language,
-               msg_hash_to_str(MENU_ENUM_LABEL_USER_LANGUAGE),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_LANGUAGE),
+               MENU_ENUM_LABEL_USER_LANGUAGE,
+               MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
                def_user_language,
                &group_info,
                &subgroup_info,
