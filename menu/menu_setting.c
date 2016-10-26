@@ -89,6 +89,16 @@ struct bool_entry
    uint32_t flags;
 };
 
+struct string_options_entry
+{
+   char *target;
+   size_t len;
+   enum msg_hash_enums name_enum_idx;
+   enum msg_hash_enums SHORT_enum_idx;
+   const char *default_value;
+   const char *values;
+};
+
 #ifdef HAVE_CHEEVOS
 static void setting_get_string_representation_cheevos_password(void *data,
       char *s, size_t len)
@@ -2553,196 +2563,145 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_DRIVERS:
-         START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
+         {
+            unsigned i;
+            struct string_options_entry string_options_entries[7];
 
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
 
-         START_SUB_GROUP(list, list_info, "State", &group_info,
-               &subgroup_info, parent_group);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->input.driver,
-               sizeof(settings->input.driver),
-               MENU_ENUM_LABEL_INPUT_DRIVER,
-               MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-               config_get_default_input(),
-               config_get_input_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_DRIVER);
+            START_SUB_GROUP(list, list_info, "State", &group_info,
+                  &subgroup_info, parent_group);
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->input.joypad_driver,
-               sizeof(settings->input.driver),
-               MENU_ENUM_LABEL_JOYPAD_DRIVER,
-               MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-               config_get_default_joypad(),
-               config_get_joypad_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_JOYPAD_DRIVER);
+            string_options_entries[0].target         = settings->input.driver;
+            string_options_entries[0].len            = sizeof(settings->input.driver);
+            string_options_entries[0].name_enum_idx  = MENU_ENUM_LABEL_INPUT_DRIVER;
+            string_options_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DRIVER;
+            string_options_entries[0].default_value  = config_get_default_input();
+            string_options_entries[0].values         = config_get_input_driver_options();
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->video.driver,
-               sizeof(settings->video.driver),
-               MENU_ENUM_LABEL_VIDEO_DRIVER,
-               MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-               config_get_default_video(),
-               config_get_video_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_DRIVER);
+            string_options_entries[1].target         = settings->input.joypad_driver;
+            string_options_entries[1].len            = sizeof(settings->input.joypad_driver);
+            string_options_entries[1].name_enum_idx  = MENU_ENUM_LABEL_JOYPAD_DRIVER;
+            string_options_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER;
+            string_options_entries[1].default_value  = config_get_default_joypad();
+            string_options_entries[1].values         = config_get_joypad_driver_options();
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->audio.driver,
-               sizeof(settings->audio.driver),
-               MENU_ENUM_LABEL_AUDIO_DRIVER,
-               MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-               config_get_default_audio(),
-               config_get_audio_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_DRIVER);
+            string_options_entries[2].target         = settings->video.driver;
+            string_options_entries[2].len            = sizeof(settings->video.driver);
+            string_options_entries[2].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_DRIVER;
+            string_options_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER;
+            string_options_entries[2].default_value  = config_get_default_video();
+            string_options_entries[2].values         = config_get_video_driver_options();
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->audio.resampler,
-               sizeof(settings->audio.resampler),
-               MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
-               MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-               config_get_default_audio_resampler(),
-               config_get_audio_resampler_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER);
+            string_options_entries[3].target         = settings->audio.driver;
+            string_options_entries[3].len            = sizeof(settings->audio.driver);
+            string_options_entries[3].name_enum_idx  = MENU_ENUM_LABEL_AUDIO_DRIVER;
+            string_options_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER;
+            string_options_entries[3].default_value  = config_get_default_audio();
+            string_options_entries[3].values         = config_get_audio_driver_options();
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->camera.driver,
-               sizeof(settings->camera.driver),
-               MENU_ENUM_LABEL_CAMERA_DRIVER,
-               MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-               config_get_default_camera(),
-               config_get_camera_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CAMERA_DRIVER);
+            string_options_entries[4].target         = settings->audio.resampler;
+            string_options_entries[4].len            = sizeof(settings->audio.resampler);
+            string_options_entries[4].name_enum_idx  = MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER;
+            string_options_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER;
+            string_options_entries[4].default_value  = config_get_default_audio_resampler();
+            string_options_entries[4].values         = config_get_audio_resampler_driver_options();
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->wifi.driver,
-               sizeof(settings->wifi.driver),
-               MENU_ENUM_LABEL_WIFI_DRIVER,
-               MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-               config_get_default_wifi(),
-               config_get_wifi_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_WIFI_DRIVER);
+            string_options_entries[5].target         = settings->camera.driver;
+            string_options_entries[5].len            = sizeof(settings->camera.driver);
+            string_options_entries[5].name_enum_idx  = MENU_ENUM_LABEL_CAMERA_DRIVER;
+            string_options_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER;
+            string_options_entries[5].default_value  = config_get_default_camera();
+            string_options_entries[5].values         = config_get_camera_driver_options();
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->location.driver,
-               sizeof(settings->location.driver),
-               MENU_ENUM_LABEL_LOCATION_DRIVER,
-               MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-               config_get_default_location(),
-               config_get_location_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOCATION_DRIVER);
+            string_options_entries[6].target         = settings->wifi.driver;
+            string_options_entries[6].len            = sizeof(settings->wifi.driver);
+            string_options_entries[6].name_enum_idx  = MENU_ENUM_LABEL_WIFI_DRIVER;
+            string_options_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_WIFI_DRIVER;
+            string_options_entries[6].default_value  = config_get_default_wifi();
+            string_options_entries[6].values         = config_get_wifi_driver_options();
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->menu.driver,
-               sizeof(settings->menu.driver),
-               MENU_ENUM_LABEL_MENU_DRIVER,
-               MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-               config_get_default_menu(),
-               config_get_menu_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_DRIVER);
+            for (i = 0; i < ARRAY_SIZE(string_options_entries); i++)
+            {
+               CONFIG_STRING_OPTIONS(
+                     list, list_info,
+                     string_options_entries[i].target,
+                     string_options_entries[i].len,
+                     string_options_entries[i].name_enum_idx,
+                     string_options_entries[i].SHORT_enum_idx,
+                     string_options_entries[i].default_value,
+                     string_options_entries[i].values,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_read_handler,
+                     general_write_handler);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+               (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+               (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+               menu_settings_list_current_add_enum_idx(list, list_info, string_options_entries[i].name_enum_idx);
+            }
 
-         CONFIG_STRING_OPTIONS(
-               list, list_info,
-               settings->record.driver,
-               sizeof(settings->record.driver),
-               MENU_ENUM_LABEL_RECORD_DRIVER,
-               MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-               config_get_default_record(),
-               config_get_record_driver_options(),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_read_handler,
-               general_write_handler);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RECORD_DRIVER);
+            CONFIG_STRING_OPTIONS(
+                  list, list_info,
+                  settings->location.driver,
+                  sizeof(settings->location.driver),
+                  MENU_ENUM_LABEL_LOCATION_DRIVER,
+                  MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+                  config_get_default_location(),
+                  config_get_location_driver_options(),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_read_handler,
+                  general_write_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+            (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+            (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_LOCATION_DRIVER);
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+            CONFIG_STRING_OPTIONS(
+                  list, list_info,
+                  settings->menu.driver,
+                  sizeof(settings->menu.driver),
+                  MENU_ENUM_LABEL_MENU_DRIVER,
+                  MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+                  config_get_default_menu(),
+                  config_get_menu_driver_options(),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_read_handler,
+                  general_write_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+            (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+            (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_DRIVER);
+
+            CONFIG_STRING_OPTIONS(
+                  list, list_info,
+                  settings->record.driver,
+                  sizeof(settings->record.driver),
+                  MENU_ENUM_LABEL_RECORD_DRIVER,
+                  MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+                  config_get_default_record(),
+                  config_get_record_driver_options(),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_read_handler,
+                  general_write_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+            (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+            (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_RECORD_DRIVER);
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
+         }
          break;
       case SETTINGS_LIST_CORE:
          {
