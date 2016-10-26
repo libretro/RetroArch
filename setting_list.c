@@ -1635,14 +1635,18 @@ bool CONFIG_STRING_OPTIONS(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       char *target, size_t len,
-      const char *name, const char *SHORT,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
       const char *default_value, const char *values,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t value = setting_string_setting_options(ST_STRING_OPTIONS, name, SHORT, target, len, default_value, "", values,
+   rarch_setting_t value = setting_string_setting_options(ST_STRING_OPTIONS,
+         msg_hash_to_str(name_enum_idx),
+         msg_hash_to_str(SHORT_enum_idx),
+         target, len, default_value, "", values,
          group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
    if (!(settings_list_append(list, list_info)))
       return false;
