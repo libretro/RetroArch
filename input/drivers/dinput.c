@@ -493,7 +493,8 @@ static int16_t dinput_input_state(void *data,
          return dinput_keyboard_pressed(di, id);
 
       case RETRO_DEVICE_ANALOG:
-         ret = dinput_pressed_analog(di, binds[port], idx, id);
+         if (binds[port])
+            ret = dinput_pressed_analog(di, binds[port], idx, id);
          if (!ret && binds[port])
             ret = input_joypad_analog(di->joypad, port,
                   idx, id, settings->input.binds[port]);
