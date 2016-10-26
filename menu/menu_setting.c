@@ -78,6 +78,17 @@
 
 #include "../tasks/tasks_internal.h"
 
+struct bool_entry
+{
+   bool *target;
+   enum msg_hash_enums name_enum_idx;
+   enum msg_hash_enums SHORT_enum_idx;
+   bool default_value;
+   enum msg_hash_enums off_enum_idx;
+   enum msg_hash_enums on_enum_idx;
+   uint32_t flags;
+};
+
 #ifdef HAVE_CHEEVOS
 static void setting_get_string_representation_cheevos_password(void *data,
       char *s, size_t len)
@@ -2734,66 +2745,62 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_CORE:
-         START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_SETTINGS);
+         {
+            unsigned i;
+            struct bool_entry bool_entries[3];
 
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_SETTINGS);
 
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
-               parent_group);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->video.shared_context,
-               MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,
-               MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-               video_shared_context,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT);
+            START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
+                  parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->load_dummy_on_core_shutdown,
-               MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
-               MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-               load_dummy_on_core_shutdown,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN);
+            bool_entries[0].target         = &settings->video.shared_context;
+            bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT;
+            bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT;
+            bool_entries[0].default_value  = video_shared_context;
+            bool_entries[0].flags          = SD_FLAG_ADVANCED;
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->set_supports_no_game_enable,
-               MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
-               MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
-               true,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED);
-         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE);
+            bool_entries[1].target         = &settings->load_dummy_on_core_shutdown;
+            bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN;
+            bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN;
+            bool_entries[1].default_value  = load_dummy_on_core_shutdown;
+            bool_entries[1].flags          = SD_FLAG_ADVANCED;
 
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+            bool_entries[2].target         = &settings->set_supports_no_game_enable;
+            bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
+            bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
+            bool_entries[2].default_value  = true;
+            bool_entries[2].flags          = SD_FLAG_ADVANCED;
+
+            for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
+            {
+               CONFIG_BOOL(
+                     list, list_info,
+                     bool_entries[i].target,
+                     bool_entries[i].name_enum_idx,
+                     bool_entries[i].SHORT_enum_idx,
+                     bool_entries[i].default_value,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     bool_entries[i].flags);
+               menu_settings_list_current_add_enum_idx(list, list_info, bool_entries[i].name_enum_idx);
+            }
+
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
+         }
          break;
       case SETTINGS_LIST_CONFIGURATION:
          START_GROUP(list, list_info, &group_info,
