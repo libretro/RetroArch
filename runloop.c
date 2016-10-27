@@ -3,6 +3,7 @@
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2014-2015 - Jay McCarthy
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-

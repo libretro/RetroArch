@@ -1,4 +1,5 @@
 /* Copyright  (C) 2010-2016 The RetroArch team
+ *  Copyright (C) 2016 - Brad Parker
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (dir_list.h).
