@@ -228,6 +228,10 @@ static int log_write(struct _reent *r, int fd, const char *ptr, size_t len)
 
    return len;
 }
+void net_print(const char* str)
+{
+   log_write(NULL, 0, str, strlen(str));
+}
 
 static devoptab_t dotab_stdout = {
    "stdout",   // device name
@@ -301,8 +305,8 @@ int __entry_menu(int argc, char **argv)
       unsigned sleep_ms = 0;
       int ret = runloop_iterate(&sleep_ms);
 
-      if (ret == 1 && sleep_ms > 0)
-       retro_sleep(sleep_ms);
+//      if (ret == 1 && sleep_ms > 0)
+//       retro_sleep(sleep_ms);
       task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
       if (ret == -1)
        break;
