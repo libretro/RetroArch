@@ -389,10 +389,10 @@ static void rgui_render(void *data)
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
    int bottom;
-   char title[256];
-   char title_buf[256];
+   char title[255];
+   char title_buf[255];
    char title_msg[64];
-   char msg[PATH_MAX_LENGTH];
+   char msg[255];
    bool msg_force                 = false;
    uint64_t *frame_count          = NULL;
    settings_t *settings           = config_get_ptr();
@@ -536,7 +536,7 @@ static void rgui_render(void *data)
    if (settings->menu.timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
-      char timedate[PATH_MAX_LENGTH];
+      char timedate[255];
 
       timedate[0] = '\0';
 
@@ -561,11 +561,11 @@ static void rgui_render(void *data)
    {
       menu_animation_ctx_ticker_t ticker;
       size_t selection;
-      char entry_path[PATH_MAX_LENGTH];
-      char entry_value[PATH_MAX_LENGTH];
-      char message[PATH_MAX_LENGTH];
-      char entry_title_buf[PATH_MAX_LENGTH];
-      char type_str_buf[PATH_MAX_LENGTH];
+      char entry_path[255];
+      char entry_value[255];
+      char message[255];
+      char entry_title_buf[255];
+      char type_str_buf[255];
       unsigned                entry_spacing = menu_entry_get_spacing(i);
       bool                entry_selected    = menu_entry_is_currently_selected(i);
       
