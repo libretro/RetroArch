@@ -22,7 +22,6 @@
 #include <stddef.h>
 
 #include <file/archive_file.h>
-#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -107,7 +106,7 @@ typedef struct database_state_handle
    uint32_t crc;
    uint32_t archive_crc;
    uint8_t *buf;
-   char archive_name[PATH_MAX_LENGTH];
+   char archive_name[255];
    char serial[4096];
 } database_state_handle_t;
 

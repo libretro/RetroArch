@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <retro_miscellaneous.h>
 #include <net/net_http.h>
 #include <queues/message_queue.h>
 #include <lists/string_list.h>
@@ -40,7 +39,7 @@ enum http_status_enum
 
 typedef struct http_transfer_info
 {
-   char url[PATH_MAX_LENGTH];
+   char url[255];
    int progress;
 } http_transfer_info_t;
 
@@ -50,8 +49,8 @@ typedef struct http_handle
    {
       struct http_connection_t *handle;
       transfer_cb_t  cb;
-      char elem1[PATH_MAX_LENGTH];
-      char url[PATH_MAX_LENGTH];
+      char elem1[255];
+      char url[255];
    } connection;
    struct http_t *handle;
    transfer_cb_t  cb;
@@ -240,7 +239,7 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
    task_finder_data_t find_data;
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[255];
    struct http_connection_t *conn = NULL;
    retro_task_t  *t               = NULL;
    http_handle_t *http            = NULL;

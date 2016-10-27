@@ -447,7 +447,7 @@ static void menu_action_setting_disp_set_label_input_desc(
       const char *path,
       char *s2, size_t len2)
 {
-   char descriptor[PATH_MAX_LENGTH];
+   char descriptor[255];
    const struct retro_keybind *auto_bind = NULL;
    const struct retro_keybind *keybind   = NULL;
    settings_t *settings                  = config_get_ptr();
@@ -461,6 +461,8 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    if (!settings)
       return;
+
+   descriptor[0] = '\0';
    
    remap_id = settings->input.remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
@@ -1405,7 +1407,7 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
       const char *path,
       char *s2, size_t len2)
 {
-   char playlist_name_with_ext[PATH_MAX_LENGTH];
+   char playlist_name_with_ext[255];
    bool found_matching_core_association         = false;
    settings_t         *settings                 = config_get_ptr();
    struct string_list *str_list                 = string_split(settings->playlist_names, ";");

@@ -241,7 +241,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   char game_path[PATH_MAX_LENGTH];
+   char game_path[255];
 
    game_path[0] ='\0';
 

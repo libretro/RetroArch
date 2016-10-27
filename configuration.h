@@ -210,7 +210,7 @@ typedef struct settings
    struct
    {
       char driver[32];
-      char device[PATH_MAX_LENGTH];
+      char device[255];
       bool allow;
       unsigned width;
       unsigned height;
@@ -234,7 +234,7 @@ typedef struct settings
    {
       char driver[32];
       char resampler[32];
-      char device[PATH_MAX_LENGTH];
+      char device[255];
       bool enable;
       bool mute_enable;
       unsigned out_rate;
@@ -320,8 +320,8 @@ typedef struct settings
 
    struct
    {
-      char buildbot_url[PATH_MAX_LENGTH];
-      char buildbot_assets_url[PATH_MAX_LENGTH];
+      char buildbot_url[255];
+      char buildbot_assets_url[255];
       bool buildbot_auto_extract_archive;
    } network;
 
@@ -400,7 +400,7 @@ typedef struct settings
 #ifdef HAVE_NETWORKING
    struct
    {
-      char server[PATH_MAX_LENGTH];
+      char server[255];
       unsigned port;
       unsigned sync_frames;
       unsigned check_frames;

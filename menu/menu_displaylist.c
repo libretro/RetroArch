@@ -153,7 +153,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
 
                if (settings)
                {
-                  char display_name[PATH_MAX_LENGTH];
+                  char display_name[255];
                   char core_path[PATH_MAX_LENGTH];
                   char *last                         = NULL;
 
@@ -437,7 +437,7 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 
    for (k = 0; k < list->size; k++)
    {
-      char tmp[PATH_MAX_LENGTH];
+      char tmp[255];
 
       tmp[0] = '\0';
 
@@ -476,7 +476,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    gfx_ctx_ident_t ident_info;
 #endif
    char tmp[PATH_MAX_LENGTH];
-   char feat_str[PATH_MAX_LENGTH];
+   char feat_str[255];
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    settings_t                  *settings = config_get_ptr();
@@ -515,7 +515,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
 #endif
    {
-      char cpu_str[PATH_MAX_LENGTH];
+      char cpu_str[255];
 
       cpu_str[0] = '\0';
 
@@ -531,7 +531,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 
    {
-      char cpu_str[PATH_MAX_LENGTH];
+      char cpu_str[255];
       char cpu_arch_str[PATH_MAX_LENGTH];
       char cpu_text_str[PATH_MAX_LENGTH];
       enum frontend_architecture arch = frontend_driver_get_cpu_architecture();

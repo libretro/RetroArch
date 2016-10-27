@@ -51,7 +51,7 @@ typedef struct rarch_system_info
    unsigned performance_level;
 
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
-   char valid_extensions[PATH_MAX_LENGTH];
+   char valid_extensions[255];
 
    struct retro_disk_control_callback  disk_control_cb; 
    struct retro_location_callback      location_cb;

@@ -126,7 +126,7 @@ enum
 static jmp_buf error_sjlj_context;
 static enum rarch_core_type current_core_type           = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
-static char error_string[PATH_MAX_LENGTH]               = {0};
+static char error_string[255]                           = {0};
 
 static retro_bits_t has_set_libretro_device;
 static bool has_set_core                                = false;
@@ -228,7 +228,7 @@ static void retroarch_print_features(void)
 
 static void retroarch_print_version(void)
 {
-   char str[PATH_MAX_LENGTH];
+   char str[255];
 
    str[0] = '\0';
 
@@ -1026,7 +1026,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
    if (verbosity_is_enabled())
    {
-      char str[PATH_MAX_LENGTH];
+      char str[255];
 
       str[0] = '\0';
 

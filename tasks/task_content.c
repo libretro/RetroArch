@@ -872,8 +872,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
       bool launched_from_menu,
       enum content_mode_load mode)
 {
-   char name[PATH_MAX_LENGTH];
-   char msg[PATH_MAX_LENGTH];
+   char name[256];
+   char msg[256];
 
    name[0] = msg[0] = '\0';
 
