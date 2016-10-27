@@ -217,14 +217,13 @@ enum menu_settings_type
 typedef struct
 {
    char deferred_path[PATH_MAX_LENGTH];
-
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
 
    uint64_t state;
    struct
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[255];
    } menu_state;
 
    char db_playlist_file[PATH_MAX_LENGTH];
