@@ -93,6 +93,8 @@ struct rarch_setting
    enum msg_hash_enums enum_value_idx;
    enum setting_type    type;
 
+   bool dont_use_enum_idx_representation;
+
    uint32_t             size;
    
    const char           *name;
@@ -362,6 +364,17 @@ bool CONFIG_HEX(
 
 /* Please strdup() NAME and SHORT */
 bool CONFIG_BIND(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      struct retro_keybind *target,
+      uint32_t player, uint32_t player_offset,
+      const char *name, const char *SHORT,
+      const struct retro_keybind *default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group);
+
+bool CONFIG_BIND_ALT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       struct retro_keybind *target,

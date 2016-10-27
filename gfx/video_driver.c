@@ -185,6 +185,9 @@ static const video_driver_t *video_drivers[] = {
 #ifdef GEKKO
    &video_gx,
 #endif
+#ifdef WIIU
+   &video_wiiu,
+#endif
 #ifdef HAVE_VG
    &video_vg,
 #endif

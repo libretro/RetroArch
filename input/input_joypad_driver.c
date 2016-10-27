@@ -39,6 +39,9 @@ static input_device_driver_t *joypad_drivers[] = {
 #ifdef GEKKO
    &gx_joypad,
 #endif
+#ifdef WIIU
+   &wiiu_joypad,
+#endif
 #ifdef _XBOX
    &xdk_joypad,
 #endif

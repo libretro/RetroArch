@@ -1,0 +1,166 @@
+TARGET		    := retroarch_wiiu
+DEBUG                = 0
+GRIFFIN_BUILD        = 0
+WHOLE_ARCHIVE_LINK   = 0
+
+OBJ	:=
+OBJ	+= wiiu/dynamic_libs/ax_functions.o
+OBJ	+= wiiu/dynamic_libs/os_functions.o
+OBJ	+= wiiu/dynamic_libs/sys_functions.o
+OBJ	+= wiiu/fs/sd_fat_devoptab.o
+OBJ	+= wiiu/dynamic_libs/fs_functions.o
+OBJ	+= wiiu/dynamic_libs/padscore_functions.o
+OBJ	+= wiiu/dynamic_libs/vpad_functions.o
+OBJ	+= wiiu/system/memory.o
+OBJ	+= wiiu/dynamic_libs/gx2_functions.o
+OBJ	+= wiiu/dynamic_libs/socket_functions.o
+OBJ	+= wiiu/fs/fs_utils.o
+
+DEFINES :=
+
+ifeq ($(GRIFFIN_BUILD), 1)
+	OBJ += griffin/griffin.o
+	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_LIBRETRODB
+	DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB
+#	DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
+else
+	HAVE_MENU_COMMON = 1
+	HAVE_RTGA = 1
+	HAVE_RPNG = 1
+	HAVE_RJPEG = 1
+	HAVE_RBMP = 1
+	HAVE_RGUI = 1
+	HAVE_ZLIB = 1
+	HAVE_7ZIP = 1
+	HAVE_BUILTINZLIB = 1
+	HAVE_LIBRETRODB = 1
+	HAVE_ZARCH = 0
+	HAVE_MATERIALUI = 0
+	HAVE_XMB = 0
+
+	include Makefile.common
+	BLACKLIST :=
+	BLACKLIST += input/input_overlay.o
+	BLACKLIST += tasks/task_overlay.o
+	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
+
+	OBJ += gfx/drivers/wiiu_gfx.o
+#	OBJ += gfx/drivers_font/wiiu_font.o
+#	OBJ += menu/drivers_display/menu_display_wiiu.o
+	OBJ += input/drivers/wiiu_input.o
+	OBJ += input/drivers_joypad/wiiu_joypad.o
+#	OBJ += audio/drivers/wiiu_audio.o
+	OBJ += frontend/drivers/platform_wiiu.o
+	OBJ += gfx/video_filters/2xsai.o
+	OBJ += gfx/video_filters/super2xsai.o
+	OBJ += gfx/video_filters/supereagle.o
+	OBJ += gfx/video_filters/2xbr.o
+	OBJ += gfx/video_filters/darken.o
+	OBJ += gfx/video_filters/epx.o
+	OBJ += gfx/video_filters/scale2x.o
+	OBJ += gfx/video_filters/blargg_ntsc_snes.o
+	OBJ += gfx/video_filters/lq2x.o
+	OBJ += gfx/video_filters/phosphor2x.o
+	OBJ += audio/audio_filters/echo.o
+	OBJ += audio/audio_filters/eq.o
+	OBJ += audio/audio_filters/chorus.o
+	OBJ += audio/audio_filters/iir.o
+	OBJ += audio/audio_filters/panning.o
+	OBJ += audio/audio_filters/phaser.o
+	OBJ += audio/audio_filters/reverb.o
+	OBJ += audio/audio_filters/wahwah.o
+endif
+
+
+ifeq ($(strip $(DEVKITPPC)),)
+$(error "Please set DEVKITPPC in your environment. export DEVKITPPC=<path to>devkitPPC")
+endif
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPRO")
+endif
+export PATH	  := $(PATH):$(DEVKITPPC)/bin:$(PORTLIBS)/bin
+export LIBOGC_INC := $(DEVKITPRO)/libogc/include
+export LIBOGC_LIB := $(DEVKITPRO)/libogc/lib/wii
+export PORTLIBS   := $(DEVKITPRO)/portlibs/ppc
+
+PREFIX := powerpc-eabi-
+
+CC      := $(PREFIX)gcc
+CXX     := $(PREFIX)g++
+AS      := $(PREFIX)as
+AR      := $(PREFIX)ar
+OBJCOPY := $(PREFIX)objcopy
+STRIP   := $(PREFIX)strip
+NM      := $(PREFIX)nm
+LD      := $(CXX)
+
+
+INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -I$(LIBOGC_INC)
+LIBDIRS := -L.
+
+CFLAGS  := -mrvl -mcpu=750 -meabi -mhard-float
+LDFLAGS :=
+#LDFLAGS := $(CFLAGS)
+
+ifeq ($(DEBUG), 1)
+   CFLAGS	+= -O0 -g
+else
+   CFLAGS	+= -O3
+endif
+
+ASFLAGS := $(CFLAGS) -mregnames
+
+CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
+#CFLAGS += -fomit-frame-pointer -mword-relocations
+#CFLAGS	+= -Wall
+CFLAGS += -DWIIU
+CFLAGS += -DHAVE_MAIN
+CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
+CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
+
+ifeq ($(WHOLE_ARCHIVE_LINK), 1)
+   WHOLE_START := -Wl,--whole-archive
+   WHOLE_END := -Wl,--no-whole-archive
+endif
+
+
+CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+
+LDFLAGS  += -nostartfiles -Wl,-Map,$(notdir $@).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc
+LDFLAGS  += -Wl,-wrap,malloc_usable_size,-wrap,_malloc_r,-wrap,_free_r,-wrap,_realloc_r,-wrap,_calloc_r,-wrap,_memalign_r
+LDFLAGS  += -Wl,-wrap,_malloc_usable_size_r,-wrap,valloc,-wrap,_valloc_r,-wrap,_pvalloc_r,--gc-sections
+
+CFLAGS   += -std=gnu99
+
+LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
+
+all: $(TARGET)
+
+$(TARGET): $(TARGET).elf
+
+$(TARGET).elf: $(OBJ) libretro_wiiu.a
+
+%.o: %.cpp
+	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
+
+%.o: %.s
+	$(CC) -c -o $@ $< $(ASFLAGS)
+
+%.o: %.S
+	$(CC) -c -o $@ $< $(ASFLAGS)
+
+%.a:
+	$(AR) -rc $@ $^
+
+$(TARGET).elf: wiiu/link.ld $(OBJ)
+#	$(LD) -T wiiu/link.ld $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+	$(LD) -n -T wiiu/link.ld $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+
+clean:
+	rm -f $(OBJ)
+	rm -f $(TARGET).elf
+
+.PHONY: $(BUILD) clean all
