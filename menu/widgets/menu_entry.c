@@ -442,7 +442,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    if (path && !use_representation)
       strlcpy(entry->path,  path,        sizeof(entry->path));
 
-   if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN)
+   if (cbs && cbs->setting && cbs->setting->enum_value_idx != MSG_UNKNOWN
+         && !cbs->setting->dont_use_enum_idx_representation)
       strlcpy(entry->path, msg_hash_to_str(cbs->setting->enum_value_idx), sizeof(entry->path));
 
    if (entry_label)

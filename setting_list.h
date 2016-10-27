@@ -93,6 +93,8 @@ struct rarch_setting
    enum msg_hash_enums enum_value_idx;
    enum setting_type    type;
 
+   bool dont_use_enum_idx_representation;
+
    uint32_t             size;
    
    const char           *name;

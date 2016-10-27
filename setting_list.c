@@ -1458,6 +1458,7 @@ bool CONFIG_BOOL_ALT(
    (*list)[list_info->index++] = value;
    if (flags != SD_FLAG_NONE)
       settings_data_list_current_add_flags(list, list_info, flags);
+   (*list)[list_info->index - 1].dont_use_enum_idx_representation = true;
    return true;
 }
 
@@ -1545,6 +1546,7 @@ bool CONFIG_UINT_ALT(
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
+   (*list)[list_info->index - 1].dont_use_enum_idx_representation = true;
    return true;
 }
 
@@ -1790,6 +1792,7 @@ bool CONFIG_ACTION_ALT(
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
+   (*list)[list_info->index - 1].dont_use_enum_idx_representation = true;
    return true;
 }
 
