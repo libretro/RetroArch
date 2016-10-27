@@ -113,7 +113,7 @@ ASFLAGS := $(CFLAGS) -mregnames
 CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #CFLAGS += -fomit-frame-pointer -mword-relocations
 #CFLAGS	+= -Wall
-CFLAGS += -DWIIU
+CFLAGS += -DWIIU -DMSB_FIRST
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)

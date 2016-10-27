@@ -29,6 +29,7 @@
 #include "string.h"
 
 #include "dynamic_libs/vpad_functions.h"
+#include "wiiu_dbg.h"
 
 #ifndef MAX_PADS
 #define MAX_PADS 1
