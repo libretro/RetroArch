@@ -988,7 +988,9 @@ static rarch_setting_t setting_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
       uint32_t idx, uint32_t idx_offset,
       const struct retro_keybind* default_value,
-      const char *group, const char *subgroup, const char *parent_group)
+      const char *group, const char *subgroup,
+      const char *parent_group,
+      bool dont_use_enum_idx)
 {
    rarch_setting_t result;
 
@@ -1039,6 +1041,8 @@ static rarch_setting_t setting_bind_setting(const char* name,
 
    result.value.target.keybind      = target;
    result.default_value.keybind     = default_value;
+
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
 }
@@ -1794,8 +1798,10 @@ bool CONFIG_BIND(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   rarch_setting_t value = setting_bind_setting(name, SHORT, target, player, player_offset, default_value,
-                  group_info->name, subgroup_info->name, parent_group);
+   rarch_setting_t value = setting_bind_setting(name, SHORT, target,
+         player, player_offset, default_value,
+         group_info->name, subgroup_info->name, parent_group,
+         false);
    if (!(settings_list_append(list, list_info)))
       return false;
 
