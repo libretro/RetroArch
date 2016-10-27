@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "dynamic_libs/os_functions.h"
-#include "utils/logger.h"
 #include "exception_handler.h"
+#include "wiiu/wiiu_dbg.h"
 
 #define OS_EXCEPTION_MODE_GLOBAL_ALL_CORES      4
 
@@ -69,7 +69,7 @@ static const char exception_print_formats[18][45] = {
      "GPR07 %08X GPR15 %08X GPR23 %08X GPR31 %08X\n",       // 8
      "LR    %08X SRR0  %08x SRR1  %08x\n",                  // 9
      "DAR   %08X DSISR %08X\n",                             // 10
-     "\nSTACK DUMP:",                                       // 11
+     "STACK DUMP:",                                         // 11
      " --> ",                                               // 12
       " -->\n",                                             // 13
       "\n",                                                 // 14
@@ -79,7 +79,7 @@ static const char exception_print_formats[18][45] = {
 };
 
 static unsigned char exception_cb(void * c, unsigned char exception_type) {
-    char buf[850];
+    char buf[4096];
     int pos = 0;
 
     OSContext *context = (OSContext *) c;
@@ -147,7 +147,9 @@ static unsigned char exception_cb(void * c, unsigned char exception_type) {
 		for (i = 0; i < 8; i += 4)
             pos += sprintf(buf + pos, exception_print_formats[17], &(pAdd[i]),pAdd[i], pAdd[i+1], pAdd[i+2], pAdd[i+3]);
 	//}
-    printf(buf);
+      void net_print(const char* str);
+
+    net_print(buf);
     OSFatal(buf);
     return 1;
 }
