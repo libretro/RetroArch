@@ -1405,7 +1405,8 @@ static rarch_setting_t setting_int_setting(const char* name,
       const char* short_description, int* target,
       int default_value,
       const char *group, const char *subgroup, const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler)
+      change_handler_t change_handler, change_handler_t read_handler,
+      bool dont_use_enum_idx)
 {
    rarch_setting_t result;
 
@@ -1453,6 +1454,8 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.value.target.integer      = target;
    result.original_value.integer    = *target;
    result.default_value.integer     = default_value;
+
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
 }
@@ -1538,11 +1541,13 @@ bool CONFIG_INT(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t value = setting_int_setting   (
+   rarch_setting_t value = setting_int_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          target, default_value,
-         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler,
+         false);
    if (!(settings_list_append(list, list_info)))
       return false;
    if (value.name)
