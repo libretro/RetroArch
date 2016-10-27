@@ -110,27 +110,17 @@ static bool sdl_input_key_pressed(void *data, int key)
 {
    if (key >= 0 && key < RARCH_BIND_LIST_END)
    {
-      sdl_input_t *sdl     = (sdl_input_t*)data;
-      settings_t *settings = config_get_ptr();
-      int port             = 0;
+      sdl_input_t              *sdl     = (sdl_input_t*)data;
+      settings_t              *settings = config_get_ptr();
       const struct retro_keybind *binds = settings->input.binds[0];
 
       if (sdl_is_pressed(sdl, 0, binds, key))
          return true;
 
-      if (settings->input.all_users_control_menu)
-      {
-         for (port = 0; port < MAX_USERS; port++)
-            if (settings->input.binds[0][key].valid && 
-                  input_joypad_pressed(sdl->joypad,
-                  port, settings->input.binds[0], key))
-               return true;
-      }
-      else
-         if (settings->input.binds[0][key].valid &&
-               input_joypad_pressed(sdl->joypad,
+      if (settings->input.binds[0][key].valid &&
+            input_joypad_pressed(sdl->joypad,
                0, settings->input.binds[0], key))
-            return true;
+         return true;
    }
 
    return false;

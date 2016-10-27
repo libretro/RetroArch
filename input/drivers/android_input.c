@@ -1162,24 +1162,14 @@ static bool android_input_key_pressed(void *data, int key)
 {
    android_input_t *android = (android_input_t*)data;
    settings_t *settings     = config_get_ptr();
-   int port                 = 0;
 
    if(settings->input.binds[0][key].valid && android_keyboard_port_input_pressed(settings->input.binds[0],key))
       return true;
 
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (settings->input.binds[0][key].valid &&
-               input_joypad_pressed(android->joypad,
-               port, settings->input.binds[0], key))
-            return true;
-   }
-   else
-      if (settings->input.binds[0][key].valid &&
-            input_joypad_pressed(android->joypad,
+   if (settings->input.binds[0][key].valid &&
+         input_joypad_pressed(android->joypad,
             0, settings->input.binds[0], key))
-         return true;
+      return true;
 
    return false;
 }
