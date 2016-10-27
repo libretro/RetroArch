@@ -28,13 +28,20 @@
 
 #include "menu_event.h"
 
+#include "content.h"
 #include "menu_driver.h"
 #include "menu_input.h"
 #include "menu_animation.h"
 #include "menu_display.h"
 #include "menu_navigation.h"
 
+#include "widgets/menu_dialog.h"
+
 #include "../configuration.h"
+#include "../retroarch.h"
+#include "../runloop.h"
+
+static bool menu_keyboard_key_state[RETROK_LAST];
 
 static int menu_event_pointer(unsigned *action)
 {
@@ -65,8 +72,24 @@ static int menu_event_pointer(unsigned *action)
    return 0;
 }
 
+bool menu_event_keyboard_is_set(enum retro_key key)
+{
+   if (menu_keyboard_key_state[key] && key == RETROK_F1)
+   {
+      menu_keyboard_key_state[key] = false;
+      return true;
+   }
+   return menu_keyboard_key_state[key];
+}
+
+void menu_event_keyboard_set(enum retro_key key)
+{
+   menu_keyboard_key_state[key] = true;
+}
+
 unsigned menu_event(uint64_t input, uint64_t trigger_input)
 {
+   unsigned i;
    menu_animation_ctx_delta_t delta;
    float delta_time;
    /* Used for key repeat */
@@ -187,6 +210,60 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       trigger_input = 0;
    }
 
+   for (i = 0; i < RETROK_LAST; i++)
+   {
+      if (i == RETROK_F1)
+         continue;
+
+      if (menu_keyboard_key_state[i])
+      {
+         switch ((enum retro_key)i)
+         {
+            case RETROK_ESCAPE:
+               BIT32_SET(trigger_input, RARCH_QUIT_KEY);
+               break;
+            case RETROK_f:
+               BIT32_SET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
+               break;
+            case RETROK_F11:
+               BIT32_SET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
+               break;
+            case RETROK_PAGEUP:
+               BIT32_SET(trigger_input, settings->menu_scroll_up_btn);
+               break;
+            case RETROK_PAGEDOWN:
+               BIT32_SET(trigger_input, settings->menu_scroll_down_btn);
+               break;
+            case RETROK_SLASH:
+               BIT32_SET(trigger_input, settings->menu_search_btn);
+               break;
+            case RETROK_LEFT:
+               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT);
+               break;
+            case RETROK_RIGHT:
+               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+               break;
+            case RETROK_UP:
+               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_UP);
+               break;
+            case RETROK_DOWN:
+               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN);
+               break;
+            case RETROK_BACKSPACE:
+               BIT32_SET(trigger_input, settings->menu_cancel_btn);
+               break;
+            case RETROK_RETURN:
+               BIT32_SET(trigger_input, settings->menu_ok_btn);
+               break;
+#if 0
+            default:
+               break;
+#endif
+         }
+         menu_keyboard_key_state[i] = false;
+      }
+   }
+
    if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       ret = MENU_ACTION_UP;
    else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
@@ -213,6 +290,40 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       ret = MENU_ACTION_INFO;
    else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
+
+   if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
+      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+
+   if (runloop_cmd_triggered(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
+      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+
+   if (runloop_cmd_press(trigger_input, RARCH_QUIT_KEY))
+   {
+      int should_we_quit = true;
+
+      if (!runloop_is_quit_confirm())
+      {
+         if (settings && settings->confirm_on_exit)
+         {
+            if (menu_dialog_is_active())
+               should_we_quit = false;
+            else if (content_is_inited())
+            {
+               if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
+                  menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
+               rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+            }
+
+            menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
+
+            should_we_quit = false;
+         }
+
+         if ((settings && !settings->confirm_on_exit) ||
+               should_we_quit)
+            return MENU_ACTION_QUIT;
+      }
+   }
 
    mouse_enabled                      = settings->menu.mouse.enable;
 #ifdef HAVE_OVERLAY

@@ -697,14 +697,14 @@ uint64_t input_menu_keys_pressed(void)
       if (
             (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
             || !input_driver_block_hotkey) && current_input->key_pressed)
-#if 0
+#if 1
          && settings->input.binds[0][i].valid
 #endif
          )
       {
          int port;
          int port_max = 1;
-#if 0
+#if 1
          if (settings->input.all_users_control_menu)
             port_max  = settings->input.max_users;
 

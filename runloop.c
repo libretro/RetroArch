@@ -88,15 +88,19 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
-
-#define runloop_cmd_press(current_input, id)     BIT64_GET(current_input, id)
-#define runloop_cmd_pressed(old_input, id)   BIT64_GET(old_input, id)
 #ifdef HAVE_MENU
-#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || \
-                                      runloop_cmd_get_state_menu_toggle_button_combo( \
-                                            settings, current_input, old_input, trigger_input))
+#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || runloop_cmd_get_state_menu_toggle_button_combo(settings, current_input, old_input, trigger_input))
 #endif
+
+enum  runloop_state
+{
+   RUNLOOP_STATE_NONE = 0,
+   RUNLOOP_STATE_ITERATE,
+   RUNLOOP_STATE_SLEEP,
+   RUNLOOP_STATE_MENU_ITERATE,
+   RUNLOOP_STATE_END,
+   RUNLOOP_STATE_QUIT
+};
 
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
@@ -720,16 +724,6 @@ void runloop_set_quit_confirm(bool on)
    runloop_quit_confirm = on;
 }
 
-enum  runloop_state
-{
-   RUNLOOP_STATE_NONE = 0,
-   RUNLOOP_STATE_ITERATE,
-   RUNLOOP_STATE_SLEEP,
-   RUNLOOP_STATE_MENU_ITERATE,
-   RUNLOOP_STATE_END,
-   RUNLOOP_STATE_QUIT
-};
-
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -801,6 +795,10 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    return -1;
 }
 
+void runloop_external_state_checks(uint64_t trigger_input)
+{
+}
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
@@ -852,23 +850,6 @@ static enum runloop_state runloop_check_state(
    if (runloop_cmd_triggered(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
 
-#ifdef HAVE_MENU
-   if (runloop_cmd_menu_press(current_input, old_input, trigger_input) ||
-         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-   {
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-      {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
-               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-      }
-      else
-      {
-         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
-         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      }
-   }
-#endif
 
 #ifdef HAVE_OVERLAY
    if (osk_enable && !input_keyboard_ctl(
@@ -914,18 +895,43 @@ static enum runloop_state runloop_check_state(
       if (focused || !runloop_idle)
          menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
-      if (!focused || runloop_idle)
+      if (!focused)
          return RUNLOOP_STATE_SLEEP;
 
+      if (action == MENU_ACTION_QUIT)
+         return RUNLOOP_STATE_QUIT;
+   }
+#endif
+   
+   if (runloop_idle)
+      return RUNLOOP_STATE_SLEEP;
+
+#ifdef HAVE_MENU
+   if (  menu_event_keyboard_is_set(RETROK_F1) ||
+         runloop_cmd_menu_press(current_input, old_input, trigger_input) ||
+         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   {
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      {
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
+               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+      }
+      else
+      {
+         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
+         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      }
+   }
+
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   {
       if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
 
       return RUNLOOP_STATE_END;
    }
 #endif
-   
-   if (runloop_idle)
-      return RUNLOOP_STATE_SLEEP;
 
    if (settings->pause_nonactive)
       focused                = video_driver_is_focused();
