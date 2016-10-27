@@ -1,3 +1,4 @@
-export WIILOAD=tcp:10.42.0.170
-wiiload retroarch_wiiu.elf
-netcat -p 4405 -l 10.42.0.170
+export WIILOAD=tcp:$1
+powerpc-eabi-strip retroarch_wiiu.elf -o retroarch_wiiu_stripped.elf
+wiiload retroarch_wiiu_stripped.elf
+netcat -p 4405 -l $1
