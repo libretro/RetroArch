@@ -4633,6 +4633,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Chinese (Simplified)";
       case MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO:
          return "Esperanto";
+      case MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE:
+         return "Vietnamese";
       case MENU_ENUM_LABEL_VALUE_LEFT_ANALOG:
          return "Left Analog";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
