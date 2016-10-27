@@ -88,15 +88,19 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
-
-#define runloop_cmd_press(current_input, id)     BIT64_GET(current_input, id)
-#define runloop_cmd_pressed(old_input, id)   BIT64_GET(old_input, id)
 #ifdef HAVE_MENU
-#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || \
-                                      runloop_cmd_get_state_menu_toggle_button_combo( \
-                                            settings, current_input, old_input, trigger_input))
+#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || runloop_cmd_get_state_menu_toggle_button_combo(settings, current_input, old_input, trigger_input))
 #endif
+
+enum  runloop_state
+{
+   RUNLOOP_STATE_NONE = 0,
+   RUNLOOP_STATE_ITERATE,
+   RUNLOOP_STATE_SLEEP,
+   RUNLOOP_STATE_MENU_ITERATE,
+   RUNLOOP_STATE_END,
+   RUNLOOP_STATE_QUIT
+};
 
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
@@ -720,16 +724,6 @@ void runloop_set_quit_confirm(bool on)
    runloop_quit_confirm = on;
 }
 
-enum  runloop_state
-{
-   RUNLOOP_STATE_NONE = 0,
-   RUNLOOP_STATE_ITERATE,
-   RUNLOOP_STATE_SLEEP,
-   RUNLOOP_STATE_MENU_ITERATE,
-   RUNLOOP_STATE_END,
-   RUNLOOP_STATE_QUIT
-};
-
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -799,6 +793,10 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 
    /* Quits out of RetroArch main loop. */
    return -1;
+}
+
+void runloop_external_state_checks(uint64_t trigger_input)
+{
 }
 
 static enum runloop_state runloop_check_state(
@@ -899,6 +897,9 @@ static enum runloop_state runloop_check_state(
 
       if (!focused)
          return RUNLOOP_STATE_SLEEP;
+
+      if (action == MENU_ACTION_QUIT)
+         return RUNLOOP_STATE_QUIT;
    }
 #endif
    
