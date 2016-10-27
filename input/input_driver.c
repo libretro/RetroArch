@@ -694,26 +694,24 @@ uint64_t input_menu_keys_pressed(void)
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
       bool state = false;
-#if 1
-      if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+      if (
+            (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
             || !input_driver_block_hotkey) && current_input->key_pressed)
+#if 0
+         && settings->input.binds[0][i].valid
+#endif
+         )
+      {
+#if 0
+         state = input_joypad_pressed(input_driver_get_joypad_driver(),
+               0, settings->input.binds[0], i);
+#else
          state = current_input->key_pressed(current_input_data, i);
+#endif
+      }
 
       if (i >= RARCH_FIRST_META_KEY)
          state |= current_input->meta_key_pressed(current_input_data, i);
-#else
-      if (((((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-            || !input_driver_block_hotkey) && current_input->key_pressed)) 
-         && settings->input.binds[0][i].valid)
-      {
-         state = input_joypad_pressed(input_driver_get_joypad_driver(),
-               0, settings->input.binds[0], i);
-      }
-
-      if (i >= RARCH_FIRST_META_KEY && settings->input.binds[0][i].valid)
-         state |= input_joypad_pressed(input_driver_get_joypad_driver(), 
-               0, settings->input.binds[0], i);
-#endif
 
 #ifdef HAVE_OVERLAY
       state |= input_overlay_key_pressed(i);
