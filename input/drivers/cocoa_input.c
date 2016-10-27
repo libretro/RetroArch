@@ -268,7 +268,7 @@ static int16_t cocoa_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret;
+   int16_t ret               = 0;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
    if (!apple || !apple->joypad)
