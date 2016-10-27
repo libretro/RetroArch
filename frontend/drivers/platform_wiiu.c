@@ -43,10 +43,14 @@
 #include "dynamic_libs/vpad_functions.h"
 #include "dynamic_libs/padscore_functions.h"
 #include "dynamic_libs/socket_functions.h"
+//#include "dynamic_libs/curl_functions.h"
 #include "dynamic_libs/ax_functions.h"
+//#include "dynamic_libs/aoc_functions.h"
+//#include "dynamic_libs/acp_functions.h"
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
 #include "system/memory.h"
+#include "system/exception_handler.h"
 #include "utils/logger.h"
 #include "utils/utils.h"
 #include "common/common.h"
@@ -257,13 +261,23 @@ int __entry_menu(int argc, char **argv)
    InitSocketFunctionPointers();
 
    log_init("10.42.0.1");
-
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
+
    InitFSFunctionPointers();
+   InitGX2FunctionPointers();
+   InitSysFunctionPointers();
    InitVPadFunctionPointers();
+   InitPadScoreFunctionPointers();
+   InitAXFunctionPointers();
+//   InitCurlFunctionPointers();
+//   InitAocFunctionPointers();
+//   InitACPFunctionPointers();
+
+
    memoryInitialize();
    mount_sd_fat("sd");
+   setup_os_exceptions();
    VPADInit();
    OSScreenInit();
 
