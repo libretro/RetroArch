@@ -95,6 +95,14 @@ static bool nullinput_set_rumble(void *data, unsigned port,
    return false;
 }
 
+static bool nullinput_keyboard_mapping_is_blocked(void *data)
+{
+   (void)data;
+
+   return false;
+}
+
+
 input_driver_t input_null = {
    nullinput_input_init,
    nullinput_input_poll,
@@ -111,5 +119,6 @@ input_driver_t input_null = {
    nullinput_set_rumble,
    NULL,
    NULL,
+   nullinput_keyboard_mapping_is_blocked,
    NULL,
 };

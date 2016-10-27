@@ -498,6 +498,7 @@ extern video_driver_t video_vita2d;
 extern video_driver_t video_ctr;
 extern video_driver_t video_d3d;
 extern video_driver_t video_gx;
+extern video_driver_t video_wiiu;
 extern video_driver_t video_xenon360;
 extern video_driver_t video_xvideo;
 extern video_driver_t video_xdk_d3d;

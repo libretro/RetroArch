@@ -34,6 +34,7 @@ enum
    VIDEO_SDL2,
    VIDEO_EXT,
    VIDEO_WII,
+   VIDEO_WIIU,
    VIDEO_XENON360,
    VIDEO_XDK_D3D,
    VIDEO_PSP1,
@@ -85,6 +86,7 @@ enum
    INPUT_CTR,
    INPUT_XENON360,
    INPUT_WII,
+   INPUT_WIIU,
    INPUT_XINPUT,
    INPUT_UDEV,
    INPUT_LINUXRAW,
@@ -96,6 +98,7 @@ enum
    JOYPAD_PS3,
    JOYPAD_XINPUT,
    JOYPAD_GX,
+   JOYPAD_WIIU,
    JOYPAD_XDK,
    JOYPAD_PSP,
    JOYPAD_CTR,
@@ -146,6 +149,8 @@ enum
 #define VIDEO_DEFAULT_DRIVER VIDEO_GL
 #elif defined(GEKKO)
 #define VIDEO_DEFAULT_DRIVER VIDEO_WII
+#elif defined(WIIU)
+#define VIDEO_DEFAULT_DRIVER VIDEO_WIIU
 #elif defined(XENON)
 #define VIDEO_DEFAULT_DRIVER VIDEO_XENON360
 #elif (defined(_XBOX1) || defined(_XBOX360)) && (defined(HAVE_D3D8) || defined(HAVE_D3D9))
@@ -250,6 +255,8 @@ enum
 #define INPUT_DEFAULT_DRIVER INPUT_CTR
 #elif defined(GEKKO)
 #define INPUT_DEFAULT_DRIVER INPUT_WII
+#elif defined(WIIU)
+#define INPUT_DEFAULT_DRIVER INPUT_WIIU
 #elif defined(HAVE_UDEV)
 #define INPUT_DEFAULT_DRIVER INPUT_UDEV
 #elif defined(__linux__) && !defined(ANDROID)
@@ -276,6 +283,8 @@ enum
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_XINPUT
 #elif defined(GEKKO)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_GX
+#elif defined(WIIU)
+#define JOYPAD_DEFAULT_DRIVER JOYPAD_WIIU
 #elif defined(_XBOX)
 #define JOYPAD_DEFAULT_DRIVER JOYPAD_XDK
 #elif defined(PSP) || defined(VITA)
