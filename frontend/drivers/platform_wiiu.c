@@ -51,6 +51,7 @@
 #include "fs/sd_fat_devoptab.h"
 #include "system/memory.h"
 #include "system/exception_handler.h"
+#include "system/exception.h"
 #include "utils/logger.h"
 #include "utils/utils.h"
 #include "common/common.h"
@@ -281,7 +282,8 @@ int __entry_menu(int argc, char **argv)
 
    memoryInitialize();
    mount_sd_fat("sd");
-   setup_os_exceptions();
+//   setup_os_exceptions();
+   InstallExceptionHandler();
    VPADInit();
    OSScreenInit();
 
