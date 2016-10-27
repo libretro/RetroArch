@@ -91,6 +91,7 @@ EXPORT_VAR(unsigned int *, pMEMAllocFromDefaultHeapEx);
 EXPORT_VAR(unsigned int *, pMEMAllocFromDefaultHeap);
 EXPORT_VAR(unsigned int *, pMEMFreeToDefaultHeap);
 
+EXPORT_DECL(int, MEMGetSizeForMBlockExpHeap, void* ptr);
 EXPORT_DECL(int, MEMGetBaseHeapHandle, int mem_arena);
 EXPORT_DECL(unsigned int, MEMGetAllocatableSizeForFrmHeapEx, int heap, int align);
 EXPORT_DECL(void *, MEMAllocFromFrmHeapEx, int heap, unsigned int size, int align);
@@ -219,6 +220,7 @@ void InitOSFunctionPointers(void)
     OSDynLoad_FindExport(coreinit_handle, 1, "MEMAllocFromDefaultHeap", &pMEMAllocFromDefaultHeap);
     OSDynLoad_FindExport(coreinit_handle, 1, "MEMFreeToDefaultHeap", &pMEMFreeToDefaultHeap);
 
+    OS_FIND_EXPORT(coreinit_handle, MEMGetSizeForMBlockExpHeap);
     OS_FIND_EXPORT(coreinit_handle, MEMGetBaseHeapHandle);
     OS_FIND_EXPORT(coreinit_handle, MEMGetAllocatableSizeForFrmHeapEx);
     OS_FIND_EXPORT(coreinit_handle, MEMAllocFromFrmHeapEx);
