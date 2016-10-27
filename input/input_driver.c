@@ -702,9 +702,19 @@ uint64_t input_menu_keys_pressed(void)
 #endif
          )
       {
+         int port;
+         int port_max = 1;
 #if 1
-         state = input_joypad_pressed(input_driver_get_joypad_driver(),
-               0, settings->input.binds[0], i);
+         if (settings->input.all_users_control_menu)
+            port_max  = settings->input.max_users;
+
+         for (port = 0; port < port_max; port++)
+         {
+            state = input_joypad_pressed(input_driver_get_joypad_driver(),
+                  port, settings->input.binds[0], i);
+            if (state)
+               break;
+         }
 #else
          state = current_input->key_pressed(current_input_data, i);
 #endif
