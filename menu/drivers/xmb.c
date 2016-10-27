@@ -1912,10 +1912,10 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       float icon_x, icon_y, label_offset;
       menu_animation_ctx_ticker_t ticker;
       char ticker_str[PATH_MAX_LENGTH];
-      char name[PATH_MAX_LENGTH];
-      char value[PATH_MAX_LENGTH];
-      char entry_value[PATH_MAX_LENGTH];
-      char entry_sublabel[PATH_MAX_LENGTH];
+      char name[255];
+      char value[255];
+      char entry_value[255];
+      char entry_sublabel[255];
       menu_entry_t entry;
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;

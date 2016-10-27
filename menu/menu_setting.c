@@ -1807,7 +1807,7 @@ static bool setting_append_list_input_player_options(
     * 2 is the length of '99'; we don't need more users than that.
     */
    static char buffer[MAX_USERS][13+2+1];
-   static char group_lbl[MAX_USERS][PATH_MAX_LENGTH];
+   static char group_lbl[MAX_USERS][255];
    unsigned i;
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
@@ -1993,8 +1993,8 @@ static bool setting_append_list_input_player_options(
 
    for (i = 0; i < RARCH_BIND_LIST_END; i ++)
    {
-      char label[PATH_MAX_LENGTH];
-      char name[PATH_MAX_LENGTH];
+      char label[255];
+      char name[255];
 
       if (input_config_bind_map_get_meta(i))
          continue;
@@ -2125,7 +2125,7 @@ static bool setting_append_list(
          if (frontend_driver_has_fork())
 #endif
          {
-            char ext_name[PATH_MAX_LENGTH];
+            char ext_name[255];
 
             ext_name[0] = '\0';
 
@@ -4087,8 +4087,8 @@ static bool setting_append_list(
 
             for (user = 0; user < MAX_USERS; user++)
             {
-               static char binds_list[MAX_USERS][PATH_MAX_LENGTH];
-               static char binds_label[MAX_USERS][PATH_MAX_LENGTH];
+               static char binds_list[MAX_USERS][255];
+               static char binds_label[MAX_USERS][255];
                unsigned user_value = user + 1;
 
                snprintf(binds_list[user],  sizeof(binds_list[user]), "%d_input_binds_list", user_value);
