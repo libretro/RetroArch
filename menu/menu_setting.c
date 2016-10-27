@@ -2829,123 +2829,93 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_SAVING:
-         START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
-         parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
+         {
+            unsigned i;
+            struct bool_entry bool_entries[6];
 
-         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
-               parent_group);
+            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->sort_savefiles_enable,
-               MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,
-               MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-               default_sort_savefiles_enable,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+            START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
+                  parent_group);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->sort_savestates_enable,
-               MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,
-               MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-               default_sort_savestates_enable,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
+            bool_entries[0].target         = &settings->sort_savefiles_enable;
+            bool_entries[0].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE;
+            bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE;
+            bool_entries[0].default_value  = default_sort_savefiles_enable;
+            bool_entries[0].flags          = SD_FLAG_NONE;
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->block_sram_overwrite,
-               MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,
-               MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-               block_sram_overwrite,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED);
+            bool_entries[1].target         = &settings->sort_savestates_enable;
+            bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE;
+            bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE;
+            bool_entries[1].default_value  = default_sort_savestates_enable;
+            bool_entries[1].flags          = SD_FLAG_NONE;
+
+            bool_entries[2].target         = &settings->block_sram_overwrite;
+            bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE;
+            bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE;
+            bool_entries[2].default_value  = block_sram_overwrite;
+            bool_entries[2].flags          = SD_FLAG_NONE;
+
+            bool_entries[3].target         = &settings->savestate_auto_index;
+            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX;
+            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX;
+            bool_entries[3].default_value  = savestate_auto_index;
+            bool_entries[3].flags          = SD_FLAG_NONE;
+
+            bool_entries[4].target         = &settings->savestate_auto_save;
+            bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE;
+            bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE;
+            bool_entries[4].default_value  = savestate_auto_save;
+            bool_entries[4].flags          = SD_FLAG_NONE;
+
+            bool_entries[5].target         = &settings->savestate_auto_load;
+            bool_entries[5].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD;
+            bool_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD;
+            bool_entries[5].default_value  = savestate_auto_load;
+            bool_entries[5].flags          = SD_FLAG_NONE;
+
+            for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
+            {
+               CONFIG_BOOL(
+                     list, list_info,
+                     bool_entries[i].target,
+                     bool_entries[i].name_enum_idx,
+                     bool_entries[i].SHORT_enum_idx,
+                     bool_entries[i].default_value,
+                     MENU_ENUM_LABEL_VALUE_OFF,
+                     MENU_ENUM_LABEL_VALUE_ON,
+                     &group_info,
+                     &subgroup_info,
+                     parent_group,
+                     general_write_handler,
+                     general_read_handler,
+                     bool_entries[i].flags);
+            }
 
 #ifdef HAVE_THREADS
-         CONFIG_UINT(
-               list, list_info,
-               &settings->autosave_interval,
-               MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
-               MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-               autosave_interval,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_AUTOSAVE_INIT);
-         menu_settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-         (*list)[list_info->index - 1].get_string_representation = 
-            &setting_get_string_representation_uint_autosave_interval;
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->autosave_interval,
+                  MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
+                  MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+                  autosave_interval,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_AUTOSAVE_INIT);
+            menu_settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+            (*list)[list_info->index - 1].get_string_representation = 
+               &setting_get_string_representation_uint_autosave_interval;
 #endif
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->savestate_auto_index,
-               MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,
-               MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-               savestate_auto_index,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->savestate_auto_save,
-               MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE,
-               MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-               savestate_auto_save,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->savestate_auto_load,
-               MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,
-               MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-               savestate_auto_load,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE);
-
-         END_SUB_GROUP(list, list_info, parent_group);
-         END_GROUP(list, list_info, parent_group);
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
+         }
          break;
       case SETTINGS_LIST_REWIND:
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS), parent_group);
