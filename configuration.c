@@ -265,6 +265,8 @@ const char *config_get_default_video(void)
          return "drm";
       case VIDEO_WII:
          return "gx";
+      case VIDEO_WIIU:
+         return "gx2";
       case VIDEO_XENON360:
          return "xenon360";
       case VIDEO_XDK_D3D:
@@ -340,6 +342,8 @@ const char *config_get_default_input(void)
          return "xinput";
       case INPUT_WII:
          return "gx";
+      case INPUT_WIIU:
+         return "wiiu";
       case INPUT_LINUXRAW:
          return "linuxraw";
       case INPUT_UDEV:
@@ -374,6 +378,8 @@ const char *config_get_default_joypad(void)
          return "xinput";
       case JOYPAD_GX:
          return "gx";
+      case JOYPAD_WIIU:
+         return "wiiu";
       case JOYPAD_XDK:
          return "xdk";
       case JOYPAD_PSP:

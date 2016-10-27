@@ -65,6 +65,9 @@ static const input_driver_t *input_drivers[] = {
 #ifdef GEKKO
    &input_gx,
 #endif
+#ifdef WIIU
+   &input_wiiu,
+#endif
 #ifdef ANDROID
    &input_android,
 #endif
@@ -512,8 +515,8 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *autoconf_bind =
       &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   bool kb_mapping_is_blocked                = current_input->keyboard_mapping_is_blocked(
-         current_input_data);
+   bool kb_mapping_is_blocked                = current_input->keyboard_mapping_is_blocked &&
+         current_input->keyboard_mapping_is_blocked(current_input_data);
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
