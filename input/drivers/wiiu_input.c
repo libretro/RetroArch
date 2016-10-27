@@ -63,7 +63,9 @@ static int16_t wiiu_input_state(void *data, const struct retro_keybind **binds,
             return input_joypad_pressed(wiiu->joypad, port, binds[port], id);
          break;
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(wiiu->joypad, port, idx, id, binds[port]);
+         if (binds[port])
+            return input_joypad_analog(wiiu->joypad, port, idx, id, binds[port]);
+         break;
    }
 
    return 0;

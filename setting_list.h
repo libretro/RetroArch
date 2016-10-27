@@ -374,6 +374,17 @@ bool CONFIG_BIND(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group);
 
+bool CONFIG_BIND_ALT(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      struct retro_keybind *target,
+      uint32_t player, uint32_t player_offset,
+      const char *name, const char *SHORT,
+      const struct retro_keybind *default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group);
+
 /**
  * setting_set_with_string_representation:
  * @setting            : pointer to setting

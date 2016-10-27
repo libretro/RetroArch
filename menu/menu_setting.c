@@ -2030,7 +2030,7 @@ static bool setting_append_list_input_player_options(
 
       snprintf(name, sizeof(name), "p%u_%s", user + 1, input_config_bind_map_get_base(i));
 
-      CONFIG_BIND(
+      CONFIG_BIND_ALT(
             list, list_info,
             &settings->input.binds[user][i],
             user + 1,
@@ -4267,7 +4267,7 @@ static bool setting_append_list(
                if (!input_config_bind_map_get_meta(i))
                   continue;
 
-               CONFIG_BIND(
+               CONFIG_BIND_ALT(
                      list, list_info,
                      &settings->input.binds[0][i], 0, 0,
                      strdup(input_config_bind_map_get_base(i)),

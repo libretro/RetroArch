@@ -1819,6 +1819,33 @@ bool CONFIG_BIND(
    return true;
 }
 
+bool CONFIG_BIND_ALT(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      struct retro_keybind *target,
+      uint32_t player, uint32_t player_offset,
+      const char *name, const char *SHORT,
+      const struct retro_keybind *default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group)
+{
+   rarch_setting_t value = setting_bind_setting(name, SHORT, target,
+         player, player_offset, default_value,
+         group_info->name, subgroup_info->name, parent_group,
+         true);
+   if (!(settings_list_append(list, list_info)))
+      return false;
+
+   if (value.name)
+      value.name_hash = msg_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
+   /* Request name and short description to be freed later */
+   settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
+
+   return true;
+}
+
 bool CONFIG_ACTION_ALT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
