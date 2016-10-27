@@ -314,19 +314,10 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
 static bool dinput_key_pressed(void *data, int key)
 {
    settings_t *settings = config_get_ptr();
-   int port = 0;
 
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (dinput_is_pressed((struct dinput_input*)data,
-               settings->input.binds[0], port, key))
-            return true;
-   }
-   else
-      if (dinput_is_pressed((struct dinput_input*)data,
+   if (dinput_is_pressed((struct dinput_input*)data,
             settings->input.binds[0], 0, key))
-         return true;
+      return true;
 
    return false;
 }

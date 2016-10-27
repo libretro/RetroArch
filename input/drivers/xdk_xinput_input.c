@@ -100,21 +100,11 @@ static bool xdk_input_key_pressed(void *data, int key)
 {
    xdk_input_t *xdk     = (xdk_input_t*)data;
    settings_t *settings = config_get_ptr();
-   int port             = 0;
 
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (settings->input.binds[0][key].valid &&
-               input_joypad_pressed(xdk->joypad,
-               port, settings->input.binds[0], key))
-            return true;
-   }
-   else
-      if (settings->input.binds[0][key].valid &&
-            input_joypad_pressed(xdk->joypad,
+   if (settings->input.binds[0][key].valid &&
+         input_joypad_pressed(xdk->joypad,
             0, settings->input.binds[0], key))
-         return true;
+      return true;
 
    return false;
 }

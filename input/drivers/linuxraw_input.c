@@ -111,24 +111,14 @@ static bool linuxraw_input_key_pressed(void *data, int key)
 {
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
    settings_t *settings       = config_get_ptr();
-   int port                   = 0;
 
    if (linuxraw_is_pressed(linuxraw, settings->input.binds[0], key))
       return true;
 
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (settings->input.binds[0][key].valid &&
-               input_joypad_pressed(linuxraw->joypad,
-               port, settings->input.binds[0], key))
-            return true;
-   }
-   else
-      if (settings->input.binds[0][key].valid &&
-            input_joypad_pressed(linuxraw->joypad,
+   if (settings->input.binds[0][key].valid &&
+         input_joypad_pressed(linuxraw->joypad,
             0, settings->input.binds[0], key))
-         return true;
+      return true;
 
    return false;
 }

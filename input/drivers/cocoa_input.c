@@ -315,41 +315,20 @@ static bool cocoa_input_key_pressed(void *data, int key)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
    settings_t *settings      = config_get_ptr();
-   int port                  = 0;
 
    if (settings->input.binds[0][key].valid && apple_input_is_pressed(0, settings->input.binds[0], key))
       return true;
 
-   if (settings->input.all_users_control_menu)
+   if (settings->input.binds[0][key].valid)
    {
-      for (port = 0; port < MAX_USERS; port++)
-      {
-         if (settings->input.binds[0][key].valid)
-         {
-            if (input_joypad_pressed(apple->joypad,
-                     port, settings->input.binds[0], key))
-               return true;
+      if (input_joypad_pressed(apple->joypad,
+               0, settings->input.binds[0], key))
+         return true;
 
 #ifdef HAVE_MFI
-            if (input_joypad_pressed(apple->sec_joypad, port, settings->input.binds[0], key))
-               return true;
+      if (input_joypad_pressed(apple->sec_joypad, 0, settings->input.binds[0], key))
+         return true;
 #endif
-         }
-      }
-   }
-   else
-   {
-      if (settings->input.binds[0][key].valid)
-      {
-         if (input_joypad_pressed(apple->joypad,
-                  0, settings->input.binds[0], key))
-            return true;
-
-#ifdef HAVE_MFI
-         if (input_joypad_pressed(apple->sec_joypad, 0, settings->input.binds[0], key))
-            return true;
-#endif
-      }
    }
 
    return false;

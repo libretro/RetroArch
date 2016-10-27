@@ -123,22 +123,13 @@ static bool x_input_key_pressed(void *data, int key)
 {
    x11_input_t      *x11 = (x11_input_t*)data;
    settings_t *settings  = config_get_ptr();
-   int port              = 0;
 
    if (settings->input.binds[0][key].valid && x_is_pressed(x11, settings->input.binds[0], key))
       return true;
 
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (input_joypad_pressed(x11->joypad,
-               port, settings->input.binds[0], key))
-            return true;
-   }
-   else
-      if (input_joypad_pressed(x11->joypad,
+   if (input_joypad_pressed(x11->joypad,
             0, settings->input.binds[0], key))
-         return true;
+      return true;
 
    return false;
 }

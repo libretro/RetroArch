@@ -552,25 +552,15 @@ static bool udev_input_key_pressed(void *data, int key)
 {
    udev_input_t *udev    = (udev_input_t*)data;
    settings_t *settings  = config_get_ptr();
-   int port              = 0;
 
    if (settings->input.binds[0][key].valid 
          && udev_input_is_pressed(settings->input.binds[0], key))
       return true;
 
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (settings->input.binds[0][key].valid &&
-               input_joypad_pressed(udev->joypad,
-               port, settings->input.binds[0], key))
-            return true;
-   }
-   else
-      if (settings->input.binds[0][key].valid &&
-            input_joypad_pressed(udev->joypad,
+   if (settings->input.binds[0][key].valid &&
+         input_joypad_pressed(udev->joypad,
             0, settings->input.binds[0], key))
-         return true;
+      return true;
 
    return false;
 }
