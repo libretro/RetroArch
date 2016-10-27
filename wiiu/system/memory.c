@@ -49,14 +49,14 @@ extern void (* MEMFreeToExpHeap)(int heap, void* ptr);
 
 static int mem1_heap = -1;
 static int bucket_heap = -1;
-int mem1_heap_handle;
+
 void memoryInitialize(void)
 {
-   mem1_heap_handle = MEMGetBaseHeapHandle(MEMORY_ARENA_1);
-   unsigned int mem1_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(mem1_heap_handle, 4);
-   void *mem1_memory = MEMAllocFromFrmHeapEx(mem1_heap_handle, mem1_allocatable_size, 4);
-   if(mem1_memory)
-       mem1_heap = MEMCreateExpHeapEx(mem1_memory, mem1_allocatable_size, 0);
+    int mem1_heap_handle = MEMGetBaseHeapHandle(MEMORY_ARENA_1);
+    unsigned int mem1_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(mem1_heap_handle, 4);
+    void *mem1_memory = MEMAllocFromFrmHeapEx(mem1_heap_handle, mem1_allocatable_size, 4);
+    if(mem1_memory)
+        mem1_heap = MEMCreateExpHeapEx(mem1_memory, mem1_allocatable_size, 0);
 
     int bucket_heap_handle = MEMGetBaseHeapHandle(MEMORY_ARENA_FG_BUCKET);
     unsigned int bucket_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(bucket_heap_handle, 4);
@@ -67,9 +67,10 @@ void memoryInitialize(void)
 
 void memoryRelease(void)
 {
-   MEMDestroyExpHeap(mem1_heap);
-   MEMFreeToFrmHeap(mem1_heap_handle, 3);
-   mem1_heap = -1;
+    MEMDestroyExpHeap(mem1_heap);
+    MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_1), 3);
+    mem1_heap = -1;
+
     MEMDestroyExpHeap(bucket_heap);
     MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_FG_BUCKET), 3);
     bucket_heap = -1;
@@ -81,8 +82,6 @@ void memoryRelease(void)
 void *__wrap_malloc(size_t size)
 {
     // pointer to a function resolve
-   if(!size)
-      return NULL;
 	return ((void * (*)(size_t))(*pMEMAllocFromDefaultHeap))(size);
 }
 
@@ -90,9 +89,6 @@ void *__wrap_memalign(size_t align, size_t size)
 {
     if (align < 4)
         align = 4;
-
-    if(!size)
-       return NULL;
     // pointer to a function resolve
     return ((void * (*)(size_t, size_t))(*pMEMAllocFromDefaultHeapEx))(size, align);
 }
