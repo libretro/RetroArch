@@ -636,7 +636,8 @@ static int setting_action_action_ok(void *data, bool wraparound)
 static rarch_setting_t setting_action_setting(const char* name,
       const char* short_description,
       const char *group, const char *subgroup,
-      const char *parent_group)
+      const char *parent_group,
+      bool dont_use_enum_idx)
 {
    rarch_setting_t result;
 
@@ -680,6 +681,8 @@ static rarch_setting_t setting_action_setting(const char* name,
    result.rounding_fraction         = NULL;
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
+
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
 }
@@ -763,7 +766,8 @@ static rarch_setting_t setting_float_setting(const char* name,
       const char* short_description, float* target, float default_value,
       const char *rounding, const char *group, const char *subgroup,
       const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler)
+      change_handler_t change_handler, change_handler_t read_handler,
+      bool dont_use_enum_idx)
 {
    rarch_setting_t result;
 
@@ -812,6 +816,8 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.original_value.fraction   = *target;
    result.default_value.fraction    = default_value;
 
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+
    return result;
 }
 
@@ -834,7 +840,8 @@ static rarch_setting_t setting_uint_setting(const char* name,
       const char* short_description, unsigned int* target,
       unsigned int default_value,
       const char *group, const char *subgroup, const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler)
+      change_handler_t change_handler, change_handler_t read_handler,
+      bool dont_use_enum_idx)
 {
    rarch_setting_t result;
 
@@ -883,6 +890,8 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
 
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+
    return result;
 }
 
@@ -905,7 +914,8 @@ static rarch_setting_t setting_hex_setting(const char* name,
       const char* short_description, unsigned int* target,
       unsigned int default_value,
       const char *group, const char *subgroup, const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler)
+      change_handler_t change_handler, change_handler_t read_handler,
+      bool dont_use_enum_idx)
 {
    rarch_setting_t result;
 
@@ -953,6 +963,8 @@ static rarch_setting_t setting_hex_setting(const char* name,
    result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
+
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
 }
@@ -1122,7 +1134,8 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
       unsigned size, const char* default_value, const char *empty,
       const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler,
-      change_handler_t read_handler)
+      change_handler_t read_handler,
+      bool dont_use_enum_idx)
 {
    rarch_setting_t result;
 
@@ -1187,6 +1200,8 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
          break;
    }
 
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+
    return result;
 }
 
@@ -1214,11 +1229,13 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
       unsigned size, const char* default_value,
       const char *empty, const char *values,
       const char *group, const char *subgroup, const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler)
+      change_handler_t change_handler, change_handler_t read_handler,
+      bool dont_use_enum_idx)
 {
   rarch_setting_t result = setting_string_setting(type, name,
         short_description, target, size, default_value, empty, group,
-        subgroup, parent_group, change_handler, read_handler);
+        subgroup, parent_group, change_handler, read_handler,
+        dont_use_enum_idx);
 
   result.parent_group    = parent_group;
   result.values          = values;
@@ -1236,7 +1253,8 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
  * Returns: setting of type ST_SUBGROUP.
  **/
 static rarch_setting_t setting_subgroup_setting(enum setting_type type,
-      const char* name, const char *parent_name, const char *parent_group)
+      const char* name, const char *parent_name, const char *parent_group,
+      bool dont_use_enum_idx)
 {
    rarch_setting_t result;
 
@@ -1281,6 +1299,8 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
 
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
+
    return result;
 }
 
@@ -1305,7 +1325,8 @@ static rarch_setting_t setting_bool_setting(const char* name,
       const char* short_description, bool* target, bool default_value,
       const char *off, const char *on,
       const char *group, const char *subgroup, const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler)
+      change_handler_t change_handler, change_handler_t read_handler,
+      bool dont_use_enum_idx)
 {
    rarch_setting_t result;
 
@@ -1355,6 +1376,8 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.default_value.boolean     = default_value;
    result.boolean.off_label         = off;
    result.boolean.on_label          = on;
+
+   result.dont_use_enum_idx_representation = dont_use_enum_idx;
 
    return result;
 }
@@ -1445,11 +1468,11 @@ bool CONFIG_BOOL_ALT(
       change_handler_t read_handler,
       uint32_t flags)
 {
-   rarch_setting_t value = setting_bool_setting  (name, SHORT, target,
+   rarch_setting_t value = setting_bool_setting(name, SHORT, target,
          default_value,
          msg_hash_to_str(off_enum_idx), msg_hash_to_str(on_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
-         change_handler, read_handler);
+         change_handler, read_handler, true);
 
    if (!settings_list_append(list, list_info))
       return false;
@@ -1458,7 +1481,6 @@ bool CONFIG_BOOL_ALT(
    (*list)[list_info->index++] = value;
    if (flags != SD_FLAG_NONE)
       settings_data_list_current_add_flags(list, list_info, flags);
-   (*list)[list_info->index - 1].dont_use_enum_idx_representation = true;
    return true;
 }
 
@@ -1478,7 +1500,7 @@ bool CONFIG_BOOL(
       change_handler_t read_handler,
       uint32_t flags)
 {
-   rarch_setting_t value = setting_bool_setting  (
+   rarch_setting_t value = setting_bool_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          target,
@@ -1486,7 +1508,7 @@ bool CONFIG_BOOL(
          msg_hash_to_str(off_enum_idx),
          msg_hash_to_str(on_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
-         change_handler, read_handler);
+         change_handler, read_handler, false);
 
    if (!settings_list_append(list, list_info))
       return false;
@@ -1538,15 +1560,15 @@ bool CONFIG_UINT_ALT(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t value = setting_uint_setting  (name, SHORT, target, default_value,
+   rarch_setting_t value = setting_uint_setting(name, SHORT, target, default_value,
                   group_info->name,
-                  subgroup_info->name, parent_group, change_handler, read_handler);
+                  subgroup_info->name, parent_group, change_handler, read_handler,
+                  true);
    if (!(settings_list_append(list, list_info)))
       return false;
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
-   (*list)[list_info->index - 1].dont_use_enum_idx_representation = true;
    return true;
 }
 
@@ -1567,7 +1589,9 @@ bool CONFIG_UINT(
          msg_hash_to_str(SHORT_enum_idx),
          target, default_value,
          group_info->name,
-         subgroup_info->name, parent_group, change_handler, read_handler);
+         subgroup_info->name, parent_group,
+         change_handler, read_handler,
+         false);
    if (!(settings_list_append(list, list_info)))
       return false;
    if (value.name)
@@ -1590,9 +1614,10 @@ bool CONFIG_FLOAT(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t value = setting_float_setting (msg_hash_to_str(name_enum_idx),
+   rarch_setting_t value = setting_float_setting(msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx), target, default_value, rounding,
-         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler,
+         false);
    if (!(settings_list_append(list, list_info)))
       return false;
    if (value.name)
@@ -1619,7 +1644,9 @@ bool CONFIG_PATH(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          target, len, default_value, "",
-         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler,
+         false);
    if (!(settings_list_append(list, list_info)))
       return false;
    if (value.name)
@@ -1649,7 +1676,9 @@ bool CONFIG_DIR(
          msg_hash_to_str(SHORT_enum_idx),
          target, len, default_value,
          msg_hash_to_str(empty_enum_idx),
-         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler,
+         false);
    if (!(settings_list_append(list, list_info)))
       return false;
    if (value.name)
@@ -1681,7 +1710,8 @@ bool CONFIG_STRING(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          target, len, default_value, "",
-         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler, false);
    if (!(settings_list_append(list, list_info)))
       return false;
    if (value.name)
@@ -1708,7 +1738,8 @@ bool CONFIG_STRING_OPTIONS(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          target, len, default_value, "", values,
-         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler, false);
    if (!(settings_list_append(list, list_info)))
       return false;
 
@@ -1739,7 +1770,8 @@ bool CONFIG_HEX(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
          target, default_value,
-         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler, false);
    if (!(settings_list_append(list, list_info)))
       return false;
    if (value.name)
@@ -1785,14 +1817,14 @@ bool CONFIG_ACTION_ALT(
       const char *parent_group)
 {
    rarch_setting_t value = setting_action_setting(name, SHORT,
-         group_info->name, subgroup_info->name, parent_group);
+         group_info->name, subgroup_info->name, parent_group,
+         true);
 
    if (!settings_list_append(list, list_info))
       return false;
    if (value.name)
       value.name_hash = msg_hash_calculate(value.name);
    (*list)[list_info->index++] = value;
-   (*list)[list_info->index - 1].dont_use_enum_idx_representation = true;
    return true;
 }
 
@@ -1808,7 +1840,9 @@ bool CONFIG_ACTION(
    rarch_setting_t value = setting_action_setting(
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         group_info->name, subgroup_info->name, parent_group);
+         group_info->name,
+         subgroup_info->name, parent_group,
+         false);
 
    if (!settings_list_append(list, list_info))
       return false;
@@ -1853,7 +1887,8 @@ bool START_SUB_GROUP(rarch_setting_t **list,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   rarch_setting_t value = setting_subgroup_setting (ST_SUB_GROUP, name, group_info->name, parent_group);
+   rarch_setting_t value = setting_subgroup_setting (ST_SUB_GROUP,
+         name, group_info->name, parent_group, false);
 
    subgroup_info->name = name;
 
