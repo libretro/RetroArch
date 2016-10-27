@@ -88,7 +88,7 @@ typedef struct mui_handle
    unsigned icon_size;
    unsigned margin;
    unsigned glyph_width;
-   char box_message[PATH_MAX_LENGTH];
+   char box_message[255];
 
    struct
    {
@@ -552,8 +552,8 @@ static void mui_render_label_value(mui_handle_t *mui,
 
 
    menu_animation_ctx_ticker_t ticker;
-   char label_str[PATH_MAX_LENGTH];
-   char value_str[PATH_MAX_LENGTH];
+   char label_str[255];
+   char value_str[255];
    bool switch_is_on               = true;
    int value_len                   = utf8len(value);
    int ticker_limit                = 0;
@@ -684,8 +684,8 @@ static void mui_render_menu_list(mui_handle_t *mui,
    {
       int y;
       size_t selection;
-      char rich_label[PATH_MAX_LENGTH];
-      char entry_value[PATH_MAX_LENGTH];
+      char rich_label[255];
+      char entry_value[255];
       bool entry_selected = false;
 
       rich_label[0] = entry_value[0] = '\0';
@@ -843,10 +843,10 @@ static void mui_frame(void *data)
    menu_display_ctx_clearcolor_t clearcolor;
    menu_animation_ctx_ticker_t ticker;
    menu_display_ctx_draw_t draw;
-   char msg[256];
-   char title[256];
-   char title_buf[256];
-   char title_msg[256];
+   char msg[255];
+   char title[255];
+   char title_buf[255];
+   char title_msg[255];
 
 #ifdef VITA
    uint32_t black_opaque_54        = 0x8a000000;
@@ -1209,8 +1209,8 @@ static void mui_frame(void *data)
    if (mui_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
       int ticker_limit, value_len;
-      char title_buf_msg_tmp[256];
-      char title_buf_msg[256];
+      char title_buf_msg_tmp[255];
+      char title_buf_msg[255];
       size_t         usable_width = width - (mui->margin * 2);
 
       title_buf_msg_tmp[0] = title_buf_msg[0] = '\0';
