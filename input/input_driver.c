@@ -663,6 +663,86 @@ uint64_t input_keys_pressed(void)
    return ret;
 }
 
+/**
+ * input_menu_keys_pressed:
+ *
+ * Grab an input sample for this frame. We exclude
+ * keyboard input here.
+ *
+ * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
+ * and you need a bitmask of more than 64 entries, reimplement
+ * it to use something like rarch_bits_t.
+ *
+ * Returns: Input sample containg a mask of all pressed keys.
+ */
+uint64_t input_menu_keys_pressed(void)
+{
+   unsigned i;
+   uint64_t             ret = 0;
+   settings_t     *settings = config_get_ptr();
+
+   if (!current_input || !current_input_data)
+      return ret;
+
+   if (current_input->key_pressed &&
+         check_input_driver_block_hotkey(
+            current_input->key_pressed(current_input_data, RARCH_ENABLE_HOTKEY)))
+      input_driver_block_libretro_input = true;
+   else
+      input_driver_block_libretro_input = false;
+
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      bool state = false;
+#if 1
+      if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+            || !input_driver_block_hotkey) && current_input->key_pressed)
+         state = current_input->key_pressed(current_input_data, i);
+
+      if (i >= RARCH_FIRST_META_KEY)
+         state |= current_input->meta_key_pressed(current_input_data, i);
+#else
+      if (((((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+            || !input_driver_block_hotkey) && current_input->key_pressed)) 
+         && settings->input.binds[0][i].valid)
+      {
+         state = input_joypad_pressed(input_driver_get_joypad_driver(),
+               0, settings->input.binds[0], i);
+      }
+
+      if (i >= RARCH_FIRST_META_KEY && settings->input.binds[0][i].valid)
+         state |= input_joypad_pressed(input_driver_get_joypad_driver(), 
+               0, settings->input.binds[0], i);
+#endif
+
+#ifdef HAVE_OVERLAY
+      state |= input_overlay_key_pressed(i);
+#endif
+
+#ifdef HAVE_COMMAND
+      if (input_driver_command)
+      {
+         command_handle_t handle;
+
+         handle.handle = input_driver_command;
+         handle.id     = i;
+
+         state |= command_get(&handle);
+      }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+      if (input_driver_remote)
+         state |= input_remote_key_pressed(i, 0);
+#endif
+
+      if (state)
+         ret |= (UINT64_C(1) << i);
+   }
+
+   return ret;
+}
+
 void *input_driver_get_data(void)
 {
    return current_input_data;

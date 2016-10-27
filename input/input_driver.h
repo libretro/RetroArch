@@ -224,6 +224,8 @@ int16_t input_state(unsigned port, unsigned device,
 
 uint64_t input_keys_pressed(void);
 
+uint64_t input_menu_keys_pressed(void);
+
 void *input_driver_get_data(void);
 
 const input_driver_t *input_get_ptr(void);

@@ -1126,7 +1126,7 @@ int runloop_iterate(unsigned *sleep_ms)
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
-   uint64_t current_input                       = input_keys_pressed();
+   uint64_t current_input                       = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
 
    last_input                                   = current_input;
