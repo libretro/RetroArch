@@ -433,14 +433,18 @@ static int zip_parse_file_iterate_step_internal(
 static int zip_parse_file_iterate_step(file_archive_transfer_t *state,
       const char *valid_exts, struct archive_extract_userdata *userdata, file_archive_file_cb file_cb)
 {
+   char filename[PATH_MAX_LENGTH];
+   int ret;
    const uint8_t *cdata = NULL;
    uint32_t checksum    = 0;
    uint32_t size        = 0;
    uint32_t csize       = 0;
    unsigned cmode       = 0;
    unsigned payload     = 0;
-   char filename[PATH_MAX_LENGTH] = {0};
-   int ret = zip_parse_file_iterate_step_internal(state, filename,
+
+   filename[0] = '\0';
+
+   ret = zip_parse_file_iterate_step_internal(state, filename,
          &cdata, &cmode, &size, &csize,
          &checksum, &payload);
 
