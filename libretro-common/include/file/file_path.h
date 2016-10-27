@@ -1,5 +1,4 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
- *  Copyright (C) 2016 - Brad Parker
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_path.h).
