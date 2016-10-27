@@ -48,22 +48,15 @@ extern void *(* MEMDestroyExpHeap)(int heap);
 extern void (* MEMFreeToExpHeap)(int heap, void* ptr);
 
 static int mem1_heap = -1;
-static int mem2_heap = -1;
 static int bucket_heap = -1;
-
+int mem1_heap_handle;
 void memoryInitialize(void)
 {
-   int mem1_heap_handle = MEMGetBaseHeapHandle(MEMORY_ARENA_1);
+   mem1_heap_handle = MEMGetBaseHeapHandle(MEMORY_ARENA_1);
    unsigned int mem1_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(mem1_heap_handle, 4);
    void *mem1_memory = MEMAllocFromFrmHeapEx(mem1_heap_handle, mem1_allocatable_size, 4);
    if(mem1_memory)
        mem1_heap = MEMCreateExpHeapEx(mem1_memory, mem1_allocatable_size, 0);
-
-   int mem2_heap_handle = MEMGetBaseHeapHandle(MEMORY_ARENA_2);
-   unsigned int mem2_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(mem2_heap_handle, 4);
-   void *mem2_memory = MEMAllocFromFrmHeapEx(mem2_heap_handle, mem2_allocatable_size, 4);
-   if(mem2_memory)
-       mem1_heap = MEMCreateExpHeapEx(mem2_memory, mem2_allocatable_size, 0);
 
     int bucket_heap_handle = MEMGetBaseHeapHandle(MEMORY_ARENA_FG_BUCKET);
     unsigned int bucket_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(bucket_heap_handle, 4);
@@ -75,13 +68,8 @@ void memoryInitialize(void)
 void memoryRelease(void)
 {
    MEMDestroyExpHeap(mem1_heap);
-   MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_1), 3);
+   MEMFreeToFrmHeap(mem1_heap_handle, 3);
    mem1_heap = -1;
-
-   MEMDestroyExpHeap(mem2_heap);
-   MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_2), 3);
-   mem1_heap = -1;
-
     MEMDestroyExpHeap(bucket_heap);
     MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_FG_BUCKET), 3);
     bucket_heap = -1;

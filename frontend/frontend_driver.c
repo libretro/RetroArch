@@ -38,7 +38,7 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
    &frontend_ctx_gx,
 #endif
 #if defined(WIIU)
-   &frontend_ctx_wiiu,
+//   &frontend_ctx_wiiu,
 #endif
 #if defined(__QNX__)
    &frontend_ctx_qnx,
