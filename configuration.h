@@ -210,7 +210,7 @@ typedef struct settings
    struct
    {
       char driver[32];
-      char device[PATH_MAX_LENGTH];
+      char device[255];
       bool allow;
       unsigned width;
       unsigned height;
@@ -234,7 +234,7 @@ typedef struct settings
    {
       char driver[32];
       char resampler[32];
-      char device[PATH_MAX_LENGTH];
+      char device[255];
       bool enable;
       bool mute_enable;
       unsigned out_rate;
@@ -400,7 +400,7 @@ typedef struct settings
 #ifdef HAVE_NETWORKING
    struct
    {
-      char server[PATH_MAX_LENGTH];
+      char server[255];
       unsigned port;
       unsigned sync_frames;
       unsigned check_frames;

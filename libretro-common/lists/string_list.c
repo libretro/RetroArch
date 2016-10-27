@@ -26,7 +26,6 @@
 
 #include <lists/string_list.h>
 #include <retro_assert.h>
-#include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
@@ -290,7 +289,7 @@ bool string_list_find_elem_prefix(const struct string_list *list,
       const char *prefix, const char *elem)
 {
    size_t i;
-   char prefixed[PATH_MAX_LENGTH];
+   char prefixed[255];
 
    if (!list)
       return false;

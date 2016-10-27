@@ -37,7 +37,7 @@ static void replace_chars(char *str, char c1, char c2)
 
 static void sanitize_to_string(char *s, const char *label, size_t len)
 {
-   char new_label[PATH_MAX_LENGTH];
+   char new_label[255];
 
    new_label[0] = '\0';
 
@@ -690,7 +690,7 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
 
    if (list_path)
    {
-      char elem0_path[PATH_MAX_LENGTH];
+      char elem0_path[255];
 
       elem0_path[0] = '\0';
 
@@ -839,8 +839,8 @@ static int action_get_title_group_settings(const char *path, const char *label,
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU), len);
    else
    {
-      char elem0[PATH_MAX_LENGTH];
-      char elem1[PATH_MAX_LENGTH];
+      char elem0[255];
+      char elem1[255];
       struct string_list *list_label = string_split(label, "|");
 
       elem0[0] = elem1[0] = '\0';

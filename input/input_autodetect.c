@@ -296,7 +296,7 @@ static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
 
 bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[255];
 
    msg[0] = '\0';
 
@@ -337,7 +337,7 @@ const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 
 void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[255];
 
    msg[0] = '\0';
 
