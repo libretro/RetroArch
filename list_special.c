@@ -55,8 +55,8 @@
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
-   char ext_shaders[PATH_MAX_LENGTH];
-   char ext_name[PATH_MAX_LENGTH];
+   char ext_shaders[255];
+   char ext_name[255];
    const char *dir                   = NULL;
    const char *exts                  = NULL;
    bool include_dirs                 = false;

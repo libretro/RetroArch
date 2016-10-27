@@ -1283,7 +1283,9 @@ static void config_set_defaults(void)
 
    if (!string_is_empty(g_defaults.dir.osk_overlay))
    {
-      char temp_path[PATH_MAX_LENGTH] = {0};
+      char temp_path[PATH_MAX_LENGTH];
+
+      temp_path[0] = '\0';
 
       fill_pathname_expand_special(temp_path,
             g_defaults.dir.osk_overlay, sizeof(temp_path));
@@ -1299,7 +1301,9 @@ static void config_set_defaults(void)
    }
    else
    {
-      char temp_path[PATH_MAX_LENGTH] = {0};
+      char temp_path[PATH_MAX_LENGTH];
+
+      temp_path[0] = '\0';
 
       strlcpy(temp_path,
             settings->directory.overlay,
@@ -1708,10 +1712,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings_t *settings)
 {
    unsigned i;
+   char tmp_str[PATH_MAX_LENGTH];
    bool ret                                        = false;
    bool tmp_bool                                   = false;
    char *save                                      = NULL;
-   char tmp_str[PATH_MAX_LENGTH];
    unsigned msg_color                              = 0;
    config_file_t *conf                             = NULL;
    struct config_int_setting       *int_settings   = NULL;
@@ -2265,7 +2269,9 @@ bool config_load_override(void)
    /* If a game override exists, add it's location to append_config_path */
    if (new_conf)
    {
-      char temp_path[PATH_MAX_LENGTH] = {0};
+      char temp_path[PATH_MAX_LENGTH];
+
+      temp_path[0] = '\0';
 
       config_file_free(new_conf);
 
