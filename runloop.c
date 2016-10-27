@@ -88,14 +88,8 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
-
-#define runloop_cmd_press(current_input, id)     BIT64_GET(current_input, id)
-#define runloop_cmd_pressed(old_input, id)   BIT64_GET(old_input, id)
 #ifdef HAVE_MENU
-#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || \
-                                      runloop_cmd_get_state_menu_toggle_button_combo( \
-                                            settings, current_input, old_input, trigger_input))
+#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || runloop_cmd_get_state_menu_toggle_button_combo(settings, current_input, old_input, trigger_input))
 #endif
 
 static rarch_system_info_t runloop_system;
