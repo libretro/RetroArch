@@ -85,7 +85,7 @@ struct defaults
    {
       char config[PATH_MAX_LENGTH];
       char core[PATH_MAX_LENGTH];
-      char buildbot_server_url[PATH_MAX_LENGTH];
+      char buildbot_server_url[255];
    } path;
 
    struct
@@ -93,7 +93,7 @@ struct defaults
       int out_latency;
       float video_refresh_rate;
       bool video_threaded_enable;
-      char menu[PATH_MAX_LENGTH];
+      char menu[32];
    } settings; 
 
 #ifndef IS_SALAMANDER

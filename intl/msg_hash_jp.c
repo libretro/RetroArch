@@ -1887,7 +1887,7 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
          msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
    {
-      static char hotkey_lbl[PATH_MAX_LENGTH] = {0};
+      static char hotkey_lbl[128] = {0};
       unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
       snprintf(hotkey_lbl, sizeof(hotkey_lbl), "input_hotkey_binds_%d", idx);
       return hotkey_lbl;
