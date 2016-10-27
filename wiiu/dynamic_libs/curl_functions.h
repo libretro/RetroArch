@@ -21,27 +21,31 @@
  * 3. This notice may not be removed or altered from any source
  * distribution.
  ***************************************************************************/
-#ifndef __SYS_FUNCTIONS_H_
-#define __SYS_FUNCTIONS_H_
+#ifndef __CURL_FUNCTIONS_H_
+#define __CURL_FUNCTIONS_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern unsigned int sysapp_handle;
+#include <gctypes.h>
+#include "socket_functions.h"
+typedef int socklen_t;
+#include <curl/curl.h>
+#include <curl/easy.h>
 
-void InitSysFunctionPointers(void);
-void InitAcquireSys(void);
+void InitCurlFunctionPointers(void);
+void InitAcquireCurl(void);
 
-extern int(*_SYSLaunchTitleByPathFromLauncher)(const char* path, int len, int zero);
-extern int (* SYSRelaunchTitle)(int argc, char** argv);
-extern int (* SYSLaunchMenu)(void);
-extern int (* SYSCheckTitleExists)(u64 titleId);
-extern int (* SYSLaunchTitle)(u64 titleId);
-
+extern CURLcode (* n_curl_global_init)(long flags);
+extern CURL * (* n_curl_easy_init)(void);
+extern CURLcode (* n_curl_easy_setopt)(CURL *curl, CURLoption option, ...);
+extern CURLcode (* n_curl_easy_perform)(CURL *curl);
+extern void (* n_curl_easy_cleanup)(CURL *curl);
+extern CURLcode (* n_curl_easy_getinfo)(CURL *curl, CURLINFO info, ...);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __SYS_FUNCTIONS_H_
+#endif // __CURL_FUNCTIONS_H_

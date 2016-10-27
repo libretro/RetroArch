@@ -43,10 +43,15 @@
 #include "dynamic_libs/vpad_functions.h"
 #include "dynamic_libs/padscore_functions.h"
 #include "dynamic_libs/socket_functions.h"
+//#include "dynamic_libs/curl_functions.h"
 #include "dynamic_libs/ax_functions.h"
+//#include "dynamic_libs/aoc_functions.h"
+//#include "dynamic_libs/acp_functions.h"
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
 #include "system/memory.h"
+#include "system/exception_handler.h"
+#include "system/exception.h"
 #include "utils/logger.h"
 #include "utils/utils.h"
 #include "common/common.h"
@@ -224,6 +229,10 @@ static int log_write(struct _reent *r, int fd, const char *ptr, size_t len)
 
    return len;
 }
+void net_print(const char* str)
+{
+   log_write(NULL, 0, str, strlen(str));
+}
 
 static devoptab_t dotab_stdout = {
    "stdout",   // device name
@@ -257,13 +266,24 @@ int __entry_menu(int argc, char **argv)
    InitSocketFunctionPointers();
 
    log_init("10.42.0.1");
-
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
+
    InitFSFunctionPointers();
+   InitGX2FunctionPointers();
+   InitSysFunctionPointers();
    InitVPadFunctionPointers();
+   InitPadScoreFunctionPointers();
+   InitAXFunctionPointers();
+//   InitCurlFunctionPointers();
+//   InitAocFunctionPointers();
+//   InitACPFunctionPointers();
+
+
    memoryInitialize();
    mount_sd_fat("sd");
+//   setup_os_exceptions();
+   InstallExceptionHandler();
    VPADInit();
    OSScreenInit();
 
@@ -287,8 +307,8 @@ int __entry_menu(int argc, char **argv)
       unsigned sleep_ms = 0;
       int ret = runloop_iterate(&sleep_ms);
 
-      if (ret == 1 && sleep_ms > 0)
-       retro_sleep(sleep_ms);
+//      if (ret == 1 && sleep_ms > 0)
+//       retro_sleep(sleep_ms);
       task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
       if (ret == -1)
        break;

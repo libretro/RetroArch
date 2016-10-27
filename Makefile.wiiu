@@ -12,6 +12,7 @@ OBJ	+= wiiu/dynamic_libs/fs_functions.o
 OBJ	+= wiiu/dynamic_libs/padscore_functions.o
 OBJ	+= wiiu/dynamic_libs/vpad_functions.o
 OBJ	+= wiiu/system/memory.o
+OBJ	+= wiiu/system/exception_handler.o
 OBJ	+= wiiu/dynamic_libs/gx2_functions.o
 OBJ	+= wiiu/dynamic_libs/socket_functions.o
 OBJ	+= wiiu/fs/fs_utils.o
@@ -100,20 +101,20 @@ LIBDIRS := -L.
 
 CFLAGS  := -mrvl -mcpu=750 -meabi -mhard-float
 LDFLAGS :=
-#LDFLAGS := $(CFLAGS)
 
 ifeq ($(DEBUG), 1)
    CFLAGS	+= -O0 -g
 else
    CFLAGS	+= -O3
 endif
+LDFLAGS := $(CFLAGS)
 
 ASFLAGS := $(CFLAGS) -mregnames
 
 CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #CFLAGS += -fomit-frame-pointer -mword-relocations
 #CFLAGS	+= -Wall
-CFLAGS += -DWIIU
+CFLAGS += -DWIIU -DMSB_FIRST
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)

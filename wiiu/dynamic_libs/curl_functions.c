@@ -22,34 +22,33 @@
  * distribution.
  ***************************************************************************/
 #include "os_functions.h"
-#include "vpad_functions.h"
+#include "curl_functions.h"
 
-unsigned int vpad_handle __attribute__((section(".data"))) = 0;
-unsigned int vpadbase_handle __attribute__((section(".data"))) = 0;
+unsigned int libcurl_handle __attribute__((section(".data"))) = 0;
 
-EXPORT_DECL(void, VPADInit, void);
-EXPORT_DECL(int, VPADRead, int chan, VPADData *buffer, u32 buffer_size, s32 *error);
-EXPORT_DECL(int, VPADGetLcdMode, int padnum, int *lcdmode);
-EXPORT_DECL(int, VPADSetLcdMode, int padnum, int lcdmode);
-EXPORT_DECL(int, VPADBASEGetMotorOnRemainingCount, int padnum);
-EXPORT_DECL(int, VPADBASESetMotorOnRemainingCount, int padnum, int counter);
+EXPORT_DECL(CURLcode, n_curl_global_init, long flags);
+EXPORT_DECL(CURL *, n_curl_easy_init, void);
+EXPORT_DECL(CURLcode, n_curl_easy_setopt, CURL *curl, CURLoption option, ...);
+EXPORT_DECL(CURLcode, n_curl_easy_perform, CURL *curl);
+EXPORT_DECL(void, n_curl_easy_cleanup, CURL *curl);
+EXPORT_DECL(CURLcode, n_curl_easy_getinfo, CURL *curl, CURLINFO info, ...);
 
-void InitAcquireVPad(void)
+void InitAcquireCurl(void)
 {
-    OSDynLoad_Acquire("vpad.rpl", &vpad_handle);
-    OSDynLoad_Acquire("vpadbase.rpl", &vpadbase_handle);
+    OSDynLoad_Acquire("nlibcurl", &libcurl_handle);
 }
 
-void InitVPadFunctionPointers(void)
+void InitCurlFunctionPointers(void)
 {
+    InitAcquireCurl();
     unsigned int *funcPointer = 0;
 
-    InitAcquireVPad();
+    OS_FIND_EXPORT_EX(libcurl_handle, curl_global_init, n_curl_global_init);
+    OS_FIND_EXPORT_EX(libcurl_handle, curl_easy_init, n_curl_easy_init);
+    OS_FIND_EXPORT_EX(libcurl_handle, curl_easy_setopt, n_curl_easy_setopt);
+    OS_FIND_EXPORT_EX(libcurl_handle, curl_easy_perform, n_curl_easy_perform);
+    OS_FIND_EXPORT_EX(libcurl_handle, curl_easy_cleanup, n_curl_easy_cleanup);
+    OS_FIND_EXPORT_EX(libcurl_handle, curl_easy_getinfo, n_curl_easy_getinfo);
 
-    OS_FIND_EXPORT(vpad_handle, VPADInit);
-    OS_FIND_EXPORT(vpad_handle, VPADRead);
-    OS_FIND_EXPORT(vpad_handle, VPADGetLcdMode);
-    OS_FIND_EXPORT(vpad_handle, VPADSetLcdMode);
-    OS_FIND_EXPORT(vpadbase_handle, VPADBASEGetMotorOnRemainingCount);
-    OS_FIND_EXPORT(vpadbase_handle, VPADBASESetMotorOnRemainingCount);
+    n_curl_global_init(CURL_GLOBAL_ALL);
 }

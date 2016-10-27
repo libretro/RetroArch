@@ -21,27 +21,20 @@
  * 3. This notice may not be removed or altered from any source
  * distribution.
  ***************************************************************************/
-#ifndef __SYS_FUNCTIONS_H_
-#define __SYS_FUNCTIONS_H_
+#include "os_functions.h"
+#include "acp_functions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+unsigned int acp_handle __attribute__((section(".data"))) = 0;
 
-extern unsigned int sysapp_handle;
+EXPORT_DECL(void, GetMetaXml, void * _ACPMetaXml);
 
-void InitSysFunctionPointers(void);
-void InitAcquireSys(void);
-
-extern int(*_SYSLaunchTitleByPathFromLauncher)(const char* path, int len, int zero);
-extern int (* SYSRelaunchTitle)(int argc, char** argv);
-extern int (* SYSLaunchMenu)(void);
-extern int (* SYSCheckTitleExists)(u64 titleId);
-extern int (* SYSLaunchTitle)(u64 titleId);
-
-
-#ifdef __cplusplus
+void InitAcquireACP(void)
+{
+    OSDynLoad_Acquire("nn_acp.rpl", &acp_handle);
 }
-#endif
 
-#endif // __SYS_FUNCTIONS_H_
+void InitACPFunctionPointers(void)
+{
+    InitAcquireACP();
+    OSDynLoad_FindExport(acp_handle,0,"GetMetaXml__Q2_2nn3acpFP11_ACPMetaXml",&GetMetaXml);
+}
