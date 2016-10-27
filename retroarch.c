@@ -126,7 +126,7 @@ enum
 static jmp_buf error_sjlj_context;
 static enum rarch_core_type current_core_type           = CORE_TYPE_PLAIN;
 static enum rarch_core_type explicit_current_core_type  = CORE_TYPE_PLAIN;
-static char error_string[PATH_MAX_LENGTH]               = {0};
+static char error_string[255]                           = {0};
 
 static retro_bits_t has_set_libretro_device;
 static bool has_set_core                                = false;

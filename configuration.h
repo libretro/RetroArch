@@ -320,8 +320,8 @@ typedef struct settings
 
    struct
    {
-      char buildbot_url[PATH_MAX_LENGTH];
-      char buildbot_assets_url[PATH_MAX_LENGTH];
+      char buildbot_url[255];
+      char buildbot_assets_url[255];
       bool buildbot_auto_extract_archive;
    } network;
 
