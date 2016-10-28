@@ -117,14 +117,6 @@ static const video_poke_interface_t *video_driver_poke   = NULL;
  * being passed to video driver. */
 static video_pixel_scaler_t *video_driver_scaler_ptr     = NULL;
 
-char rotation_lut[4][32] =
-{
-   "Normal",
-   "90 deg",
-   "180 deg",
-   "270 deg"
-};
-
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "4:3",           1.3333f },
    { "16:9",          1.7778f },

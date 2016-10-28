@@ -205,9 +205,6 @@ typedef struct video_driver
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
 
-
-extern char rotation_lut[4][32];
-
 struct aspect_ratio_elem
 {
    char name[64];
