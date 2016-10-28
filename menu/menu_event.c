@@ -217,7 +217,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
    for (i = 0; i < RETROK_LAST; i++)
    {
-      if (i == RETROK_F1)
+      if (i == RETROK_F1 || i == RETROK_F11)
          continue;
 
       if (menu_keyboard_key_state[i])
@@ -229,9 +229,6 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
                break;
             case RETROK_f:
                BIT32_SET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-               break;
-            case RETROK_F11:
-               BIT32_SET(trigger_input, RARCH_GRAB_MOUSE_TOGGLE);
                break;
             case RETROK_PAGEUP:
                BIT32_SET(trigger_input, settings->menu_scroll_up_btn);
@@ -299,8 +296,11 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
       command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
 
-   if (runloop_cmd_triggered(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
+   if (menu_keyboard_key_state[RETROK_F11])
+   {
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+      menu_keyboard_key_state[RETROK_F11] = false;
+   }
 
    if (runloop_cmd_press(trigger_input, RARCH_QUIT_KEY))
    {
