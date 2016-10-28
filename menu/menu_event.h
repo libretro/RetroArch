@@ -37,7 +37,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_state);
 
 void menu_event_keyboard_set(bool down, enum retro_key key);
 
-unsigned short menu_event_keyboard_is_set(enum retro_key key);
+unsigned char menu_event_keyboard_is_set(enum retro_key key);
 
 unsigned kbd_index;
 char kbd_grid[41];
