@@ -41,7 +41,7 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 
-static bool menu_keyboard_key_state[RETROK_LAST];
+static unsigned short menu_keyboard_key_state[RETROK_LAST];
 
 static int menu_event_pointer(unsigned *action)
 {
@@ -72,19 +72,24 @@ static int menu_event_pointer(unsigned *action)
    return 0;
 }
 
-bool menu_event_keyboard_is_set(enum retro_key key)
+unsigned short menu_event_keyboard_is_set(enum retro_key key)
 {
-   if (menu_keyboard_key_state[key] && key == RETROK_F1)
-   {
-      menu_keyboard_key_state[key] = false;
-      return true;
-   }
    return menu_keyboard_key_state[key];
 }
 
-void menu_event_keyboard_set(enum retro_key key)
+void menu_event_keyboard_set(bool down, enum retro_key key)
 {
-   menu_keyboard_key_state[key] = true;
+   if (key == RETROK_UNKNOWN)
+   {
+      unsigned i;
+
+      for (i = 0; i < RETROK_LAST; i++)
+      {
+         menu_keyboard_key_state[i] = (menu_keyboard_key_state[i] & 3) << 1;
+      }
+   }
+   else
+      menu_keyboard_key_state[key] = ((menu_keyboard_key_state[key] & 1) << 1) | down;
 }
 
 unsigned menu_event(uint64_t input, uint64_t trigger_input)

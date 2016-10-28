@@ -226,24 +226,23 @@ static void menu_input_key_event(bool down, unsigned keycode,
    RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n", down, keycode, mod, character);
 #endif
 
-   if (down)
-      menu_event_keyboard_set((enum retro_key)keycode);
+   menu_event_keyboard_set(down, (enum retro_key)keycode);
 }
 
-static void menu_driver_toggle(bool latch)
+static void menu_driver_toggle(bool on)
 {
    retro_keyboard_event_t *key_event          = NULL;
    retro_keyboard_event_t *frontend_key_event = NULL;
    settings_t                 *settings       = config_get_ptr();
 
-   menu_driver_toggled = latch;
+   menu_driver_toggled = on;
 
-   if (!latch)
+   if (!on)
       menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
 
-   menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &latch);
+   menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &on);
 
-   if (latch)
+   if (on)
       menu_driver_alive = true;
    else
       menu_driver_alive = false;
@@ -765,12 +764,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_TOGGLE:
          {
-            bool *latch = (bool*)data;
-            if (!latch)
+            bool *on = (bool*)data;
+            if (!on)
                return false;
 
             if (menu_driver_ctx && menu_driver_ctx->toggle)
-               menu_driver_ctx->toggle(menu_userdata, *latch);
+               menu_driver_ctx->toggle(menu_userdata, *on);
          }
          break;
       case RARCH_MENU_CTL_REFRESH:

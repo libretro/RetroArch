@@ -907,22 +907,26 @@ static enum runloop_state runloop_check_state(
       return RUNLOOP_STATE_SLEEP;
 
 #ifdef HAVE_MENU
-   if (  menu_event_keyboard_is_set(RETROK_F1) ||
-         runloop_cmd_menu_press(current_input, old_input, trigger_input) ||
-         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (menu_event_keyboard_is_set(RETROK_F1) == 1)
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
          if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
                !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         {
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-      }
-      else
-      {
-         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
-         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+            menu_event_keyboard_set(false, RETROK_F1);
+         }
       }
    }
+   else if ((!menu_event_keyboard_is_set(RETROK_F1) && runloop_cmd_menu_press(current_input, old_input, trigger_input)) ||
+         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   {
+      menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+   }
+   else
+      menu_event_keyboard_set(false, RETROK_F1);
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
