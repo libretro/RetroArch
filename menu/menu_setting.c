@@ -346,8 +346,18 @@ static void setting_get_string_representation_uint_video_rotation(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
+   {
+      char rotation_lut[4][32] =
+      {
+         "Normal",
+         "90 deg",
+         "180 deg",
+         "270 deg"
+      };
+
       strlcpy(s, rotation_lut[*setting->value.target.unsigned_integer],
             len);
+   }
 }
 
 static void setting_get_string_representation_uint_aspect_ratio_index(void *data,
