@@ -399,6 +399,7 @@ static config_file_t *config_file_new_internal(
       free(conf->path);
       goto error;
    }
+   setvbuf(file, NULL, _IOFBF, 0x4000);
 
    while (!feof(file))
    {
@@ -890,6 +891,7 @@ bool config_file_write(config_file_t *conf, const char *path)
       file = fopen(path, "w");
       if (!file)
          return false;
+      setvbuf(file, NULL, _IOFBF, 0x4000);
    }
    else
       file = stdout;
