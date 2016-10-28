@@ -222,7 +222,7 @@ static void menu_input_key_event(bool down, unsigned keycode,
    (void)keycode;
    (void)mod;
 
-#if 1
+#if 0
    RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n", down, keycode, mod, character);
 #endif
 
