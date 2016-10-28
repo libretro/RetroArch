@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -625,7 +626,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          {
             /* Work around C89 limitations */
             char u[501];
-            const char * t = 
+            const char * t =
                   "RetroArch relies on an unique form of\n"
                   "audio/video synchronization where it needs to be\n"
                   "calibrated against the refresh rate of your\n"
@@ -4171,9 +4172,9 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE:
          return "Cheat File";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD:
-         return "Cheat File Load";
+         return "Load Cheat File";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
-         return "Cheat File Save As";
+         return "Save Cheat File As";
       case MENU_ENUM_LABEL_VALUE_CORE_COUNTERS:
          return "Core Counters";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
@@ -4632,6 +4633,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Chinese (Simplified)";
       case MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO:
          return "Esperanto";
+      case MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE:
+         return "Vietnamese";
       case MENU_ENUM_LABEL_VALUE_LEFT_ANALOG:
          return "Left Analog";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:

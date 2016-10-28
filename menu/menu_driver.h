@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -216,14 +217,13 @@ enum menu_settings_type
 typedef struct
 {
    char deferred_path[PATH_MAX_LENGTH];
-
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
 
    uint64_t state;
    struct
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[255];
    } menu_state;
 
    char db_playlist_file[PATH_MAX_LENGTH];

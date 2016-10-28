@@ -30,7 +30,10 @@ extern "C" {
 
 #include "gx2_types.h"
 
+extern unsigned int gx2_handle;
+
 void InitGX2FunctionPointers(void);
+void InitAcquireGX2(void);
 
 extern void (* GX2Init)(u32 * init_attribs);
 extern void (* GX2Shutdown)(void);
@@ -44,6 +47,7 @@ extern void (* GX2SetContextState)(const GX2ContextState* state);
 extern void (* GX2DrawEx)(s32 primitive_type, u32 count, u32 first_vertex, u32 instances_count);
 extern void (* GX2DrawIndexedEx)(s32 primitive_type, u32 count, s32 index_format, const void* idx, u32 first_vertex, u32 instances_count);
 extern void (* GX2ClearDepthStencilEx)(GX2DepthBuffer *depthBuffer, f32 depth_value, u8 stencil_value, s32 clear_mode);
+extern void (* GX2SetClearDepthStencil)(GX2DepthBuffer *depthBuffer, f32 depth_value, u8 stencil_value);
 extern void (* GX2CopyColorBufferToScanBuffer)(const GX2ColorBuffer *colorBuffer, s32 scan_target);
 extern void (* GX2SwapScanBuffers)(void);
 extern void (* GX2SetTVEnable)(s32 enable);
@@ -96,6 +100,8 @@ extern void (* GX2SetDRCGamma)(f32 val);
 extern s32 (* GX2GetSystemTVScanMode)(void);
 extern s32 (* GX2GetSystemDRCScanMode)(void);
 extern void (* GX2RSetAllocator)(void * (*allocFunc)(u32, u32, u32), void (*freeFunc)(u32, void*));
+extern void (* GX2CopySurface)(GX2Surface * srcSurface,u32 srcMip,u32 srcSlice,GX2Surface * dstSurface,u32 dstMip,u32 dstSlice );
+extern void (* GX2ClearBuffersEx)(GX2ColorBuffer * colorBuffer,GX2DepthBuffer * depthBuffer,f32 r, f32 g, f32 b, f32 a,f32 depthValue,u8 stencilValue,int clearFlags);
 
 static inline void GX2InitDepthBuffer(GX2DepthBuffer *depthBuffer, s32 dimension, u32 width, u32 height, u32 depth, s32 format, s32 aa)
 {

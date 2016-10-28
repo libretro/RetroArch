@@ -1,5 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2014-2016 - Jean-André Santoni
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -2722,19 +2724,19 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_SHADER_OPTIONS,
             MENU_SETTING_ACTION, 0, 0);
 #endif
-      
+
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
             msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
             MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
             MENU_SETTING_ACTION, 0, 0);
-      
+
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
             msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
             MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
             MENU_SETTING_ACTION, 0, 0);
-      
+
 #ifdef HAVE_CHEEVOS
       if(settings->cheevos.enable)
          menu_entries_append_enum(info->list,
@@ -3039,6 +3041,11 @@ static int menu_displaylist_parse_options_cheats(
       return -1;
 
    menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
+         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
+         MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
          MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
@@ -3053,11 +3060,6 @@ static int menu_displaylist_parse_options_cheats(
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_NUM_PASSES),
          MENU_ENUM_LABEL_CHEAT_NUM_PASSES,
          0, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
-         MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
-         MENU_SETTING_ACTION, 0, 0);
 
    for (i = 0; i < cheat_manager_get_size(); i++)
    {

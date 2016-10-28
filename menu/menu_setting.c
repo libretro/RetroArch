@@ -1,6 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2014-2016 - Jean-André Santoni
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -468,6 +470,7 @@ static void setting_get_string_representation_uint_user_language(void *data,
    modes[RETRO_LANGUAGE_CHINESE_SIMPLIFIED]  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED);
    modes[RETRO_LANGUAGE_ESPERANTO]           = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO);
    modes[RETRO_LANGUAGE_POLISH]              = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_POLISH);
+   modes[RETRO_LANGUAGE_VIETNAMESE]          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE);
 
    if (settings)
       strlcpy(s, modes[settings->user_language], len);

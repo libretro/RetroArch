@@ -38,6 +38,7 @@ extern unsigned int * pMEMAllocFromDefaultHeapEx;
 extern unsigned int * pMEMAllocFromDefaultHeap;
 extern unsigned int * pMEMFreeToDefaultHeap;
 
+extern int (*MEMGetSizeForMBlockExpHeap)(void *ptr);
 extern int (* MEMGetBaseHeapHandle)(int mem_arena);
 extern unsigned int (* MEMGetAllocatableSizeForFrmHeapEx)(int heap, int align);
 extern void *(* MEMAllocFromFrmHeapEx)(int heap, unsigned int size, int align);
@@ -76,12 +77,15 @@ void memoryRelease(void)
     bucket_heap = -1;
 }
 
+#if 0
 //!-------------------------------------------------------------------------------------------
 //! wraps
 //!-------------------------------------------------------------------------------------------
 void *__wrap_malloc(size_t size)
 {
     // pointer to a function resolve
+   if(!size)
+      return NULL;
 	return ((void * (*)(size_t))(*pMEMAllocFromDefaultHeap))(size);
 }
 
@@ -89,7 +93,8 @@ void *__wrap_memalign(size_t align, size_t size)
 {
     if (align < 4)
         align = 4;
-
+    if(!size)
+       return NULL;
     // pointer to a function resolve
     return ((void * (*)(size_t, size_t))(*pMEMAllocFromDefaultHeapEx))(size, align);
 }
@@ -159,7 +164,106 @@ void *__wrap__realloc_r(struct _reent *r, void *p, size_t size)
 {
     return __wrap_realloc(p, size);
 }
+#else
 
+void *
+__wrap_memalign(size_t alignment, size_t size) {
+   return MEMAllocFromExpHeapEx(MEMGetBaseHeapHandle(MEMORY_ARENA_2), size, alignment);
+}
+
+void *
+__wrap_malloc(size_t size) {
+   return __wrap_memalign(4, size);
+}
+
+void
+__wrap_free(void *ptr) {
+   if (ptr) {
+      MEMFreeToExpHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_2), ptr);
+   }
+}
+
+size_t
+__wrap_malloc_usable_size(void *ptr) {
+   return MEMGetSizeForMBlockExpHeap(ptr);
+}
+
+void *
+__wrap_realloc(void *ptr, size_t size) {
+   if (!ptr) {
+      return __wrap_malloc(size);
+   }
+
+   if (__wrap_malloc_usable_size(ptr) >= size) {
+      return ptr;
+   }
+
+   void *realloc_ptr = __wrap_malloc(size);
+
+   if(!realloc_ptr) {
+      return NULL;
+   }
+
+   memcpy(realloc_ptr, ptr, __wrap_malloc_usable_size(ptr));
+   __wrap_free(ptr);
+
+   return realloc_ptr;
+}
+
+void *
+__wrap_calloc(size_t num, size_t size) {
+   void *ptr = __wrap_malloc(num*size);
+
+   if(ptr) {
+      memset(ptr, 0, num*size);
+   }
+
+   return ptr;
+}
+
+void *
+__wrap_valloc(size_t size) {
+   return __wrap_memalign(64, size);
+}
+
+
+
+void *
+__wrap__memalign_r(struct _reent *r, size_t alignment, size_t size) {
+   return __wrap_memalign(alignment, size);
+}
+
+void *
+__wrap__malloc_r(struct _reent *r, size_t size) {
+   return __wrap_malloc(size);
+}
+
+void
+__wrap__free_r(struct _reent *r, void *ptr) {
+   return __wrap_free(ptr);
+}
+
+void *
+__wrap__realloc_r(struct _reent *r, void *ptr, size_t size) {
+   return __wrap_realloc(ptr, size);
+}
+
+void *
+__wrap__calloc_r(struct _reent *r, size_t num, size_t size) {
+   return __wrap_calloc(num, size);
+}
+
+size_t
+__wrap__malloc_usable_size_r(struct _reent *r, void *ptr) {
+   return __wrap_malloc_usable_size(ptr);
+}
+
+void *
+__wrap__valloc_r(struct _reent *r, size_t size) {
+   return __wrap_valloc(size);
+}
+
+#endif
 //!-------------------------------------------------------------------------------------------
 //! some wrappers
 //!-------------------------------------------------------------------------------------------

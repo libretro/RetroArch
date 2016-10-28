@@ -1,3 +1,4 @@
+/*  Copyright (C) 2016 - Brad Parker */
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>

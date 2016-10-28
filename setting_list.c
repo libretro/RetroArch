@@ -80,6 +80,8 @@ rarch_setting_t setting_terminator_setting(void)
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
 
+   result.dont_use_enum_idx_representation = false;
+
    return result;
 }
 
@@ -742,6 +744,7 @@ static rarch_setting_t setting_group_setting(enum setting_type type, const char*
    result.enforce_minrange          = false;
    result.enforce_maxrange          = false;
 
+   result.dont_use_enum_idx_representation = false;
 
    return result;
 }

@@ -92,6 +92,7 @@ typedef struct frontend_ctx_driver
 } frontend_ctx_driver_t;
 
 extern frontend_ctx_driver_t frontend_ctx_gx;
+extern frontend_ctx_driver_t frontend_ctx_wiiu;
 extern frontend_ctx_driver_t frontend_ctx_ps3;
 extern frontend_ctx_driver_t frontend_ctx_xdk;
 extern frontend_ctx_driver_t frontend_ctx_qnx;

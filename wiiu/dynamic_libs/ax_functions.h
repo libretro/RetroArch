@@ -30,9 +30,14 @@ extern "C" {
 
 #include <gctypes.h>
 
+extern unsigned int sound_handle;
+
 void InitAXFunctionPointers(void);
+void InitAcquireAX(void);
+void ProperlyEndTransitionAudio(void);
 
 extern void (* AXInitWithParams)(u32 * params);
+extern void (* AXInit)(void);
 extern void (* AXQuit)(void);
 extern u32 (* AXGetInputSamplesPerSec)(void);
 extern s32 (* AXVoiceBegin)(void *v);

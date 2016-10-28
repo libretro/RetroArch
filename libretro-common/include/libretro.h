@@ -244,6 +244,7 @@ enum retro_language
    RETRO_LANGUAGE_CHINESE_SIMPLIFIED  = 11,
    RETRO_LANGUAGE_ESPERANTO           = 12,
    RETRO_LANGUAGE_POLISH              = 13,
+   RETRO_LANGUAGE_VIETNAMESE          = 14,
    RETRO_LANGUAGE_LAST,
 
    /* Ensure sizeof(enum) == sizeof(int) */

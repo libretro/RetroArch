@@ -1545,12 +1545,16 @@ static void menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
 {
    rarch_setting_t *setting = menu_setting_find(list->list[i].label);
 
+   *s = '\0';
    *w = 19;
 
-   if (*setting->value.target.boolean)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   if (setting)
+   {
+      if (*setting->value.target.boolean)
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+      else
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   }
 
    strlcpy(s2, path, len2);
 }
@@ -1581,11 +1585,12 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
       char *s2, size_t len2)
 {
    rarch_setting_t *setting = menu_setting_find(list->list[i].label);
-   const char *basename     = path_basename(setting->value.target.string);
+   const char *basename     = setting ? path_basename(setting->value.target.string) : NULL;
 
    *w = 19;
 
-   strlcpy(s, basename, len);
+   if (!string_is_empty(basename))
+      strlcpy(s, basename, len);
 
    strlcpy(s2, path, len2);
 }
