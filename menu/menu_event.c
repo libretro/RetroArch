@@ -222,45 +222,54 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
       if (menu_keyboard_key_state[i])
       {
-         switch ((enum retro_key)i)
+         if (settings->input.binds[0][RARCH_QUIT_KEY].key == (enum retro_key)i)
          {
-            case RETROK_ESCAPE:
-               BIT32_SET(trigger_input, RARCH_QUIT_KEY);
-               break;
-            case RETROK_f:
-               BIT32_SET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-               break;
-            case RETROK_PAGEUP:
-               BIT32_SET(trigger_input, settings->menu_scroll_up_btn);
-               break;
-            case RETROK_PAGEDOWN:
-               BIT32_SET(trigger_input, settings->menu_scroll_down_btn);
-               break;
-            case RETROK_SLASH:
-               BIT32_SET(trigger_input, settings->menu_search_btn);
-               break;
-            case RETROK_LEFT:
-               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT);
-               break;
-            case RETROK_RIGHT:
-               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-               break;
-            case RETROK_UP:
-               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_UP);
-               break;
-            case RETROK_DOWN:
-               BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN);
-               break;
-            case RETROK_BACKSPACE:
-               BIT32_SET(trigger_input, settings->menu_cancel_btn);
-               break;
-            case RETROK_RETURN:
-               BIT32_SET(trigger_input, settings->menu_ok_btn);
-               break;
-#if 0
-            default:
-               break;
-#endif
+            BIT32_SET(trigger_input, RARCH_QUIT_KEY);
+         }
+         else if (settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key == (enum retro_key)i)
+         {
+            BIT32_SET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
+         }
+         else
+         {
+            switch ((enum retro_key)i)
+            {
+               case RETROK_PAGEUP:
+                  BIT32_SET(trigger_input, settings->menu_scroll_up_btn);
+                  break;
+               case RETROK_PAGEDOWN:
+                  BIT32_SET(trigger_input, settings->menu_scroll_down_btn);
+                  break;
+               case RETROK_SPACE:
+                  BIT32_SET(trigger_input, settings->menu_default_btn);
+                  break;
+               case RETROK_SLASH:
+                  BIT32_SET(trigger_input, settings->menu_search_btn);
+                  break;
+               case RETROK_RSHIFT:
+                  BIT32_SET(trigger_input, settings->menu_info_btn);
+                  break;
+               case RETROK_LEFT:
+                  BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT);
+                  break;
+               case RETROK_RIGHT:
+                  BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  break;
+               case RETROK_UP:
+                  BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_UP);
+                  break;
+               case RETROK_DOWN:
+                  BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN);
+                  break;
+               case RETROK_BACKSPACE:
+                  BIT32_SET(trigger_input, settings->menu_cancel_btn);
+                  break;
+               case RETROK_RETURN:
+                  BIT32_SET(trigger_input, settings->menu_ok_btn);
+                  break;
+               default:
+                  break;
+            }
          }
          menu_keyboard_key_state[i] = false;
       }
