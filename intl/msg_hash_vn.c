@@ -38,7 +38,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
       {
          case RARCH_FAST_FORWARD_KEY:
             snprintf(s, len,
-                  "Toggles between fast-forwarding and \n"
+                  "Bật/tắt between fast-forwarding and \n"
                   "normal speed."
                   );
             break;
@@ -77,15 +77,15 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_SCREENSHOT:
             snprintf(s, len,
-                  "Take screenshot.");
+                  "Chụp ảnh màn hình.");
             break;
          case RARCH_MUTE:
             snprintf(s, len,
-                  "Mute/unmute audio.");
+                  "Tắt/Bật âm thanh.");
             break;
          case RARCH_OSK:
             snprintf(s, len,
-                  "Toggles onscreen keyboard.");
+                  "Bật/tắt bàn phím trên màn hình.");
             break;
          case RARCH_NETPLAY_FLIP:
             snprintf(s, len,
@@ -114,11 +114,11 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_VOLUME_UP:
             snprintf(s, len,
-                  "Increases audio volume.");
+                  "Tăng âm lượng.");
             break;
          case RARCH_VOLUME_DOWN:
             snprintf(s, len,
-                  "Decreases audio volume.");
+                  "Giảm âm lượng.");
             break;
          case RARCH_OVERLAY_NEXT:
             snprintf(s, len,
@@ -126,7 +126,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_DISK_EJECT_TOGGLE:
             snprintf(s, len,
-                  "Toggles eject for disks. \n"
+                  "Bật/tắt eject for disks. \n"
                   " \n"
                   "Used for multiple-disk content. ");
             break;
@@ -139,7 +139,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_GRAB_MOUSE_TOGGLE:
             snprintf(s, len,
-                  "Toggles mouse grab. \n"
+                  "Bật/tắt mouse grab. \n"
                   " \n"
                   "When mouse is grabbed, RetroArch hides the \n"
                   "mouse, and keeps the mouse pointer inside \n"
@@ -147,7 +147,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "work better.");
             break;
          case RARCH_MENU_TOGGLE:
-            snprintf(s, len, "Toggles menu.");
+            snprintf(s, len, "Bật/tắt menu.");
             break;
          case RARCH_LOAD_STATE_KEY:
             snprintf(s, len,
@@ -155,7 +155,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_FULLSCREEN_TOGGLE_KEY:
             snprintf(s, len,
-                  "Toggles fullscreen.");
+                  "Bật/tắt chế độ toàn màn hình.");
             break;
          case RARCH_QUIT_KEY:
             snprintf(s, len,
@@ -1065,11 +1065,11 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
-               "Toggles menu.");
+               "Bật/tắt menu.");
          break;
       case MENU_ENUM_LABEL_GRAB_MOUSE_TOGGLE:
          snprintf(s, len,
-               "Toggles mouse grab.\n"
+               "Bật/tắt mouse grab.\n"
                " \n"
                "When mouse is grabbed, RetroArch hides the \n"
                "mouse, and keeps the mouse pointer inside \n"
@@ -1121,7 +1121,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DISK_EJECT_TOGGLE:
          snprintf(s, len,
-               "Toggles eject for disks.\n"
+               "Bật/tắt eject for disks.\n"
                " \n"
                "Used for multiple-disk content.");
          break;
@@ -1269,7 +1269,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_OVERLAY_NEXT:
          snprintf(s, len,
-               "Toggles to next overlay.\n"
+               "Bật/tắt to next overlay.\n"
                " \n"
                "Wraps around.");
          break;
@@ -1280,11 +1280,11 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VOLUME_UP:
          snprintf(s, len,
-               "Increases audio volume.");
+               "Tăng âm lượng.");
          break;
       case MENU_ENUM_LABEL_VOLUME_DOWN:
          snprintf(s, len,
-               "Decreases audio volume.");
+               "Giảm âm lượng.");
          break;
       case MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION:
          snprintf(s, len,
@@ -1346,7 +1346,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SCREENSHOT:
          snprintf(s, len,
-               "Take screenshot.");
+               "Chụp ảnh màn hình.");
          break;
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
          snprintf(s, len,
@@ -1398,7 +1398,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "based on the core being used.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
-         snprintf(s, len, "Toggles fullscreen.");
+         snprintf(s, len, "Bật/tắt chế độ toàn màn hình.");
          break;
       case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
          snprintf(s, len,
@@ -1734,7 +1734,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_MUTE:
          snprintf(s, len,
-               "Mute/unmute audio.");
+               "Tắt/Bật âm thanh.");
          break;
       case MENU_ENUM_LABEL_REWIND:
          snprintf(s, len,
@@ -1903,7 +1903,7 @@ static const char *menu_hash_to_str_vn_label_enum(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC:
          return "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance.";
       case MENU_ENUM_SUBLABEL_MENU_SETTINGS:
-         return "Adjusts settings related to the appearance of the menu screen.";
+         return "Điều chỉnh thiết lập related to the appearance of the menu screen.";
       case MSG_CONNECTION_SLOT:
          return "Connection slot";
       case MSG_WAITING_FOR_CLIENT:
@@ -3034,41 +3034,41 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
    switch (msg)
    {
       case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
-         return "Saves changes to configuration file on exit.";
+         return "Lưu cấu hình khi thoát retroarch.";
       case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES:
          return "Sets how many frames the CPU can run ahead of the GPU when using 'Hard GPU Sync'.";
       case MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO:
          return "The accurate estimated refresh rate of the monitor in Hz.";
       case MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX:
-         return "Selects which display monitor to use.";
+         return "Chọn màn hình hiển thị để sử dụng.";
       case MENU_ENUM_SUBLABEL_LOG_VERBOSITY:
          return "Enable or disable logging to the terminal.";
       case MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES:
-         return "Show hidden files/directories inside the file browser.";
+         return "Hiện ra tập tin và thư mục ẩn trong trình duyệt tập tin.";
       case MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
-         return "Gamepad button combination to toggle menu.";
+         return "Kết hợp nút Gamepad để vào menu bật/tắt.";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
-         return "Amount of cores that the CPU has.";
+         return "Số lượng lõi của CPU.";
       case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:
          return "Inserts a black frame inbetween frames. Useful for users of 120 Hz monitors who want to play 60 Hz material with eliminated ghosting.";
       case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
          return "Reduces latency at the cost of higher risk of video stuttering. Adds a delay after V-Sync (in ms).";
       case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
-         return "Download and/or scan content, and add it to your collection.";
+         return "Tải/quét nội dung và thêm vào bộ sưu tập.";
       case MENU_ENUM_SUBLABEL_NETPLAY:
-         return "Join or host a netplay session.";
+         return "Tham gia hoặc làm máy chủ cho netplay.";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
-         return "Displays the current framerate per second onscreen.";
+         return "Hiển thị tốc độ khung hình/giây trên màn hình.";
       case MENU_ENUM_SUBLABEL_VIDEO_SETTINGS:
-         return "Adjusts settings for video output.";
+         return "Điều chỉnh thiết lập cho video ra.";
       case MENU_ENUM_SUBLABEL_AUDIO_SETTINGS:
-         return "Adjusts settings for audio output.";
+         return "Điều chỉnh thiết lập cho âm thanh ra.";
       case MENU_ENUM_SUBLABEL_INPUT_SETTINGS:
-         return "Adjusts settings for joypads, keyboard and mouse.";
+         return "Điều chỉnh thiết lập cho joypads, bàn phím và chuột.";
       case MENU_ENUM_SUBLABEL_WIFI_SETTINGS:
          return "Scans for wireless networks and establishes connection.";
       case MENU_ENUM_SUBLABEL_SERVICES_SETTINGS:
-         return "Manage operating system level services.";
+         return "Quản lý dịch vụ của hệ điều hành.";
       case MENU_ENUM_SUBLABEL_SSH_ENABLE:
          return "Enable or disable remote command line access.";
       case MENU_ENUM_SUBLABEL_SAMBA_ENABLE:
@@ -3086,11 +3086,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
          return "Configure controls for this user.";
       case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
-         return "Configure hotkey settings.";
+         return "Configure hotkey thiết lập.";
       case MSG_VALUE_SHUTTING_DOWN:
-         return "Shutting down...";
+         return "Đang tắt máy...";
       case MSG_VALUE_REBOOTING:
-         return "Rebooting...";
+         return "Đang khởi động lại...";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
          return "Failed to start audio driver. Will continue without audio.";
       case MSG_FOUND_LAST_STATE_SLOT:
@@ -3388,7 +3388,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_TAKING_SCREENSHOT:
          return "Taking screenshot.";
       case MSG_FAILED_TO_TAKE_SCREENSHOT:
-         return "Failed to take screenshot.";
+         return "Bị lỗi khi chụp ảnh màn hình.";
       case MSG_FAILED_TO_START_RECORDING:
          return "Failed to start recording.";
       case MSG_RECORDING_TERMINATED_DUE_TO_RESIZE:
@@ -3710,7 +3710,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
       case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
-         return "Settings";
+         return "Thiết lập";
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "History";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
@@ -3718,7 +3718,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "Playlists";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
-         return "No settings found.";
+         return "No thiết lập found.";
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
          return "No performance counters.";
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
@@ -3896,7 +3896,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR:
          return "Menu entry normal color";
       case MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
-         return "Show Advanced Settings";
+         return "Show Advanced thiết lập";
       case MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE:
          return "Mouse Support";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
@@ -3910,7 +3910,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT:
          return "Disconnect";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS:
-         return "Netplay settings";
+         return "Netplay thiết lập";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
          return "DPI Override Enable";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
@@ -3930,7 +3930,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
          return "Icon Shadows Enable";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_SETTINGS:
-         return "Show Settings Tab";
+         return "Show thiết lập Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_IMAGES:
          return "Show Images Tab";
       case MENU_ENUM_LABEL_VALUE_XMB_SHOW_MUSIC:
@@ -4036,7 +4036,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
          return "Force-disable sRGB FBO";
       case MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN:
-         return "Windowed Fullscreen Mode";
+         return "Chế độ toàn màn hình trong khung";
       case MENU_ENUM_LABEL_VALUE_PAL60_ENABLE:
          return "Use PAL60 Mode";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER:
@@ -4052,7 +4052,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
          return "Sort Savestates In Folders";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN:
-         return "Use Fullscreen Mode";
+         return "Sử dụng chế độ toàn màn hình";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SCALE:
          return "Windowed Scale";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER:
@@ -4178,7 +4178,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_COUNTERS:
          return "Core Counters";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
-         return "Take Screenshot";
+         return "Chụp ảnh màn hình";
       case MENU_ENUM_LABEL_VALUE_DELETE_ENTRY:
          return "Remove";
       case MENU_ENUM_LABEL_VALUE_RESUME:
@@ -4210,7 +4210,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
-         return "Settings";
+         return "Thiết lập";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:
          return "Quit RetroArch";
       case MENU_ENUM_LABEL_VALUE_SHUTDOWN:
@@ -4260,7 +4260,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "Close";
       case MENU_ENUM_LABEL_VALUE_MANAGEMENT:
-         return "Database Settings";
+         return "Database thiết lập";
       case MENU_ENUM_LABEL_VALUE_SAVE_STATE:
          return "Save State";
       case MENU_ENUM_LABEL_VALUE_LOAD_STATE:
@@ -4608,31 +4608,31 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS:
          return "Input User %u Binds";
       case MENU_ENUM_LABEL_VALUE_LANG_ENGLISH:
-         return "English";
+         return "Tiếng Anh";
       case MENU_ENUM_LABEL_VALUE_LANG_JAPANESE:
-         return "Japanese";
+         return "Tiếng Nhật";
       case MENU_ENUM_LABEL_VALUE_LANG_FRENCH:
-         return "French";
+         return "Tiếng Pháp";
       case MENU_ENUM_LABEL_VALUE_LANG_SPANISH:
-         return "Spanish";
+         return "Tiếng Tây Ban Nha";
       case MENU_ENUM_LABEL_VALUE_LANG_GERMAN:
-         return "German";
+         return "Tiếng Đức";
       case MENU_ENUM_LABEL_VALUE_LANG_ITALIAN:
-         return "Italian";
+         return "Tiếng Ý";
       case MENU_ENUM_LABEL_VALUE_LANG_DUTCH:
-         return "Dutch";
+         return "Tiếng Hà Lan";
       case MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE:
-         return "Portuguese";
+         return "Tiếng Bồ Đào Nha";
       case MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN:
-         return "Russian";
+         return "Tiếng Nga";
       case MENU_ENUM_LABEL_VALUE_LANG_KOREAN:
-         return "Korean";
+         return "Tiếng Hàn Quốc";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL:
-         return "Chinese (Traditional)";
+         return "Tiếng Trung Quốc (Chữ Hán phồn thể)";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
-         return "Chinese (Simplified)";
+         return "Tiếng Trung Quốc (Chữ Hán giản thể)";
       case MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO:
-         return "Esperanto";
+         return "Tiếng Quốc tế ngữ";
       case MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE:
          return "Tiếng Việt";
       case MENU_ENUM_LABEL_VALUE_LEFT_ANALOG:
@@ -4746,7 +4746,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY:
          return "Save state";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY:
-         return "Fullscreen toggle";
+         return "Bật/tắt chế độ toàn màn hình";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY:
          return "Quit RetroArch";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS:
@@ -4774,7 +4774,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE:
          return "Cheat toggle";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT:
-         return "Take screenshot";
+         return "Chụp ảnh màn hình";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE:
          return "Audio mute toggle";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_OSK:
