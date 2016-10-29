@@ -574,13 +574,13 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    settings_t *settings = config_get_ptr();
 
    /* Only bind for up to two players for now. */
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < settings->input.max_users; i++)
       binds[i] = settings->input.binds[i];
 
    for (i = 0; i < 2; i++)
       input_push_analog_dpad(settings->input.binds[i],
             settings->input.analog_dpad_mode[i]);
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < settings->input.max_users; i++)
       input_push_analog_dpad(settings->input.autoconf_binds[i],
             settings->input.analog_dpad_mode[i]);
 
@@ -597,7 +597,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 
    for (i = 0; i < 2; i++)
       input_pop_analog_dpad(settings->input.binds[i]);
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < settings->input.max_users; i++)
       input_pop_analog_dpad(settings->input.autoconf_binds[i]);
 }
 
