@@ -686,7 +686,7 @@ static void xmb_messagebox(void *data, const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
-static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid[], unsigned id)
+static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned id)
 {
    unsigned i, width, height;
    float dark[16]=  {
@@ -787,7 +787,7 @@ static void xmb_render_messagebox_internal(
    }
 
    if (menu_input_dialog_get_display_kb())
-      xmb_render_keyboard(xmb, osk_grid, osk_ptr);
+      xmb_render_keyboard(xmb, menu_event_get_osk_grid(), menu_event_get_osk_ptr());
 
 end:
    string_list_free(list);

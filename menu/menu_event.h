@@ -39,9 +39,8 @@ void menu_event_keyboard_set(bool down, enum retro_key key);
 
 unsigned char menu_event_keyboard_is_set(enum retro_key key);
 
-unsigned osk_ptr;
-unsigned osk_idx;
-char* osk_grid[41];
+unsigned menu_event_get_osk_ptr();
+const char** menu_event_get_osk_grid();
 
 RETRO_END_DECLS
 

@@ -77,7 +77,7 @@ typedef struct input_keyboard_ctx_wait
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
-bool input_keyboard_line_append(char* word);
+bool input_keyboard_line_append(const char *word);
 
 /**
  * input_keyboard_start_line:

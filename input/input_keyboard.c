@@ -166,7 +166,7 @@ static bool input_keyboard_line_event(
    return false;
 }
 
-bool input_keyboard_line_append(char* word)
+bool input_keyboard_line_append(const char *word)
 {
    unsigned len = strlen(word);
 

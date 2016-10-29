@@ -271,7 +271,7 @@ static void mui_draw_text(font_data_t *font, float x, float y, unsigned width, u
    menu_display_draw_text(font, msg, width, height, &params);
 }
 
-static void mui_render_keyboard(mui_handle_t *mui, char* grid[], unsigned id)
+static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned id)
 {
    unsigned i, width, height;
    float dark[16]=  {
@@ -456,7 +456,7 @@ static void mui_render_messagebox(mui_handle_t *mui,
    }
 
    if (menu_input_dialog_get_display_kb())
-      mui_render_keyboard(mui, osk_grid, osk_ptr);
+      mui_render_keyboard(mui, menu_event_get_osk_grid(), menu_event_get_osk_ptr());
 
 end:
    string_list_free(list);

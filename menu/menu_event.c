@@ -44,6 +44,68 @@
 
 static unsigned char menu_keyboard_key_state[RETROK_LAST];
 
+enum osk_type
+{
+   OSK_TYPE_UNKNOWN = 0U,
+   OSK_UPPERCASE_LATIN,
+   OSK_LOWERCASE_LATIN,
+   OSK_HIRAGANA_PAGE1,
+   OSK_HIRAGANA_PAGE2,
+   OSK_KATAKANA_PAGE1,
+   OSK_KATAKANA_PAGE2,
+   OSK_TYPE_LAST
+};
+
+static enum osk_type osk_idx = OSK_UPPERCASE_LATIN;
+static unsigned osk_ptr;
+static const char *osk_grid[41];
+
+static const char *uppercase_grid[] = {
+                          "!","@","#","$","%","^","&","*","(",")",
+                          "Q","W","E","R","T","Y","U","I","O","P",
+                          "A","S","D","F","G","H","J","K","L",":",
+                          "Z","X","C","V","B","N","M"," ","<",">"};
+
+static const char *lowercase_grid[] = {
+                          "1","2","3","4","5","6","7","8","9","0",
+                          "q","w","e","r","t","y","u","i","o","p",
+                          "a","s","d","f","g","h","j","k","l",";",
+                          "z","x","c","v","b","n","m"," ",",","."};
+
+static const char *hiragana_page1_grid[] = {
+                          "あ","い","う","え","お","ら","り","る","れ","ろ",
+                          "か","き","く","け","こ","が","ぎ","ぐ","げ","ご",
+                          "さ","し","す","せ","そ","ざ","じ","ず","ぜ","ぞ",
+                          "た","ち","つ","て","と","だ","ぢ","づ","で","ど"};
+
+static const char *hiragana_page2_grid[] = {
+                          "な","に","ぬ","ね","の","ば","び","ぶ","べ","ぼ",
+                          "は","ひ","ふ","へ","ほ","ぱ","ぴ","ぷ","ぺ","ぽ",
+                          "ま","み","む","め","も","ん","っ","ゃ","ゅ","ょ",
+                          "や","ゆ","よ","わ","を","ぁ","ぃ","ぅ","ぇ","ぉ"};
+
+static const char *katakana_page1_grid[] = {
+                          "ア","イ","ウ","エ","オ","ラ","リ","ル","レ","ロ",
+                          "カ","キ","ク","ケ","コ","ガ","ギ","グ","ゲ","ゴ",
+                          "サ","シ","ス","セ","ソ","ザ","ジ","ズ","ゼ","ゾ",
+                          "タ","チ","ツ","テ","ト","ダ","ヂ","ヅ","デ","ド"};
+
+static const char *katakana_page2_grid[] = {
+                          "ナ","ニ","ヌ","ネ","ノ","バ","ビ","ブ","ベ","ボ",
+                          "ハ","ヒ","フ","ヘ","ホ","パ","ピ","プ","ペ","ポ",
+                          "マ","ミ","ム","メ","モ","ン","ッ","ャ","ュ","ョ",
+                          "ヤ","ユ","ヨ","ワ","ヲ","ァ","ィ","ゥ","ェ","ォ"};
+
+unsigned menu_event_get_osk_ptr()
+{
+   return osk_ptr;
+}
+
+const char** menu_event_get_osk_grid()
+{
+   return osk_grid;
+}
+
 static int menu_event_pointer(unsigned *action)
 {
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
@@ -163,40 +225,35 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    {
       switch (osk_idx)
       {
-         case 0:
+         case OSK_HIRAGANA_PAGE1:
          {
-            char* grid[] = {"!","@","#","$","%","^","&","*","(",")",
-                            "Q","W","E","R","T","Y","U","I","O","P",
-                            "A","S","D","F","G","H","J","K","L",":",
-                            "Z","X","C","V","B","N","M"," ","<",">"};
-            memcpy(osk_grid, grid, sizeof(grid));
+            memcpy(osk_grid, hiragana_page1_grid, sizeof(hiragana_page1_grid));
             break;
          }
-         case 1:
+         case OSK_HIRAGANA_PAGE2:
          {
-            char* grid[] = {"1","2","3","4","5","6","7","8","9","0",
-                            "q","w","e","r","t","y","u","i","o","p",
-                            "a","s","d","f","g","h","j","k","l",";",
-                            "z","x","c","v","b","n","m"," ",",","."};
-            memcpy(osk_grid, grid, sizeof(grid));
+            memcpy(osk_grid, hiragana_page2_grid, sizeof(hiragana_page2_grid));
             break;
          }
-         case 2:
+         case OSK_KATAKANA_PAGE1:
          {
-            char* grid[] = {"あ","い","う","え","お","ら","り","る","れ","ろ",
-                            "か","き","く","け","こ","が","ぎ","ぐ","げ","ご",
-                            "さ","し","す","せ","そ","ざ","じ","ず","ぜ","ぞ",
-                            "た","ち","つ","て","と","だ","ぢ","づ","で","ど"};
-            memcpy(osk_grid, grid, sizeof(grid));
+            memcpy(osk_grid, katakana_page1_grid, sizeof(katakana_page1_grid));
             break;
          }
-         case 3:
+         case OSK_KATAKANA_PAGE2:
          {
-            char* grid[] = {"な","に","ぬ","ね","の","ば","び","ぶ","べ","ぼ",
-                            "は","ひ","ふ","へ","ほ","ぱ","ぴ","ぷ","ぺ","ぽ",
-                            "ま","み","む","め","も","ん","っ","ゃ","ゅ","ょ",
-                            "や","ゆ","よ","わ","を","ぁ","ぃ","ぅ","ぇ","ぉ"};
-            memcpy(osk_grid, grid, sizeof(grid));
+            memcpy(osk_grid, katakana_page2_grid, sizeof(katakana_page2_grid));
+            break;
+         }
+         case OSK_LOWERCASE_LATIN:
+         {
+            memcpy(osk_grid, lowercase_grid, sizeof(lowercase_grid));
+            break;
+         }
+         case OSK_UPPERCASE_LATIN:
+         default:
+         {
+            memcpy(osk_grid, uppercase_grid, sizeof(uppercase_grid));
             break;
          }
       }
@@ -227,18 +284,18 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L))
       {
-         if (osk_idx > 0)
+         if (osk_idx > OSK_TYPE_UNKNOWN + 1)
             osk_idx--;
          else
-            osk_idx = 3;
+            osk_idx = OSK_TYPE_LAST - 1;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R))
       {
-         if (osk_idx < 3)
+         if (osk_idx < OSK_TYPE_LAST - 1)
             osk_idx++;
          else
-            osk_idx = 0;
+            osk_idx = OSK_TYPE_UNKNOWN + 1;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
