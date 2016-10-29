@@ -85,9 +85,7 @@ void menu_event_keyboard_set(bool down, enum retro_key key)
       unsigned i;
 
       for (i = 0; i < RETROK_LAST; i++)
-      {
          menu_keyboard_key_state[i] = (menu_keyboard_key_state[i] & 1) << 1;
-      }
    }
    else
       menu_keyboard_key_state[key] = ((menu_keyboard_key_state[key] & 1) << 1) | down;
@@ -95,7 +93,6 @@ void menu_event_keyboard_set(bool down, enum retro_key key)
 
 unsigned menu_event(uint64_t input, uint64_t trigger_input)
 {
-   unsigned i;
    menu_animation_ctx_delta_t delta;
    float delta_time;
    /* Used for key repeat */
@@ -257,9 +254,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       {
          if (settings && settings->confirm_on_exit)
          {
-            if (menu_dialog_is_active())
-               should_we_quit = false;
-            else if (content_is_inited())
+            if (!menu_dialog_is_active() && content_is_inited())
             {
                if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
                   menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
