@@ -1039,6 +1039,22 @@ static void android_input_poll_memcpy(void *data)
    }
 }
 
+static bool android_input_key_pressed(void *data, int key)		
+{		
+   android_input_t *android = (android_input_t*)data;		
+   settings_t *settings     = config_get_ptr();		
+
+   if(settings->input.binds[0][key].valid && android_keyboard_port_input_pressed(settings->input.binds[0],key))		
+      return true;		
+
+   if (settings->input.binds[0][key].valid &&		
+         input_joypad_pressed(android->joypad,		
+            0, settings->input.binds[0], key))		
+      return true;		
+
+   return false;		
+}
+
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
  */
@@ -1049,7 +1065,7 @@ static void android_input_poll(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
-            ALooper_pollAll((input_driver_key_pressed(&key))
+            ALooper_pollAll((android_input_key_pressed(data, key))
                ? -1 : 1,
                NULL, NULL, NULL)) >= 0)
    {

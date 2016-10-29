@@ -29,7 +29,6 @@
 
 #include "menu_event.h"
 
-#include "content.h"
 #include "menu_driver.h"
 #include "menu_input.h"
 #include "menu_animation.h"
@@ -39,6 +38,7 @@
 #include "widgets/menu_dialog.h"
 
 #include "../configuration.h"
+#include "../content.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 
