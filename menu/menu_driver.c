@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -28,6 +29,7 @@
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "menu_display.h"
+#include "menu_event.h"
 #include "menu_navigation.h"
 #include "widgets/menu_dialog.h"
 #include "widgets/menu_list.h"
@@ -221,27 +223,30 @@ static void menu_input_key_event(bool down, unsigned keycode,
    (void)keycode;
    (void)mod;
 
-   if (character == '/')
-      menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
+#if 0
+   RARCH_LOG("down: %d, keycode: %d, mod: %d, character: %d\n", down, keycode, mod, character);
+#endif
+
+   menu_event_keyboard_set(down, (enum retro_key)keycode);
 }
 
-static void menu_driver_toggle(bool latch)
+static void menu_driver_toggle(bool on)
 {
    retro_keyboard_event_t *key_event          = NULL;
    retro_keyboard_event_t *frontend_key_event = NULL;
    settings_t                 *settings       = config_get_ptr();
 
-   menu_driver_toggled = latch;
+   menu_driver_toggled = on;
 
-   if (!latch)
+   if (!on)
       menu_display_toggle_set_reason(MENU_TOGGLE_REASON_NONE);
 
-   menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &latch);
+   menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &on);
 
-   if (latch)
-      menu_driver_ctl(RARCH_MENU_CTL_SET_ALIVE, NULL);
+   if (on)
+      menu_driver_alive = true;
    else
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_ALIVE, NULL);
+      menu_driver_alive = false;
 
    runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
    runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET,          &key_event);
@@ -332,24 +337,15 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
          menu_driver_pending_quick_menu = true;
          break;
-      case RARCH_MENU_CTL_UNSET_PENDING_QUICK_MENU:
-         menu_driver_pending_quick_menu = false;
-         break;
       case RARCH_MENU_CTL_IS_PENDING_QUIT:
          return menu_driver_pending_quit;
       case RARCH_MENU_CTL_SET_PENDING_QUIT:
          menu_driver_pending_quit     = true;
          break;
-      case RARCH_MENU_CTL_UNSET_PENDING_QUIT:
-         menu_driver_pending_quit     = false;
-         break;
       case RARCH_MENU_CTL_IS_PENDING_SHUTDOWN:
          return menu_driver_pending_shutdown;
       case RARCH_MENU_CTL_SET_PENDING_SHUTDOWN:
          menu_driver_pending_shutdown = true;
-         break;
-      case RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN:
-         menu_driver_pending_shutdown = false;
          break;
       case RARCH_MENU_CTL_DESTROY:
          menu_driver_pending_quick_menu = false;
@@ -530,12 +526,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_UNSET_TOGGLE:
          menu_driver_toggle(false);
-         break;
-      case RARCH_MENU_CTL_SET_ALIVE:
-         menu_driver_alive = true;
-         break;
-      case RARCH_MENU_CTL_UNSET_ALIVE:
-         menu_driver_alive = false;
          break;
       case RARCH_MENU_CTL_IS_ALIVE:
          return menu_driver_alive;
@@ -775,12 +765,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_TOGGLE:
          {
-            bool *latch = (bool*)data;
-            if (!latch)
+            bool *on = (bool*)data;
+            if (!on)
                return false;
 
             if (menu_driver_ctx && menu_driver_ctx->toggle)
-               menu_driver_ctx->toggle(menu_userdata, *latch);
+               menu_driver_ctx->toggle(menu_userdata, *on);
          }
          break;
       case RARCH_MENU_CTL_REFRESH:
@@ -853,7 +843,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUICK_MENU, NULL))
             {
-               menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUICK_MENU, NULL);
+               menu_driver_pending_quick_menu = false;
                menu_entries_flush_stack(NULL, MENU_SETTINGS);
                menu_display_set_msg_force(true);
 
@@ -862,7 +852,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
                if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
                {
-                  menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT, NULL);
+                  menu_driver_pending_quit     = false;
                   return false;
                }
 
@@ -871,12 +861,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
             {
-               menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT, NULL);
+               menu_driver_pending_quit     = false;
                return false;
             }
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_SHUTDOWN, NULL))
             {
-               menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN, NULL);
+               menu_driver_pending_shutdown = false;
                if (!command_event(CMD_EVENT_QUIT, NULL))
                   return false;
                return true;

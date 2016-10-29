@@ -3,6 +3,7 @@
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2012-2015 - Michael Lelli
  *  Copyright (C) 2014-2015 - Jay McCarthy
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -88,15 +89,19 @@
 #define DEFAULT_EXT ""
 #endif
 
-#define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
-
-#define runloop_cmd_press(current_input, id)     BIT64_GET(current_input, id)
-#define runloop_cmd_pressed(old_input, id)   BIT64_GET(old_input, id)
 #ifdef HAVE_MENU
-#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || \
-                                      runloop_cmd_get_state_menu_toggle_button_combo( \
-                                            settings, current_input, old_input, trigger_input))
+#define runloop_cmd_menu_press(current_input, old_input, trigger_input)   (BIT64_GET(trigger_input, RARCH_MENU_TOGGLE) || runloop_cmd_get_state_menu_toggle_button_combo(settings, current_input, old_input, trigger_input))
 #endif
+
+enum  runloop_state
+{
+   RUNLOOP_STATE_NONE = 0,
+   RUNLOOP_STATE_ITERATE,
+   RUNLOOP_STATE_SLEEP,
+   RUNLOOP_STATE_MENU_ITERATE,
+   RUNLOOP_STATE_END,
+   RUNLOOP_STATE_QUIT
+};
 
 static rarch_system_info_t runloop_system;
 static struct retro_frame_time_callback runloop_frame_time;
@@ -145,7 +150,7 @@ void runloop_msg_queue_push(const char *msg,
 #endif
 
    if (flush)
-      runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_CLEAR, NULL);
+      msg_queue_clear(runloop_msg_queue);
 
    msg_info.msg      = msg;
    msg_info.prio     = prio;
@@ -237,7 +242,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   char game_path[PATH_MAX_LENGTH];
+   char game_path[255];
 
    game_path[0] ='\0';
 
@@ -345,13 +350,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE:
          return runloop_game_options_active;
-      case RUNLOOP_CTL_IS_FRAME_TIME_LAST:
-         return runloop_frame_time_last_enable;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
          runloop_set_frame_limit = true;
          break;
-      case RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT:
-         return runloop_set_frame_limit;
       case RUNLOOP_CTL_GET_PERFCNT:
          {
             bool **perfcnt = (bool**)data;
@@ -513,9 +514,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          slock_unlock(_runloop_msg_queue_lock);
 #endif
          break;
-      case RUNLOOP_CTL_MSG_QUEUE_CLEAR:
-         msg_queue_clear(runloop_msg_queue);
-         break;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          if (!runloop_msg_queue)
             return true;
@@ -562,8 +560,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
          runloop_core_shutdown_initiated = true;
          break;
-      case RUNLOOP_CTL_IS_CORE_SHUTDOWN:
-         return runloop_core_shutdown_initiated;
       case RUNLOOP_CTL_SET_SHUTDOWN:
          runloop_shutdown_initiated = true;
          break;
@@ -572,8 +568,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_SET_EXEC:
          runloop_exec = true;
          break;
-      case RUNLOOP_CTL_IS_EXEC:
-         return runloop_exec;
       case RUNLOOP_CTL_DATA_DEINIT:
          task_queue_ctl(TASK_QUEUE_CTL_DEINIT, NULL);
          break;
@@ -731,16 +725,6 @@ void runloop_set_quit_confirm(bool on)
    runloop_quit_confirm = on;
 }
 
-enum  runloop_state
-{
-   RUNLOOP_STATE_NONE = 0,
-   RUNLOOP_STATE_ITERATE,
-   RUNLOOP_STATE_SLEEP,
-   RUNLOOP_STATE_MENU_ITERATE,
-   RUNLOOP_STATE_END,
-   RUNLOOP_STATE_QUIT
-};
-
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -812,6 +796,10 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    return -1;
 }
 
+void runloop_external_state_checks(uint64_t trigger_input)
+{
+}
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
@@ -823,7 +811,9 @@ static enum runloop_state runloop_check_state(
    static char prev_overlay_restore = false;
    bool osk_enable                  = input_driver_is_onscreen_keyboard_enabled();
 #endif
+#ifdef HAVE_NETWORKING
    bool tmp                         = false;
+#endif
    bool focused                     = true;
    uint64_t trigger_input           = current_input & ~old_input;
    bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
@@ -861,23 +851,6 @@ static enum runloop_state runloop_check_state(
    if (runloop_cmd_triggered(trigger_input, RARCH_GRAB_MOUSE_TOGGLE))
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
 
-#ifdef HAVE_MENU
-   if (runloop_cmd_menu_press(current_input, old_input, trigger_input) ||
-         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-   {
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-      {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
-               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-      }
-      else
-      {
-         menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
-         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      }
-   }
-#endif
 
 #ifdef HAVE_OVERLAY
    if (osk_enable && !input_keyboard_ctl(
@@ -910,31 +883,77 @@ static enum runloop_state runloop_check_state(
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       menu_ctx_iterate_t iter;
-      enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-      bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
+      bool skip = false;
+#ifdef HAVE_OVERLAY
+      skip = osk_enable && input_keyboard_return_pressed();
+#endif
 
-      focused                 = focused && !ui_companion_is_on_foreground();
+      if (!skip)
+      {
+         enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
+         bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
 
-      iter.action             = action;
+         focused                 = focused && !ui_companion_is_on_foreground();
 
-      if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+         iter.action             = action;
 
-      if (focused || !runloop_idle)
-         menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+         if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
-      if (!focused || runloop_idle)
-         return RUNLOOP_STATE_SLEEP;
+         if (focused || !runloop_idle)
+            menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
+         if (!focused)
+            return RUNLOOP_STATE_SLEEP;
+
+         if (action == MENU_ACTION_QUIT)
+            return RUNLOOP_STATE_QUIT;
+      }
+   }
+#endif
+   
+   if (runloop_idle)
+      return RUNLOOP_STATE_SLEEP;
+
+#ifdef HAVE_MENU
+   if (menu_event_keyboard_is_set(RETROK_F1) == 1)
+   {
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      {
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
+               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         {
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+            menu_event_keyboard_set(false, RETROK_F1);
+         }
+      }
+   }
+   else if ((!menu_event_keyboard_is_set(RETROK_F1) && runloop_cmd_menu_press(current_input, old_input, trigger_input)) ||
+         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   {
+      if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+      {
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) &&
+               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+      }
+      else
+      {
+        menu_display_toggle_set_reason(MENU_TOGGLE_REASON_USER);
+        rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      }
+   }
+   else
+      menu_event_keyboard_set(false, RETROK_F1);
+
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   {
       if (!settings->menu.throttle_framerate && !settings->fastforward_ratio)
          return RUNLOOP_STATE_MENU_ITERATE;
 
       return RUNLOOP_STATE_END;
    }
 #endif
-   
-   if (runloop_idle)
-      return RUNLOOP_STATE_SLEEP;
 
    if (settings->pause_nonactive)
       focused                = video_driver_is_focused();
@@ -1135,7 +1154,7 @@ int runloop_iterate(unsigned *sleep_ms)
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
-   uint64_t current_input                       = input_keys_pressed();
+   uint64_t current_input                       = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
 
    last_input                                   = current_input;

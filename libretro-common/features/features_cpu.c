@@ -168,6 +168,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    sceRtcGetCurrentTick((SceRtcTick*)&time_ticks);
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
+#elif defined(WIIU)
+   time_ticks = 0;
 #elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);
@@ -216,6 +218,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return osGetTime() * 1000;
 #elif defined(VITA)
    return sceKernelGetProcessTimeWide();
+#elif defined(WIIU)
+   return 0;
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
@@ -459,6 +463,8 @@ unsigned cpu_features_get_core_amount(void)
    return 4;
 #elif defined(_3DS)
    return 1;
+#elif defined(WIIU)
+   return 3;
 #elif defined(_SC_NPROCESSORS_ONLN)
    /* Linux, most UNIX-likes. */
    long ret = sysconf(_SC_NPROCESSORS_ONLN);

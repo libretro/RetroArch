@@ -268,7 +268,7 @@ static int16_t cocoa_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret;
+   int16_t ret               = 0;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
    if (!apple || !apple->joypad)
@@ -277,7 +277,7 @@ static int16_t cocoa_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port][id].valid)
+         if (binds[port] && binds[port][id].valid)
          {
             return apple_input_is_pressed(port, binds[port], id) ||
                input_joypad_pressed(apple->joypad, port, binds[port], id)
@@ -289,10 +289,11 @@ static int16_t cocoa_input_state(void *data,
          break;
       case RETRO_DEVICE_ANALOG:
 #ifdef HAVE_MFI
-         ret = input_joypad_analog(apple->sec_joypad, port,
+         if (binds[port])
+            ret = input_joypad_analog(apple->sec_joypad, port,
                idx, id, binds[port]);
-         if (!ret)
 #endif
+         if (!ret && binds[port])
             ret = input_joypad_analog(apple->joypad, port,
                   idx, id, binds[port]);
          return ret;
@@ -308,50 +309,6 @@ static int16_t cocoa_input_state(void *data,
    }
 
    return 0;
-}
-
-static bool cocoa_input_key_pressed(void *data, int key)
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-   settings_t *settings      = config_get_ptr();
-   int port                  = 0;
-
-   if (settings->input.binds[0][key].valid && apple_input_is_pressed(0, settings->input.binds[0], key))
-      return true;
-
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-      {
-         if (settings->input.binds[0][key].valid)
-         {
-            if (input_joypad_pressed(apple->joypad,
-                     port, settings->input.binds[0], key))
-               return true;
-
-#ifdef HAVE_MFI
-            if (input_joypad_pressed(apple->sec_joypad, port, settings->input.binds[0], key))
-               return true;
-#endif
-         }
-      }
-   }
-   else
-   {
-      if (settings->input.binds[0][key].valid)
-      {
-         if (input_joypad_pressed(apple->joypad,
-                  0, settings->input.binds[0], key))
-            return true;
-
-#ifdef HAVE_MFI
-         if (input_joypad_pressed(apple->sec_joypad, 0, settings->input.binds[0], key))
-            return true;
-#endif
-      }
-   }
-
-   return false;
 }
 
 static bool cocoa_input_meta_key_pressed(void *data, int key)
@@ -449,7 +406,6 @@ input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
    cocoa_input_state,
-   cocoa_input_key_pressed,
    cocoa_input_meta_key_pressed,
    cocoa_input_free,
    NULL,

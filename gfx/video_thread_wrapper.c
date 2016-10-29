@@ -123,7 +123,7 @@ struct thread_packet
 
       struct
       {
-         char msg[PATH_MAX_LENGTH];
+         char msg[255];
          struct font_params params;
       } osd_message;
 
@@ -216,7 +216,7 @@ struct thread_video
       bool updated;
       bool within_thread;
       uint64_t count;
-      char msg[PATH_MAX_LENGTH];
+      char msg[255];
    } frame;
 
    video_driver_t video_thread;

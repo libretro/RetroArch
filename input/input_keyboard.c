@@ -46,6 +46,13 @@ static input_keyboard_press_t g_keyboard_press_cb;
 
 static void *g_keyboard_press_data;
 
+static bool return_pressed;
+
+bool input_keyboard_return_pressed()
+{
+   return return_pressed;
+}
+
 static void input_keyboard_line_toggle_osk(bool enable)
 {
    settings_t *settings = config_get_ptr();
@@ -199,6 +206,9 @@ void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    static bool deferred_wait_keys;
+
+   if (code == RETROK_RETURN || code == RETROK_UNKNOWN)
+      return_pressed = down;
 
    if (deferred_wait_keys)
    {

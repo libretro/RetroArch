@@ -90,7 +90,10 @@ struct rarch_setting_group_info
 struct rarch_setting
 {
    enum msg_hash_enums enum_idx;
+   enum msg_hash_enums enum_value_idx;
    enum setting_type    type;
+
+   bool dont_use_enum_idx_representation;
 
    uint32_t             size;
    
@@ -203,7 +206,7 @@ bool END_SUB_GROUP(
       rarch_setting_info_t *list_info,
       const char *parent_group);
 
-bool CONFIG_ACTION(
+bool CONFIG_ACTION_ALT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *name, const char *SHORT,
@@ -211,33 +214,59 @@ bool CONFIG_ACTION(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group);
 
-bool CONFIG_BOOL(
+bool CONFIG_ACTION(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group);
+
+bool CONFIG_BOOL_ALT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       bool *target,
       const char *name, const char *SHORT,
       bool default_value,
-      const char *off, const char *on,
+      enum msg_hash_enums off_enum_idx,
+      enum msg_hash_enums on_enum_idx,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
       change_handler_t change_handler,
       change_handler_t read_handler,
-      uint32_t flags
-      );
+      uint32_t flags);
+
+bool CONFIG_BOOL(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      bool *target,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
+      bool default_value,
+      enum msg_hash_enums off_enum_idx,
+      enum msg_hash_enums on_enum_idx,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler,
+      change_handler_t read_handler,
+      uint32_t flags);
 
 bool CONFIG_INT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       int *target,
-      const char *name, const char *SHORT,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
       int default_value,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler);
 
-bool CONFIG_UINT(
+bool CONFIG_UINT_ALT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned int *target,
@@ -248,11 +277,24 @@ bool CONFIG_UINT(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler);
 
+bool CONFIG_UINT(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned int *target,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
+      unsigned int default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler);
+
 bool CONFIG_FLOAT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       float *target,
-      const char *name, const char *SHORT,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
       float default_value, const char *rounding,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
@@ -263,7 +305,8 @@ bool CONFIG_PATH(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       char *target, size_t len,
-      const char *name, const char *SHORT,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
       const char *default_value,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
@@ -274,8 +317,10 @@ bool CONFIG_DIR(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       char *target, size_t len,
-      const char *name, const char *SHORT,
-      const char *default_value, const char *empty,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
+      const char *default_value,
+      enum msg_hash_enums empty_enum_idx,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
@@ -285,7 +330,8 @@ bool CONFIG_STRING(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       char *target, size_t len,
-      const char *name, const char *SHORT,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
       const char *default_value,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
@@ -296,7 +342,8 @@ bool CONFIG_STRING_OPTIONS(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       char *target, size_t len,
-      const char *name, const char *SHORT,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
       const char *default_value, const char *values,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
@@ -307,7 +354,8 @@ bool CONFIG_HEX(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned int *target,
-      const char *name, const char *SHORT,
+      enum msg_hash_enums name_enum_idx,
+      enum msg_hash_enums SHORT_enum_idx,
       unsigned int default_value, 
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
@@ -316,6 +364,17 @@ bool CONFIG_HEX(
 
 /* Please strdup() NAME and SHORT */
 bool CONFIG_BIND(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      struct retro_keybind *target,
+      uint32_t player, uint32_t player_offset,
+      const char *name, const char *SHORT,
+      const struct retro_keybind *default_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group);
+
+bool CONFIG_BIND_ALT(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       struct retro_keybind *target,

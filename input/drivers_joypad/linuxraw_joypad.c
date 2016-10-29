@@ -176,7 +176,9 @@ static void handle_plugged_pad(void)
          else if (event->mask & (IN_CREATE | IN_ATTRIB))
          {
             bool ret;
-            char path[PATH_MAX_LENGTH] = {0};
+            char path[PATH_MAX_LENGTH];
+
+            path[0] = '\0';
 
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
             ret = linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]);
@@ -227,10 +229,12 @@ static bool linuxraw_joypad_init(void *data)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char path[PATH_MAX_LENGTH]  = {0};
+      char path[PATH_MAX_LENGTH];
       autoconfig_params_t params  = {{0}};
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
       settings_t *settings        = config_get_ptr();
+
+      path[0]                     = '\0';
 
       params.idx                  = i;
       pad->fd                     = -1;

@@ -447,7 +447,7 @@ static void menu_action_setting_disp_set_label_input_desc(
       const char *path,
       char *s2, size_t len2)
 {
-   char descriptor[PATH_MAX_LENGTH];
+   char descriptor[255];
    const struct retro_keybind *auto_bind = NULL;
    const struct retro_keybind *keybind   = NULL;
    settings_t *settings                  = config_get_ptr();
@@ -461,6 +461,8 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    if (!settings)
       return;
+
+   descriptor[0] = '\0';
    
    remap_id = settings->input.remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
@@ -506,7 +508,9 @@ static void menu_action_setting_disp_set_label_input_desc(
             str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y);
             break;
       }
-      strlcpy(s, str, len);
+
+      if (!string_is_empty(str))
+         strlcpy(s, str, len);
    }
 
    *w = 19;
@@ -1403,7 +1407,7 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
       const char *path,
       char *s2, size_t len2)
 {
-   char playlist_name_with_ext[PATH_MAX_LENGTH];
+   char playlist_name_with_ext[255];
    bool found_matching_core_association         = false;
    settings_t         *settings                 = config_get_ptr();
    struct string_list *str_list                 = string_split(settings->playlist_names, ";");
@@ -1541,12 +1545,16 @@ static void menu_action_setting_disp_set_label_setting_bool(file_list_t* list,
 {
    rarch_setting_t *setting = menu_setting_find(list->list[i].label);
 
+   *s = '\0';
    *w = 19;
 
-   if (*setting->value.target.boolean)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   if (setting)
+   {
+      if (*setting->value.target.boolean)
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+      else
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   }
 
    strlcpy(s2, path, len2);
 }
@@ -1577,11 +1585,12 @@ static void menu_action_setting_disp_set_label_setting_path(file_list_t* list,
       char *s2, size_t len2)
 {
    rarch_setting_t *setting = menu_setting_find(list->list[i].label);
-   const char *basename     = path_basename(setting->value.target.string);
+   const char *basename     = setting ? path_basename(setting->value.target.string) : NULL;
 
    *w = 19;
 
-   strlcpy(s, basename, len);
+   if (!string_is_empty(basename))
+      strlcpy(s, basename, len);
 
    strlcpy(s2, path, len2);
 }

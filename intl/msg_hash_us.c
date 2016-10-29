@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -625,9 +626,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          {
             /* Work around C89 limitations */
             char u[501];
-            char t[501];
-
-            strlcpy(t,
+            const char * t =
                   "RetroArch relies on an unique form of\n"
                   "audio/video synchronization where it needs to be\n"
                   "calibrated against the refresh rate of your\n"
@@ -636,8 +635,8 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "If you experience any audio crackling or video\n"
                   "tearing, usually it means that you need to\n"
                   "calibrate the settings. Some choices below:\n"
-                  " \n", sizeof(t));
-            snprintf(u, sizeof(u),
+                  " \n";
+            snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                   "a) Go to '%s' -> '%s', and enable\n"
                   "'Threaded Video'. Refresh rate will not matter\n"
                   "in this mode, framerate will be higher,\n"
@@ -650,7 +649,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-            strlcat(s, t, len);
+            strlcpy(s, t, len);
             strlcat(s, u, len);
          }
          break;
@@ -1891,7 +1890,7 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
          msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
    {
-      static char hotkey_lbl[PATH_MAX_LENGTH] = {0};
+      static char hotkey_lbl[128] = {0};
       unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
       snprintf(hotkey_lbl, sizeof(hotkey_lbl), "input_hotkey_binds_%d", idx);
       return hotkey_lbl;
@@ -3077,7 +3076,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE:
          return "Enable or disable bluetooth.";
       case MENU_ENUM_SUBLABEL_USER_LANGUAGE:
-         return "Sets the language of the interface. Requires a restart.";
+         return "Sets the language of the interface.";
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
          return "Prevents your system's screensaver from becoming active.";
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
@@ -4173,9 +4172,9 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE:
          return "Cheat File";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD:
-         return "Cheat File Load";
+         return "Load Cheat File";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
-         return "Cheat File Save As";
+         return "Save Cheat File As";
       case MENU_ENUM_LABEL_VALUE_CORE_COUNTERS:
          return "Core Counters";
       case MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT:
@@ -4634,6 +4633,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Chinese (Simplified)";
       case MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO:
          return "Esperanto";
+      case MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE:
+         return "Vietnamese";
       case MENU_ENUM_LABEL_VALUE_LEFT_ANALOG:
          return "Left Analog";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:

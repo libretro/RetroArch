@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -86,13 +87,10 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET,
    RARCH_MENU_CTL_IS_PENDING_QUICK_MENU,
    RARCH_MENU_CTL_SET_PENDING_QUICK_MENU,
-   RARCH_MENU_CTL_UNSET_PENDING_QUICK_MENU,
    RARCH_MENU_CTL_IS_PENDING_QUIT,
    RARCH_MENU_CTL_SET_PENDING_QUIT,
-   RARCH_MENU_CTL_UNSET_PENDING_QUIT,
    RARCH_MENU_CTL_IS_PENDING_SHUTDOWN,
    RARCH_MENU_CTL_SET_PENDING_SHUTDOWN,
-   RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN,
    RARCH_MENU_CTL_DEINIT,
    RARCH_MENU_CTL_INIT,
    RARCH_MENU_CTL_SHADER_DEINIT,
@@ -109,8 +107,6 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_IS_TOGGLE,
    RARCH_MENU_CTL_SET_TOGGLE,
    RARCH_MENU_CTL_UNSET_TOGGLE,
-   RARCH_MENU_CTL_SET_ALIVE,
-   RARCH_MENU_CTL_UNSET_ALIVE,
    RARCH_MENU_CTL_IS_ALIVE,
    RARCH_MENU_CTL_DESTROY,
    RARCH_MENU_CTL_IS_SET_TEXTURE,
@@ -221,14 +217,13 @@ enum menu_settings_type
 typedef struct
 {
    char deferred_path[PATH_MAX_LENGTH];
-
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
 
    uint64_t state;
    struct
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[1024];
    } menu_state;
 
    char db_playlist_file[PATH_MAX_LENGTH];

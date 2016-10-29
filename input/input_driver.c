@@ -37,6 +37,8 @@
 #include "../verbosity.h"
 #include "../command.h"
 
+#include "../menu/widgets/menu_input_dialog.h"
+
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
    &input_ps3,
@@ -64,6 +66,9 @@ static const input_driver_t *input_drivers[] = {
 #endif
 #ifdef GEKKO
    &input_gx,
+#endif
+#ifdef WIIU
+   &input_wiiu,
 #endif
 #ifdef ANDROID
    &input_android,
@@ -512,8 +517,8 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
       &settings->input.binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *autoconf_bind =
       &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   bool kb_mapping_is_blocked                = current_input->keyboard_mapping_is_blocked(
-         current_input_data);
+   bool kb_mapping_is_blocked                = current_input->keyboard_mapping_is_blocked &&
+         current_input->keyboard_mapping_is_blocked(current_input_data);
 
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
@@ -569,13 +574,13 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    settings_t *settings = config_get_ptr();
 
    /* Only bind for up to two players for now. */
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < settings->input.max_users; i++)
       binds[i] = settings->input.binds[i];
 
    for (i = 0; i < 2; i++)
       input_push_analog_dpad(settings->input.binds[i],
             settings->input.analog_dpad_mode[i]);
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < settings->input.max_users; i++)
       input_push_analog_dpad(settings->input.autoconf_binds[i],
             settings->input.analog_dpad_mode[i]);
 
@@ -592,7 +597,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 
    for (i = 0; i < 2; i++)
       input_pop_analog_dpad(settings->input.binds[i]);
-   for (i = 0; i < MAX_USERS; i++)
+   for (i = 0; i < settings->input.max_users; i++)
       input_pop_analog_dpad(settings->input.autoconf_binds[i]);
 }
 
@@ -611,13 +616,16 @@ uint64_t input_keys_pressed(void)
 {
    unsigned i;
    uint64_t             ret = 0;
+   settings_t     *settings = config_get_ptr();
+   const struct retro_keybind *binds = settings->input.binds[0];
 
    if (!current_input || !current_input_data)
       return ret;
 
-   if (current_input->key_pressed &&
+   if (
          check_input_driver_block_hotkey(
-            current_input->key_pressed(current_input_data, RARCH_ENABLE_HOTKEY)))
+            current_input->input_state(current_input_data, &binds, 0,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)))
       input_driver_block_libretro_input = true;
    else
       input_driver_block_libretro_input = false;
@@ -626,8 +634,9 @@ uint64_t input_keys_pressed(void)
    {
       bool state = false;
       if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-            || !input_driver_block_hotkey) && current_input->key_pressed)
-         state = current_input->key_pressed(current_input_data, i);
+            || !input_driver_block_hotkey))
+         state = current_input->input_state(current_input_data, &binds,
+               0, RETRO_DEVICE_JOYPAD, 0, i);
 
       if (i >= RARCH_FIRST_META_KEY)
          state |= current_input->meta_key_pressed(current_input_data, i);
@@ -660,6 +669,144 @@ uint64_t input_keys_pressed(void)
    return ret;
 }
 
+/**
+ * input_menu_keys_pressed:
+ *
+ * Grab an input sample for this frame. We exclude
+ * keyboard input here.
+ *
+ * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
+ * and you need a bitmask of more than 64 entries, reimplement
+ * it to use something like rarch_bits_t.
+ *
+ * Returns: Input sample containg a mask of all pressed keys.
+ */
+uint64_t input_menu_keys_pressed(void)
+{
+   unsigned i;
+   uint64_t             ret = 0;
+   settings_t     *settings = config_get_ptr();
+   const struct retro_keybind *binds[MAX_USERS] = {NULL};
+
+   if (!current_input || !current_input_data)
+      return ret;
+
+   if (
+         check_input_driver_block_hotkey(
+            current_input->input_state(current_input_data, &binds[0], 0,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)))
+      input_driver_block_libretro_input = true;
+   else
+      input_driver_block_libretro_input = false;
+
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      bool state = false;
+      if (
+            (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+            || !input_driver_block_hotkey))
+         && settings->input.binds[0][i].valid
+         )
+      {
+         int port;
+         int port_max = 1;
+         if (settings->input.all_users_control_menu)
+            port_max  = settings->input.max_users;
+
+         for (port = 0; port < port_max; port++)
+         {
+            const input_device_driver_t *first = current_input->get_joypad_driver 
+               ? current_input->get_joypad_driver(current_input_data) : NULL;
+            const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
+               ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
+
+            if (sec)
+               state = input_joypad_pressed(sec, port, settings->input.binds[0], i);
+            if (first)
+               state = input_joypad_pressed(first, port, settings->input.binds[0], i);
+            if (state)
+               break;
+         }
+      }
+
+      if (i >= RARCH_FIRST_META_KEY)
+         state |= current_input->meta_key_pressed(current_input_data, i);
+
+#ifdef HAVE_OVERLAY
+      state |= input_overlay_key_pressed(i);
+#endif
+
+#ifdef HAVE_COMMAND
+      if (input_driver_command)
+      {
+         command_handle_t handle;
+
+         handle.handle = input_driver_command;
+         handle.id     = i;
+
+         state |= command_get(&handle);
+      }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+      if (input_driver_remote)
+         state |= input_remote_key_pressed(i, 0);
+#endif
+
+      if (state)
+         ret |= (UINT64_C(1) << i);
+   }
+
+   if (menu_input_dialog_get_display_kb())
+      return ret;
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN))
+      BIT32_SET(ret, settings->menu_ok_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_BACKSPACE))
+      BIT32_SET(ret, settings->menu_cancel_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_SPACE))
+      BIT32_SET(ret, settings->menu_default_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_SLASH))
+      BIT32_SET(ret, settings->menu_search_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_RSHIFT))
+      BIT32_SET(ret, settings->menu_info_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_RIGHT))
+      BIT32_SET(ret, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_LEFT))
+      BIT32_SET(ret, RETRO_DEVICE_ID_JOYPAD_LEFT);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_DOWN))
+      BIT32_SET(ret, RETRO_DEVICE_ID_JOYPAD_DOWN);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_UP))
+      BIT32_SET(ret, RETRO_DEVICE_ID_JOYPAD_UP);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, settings->input.binds[0][RARCH_QUIT_KEY].key ))
+      BIT32_SET(ret, RARCH_QUIT_KEY);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key ))
+      BIT32_SET(ret, RARCH_FULLSCREEN_TOGGLE_KEY);
+
+   return ret;
+}
+
 void *input_driver_get_data(void)
 {
    return current_input_data;
@@ -668,13 +815,6 @@ void *input_driver_get_data(void)
 void **input_driver_get_data_ptr(void)
 {
    return (void**)&current_input_data;
-}
-
-bool input_driver_key_pressed(unsigned *key)
-{
-   if (key && current_input->key_pressed)
-      return current_input->key_pressed(current_input_data, *key);
-   return true;
 }
 
 bool input_driver_has_capabilities(void)

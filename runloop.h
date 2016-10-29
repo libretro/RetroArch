@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -26,6 +27,11 @@
 
 #include "input/input_defines.h"
 
+#define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
+
+#define runloop_cmd_press(current_input, id)     (BIT64_GET(current_input, id))
+#define runloop_cmd_pressed(old_input, id)       (BIT64_GET(old_input, id))
+
 RETRO_BEGIN_DECLS
 
 enum runloop_ctl_state
@@ -33,13 +39,11 @@ enum runloop_ctl_state
    RUNLOOP_CTL_NONE = 0,
 
    RUNLOOP_CTL_SET_FRAME_LIMIT,
-   RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT,
 
    RUNLOOP_CTL_TASK_INIT,
 
    RUNLOOP_CTL_FRAME_TIME_FREE,
    RUNLOOP_CTL_SET_FRAME_TIME_LAST,
-   RUNLOOP_CTL_IS_FRAME_TIME_LAST,
    RUNLOOP_CTL_SET_FRAME_TIME,
 
    RUNLOOP_CTL_IS_IDLE,
@@ -71,13 +75,11 @@ enum runloop_ctl_state
    RUNLOOP_CTL_GLOBAL_FREE,
 
    RUNLOOP_CTL_SET_CORE_SHUTDOWN,
-   RUNLOOP_CTL_IS_CORE_SHUTDOWN,
 
    RUNLOOP_CTL_SET_SHUTDOWN,
    RUNLOOP_CTL_IS_SHUTDOWN,
 
    RUNLOOP_CTL_SET_EXEC,
-   RUNLOOP_CTL_IS_EXEC,
 
    /* Runloop state */
    RUNLOOP_CTL_CLEAR_STATE,
@@ -98,7 +100,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_MSG_QUEUE_INIT,
    RUNLOOP_CTL_MSG_QUEUE_DEINIT,
    RUNLOOP_CTL_MSG_QUEUE_PULL,
-   RUNLOOP_CTL_MSG_QUEUE_CLEAR,
 
    /* Core options */
    RUNLOOP_CTL_HAS_CORE_OPTIONS,

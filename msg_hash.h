@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -1858,6 +1859,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
    MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO,
    MENU_ENUM_LABEL_VALUE_LANG_POLISH,
+   MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE,
 
    MENU_ENUM_LABEL_VALUE_NONE,
 
@@ -2236,6 +2238,12 @@ int menu_hash_get_help_pl_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_nl(enum msg_hash_enums msg);
 int menu_hash_get_help_nl_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_vn(enum msg_hash_enums msg);
+int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len);
+
+const char *msg_hash_to_str_chs(enum msg_hash_enums msg);
+int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len);
 
 const char *msg_hash_to_str_us(enum msg_hash_enums msg);
 int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);

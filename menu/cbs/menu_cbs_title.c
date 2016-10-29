@@ -37,7 +37,7 @@ static void replace_chars(char *str, char c1, char c2)
 
 static void sanitize_to_string(char *s, const char *label, size_t len)
 {
-   char new_label[PATH_MAX_LENGTH];
+   char new_label[255];
 
    new_label[0] = '\0';
 
@@ -490,12 +490,6 @@ static int action_get_title_font_path(const char *path, const char *label,
    return fill_title(s, "Font", path, len);
 }
 
-static int action_get_xmb_font_path(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Font", path, len);
-}
-
 static int action_get_title_video_shader_preset(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -696,7 +690,7 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
 
    if (list_path)
    {
-      char elem0_path[PATH_MAX_LENGTH];
+      char elem0_path[255];
 
       elem0_path[0] = '\0';
 
@@ -845,8 +839,8 @@ static int action_get_title_group_settings(const char *path, const char *label,
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU), len);
    else
    {
-      char elem0[PATH_MAX_LENGTH];
-      char elem1[PATH_MAX_LENGTH];
+      char elem0[255];
+      char elem1[255];
       struct string_list *list_label = string_split(label, "|");
 
       elem0[0] = elem1[0] = '\0';
@@ -1316,10 +1310,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay);
             break;
          case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_font_path);
-            break;
          case MENU_ENUM_LABEL_XMB_FONT:
-            BIND_ACTION_GET_TITLE(cbs, action_get_xmb_font_path);
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_font_path);
             break;
          case MENU_ENUM_LABEL_VIDEO_FILTER:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_video_filter);
@@ -1599,10 +1591,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_GET_TITLE(cbs, action_get_title_overlay);
             break;
          case MENU_LABEL_VIDEO_FONT_PATH:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_font_path);
-            break;
          case MENU_LABEL_XMB_FONT:
-            BIND_ACTION_GET_TITLE(cbs, action_get_xmb_font_path);
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_font_path);
             break;
          case MENU_LABEL_VIDEO_FILTER:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_video_filter);

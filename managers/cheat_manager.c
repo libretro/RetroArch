@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -97,7 +97,9 @@ void cheat_manager_apply_cheats(void)
          core_set_cheat(&cheat_info);
       }
    }
-   
+    runloop_msg_queue_push("Applying cheat changes.", 1, 180, true);
+    RARCH_LOG("Applying cheat changes.\n");
+
 #ifdef HAVE_CHEEVOS
    data_bool = idx != 0;
    cheevos_apply_cheats(&data_bool);
@@ -137,7 +139,7 @@ bool cheat_manager_save(const char *path)
          path, sizeof(buf));
 
    fill_pathname_noext(cheats_file, buf, ".cht", sizeof(cheats_file));
-   
+
    conf = config_file_new(cheats_file);
 
    if (!conf)
@@ -340,7 +342,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 
    snprintf(msg, sizeof(msg), "Cheat: #%u [%s]: %s",
          handle_idx, handle->cheats[handle_idx].state ? "ON" : "OFF",
-         (handle->cheats[handle_idx].desc) ? 
+         (handle->cheats[handle_idx].desc) ?
          (handle->cheats[handle_idx].desc) : (handle->cheats[handle_idx].code)
          );
    runloop_msg_queue_push(msg, 1, 180, true);

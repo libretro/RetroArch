@@ -22,6 +22,8 @@
 
 #include <retro_common_api.h>
 
+#include <libretro.h>
+
 RETRO_BEGIN_DECLS
 
 /* Send input code to menu for one frame.
@@ -32,6 +34,10 @@ RETRO_BEGIN_DECLS
  * state.
  */
 unsigned menu_event(uint64_t input, uint64_t trigger_state);
+
+void menu_event_keyboard_set(bool down, enum retro_key key);
+
+unsigned char menu_event_keyboard_is_set(enum retro_key key);
 
 unsigned kbd_index;
 char kbd_grid[41];

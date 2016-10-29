@@ -2,6 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2013-2015 - Jason Fetters
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -22,7 +23,6 @@
 #include <stddef.h>
 
 #include <file/archive_file.h>
-#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -107,7 +107,7 @@ typedef struct database_state_handle
    uint32_t crc;
    uint32_t archive_crc;
    uint8_t *buf;
-   char archive_name[PATH_MAX_LENGTH];
+   char archive_name[255];
    char serial[4096];
 } database_state_handle_t;
 

@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -872,8 +873,8 @@ static bool task_load_content(content_ctx_info_t *content_info,
       bool launched_from_menu,
       enum content_mode_load mode)
 {
-   char name[PATH_MAX_LENGTH];
-   char msg[PATH_MAX_LENGTH];
+   char name[256];
+   char msg[256];
 
    name[0] = msg[0] = '\0';
 

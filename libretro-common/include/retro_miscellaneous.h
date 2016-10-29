@@ -32,6 +32,8 @@
 #include <time/time.h>
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #include <unistd.h>
+#elif defined(WIIU)
+#include <coreinit/thread.h>
 #elif defined(PSP)
 #include <pspthreadman.h>
 #elif defined(VITA)
@@ -58,7 +60,7 @@
 #include <retro_inline.h>
 
 #ifndef PATH_MAX_LENGTH
-#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(GEKKO)
+#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(GEKKO)|| defined(WIIU)
 #define PATH_MAX_LENGTH 512
 #else
 #define PATH_MAX_LENGTH 4096
@@ -100,6 +102,8 @@ static INLINE void retro_sleep(unsigned msec)
    udelay(1000 * msec);
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
    usleep(1000 * msec);
+#elif defined(WIIU)
+   OSSleepTicks(((uint64_t)msec * 248625000)/4000000);
 #else
    struct timespec tv = {0};
    tv.tv_sec = msec / 1000;

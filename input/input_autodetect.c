@@ -117,9 +117,9 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 static void input_autoconfigure_joypad_add(config_file_t *conf,
       autoconfig_params_t *params)
 {
-   char msg[PATH_MAX_LENGTH];
-   char display_name[PATH_MAX_LENGTH];
-   char device_type[PATH_MAX_LENGTH];
+   char msg[128];
+   char display_name[128];
+   char device_type[128];
    bool block_osd_spam                = false;
    static bool remote_is_bound        = false;
    settings_t      *settings          = config_get_ptr();
@@ -296,7 +296,7 @@ static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
 
 bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[255];
 
    msg[0] = '\0';
 
@@ -337,7 +337,7 @@ const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
 
 void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 {
-   char msg[PATH_MAX_LENGTH];
+   char msg[255];
 
    msg[0] = '\0';
 

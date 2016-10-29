@@ -494,9 +494,7 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          {
             /* Work around C89 limitations */
-            char u[501];
-            char t[501];
-            snprintf(u, sizeof(u),
+            const char * u =
                   "Taxa de Atualização Automática.\n"
                   " \n"
                   "A taxa de atualização exata de nosso monitor (Hz).\n"
@@ -505,8 +503,8 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                   " \n"
                   "audio_input_rate = game input rate * display \n"
                   "refresh rate / game refresh rate\n"
-                  " \n");
-            snprintf(t, sizeof(t),
+                  " \n";
+            const char * t =
                   "Se a implementação não informar valores, \n"
                   "valores NTSC serão assumidos por questão de \n"
                   "compatibilidade.\n"
@@ -514,8 +512,8 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Esse valor deve ficar próximo de 60Hz para \n"
                   "evitar grande mudanças de pitch. Se o monitor \n"
                   "não rodar a 60Hz, ou algo próximo a isso, desative\n"
-                  "o VSync, e deixe-o com valores padrão.");
-            strlcat(s, u, len);
+                  "o VSync, e deixe-o com valores padrão.";
+            strlcpy(s, u, len);
             strlcat(s, t, len);
          }
          break;

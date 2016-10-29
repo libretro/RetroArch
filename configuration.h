@@ -1,6 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2014-2016 - Jean-André Santoni
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -210,7 +212,7 @@ typedef struct settings
    struct
    {
       char driver[32];
-      char device[PATH_MAX_LENGTH];
+      char device[255];
       bool allow;
       unsigned width;
       unsigned height;
@@ -234,7 +236,7 @@ typedef struct settings
    {
       char driver[32];
       char resampler[32];
-      char device[PATH_MAX_LENGTH];
+      char device[255];
       bool enable;
       bool mute_enable;
       unsigned out_rate;
@@ -320,8 +322,8 @@ typedef struct settings
 
    struct
    {
-      char buildbot_url[PATH_MAX_LENGTH];
-      char buildbot_assets_url[PATH_MAX_LENGTH];
+      char buildbot_url[255];
+      char buildbot_assets_url[255];
       bool buildbot_auto_extract_archive;
    } network;
 
@@ -400,7 +402,7 @@ typedef struct settings
 #ifdef HAVE_NETWORKING
    struct
    {
-      char server[PATH_MAX_LENGTH];
+      char server[255];
       unsigned port;
       unsigned sync_frames;
       unsigned check_frames;

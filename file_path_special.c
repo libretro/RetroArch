@@ -242,7 +242,7 @@ void fill_pathname_application_path(char *s, size_t len)
    {
       pid_t pid;
       static const char *exts[] = { "exe", "file", "path/a.out" };
-      char link_path[PATH_MAX_LENGTH];
+      char link_path[255];
 
       link_path[0] = *s = '\0';
       pid       = getpid(); 

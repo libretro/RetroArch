@@ -697,7 +697,7 @@ void path_clear_all(void)
 
 enum rarch_content_type path_is_media_type(const char *path)
 {
-   char ext_lower[PATH_MAX_LENGTH];
+   char ext_lower[128];
 
    ext_lower[0] = '\0';
 

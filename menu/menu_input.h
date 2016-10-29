@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -42,7 +43,8 @@ enum menu_action
    MENU_ACTION_SCROLL_UP,
    MENU_ACTION_TOGGLE,
    MENU_ACTION_POINTER_MOVED,
-   MENU_ACTION_POINTER_PRESSED
+   MENU_ACTION_POINTER_PRESSED,
+   MENU_ACTION_QUIT
 };
 
 enum menu_input_pointer_state

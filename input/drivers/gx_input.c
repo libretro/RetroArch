@@ -51,11 +51,13 @@ static int16_t gx_input_state(void *data, const struct retro_keybind **binds,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port][id].valid)
+         if (binds[port] && binds[port][id].valid)
             return input_joypad_pressed(gx->joypad, port, binds[port], id);
          break;
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(gx->joypad, port, idx, id, binds[port]);
+         if (binds[port])
+            return input_joypad_analog(gx->joypad, port, idx, id, binds[port]);
+         break;
    }
 
    return 0;
@@ -92,29 +94,6 @@ static void gx_input_poll(void *data)
 
    if (gx && gx->joypad)
       gx->joypad->poll();
-}
-
-static bool gx_input_key_pressed(void *data, int key)
-{
-   settings_t *settings = config_get_ptr();
-   gx_input_t *gx       = (gx_input_t*)data;
-   int port             = 0;
-
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (settings->input.binds[0][key].valid &&
-               input_joypad_pressed(gx->joypad,
-               port, settings->input.binds[0], key))
-            return true;
-   }
-   else
-      if (settings->input.binds[0][key].valid &&
-            input_joypad_pressed(gx->joypad,
-            0, settings->input.binds[0], key))
-         return true;
-
-   return false;
 }
 
 static bool gx_input_meta_key_pressed(void *data, int key)
@@ -177,7 +156,6 @@ input_driver_t input_gx = {
    gx_input_init,
    gx_input_poll,
    gx_input_state,
-   gx_input_key_pressed,
    gx_input_meta_key_pressed,
    gx_input_free_input,
    NULL,

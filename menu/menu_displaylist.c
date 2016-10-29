@@ -1,5 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2014-2016 - Jean-André Santoni
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -153,7 +155,7 @@ static void print_buf_lines(file_list_t *list, char *buf,
 
                if (settings)
                {
-                  char display_name[PATH_MAX_LENGTH];
+                  char display_name[255];
                   char core_path[PATH_MAX_LENGTH];
                   char *last                         = NULL;
 
@@ -437,7 +439,7 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 
    for (k = 0; k < list->size; k++)
    {
-      char tmp[PATH_MAX_LENGTH];
+      char tmp[255];
 
       tmp[0] = '\0';
 
@@ -476,7 +478,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    gfx_ctx_ident_t ident_info;
 #endif
    char tmp[PATH_MAX_LENGTH];
-   char feat_str[PATH_MAX_LENGTH];
+   char feat_str[255];
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    settings_t                  *settings = config_get_ptr();
@@ -515,7 +517,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
 #endif
    {
-      char cpu_str[PATH_MAX_LENGTH];
+      char cpu_str[255];
 
       cpu_str[0] = '\0';
 
@@ -531,7 +533,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 
    {
-      char cpu_str[PATH_MAX_LENGTH];
+      char cpu_str[255];
       char cpu_arch_str[PATH_MAX_LENGTH];
       char cpu_text_str[PATH_MAX_LENGTH];
       enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
@@ -2722,19 +2724,19 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_ENUM_LABEL_SHADER_OPTIONS,
             MENU_SETTING_ACTION, 0, 0);
 #endif
-      
+
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
             msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE),
             MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
             MENU_SETTING_ACTION, 0, 0);
-      
+
       menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
             msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME),
             MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
             MENU_SETTING_ACTION, 0, 0);
-      
+
 #ifdef HAVE_CHEEVOS
       if(settings->cheevos.enable)
          menu_entries_append_enum(info->list,
@@ -3039,6 +3041,11 @@ static int menu_displaylist_parse_options_cheats(
       return -1;
 
    menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
+         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
+         MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
+         MENU_SETTING_ACTION, 0, 0);
+   menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD),
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD),
          MENU_ENUM_LABEL_CHEAT_FILE_LOAD,
@@ -3053,15 +3060,12 @@ static int menu_displaylist_parse_options_cheats(
          msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_NUM_PASSES),
          MENU_ENUM_LABEL_CHEAT_NUM_PASSES,
          0, 0, 0);
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES),
-         msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES),
-         MENU_ENUM_LABEL_CHEAT_APPLY_CHANGES,
-         MENU_SETTING_ACTION, 0, 0);
 
    for (i = 0; i < cheat_manager_get_size(); i++)
    {
-      char cheat_label[64] = {0};
+      char cheat_label[64];
+
+      cheat_label[0] = '\0';
 
       snprintf(cheat_label, sizeof(cheat_label),
             "%s #%u: ", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT), i);

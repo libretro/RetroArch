@@ -758,6 +758,14 @@ static void handle_hotplug(android_input_data_t *android_data,
       }
    }
 
+   /* Other ATV Devices
+    * Add other common ATV devices that will follow the Android
+    * Gaempad convention as "Android Gamepad"
+    */
+    /* to-do: add DS4 on Bravia ATV */
+   else if (strstr(device_name, "NVIDIA"))
+      strlcpy (name_buf, "Android Gamepad", sizeof(name_buf));
+
    /* GPD XD
     * This is a simple hack, basically groups the "back"
     * button with the rest of the gamepad
@@ -1031,6 +1039,22 @@ static void android_input_poll_memcpy(void *data)
    }
 }
 
+static bool android_input_key_pressed(void *data, int key)		
+{		
+   android_input_t *android = (android_input_t*)data;		
+   settings_t *settings     = config_get_ptr();		
+
+   if(settings->input.binds[0][key].valid && android_keyboard_port_input_pressed(settings->input.binds[0],key))		
+      return true;		
+
+   if (settings->input.binds[0][key].valid &&		
+         input_joypad_pressed(android->joypad,		
+            0, settings->input.binds[0], key))		
+      return true;		
+
+   return false;		
+}
+
 /* Handle all events. If our activity is in pause state,
  * block until we're unpaused.
  */
@@ -1041,7 +1065,7 @@ static void android_input_poll(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
-            ALooper_pollAll((input_driver_key_pressed(&key))
+            ALooper_pollAll((android_input_key_pressed(data, key))
                ? -1 : 1,
                NULL, NULL, NULL)) >= 0)
    {
@@ -1112,13 +1136,15 @@ static int16_t android_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port][id].valid)
+         if (binds[port] && binds[port][id].valid)
             return input_joypad_pressed(android->joypad, port, binds[port], id) ||
                android_keyboard_port_input_pressed(binds[port],id);
          break;
       case RETRO_DEVICE_ANALOG:
-         return input_joypad_analog(android->joypad, port, idx, id,
-               binds[port]);
+         if (binds[port])
+            return input_joypad_analog(android->joypad, port, idx, id,
+                  binds[port]);
+         break;
       case RETRO_DEVICE_POINTER:
          switch (id)
          {
@@ -1154,32 +1180,6 @@ static int16_t android_input_state(void *data,
    }
 
    return 0;
-}
-
-static bool android_input_key_pressed(void *data, int key)
-{
-   android_input_t *android = (android_input_t*)data;
-   settings_t *settings     = config_get_ptr();
-   int port                 = 0;
-
-   if(settings->input.binds[0][key].valid && android_keyboard_port_input_pressed(settings->input.binds[0],key))
-      return true;
-
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (settings->input.binds[0][key].valid &&
-               input_joypad_pressed(android->joypad,
-               port, settings->input.binds[0], key))
-            return true;
-   }
-   else
-      if (settings->input.binds[0][key].valid &&
-            input_joypad_pressed(android->joypad,
-            0, settings->input.binds[0], key))
-         return true;
-
-   return false;
 }
 
 static bool android_input_meta_key_pressed(void *data, int key)
@@ -1339,7 +1339,6 @@ input_driver_t input_android = {
    android_input_init,
    android_input_poll,
    android_input_state,
-   android_input_key_pressed,
    android_input_meta_key_pressed,
    android_input_free_input,
    android_input_set_sensor_state,

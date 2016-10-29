@@ -354,7 +354,10 @@ end:
    if (handle)
    {
       if (handle->backend)
-         handle->backend->stream_free(handle->stream);
+      {
+         if (handle->backend->stream_free)
+            handle->backend->stream_free(handle->stream);
+      }
 
       if (handle->data)
          free(handle->data);
@@ -426,7 +429,8 @@ int file_archive_parse_file_iterate(
          }
          if (state->stream && state->backend)
          {
-            state->backend->stream_free(state->stream);
+            if (state->backend->stream_free)
+               state->backend->stream_free(state->stream);
 
             if (state->stream)
                free(state->stream);

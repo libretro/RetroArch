@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -477,7 +478,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Hide input descriptors that were not set \n"
                "by the core.");
          break;
-      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE: 
+      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
          snprintf(s, len,
                "Video refresh rate of your monitor. \n"
                "Used to calculate a suitable audio input rate.");
@@ -624,9 +625,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          {
             /* Work around C89 limitations */
             char u[501];
-            char t[501];
-
-            strlcpy(t, 
+            const char * t =
                   "RetroArch relies on an unique form of\n"
                   "audio/video synchronization where it needs to be\n"
                   "calibrated against the refresh rate of your\n"
@@ -635,8 +634,8 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "If you experience any audio crackling or video\n"
                   "tearing, usually it means that you need to\n"
                   "calibrate the settings. Some choices below:\n"
-                  " \n", sizeof(t));
-            snprintf(u, sizeof(u),
+                  " \n";
+            snprintf(u, sizeof(u), /* can't inline this due to the printf arguments */
                   "a) Go to '%s' -> '%s', and enable\n"
                   "'Threaded Video'. Refresh rate will not matter\n"
                   "in this mode, framerate will be higher,\n"
@@ -649,7 +648,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO));
-            strlcat(s, t, len);
+            strlcpy(s, t, len);
             strlcat(s, u, len);
          }
          break;
@@ -1889,7 +1888,7 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
          msg >= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN)
    {
-      static char hotkey_lbl[PATH_MAX_LENGTH] = {0};
+      static char hotkey_lbl[128] = {0};
       unsigned idx = msg - MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN;
       snprintf(hotkey_lbl, sizeof(hotkey_lbl), "input_hotkey_binds_%d", idx);
       return hotkey_lbl;
@@ -2635,7 +2634,7 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "video_aspect_ratio_auto";
       case MENU_ENUM_LABEL_VIDEO_FORCE_ASPECT:
          return "video_force_aspect";
-      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE: 
+      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
          return "video_refresh_rate";
       case MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE:
          return "video_force_srgb_disable";
@@ -3062,6 +3061,20 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "ビデオ出力の設定を変える。";
       case MENU_ENUM_SUBLABEL_AUDIO_SETTINGS:
          return "オーディオ出力の設定を変更する。";
+      case MENU_ENUM_SUBLABEL_INPUT_SETTINGS:
+         return "ゲームパッド、キーボード、マウスの設定を変更する。";
+      case MENU_ENUM_SUBLABEL_WIFI_SETTINGS:
+         return "無線ネットワークを検索して接続する。";
+      case MENU_ENUM_SUBLABEL_SERVICES_SETTINGS:
+         return "OS関係のサービスを管理する。";
+      case MENU_ENUM_SUBLABEL_SSH_ENABLE:
+         return "SSHでのアクセスを有効する。";
+      case MENU_ENUM_SUBLABEL_SAMBA_ENABLE:
+         return "フォルダのネットワーク共有を有効する。";
+      case MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE:
+         return "Bluetoothを有効する。";
+      case MENU_ENUM_SUBLABEL_USER_LANGUAGE:
+         return "インタフェースの言語を変更する。";
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
          return "システムのスクリーンセーバーをアクティブになることを予防する。";
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
@@ -3927,15 +3940,15 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE:
          return "メニューのシェーダーパイプライン";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
-         return "Monochrome";
+         return "モノクローム";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI:
-         return "FlatUI";
+         return "フラットUI";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:
-         return "RetroActive";
+         return "レトロアクティブ";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL:
-         return "Pixel";
+         return "ピクセル";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM:
-         return "Custom";
+         return "カスタム";
       case MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "スクリーンセーバーをサスペンド";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
@@ -4141,19 +4154,19 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
          return "リマップファイルをロード";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
-         return "Custom Ratio";
+         return "カスタム比";
       case MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY:
-         return "<Use this directory>";
+         return "<このフォルダを使用>";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "コンテンツをスタート";
       case MENU_ENUM_LABEL_VALUE_DISK_OPTIONS:
-         return "Disk Control";
+         return "ディスク設定";
       case MENU_ENUM_LABEL_VALUE_CORE_OPTIONS:
          return "オプション";
       case MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS:
          return "チート";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE:
-         return "Remap File";
+         return "リマップファイル";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE:
          return "チートファイル";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD:
@@ -4618,6 +4631,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "中国語 (簡体)";
       case MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO:
          return "エスペラント";
+      case MENU_ENUM_LABEL_VALUE_LANG_VIETNAMESE:
+         return "ベトナム語";
       case MENU_ENUM_LABEL_VALUE_LEFT_ANALOG:
          return "左のアナログ";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
@@ -4694,6 +4709,14 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "L3ボタン(親指)";
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3:
          return "R3ボタン(親指)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X:
+         return "左アナログX";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y:
+         return "左アナログY";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X:
+         return "右アナログX";
+      case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y:
+         return "右アナログY";
       case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS:
          return "左アナログX+ (右)";
       case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS:

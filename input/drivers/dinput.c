@@ -281,7 +281,7 @@ static bool dinput_is_pressed(struct dinput_input *di,
 
    if (!di->blocked && dinput_keyboard_pressed(di, bind->key))
       return true;
-   if (binds[id].valid && input_joypad_pressed(di->joypad, port, binds, id))
+   if (binds && binds[id].valid && input_joypad_pressed(di->joypad, port, binds, id))
       return true;
 
    return false;
@@ -309,26 +309,6 @@ static int16_t dinput_pressed_analog(struct dinput_input *di,
       pressed_plus  = 0x7fff;
 
    return pressed_plus + pressed_minus;
-}
-
-static bool dinput_key_pressed(void *data, int key)
-{
-   settings_t *settings = config_get_ptr();
-   int port = 0;
-
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (dinput_is_pressed((struct dinput_input*)data,
-               settings->input.binds[0], port, key))
-            return true;
-   }
-   else
-      if (dinput_is_pressed((struct dinput_input*)data,
-            settings->input.binds[0], 0, key))
-         return true;
-
-   return false;
 }
 
 static bool dinput_meta_key_pressed(void *data, int key)
@@ -486,14 +466,16 @@ static int16_t dinput_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return dinput_is_pressed(di, binds[port], port, id);
-
+         if (binds[port])
+            return dinput_is_pressed(di, binds[port], port, id);
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return dinput_keyboard_pressed(di, id);
 
       case RETRO_DEVICE_ANALOG:
-         ret = dinput_pressed_analog(di, binds[port], idx, id);
-         if (!ret)
+         if (binds[port])
+            ret = dinput_pressed_analog(di, binds[port], idx, id);
+         if (!ret && binds[port])
             ret = input_joypad_analog(di->joypad, port,
                   idx, id, settings->input.binds[port]);
          return ret;
@@ -772,7 +754,6 @@ input_driver_t input_dinput = {
    dinput_init,
    dinput_poll,
    dinput_input_state,
-   dinput_key_pressed,
    dinput_meta_key_pressed,
    dinput_free,
    NULL,

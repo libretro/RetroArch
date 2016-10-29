@@ -219,6 +219,7 @@ extern input_device_driver_t psp_joypad;
 extern input_device_driver_t ctr_joypad;
 extern input_device_driver_t xdk_joypad;
 extern input_device_driver_t gx_joypad;
+extern input_device_driver_t wiiu_joypad;
 extern input_device_driver_t hid_joypad;
 extern input_device_driver_t android_joypad;
 extern input_device_driver_t qnx_joypad;

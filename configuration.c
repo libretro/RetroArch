@@ -1,6 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2014-2016 - Jean-André Santoni
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -265,6 +267,8 @@ const char *config_get_default_video(void)
          return "drm";
       case VIDEO_WII:
          return "gx";
+      case VIDEO_WIIU:
+         return "gx2";
       case VIDEO_XENON360:
          return "xenon360";
       case VIDEO_XDK_D3D:
@@ -340,6 +344,8 @@ const char *config_get_default_input(void)
          return "xinput";
       case INPUT_WII:
          return "gx";
+      case INPUT_WIIU:
+         return "wiiu";
       case INPUT_LINUXRAW:
          return "linuxraw";
       case INPUT_UDEV:
@@ -374,6 +380,8 @@ const char *config_get_default_joypad(void)
          return "xinput";
       case JOYPAD_GX:
          return "gx";
+      case JOYPAD_WIIU:
+         return "wiiu";
       case JOYPAD_XDK:
          return "xdk";
       case JOYPAD_PSP:
@@ -1277,7 +1285,9 @@ static void config_set_defaults(void)
 
    if (!string_is_empty(g_defaults.dir.osk_overlay))
    {
-      char temp_path[PATH_MAX_LENGTH] = {0};
+      char temp_path[PATH_MAX_LENGTH];
+
+      temp_path[0] = '\0';
 
       fill_pathname_expand_special(temp_path,
             g_defaults.dir.osk_overlay, sizeof(temp_path));
@@ -1293,7 +1303,9 @@ static void config_set_defaults(void)
    }
    else
    {
-      char temp_path[PATH_MAX_LENGTH] = {0};
+      char temp_path[PATH_MAX_LENGTH];
+
+      temp_path[0] = '\0';
 
       strlcpy(temp_path,
             settings->directory.overlay,
@@ -1702,10 +1714,10 @@ static bool config_load_file(const char *path, bool set_defaults,
    settings_t *settings)
 {
    unsigned i;
+   char tmp_str[PATH_MAX_LENGTH];
    bool ret                                        = false;
    bool tmp_bool                                   = false;
    char *save                                      = NULL;
-   char tmp_str[PATH_MAX_LENGTH];
    unsigned msg_color                              = 0;
    config_file_t *conf                             = NULL;
    struct config_int_setting       *int_settings   = NULL;
@@ -2259,7 +2271,9 @@ bool config_load_override(void)
    /* If a game override exists, add it's location to append_config_path */
    if (new_conf)
    {
-      char temp_path[PATH_MAX_LENGTH] = {0};
+      char temp_path[PATH_MAX_LENGTH];
+
+      temp_path[0] = '\0';
 
       config_file_free(new_conf);
 

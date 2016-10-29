@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2015 - Jean-André Santoni
+ *  Copyright (C) 2014-2016 - Jean-André Santoni
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -157,7 +158,7 @@ typedef struct xmb_handle
    size_t selection_ptr_old;
    int depth;
    int old_depth;
-   char box_message[PATH_MAX_LENGTH];
+   char box_message[1024];
    float x;
    float alpha;
    uintptr_t thumbnail;
@@ -201,7 +202,7 @@ typedef struct xmb_handle
 
    float shadow_offset;
 
-   char title_name[256];
+   char title_name[255];
 
    struct
    {
@@ -1912,10 +1913,10 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       float icon_x, icon_y, label_offset;
       menu_animation_ctx_ticker_t ticker;
       char ticker_str[PATH_MAX_LENGTH];
-      char name[PATH_MAX_LENGTH];
-      char value[PATH_MAX_LENGTH];
-      char entry_value[PATH_MAX_LENGTH];
-      char entry_sublabel[PATH_MAX_LENGTH];
+      char name[255];
+      char value[255];
+      char entry_value[255];
+      char entry_sublabel[255];
       menu_entry_t entry;
       const float half_size             = xmb->icon.size / 2.0f;
       uintptr_t texture_switch          = 0;
@@ -2321,9 +2322,9 @@ static void xmb_frame(void *data)
    unsigned i, width, height;
    float item_color[16], coord_black[16], coord_white[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
-   char msg[PATH_MAX_LENGTH];
-   char title_msg[256];
-   char title_truncated[256];
+   char msg[1024];
+   char title_msg[255];
+   char title_truncated[255];
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
    file_list_t *menu_stack                 = NULL;
@@ -2425,7 +2426,7 @@ static void xmb_frame(void *data)
    if (settings->menu.timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
-      char timedate[256];
+      char timedate[255];
 
       timedate[0]        = '\0';
 

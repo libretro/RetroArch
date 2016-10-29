@@ -247,7 +247,7 @@ bool playlist_push(playlist_t *playlist,
    {
       if (string_is_empty(core_name) && !string_is_empty(core_path))
       {
-         static char base_path[PATH_MAX_LENGTH] = {0};
+         static char base_path[255] = {0};
          fill_pathname_base_noext(base_path, core_path, sizeof(base_path));
          core_name = base_path;
          RARCH_LOG("core_name is now: %s\n", core_name);

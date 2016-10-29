@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C) 2016 - Brad Parker
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -83,9 +84,11 @@ size_t core_len;
 
 static void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
 {
-   char subdir_path[PATH_MAX_LENGTH] = {0};
+   char subdir_path[PATH_MAX_LENGTH];
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    menu_file_transfer_t *state       = (menu_file_transfer_t*)user_data;
+
+   subdir_path[0] = '\0';
 
    if (!data || err)
       goto finish;
@@ -1902,10 +1905,12 @@ static int action_ok_file_load_ffmpeg(const char *path,
 static int action_ok_file_load_imageviewer(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char fullpath[PATH_MAX_LENGTH]  = {0};
+   char fullpath[PATH_MAX_LENGTH];
    const char *menu_path           = NULL;
    file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
    menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
+
+   fullpath[0] = '\0';
 
    fill_pathname_join(fullpath, menu_path, path,
          sizeof(fullpath));

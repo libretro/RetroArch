@@ -82,12 +82,12 @@ static bool linuxraw_key_pressed(linuxraw_input_t *linuxraw, int key)
 static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw,
       const struct retro_keybind *binds, unsigned id)
 {
-   const struct retro_keybind *bind = &binds[id];
+   const struct retro_keybind *bind = binds ? &binds[id] : NULL;
 
    if (id >= RARCH_BIND_LIST_END)
       return false;
 
-   return bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
+   return bind && bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
 }
 
 static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
@@ -107,32 +107,6 @@ static int16_t linuxraw_analog_pressed(linuxraw_input_t *linuxraw,
    return pressed_plus + pressed_minus;
 }
 
-static bool linuxraw_input_key_pressed(void *data, int key)
-{
-   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
-   settings_t *settings       = config_get_ptr();
-   int port                   = 0;
-
-   if (linuxraw_is_pressed(linuxraw, settings->input.binds[0], key))
-      return true;
-
-   if (settings->input.all_users_control_menu)
-   {
-      for (port = 0; port < MAX_USERS; port++)
-         if (settings->input.binds[0][key].valid &&
-               input_joypad_pressed(linuxraw->joypad,
-               port, settings->input.binds[0], key))
-            return true;
-   }
-   else
-      if (settings->input.binds[0][key].valid &&
-            input_joypad_pressed(linuxraw->joypad,
-            0, settings->input.binds[0], key))
-         return true;
-
-   return false;
-}
-
 static bool linuxraw_input_meta_key_pressed(void *data, int key)
 {
    return false;
@@ -142,19 +116,20 @@ static int16_t linuxraw_input_state(void *data,
       const struct retro_keybind **binds, unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   int16_t ret;
+   int16_t ret                = 0;
    linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (binds[port][id].valid)
+         if (binds[port] && binds[port][id].valid)
             return linuxraw_is_pressed(linuxraw, binds[port], id) ||
                input_joypad_pressed(linuxraw->joypad, port, binds[port], id);
          break;
       case RETRO_DEVICE_ANALOG:
-         ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
-         if (!ret)
+         if (binds[port])
+            ret = linuxraw_analog_pressed(linuxraw, binds[port], idx, id);
+         if (!ret && binds[port])
             ret = input_joypad_analog(linuxraw->joypad, port, idx, id, binds[port]);
          return ret;
    }
@@ -258,7 +233,6 @@ input_driver_t input_linuxraw = {
    linuxraw_input_init,
    linuxraw_input_poll,
    linuxraw_input_state,
-   linuxraw_input_key_pressed,
    linuxraw_input_meta_key_pressed,
    linuxraw_input_free,
    NULL,

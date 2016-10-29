@@ -157,6 +157,11 @@ void menu_settings_list_current_add_enum_idx(
       rarch_setting_info_t *list_info,
       enum msg_hash_enums enum_idx);
 
+void menu_settings_list_current_add_enum_value_idx(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum msg_hash_enums enum_idx);
+
 bool menu_setting_free(void *data);
 
 bool settings_list_append(rarch_setting_t **list,
