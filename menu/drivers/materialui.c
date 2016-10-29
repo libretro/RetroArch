@@ -275,10 +275,10 @@ static void mui_render_keyboard(mui_handle_t *mui, char* grid[], unsigned id)
 {
    unsigned i, width, height;
    float dark[16]=  {
-      0.00, 0.00, 0.00, 0.5,
-      0.00, 0.00, 0.00, 0.5,
-      0.00, 0.00, 0.00, 0.5,
-      0.00, 0.00, 0.00, 0.5,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
    };
 
    float light[16]=  {
@@ -297,13 +297,14 @@ static void mui_render_keyboard(mui_handle_t *mui, char* grid[], unsigned id)
    for (i = 0; i <= 40; i++)
    {
       int line_y;
+      int ptr_width = height / 12;
       line_y    = (i / 10)*height/10.0;
 
       if (i == id)
          menu_display_draw_quad(
-               width/11.0 + (i % 10) * width/11.0 - 30,
-               height*2.5/4.0 + line_y - 30 - mui->font->size / 4,
-               60, 60,
+               width/11.0 + (i % 10) * width/11.0 - ptr_width/2,
+               height*2.5/4.0 + line_y - ptr_width/2 - mui->font->size / 4,
+               ptr_width, ptr_width,
                width, height,
                &light[0]);
 
