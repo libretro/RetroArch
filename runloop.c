@@ -885,7 +885,7 @@ static enum runloop_state runloop_check_state(
       menu_ctx_iterate_t iter;
       bool skip = false;
 #ifdef HAVE_OVERLAY
-      skip = osk_enable && BIT64_GET(trigger_input, settings->menu_ok_btn);
+      skip = osk_enable && input_keyboard_return_pressed();
 #endif
 
       if (!skip)
