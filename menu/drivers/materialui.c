@@ -455,7 +455,7 @@ static void mui_render_messagebox(mui_handle_t *mui,
    }
 
    if (menu_input_dialog_get_display_kb())
-      mui_render_keyboard(mui, kbd_grid, kbd_index);
+      mui_render_keyboard(mui, osk_grid, osk_ptr);
 
 end:
    string_list_free(list);

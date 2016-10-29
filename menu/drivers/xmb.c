@@ -786,7 +786,7 @@ static void xmb_render_messagebox_internal(
    }
 
    if (menu_input_dialog_get_display_kb())
-      xmb_render_keyboard(xmb, kbd_grid, kbd_index);
+      xmb_render_keyboard(xmb, osk_grid, osk_ptr);
 
 end:
    string_list_free(list);

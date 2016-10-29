@@ -161,49 +161,49 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
    if (menu_input_dialog_get_display_kb())
    {
-      if (kbd_upper)
+      if (osk_upper)
       {
          char* grid[] = {"!","@","#","$","%","^","&","*","(",")","Q","W","E","R","T","Y","U","I","O","P","A","S","D","F","G","H","J","K","L",":","Z","X","C","V","B","N","M"," ","<",">","?"};
-         memcpy(kbd_grid, grid, sizeof(grid));
+         memcpy(osk_grid, grid, sizeof(grid));
       }
       else
       {
-         char* grid[] = {"1","2","3","4","5","6","7","8","9","0","あ","w","e","r","t","y","u","i","o","p","a","s","d","f","g","h","j","k","l",";","z","x","c","v","b","n","m"," ",",",".","/"};
-         memcpy(kbd_grid, grid, sizeof(grid));
+         char* grid[] = {"1","2","3","4","5","6","7","8","9","0","q","w","e","r","t","y","u","i","o","p","a","s","d","f","g","h","j","k","l",";","z","x","c","v","b","n","m"," ",",",".","/"};
+         memcpy(osk_grid, grid, sizeof(grid));
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
-         if (kbd_index < 30)
-            kbd_index = kbd_index + 10;
+         if (osk_ptr < 30)
+            osk_ptr = osk_ptr + 10;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       {
-         if (kbd_index >= 10)
-            kbd_index = kbd_index - 10;
+         if (osk_ptr >= 10)
+            osk_ptr = osk_ptr - 10;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
-         if (kbd_index < 39)
-            kbd_index = kbd_index + 1;
+         if (osk_ptr < 39)
+            osk_ptr = osk_ptr + 1;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
-         if (kbd_index >= 1)
-            kbd_index = kbd_index - 1;
+         if (osk_ptr >= 1)
+            osk_ptr = osk_ptr - 1;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
       {
-         kbd_upper = ! kbd_upper;
+         osk_upper = ! osk_upper;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
       {
-         input_keyboard_line_append(kbd_grid[kbd_index]);
+         input_keyboard_line_append(osk_grid[osk_ptr]);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
