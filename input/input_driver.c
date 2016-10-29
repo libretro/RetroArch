@@ -619,9 +619,6 @@ uint64_t input_keys_pressed(void)
    settings_t     *settings = config_get_ptr();
    const struct retro_keybind *binds = settings->input.binds[0];
 
-   if (!current_input || !current_input_data)
-      return ret;
-
    if (
          check_input_driver_block_hotkey(
             current_input->input_state(current_input_data, &binds, 0,
