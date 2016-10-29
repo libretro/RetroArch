@@ -682,6 +682,7 @@ uint64_t input_menu_keys_pressed(void)
    unsigned i;
    uint64_t             ret = 0;
    settings_t     *settings = config_get_ptr();
+   const struct retro_keybind *binds[MAX_USERS] = {NULL};
 
    if (!current_input || !current_input_data)
       return ret;
@@ -699,14 +700,11 @@ uint64_t input_menu_keys_pressed(void)
       if (
             (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
             || !input_driver_block_hotkey) && current_input->key_pressed)
-#if 1
          && settings->input.binds[0][i].valid
-#endif
          )
       {
          int port;
          int port_max = 1;
-#if 1
          if (settings->input.all_users_control_menu)
             port_max  = settings->input.max_users;
 
@@ -717,9 +715,6 @@ uint64_t input_menu_keys_pressed(void)
             if (state)
                break;
          }
-#else
-         state = current_input->key_pressed(current_input_data, i);
-#endif
       }
 
       if (i >= RARCH_FIRST_META_KEY)
@@ -749,8 +744,6 @@ uint64_t input_menu_keys_pressed(void)
       if (state)
          ret |= (UINT64_C(1) << i);
    }
-
-   const struct retro_keybind *binds[MAX_USERS] = {NULL};
 
    if (menu_input_dialog_get_display_kb())
       return ret;
