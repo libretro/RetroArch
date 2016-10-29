@@ -271,7 +271,7 @@ static void mui_draw_text(font_data_t *font, float x, float y, unsigned width, u
    menu_display_draw_text(font, msg, width, height, &params);
 }
 
-static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
+static void mui_render_keyboard(mui_handle_t *mui, char* grid[], unsigned id)
 {
    unsigned i, width, height;
    float dark[16]=  {
@@ -297,10 +297,6 @@ static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
    for (i = 0; i <= 40; i++)
    {
       int line_y;
-      char letter[2];
-
-      letter[0] = grid[i];
-      letter[1] = '\0';
       line_y    = (i / 10)*height/10.0;
 
       if (i == id)
@@ -314,7 +310,7 @@ static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
       mui_draw_text(mui->font,
             width/11.0 + (i % 10) * width/11.0,
             height*2.5/4.0 + line_y,
-            width, height, letter, 0xffffffff, TEXT_ALIGN_CENTER);
+            width, height, grid[i], 0xffffffff, TEXT_ALIGN_CENTER);
    }
 }
 

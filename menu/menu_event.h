@@ -40,7 +40,7 @@ void menu_event_keyboard_set(bool down, enum retro_key key);
 unsigned char menu_event_keyboard_is_set(enum retro_key key);
 
 unsigned kbd_index;
-char kbd_grid[41];
+char* kbd_grid[41];
 bool kbd_upper;
 
 RETRO_END_DECLS

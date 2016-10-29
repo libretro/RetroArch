@@ -686,7 +686,7 @@ static void xmb_messagebox(void *data, const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
-static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid, unsigned id)
+static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid[], unsigned id)
 {
    unsigned i, width, height;
    float dark[16]=  {
@@ -712,10 +712,6 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid, unsigned id)
    for (i = 0; i <= 40; i++)
    {
       int line_y;
-      char letter[2];
-
-      letter[0] = grid[i];
-      letter[1] = '\0';
       line_y    = (i / 10)*height/10.0;
 
       if (i == id)
@@ -726,7 +722,7 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid, unsigned id)
                width, height,
                &light[0]);
 
-      xmb_draw_text(xmb, letter,
+      xmb_draw_text(xmb, grid[i],
             width/11.0 + (i % 10) * width/11.0,
             height*2.5/4.0 + line_y,
             1, 1, TEXT_ALIGN_CENTER, width, height, xmb->font);

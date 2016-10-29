@@ -162,9 +162,15 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    if (menu_input_dialog_get_display_kb())
    {
       if (kbd_upper)
-         strlcpy(kbd_grid, "!@#$%^&*()QWERTYUIOPASDFGHJKL:ZXCVBNM <>?", sizeof(kbd_grid));
+      {
+         char* grid[] = {"!","@","#","$","%","^","&","*","(",")","Q","W","E","R","T","Y","U","I","O","P","A","S","D","F","G","H","J","K","L",":","Z","X","C","V","B","N","M"," ","<",">","?"};
+         memcpy(kbd_grid, grid, sizeof(grid));
+      }
       else
-         strlcpy(kbd_grid, "1234567890qwertyuiopasdfghjkl:zxcvbnm ,./", sizeof(kbd_grid));
+      {
+         char* grid[] = {"1","2","3","4","5","6","7","8","9","0","あ","w","e","r","t","y","u","i","o","p","a","s","d","f","g","h","j","k","l",";","z","x","c","v","b","n","m"," ",",",".","/"};
+         memcpy(kbd_grid, grid, sizeof(grid));
+      }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
@@ -197,8 +203,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
       {
-         input_keyboard_event(true, kbd_grid[kbd_index], kbd_grid[kbd_index],
-               0, RETRO_DEVICE_KEYBOARD);
+         input_keyboard_line_append(kbd_grid[kbd_index]);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))

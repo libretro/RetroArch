@@ -166,6 +166,32 @@ static bool input_keyboard_line_event(
    return false;
 }
 
+bool input_keyboard_line_append(char* word)
+{
+   char *newbuf = (char*)
+         realloc(g_keyboard_line->buffer, g_keyboard_line->size + 2);
+   if (!newbuf)
+      return false;
+
+   memmove(newbuf + g_keyboard_line->ptr + 1,
+         newbuf + g_keyboard_line->ptr,
+         g_keyboard_line->size - g_keyboard_line->ptr + 1);
+
+   unsigned i = 0;
+   for (i = 0; i < strlen(word); i++)
+   {
+      newbuf[g_keyboard_line->ptr] = word[i];
+      g_keyboard_line->ptr++;
+      g_keyboard_line->size++;
+   }
+
+   newbuf[g_keyboard_line->size] = '\0';
+
+   g_keyboard_line->buffer = newbuf;
+
+   return false;
+}
+
 /**
  * input_keyboard_start_line:
  * @userdata                 : Userdata.
