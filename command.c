@@ -1094,7 +1094,7 @@ static void command_event_set_volume(float gain)
    settings->audio.volume  = MAX(settings->audio.volume, -80.0f);
    settings->audio.volume  = MIN(settings->audio.volume, 12.0f);
 
-   snprintf(msg, sizeof(msg), "%s: %.1f dB", 
+   snprintf(msg, sizeof(msg), "%s: %.1f dB",
          msg_hash_to_str(MSG_AUDIO_VOLUME),
          settings->audio.volume);
    runloop_msg_queue_push(msg, 1, 180, true);
@@ -1226,7 +1226,7 @@ static void command_event_load_auto_state(void)
    global_t   *global   = global_get_ptr();
 
 #ifdef HAVE_NETWORKING
-   if (     netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL) 
+   if (     netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
          && !settings->netplay.is_spectate)
       return;
 #endif
@@ -1455,7 +1455,7 @@ static bool command_event_save_auto_state(void)
          sizeof(savestate_name_auto));
 
    ret = content_save_state((const char*)savestate_name_auto, true, true);
-   RARCH_LOG("%s \"%s\" %s.\n", 
+   RARCH_LOG("%s \"%s\" %s.\n",
          msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
          savestate_name_auto, ret ?
          "succeeded" : "failed");
@@ -1778,7 +1778,7 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_set_video_mode(width, height, true);
 
                if (width == 0 || height == 0)
-                  snprintf(msg, sizeof(msg), "%s: DEFAULT", 
+                  snprintf(msg, sizeof(msg), "%s: DEFAULT",
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION));
                else
                   snprintf(msg, sizeof(msg),"%s: %dx%d",
@@ -2303,7 +2303,10 @@ bool command_event(enum event_command cmd, void *data)
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-            if (settings->video.black_frame_insertion)
+            bool is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+            runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, is_paused ? 1: 30, true);
+
+            if (settings->video.black_frame_insertion || is_paused)
             {
                if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
                   video_driver_cached_frame();
