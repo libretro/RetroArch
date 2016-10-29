@@ -2242,6 +2242,9 @@ int menu_hash_get_help_nl_enum(enum msg_hash_enums msg, char *s, size_t len);
 const char *msg_hash_to_str_vn(enum msg_hash_enums msg);
 int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len);
 
+const char *msg_hash_to_str_chs(enum msg_hash_enums msg);
+int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len);
+
 const char *msg_hash_to_str_us(enum msg_hash_enums msg);
 int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len);
 

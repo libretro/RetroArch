@@ -67,6 +67,9 @@ int menu_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case RETRO_LANGUAGE_VIETNAMESE:
          ret = menu_hash_get_help_vn_enum(msg, s, len);
+		 break;
+      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+         ret = menu_hash_get_help_chs_enum(msg, s, len);
          break;
       default:
          break;
@@ -123,6 +126,9 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_VIETNAMESE:
          ret = msg_hash_to_str_vn(msg);
+         break;
+      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+         ret = msg_hash_to_str_chs(msg);
          break;
       default:
          break;
