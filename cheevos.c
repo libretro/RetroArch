@@ -1830,9 +1830,10 @@ static size_t cheevos_eval_md5(
    }
    else
    {
-      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
-      filestream_seek(file, offset, SEEK_SET);
       size_t size = 0;
+      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
+
+      filestream_seek(file, offset, SEEK_SET);
 
       if (!file)
          return 0;
@@ -1843,13 +1844,13 @@ static size_t cheevos_eval_md5(
       for (;;)
       {
          uint8_t buffer[4096];
+         ssize_t num_read;
          size_t to_read = sizeof(buffer);
 
          if (to_read > max_size)
             to_read = max_size;
 
-         ssize_t num_read = filestream_read(file,
-               (void*)buffer, to_read);
+         num_read = filestream_read(file, (void*)buffer, to_read);
 
          if (num_read <= 0)
             break;
