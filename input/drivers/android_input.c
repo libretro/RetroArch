@@ -758,6 +758,14 @@ static void handle_hotplug(android_input_data_t *android_data,
       }
    }
 
+   /* Other ATV Devices
+    * Add other common ATV devices that will follow the Android
+    * Gaempad convention as "Android Gamepad"
+    */
+    /* to-do: add DS4 on Bravia ATV */
+   else if (strstr(device_name, "NVIDIA"))
+      strlcpy (name_buf, "Android Gamepad", sizeof(name_buf));
+
    /* GPD XD
     * This is a simple hack, basically groups the "back"
     * button with the rest of the gamepad
