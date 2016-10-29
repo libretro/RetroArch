@@ -2906,6 +2906,12 @@ static int menu_displaylist_parse_scan_directory_list(
          msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
          MENU_ENUM_LABEL_SCAN_DIRECTORY,
          MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+         msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
+         MENU_ENUM_LABEL_SCAN_FILE,
+         MENU_SETTING_ACTION, 0, 0);
 #endif
 
    return 0;

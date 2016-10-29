@@ -2178,13 +2178,16 @@ static bool setting_append_list(
                   parent_group);
          }
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ADD_CONTENT_LIST,
-               MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+         if (!string_is_equal(settings->menu.driver, "xmb"))
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_ADD_CONTENT_LIST,
+                  MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+         }
 
 #if defined(HAVE_NETWORKING)
          CONFIG_ACTION(
