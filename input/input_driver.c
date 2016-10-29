@@ -622,9 +622,10 @@ uint64_t input_keys_pressed(void)
    if (!current_input || !current_input_data)
       return ret;
 
-   if (current_input->key_pressed &&
+   if (
          check_input_driver_block_hotkey(
-            current_input->key_pressed(current_input_data, RARCH_ENABLE_HOTKEY)))
+            current_input->input_state(current_input_data, &binds, 0,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)))
       input_driver_block_libretro_input = true;
    else
       input_driver_block_libretro_input = false;
@@ -690,9 +691,10 @@ uint64_t input_menu_keys_pressed(void)
    if (!current_input || !current_input_data)
       return ret;
 
-   if (current_input->key_pressed &&
+   if (
          check_input_driver_block_hotkey(
-            current_input->key_pressed(current_input_data, RARCH_ENABLE_HOTKEY)))
+            current_input->input_state(current_input_data, &binds[0], 0,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY)))
       input_driver_block_libretro_input = true;
    else
       input_driver_block_libretro_input = false;
@@ -702,7 +704,7 @@ uint64_t input_menu_keys_pressed(void)
       bool state = false;
       if (
             (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-            || !input_driver_block_hotkey) && current_input->key_pressed)
+            || !input_driver_block_hotkey))
          && settings->input.binds[0][i].valid
          )
       {
@@ -713,8 +715,10 @@ uint64_t input_menu_keys_pressed(void)
 
          for (port = 0; port < port_max; port++)
          {
-            const input_device_driver_t *first = current_input->get_joypad_driver ? current_input->get_joypad_driver(current_input_data) : NULL;
-            const input_device_driver_t *sec   = current_input->get_sec_joypad_driver ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
+            const input_device_driver_t *first = current_input->get_joypad_driver 
+               ? current_input->get_joypad_driver(current_input_data) : NULL;
+            const input_device_driver_t *sec   = current_input->get_sec_joypad_driver 
+               ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
 
             if (sec)
                state = input_joypad_pressed(sec, port, settings->input.binds[0], i);
