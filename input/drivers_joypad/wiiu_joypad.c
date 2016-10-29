@@ -18,6 +18,8 @@
 #include "../../config.h"
 #endif
 
+#include <vpad/input.h>
+
 #include "../input_joypad_driver.h"
 #include "../input_driver.h"
 #include "../input_autodetect.h"
@@ -28,7 +30,6 @@
 #include "../../command.h"
 #include "string.h"
 
-#include "dynamic_libs/vpad_functions.h"
 #include "wiiu_dbg.h"
 
 #ifndef MAX_PADS
@@ -129,43 +130,43 @@ static int16_t wiiu_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static void wiiu_joypad_poll(void)
 {
-   VPADData vpad;
-   int vpadError = -1;
+   VPADStatus vpad;
+   VPADReadError vpadError;
    VPADRead(0, &vpad, 1, &vpadError);
 
    pad_state = 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_PLUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_MINUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_X) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_Y) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_B) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_ZR) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_ZL) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_STICK_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
-   pad_state |= (vpad.btns_h & VPAD_BUTTON_STICK_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_PLUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_MINUS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_X) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_Y) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_B) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_A) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_ZR) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_ZL) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_STICK_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
+   pad_state |= (vpad.hold & VPAD_BUTTON_STICK_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
 
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  vpad.lstick.x * 0x7FF0;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -vpad.lstick.y * 0x7FF0;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  vpad.rstick.x * 0x7FF0;
-   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -vpad.rstick.y * 0x7FF0;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X]  =  vpad.leftStick.x * 0x7FF0;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -vpad.leftStick.y * 0x7FF0;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  vpad.rightStick.x * 0x7FF0;
+   analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -vpad.rightStick.y * 0x7FF0;
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   if((vpad.tpdata.touched) && (vpad.tpdata.x > 200))
+   if((vpad.tpNormal.touched) && (vpad.tpNormal.x > 200))
       BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 
    /* panic button */
-   if((vpad.btns_h & VPAD_BUTTON_R) &&
-      (vpad.btns_h & VPAD_BUTTON_L) &&
-      (vpad.btns_h & VPAD_BUTTON_STICK_R) &&
-      (vpad.btns_h & VPAD_BUTTON_STICK_L))
+   if((vpad.hold & VPAD_BUTTON_R) &&
+      (vpad.hold & VPAD_BUTTON_L) &&
+      (vpad.hold & VPAD_BUTTON_STICK_R) &&
+      (vpad.hold & VPAD_BUTTON_STICK_L))
       command_event(CMD_EVENT_QUIT, NULL);
 
 }

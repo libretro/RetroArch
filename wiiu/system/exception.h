@@ -1,7 +1,9 @@
 /* source: https://github.com/QuarkTheAwesome/URetro */
 
-#include "wiiu/dynamic_libs/os_functions.h"
-
+#include <coreinit/exception.h>
+#include <coreinit/debug.h>
+#include <coreinit/dynload.h>
+#include <coreinit/internal.h>
 
 #ifndef __EXCEPTION_H__
 #define __EXCEPTION_H__
@@ -21,10 +23,10 @@ unsigned char exception_handler(void* contextIn) {
 
 	//Temporary hacky fix, please ignore me.
 
-	unsigned int coreinit_handle;
+	OSDynLoadModule coreinit_handle;
 	OSDynLoad_Acquire("coreinit.rpl", &coreinit_handle);
 	void (*DisassemblePPCRange)(void *start, void *end, void *printf_func, int *find_symbol_func, int flags);
-	OSDynLoad_FindExport(coreinit_handle, 0, "DisassemblePPCRange", &DisassemblePPCRange);
+	OSDynLoad_FindExport(coreinit_handle, 0, "DisassemblePPCRange", (void**)&DisassemblePPCRange);
 
 	int* context = (int*)contextIn;
 
@@ -44,9 +46,9 @@ unsigned char exception_handler(void* contextIn) {
 	return 0;
 }
 void InstallExceptionHandler() {
-	OSSetExceptionCallback(2, &exception_handler);
-	OSSetExceptionCallback(3, &exception_handler);
-	OSSetExceptionCallback(6, &exception_handler);
+	OSSetExceptionCallback(OS_EXCEPTION_TYPE_DSI, (OSExceptionCallbackFn)&exception_handler);
+	OSSetExceptionCallback(OS_EXCEPTION_TYPE_ISI, (OSExceptionCallbackFn)&exception_handler);
+	OSSetExceptionCallback(OS_EXCEPTION_TYPE_PROGRAM, (OSExceptionCallbackFn)&exception_handler);
 }
 
 #endif //__EXCEPTION_H__

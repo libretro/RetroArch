@@ -33,7 +33,7 @@
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
 #include <unistd.h>
 #elif defined(WIIU)
-#include <wiiu/dynamic_libs/os_functions.h>
+#include <coreinit/thread.h>
 #elif defined(PSP)
 #include <pspthreadman.h>
 #elif defined(VITA)
@@ -103,7 +103,7 @@ static INLINE void retro_sleep(unsigned msec)
 #elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
    usleep(1000 * msec);
 #elif defined(WIIU)
-   OSSleepTicks(((uint64_t)msec * BUS_SPEED)/4000000);
+   OSSleepTicks(((uint64_t)msec * 248625000)/4000000);
 #else
    struct timespec tv = {0};
    tv.tv_sec = msec / 1000;

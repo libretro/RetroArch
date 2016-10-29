@@ -16,9 +16,11 @@
  ****************************************************************************/
 #include <malloc.h>
 #include <string.h>
-#include "dynamic_libs/os_functions.h"
-#include "common/common.h"
 #include "memory.h"
+#include <coreinit/memory.h>
+#include <coreinit/baseheap.h>
+#include <coreinit/frameheap.h>
+#include <coreinit/expandedheap.h>
 
 #define MEMORY_ARENA_1          0
 #define MEMORY_ARENA_2          1
@@ -30,36 +32,18 @@
 #define MEMORY_ARENA_8          7
 #define MEMORY_ARENA_FG_BUCKET  8
 
-//!----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//! Memory functions
-//! This is the only place where those are needed so lets keep them more or less private
-//!----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-extern unsigned int * pMEMAllocFromDefaultHeapEx;
-extern unsigned int * pMEMAllocFromDefaultHeap;
-extern unsigned int * pMEMFreeToDefaultHeap;
-
-extern int (*MEMGetSizeForMBlockExpHeap)(void *ptr);
-extern int (* MEMGetBaseHeapHandle)(int mem_arena);
-extern unsigned int (* MEMGetAllocatableSizeForFrmHeapEx)(int heap, int align);
-extern void *(* MEMAllocFromFrmHeapEx)(int heap, unsigned int size, int align);
-extern void (* MEMFreeToFrmHeap)(int heap, int mode);
-extern void *(* MEMAllocFromExpHeapEx)(int heap, unsigned int size, int align);
-extern int (* MEMCreateExpHeapEx)(void* address, unsigned int size, unsigned short flags);
-extern void *(* MEMDestroyExpHeap)(int heap);
-extern void (* MEMFreeToExpHeap)(int heap, void* ptr);
-
-static int mem1_heap = -1;
-static int bucket_heap = -1;
+static MEMExpandedHeap* mem1_heap;
+static MEMExpandedHeap* bucket_heap;
 
 void memoryInitialize(void)
 {
-    int mem1_heap_handle = MEMGetBaseHeapHandle(MEMORY_ARENA_1);
+    MEMHeapHandle mem1_heap_handle = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
     unsigned int mem1_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(mem1_heap_handle, 4);
     void *mem1_memory = MEMAllocFromFrmHeapEx(mem1_heap_handle, mem1_allocatable_size, 4);
     if(mem1_memory)
         mem1_heap = MEMCreateExpHeapEx(mem1_memory, mem1_allocatable_size, 0);
 
-    int bucket_heap_handle = MEMGetBaseHeapHandle(MEMORY_ARENA_FG_BUCKET);
+    MEMHeapHandle bucket_heap_handle = MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG);
     unsigned int bucket_allocatable_size = MEMGetAllocatableSizeForFrmHeapEx(bucket_heap_handle, 4);
     void *bucket_memory = MEMAllocFromFrmHeapEx(bucket_heap_handle, bucket_allocatable_size, 4);
     if(bucket_memory)
@@ -70,11 +54,11 @@ void memoryRelease(void)
 {
     MEMDestroyExpHeap(mem1_heap);
     MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_1), 3);
-    mem1_heap = -1;
+    mem1_heap = NULL;
 
     MEMDestroyExpHeap(bucket_heap);
     MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_FG_BUCKET), 3);
-    bucket_heap = -1;
+    bucket_heap = NULL;
 }
 
 #if 0

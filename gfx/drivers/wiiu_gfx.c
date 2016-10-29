@@ -17,7 +17,8 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-#include "dynamic_libs/os_functions.h"
+#include <coreinit/screen.h>
+#include <coreinit/cache.h>
 #include "system/memory.h"
 #include "string.h"
 
