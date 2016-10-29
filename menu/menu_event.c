@@ -216,66 +216,6 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       trigger_input = 0;
    }
 
-   for (i = 0; i < RETROK_LAST; i++)
-   {
-      if (i == RETROK_F1 || i == RETROK_F11)
-         continue;
-
-      if (menu_keyboard_key_state[i])
-      {
-         if (settings->input.binds[0][RARCH_QUIT_KEY].key == (enum retro_key)i)
-         {
-            BIT32_SET(trigger_input, RARCH_QUIT_KEY);
-         }
-         else if (settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key == (enum retro_key)i)
-         {
-            BIT32_SET(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY);
-         }
-         else
-         {
-            switch ((enum retro_key)i)
-            {
-               case RETROK_PAGEUP:
-                  BIT32_SET(trigger_input, settings->menu_scroll_up_btn);
-                  break;
-               case RETROK_PAGEDOWN:
-                  BIT32_SET(trigger_input, settings->menu_scroll_down_btn);
-                  break;
-               case RETROK_SPACE:
-                  BIT32_SET(trigger_input, settings->menu_default_btn);
-                  break;
-               case RETROK_SLASH:
-                  BIT32_SET(trigger_input, settings->menu_search_btn);
-                  break;
-               case RETROK_RSHIFT:
-                  BIT32_SET(trigger_input, settings->menu_info_btn);
-                  break;
-               case RETROK_LEFT:
-                  BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT);
-                  break;
-               case RETROK_RIGHT:
-                  BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-                  break;
-               case RETROK_UP:
-                  BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_UP);
-                  break;
-               case RETROK_DOWN:
-                  BIT32_SET(trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN);
-                  break;
-               case RETROK_BACKSPACE:
-                  BIT32_SET(trigger_input, settings->menu_cancel_btn);
-                  break;
-               case RETROK_RETURN:
-                  BIT32_SET(trigger_input, settings->menu_ok_btn);
-                  break;
-               default:
-                  break;
-            }
-         }
-         menu_keyboard_key_state[i] = false;
-      }
-   }
-
    if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       ret = MENU_ACTION_UP;
    else if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
@@ -302,9 +242,6 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       ret = MENU_ACTION_INFO;
    else if (trigger_input & (UINT64_C(1) << RARCH_MENU_TOGGLE))
       ret = MENU_ACTION_TOGGLE;
-
-   if (runloop_cmd_triggered(trigger_input, RARCH_FULLSCREEN_TOGGLE_KEY))
-      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
 
    if (menu_keyboard_key_state[RETROK_F11])
    {

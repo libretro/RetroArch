@@ -883,24 +883,32 @@ static enum runloop_state runloop_check_state(
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       menu_ctx_iterate_t iter;
-      enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-      bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
+      bool skip = false;
+#ifdef HAVE_OVERLAY
+      skip = osk_enable && BIT64_GET(trigger_input, settings->menu_ok_btn);
+#endif
 
-      focused                 = focused && !ui_companion_is_on_foreground();
+      if (!skip)
+      {
+         enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
+         bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
 
-      iter.action             = action;
+         focused                 = focused && !ui_companion_is_on_foreground();
 
-      if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+         iter.action             = action;
 
-      if (focused || !runloop_idle)
-         menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+         if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
-      if (!focused)
-         return RUNLOOP_STATE_SLEEP;
+         if (focused || !runloop_idle)
+            menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
-      if (action == MENU_ACTION_QUIT)
-         return RUNLOOP_STATE_QUIT;
+         if (!focused)
+            return RUNLOOP_STATE_SLEEP;
+
+         if (action == MENU_ACTION_QUIT)
+            return RUNLOOP_STATE_QUIT;
+      }
    }
 #endif
    

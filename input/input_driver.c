@@ -37,6 +37,8 @@
 #include "../verbosity.h"
 #include "../command.h"
 
+#include "../menu/widgets/menu_input_dialog.h"
+
 static const input_driver_t *input_drivers[] = {
 #ifdef __CELLOS_LV2__
    &input_ps3,
@@ -747,6 +749,55 @@ uint64_t input_menu_keys_pressed(void)
       if (state)
          ret |= (UINT64_C(1) << i);
    }
+
+   const struct retro_keybind *binds[MAX_USERS] = {NULL};
+
+   if (menu_input_dialog_get_display_kb())
+      return ret;
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN))
+      BIT32_SET(ret, settings->menu_ok_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_BACKSPACE))
+      BIT32_SET(ret, settings->menu_cancel_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_SPACE))
+      BIT32_SET(ret, settings->menu_default_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_SLASH))
+      BIT32_SET(ret, settings->menu_search_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_RSHIFT))
+      BIT32_SET(ret, settings->menu_info_btn);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_RIGHT))
+      BIT32_SET(ret, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_LEFT))
+      BIT32_SET(ret, RETRO_DEVICE_ID_JOYPAD_LEFT);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_DOWN))
+      BIT32_SET(ret, RETRO_DEVICE_ID_JOYPAD_DOWN);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_UP))
+      BIT32_SET(ret, RETRO_DEVICE_ID_JOYPAD_UP);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, settings->input.binds[0][RARCH_QUIT_KEY].key ))
+      BIT32_SET(ret, RARCH_QUIT_KEY);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key ))
+      BIT32_SET(ret, RARCH_FULLSCREEN_TOGGLE_KEY);
 
    return ret;
 }
