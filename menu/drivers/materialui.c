@@ -89,7 +89,7 @@ typedef struct mui_handle
    unsigned icon_size;
    unsigned margin;
    unsigned glyph_width;
-   char box_message[255];
+   char box_message[1024];
 
    struct
    {

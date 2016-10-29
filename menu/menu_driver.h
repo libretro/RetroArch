@@ -223,7 +223,7 @@ typedef struct
    uint64_t state;
    struct
    {
-      char msg[255];
+      char msg[1024];
    } menu_state;
 
    char db_playlist_file[PATH_MAX_LENGTH];

@@ -158,7 +158,7 @@ typedef struct xmb_handle
    size_t selection_ptr_old;
    int depth;
    int old_depth;
-   char box_message[255];
+   char box_message[1024];
    float x;
    float alpha;
    uintptr_t thumbnail;
@@ -2322,7 +2322,7 @@ static void xmb_frame(void *data)
    unsigned i, width, height;
    float item_color[16], coord_black[16], coord_white[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
-   char msg[255];
+   char msg[1024];
    char title_msg[255];
    char title_truncated[255];
    bool render_background                  = false;
