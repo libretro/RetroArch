@@ -616,6 +616,8 @@ uint64_t input_keys_pressed(void)
 {
    unsigned i;
    uint64_t             ret = 0;
+   settings_t     *settings = config_get_ptr();
+   const struct retro_keybind *binds = settings->input.binds[0];
 
    if (!current_input || !current_input_data)
       return ret;
@@ -631,8 +633,9 @@ uint64_t input_keys_pressed(void)
    {
       bool state = false;
       if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-            || !input_driver_block_hotkey) && current_input->key_pressed)
-         state = current_input->key_pressed(current_input_data, i);
+            || !input_driver_block_hotkey))
+         state = current_input->input_state(current_input_data, &binds,
+               0, RETRO_DEVICE_JOYPAD, 0, i);
 
       if (i >= RARCH_FIRST_META_KEY)
          state |= current_input->meta_key_pressed(current_input_data, i);
