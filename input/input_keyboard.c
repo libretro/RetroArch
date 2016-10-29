@@ -168,17 +168,19 @@ static bool input_keyboard_line_event(
 
 bool input_keyboard_line_append(char* word)
 {
+   unsigned len = strlen(word);
+
    char *newbuf = (char*)
-         realloc(g_keyboard_line->buffer, g_keyboard_line->size + 2);
+         realloc(g_keyboard_line->buffer, g_keyboard_line->size + len*2);
    if (!newbuf)
       return false;
 
-   memmove(newbuf + g_keyboard_line->ptr + 1,
+   memmove(newbuf + g_keyboard_line->ptr + len,
          newbuf + g_keyboard_line->ptr,
-         g_keyboard_line->size - g_keyboard_line->ptr + 1);
+         g_keyboard_line->size - g_keyboard_line->ptr + len);
 
    unsigned i = 0;
-   for (i = 0; i < strlen(word); i++)
+   for (i = 0; i < len; i++)
    {
       newbuf[g_keyboard_line->ptr] = word[i];
       g_keyboard_line->ptr++;

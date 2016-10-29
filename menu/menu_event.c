@@ -161,15 +161,44 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
    if (menu_input_dialog_get_display_kb())
    {
-      if (osk_upper)
+      switch (osk_idx)
       {
-         char* grid[] = {"!","@","#","$","%","^","&","*","(",")","Q","W","E","R","T","Y","U","I","O","P","A","S","D","F","G","H","J","K","L",":","Z","X","C","V","B","N","M"," ","<",">","?"};
-         memcpy(osk_grid, grid, sizeof(grid));
-      }
-      else
-      {
-         char* grid[] = {"1","2","3","4","5","6","7","8","9","0","q","w","e","r","t","y","u","i","o","p","a","s","d","f","g","h","j","k","l",";","z","x","c","v","b","n","m"," ",",",".","/"};
-         memcpy(osk_grid, grid, sizeof(grid));
+         case 0:
+         {
+            char* grid[] = {"!","@","#","$","%","^","&","*","(",")",
+                            "Q","W","E","R","T","Y","U","I","O","P",
+                            "A","S","D","F","G","H","J","K","L",":",
+                            "Z","X","C","V","B","N","M"," ","<",">"};
+            memcpy(osk_grid, grid, sizeof(grid));
+            break;
+         }
+         case 1:
+         {
+            char* grid[] = {"1","2","3","4","5","6","7","8","9","0",
+                            "q","w","e","r","t","y","u","i","o","p",
+                            "a","s","d","f","g","h","j","k","l",";",
+                            "z","x","c","v","b","n","m"," ",",","."};
+            memcpy(osk_grid, grid, sizeof(grid));
+            break;
+         }
+         case 2:
+         {
+            char* grid[] = {"あ","い","う","え","お","ら","り","る","れ","ろ",
+                            "か","き","く","け","こ","が","ぎ","ぐ","げ","ご",
+                            "さ","し","す","せ","そ","ざ","じ","ず","ぜ","ぞ",
+                            "た","ち","つ","て","と","だ","ぢ","づ","で","ど"};
+            memcpy(osk_grid, grid, sizeof(grid));
+            break;
+         }
+         case 3:
+         {
+            char* grid[] = {"な","に","ぬ","ね","の","ば","び","ぶ","べ","ぼ",
+                            "は","ひ","ふ","へ","ほ","ぱ","ぴ","ぷ","ぺ","ぽ",
+                            "ま","み","む","め","も","ん","っ","ゃ","ゅ","ょ",
+                            "や","ゆ","よ","わ","を","ぁ","ぃ","ぅ","ぇ","ぉ"};
+            memcpy(osk_grid, grid, sizeof(grid));
+            break;
+         }
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
@@ -196,9 +225,20 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
             osk_ptr = osk_ptr - 1;
       }
 
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y))
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L))
       {
-         osk_upper = ! osk_upper;
+         if (osk_idx > 0)
+            osk_idx--;
+         else
+            osk_idx = 3;
+      }
+
+      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R))
+      {
+         if (osk_idx < 3)
+            osk_idx++;
+         else
+            osk_idx = 0;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
