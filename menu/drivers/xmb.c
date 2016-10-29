@@ -2861,9 +2861,6 @@ static void *xmb_init(void **userdata)
    menu_display_allocate_white_texture();
 
    xmb_init_horizontal_list(xmb);
-   /* FIXME: remove this? */
-   xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font_size);
-   xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font2_size);
    xmb_init_ribbon(xmb);
 
    return menu;
@@ -3424,6 +3421,9 @@ static void xmb_context_destroy(void *data)
 
    menu_display_font_free(xmb->font);
    menu_display_font_free(xmb->font2);
+
+   xmb->font = NULL;
+   xmb->font2 = NULL;
 }
 
 static void xmb_toggle(void *userdata, bool menu_on)
