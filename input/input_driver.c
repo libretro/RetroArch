@@ -710,8 +710,13 @@ uint64_t input_menu_keys_pressed(void)
 
          for (port = 0; port < port_max; port++)
          {
-            state = input_joypad_pressed(input_driver_get_joypad_driver(),
-                  port, settings->input.binds[0], i);
+            const input_device_driver_t *first = current_input->get_joypad_driver ? current_input->get_joypad_driver(current_input_data) : NULL;
+            const input_device_driver_t *sec   = current_input->get_sec_joypad_driver ? current_input->get_sec_joypad_driver(current_input_data) : NULL;
+
+            if (sec)
+               state = input_joypad_pressed(sec, port, settings->input.binds[0], i);
+            if (first)
+               state = input_joypad_pressed(first, port, settings->input.binds[0], i);
             if (state)
                break;
          }
