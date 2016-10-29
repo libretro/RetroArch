@@ -1825,7 +1825,7 @@ static size_t cheevos_eval_md5(
       if (info->size - offset < max_size)
          max_size = info->size - offset;
 
-      MD5_Update(ctx, (void*)(uint8_t*)info->data + offset, max_size);
+      MD5_Update(ctx, (void*)((uint8_t*)info->data + offset), max_size);
       return max_size;
    }
    else
