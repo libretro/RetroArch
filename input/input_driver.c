@@ -817,13 +817,6 @@ void **input_driver_get_data_ptr(void)
    return (void**)&current_input_data;
 }
 
-bool input_driver_key_pressed(unsigned *key)
-{
-   if (key && current_input->key_pressed)
-      return current_input->key_pressed(current_input_data, *key);
-   return true;
-}
-
 bool input_driver_has_capabilities(void)
 {
    if (!current_input->get_capabilities || !current_input_data)

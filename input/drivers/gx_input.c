@@ -96,19 +96,6 @@ static void gx_input_poll(void *data)
       gx->joypad->poll();
 }
 
-static bool gx_input_key_pressed(void *data, int key)
-{
-   settings_t *settings = config_get_ptr();
-   gx_input_t *gx       = (gx_input_t*)data;
-
-   if (settings->input.binds[0][key].valid &&
-         input_joypad_pressed(gx->joypad,
-            0, settings->input.binds[0], key))
-      return true;
-
-   return false;
-}
-
 static bool gx_input_meta_key_pressed(void *data, int key)
 {
    if (BIT64_GET(lifecycle_state, key))
@@ -169,7 +156,6 @@ input_driver_t input_gx = {
    gx_input_init,
    gx_input_poll,
    gx_input_state,
-   gx_input_key_pressed,
    gx_input_meta_key_pressed,
    gx_input_free_input,
    NULL,

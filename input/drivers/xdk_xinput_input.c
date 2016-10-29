@@ -96,19 +96,6 @@ static void *xdk_input_init(void)
    return xdk;
 }
 
-static bool xdk_input_key_pressed(void *data, int key)
-{
-   xdk_input_t *xdk     = (xdk_input_t*)data;
-   settings_t *settings = config_get_ptr();
-
-   if (settings->input.binds[0][key].valid &&
-         input_joypad_pressed(xdk->joypad,
-            0, settings->input.binds[0], key))
-      return true;
-
-   return false;
-}
-
 static bool xdk_input_meta_key_pressed(void *data, int key)
 {
    return false;
@@ -190,7 +177,6 @@ input_driver_t input_xinput = {
    xdk_input_init,
    xdk_input_poll,
    xdk_input_state,
-   xdk_input_key_pressed,
    xdk_input_meta_key_pressed,
    xdk_input_free_input,
    NULL,

@@ -88,14 +88,6 @@ static void* xenon360_input_init(void)
    return (void*)-1;
 }
 
-static bool xenon360_input_key_pressed(void *data, int key)
-{
-   if (state & (UINT64_C(1) << key))
-      return true;
-
-   return false;
-}
-
 static bool xenon360_input_meta_key_pressed(void *data, int key)
 {
    return (state & (UINT64_C(1) << key));
@@ -131,7 +123,6 @@ input_driver_t input_xenon360 = {
    xenon360_input_init,
    xenon360_input_poll,
    xenon360_input_state,
-   xenon360_input_key_pressed,
    xenon360_input_meta_key_pressed,
    xenon360_input_free_input,
    NULL,

@@ -76,7 +76,6 @@ typedef struct input_driver
    int16_t (*input_state)(void *data,
          const struct retro_keybind **retro_keybinds,
          unsigned port, unsigned device, unsigned index, unsigned id);
-   bool (*key_pressed)(void *data, int key);
    bool (*meta_key_pressed)(void *data, int key);
    void (*free)(void *data);
    bool (*set_sensor_state)(void *data, unsigned port,
@@ -233,8 +232,6 @@ const input_driver_t *input_get_ptr(void);
 const input_driver_t **input_get_double_ptr(void);
 
 void **input_driver_get_data_ptr(void);
-
-bool input_driver_key_pressed(unsigned *key);
 
 bool input_driver_has_capabilities(void);
 

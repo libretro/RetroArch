@@ -311,29 +311,6 @@ static int16_t cocoa_input_state(void *data,
    return 0;
 }
 
-static bool cocoa_input_key_pressed(void *data, int key)
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-   settings_t *settings      = config_get_ptr();
-
-   if (settings->input.binds[0][key].valid && apple_input_is_pressed(0, settings->input.binds[0], key))
-      return true;
-
-   if (settings->input.binds[0][key].valid)
-   {
-      if (input_joypad_pressed(apple->joypad,
-               0, settings->input.binds[0], key))
-         return true;
-
-#ifdef HAVE_MFI
-      if (input_joypad_pressed(apple->sec_joypad, 0, settings->input.binds[0], key))
-         return true;
-#endif
-   }
-
-   return false;
-}
-
 static bool cocoa_input_meta_key_pressed(void *data, int key)
 {
    return false;
@@ -429,7 +406,6 @@ input_driver_t input_cocoa = {
    cocoa_input_init,
    cocoa_input_poll,
    cocoa_input_state,
-   cocoa_input_key_pressed,
    cocoa_input_meta_key_pressed,
    cocoa_input_free,
    NULL,

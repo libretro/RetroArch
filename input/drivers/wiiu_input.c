@@ -94,19 +94,6 @@ static void* wiiu_input_initialize(void)
    return wiiu;
 }
 
-static bool wiiu_input_key_pressed(void *data, int key)
-{
-   settings_t *settings = config_get_ptr();
-   wiiu_input_t *wiiu     = (wiiu_input_t*)data;
-
-   if (settings->input.binds[0][key].valid &&
-         input_joypad_pressed(wiiu->joypad,
-            0, settings->input.binds[0], key))
-      return true;
-
-   return false;
-}
-
 static bool wiiu_input_meta_key_pressed(void *data, int key)
 {
    if (BIT64_GET(lifecycle_state, key))
@@ -167,7 +154,6 @@ input_driver_t input_wiiu = {
    wiiu_input_initialize,
    wiiu_input_poll,
    wiiu_input_state,
-   wiiu_input_key_pressed,
    wiiu_input_meta_key_pressed,
    wiiu_input_free_input,
    NULL,

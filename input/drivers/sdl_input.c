@@ -106,26 +106,6 @@ static int16_t sdl_analog_pressed(sdl_input_t *sdl, const struct retro_keybind *
    return pressed_plus + pressed_minus;
 }
 
-static bool sdl_input_key_pressed(void *data, int key)
-{
-   if (key >= 0 && key < RARCH_BIND_LIST_END)
-   {
-      sdl_input_t              *sdl     = (sdl_input_t*)data;
-      settings_t              *settings = config_get_ptr();
-      const struct retro_keybind *binds = settings->input.binds[0];
-
-      if (sdl_is_pressed(sdl, 0, binds, key))
-         return true;
-
-      if (settings->input.binds[0][key].valid &&
-            input_joypad_pressed(sdl->joypad,
-               0, settings->input.binds[0], key))
-         return true;
-   }
-
-   return false;
-}
-
 static bool sdl_input_meta_key_pressed(void *data, int key)
 {
    return false;
@@ -262,9 +242,7 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
       case RETRO_DEVICE_JOYPAD:
          return sdl_joypad_device_state(data, binds, port, id, &type);
       case RETRO_DEVICE_ANALOG:
-         {
-            return sdl_analog_device_state(data, binds, port, idx, id);
-         }
+         return sdl_analog_device_state(data, binds, port, idx, id);
       case RETRO_DEVICE_MOUSE:
          return sdl_mouse_device_state(data, id);
       case RETRO_DEVICE_POINTER:
@@ -437,7 +415,6 @@ input_driver_t input_sdl = {
    sdl_input_init,
    sdl_input_poll,
    sdl_input_state,
-   sdl_input_key_pressed,
    sdl_input_meta_key_pressed,
    sdl_input_free,
    NULL,

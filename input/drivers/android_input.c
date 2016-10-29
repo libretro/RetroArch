@@ -1166,22 +1166,6 @@ static int16_t android_input_state(void *data,
    return 0;
 }
 
-static bool android_input_key_pressed(void *data, int key)
-{
-   android_input_t *android = (android_input_t*)data;
-   settings_t *settings     = config_get_ptr();
-
-   if(settings->input.binds[0][key].valid && android_keyboard_port_input_pressed(settings->input.binds[0],key))
-      return true;
-
-   if (settings->input.binds[0][key].valid &&
-         input_joypad_pressed(android->joypad,
-            0, settings->input.binds[0], key))
-      return true;
-
-   return false;
-}
-
 static bool android_input_meta_key_pressed(void *data, int key)
 {
    return false;
@@ -1339,7 +1323,6 @@ input_driver_t input_android = {
    android_input_init,
    android_input_poll,
    android_input_state,
-   android_input_key_pressed,
    android_input_meta_key_pressed,
    android_input_free_input,
    android_input_set_sensor_state,
