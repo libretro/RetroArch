@@ -1396,12 +1396,12 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Directory Overlay";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
          return "Directory Overlay OSK";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
-         return "Scambia ingressi in rete";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
+         return "Giocatore 2 usa Controller 1 in rete";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
          return "Abilita spettatore in rete";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS: /* TODO: Original string changed */
-         return "Indirizzo IP";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS:
+         return "Indirizzo Server";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT:
          return "Porta TCP/UDP Rete";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
@@ -1432,6 +1432,14 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Supporto touch";
       case MENU_ENUM_LABEL_VALUE_CORE_ENABLE:
          return "Mostra nome dei core";
+	  case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST:
+         return "Comincia ad ospitare";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT:
+         return "Connetti alla rete ospite";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT:
+         return "Disconnetti";
+      case MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS:
+		 return "Settaggi di rete";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_ENABLE:
          return "Abilita DPI Override";
       case MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE:
@@ -1746,6 +1754,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Lista Obiettivi";
       case MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER:
          return "Aggiorna Online";
+	  case MENU_ENUM_LABEL_VALUE_NETPLAY:
+		 return "Rete";
       case MENU_ENUM_LABEL_VALUE_CORE_INFORMATION:
          return "Informazioni del core";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND:
