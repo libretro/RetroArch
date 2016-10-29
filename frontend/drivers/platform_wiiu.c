@@ -36,26 +36,18 @@
 
 #include "tasks/tasks_internal.h"
 #include "runloop.h"
-#include "dynamic_libs/os_functions.h"
-#include "dynamic_libs/fs_functions.h"
-#include "dynamic_libs/gx2_functions.h"
-#include "dynamic_libs/sys_functions.h"
-#include "dynamic_libs/vpad_functions.h"
-#include "dynamic_libs/padscore_functions.h"
-#include "dynamic_libs/socket_functions.h"
-//#include "dynamic_libs/curl_functions.h"
-#include "dynamic_libs/ax_functions.h"
-//#include "dynamic_libs/aoc_functions.h"
-//#include "dynamic_libs/acp_functions.h"
+#include <nsysnet/socket.h>
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
+#include "system/dynamic.h"
 #include "system/memory.h"
 #include "system/exception_handler.h"
 #include "system/exception.h"
 #include "utils/logger.h"
-#include "utils/utils.h"
-#include "common/common.h"
 #include <sys/iosupport.h>
+
+#include <coreinit/screen.h>
+#include <vpad/input.h>
 
 #include "wiiu_dbg.h"
 
@@ -211,7 +203,7 @@ static int log_write(struct _reent *r, int fd, const char *ptr, size_t len)
        return len;
 
    while(log_lock)
-      OSSleepTicks(((BUS_SPEED/4)) / 1000);
+      OSSleepTicks(((248625000/4)) / 1000);
    log_lock = 1;
 
    int ret;
@@ -262,33 +254,17 @@ static devoptab_t dotab_stdout = {
 
 int __entry_menu(int argc, char **argv)
 {
-   InitOSFunctionPointers();
-   InitSocketFunctionPointers();
-
+   InitFunctionPointers();
+   socket_lib_init();
    log_init("10.42.0.1");
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
-
-   InitFSFunctionPointers();
-   InitGX2FunctionPointers();
-   InitSysFunctionPointers();
-   InitVPadFunctionPointers();
-   InitPadScoreFunctionPointers();
-   InitAXFunctionPointers();
-//   InitCurlFunctionPointers();
-//   InitAocFunctionPointers();
-//   InitACPFunctionPointers();
-
-
    memoryInitialize();
    mount_sd_fat("sd");
-//   setup_os_exceptions();
-   InstallExceptionHandler();
+   setup_os_exceptions();
+//   InstallExceptionHandler();
    VPADInit();
    OSScreenInit();
-
-   int vpadError = -1;
-   VPADData vpad;
 
    verbosity_enable();
    DEBUG_VAR(argc);
@@ -296,12 +272,12 @@ int __entry_menu(int argc, char **argv)
    DEBUG_STR(argv[1]);
 #if 0
    int argc_ = 2;
-   char* argv_[] = {"retroarch.elf", "sd:/zz.gb"};
+   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/smb3.nes", NULL};
    rarch_main(argc_, argv_, NULL);
 #else
    rarch_main(argc, argv, NULL);
 #endif
-   int frames = 0;
+//   int frames = 0;
    do
    {
       unsigned sleep_ms = 0;

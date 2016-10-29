@@ -22,19 +22,40 @@
  * distribution.
  ***************************************************************************/
 #include <errno.h>
-#include <ogc/disc_io.h>
+//#include <ogc/disc_io.h>
 #include <sys/statvfs.h>
 #include <sys/dirent.h>
 #include <string.h>
 #include <malloc.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include "dynamic_libs/fs_functions.h"
-#include "dynamic_libs/os_functions.h"
 #include "fs_utils.h"
+#include <coreinit/mutex.h>
+#include <coreinit/filesystem.h>
 
 #define FS_ALIGNMENT            0x40
 #define FS_ALIGN(x)             (((x) + FS_ALIGNMENT - 1) & ~(FS_ALIGNMENT - 1))
+
+typedef struct __attribute__((packed))
+{
+    uint32_t flag;
+    uint32_t permission;
+    uint32_t owner_id;
+    uint32_t group_id;
+    uint32_t size;
+    uint32_t alloc_size;
+    uint64_t quota_size;
+    uint32_t ent_id;
+    uint64_t ctime;
+    uint64_t mtime;
+    uint8_t attributes[48];
+} FSStat__;
+
+typedef struct
+{
+   FSStat__ stat;
+   char name[256];
+} FSDirEntry;
 
 typedef struct _sd_fat_private_t {
     char *mount_path;
@@ -374,8 +395,8 @@ static int sd_fat_fstat_r (struct _reent *r, int fd, struct stat *st)
     // Zero out the stat buffer
     memset(st, 0, sizeof(struct stat));
 
-    FSStat stats;
-    int result = FSGetStatFile(file->dev->pClient, file->dev->pCmd, file->fd, &stats, -1);
+    FSStat__ stats;
+    int result = FSGetStatFile(file->dev->pClient, file->dev->pCmd, file->fd, (FSStat*)&stats, -1);
     if(result != 0) {
         r->_errno = result;
         OSUnlockMutex(file->dev->pMutex);
@@ -463,9 +484,9 @@ static int sd_fat_stat_r (struct _reent *r, const char *path, struct stat *st)
         return -1;
     }
 
-    FSStat stats;
+    FSStat__ stats;
 
-    int result = FSGetStat(dev->pClient, dev->pCmd, real_path, &stats, -1);
+    int result = FSGetStat(dev->pClient, dev->pCmd, real_path, (FSStat*)&stats, -1);
 
     free(real_path);
 
@@ -793,7 +814,7 @@ static int sd_fat_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filenam
 
     FSDirEntry * dir_entry = malloc(sizeof(FSDirEntry));
 
-    int result = FSReadDir(dirIter->dev->pClient, dirIter->dev->pCmd, dirIter->dirHandle, dir_entry, -1);
+    int result = FSReadDir(dirIter->dev->pClient, dirIter->dev->pCmd, dirIter->dirHandle, (FSDirectoryEntry*)dir_entry, -1);
     if(result < 0)
     {
         free(dir_entry);
@@ -894,7 +915,7 @@ static int sd_fat_add_device (const char *name, const char *mount_path, void *pC
     priv->mount_path = devpath;
     priv->pClient = pClient;
     priv->pCmd = pCmd;
-    priv->pMutex = malloc(OS_MUTEX_SIZE);
+    priv->pMutex = malloc(sizeof(OSMutex));
 
     if(!priv->pMutex) {
         free(dev);
@@ -974,8 +995,8 @@ int mount_sd_fat(const char *path)
     int result = -1;
 
     // get command and client
-    void* pClient = malloc(FS_CLIENT_SIZE);
-    void* pCmd = malloc(FS_CMD_BLOCK_SIZE);
+    void* pClient = malloc(sizeof(FSClient));
+    void* pCmd = malloc(sizeof(FSCmdBlock));
 
     if(!pClient || !pCmd) {
         // just in case free if not 0
@@ -988,7 +1009,7 @@ int mount_sd_fat(const char *path)
 
     FSInit();
     FSInitCmdBlock(pCmd);
-    FSAddClientEx(pClient, 0, -1);
+    FSAddClient(pClient, -1);
 
     char *mountPath = NULL;
 
@@ -1010,7 +1031,7 @@ int unmount_sd_fat(const char *path)
     if(result == 0)
     {
         UmountFS(pClient, pCmd, mountPath);
-        FSDelClient(pClient);
+        FSDelClient(pClient, -1);
         free(pClient);
         free(pCmd);
         free(mountPath);

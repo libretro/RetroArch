@@ -4,18 +4,12 @@ GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
 
 OBJ	:=
-OBJ	+= wiiu/dynamic_libs/ax_functions.o
-OBJ	+= wiiu/dynamic_libs/os_functions.o
-OBJ	+= wiiu/dynamic_libs/sys_functions.o
-OBJ	+= wiiu/fs/sd_fat_devoptab.o
-OBJ	+= wiiu/dynamic_libs/fs_functions.o
-OBJ	+= wiiu/dynamic_libs/padscore_functions.o
-OBJ	+= wiiu/dynamic_libs/vpad_functions.o
 OBJ	+= wiiu/system/memory.o
 OBJ	+= wiiu/system/exception_handler.o
-OBJ	+= wiiu/dynamic_libs/gx2_functions.o
-OBJ	+= wiiu/dynamic_libs/socket_functions.o
+OBJ	+= wiiu/fs/sd_fat_devoptab.o
 OBJ	+= wiiu/fs/fs_utils.o
+OBJ	+= wiiu/system/dynamic.o
+OBJ	+= wiiu/system/dyn_stubs.o
 
 DEFINES :=
 
@@ -79,6 +73,12 @@ endif
 ifeq ($(strip $(DEVKITPRO)),)
 $(error "Please set DEVKITPRO in your environment. export DEVKITPRO=<path to>devkitPRO")
 endif
+
+ifeq ($(strip $(WUT_ROOT)),)
+$(error "Please set WUT_ROOT in your environment. export WUT_ROOT=<path to>WUT")
+endif
+
+
 export PATH	  := $(PATH):$(DEVKITPPC)/bin:$(PORTLIBS)/bin
 export LIBOGC_INC := $(DEVKITPRO)/libogc/include
 export LIBOGC_LIB := $(DEVKITPRO)/libogc/lib/wii
@@ -96,7 +96,7 @@ NM      := $(PREFIX)nm
 LD      := $(CXX)
 
 
-INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -I$(LIBOGC_INC)
+INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -I$(WUT_ROOT)/include -I$(LIBOGC_INC)
 LIBDIRS := -L.
 
 CFLAGS  := -mrvl -mcpu=750 -meabi -mhard-float
@@ -109,11 +109,12 @@ else
 endif
 LDFLAGS := $(CFLAGS)
 
-ASFLAGS := $(CFLAGS) -mregnames
+ASFLAGS := $(CFLAGS) -mregnames $(INCDIRS)
 
 CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #CFLAGS += -fomit-frame-pointer -mword-relocations
 #CFLAGS	+= -Wall
+CFLAGS += -Dstatic_assert=_Static_assert
 CFLAGS += -DWIIU -DMSB_FIRST
 CFLAGS += -DHAVE_MAIN
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
@@ -125,13 +126,11 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 
 
-CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
 LDFLAGS  += -nostartfiles -Wl,-Map,$(notdir $@).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc
 LDFLAGS  += -Wl,-wrap,malloc_usable_size,-wrap,_malloc_r,-wrap,_free_r,-wrap,_realloc_r,-wrap,_calloc_r,-wrap,_memalign_r
 LDFLAGS  += -Wl,-wrap,_malloc_usable_size_r,-wrap,valloc,-wrap,_valloc_r,-wrap,_pvalloc_r,--gc-sections
-
-CFLAGS   += -std=gnu99
 
 LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
 
@@ -139,7 +138,7 @@ all: $(TARGET)
 
 $(TARGET): $(TARGET).elf
 
-$(TARGET).elf: $(OBJ) libretro_wiiu.a
+$(TARGET).elf: $(OBJ) libretro_wiiu.a wiiu/link.ld
 
 %.o: %.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
