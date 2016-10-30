@@ -1166,9 +1166,9 @@ static void command_event_init_controllers(void)
             /* Some cores do not properly range check port argument.
              * This is broken behavior of course, but avoid breaking
              * cores needlessly. */
-            RARCH_LOG("%s %u : %s (ID: %u).\n", i + 1,
-                  msg_hash_to_str(MSG_CONNECTING_TO_PORT),
-                  ident, device, i + 1);
+            RARCH_LOG("%s %u: %s (ID: %u).\n",
+                    msg_hash_to_str(MSG_CONNECTING_TO_PORT),
+                    device, ident, i+1);
             set_controller = true;
             break;
       }
