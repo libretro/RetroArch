@@ -60,10 +60,10 @@ During the frame of execution, when the core requests input, it receives the
 input from the state buffer, both local and real or simulated remote.
 
 Post-frame, it checks whether it's read more than it's actioned, i.e. if read >
-other self > other. If so, it first checks whether its simulated remote data
-was correct. If it was, it simply moves other up. If not, it rewinds to other
-(by loading the serialized state there) and runs the core in replay mode with
-the real data up to the least of self and read, then sets other to that.
+other and self > other. If so, it first checks whether its simulated remote
+data was correct. If it was, it simply moves other up. If not, it rewinds to
+other (by loading the serialized state there) and runs the core in replay mode
+with the real data up to the least of self and read, then sets other to that.
 
 When in Netplay mode, the callback for receiving input is replaced by
 input_state_net. It is the role of input_state_net to combine the true local
@@ -146,8 +146,17 @@ Command: LOAD_SAVESTATE
 Payload:
     {
        frame number: uint32
+       uncompressed size: uint32
        serialized save state: blob (variable size)
     }
 Description:
     Cause the other side to load a savestate, notionally one which the sending
-    side has also loaded.
+    side has also loaded. The serialized savestate is zlib compressed.
+
+Command: PAUSE
+Payload: None
+    Indicates that the core is paused. The receiving peer should also pause.
+
+Command: RESUME
+Payload: None
+    Indicates that the core is no longer paused.
