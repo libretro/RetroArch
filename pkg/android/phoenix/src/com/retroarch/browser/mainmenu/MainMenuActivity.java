@@ -40,13 +40,13 @@ public final class MainMenuActivity extends PreferenceActivity
 		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/com.retroarch/files";
 		retro.putExtra("EXTERNAL", external);
 
-      boolean hasPermission = (ContextCompat.checkSelfPermission(activity,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
-      if (!hasPermission) {
-         ActivityCompat.requestPermissions(parentActivity,
-         new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-         REQUEST_WRITE_STORAGE);
-      }
+		boolean hasPermission = (ContextCompat.checkSelfPermission(activity,
+				Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
+		if (!hasPermission) {
+			ActivityCompat.requestPermissions(parentActivity,
+			new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+			REQUEST_WRITE_STORAGE);
+		}
 	}
 
 	@Override
@@ -63,11 +63,11 @@ public final class MainMenuActivity extends PreferenceActivity
 		
 		if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB))
 		{
-		   retro = new Intent(this, RetroActivityFuture.class);
+			retro = new Intent(this, RetroActivityFuture.class);
 		}
 		else
 		{
-		   retro = new Intent(this, RetroActivityPast.class);
+			retro = new Intent(this, RetroActivityPast.class);
 		}
 		retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
