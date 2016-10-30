@@ -2021,6 +2021,7 @@ static int action_ok_undo_save_state(const char *path,
 }
 
 #ifdef HAVE_NETWORKING
+
 #ifdef HAVE_ZLIB
 static void cb_decompressed(void *task_data, void *user_data, const char *err)
 {
@@ -2055,7 +2056,6 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
 }
 #endif
 
-#ifdef HAVE_NETWORKING
 static int generic_action_ok_network(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum msg_hash_enums enum_idx)
@@ -2186,7 +2186,6 @@ static void cb_generic_dir_download(void *task_data,
    generic_action_ok_network(transf->path, transf->path, 0, 0, 0,
          MENU_ENUM_LABEL_CB_CORE_CONTENT_LIST);
 }
-#endif
 
 /* expects http_transfer_t*, menu_file_transfer_t* */
 static void cb_generic_download(void *task_data,
@@ -2302,7 +2301,7 @@ static void cb_generic_download(void *task_data,
       goto finish;
    }
 
-#ifdef HAVE_COMPRESSION
+#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
    if (!settings->network.buildbot_auto_extract_archive)
       goto finish;
 
