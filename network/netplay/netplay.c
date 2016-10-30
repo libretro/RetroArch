@@ -1494,7 +1494,7 @@ void netplay_load_savestate(netplay_t *netplay,
    /* Compress it */
    memset(&stream, 0, sizeof(stream));
    deflateInit(&stream, Z_DEFAULT_COMPRESSION);
-   stream.next_in = (z_const Bytef *) serial_info->data_const;
+   stream.next_in = (Bytef *) serial_info->data_const;
    stream.avail_in = serial_info->size;
    stream.next_out = netplay->zbuffer;
    stream.avail_out = netplay->zbuffer_size;
