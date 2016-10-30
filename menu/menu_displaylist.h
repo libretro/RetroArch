@@ -170,7 +170,7 @@ typedef struct menu_displaylist_info
    char path_c[PATH_MAX_LENGTH];
    char label[255];
    uint32_t label_hash;
-   char exts[255];
+   char exts[PATH_MAX_LENGTH];
    unsigned type;
    unsigned type_default;
    size_t directory_ptr;
