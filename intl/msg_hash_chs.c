@@ -57,33 +57,33 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_SHADER_NEXT:
             snprintf(s, len,
-                  "Applies next shader in directory.");
+                  "应用文件夹中的下一个Shader特效。");
             break;
          case RARCH_SHADER_PREV:
             snprintf(s, len,
-                  "Applies previous shader in directory.");
+                  "应用文件夹中的上一个Shader特效。");
             break;
          case RARCH_CHEAT_INDEX_PLUS:
          case RARCH_CHEAT_INDEX_MINUS:
          case RARCH_CHEAT_TOGGLE:
             snprintf(s, len,
-                  "金手指.");
+                  "金手指。");
             break;
          case RARCH_RESET:
             snprintf(s, len,
-                  "Reset the content.");
+                  "重置游戏内容。");
             break;
          case RARCH_SCREENSHOT:
             snprintf(s, len,
-                  "截图.");
+                  "截图。");
             break;
          case RARCH_MUTE:
             snprintf(s, len,
-                  "静音/取消经营.");
+                  "静音/取消静音。");
             break;
          case RARCH_OSK:
             snprintf(s, len,
-                  "Toggles onscreen keyboard.");
+                  "显示/隐藏屏显键盘。");
             break;
          case RARCH_NETPLAY_FLIP:
             snprintf(s, len,
@@ -91,7 +91,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_SLOWMOTION:
             snprintf(s, len,
-                  "Hold for slowmotion.");
+                  "按住并以慢动作运行。");
             break;
          case RARCH_ENABLE_HOTKEY:
             snprintf(s, len,
@@ -112,15 +112,15 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_VOLUME_UP:
             snprintf(s, len,
-                  "调高音量.");
+                  "提高音量。");
             break;
          case RARCH_VOLUME_DOWN:
             snprintf(s, len,
-                  "降低音量.");
+                  "降低音量。");
             break;
          case RARCH_OVERLAY_NEXT:
             snprintf(s, len,
-                  "Switches to next overlay. Wraps around.");
+                  "切换到下一个屏幕覆层。将会循环选择。");
             break;
          case RARCH_DISK_EJECT_TOGGLE:
             snprintf(s, len,
@@ -137,60 +137,59 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_GRAB_MOUSE_TOGGLE:
             snprintf(s, len,
-                  "Toggles mouse grab. \n"
+                  "鼠标捕获开关 \n"
                   " \n"
-                  "When mouse is grabbed, RetroArch hides the \n"
-                  "mouse, and keeps the mouse pointer inside \n"
-                  "the window to allow relative mouse input to \n"
-                  "work better.");
+                  "当鼠标捕获开启时，RetroArch将会隐藏鼠标指针，并 \n"
+                  "使之控制在窗口中。这使得一些依靠鼠标相对位置的程 \n"
+                  "序能更好运行。");
             break;
          case RARCH_MENU_TOGGLE:
-            snprintf(s, len, "Toggles menu.");
+            snprintf(s, len, "切换菜单显示。");
             break;
          case RARCH_LOAD_STATE_KEY:
             snprintf(s, len,
-                  "Loads state.");
+                  "加载游戏状态。");
             break;
          case RARCH_FULLSCREEN_TOGGLE_KEY:
             snprintf(s, len,
-                  "Toggles fullscreen.");
+                  "切换到全屏模式。");
             break;
          case RARCH_QUIT_KEY:
             snprintf(s, len,
-                  "Key to exit RetroArch cleanly. \n"
+                  "用于正常退出 RetroArch 的按键 \n"
                   " \n"
-                  "Killing it in any hard way (SIGKILL, etc.) will \n"
-                  "terminate RetroArch without saving RAM, etc."
+                  "使用任何强制手段来退出RetroArch（如发送SIGKILL） \n"
+                  "可能导致系统无法正确存储数据。"
 #ifdef __unix__
-                  "\nOn Unix-likes, SIGINT/SIGTERM allows a clean \n"
-                  "deinitialization."
+                  "\n在类Unix系统上，SIGINT/SIGTERM信号能够保证正常 \n"
+                  "关闭程序。"
 #endif
                   "");
             break;
          case RARCH_STATE_SLOT_PLUS:
          case RARCH_STATE_SLOT_MINUS:
             snprintf(s, len,
-                  "State slots. \n"
+                  "状态存储槽 \n"
                   " \n"
-                  "With slot set to 0, save state name is \n"
-                  "*.state (or whatever defined on commandline). \n"
+                  "当槽位选择为0时，状态存档将以*.state命名（或其他 \n"
+                  "在命令行中定义的名称）。 \n"
                   " \n"
-                  "When slot is not 0, path will be <path><d>, \n"
-                  "where <d> is slot number.");
+                  "当状态槽不为0时，路径将会设为<path><d>，其中<d> \n"
+                  "是状态槽的索引。");
             break;
          case RARCH_SAVE_STATE_KEY:
             snprintf(s, len,
-                  "Saves state.");
+                  "保存游戏状态。");
             break;
          case RARCH_REWIND:
             snprintf(s, len,
-                  "Hold button down to rewind. \n"
+                  "按住按钮来回溯 \n"
                   " \n"
-                  "Rewinding must be enabled.");
+                  "回溯功能必须被启用。");
             break;
          case RARCH_MOVIE_RECORD_TOGGLE:
             snprintf(s, len,
-                  "Toggle between recording and not.");
+                  "在录制和非录制模式切换。");
             break;
          default:
             if (string_is_empty(s))
@@ -221,22 +220,16 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Password for your Retro Achievements account.");
          break;
       case MENU_ENUM_LABEL_USER_LANGUAGE:
-         snprintf(s, len, "Localizes the menu and all onscreen messages \n"
-               "according to the language you have selected \n"
-               "here. \n"
+         snprintf(s, len, "依据选择的语言来本地化菜单和其他屏显消息。 \n"
                " \n"
-               "Requires a restart for the changes \n"
-               "to take effect. \n"
+               "需要重新启动来使之生效。 \n"
                " \n"
-               "Note: not all languages might be currently \n"
-               "implemented. \n"
+               "注意：可能不是所有的语言都已完成翻译工作。 \n"
                " \n"
-               "In case a language is not implemented, \n"
-               "we fallback to English.");
+               "若一个语言没有被翻译，则会退回到英语显示。");
          break;
       case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
-         snprintf(s, len, "Change the font that is used \n"
-               "for the Onscreen Display text.");
+         snprintf(s, len, "改变屏显文字的字体。");
          break;
       case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
          snprintf(s, len, "Automatically load content-specific core options.");
@@ -355,146 +348,135 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
-               "回到上级目录.");
+               "回到上级目录。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
          snprintf(s, len,
-               "Shader preset file.");
+               "Shader预设文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_SHADER:
          snprintf(s, len,
-               "Shader file.");
+               "Shader文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_REMAP:
          snprintf(s, len,
-               "Remap controls file.");
+               "控制重映射文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CHEAT:
          snprintf(s, len,
-               "金手指文件.");
+               "金手指文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY:
          snprintf(s, len,
-               "Overlay file.");
+               "覆层文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_RDB:
          snprintf(s, len,
-               "Database file.");
+               "数据库文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_FONT:
          snprintf(s, len,
-               "TrueType字体文件.");
+               "TrueType字体文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
          snprintf(s, len,
-               "Plain file.");
+               "普通文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN:
          snprintf(s, len,
-               "视频. \n"
+               "视频 \n"
                " \n"
-               "Select it to open this file with the \n"
-               "video player.");
+               "选择文件并使用视频播放器打开。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN:
          snprintf(s, len,
-               "音乐. \n"
+               "音乐 \n"
                " \n"
-               "Select it to open this file with the \n"
-               "music player.");
+               "选择文件并使用音乐播放器打开。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE:
          snprintf(s, len,
-               "图片文件.");
+               "图片文件。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER:
          snprintf(s, len,
-               "图片. \n"
+               "图片 \n"
                " \n"
-               "Select it to open this file with the \n"
-               "image viewer.");
+               "选择文件并使用图片浏览器打开。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION:
          snprintf(s, len,
-               "Libretro core. \n"
+               "Libretro核心 \n"
                " \n"
-               "Selecting this will associate this core \n"
-               "to the game.");
+               "选中核心将会使其关联至游戏。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CORE:
          snprintf(s, len,
-               "Libretro core. \n"
+               "Libretro核心 \n"
                " \n"
-               "Select this file to have RetroArch load this core.");
+               "选择该文件使 RetroArch 加载该核心。");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
          snprintf(s, len,
-               "目录. \n"
+               "目录 \n"
                " \n"
-               "Select it to open this directory.");
+               "选择并打开该文件夹。");
          break;
       case MENU_ENUM_LABEL_CACHE_DIRECTORY:
          snprintf(s, len,
-               "Cache Directory. \n"
+               "缓存目录 \n"
                " \n"
-               "Content decompressed by RetroArch will be \n"
-               "temporarily extracted to this directory.");
+               "被RetroArch解压的游戏内容会临时存放到这个文 \n"
+               "件夹。");
          break;
       case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
          snprintf(s, len,
-               "If enabled, every content loaded \n"
-               "in RetroArch will be automatically \n"
-               "added to the recent history list.");
+               "若开启，所有在RetroArch中加载过的文件 \n"
+               "都会自动的放入最近使用历史列表中。");
          break;
       case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
          snprintf(s, len,
-               "File Browser Directory. \n"
+               "文件浏览器目录 \n"
                " \n"
-               "Sets start directory for menu file browser.");
+               "设置文件浏览器的初始目录。");
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          snprintf(s, len,
-               "Influence how input polling is done inside \n"
-               "RetroArch. \n"
+               "影响输入轮询过程在RetroArch中的执行方式。 \n"
                " \n"
-               "Early  - Input polling is performed before \n"
-               "the frame is processed. \n"
-               "Normal - Input polling is performed when \n"
-               "polling is requested. \n"
-               "Late   - Input polling is performed on \n"
-               "first input state request per frame.\n"
+               "稍早 - 输入轮询过程将在帧生成之前执行。 \n"
+               "正常 - 输入轮询过程将在被请求时执行。 \n"
+               "稍晚 - 输入轮询过程将在每一帧的首次请求时执行。 \n"
                " \n"
-               "Setting it to 'Early' or 'Late' can result \n"
-               "in less latency, \n"
-               "depending on your configuration.\n\n"
-               "When netplay is enabled, the default polling \n"
-               "behavior (Normal) will be used, \n"
-               "regardless of the value set here."
+               "依据设置的不同，设置为“稍早”或“稍晚”可以获得较低 \n"
+               "的时延。 \n"
+               "当在进行在线游戏时，不管设置的值如何，都只会启用 \n"
+               "正常模式进行输入轮询过程。"
                );
          break;
       case MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          snprintf(s, len,
-               "Hide input descriptors that were not set \n"
-               "by the core.");
+               "隐藏不被核心使用的输入描述。");
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE:
          snprintf(s, len,
-               "Video refresh rate of your monitor. \n"
-               "Used to calculate a suitable audio input rate.");
+               "显示器的视频刷新率。 \n"
+               "可被用来计算一个合适的音频输入率。");
          break;
       case MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE:
          snprintf(s, len,
-               "Forcibly disable sRGB FBO support. Some Intel \n"
-               "OpenGL drivers on Windows have video problems \n"
-               "with sRGB FBO support enabled.");
+               "强制关闭sRGB帧缓冲支持。\n"
+               "\n"
+               "某些在Windows上的Intel的OpenGL驱动会对sRGB帧缓 \n"
+               "冲支持产生问题，需要启用以强制关闭程序对其的使用。");
          break;
       case MENU_ENUM_LABEL_AUDIO_ENABLE:
          snprintf(s, len,
-               "Enable audio output.");
+               "启用音频输出。");
          break;
       case MENU_ENUM_LABEL_AUDIO_SYNC:
          snprintf(s, len,
-               "Synchronize audio (recommended).");
+               "同步音频（推荐）。");
          break;
       case MENU_ENUM_LABEL_AUDIO_LATENCY:
          snprintf(s, len,
@@ -676,7 +658,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "欢迎使用RetroArch\n"
                "\n"
                "正在解压必要文件, 请稍等。\n"
-               "这可能需要一点时间...\n"
+               "这可能需要一点时间……\n"
                );
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
@@ -1409,9 +1391,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
          snprintf(s, len,
-               "截图目录. \n"
+               "截图目录 \n"
                " \n"
-               "Directory to dump screenshots to."
+               "用于保存截图的文件夹。"
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
@@ -1452,11 +1434,9 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          snprintf(s, len,
-               "动态壁纸目录. \n"
+               "动态壁纸目录 \n"
                " \n"
-               " The place to store wallpapers that will \n"
-               "be loaded dynamically by the menu depending \n"
-               "on context.");
+               "保存用于主界面的、依据游戏内容变化的动态壁纸。");
          break;
       case MENU_ENUM_LABEL_SLOWMOTION_RATIO:
          snprintf(s, len,
@@ -3080,7 +3060,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_VALUE_REBOOTING:
          return "正在重启……";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
-         return "音频驱动启动失败. 将在无音频模式下继续启动.";
+         return "音频驱动启动失败，将在无音频模式下继续启动。";
       case MSG_FOUND_LAST_STATE_SLOT:
          return "Found last state slot";
       case MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT:
@@ -3180,17 +3160,17 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_INPUT_CHEAT:
          return "输入金手指";
       case MSG_DECOMPRESSION_ALREADY_IN_PROGRESS:
-         return "解压缩正在进行中.";
+         return "解压缩已在进行中。";
       case MSG_DECOMPRESSION_FAILED:
-         return "解压缩失败.";
+         return "解压缩失败。";
       case MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY:
          return "Core options file created successfully.";
       case MSG_FAILED_TO_CREATE_THE_DIRECTORY:
-         return "创建目录失败.";
+         return "创建目录失败。";
       case MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE:
          return "Failed to extract content from compressed file";
       case MSG_FILE_NOT_FOUND:
-         return "文件未找到";
+         return "未找到文件";
       case MSG_ERROR_SAVING_CORE_OPTIONS_FILE:
          return "Error saving core options file.";
       case MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT:
@@ -3220,7 +3200,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_COMPILED_AGAINST_API:
          return "Compiled against API";
       case MSG_FAILED_TO_LOAD:
-         return "载入失败";
+         return "无法加载";
       case MSG_CONNECTED_TO:
          return "Connected to";
       case MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR:
@@ -3508,9 +3488,9 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_SLOW_MOTION:
          return "慢动作。";
       case MSG_SLOW_MOTION_REWIND:
-         return "慢动作倒回。";
+         return "慢动作回溯。";
       case MSG_REWINDING:
-         return "正在倒回。";
+         return "正在回溯。";
       case MSG_REWIND_REACHED_END:
          return "Reached end of rewind buffer.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
@@ -3722,7 +3702,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS:
          return "存档";
       case MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS:
-         return "倒回";
+         return "回溯";
       case MENU_ENUM_LABEL_VALUE_SHADER:
          return "Shader";
       case MENU_ENUM_LABEL_VALUE_CHEAT:
@@ -4084,7 +4064,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY:
          return "帧延时";
       case MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE:
-         return "工作周期";
+         return "Turbo占空比";
       case MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD:
          return "Turbo区间";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT:
@@ -4112,7 +4092,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES:
          return "应用Shader修改";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
-         return "启用倒回";
+         return "启用回溯";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "收藏";
       case MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST:
@@ -4140,7 +4120,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
          return "加载配置";
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
-         return "倒回粒度";
+         return "回溯粒度";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
          return "加载重映射文件";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
@@ -4742,7 +4722,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS:
          return "存档槽 -";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND:
-         return "倒回";
+         return "回溯";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_MOVIE_RECORD_TOGGLE:
          return "视频录制开关";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE:
@@ -4786,7 +4766,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV:
          return "上一张光盘";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE:
-         return "切换鼠标抓取";
+         return "鼠标捕获开关";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE:
          return "切换菜单";
       case MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX:
