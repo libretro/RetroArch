@@ -1818,7 +1818,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 }
 
 char* word_wrap (char* buffer, char* string, int line_width) {
-   int i = 0;
+   unsigned i = 0;
    int k, counter;
 
    while(i < strlen( string ) ) 

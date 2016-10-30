@@ -285,17 +285,17 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L))
       {
          if (osk_idx > OSK_TYPE_UNKNOWN + 1)
-            osk_idx--;
+            osk_idx = (enum osk_type)(osk_idx - 1);
          else
-            osk_idx = OSK_TYPE_LAST - 1;
+            osk_idx = (enum osk_type)(OSK_TYPE_LAST - 1);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R))
       {
          if (osk_idx < OSK_TYPE_LAST - 1)
-            osk_idx++;
+            osk_idx = (enum osk_type)(osk_idx + 1);
          else
-            osk_idx = OSK_TYPE_UNKNOWN + 1;
+            osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
