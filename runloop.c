@@ -860,14 +860,12 @@ static enum runloop_state runloop_check_state(
          if (!focused)
             return RUNLOOP_STATE_SLEEP;
 
-         if (action == MENU_ACTION_QUIT)
+         if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
             return RUNLOOP_STATE_QUIT;
       }
 
       if (menu_driver_is_binding_state())
-      {
          trigger_input = 0;
-      }
    }
 #endif
    
@@ -914,7 +912,7 @@ static enum runloop_state runloop_check_state(
 #endif
 
    if (runloop_iterate_time_to_exit(
-            runloop_cmd_press(current_input, RARCH_QUIT_KEY)) != 1)
+            runloop_cmd_press(trigger_input, RARCH_QUIT_KEY)) != 1)
       return RUNLOOP_STATE_QUIT;
 
    if (runloop_idle)
