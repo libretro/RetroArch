@@ -207,7 +207,7 @@ void fill_pathname_application_path(char *s, size_t len)
   CFBundleRef bundle = CFBundleGetMainBundle();
 #endif
 #ifdef _WIN32
-   DWORD ret
+   DWORD ret;
 #endif
 #ifdef __HAIKU__
    image_info info;
