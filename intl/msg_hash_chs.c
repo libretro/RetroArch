@@ -67,7 +67,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          case RARCH_CHEAT_INDEX_MINUS:
          case RARCH_CHEAT_TOGGLE:
             snprintf(s, len,
-                  "Cheats.");
+                  "金手指.");
             break;
          case RARCH_RESET:
             snprintf(s, len,
@@ -75,11 +75,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_SCREENSHOT:
             snprintf(s, len,
-                  "Take screenshot.");
+                  "截图.");
             break;
          case RARCH_MUTE:
             snprintf(s, len,
-                  "Mute/unmute audio.");
+                  "静音/取消经营.");
             break;
          case RARCH_OSK:
             snprintf(s, len,
@@ -112,11 +112,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_VOLUME_UP:
             snprintf(s, len,
-                  "Increases audio volume.");
+                  "调高音量.");
             break;
          case RARCH_VOLUME_DOWN:
             snprintf(s, len,
-                  "Decreases audio volume.");
+                  "降低音量.");
             break;
          case RARCH_OVERLAY_NEXT:
             snprintf(s, len,
@@ -355,7 +355,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
-               "Go back to the parent directory.");
+               "回到上级目录.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
          snprintf(s, len,
@@ -371,7 +371,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CHEAT:
          snprintf(s, len,
-               "Cheat file.");
+               "金手指文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_OVERLAY:
          snprintf(s, len,
@@ -383,7 +383,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_FONT:
          snprintf(s, len,
-               "TrueType font file.");
+               "TrueType字体文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_PLAIN_FILE:
          snprintf(s, len,
@@ -391,25 +391,25 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_MOVIE_OPEN:
          snprintf(s, len,
-               "Video. \n"
+               "视频. \n"
                " \n"
                "Select it to open this file with the \n"
                "video player.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_MUSIC_OPEN:
          snprintf(s, len,
-               "Music. \n"
+               "音乐. \n"
                " \n"
                "Select it to open this file with the \n"
                "music player.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE:
          snprintf(s, len,
-               "Image file.");
+               "图片文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER:
          snprintf(s, len,
-               "Image. \n"
+               "图片. \n"
                " \n"
                "Select it to open this file with the \n"
                "image viewer.");
@@ -429,7 +429,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
          snprintf(s, len,
-               "Directory. \n"
+               "目录. \n"
                " \n"
                "Select it to open this directory.");
          break;
@@ -673,10 +673,10 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT:
          snprintf(s, len,
-               "Welcome to RetroArch\n"
+               "欢迎使用RetroArch\n"
                "\n"
-               "Extracting assets, please wait.\n"
-               "This might take a while...\n"
+               "正在解压必要文件, 请稍等。\n"
+               "这可能需要一点时间...\n"
                );
          break;
       case MENU_ENUM_LABEL_INPUT_DRIVER:
@@ -1409,7 +1409,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
          snprintf(s, len,
-               "Screenshot Directory. \n"
+               "截图目录. \n"
                " \n"
                "Directory to dump screenshots to."
                );
@@ -1452,7 +1452,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          snprintf(s, len,
-               "Dynamic Wallpapers Directory. \n"
+               "动态壁纸目录. \n"
                " \n"
                " The place to store wallpapers that will \n"
                "be loaded dynamically by the menu depending \n"
@@ -1901,11 +1901,11 @@ static const char *menu_hash_to_str_chs_label_enum(enum msg_hash_enums msg)
       case MSG_GOT_CONNECTION_FROM:
          return "Got connection from";
       case MSG_AUTODETECT:
-         return "Autodetect";
+         return "自动检测";
       case MSG_SUCCEEDED:
-         return "succeeded";
+         return "已成功";
       case MSG_FAILED:
-         return "failed";
+         return "已失败";
       case MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED:
          return "Unknown netplay command received";
       case MSG_NETPLAY_USERS_HAS_FLIPPED:
@@ -3080,7 +3080,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_VALUE_REBOOTING:
          return "正在重启……";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
-         return "Failed to start audio driver. Will continue without audio.";
+         return "音频驱动启动失败. 将在无音频模式下继续启动.";
       case MSG_FOUND_LAST_STATE_SLOT:
          return "Found last state slot";
       case MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT:
@@ -3176,21 +3176,21 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_AUTOCONFIG_FILE_ERROR_SAVING:
          return "Error saving autoconf file.";
       case MSG_DOWNLOAD_FAILED:
-         return "Download failed";
+         return "下载失败";
       case MSG_INPUT_CHEAT:
-         return "Input Cheat";
+         return "输入金手指";
       case MSG_DECOMPRESSION_ALREADY_IN_PROGRESS:
-         return "Decompression already in progress.";
+         return "解压缩正在进行中.";
       case MSG_DECOMPRESSION_FAILED:
-         return "Decompression failed.";
+         return "解压缩失败.";
       case MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY:
          return "Core options file created successfully.";
       case MSG_FAILED_TO_CREATE_THE_DIRECTORY:
-         return "Failed to create the directory.";
+         return "创建目录失败.";
       case MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE:
          return "Failed to extract content from compressed file";
       case MSG_FILE_NOT_FOUND:
-         return "File not found";
+         return "文件未找到";
       case MSG_ERROR_SAVING_CORE_OPTIONS_FILE:
          return "Error saving core options file.";
       case MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT:
@@ -3220,7 +3220,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_COMPILED_AGAINST_API:
          return "Compiled against API";
       case MSG_FAILED_TO_LOAD:
-         return "Failed to load";
+         return "载入失败";
       case MSG_CONNECTED_TO:
          return "Connected to";
       case MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR:
