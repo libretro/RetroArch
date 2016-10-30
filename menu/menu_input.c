@@ -32,6 +32,7 @@
 #include "menu_animation.h"
 #include "menu_display.h"
 #include "menu_navigation.h"
+#include "menu_event.h"
 
 #include "../configuration.h"
 
@@ -221,6 +222,15 @@ static int menu_input_mouse_frame(
    if (settings->menu.mouse.enable)
       ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action);
 
+   if (menu_input_dialog_get_display_kb())
+   {
+      menu_ctx_pointer_t point;
+      point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+      menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
+      menu_event_set_osk_ptr(point.retcode);
+   }
+
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_L))
    {
       menu_ctx_pointer_t point;
@@ -232,9 +242,20 @@ static int menu_input_mouse_frame(
       point.entry  = entry;
       point.action = action;
 
-      menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
-
-      ret = point.retcode;
+      if (menu_input_dialog_get_display_kb())
+      {
+         menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
+         if (point.retcode > -1)
+         {
+            menu_event_set_osk_ptr(point.retcode);
+            input_keyboard_line_append(menu_event_get_osk_grid()[point.retcode]);
+         }
+      }
+      else
+      {
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
+         ret = point.retcode;
+      }
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_R))
@@ -423,9 +444,20 @@ static int menu_input_pointer_post_iterate(
             point.entry  = entry;
             point.action = action;
 
-            menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
-
-            ret = point.retcode;
+            if (menu_input_dialog_get_display_kb())
+            {
+               menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
+               if (point.retcode > -1)
+               {
+                  menu_event_set_osk_ptr(point.retcode);
+                  input_keyboard_line_append(menu_event_get_osk_grid()[point.retcode]);
+               }
+            }
+            else
+            {
+               menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
+               ret = point.retcode;
+            }
          }
 
          pointer_oldpressed[0]             = false;

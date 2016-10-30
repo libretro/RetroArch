@@ -730,6 +730,34 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned 
    }
 }
 
+/* Returns the OSK key at a given position */
+static int xmb_osk_ptr_at_pos(void *data, int x, int y)
+{
+   unsigned i, width, height;
+
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   if (!xmb)
+      return -1;
+
+   video_driver_get_size(&width, &height);
+
+   for (i = 0; i <= 40; i++)
+   {
+      int line_y;
+      int ptr_width = height / 12;
+      line_y    = (i / 10)*height/10.0;
+
+      int ptr_x = width/11.0 + (i % 10) * width/11.0 - ptr_width/2;
+      int ptr_y = height*2.5/4.0 + line_y - ptr_width/2 - xmb->font->size / 4;
+
+      if (x > ptr_x && x < ptr_x + ptr_width
+       && y > ptr_y && y < ptr_y + ptr_width)
+         return i;
+   }
+
+   return -1;
+}
+
 static void xmb_render_messagebox_internal(
       xmb_handle_t *xmb, const char *message)
 {
@@ -3682,4 +3710,5 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_pointer_tap,
    xmb_update_thumbnail_path,
    xmb_update_thumbnail_image,
+   xmb_osk_ptr_at_pos,
 };

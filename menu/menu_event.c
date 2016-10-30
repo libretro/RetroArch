@@ -101,6 +101,11 @@ unsigned menu_event_get_osk_ptr()
    return osk_ptr;
 }
 
+void menu_event_set_osk_ptr(unsigned i)
+{
+   osk_ptr = i;
+}
+
 const char** menu_event_get_osk_grid()
 {
    return osk_grid;
