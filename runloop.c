@@ -842,6 +842,9 @@ static enum runloop_state runloop_check_state(
       skip = osk_enable && input_keyboard_return_pressed();
 #endif
 
+      if (menu_driver_is_binding_state())
+         trigger_input = 0;
+
       if (!skip)
       {
          enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
@@ -863,9 +866,6 @@ static enum runloop_state runloop_check_state(
          if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
             return RUNLOOP_STATE_QUIT;
       }
-
-      if (menu_driver_is_binding_state())
-         trigger_input = 0;
    }
 #endif
    
