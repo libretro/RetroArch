@@ -427,7 +427,7 @@ static int setting_fraction_action_right_default(
       return -1;
 
    min = setting->min;
-   max = setting->min;
+   max = setting->max;
 
    (void)wraparound; /* TODO/FIXME - handle this */
 
