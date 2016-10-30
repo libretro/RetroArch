@@ -1291,13 +1291,6 @@ static void config_set_defaults(void)
 
       fill_pathname_expand_special(temp_path,
             g_defaults.dir.osk_overlay, sizeof(temp_path));
-#ifdef RARCH_MOBILE
-      if (string_is_empty(settings->path.osk_overlay))
-            fill_pathname_join(settings->path.osk_overlay,
-                  temp_path,
-                  "keyboards/modular-keyboard/opaque/big.cfg",
-                  sizeof(settings->path.osk_overlay));
-#endif
 
       dir_set(RARCH_DIR_OSK_OVERLAY, temp_path);
    }
