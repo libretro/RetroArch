@@ -743,12 +743,10 @@ static int xmb_osk_ptr_at_pos(void *data, int x, int y)
 
    for (i = 0; i <= 40; i++)
    {
-      int line_y;
       int ptr_width = height / 12;
-      line_y    = (i / 10)*height/10.0;
-
-      int ptr_x = width/11.0 + (i % 10) * width/11.0 - ptr_width/2;
-      int ptr_y = height*2.5/4.0 + line_y - ptr_width/2 - xmb->font->size / 4;
+      int line_y    = (i / 10)*height/10.0;
+      int ptr_x     = width/11.0 + (i % 10) * width/11.0 - ptr_width/2;
+      int ptr_y     = height*2.5/4.0 + line_y - ptr_width/2 - xmb->font->size / 4;
 
       if (x > ptr_x && x < ptr_x + ptr_width
        && y > ptr_y && y < ptr_y + ptr_width)
