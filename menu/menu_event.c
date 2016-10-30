@@ -57,7 +57,7 @@ enum osk_type
 };
 
 static enum osk_type osk_idx = OSK_UPPERCASE_LATIN;
-static unsigned osk_ptr;
+static int osk_ptr;
 static const char *osk_grid[41];
 
 static const char *uppercase_grid[] = {
@@ -96,12 +96,12 @@ static const char *katakana_page2_grid[] = {
                           "マ","ミ","ム","メ","モ","ン","ッ","ャ","ュ","ョ",
                           "ヤ","ユ","ヨ","ワ","ヲ","ァ","ィ","ゥ","ェ","ォ"};
 
-unsigned menu_event_get_osk_ptr()
+int menu_event_get_osk_ptr()
 {
    return osk_ptr;
 }
 
-void menu_event_set_osk_ptr(unsigned i)
+void menu_event_set_osk_ptr(int i)
 {
    osk_ptr = i;
 }
@@ -305,7 +305,8 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
       {
-         input_keyboard_line_append(osk_grid[osk_ptr]);
+         if (osk_ptr >= 0)
+            input_keyboard_line_append(osk_grid[osk_ptr]);
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
