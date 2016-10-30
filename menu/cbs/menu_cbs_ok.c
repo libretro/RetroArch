@@ -3451,6 +3451,7 @@ static int action_ok_netplay_disconnect(const char *path,
 {
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_DISCONNECT, NULL);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 
 #else
