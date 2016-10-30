@@ -367,6 +367,8 @@ const char *xmb_theme_ident(void)
          return "pixel";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
+       case XMB_ICON_THEME_MONOCHROME_JAGGED:
+         return "monochrome-jagged";
       case XMB_ICON_THEME_MONOCHROME:
       default:
          break;
@@ -1543,7 +1545,7 @@ static void xmb_context_reset_horizontal_list(
             continue;
       }
 
-      iconpath[0] = sysname[0] = texturepath[0] = 
+      iconpath[0] = sysname[0] = texturepath[0] =
          content_texturepath[0] = '\0';
 
       file_list_get_at_offset(xmb->horizontal_list, i,
@@ -1719,7 +1721,7 @@ static void xmb_populate_entries(void *data,
 }
 
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
-      xmb_node_t *core_node, xmb_node_t *node, 
+      xmb_node_t *core_node, xmb_node_t *node,
       enum msg_hash_enums enum_idx, unsigned type, bool active)
 {
    switch (enum_idx)
@@ -1847,13 +1849,13 @@ char* word_wrap (char* buffer, char* string, int line_width) {
    unsigned i = 0;
    int k, counter;
 
-   while(i < strlen( string ) ) 
+   while(i < strlen( string ) )
    {
       /* copy string until the end of the line is reached */
-      for ( counter = 1; counter <= line_width; counter++ ) 
+      for ( counter = 1; counter <= line_width; counter++ )
       {
          /* check if end of string reached */
-         if ( i == strlen( string ) ) 
+         if ( i == strlen( string ) )
          {
             buffer[ i ] = 0;
             return buffer;
@@ -1861,24 +1863,24 @@ char* word_wrap (char* buffer, char* string, int line_width) {
 
          buffer[ i ] = string[ i ];
 
-         /* check for newlines embedded in the original input 
+         /* check for newlines embedded in the original input
           * and reset the index */
          if ( buffer[ i ] == '\n' )
-            counter = 1; 
+            counter = 1;
          i++;
       }
       /* check for whitespace */
-      if ( isspace( string[ i ] ) ) 
+      if ( isspace( string[ i ] ) )
       {
          buffer[i] = '\n';
          i++;
-      } 
+      }
       else
       {
          /* check for nearest whitespace back in string */
-         for ( k = i; k > 0; k--) 
+         for ( k = i; k > 0; k--)
          {
-            if ( isspace( string[ k ] ) ) 
+            if ( isspace( string[ k ] ) )
             {
                buffer[ k ] = '\n';
                /* set string index back to character after this one */
@@ -2232,7 +2234,7 @@ static void xmb_draw_bg(
 #if 0
    RARCH_LOG("DRAW BG %d %d \n",width,height);
 #endif
-   
+
    bool running = menu_display_libretro_running();
 
    draw.x                    = 0;
@@ -2251,8 +2253,8 @@ static void xmb_draw_bg(
    menu_display_set_viewport();
 
 #ifdef HAVE_SHADERPIPELINE
-   if (settings->menu.xmb.shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER 
-         && 
+   if (settings->menu.xmb.shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
+         &&
          (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER))
    {
       draw.color = xmb_gradient_ident();
@@ -2543,7 +2545,7 @@ static void xmb_frame(void *data)
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
-         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1) 
+         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
          ? xmb->categories.selection_ptr : xmb->categories.selection_ptr_old,
          &item_color[0],
          width,
