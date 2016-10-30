@@ -19,6 +19,8 @@ import android.provider.Settings;
  * {@link PreferenceActivity} subclass that provides all of the
  * functionality of the main menu screen.
  */
+private static final int REQUEST_WRITE_STORAGE = 112;
+
 public final class MainMenuActivity extends PreferenceActivity
 {
 	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
@@ -37,6 +39,14 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("SCREENSHOTS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
 		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/com.retroarch/files";
 		retro.putExtra("EXTERNAL", external);
+
+      boolean hasPermission = (ContextCompat.checkSelfPermission(activity,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
+      if (!hasPermission) {
+         ActivityCompat.requestPermissions(parentActivity,
+         new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+         REQUEST_WRITE_STORAGE);
+      }
 	}
 
 	@Override
