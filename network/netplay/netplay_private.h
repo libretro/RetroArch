@@ -122,6 +122,10 @@ struct netplay
    struct delta_frame *buffer;
    size_t buffer_size;
 
+   /* A buffer into which to compress frames for transfer */
+   uint8_t *zbuffer;
+   size_t zbuffer_size;
+
    /* Pointer where we are now. */
    size_t self_ptr; 
    /* Points to the last reliable state that self ever had. */
