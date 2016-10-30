@@ -659,7 +659,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
             inflateInit(&stream);
             stream.next_in = netplay->zbuffer;
             stream.avail_in = cmd_size - 2*sizeof(uint32_t);
-            stream.next_out = netplay->buffer[netplay->read_ptr].state;
+            stream.next_out = (Bytef *) netplay->buffer[netplay->read_ptr].state;
             stream.avail_out = netplay->state_size;
             if (inflate(&stream, 1) == Z_STREAM_ERROR)
             {
@@ -1136,7 +1136,7 @@ bool netplay_init_serialization(netplay_t *netplay)
    }
 
    netplay->zbuffer_size = netplay->state_size * 2;
-   netplay->zbuffer = calloc(netplay->zbuffer_size, 1);
+   netplay->zbuffer = (uint8_t *) calloc(netplay->zbuffer_size, 1);
    if (!netplay->zbuffer)
    {
       netplay->quirks |= NETPLAY_QUIRK_NO_TRANSMISSION;
