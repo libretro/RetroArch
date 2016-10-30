@@ -2300,10 +2300,12 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_PAUSE_CHECKS:
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
          {
+            bool is_paused = false;
+
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-            bool is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
             runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, is_paused ? 1: 30, true);
 
             if (settings->video.black_frame_insertion || is_paused)

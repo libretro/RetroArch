@@ -168,6 +168,7 @@ static bool input_keyboard_line_event(
 
 bool input_keyboard_line_append(const char *word)
 {
+   unsigned i = 0;
    unsigned len = strlen(word);
 
    char *newbuf = (char*)
@@ -179,7 +180,6 @@ bool input_keyboard_line_append(const char *word)
          newbuf + g_keyboard_line->ptr,
          g_keyboard_line->size - g_keyboard_line->ptr + len);
 
-   unsigned i = 0;
    for (i = 0; i < len; i++)
    {
       newbuf[g_keyboard_line->ptr] = word[i];
