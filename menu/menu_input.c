@@ -36,6 +36,9 @@
 
 #include "../configuration.h"
 
+static int mouse_old_x;
+static int mouse_old_y;
+
 enum menu_mouse_action
 {
    MENU_MOUSE_ACTION_NONE = 0,
@@ -229,7 +232,10 @@ static int menu_input_mouse_frame(
       point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
       menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
-      menu_event_set_osk_ptr(point.retcode);
+      if (mouse_old_x != point.x || mouse_old_y != point.y)
+         menu_event_set_osk_ptr(point.retcode);
+      mouse_old_x = point.x;
+      mouse_old_y = point.y;
    }
 
    if (BIT64_GET(mouse_state, MENU_MOUSE_ACTION_BUTTON_L))
