@@ -19,10 +19,10 @@ import android.provider.Settings;
  * {@link PreferenceActivity} subclass that provides all of the
  * functionality of the main menu screen.
  */
-private static final int REQUEST_WRITE_STORAGE = 112;
 
 public final class MainMenuActivity extends PreferenceActivity
 {
+	private static final int REQUEST_WRITE_STORAGE = 112;
 	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
 			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
 	{
@@ -47,6 +47,24 @@ public final class MainMenuActivity extends PreferenceActivity
 			new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
 			REQUEST_WRITE_STORAGE);
 		}
+	}
+	
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+		 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		 switch (requestCode)
+		 {
+			  case REQUEST_WRITE_STORAGE: {
+					if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+					{
+						Toast.makeText(parentActivity, "RetroArch will be able to write to the SD card", Toast.LENGTH_LONG).show();
+					} else
+					{
+						Toast.makeText(parentActivity, "RetroArch won't be able to write to the SD card", Toast.LENGTH_LONG).show();
+					}
+			  }
+		 }
+	
 	}
 
 	@Override
