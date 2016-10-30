@@ -90,6 +90,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    hash                      = msg_hash_calculate(label);
    iterate_type              = action_iterate_type(hash);
 
+   menu_driver_set_binding_state(iterate_type == ITERATE_TYPE_BIND);
+
    if (     action != MENU_ACTION_NOOP
          || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL)
          || menu_display_get_update_pending())

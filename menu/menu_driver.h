@@ -380,6 +380,9 @@ const char *menu_driver_ident(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
+bool menu_driver_is_binding_state();
+void menu_driver_set_binding_state(bool on);
+
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;

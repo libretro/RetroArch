@@ -83,11 +83,22 @@ static bool menu_driver_toggled                 = false;
 static bool menu_driver_data_own                = false;
 static bool menu_driver_pending_quit            = false;
 static bool menu_driver_pending_shutdown        = false;
+static bool menu_driver_is_binding              = false;
 static playlist_t *menu_driver_playlist         = NULL;
 static struct video_shader *menu_driver_shader  = NULL;
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
+
+bool menu_driver_is_binding_state()
+{
+   return menu_driver_is_binding;
+}
+
+void menu_driver_set_binding_state(bool on)
+{
+   menu_driver_is_binding = on;
+}
 
 /**
  * menu_driver_find_handle:
