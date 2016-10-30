@@ -672,6 +672,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
                RARCH_ERR("CMD_LOAD_SAVESTATE received too-short savestate.\n");
                return netplay_cmd_nak(netplay);
             }
+            inflateEnd(&stream);
 
             /* Skip ahead if it's past where we are */
             if (frame > netplay->self_frame_count)
@@ -1499,16 +1500,15 @@ void netplay_load_savestate(netplay_t *netplay,
    stream.avail_out = netplay->zbuffer_size;
    if (deflate(&stream, 1) == Z_STREAM_ERROR)
    {
-      fprintf(stderr, "OH NO! %s\n", stream.msg);
       hangup(netplay);
       return;
    }
    if (stream.total_in != serial_info->size)
    {
-      fprintf(stderr, "OH NO 2! %u %u\n", (unsigned) stream.total_in, (unsigned) serial_info->size);
       hangup(netplay);
       return;
    }
+   deflateEnd(&stream);
 
    /* And send it to the peer */
    header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
