@@ -235,7 +235,7 @@ void input_keyboard_event(bool down, unsigned code,
 {
    static bool deferred_wait_keys;
 
-   if (code == RETROK_RETURN || code == RETROK_UNKNOWN)
+   if (code == RETROK_RETURN || (!down && code == RETROK_UNKNOWN))
       return_pressed = down;
 
    if (deferred_wait_keys)
