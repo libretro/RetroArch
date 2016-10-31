@@ -369,30 +369,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    }
 
    if (runloop_cmd_press(trigger_input, RARCH_QUIT_KEY))
-   {
-      int should_we_quit = true;
-
-      if (!runloop_is_quit_confirm())
-      {
-         if (settings && settings->confirm_on_exit)
-         {
-            if (!menu_dialog_is_active() && content_is_inited())
-            {
-               if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
-                  menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
-               rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-            }
-
-            menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
-
-            should_we_quit = false;
-         }
-
-         if ((settings && !settings->confirm_on_exit) ||
-               should_we_quit)
-            return MENU_ACTION_QUIT;
-      }
-   }
+      return MENU_ACTION_QUIT;
 
    mouse_enabled                      = settings->menu.mouse.enable;
 #ifdef HAVE_OVERLAY

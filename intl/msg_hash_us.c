@@ -2606,8 +2606,6 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "auto_overrides_enable";
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          return "config_save_on_exit";
-      case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
-         return "confirm_on_exit";
       case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
          return "show_hidden_files";
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:

@@ -110,27 +110,12 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
             menu_dialog_set_active(false);
-
-            if (menu_dialog_get_current_type() == MENU_DIALOG_QUIT_CONFIRM)
-            {
-               runloop_set_quit_confirm(true);
-               command_event(CMD_EVENT_QUIT_CONFIRM, NULL);
-            }
          }
 
          if (action == MENU_ACTION_CANCEL)
          {
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
             menu_dialog_set_active(false);
-
-            if (menu_dialog_get_current_type() == MENU_DIALOG_QUIT_CONFIRM)
-            {
-               runloop_set_quit_confirm(false);
-
-               if (content_is_inited() &&
-                      menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
-                  rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-            }
          }
          break;
       case ITERATE_TYPE_BIND:

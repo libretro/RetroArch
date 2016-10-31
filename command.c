@@ -1714,13 +1714,6 @@ static void command_event_main_state(unsigned cmd)
 
 void handle_quit_event(void)
 {
-#ifdef HAVE_MENU
-   settings_t *settings      = config_get_ptr();
-   if (settings && settings->confirm_on_exit &&
-         menu_dialog_is_active())
-      return;
-#endif
-
    command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
    command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
@@ -1931,18 +1924,7 @@ bool command_event(enum event_command cmd, void *data)
          core_unload();
 #endif
          break;
-      case CMD_EVENT_QUIT_CONFIRM:
-         handle_quit_event();
-         break;
       case CMD_EVENT_QUIT:
-#ifdef HAVE_MENU
-         if (settings && settings->confirm_on_exit &&
-                !menu_dialog_is_active() && !runloop_is_quit_confirm())
-         {
-            menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
-            break;
-         }
-#endif
          handle_quit_event();
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:

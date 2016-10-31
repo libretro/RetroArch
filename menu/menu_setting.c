@@ -2719,12 +2719,6 @@ static bool setting_append_list(
             bool_entries[0].default_value  = config_save_on_exit;
             bool_entries[0].flags          = SD_FLAG_NONE;
 
-            bool_entries[1].target         = &settings->confirm_on_exit;
-            bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_CONFIRM_ON_EXIT;
-            bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT;
-            bool_entries[1].default_value  = confirm_on_exit;
-            bool_entries[1].flags          = SD_FLAG_NONE;
-
             bool_entries[2].target         = &settings->show_hidden_files;
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_SHOW_HIDDEN_FILES;
             bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES;
