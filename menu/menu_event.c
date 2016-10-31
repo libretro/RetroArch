@@ -24,6 +24,8 @@
 #include "../config.h"
 #endif
 
+#include <encodings/utf.h>
+
 #include "widgets/menu_entry.h"
 #include "widgets/menu_input_dialog.h"
 
@@ -59,6 +61,8 @@ enum osk_type
 static enum osk_type osk_idx = OSK_UPPERCASE_LATIN;
 static int osk_ptr;
 static const char *osk_grid[41];
+static unsigned osk_last_codepoint = 0;
+static unsigned osk_last_codepoint_len = 0;
 
 static const char *uppercase_grid[] = {
                           "!","@","#","$","%","^","&","*","(",")",
@@ -306,12 +310,22 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
       {
          if (osk_ptr >= 0)
+         {
+            const char *letter = osk_grid[osk_ptr];
+
+            osk_last_codepoint_len = strlen(osk_grid[osk_ptr]);
+            osk_last_codepoint = utf8_walk(&letter);
+
             input_keyboard_line_append(osk_grid[osk_ptr]);
+         }
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
       {
-         input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+         unsigned i;
+
+         for (i = 0; i < osk_last_codepoint_len; i++)
+            input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
       }
 
       /* send return key to close keyboard input window */
