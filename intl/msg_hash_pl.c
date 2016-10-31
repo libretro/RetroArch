@@ -172,6 +172,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Przekierowywanie pliku zapisu do";
       case MSG_REDIRECTING_SAVESTATE_TO:
          return "Przekierowywanie zapisu stanu do";
+// TODO
       case MSG_APPLYING_CHEAT:
          return "Applying cheat changes.";
       case MSG_SHADER:
