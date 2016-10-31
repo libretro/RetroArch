@@ -365,10 +365,12 @@ const char *xmb_theme_ident(void)
          return "retroactive";
       case XMB_ICON_THEME_PIXEL:
          return "pixel";
+      case XMB_ICON_THEME_NEOACTIVE:
+         return "neoactive";
+      case XMB_ICON_THEME_MONOCHROME_JAGGED:
+         return "monochrome-jagged";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
-       case XMB_ICON_THEME_MONOCHROME_JAGGED:
-         return "monochrome-jagged";
       case XMB_ICON_THEME_MONOCHROME:
       default:
          break;

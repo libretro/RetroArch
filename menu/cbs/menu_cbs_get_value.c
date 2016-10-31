@@ -743,10 +743,14 @@ static void menu_action_setting_disp_set_label_xmb_theme(
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL), len);
          break;
-       case XMB_ICON_THEME_MONOCHROME_JAGGED:
+      case XMB_ICON_THEME_NEOACTIVE:
+         strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE), len);
+         break;
+      case XMB_ICON_THEME_MONOCHROME_JAGGED:
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED), len);
-         break;
+	 break;
       case XMB_ICON_THEME_CUSTOM:
          strlcpy(s,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM), len);

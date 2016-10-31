@@ -196,6 +196,7 @@ install: $(TARGET)
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/flatui/src; \
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/monochrome/src; \
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retroactive/src; \
+		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/neoactive/src; \
 		rm -rf $(DESTDIR)$(ASSETS_DIR)/retroarch/assets/xmb/retroactive_marked/src; \
 		echo "Asset copying done."; \
 	fi
