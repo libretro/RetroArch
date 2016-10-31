@@ -103,6 +103,13 @@ bool settings_list_append(rarch_setting_t **list,
    return true;
 }
 
+enum setting_type setting_get_type(rarch_setting_t *setting)		
+{		
+   if (!setting)		
+      return ST_NONE;		
+   return setting->type;		
+}
+
 unsigned setting_get_bind_type(rarch_setting_t *setting)
 {
    if (!setting)
@@ -309,7 +316,7 @@ int setting_set_with_string_representation(rarch_setting_t* setting,
    max          = setting->max;
    flags        = setting->flags;
 
-   switch (setting->type)
+   switch (setting_get_type(setting))
    {
       case ST_INT:
          sscanf(value, "%d", setting->value.target.integer);
@@ -463,7 +470,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
    if (!setting)
       return;
 
-   switch (setting->type)
+   switch (setting_get_type(setting))
    {
       case ST_BOOL:
          *setting->value.target.boolean          = setting->default_value.boolean;
@@ -486,7 +493,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
       case ST_DIR:
          if (setting->default_value.string)
          {
-            if (setting->type == ST_STRING)
+            if (setting_get_type(setting) == ST_STRING)
                setting_set_with_string_representation(setting, setting->default_value.string);
             else
                fill_pathname_expand_special(setting->value.target.string,
@@ -2020,7 +2027,7 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 
    (void)wraparound;
 
-   switch (setting->type)
+   switch (setting_get_type(setting))
    {
       case ST_UINT:
          cb = menu_input_st_uint_cb;

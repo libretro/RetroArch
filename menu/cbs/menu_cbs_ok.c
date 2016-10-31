@@ -1942,7 +1942,7 @@ static int action_ok_file_load(const char *path,
 
    setting = menu_setting_find(menu_label);
 
-   if (setting && setting->type == ST_PATH)
+   if (setting_get_type(setting) == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);
 
    strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
