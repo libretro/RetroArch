@@ -31,10 +31,6 @@
 
 #include <gfx/gl_capabilities.h>
 
-#ifdef RARCH_INTERNAL
-#include "../../gfx/video_driver.h"
-#endif
-
 static bool gl_core_context       = false;
 
 bool gl_query_core_context_in_use(void)
@@ -50,19 +46,6 @@ void gl_query_core_context_set(bool set)
 void gl_query_core_context_unset(void)
 {
    gl_core_context = false;
-}
-
-static bool has_hardware_stencil(void)
-{
-#ifdef RARCH_INTERNAL
-   struct retro_hw_render_callback *hwr =
-      video_driver_get_hw_context();
-   if (!hwr)
-      return false;
-   return hwr->stencil;
-#else
-   return true;
-#endif
 }
 
 static bool gl_query_extension(const char *ext)
@@ -227,16 +210,13 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #endif
          break;
       case GL_CAPS_PACKED_DEPTH_STENCIL:
-         {
-            if (!has_hardware_stencil())
-               return false;
-            if (major >= 3)
-               return true;
-            if (     !gl_query_extension("OES_packed_depth_stencil")
-                  && !gl_query_extension("EXT_packed_depth_stencil"))
-               return false;
-         }
-         return true;
+         if (major >= 3)
+            return true;
+         if (gl_query_extension("OES_packed_depth_stencil"))
+            return true;
+         if (gl_query_extension("EXT_packed_depth_stencil"))
+            return true;
+         break;
       case GL_CAPS_ES2_COMPAT:
 #ifndef HAVE_OPENGLES
          /* ATI card detected, skipping check for GL_RGB565 support... */

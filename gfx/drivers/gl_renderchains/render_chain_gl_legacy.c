@@ -871,7 +871,8 @@ bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    stencil = hwr->stencil;
 
 #ifdef HAVE_OPENGLES
-   if (!gl_check_capability(GL_CAPS_PACKED_DEPTH_STENCIL))
+   if (!hwr->stencil &&
+         !gl_check_capability(GL_CAPS_PACKED_DEPTH_STENCIL))
       return false;
    RARCH_LOG("[GL]: Supports Packed depth stencil.\n");
 #endif
