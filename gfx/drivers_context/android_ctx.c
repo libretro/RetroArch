@@ -105,8 +105,11 @@ static void *android_gfx_ctx_init(void *video_driver)
 #ifdef HAVE_OPENGLES
    EGLint n, major, minor;
    EGLint format;
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+   bool debug = hwr->debug_context;
    EGLint context_attributes[] = {
       EGL_CONTEXT_CLIENT_VERSION, g_es3 ? 3 : 2,
+      EGL_CONTEXT_FLAGS_KHR, debug ? EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR : 0,
       EGL_NONE
    };
    EGLint attribs[] = {
