@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug Cg|Win32">
       <Configuration>Debug Cg</Configuration>
@@ -44,53 +44,45 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -122,7 +114,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\gfx\include;$(IncludePath)</IncludePath>
     <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -131,7 +122,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\gfx\include;$(IncludePath)</IncludePath>
     <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -140,7 +130,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\gfx\include;$(IncludePath)</IncludePath>
     <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -149,7 +138,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\gfx\include;$(IncludePath)</IncludePath>
     <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -158,7 +146,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\gfx\include;$(IncludePath)</IncludePath>
     <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -167,7 +154,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\gfx\include;$(IncludePath)</IncludePath>
     <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x86;$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -176,7 +162,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\gfx\include;$(IncludePath)</IncludePath>
     <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -185,7 +170,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\gfx\include;$(IncludePath)</IncludePath>
     <IncludePath>$(DXSDK_DIR)Include;$(CG_INC_PATH);$(IncludePath)</IncludePath>
     <LibraryPath>$(DXSDK_DIR)Lib\x64;$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
@@ -198,11 +182,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-<<<<<<< Updated upstream
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-=======
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_UPDATE_ASSETS;HAVE_HTTPSERVER=1;HAVE_CHEEVOS=1;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
->>>>>>> Stashed changes
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -221,11 +201,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-<<<<<<< Updated upstream
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_CG;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-=======
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_UPDATE_ASSETS;HAVE_HTTPSERVER=1;HAVE_CHEEVOS=1;HAVE_CG;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
->>>>>>> Stashed changes
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -245,11 +221,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-<<<<<<< Updated upstream
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-=======
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_UPDATE_ASSETS;HAVE_HTTPSERVER=1;HAVE_CHEEVOS=1;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
->>>>>>> Stashed changes
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\gfx\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -268,11 +240,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-<<<<<<< Updated upstream
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_CG;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-=======
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_UPDATE_ASSETS;HAVE_HTTPSERVER=1;HAVE_CHEEVOS=1;HAVE_CG;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
->>>>>>> Stashed changes
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\gfx\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -294,11 +262,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-<<<<<<< Updated upstream
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-=======
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_UPDATE_ASSETS;HAVE_HTTPSERVER=1;HAVE_CHEEVOS=1;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
->>>>>>> Stashed changes
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -322,11 +286,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-<<<<<<< Updated upstream
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_CG;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-=======
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_UPDATE_ASSETS;HAVE_HTTPSERVER=1;HAVE_CHEEVOS=1;HAVE_CG;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
->>>>>>> Stashed changes
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -351,11 +311,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-<<<<<<< Updated upstream
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-=======
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_UPDATE_ASSETS;HAVE_HTTPSERVER=1;HAVE_CHEEVOS=1;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
->>>>>>> Stashed changes
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\gfx\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -379,11 +335,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-<<<<<<< Updated upstream
       <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_CG;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
-=======
-      <PreprocessorDefinitions>WIN32;RARCH_INTERNAL;HAVE_D3D;HAVE_D3D9;HAVE_UPDATE_ASSETS;HAVE_HTTPSERVER=1;HAVE_CHEEVOS=1;HAVE_CG;HAVE_GLSL;HAVE_GRIFFIN;HAVE_LANGEXTRA;HAVE_FBO;HAVE_ZLIB;HAVE_XMB;HAVE_SHADERPIPELINE;WANT_ZLIB;HAVE_FBO;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_BUILTIN_AUTOCONFIG;HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_DYLIB;HAVE_NETPLAY;HAVE_NETWORKING;HAVE_NETWORK_CMD;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;WANT_ZLIB;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_7ZIP;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_STB_FONT</PreprocessorDefinitions>
->>>>>>> Stashed changes
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\deps\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\gfx\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
