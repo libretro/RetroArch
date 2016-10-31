@@ -255,7 +255,7 @@ static int menu_input_mouse_frame(
          if (point.retcode > -1)
          {
             menu_event_set_osk_ptr(point.retcode);
-            input_keyboard_line_append(menu_event_get_osk_grid()[point.retcode]);
+            menu_event_osk_append(point.retcode);
          }
       }
       else
@@ -457,7 +457,7 @@ static int menu_input_pointer_post_iterate(
                if (point.retcode > -1)
                {
                   menu_event_set_osk_ptr(point.retcode);
-                  input_keyboard_line_append(menu_event_get_osk_grid()[point.retcode]);
+                  menu_event_osk_append(point.retcode);
                }
             }
             else
