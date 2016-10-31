@@ -271,14 +271,14 @@ static void mui_draw_text(font_data_t *font, float x, float y, unsigned width, u
    menu_display_draw_text(font, msg, width, height, &params);
 }
 
-static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
+static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned id)
 {
    unsigned i, width, height;
    float dark[16]=  {
-      0.00, 0.00, 0.00, 0.5,
-      0.00, 0.00, 0.00, 0.5,
-      0.00, 0.00, 0.00, 0.5,
-      0.00, 0.00, 0.00, 0.5,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
    };
 
    float light[16]=  {
@@ -297,25 +297,48 @@ static void mui_render_keyboard(mui_handle_t *mui, char* grid, unsigned id)
    for (i = 0; i <= 40; i++)
    {
       int line_y;
-      char letter[2];
-
-      letter[0] = grid[i];
-      letter[1] = '\0';
+      int ptr_width = height / 12;
       line_y    = (i / 10)*height/10.0;
 
       if (i == id)
          menu_display_draw_quad(
-               width/11.0 + (i % 10) * width/11.0 - 30,
-               height*2.5/4.0 + line_y - 30 - mui->font->size / 4,
-               60, 60,
+               width/11.0 + (i % 10) * width/11.0 - ptr_width/2,
+               height*2.5/4.0 + line_y - ptr_width/2 - mui->font->size / 4,
+               ptr_width, ptr_width,
                width, height,
                &light[0]);
 
       mui_draw_text(mui->font,
             width/11.0 + (i % 10) * width/11.0,
             height*2.5/4.0 + line_y,
-            width, height, letter, 0xffffffff, TEXT_ALIGN_CENTER);
+            width, height, grid[i], 0xffffffff, TEXT_ALIGN_CENTER);
    }
+}
+
+/* Returns the OSK key at a given position */
+static int mui_osk_ptr_at_pos(void *data, int x, int y)
+{
+   unsigned i, width, height;
+
+   mui_handle_t *mui = (mui_handle_t*)data;
+   if (!mui)
+      return -1;
+
+   video_driver_get_size(&width, &height);
+
+   for (i = 0; i <= 40; i++)
+   {
+      int ptr_width = height / 12;
+      int line_y    = (i / 10)*height/10.0;
+      int ptr_x     = width/11.0 + (i % 10) * width/11.0 - ptr_width/2;
+      int ptr_y     = height*2.5/4.0 + line_y - ptr_width/2 - mui->font->size / 4;
+
+      if (x > ptr_x && x < ptr_x + ptr_width
+       && y > ptr_y && y < ptr_y + ptr_width)
+         return i;
+   }
+
+   return -1;
 }
 
 static void mui_draw_tab_begin(mui_handle_t *mui,
@@ -459,7 +482,7 @@ static void mui_render_messagebox(mui_handle_t *mui,
    }
 
    if (menu_input_dialog_get_display_kb())
-      mui_render_keyboard(mui, kbd_grid, kbd_index);
+      mui_render_keyboard(mui, menu_event_get_osk_grid(), menu_event_get_osk_ptr());
 
 end:
    string_list_free(list);
@@ -1821,4 +1844,7 @@ menu_ctx_driver_t menu_ctx_mui = {
    "glui",
    mui_environ,
    mui_pointer_tap,
+   NULL,
+   NULL,
+   mui_osk_ptr_at_pos,
 };

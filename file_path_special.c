@@ -202,17 +202,24 @@ bool fill_pathname_application_data(char *s, size_t len)
 #if !defined(RARCH_CONSOLE)
 void fill_pathname_application_path(char *s, size_t len)
 {
+   size_t i;
 #ifdef __APPLE__
   CFBundleRef bundle = CFBundleGetMainBundle();
 #endif
-   size_t i;
+#ifdef _WIN32
+   DWORD ret;
+#endif
+#ifdef __HAIKU__
+   image_info info;
+   int32_t cookie = 0;
+#endif
    (void)i;
 
    if (!len)
       return;
 
 #ifdef _WIN32
-   DWORD ret = GetModuleFileName(GetModuleHandle(NULL), s, len - 1);
+   ret    = GetModuleFileName(GetModuleHandle(NULL), s, len - 1);
    s[ret] = '\0';
 #elif defined(__APPLE__)
    if (bundle)
@@ -227,9 +234,6 @@ void fill_pathname_application_path(char *s, size_t len)
       return;
    }
 #elif defined(__HAIKU__)
-   image_info info;
-   int32 cookie = 0;
-
    while (get_next_image_info(0, &cookie, &info) == B_OK)
    {
       if (info.type == B_APP_IMAGE)

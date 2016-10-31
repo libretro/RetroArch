@@ -121,7 +121,6 @@ static bool runloop_set_frame_limit                        = false;
 static bool runloop_paused                                 = false;
 static bool runloop_idle                                   = false;
 static bool runloop_exec                                   = false;
-static bool runloop_quit_confirm                           = false;
 static bool runloop_slowmotion                             = false;
 static bool runloop_shutdown_initiated                     = false;
 static bool runloop_core_shutdown_initiated                = false;
@@ -715,16 +714,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    return true;
 }
 
-bool runloop_is_quit_confirm(void)
-{
-   return runloop_quit_confirm;
-}
-
-void runloop_set_quit_confirm(bool on)
-{
-   runloop_quit_confirm = on;
-}
-
 /* Time to exit out of the main loop?
  * Reasons for exiting:
  * a) Shutdown environment callback was invoked.
@@ -747,27 +736,6 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 
    if (!time_to_exit)
       return 1;
-
-#ifdef HAVE_MENU
-   if (!runloop_is_quit_confirm())
-   {
-      if (settings && settings->confirm_on_exit)
-      {
-         if (menu_dialog_is_active())
-            return 1;
-
-         if (content_is_inited())
-         {
-            if(menu_display_toggle_get_reason() != MENU_TOGGLE_REASON_USER)
-               menu_display_toggle_set_reason(MENU_TOGGLE_REASON_MESSAGE);
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-         }
-
-         menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
-         return 1;
-      }
-   }
-#endif
 
    if (runloop_exec)
       runloop_exec = false;
@@ -833,6 +801,42 @@ static enum runloop_state runloop_check_state(
       }
    }
 
+#ifdef HAVE_MENU
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   {
+      menu_ctx_iterate_t iter;
+      bool skip = false;
+#ifdef HAVE_OVERLAY
+      skip = osk_enable && input_keyboard_return_pressed();
+#endif
+
+      if (menu_driver_is_binding_state())
+         trigger_input = 0;
+
+      if (!skip)
+      {
+         enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
+         bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
+
+         focused                 = focused && !ui_companion_is_on_foreground();
+
+         iter.action             = action;
+
+         if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+
+         if (focused || !runloop_idle)
+            menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+
+         if (!focused)
+            return RUNLOOP_STATE_SLEEP;
+
+         if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
+            return RUNLOOP_STATE_QUIT;
+      }
+   }
+#endif
+   
    if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
 
@@ -876,42 +880,9 @@ static enum runloop_state runloop_check_state(
 #endif
 
    if (runloop_iterate_time_to_exit(
-            runloop_cmd_press(current_input, RARCH_QUIT_KEY)) != 1)
+            runloop_cmd_press(trigger_input, RARCH_QUIT_KEY)) != 1)
       return RUNLOOP_STATE_QUIT;
 
-#ifdef HAVE_MENU
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-   {
-      menu_ctx_iterate_t iter;
-      bool skip = false;
-#ifdef HAVE_OVERLAY
-      skip = osk_enable && input_keyboard_return_pressed();
-#endif
-
-      if (!skip)
-      {
-         enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-         bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
-
-         focused                 = focused && !ui_companion_is_on_foreground();
-
-         iter.action             = action;
-
-         if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-
-         if (focused || !runloop_idle)
-            menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
-
-         if (!focused)
-            return RUNLOOP_STATE_SLEEP;
-
-         if (action == MENU_ACTION_QUIT)
-            return RUNLOOP_STATE_QUIT;
-      }
-   }
-#endif
-   
    if (runloop_idle)
       return RUNLOOP_STATE_SLEEP;
 

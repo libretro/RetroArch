@@ -626,7 +626,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          {
             /* Work around C89 limitations */
             char u[501];
-            const char * t = 
+            const char * t =
                   "RetroArch relies on an unique form of\n"
                   "audio/video synchronization where it needs to be\n"
                   "calibrated against the refresh rate of your\n"
@@ -3943,6 +3943,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Menu Shader Pipeline";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
          return "Monochrome";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED:
+         return "Monochrome Jagged";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI:
          return "FlatUI";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:

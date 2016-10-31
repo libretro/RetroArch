@@ -2221,7 +2221,7 @@ static int menu_displaylist_parse_settings_internal(void *data,
       bool time_to_exit             = false;
       const char *short_description = setting->short_description;
       const char *name              = setting->name;
-      enum setting_type type        = setting->type;
+      enum setting_type type        = setting_get_type(setting);
       rarch_setting_t **list        = &setting;
 
       switch (parse_type)
@@ -2307,7 +2307,7 @@ loop:
          case PARSE_GROUP:
          case PARSE_ONLY_GROUP:
          case PARSE_SUB_GROUP:
-            if (setting->type == precond)
+            if (setting_get_type(setting) == precond)
                time_to_exit = true;
             break;
          case PARSE_ONLY_BIND:
@@ -2408,7 +2408,7 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
       bool time_to_exit             = false;
       const char *short_description = setting->short_description;
       const char *name              = setting->name;
-      enum setting_type type        = setting->type;
+      enum setting_type type        = setting_get_type(setting);
       rarch_setting_t **list        = &setting;
 
       switch (parse_type)
@@ -2494,7 +2494,7 @@ loop:
          case PARSE_GROUP:
          case PARSE_ONLY_GROUP:
          case PARSE_SUB_GROUP:
-            if (setting->type == precond)
+            if (setting_get_type(setting) == precond)
                time_to_exit = true;
             break;
          case PARSE_ONLY_BIND:
@@ -2872,14 +2872,6 @@ static int menu_displaylist_parse_information_list(
 static int menu_displaylist_parse_add_content_list(
       menu_displaylist_info_t *info)
 {
-#ifdef HAVE_NETWORKING
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
-         msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
-         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
-         MENU_SETTING_ACTION, 0, 0);
-#endif
-
 #ifdef HAVE_LIBRETRODB
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
@@ -2913,6 +2905,12 @@ static int menu_displaylist_parse_scan_directory_list(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
          msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DIRECTORY),
          MENU_ENUM_LABEL_SCAN_DIRECTORY,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
+         msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE),
+         MENU_ENUM_LABEL_SCAN_FILE,
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
@@ -2950,6 +2948,14 @@ static int menu_displaylist_parse_options(
          msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST),
          MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
          MENU_SETTING_ACTION, 0, 0);
+
+#ifdef HAVE_NETWORKING
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS),
+         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+         MENU_SETTING_ACTION, 0, 0);
+#endif
 
 #if !defined(VITA)
    menu_entries_append_enum(info->list,
@@ -4518,9 +4524,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CONFIRM_ON_EXIT,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG,

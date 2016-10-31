@@ -2606,8 +2606,6 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "auto_overrides_enable";
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          return "config_save_on_exit";
-      case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
-         return "confirm_on_exit";
       case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
          return "show_hidden_files";
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
@@ -3054,7 +3052,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
          return "Reduces latency at the cost of higher risk of video stuttering. Adds a delay after V-Sync (in ms).";
       case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
-         return "Download and/or scan content, and add it to your collection.";
+         return "Scan contents and add to the database.";
       case MENU_ENUM_SUBLABEL_NETPLAY:
          return "Join or host a netplay session.";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
@@ -3082,7 +3080,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "Tells the video driver to explicitly use a specified buffering mode.";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
-         return "Download and update add-ons and components for RetroArch.";
+         return "Download add-ons, components and contents for RetroArch.";
       case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
          return "Configure controls for this user.";
       case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
@@ -3672,7 +3670,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
          return "Update Core Info Files";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
-         return "Download Content";
+         return "Content Downloader";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE:
          return "Download Core...";
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
@@ -3682,7 +3680,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY:
          return "Scan Directory";
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
-         return "Add Content";
+         return "Scan Content";
       case MENU_ENUM_LABEL_VALUE_INFORMATION:
          return "Information";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
@@ -3943,6 +3941,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Menu Shader Pipeline";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
          return "Monochrome";
+       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED:
+         return "Monochrome Jagged";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI:
          return "FlatUI";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:

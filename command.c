@@ -1166,9 +1166,9 @@ static void command_event_init_controllers(void)
             /* Some cores do not properly range check port argument.
              * This is broken behavior of course, but avoid breaking
              * cores needlessly. */
-            RARCH_LOG("%s %u : %s (ID: %u).\n", i + 1,
-                  msg_hash_to_str(MSG_CONNECTING_TO_PORT),
-                  ident, device, i + 1);
+            RARCH_LOG("%s %u: %s (ID: %u).\n",
+                    msg_hash_to_str(MSG_CONNECTING_TO_PORT),
+                    device, ident, i+1);
             set_controller = true;
             break;
       }
@@ -1714,13 +1714,6 @@ static void command_event_main_state(unsigned cmd)
 
 void handle_quit_event(void)
 {
-#ifdef HAVE_MENU
-   settings_t *settings      = config_get_ptr();
-   if (settings && settings->confirm_on_exit &&
-         menu_dialog_is_active())
-      return;
-#endif
-
    command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
    command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
    command_event(CMD_EVENT_RESTORE_DEFAULT_SHADER_PRESET, NULL);
@@ -1931,18 +1924,7 @@ bool command_event(enum event_command cmd, void *data)
          core_unload();
 #endif
          break;
-      case CMD_EVENT_QUIT_CONFIRM:
-         handle_quit_event();
-         break;
       case CMD_EVENT_QUIT:
-#ifdef HAVE_MENU
-         if (settings && settings->confirm_on_exit &&
-                !menu_dialog_is_active() && !runloop_is_quit_confirm())
-         {
-            menu_dialog_show_message(MENU_DIALOG_QUIT_CONFIRM, MENU_ENUM_LABEL_CONFIRM_ON_EXIT);
-            break;
-         }
-#endif
          handle_quit_event();
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
@@ -2039,7 +2021,7 @@ bool command_event(enum event_command cmd, void *data)
          if (audio_driver_alive())
             return false;
 
-         if (!settings->audio.mute_enable && !audio_driver_start())
+         if (settings && !settings->audio.mute_enable && !audio_driver_start())
          {
             RARCH_ERR("%s\n",
                   msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
@@ -2300,10 +2282,12 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_PAUSE_CHECKS:
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
          {
+            bool is_paused = false;
+
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
             command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
-            bool is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
             runloop_msg_queue_push(msg_hash_to_str(MSG_PAUSED), 1, is_paused ? 1: 30, true);
 
             if (settings->video.black_frame_insertion || is_paused)

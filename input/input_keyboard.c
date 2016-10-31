@@ -166,6 +166,34 @@ static bool input_keyboard_line_event(
    return false;
 }
 
+bool input_keyboard_line_append(const char *word)
+{
+   unsigned i = 0;
+   unsigned len = strlen(word);
+
+   char *newbuf = (char*)
+         realloc(g_keyboard_line->buffer, g_keyboard_line->size + len*2);
+   if (!newbuf)
+      return false;
+
+   memmove(newbuf + g_keyboard_line->ptr + len,
+         newbuf + g_keyboard_line->ptr,
+         g_keyboard_line->size - g_keyboard_line->ptr + len);
+
+   for (i = 0; i < len; i++)
+   {
+      newbuf[g_keyboard_line->ptr] = word[i];
+      g_keyboard_line->ptr++;
+      g_keyboard_line->size++;
+   }
+
+   newbuf[g_keyboard_line->size] = '\0';
+
+   g_keyboard_line->buffer = newbuf;
+
+   return false;
+}
+
 /**
  * input_keyboard_start_line:
  * @userdata                 : Userdata.
@@ -207,7 +235,7 @@ void input_keyboard_event(bool down, unsigned code,
 {
    static bool deferred_wait_keys;
 
-   if (code == RETROK_RETURN || code == RETROK_UNKNOWN)
+   if (code == RETROK_RETURN || (!down && code == RETROK_UNKNOWN))
       return_pressed = down;
 
    if (deferred_wait_keys)

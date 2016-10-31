@@ -367,6 +367,8 @@ const char *xmb_theme_ident(void)
          return "pixel";
       case XMB_ICON_THEME_CUSTOM:
          return "custom";
+       case XMB_ICON_THEME_MONOCHROME_JAGGED:
+         return "monochrome-jagged";
       case XMB_ICON_THEME_MONOCHROME:
       default:
          break;
@@ -686,14 +688,14 @@ static void xmb_messagebox(void *data, const char *message)
    strlcpy(xmb->box_message, message, sizeof(xmb->box_message));
 }
 
-static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid, unsigned id)
+static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned id)
 {
    unsigned i, width, height;
    float dark[16]=  {
-      0.00, 0.00, 0.00, 0.5,
-      0.00, 0.00, 0.00, 0.5,
-      0.00, 0.00, 0.00, 0.5,
-      0.00, 0.00, 0.00, 0.5,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.75,
    };
 
    float light[16]=  {
@@ -712,25 +714,48 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, char* grid, unsigned id)
    for (i = 0; i <= 40; i++)
    {
       int line_y;
-      char letter[2];
-
-      letter[0] = grid[i];
-      letter[1] = '\0';
+      int ptr_width = height / 12;
       line_y    = (i / 10)*height/10.0;
 
       if (i == id)
          menu_display_draw_quad(
-               width/11.0 + (i % 10) * width/11.0 - 30,
-               height*2.5/4.0 + line_y - 30 - xmb->font->size / 4,
-               60, 60,
+               width/11.0 + (i % 10) * width/11.0 - ptr_width/2,
+               height*2.5/4.0 + line_y - ptr_width/2 - xmb->font->size / 4,
+               ptr_width, ptr_width,
                width, height,
                &light[0]);
 
-      xmb_draw_text(xmb, letter,
+      xmb_draw_text(xmb, grid[i],
             width/11.0 + (i % 10) * width/11.0,
             height*2.5/4.0 + line_y,
             1, 1, TEXT_ALIGN_CENTER, width, height, xmb->font);
    }
+}
+
+/* Returns the OSK key at a given position */
+static int xmb_osk_ptr_at_pos(void *data, int x, int y)
+{
+   unsigned i, width, height;
+
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   if (!xmb)
+      return -1;
+
+   video_driver_get_size(&width, &height);
+
+   for (i = 0; i <= 40; i++)
+   {
+      int ptr_width = height / 12;
+      int line_y    = (i / 10)*height/10.0;
+      int ptr_x     = width/11.0 + (i % 10) * width/11.0 - ptr_width/2;
+      int ptr_y     = height*2.5/4.0 + line_y - ptr_width/2 - xmb->font->size / 4;
+
+      if (x > ptr_x && x < ptr_x + ptr_width
+       && y > ptr_y && y < ptr_y + ptr_width)
+         return i;
+   }
+
+   return -1;
 }
 
 static void xmb_render_messagebox_internal(
@@ -790,7 +815,7 @@ static void xmb_render_messagebox_internal(
    }
 
    if (menu_input_dialog_get_display_kb())
-      xmb_render_keyboard(xmb, kbd_grid, kbd_index);
+      xmb_render_keyboard(xmb, menu_event_get_osk_grid(), menu_event_get_osk_ptr());
 
 end:
    string_list_free(list);
@@ -1520,7 +1545,7 @@ static void xmb_context_reset_horizontal_list(
             continue;
       }
 
-      iconpath[0] = sysname[0] = texturepath[0] = 
+      iconpath[0] = sysname[0] = texturepath[0] =
          content_texturepath[0] = '\0';
 
       file_list_get_at_offset(xmb->horizontal_list, i,
@@ -1696,7 +1721,7 @@ static void xmb_populate_entries(void *data,
 }
 
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
-      xmb_node_t *core_node, xmb_node_t *node, 
+      xmb_node_t *core_node, xmb_node_t *node,
       enum msg_hash_enums enum_idx, unsigned type, bool active)
 {
    switch (enum_idx)
@@ -1821,16 +1846,16 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 }
 
 char* word_wrap (char* buffer, char* string, int line_width) {
-   int i = 0;
+   unsigned i = 0;
    int k, counter;
 
-   while(i < strlen( string ) ) 
+   while(i < strlen( string ) )
    {
       /* copy string until the end of the line is reached */
-      for ( counter = 1; counter <= line_width; counter++ ) 
+      for ( counter = 1; counter <= line_width; counter++ )
       {
          /* check if end of string reached */
-         if ( i == strlen( string ) ) 
+         if ( i == strlen( string ) )
          {
             buffer[ i ] = 0;
             return buffer;
@@ -1838,24 +1863,24 @@ char* word_wrap (char* buffer, char* string, int line_width) {
 
          buffer[ i ] = string[ i ];
 
-         /* check for newlines embedded in the original input 
+         /* check for newlines embedded in the original input
           * and reset the index */
          if ( buffer[ i ] == '\n' )
-            counter = 1; 
+            counter = 1;
          i++;
       }
       /* check for whitespace */
-      if ( isspace( string[ i ] ) ) 
+      if ( isspace( string[ i ] ) )
       {
          buffer[i] = '\n';
          i++;
-      } 
+      }
       else
       {
          /* check for nearest whitespace back in string */
-         for ( k = i; k > 0; k--) 
+         for ( k = i; k > 0; k--)
          {
-            if ( isspace( string[ k ] ) ) 
+            if ( isspace( string[ k ] ) )
             {
                buffer[ k ] = '\n';
                /* set string index back to character after this one */
@@ -2209,7 +2234,7 @@ static void xmb_draw_bg(
 #if 0
    RARCH_LOG("DRAW BG %d %d \n",width,height);
 #endif
-   
+
    bool running = menu_display_libretro_running();
 
    draw.x                    = 0;
@@ -2228,8 +2253,8 @@ static void xmb_draw_bg(
    menu_display_set_viewport();
 
 #ifdef HAVE_SHADERPIPELINE
-   if (settings->menu.xmb.shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER 
-         && 
+   if (settings->menu.xmb.shader_pipeline > XMB_SHADER_PIPELINE_WALLPAPER
+         &&
          (settings->menu.xmb.menu_color_theme != XMB_THEME_WALLPAPER))
    {
       draw.color = xmb_gradient_ident();
@@ -2520,7 +2545,7 @@ static void xmb_frame(void *data)
          xmb->selection_buf_old,
          xmb->menu_stack_old,
          xmb->selection_ptr_old,
-         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1) 
+         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1)
          ? xmb->categories.selection_ptr : xmb->categories.selection_ptr_old,
          &item_color[0],
          width,
@@ -2865,9 +2890,6 @@ static void *xmb_init(void **userdata)
    menu_display_allocate_white_texture();
 
    xmb_init_horizontal_list(xmb);
-   /* FIXME: remove this? */
-   xmb->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font_size);
-   xmb->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT, xmb->font2_size);
    xmb_init_ribbon(xmb);
 
    return menu;
@@ -3428,6 +3450,9 @@ static void xmb_context_destroy(void *data)
 
    menu_display_font_free(xmb->font);
    menu_display_font_free(xmb->font2);
+
+   xmb->font = NULL;
+   xmb->font2 = NULL;
 }
 
 static void xmb_toggle(void *userdata, bool menu_on)
@@ -3685,4 +3710,5 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_pointer_tap,
    xmb_update_thumbnail_path,
    xmb_update_thumbnail_image,
+   xmb_osk_ptr_at_pos,
 };

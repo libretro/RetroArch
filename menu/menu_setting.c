@@ -640,7 +640,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    if (!setting)
       return -1;
 
-   switch (setting->type)
+   switch (setting_get_type(setting))
    {
       case ST_PATH:
          if (action == MENU_ACTION_OK)
@@ -690,9 +690,10 @@ static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
    uint32_t needle        = msg_hash_calculate(label);
    rarch_setting_t **list = &setting;
 
-   for (; setting->type != ST_NONE; (*list = *list + 1))
+   for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
    {
-      if (needle == setting->name_hash && setting->type <= ST_GROUP)
+      if (     (needle                    == setting->name_hash)
+            && (setting_get_type(setting) <= ST_GROUP))
       {
          const char *name              = setting->name;
          const char *short_description = setting->short_description;
@@ -717,9 +718,9 @@ static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting
      enum msg_hash_enums enum_idx)
 {
    rarch_setting_t **list = &setting;
-   for (; setting->type != ST_NONE; (*list = *list + 1))
+   for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
    {
-      if (setting->enum_idx == enum_idx && setting->type <= ST_GROUP)
+      if (setting->enum_idx == enum_idx && setting_get_type(setting) <= ST_GROUP)
       {
          const char *short_description = setting->short_description;
          if (string_is_empty(short_description))
@@ -773,7 +774,7 @@ int menu_setting_set_flags(rarch_setting_t *setting)
    if (!setting)
       return 0;
 
-   switch (setting->type)
+   switch (setting_get_type(setting))
    {
       case ST_STRING_OPTIONS:
          return MENU_SETTING_STRING_OPTIONS;
@@ -821,7 +822,7 @@ void *setting_get_ptr(rarch_setting_t *setting)
    if (!setting)
       return NULL;
 
-   switch (setting->type)
+   switch (setting_get_type(setting))
    {
       case ST_BOOL:
          return setting->value.target.boolean;
@@ -2178,13 +2179,16 @@ static bool setting_append_list(
                   parent_group);
          }
 
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_ADD_CONTENT_LIST,
-               MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-               &group_info,
-               &subgroup_info,
-               parent_group);
+         if (!string_is_equal(settings->menu.driver, "xmb"))
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  MENU_ENUM_LABEL_ADD_CONTENT_LIST,
+                  MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+         }
 
 #if defined(HAVE_NETWORKING)
          CONFIG_ACTION(
@@ -2715,12 +2719,6 @@ static bool setting_append_list(
             bool_entries[0].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT;
             bool_entries[0].default_value  = config_save_on_exit;
             bool_entries[0].flags          = SD_FLAG_NONE;
-
-            bool_entries[1].target         = &settings->confirm_on_exit;
-            bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_CONFIRM_ON_EXIT;
-            bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT;
-            bool_entries[1].default_value  = confirm_on_exit;
-            bool_entries[1].flags          = SD_FLAG_NONE;
 
             bool_entries[2].target         = &settings->show_hidden_files;
             bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_SHOW_HIDDEN_FILES;
@@ -6311,7 +6309,7 @@ bool menu_setting_free(void *data)
       return false;
 
    /* Free data which was previously tagged */
-   for (; setting->type != ST_NONE; (*list = *list + 1))
+   for (; setting_get_type(setting) != ST_NONE; (*list = *list + 1))
       for (values = setting->free_flags, n = 0; values != 0; values >>= 1, n++)
          if (values & 1)
             switch (1 << n)
@@ -6453,7 +6451,7 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
 
             flags                    = setting->flags;
 
-            if (setting->type != ST_ACTION)
+            if (setting_get_type(setting) != ST_ACTION)
                return false;
 
             if (!setting->change_handler)

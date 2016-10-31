@@ -83,11 +83,22 @@ static bool menu_driver_toggled                 = false;
 static bool menu_driver_data_own                = false;
 static bool menu_driver_pending_quit            = false;
 static bool menu_driver_pending_shutdown        = false;
+static bool menu_driver_is_binding              = false;
 static playlist_t *menu_driver_playlist         = NULL;
 static struct video_shader *menu_driver_shader  = NULL;
 static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
+
+bool menu_driver_is_binding_state()
+{
+   return menu_driver_is_binding;
+}
+
+void menu_driver_set_binding_state(bool on)
+{
+   menu_driver_is_binding = on;
+}
 
 /**
  * menu_driver_find_handle:
@@ -903,6 +914,18 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             point->retcode = menu_driver_ctx->pointer_tap(menu_userdata,
                   point->x, point->y, point->ptr,
                   point->cbs, point->entry, point->action);
+         }
+         break;
+      case RARCH_MENU_CTL_OSK_PTR_AT_POS:
+         {
+            menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
+            if (!menu_driver_ctx || !menu_driver_ctx->osk_ptr_at_pos)
+            {
+               point->retcode = 0;
+               return false;
+            }
+            point->retcode = menu_driver_ctx->osk_ptr_at_pos(menu_userdata,
+                  point->x, point->y);
          }
          break;
       case RARCH_MENU_CTL_BIND_INIT:

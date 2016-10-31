@@ -137,7 +137,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "Complete by toggling eject again.");
             break;
          case RARCH_GRAB_MOUSE_TOGGLE:
-            snprintf(s, len, 
+            snprintf(s, len,
                   "Toggles mouse grab. \n"
                   " \n"
                   "When mouse is grabbed, RetroArch hides the \n"
@@ -1482,7 +1482,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                " Possible values are [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
-         snprintf(s, len, 
+         snprintf(s, len,
                "Turbo period.\n"
                " \n"
                "Describes the period of which turbo-enabled\n"
@@ -1492,7 +1492,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                );
          break;
       case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
-         snprintf(s, len, 
+         snprintf(s, len,
                "Duty cycle.\n"
                " \n"
                "Describes how long the period of a turbo-enabled\n"
@@ -3941,6 +3941,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "メニューのシェーダーパイプライン";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
          return "モノクローム";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED:
+         return "モノクローム Jagged";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI:
          return "フラットUI";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:

@@ -271,7 +271,7 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
    if (!setting)
       return menu_cbs_exit();
    return menu_action_handle_setting(setting,
-         setting->type, MENU_ACTION_LEFT, wraparound);
+         setting_get_type(setting), MENU_ACTION_LEFT, wraparound);
 #else
    return 0;
 #endif
@@ -417,7 +417,7 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
       const char *parent_group   = cbs->setting->parent_group;
 
       if (string_is_equal(parent_group, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)) 
-               && (cbs->setting->type == ST_GROUP))
+               && (setting_get_type(cbs->setting) == ST_GROUP))
       {
          BIND_ACTION_LEFT(cbs, action_left_mainmenu);
          return 0;

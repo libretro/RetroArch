@@ -45,7 +45,7 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 
    if (setting)
    {
-      switch (setting->type)
+      switch (setting_get_type(setting))
       {
          case ST_BOOL:
             return MENU_ENTRY_BOOL;
