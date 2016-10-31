@@ -3941,6 +3941,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Menu Shader Pipeline";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
          return "Monochrome";
+       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED:
+         return "Monochrome Jagged";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI:
          return "FlatUI";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:
