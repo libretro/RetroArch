@@ -22,7 +22,7 @@ import android.provider.Settings;
 
 public final class MainMenuActivity extends PreferenceActivity
 {
-	private static final int REQUEST_WRITE_STORAGE = 112;
+	private static int REQUEST_WRITE_STORAGE = 112;
 	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
 			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
 	{
