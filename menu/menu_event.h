@@ -41,6 +41,7 @@ unsigned char menu_event_keyboard_is_set(enum retro_key key);
 
 int menu_event_get_osk_ptr();
 void menu_event_set_osk_ptr(int);
+void menu_event_osk_append(int);
 const char** menu_event_get_osk_grid();
 
 RETRO_END_DECLS
