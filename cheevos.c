@@ -75,17 +75,19 @@
 
 enum
 {
+   /* Don't change those, the values match the console IDs
+    * at retroachievements.org. */
    CHEEVOS_CONSOLE_MEGA_DRIVE = 1,
-   CHEEVOS_CONSOLE_NINTENDO_64,
-   CHEEVOS_CONSOLE_SUPER_NINTENDO,
-   CHEEVOS_CONSOLE_GAMEBOY,
-   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE,
-   CHEEVOS_CONSOLE_GAMEBOY_COLOR,
-   CHEEVOS_CONSOLE_NINTENDO,
-   CHEEVOS_CONSOLE_PC_ENGINE,
-   CHEEVOS_CONSOLE_SEGA_CD,
-   CHEEVOS_CONSOLE_SEGA_32X,
-   CHEEVOS_CONSOLE_MASTER_SYSTEM
+   CHEEVOS_CONSOLE_NINTENDO_64 = 2,
+   CHEEVOS_CONSOLE_SUPER_NINTENDO = 3,
+   CHEEVOS_CONSOLE_GAMEBOY = 4,
+   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE = 5,
+   CHEEVOS_CONSOLE_GAMEBOY_COLOR = 6,
+   CHEEVOS_CONSOLE_NINTENDO = 7,
+   CHEEVOS_CONSOLE_PC_ENGINE = 8,
+   CHEEVOS_CONSOLE_SEGA_CD = 9,
+   CHEEVOS_CONSOLE_SEGA_32X = 10,
+   CHEEVOS_CONSOLE_MASTER_SYSTEM = 11
 };
 
 enum
@@ -350,13 +352,9 @@ static void cheevos_log_var(const cheevos_var_t* var)
    );
    RARCH_LOG("CHEEVOS         value: %u\n", var->value);
 }
-#endif
 
 static void cheevos_log_cond(const cheevos_cond_t* cond)
 {
-#ifndef CHEEVOS_VERBOSE
-   (void)cond;
-#else
    RARCH_LOG("CHEEVOS     condition %p\n", cond);
    RARCH_LOG("CHEEVOS       type:     %s\n",
       cond->type == CHEEVOS_COND_TYPE_STANDARD ? "standard" :
@@ -378,14 +376,11 @@ static void cheevos_log_cond(const cheevos_cond_t* cond)
    );
    RARCH_LOG("CHEEVOS       target:\n");
    cheevos_log_var(&cond->target);
-#endif
 }
 
-static void cheevos_log_cheevo(const cheevo_t* cheevo, const cheevos_field_t* memaddr_ud)
+static void cheevos_log_cheevo(const cheevo_t* cheevo,
+      const cheevos_field_t* memaddr_ud)
 {
-#ifndef CHEEVOS_VERBOSE
-   (void)cheevo;
-#else
    char memaddr[256];
    size_t length;
 
@@ -406,37 +401,58 @@ static void cheevos_log_cheevo(const cheevo_t* cheevo, const cheevos_field_t* me
    RARCH_LOG("CHEEVOS   points:  %u\n", cheevo->points);
    RARCH_LOG("CHEEVOS   sets:    %u\n", cheevo->count);
    RARCH_LOG("CHEEVOS   memaddr: %s\n", memaddr);
-#endif
 }
 
-#ifdef CHEEVOS_VERBOSE
-static void cheevos_add_var_size(char** aux, size_t* left, const cheevos_var_t* var)
+static void cheevos_add_var_size(char** aux, size_t* left,
+      const cheevos_var_t* var)
 {
    switch( var->size )
    {
-      case CHEEVOS_VAR_SIZE_BIT_0: cheevos_add_char(aux, left, 'M'); break;
-      case CHEEVOS_VAR_SIZE_BIT_1: cheevos_add_char(aux, left, 'N'); break;
-      case CHEEVOS_VAR_SIZE_BIT_2: cheevos_add_char(aux, left, 'O'); break;
-      case CHEEVOS_VAR_SIZE_BIT_3: cheevos_add_char(aux, left, 'P'); break;
-      case CHEEVOS_VAR_SIZE_BIT_4: cheevos_add_char(aux, left, 'Q'); break;
-      case CHEEVOS_VAR_SIZE_BIT_5: cheevos_add_char(aux, left, 'R'); break;
-      case CHEEVOS_VAR_SIZE_BIT_6: cheevos_add_char(aux, left, 'S'); break;
-      case CHEEVOS_VAR_SIZE_BIT_7: cheevos_add_char(aux, left, 'T'); break;
-      case CHEEVOS_VAR_SIZE_NIBBLE_LOWER: cheevos_add_char(aux, left, 'L'); break;
-      case CHEEVOS_VAR_SIZE_NIBBLE_UPPER: cheevos_add_char(aux, left, 'U'); break;
-      case CHEEVOS_VAR_SIZE_EIGHT_BITS: cheevos_add_char(aux, left, 'H'); break;
-      case CHEEVOS_VAR_SIZE_THIRTYTWO_BITS: cheevos_add_char(aux, left, 'X'); break;
+      case CHEEVOS_VAR_SIZE_BIT_0:
+         cheevos_add_char(aux, left, 'M');
+         break;
+      case CHEEVOS_VAR_SIZE_BIT_1:
+         cheevos_add_char(aux, left, 'N');
+         break;
+      case CHEEVOS_VAR_SIZE_BIT_2:
+         cheevos_add_char(aux, left, 'O');
+         break;
+      case CHEEVOS_VAR_SIZE_BIT_3:
+         cheevos_add_char(aux, left, 'P');
+         break;
+      case CHEEVOS_VAR_SIZE_BIT_4:
+         cheevos_add_char(aux, left, 'Q');
+         break;
+      case CHEEVOS_VAR_SIZE_BIT_5:
+         cheevos_add_char(aux, left, 'R');
+         break;
+      case CHEEVOS_VAR_SIZE_BIT_6:
+         cheevos_add_char(aux, left, 'S');
+         break;
+      case CHEEVOS_VAR_SIZE_BIT_7:
+         cheevos_add_char(aux, left, 'T');
+         break;
+      case CHEEVOS_VAR_SIZE_NIBBLE_LOWER:
+         cheevos_add_char(aux, left, 'L');
+         break;
+      case CHEEVOS_VAR_SIZE_NIBBLE_UPPER:
+         cheevos_add_char(aux, left, 'U');
+         break;
+      case CHEEVOS_VAR_SIZE_EIGHT_BITS:
+         cheevos_add_char(aux, left, 'H');
+         break;
+      case CHEEVOS_VAR_SIZE_THIRTYTWO_BITS:
+         cheevos_add_char(aux, left, 'X');
+         break;
       case CHEEVOS_VAR_SIZE_SIXTEEN_BITS:
-      default: cheevos_add_char(aux, left, ' '); break;
+      default:
+         cheevos_add_char(aux, left, ' ');
+         break;
    }
 }
-#endif
 
 static void cheevos_post_log_cheevo(const cheevo_t* cheevo)
 {
-#ifndef CHEEVOS_VERBOSE
-   (void)cheevo;
-#else
    char memaddr[256];
    char *aux = memaddr;
    size_t left = sizeof(memaddr);
@@ -459,7 +475,8 @@ static void cheevos_post_log_cheevo(const cheevo_t* cheevo)
          else if (cond->type == CHEEVOS_COND_TYPE_PAUSE_IF)
             cheevos_add_string(&aux, &left, "P:");
 
-         if (cond->source.type == CHEEVOS_VAR_TYPE_ADDRESS || cond->source.type == CHEEVOS_VAR_TYPE_DELTA_MEM)
+         if (   cond->source.type == CHEEVOS_VAR_TYPE_ADDRESS
+             || cond->source.type == CHEEVOS_VAR_TYPE_DELTA_MEM)
          {
             if (cond->source.type == CHEEVOS_VAR_TYPE_DELTA_MEM)
                cheevos_add_char(&aux, &left, 'd');
@@ -475,15 +492,28 @@ static void cheevos_post_log_cheevo(const cheevo_t* cheevo)
 
          switch (cond->op)
          {
-            case CHEEVOS_COND_OP_EQUALS: cheevos_add_char(&aux, &left, '='); break;
-      		case CHEEVOS_COND_OP_GREATER_THAN: cheevos_add_char(&aux, &left, '>'); break;
-      		case CHEEVOS_COND_OP_GREATER_THAN_OR_EQUAL: cheevos_add_char(&aux, &left, '>'); cheevos_add_char(&aux, &left, '='); break;
-      		case CHEEVOS_COND_OP_LESS_THAN: cheevos_add_char(&aux, &left, '<'); break;
-      		case CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL: cheevos_add_char(&aux, &left, '<'); cheevos_add_char(&aux, &left, '='); break;
-      		case CHEEVOS_COND_OP_NOT_EQUAL_TO:cheevos_add_char(&aux, &left, '!'); cheevos_add_char(&aux, &left, '='); break;
+            case CHEEVOS_COND_OP_EQUALS:
+               cheevos_add_char(&aux, &left, '=');
+               break;
+      		case CHEEVOS_COND_OP_GREATER_THAN:
+               cheevos_add_char(&aux, &left, '>');
+               break;
+      		case CHEEVOS_COND_OP_GREATER_THAN_OR_EQUAL:
+               cheevos_add_string(&aux, &left, ">=");
+               break;
+      		case CHEEVOS_COND_OP_LESS_THAN:
+               cheevos_add_char(&aux, &left, '<');
+               break;
+      		case CHEEVOS_COND_OP_LESS_THAN_OR_EQUAL:
+               cheevos_add_string(&aux, &left, "<=");
+               break;
+      		case CHEEVOS_COND_OP_NOT_EQUAL_TO:
+               cheevos_add_string(&aux, &left, "!=");
+               break;
          }
 
-         if (cond->target.type == CHEEVOS_VAR_TYPE_ADDRESS || cond->target.type == CHEEVOS_VAR_TYPE_DELTA_MEM)
+         if (   cond->target.type == CHEEVOS_VAR_TYPE_ADDRESS
+             || cond->target.type == CHEEVOS_VAR_TYPE_DELTA_MEM)
          {
             if (cond->target.type == CHEEVOS_VAR_TYPE_DELTA_MEM)
                cheevos_add_char(&aux, &left, 'd');
@@ -510,8 +540,8 @@ static void cheevos_post_log_cheevo(const cheevo_t* cheevo)
    memaddr[sizeof(memaddr) - 1] = 0;
 
    RARCH_LOG("CHEEVOS   memaddr (computed): %s\n", memaddr);
-#endif
 }
+#endif
 
 static uint32_t cheevos_djb2(const char* str, size_t length)
 {
@@ -1052,7 +1082,9 @@ static void cheevos_parse_memaddr(cheevos_cond_t *cond, const char *memaddr, uns
          if (index == set)
          {
             cheevos_parse_cond(cond, &memaddr);
+#ifdef CHEEVOS_VERBOSE
             cheevos_log_cond(cond);
+#endif
             cond++;
          }
          else
@@ -1118,7 +1150,9 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
 
    cheevo->count = cheevos_count_cond_sets(ud->memaddr.string);
 
+#ifdef CHEEVOS_VERBOSE
    cheevos_log_cheevo(cheevo, &ud->memaddr);
+#endif
 
    if (cheevo->count)
    {
@@ -1161,7 +1195,10 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
       }
    }
 
+#ifdef CHEEVOS_VERBOSE
    cheevos_post_log_cheevo(cheevo);
+#endif
+
    return 0;
 
 error:
