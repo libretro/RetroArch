@@ -1978,7 +1978,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #endif
 
    if (!video_shader_driver_init_first())
+   {
+      RARCH_ERR("[GL:]: Shader driver initialization failed.\n");
       goto error;
+   }
 
    video_shader_driver_get_ident(&ident_info);
 
@@ -2001,7 +2004,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    if (!video_shader_driver_info(&shader_info))
+   {
+      RARCH_ERR("[GL]: Shader driver info check failed.\n");
       goto error;
+   }
 
    RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
    RARCH_LOG("[GL]: Loaded %u program(s).\n",
@@ -2074,7 +2080,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (gl->hw_render_use &&
          !gl_init_hw_render(gl, gl->tex_w, gl->tex_h))
+   {
+      RARCH_ERR("[GL]: Hardware rendering context initialization failed.\n");
       goto error;
+   }
 #endif
 
    inp.input      = input;
