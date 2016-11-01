@@ -49,7 +49,6 @@ namespace detail
 				std::numeric_limits<genFIType>::is_iec559 || std::numeric_limits<genFIType>::is_signed,
 				"'abs' only accept floating-point and integer scalar or vector inputs");
 			return x >= genFIType(0) ? x : -x;
-			// TODO, perf comp with: *(((int *) &x) + 1) &= 0x7fffffff;
 		}
 	};
 
@@ -206,17 +205,6 @@ namespace detail
 
 	VECTORIZE_VEC(round)
 
-/*
-	// roundEven
-	template <typename genType>
-	GLM_FUNC_QUALIFIER genType roundEven(genType const& x)
-	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'roundEven' only accept floating-point inputs");
-
-		return genType(int(x + genType(int(x) % 2)));
-	}
-*/
-	
 	// roundEven
 	template <typename genType>
 	GLM_FUNC_QUALIFIER genType roundEven(genType const & x)
@@ -230,25 +218,12 @@ namespace detail
 		genType FractionalPart = fract(x);
 
 		if(FractionalPart > static_cast<genType>(0.5) || FractionalPart < static_cast<genType>(0.5))
-		{
 			return round(x);
-		}
-		else if((Integer % 2) == 0)
-		{
+		if((Integer % 2) == 0)
 			return IntegerPart;
-		}
-		else if(x <= static_cast<genType>(0)) // Work around... 
-		{
+		if(x <= static_cast<genType>(0)) // Work around... 
 			return IntegerPart - static_cast<genType>(1);
-		}
-		else
-		{
-			return IntegerPart + static_cast<genType>(1);
-		}
-		//else // Bug on MinGW 4.5.2
-		//{
-		//	return mix(IntegerPart + genType(-1), IntegerPart + genType(1), x <= genType(0));
-		//}
+      return IntegerPart + static_cast<genType>(1);
 	}
 	
 	VECTORIZE_VEC(roundEven)
@@ -353,14 +328,6 @@ namespace detail
 			modf(x.z, i.z),
 			modf(x.w, i.w));
 	}
-
-	//// Only valid if (INT_MIN <= x-y <= INT_MAX)
-	//// min(x,y)
-	//r = y + ((x - y) & ((x - y) >> (sizeof(int) *
-	//CHAR_BIT - 1)));
-	//// max(x,y)
-	//r = x - ((x - y) & ((x - y) >> (sizeof(int) *
-	//CHAR_BIT - 1)));
 
 	// min
 	template <typename genType>

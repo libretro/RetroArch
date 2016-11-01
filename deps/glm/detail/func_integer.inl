@@ -112,8 +112,7 @@ namespace glm
 		Borrow = x >= y ? static_cast<uint32>(0) : static_cast<uint32>(1);
 		if(y >= x)
 			return y - x;
-		else
-			return static_cast<uint32>((static_cast<int64>(1) << static_cast<int64>(32)) + (static_cast<int64>(y) - static_cast<int64>(x)));
+      return static_cast<uint32>((static_cast<int64>(1) << static_cast<int64>(32)) + (static_cast<int64>(y) - static_cast<int64>(x)));
 	}
 
 	template <>

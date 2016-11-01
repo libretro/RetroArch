@@ -39,12 +39,6 @@ namespace detail
 	{
 		template <typename T>
 		GLM_FUNC_QUALIFIER T operator() (T const & Min, T const & Max) const;
-/*
-		{
-			GLM_STATIC_ASSERT(0, "'linearRand' invalid template parameter type. GLM_GTC_random only supports floating-point template types.");
-			return Min;
-		}
-*/
 	};
 
 	template <>

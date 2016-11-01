@@ -11,25 +11,6 @@
 namespace glm{
 namespace detail{
 
-
-//////////////////////////////////////
-// Debugging
-#if 0
-void print(__m128 v)
-{
-    GLM_ALIGN(16) float result[4];
-    _mm_store_ps(result, v);
-
-    printf("__m128:    %f %f %f %f\n", result[0], result[1], result[2], result[3]);
-}
-
-void print(const fvec4SIMD &v)
-{
-    printf("fvec4SIMD: %f %f %f %f\n", v.x, v.y, v.z, v.w);
-}
-#endif
-
-
 //////////////////////////////////////
 // Implicit basic constructors
 
