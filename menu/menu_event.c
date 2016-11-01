@@ -25,6 +25,7 @@
 #endif
 
 #include <encodings/utf.h>
+#include <string/stdstring.h>
 
 #include "widgets/menu_entry.h"
 #include "widgets/menu_input_dialog.h"
@@ -114,33 +115,21 @@ void menu_event_osk_append(int ptr)
 {
    if (ptr >= 0)
    {
-      if (!strcmp(osk_grid[ptr],"⇦"))
-      {
+      if (string_is_equal(osk_grid[ptr],"⇦"))
          input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-      }
-      else if (!strcmp(osk_grid[ptr],"⏎"))
-      {
+      else if (string_is_equal(osk_grid[ptr],"⏎"))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-      }
-      else if (!strcmp(osk_grid[ptr],"⇧"))
-      {
+      else if (string_is_equal(osk_grid[ptr],"⇧"))
          osk_idx = OSK_UPPERCASE_LATIN;
-      }
-      else if (!strcmp(osk_grid[ptr],"⇩"))
-      {
+      else if (string_is_equal(osk_grid[ptr],"⇩"))
          osk_idx = OSK_LOWERCASE_LATIN;
-      }
-      else if (!strcmp(osk_grid[ptr],"⊕"))
-      {
+      else if (string_is_equal(osk_grid[ptr],"⊕"))
          if (osk_idx < OSK_TYPE_LAST - 1)
             osk_idx = (enum osk_type)(osk_idx + 1);
          else
             osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
-      }
       else
-      {
          input_keyboard_line_append(osk_grid[ptr]);
-      }
    }
 }
 
@@ -288,15 +277,15 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
             memcpy(osk_grid, katakana_page2_grid, sizeof(katakana_page2_grid));
             break;
          }
-         case OSK_LOWERCASE_LATIN:
-         {
-            memcpy(osk_grid, lowercase_grid, sizeof(lowercase_grid));
-            break;
-         }
          case OSK_UPPERCASE_LATIN:
-         default:
          {
             memcpy(osk_grid, uppercase_grid, sizeof(uppercase_grid));
+            break;
+         }
+         case OSK_LOWERCASE_LATIN:
+         default:
+         {
+            memcpy(osk_grid, lowercase_grid, sizeof(lowercase_grid));
             break;
          }
       }
