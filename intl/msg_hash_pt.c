@@ -825,7 +825,7 @@ int menu_hash_get_help_pt_enum(enum msg_hash_enums msg, char *s, size_t len)
                " Valores possíveis são [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
-         snprintf(s, len, 
+         snprintf(s, len,
                "Período de turbo.\n"
                " \n"
                "Descreve a velocidade na qual se alternam\n"
@@ -1066,7 +1066,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Redirecionando save para";
       case MSG_REDIRECTING_SAVESTATE_TO:
          return "Redirecionando savestate para";
-// TODO
+/* TODO */
       case MSG_APPLYING_CHEAT:
          return "Applying cheat changes.";
       case MSG_SHADER:
