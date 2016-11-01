@@ -12,10 +12,9 @@
 
 #define GLM_SWIZZLE
 #define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
+#include <glm/packing.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-using namespace glm;
 
 #if GL_DEBUG
 #define GL_CHECK_ERROR() do { \
@@ -152,12 +151,12 @@ static GLuint fft_compile_program(glfft_t *fft,
 
 static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned height)
 {
-   vec3 eye        = vec3(0, 80, -60);
-   vec3 center     = eye + vec3(0.0f, 0.0f, 1.0f);
-   vec3 up         = vec3(0.0f, 1.0f, 0.0f);
-   mat4 mvp_persp  = perspective((float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
-   mat4 mvp_lookat = lookAt(eye, center, up);
-   mat4 mvp        = mvp_persp * mvp_lookat;
+   glm::vec3 eye        = glm::vec3(0, 80, -60);
+   glm::vec3 center     = eye + glm::vec3(0.0f, 0.0f, 1.0f);
+   glm::vec3 up         = glm::vec3(0.0f, 1.0f, 0.0f);
+   glm::mat4 mvp_persp  = glm::perspective((float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
+   glm::mat4 mvp_lookat = glm::lookAt(eye, center, up);
+   glm::mat4 mvp        = mvp_persp * mvp_lookat;
 
    /* Render scene. */
    glBindFramebuffer(GL_FRAMEBUFFER, fft->ms_fbo ? fft->ms_fbo : backbuffer);
@@ -167,7 +166,7 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
 
    glUseProgram(fft->block.prog);
    glUniformMatrix4fv(glGetUniformLocation(fft->block.prog, "uMVP"),
-         1, GL_FALSE, value_ptr(mvp));
+         1, GL_FALSE, glm::value_ptr(mvp));
    glUniform2i(glGetUniformLocation(fft->block.prog, "uOffset"),
          (-int(fft->block_size) + 1) / 2, fft->output_ptr);
    glUniform4f(glGetUniformLocation(fft->block.prog, "uHeightmapParams"),
@@ -348,12 +347,12 @@ void fft_build_params(glfft_t *fft, GLuint *buffer,
 
          unsigned read_a       = (step == 0) ? bitinverse(a, size) : a;
          unsigned read_b       = (step == 0) ? bitinverse(b, size) : b;
-         vec2 tmp              = vec2(twiddle.real, twiddle.imag);
+         glm::vec2 tmp         = glm::vec2(twiddle.real, twiddle.imag);
 
          buffer[2 * a + 0]     = (read_a << 16) | read_b;
-         buffer[2 * a + 1]     = packHalf2x16(tmp);
+         buffer[2 * a + 1]     = glm::packHalf2x16(tmp);
          buffer[2 * b + 0]     = (read_a << 16) | read_b;
-         buffer[2 * b + 1]     = packHalf2x16(-tmp);
+         buffer[2 * b + 1]     = glm::packHalf2x16(-tmp);
       }
    }
 }
