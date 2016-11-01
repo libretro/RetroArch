@@ -16,6 +16,8 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.widget.Toast;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.content.pm.PackageManager;
 
 
 /**
@@ -46,7 +48,7 @@ public final class MainMenuActivity extends PreferenceActivity
 		boolean hasPermission = (ContextCompat.checkSelfPermission(this,
 				android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
 		if (!hasPermission) {
-			ActivityCompat.requestPermissions(this,
+			ActivityCompat.requestPermissions(context,
 			new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
 			REQUEST_WRITE_STORAGE);
 		}
