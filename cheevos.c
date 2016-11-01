@@ -879,6 +879,10 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
    var->bank_id = -1;
    var->value   = value;
 
+   if (   cheevos_locals.console_id == CHEEVOS_CONSOLE_NINTENDO
+       && var->value < 0x2000)
+      var->value &= 0x07ff;
+
    if (system->mmaps.num_descriptors != 0)
    {
       const struct retro_memory_descriptor *desc = NULL;
