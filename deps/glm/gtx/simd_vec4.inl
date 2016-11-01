@@ -48,11 +48,6 @@ GLM_FUNC_QUALIFIER fvec4SIMD::fvec4SIMD(float const & x, float const & y, float 
 //		Data(_mm_setr_ps(x, y, z, w))
 	Data(_mm_set_ps(w, z, y, x))
 {}
-/*
-GLM_FUNC_QUALIFIER fvec4SIMD::fvec4SIMD(float const v[4]) :
-	Data(_mm_load_ps(v))
-{}
-*/
 //////////////////////////////////////
 // Swizzle constructors
 
@@ -279,11 +274,6 @@ GLM_FUNC_QUALIFIER vec4 vec4_cast
 	return Result;
 }
 
-// Other possible implementation
-//float abs(float a)
-//{
-//  return max(-a, a);
-//}
 GLM_FUNC_QUALIFIER detail::fvec4SIMD abs
 (
 	detail::fvec4SIMD const & x
@@ -336,14 +326,6 @@ GLM_FUNC_QUALIFIER detail::fvec4SIMD round
 	return detail::sse_rnd_ps(x.Data);
 }
 
-//GLM_FUNC_QUALIFIER detail::fvec4SIMD roundEven
-//(
-//	detail::fvec4SIMD const & x
-//)
-//{
-
-//}
-
 GLM_FUNC_QUALIFIER detail::fvec4SIMD ceil
 (
 	detail::fvec4SIMD const & x
@@ -377,15 +359,6 @@ GLM_FUNC_QUALIFIER detail::fvec4SIMD mod
 {
 	return detail::sse_mod_ps(x.Data, _mm_set1_ps(y));
 }
-
-//GLM_FUNC_QUALIFIER detail::fvec4SIMD modf
-//(
-//	detail::fvec4SIMD const & x, 
-//	detail::fvec4SIMD & i
-//)
-//{
-
-//}
 
 GLM_FUNC_QUALIFIER detail::fvec4SIMD min
 (
@@ -494,32 +467,6 @@ GLM_FUNC_QUALIFIER detail::fvec4SIMD smoothstep
 {
 	return detail::sse_ssp_ps(_mm_set1_ps(edge0), _mm_set1_ps(edge1), x.Data);
 }
-
-//GLM_FUNC_QUALIFIER bvec4 isnan(detail::fvec4SIMD const & x)
-//{
-
-//}
-
-//GLM_FUNC_QUALIFIER bvec4 isinf(detail::fvec4SIMD const & x)
-//{
-
-//}
-
-//GLM_FUNC_QUALIFIER detail::ivec4SIMD floatBitsToInt
-//(
-//	detail::fvec4SIMD const & value
-//)
-//{
-
-//}
-
-//GLM_FUNC_QUALIFIER detail::fvec4SIMD intBitsToFloat
-//(
-//	detail::ivec4SIMD const & value
-//)
-//{
-
-//}
 
 GLM_FUNC_QUALIFIER detail::fvec4SIMD fma
 (
