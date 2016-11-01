@@ -665,8 +665,7 @@
 #	define GLM_INLINE inline
 #endif//defined(GLM_FORCE_INLINE)
 
-#define GLM_FUNC_DECL GLM_CUDA_FUNC_DECL
-#define GLM_FUNC_QUALIFIER GLM_CUDA_FUNC_DEF GLM_INLINE
+#define GLM_FUNC_QUALIFIER GLM_INLINE
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Swizzle operators

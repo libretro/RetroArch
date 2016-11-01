@@ -34,8 +34,8 @@
 namespace glm{
 namespace detail
 {
-	GLM_FUNC_DECL float toFloat32(int16_t value);
-	GLM_FUNC_DECL int16_t toFloat16(float const & value);
+	float toFloat32(int16_t value);
+	int16_t toFloat16(float const & value);
 
 }//namespace detail
 }//namespace glm

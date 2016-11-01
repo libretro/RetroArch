@@ -58,7 +58,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tvec3<T, P> cross(
+	detail::tvec3<T, P> cross(
 		detail::tquat<T, P> const & q,
 		detail::tvec3<T, P> const & v);
 
@@ -66,7 +66,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tvec3<T, P> cross(
+	detail::tvec3<T, P> cross(
 		detail::tvec3<T, P> const & v,
 		detail::tquat<T, P> const & q);
 
@@ -75,7 +75,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> squad(
+	detail::tquat<T, P> squad(
 		detail::tquat<T, P> const & q1,
 		detail::tquat<T, P> const & q2,
 		detail::tquat<T, P> const & s1,
@@ -86,7 +86,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> intermediate(
+	detail::tquat<T, P> intermediate(
 		detail::tquat<T, P> const & prev,
 		detail::tquat<T, P> const & curr,
 		detail::tquat<T, P> const & next);
@@ -95,21 +95,21 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> exp(
+	detail::tquat<T, P> exp(
 		detail::tquat<T, P> const & q);
 
 	//! Returns a log of a quaternion.
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> log(
+	detail::tquat<T, P> log(
 		detail::tquat<T, P> const & q);
 
 	/// Returns x raised to the y power.
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> pow(
+	detail::tquat<T, P> pow(
 		detail::tquat<T, P> const & x,
 		T const & y);
 
@@ -124,7 +124,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tvec3<T, P> rotate(
+	detail::tvec3<T, P> rotate(
 		detail::tquat<T, P> const & q,
 		detail::tvec3<T, P> const & v);
 
@@ -132,7 +132,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tvec4<T, P> rotate(
+	detail::tvec4<T, P> rotate(
 		detail::tquat<T, P> const & q,
 		detail::tvec4<T, P> const & v);
 
@@ -140,42 +140,42 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL T extractRealComponent(
+	T extractRealComponent(
 		detail::tquat<T, P> const & q);
 
 	/// Converts a quaternion to a 3 * 3 matrix.
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tmat3x3<T, P> toMat3(
+	detail::tmat3x3<T, P> toMat3(
 		detail::tquat<T, P> const & x){return mat3_cast(x);}
 
 	/// Converts a quaternion to a 4 * 4 matrix.
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tmat4x4<T, P> toMat4(
+	detail::tmat4x4<T, P> toMat4(
 		detail::tquat<T, P> const & x){return mat4_cast(x);}
 
 	/// Converts a 3 * 3 matrix to a quaternion.
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> toQuat(
+	detail::tquat<T, P> toQuat(
 		detail::tmat3x3<T, P> const & x){return quat_cast(x);}
 
 	/// Converts a 4 * 4 matrix to a quaternion.
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> toQuat(
+	detail::tquat<T, P> toQuat(
 		detail::tmat4x4<T, P> const & x){return quat_cast(x);}
 
 	/// Quaternion interpolation using the rotation short path.
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> shortMix(
+	detail::tquat<T, P> shortMix(
 		detail::tquat<T, P> const & x,
 		detail::tquat<T, P> const & y,
 		T const & a);
@@ -184,7 +184,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> fastMix(
+	detail::tquat<T, P> fastMix(
 		detail::tquat<T, P> const & x,
 		detail::tquat<T, P> const & y,
 		T const & a);
@@ -195,7 +195,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL detail::tquat<T, P> rotation(
+	detail::tquat<T, P> rotation(
 		detail::tvec3<T, P> const & orig, 
 		detail::tvec3<T, P> const & dest);
 
@@ -203,7 +203,7 @@ namespace glm
 	/// 
 	/// @see gtx_quaternion
 	template<typename T, precision P>
-	GLM_FUNC_DECL T length2(detail::tquat<T, P> const & q);
+	T length2(detail::tquat<T, P> const & q);
 
 	/// @}
 }//namespace glm

@@ -312,51 +312,14 @@ namespace glm
 	namespace detail
 	{
 		template <typename PARAM, typename RET>
-		GLM_FUNC_DECL RET bitfieldInterleave(PARAM x, PARAM y);
+		RET bitfieldInterleave(PARAM x, PARAM y);
 
 		template <typename PARAM, typename RET>
-		GLM_FUNC_DECL RET bitfieldInterleave(PARAM x, PARAM y, PARAM z);
+		RET bitfieldInterleave(PARAM x, PARAM y, PARAM z);
 
 		template <typename PARAM, typename RET>
-		GLM_FUNC_DECL RET bitfieldInterleave(PARAM x, PARAM y, PARAM z, PARAM w);
+		RET bitfieldInterleave(PARAM x, PARAM y, PARAM z, PARAM w);
 
-/*
-		template <typename PARAM, typename RET>
-		inline RET bitfieldInterleave(PARAM x, PARAM y)
-		{
-			RET Result = 0; 
-			for (int i = 0; i < sizeof(PARAM) * 8; i++)
-				Result |= (x & 1U << i) << i | (y & 1U << i) << (i + 1);
-			return Result;
-		}
-
-		template <typename PARAM, typename RET>
-		inline RET bitfieldInterleave(PARAM x, PARAM y, PARAM z)
-		{
-			RET Result = 0; 
-			for (RET i = 0; i < sizeof(PARAM) * 8; i++)
-			{
-				Result |= ((RET(x) & (RET(1) << i)) << ((i << 1) + 0));
-				Result |= ((RET(y) & (RET(1) << i)) << ((i << 1) + 1));
-				Result |= ((RET(z) & (RET(1) << i)) << ((i << 1) + 2));
-			}
-			return Result;
-		}
-
-		template <typename PARAM, typename RET>
-		inline RET bitfieldInterleave(PARAM x, PARAM y, PARAM z, PARAM w)
-		{
-			RET Result = 0; 
-			for (int i = 0; i < sizeof(PARAM) * 8; i++)
-			{
-				Result |= ((((RET(x) >> i) & RET(1))) << RET((i << 2) + 0));
-				Result |= ((((RET(y) >> i) & RET(1))) << RET((i << 2) + 1));
-				Result |= ((((RET(z) >> i) & RET(1))) << RET((i << 2) + 2));
-				Result |= ((((RET(w) >> i) & RET(1))) << RET((i << 2) + 3));
-			}
-			return Result;
-		}
-*/
 		template <>
 		GLM_FUNC_QUALIFIER glm::uint16 bitfieldInterleave(glm::uint8 x, glm::uint8 y)
 		{

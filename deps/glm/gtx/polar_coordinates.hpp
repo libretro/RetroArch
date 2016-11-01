@@ -54,14 +54,14 @@ namespace glm
 	///
 	/// @see gtx_polar_coordinates
 	template <typename T, precision P>
-	GLM_FUNC_DECL detail::tvec3<T, P> polar(
+	detail::tvec3<T, P> polar(
 		detail::tvec3<T, P> const & euclidean);
 
 	/// Convert Polar to Euclidean coordinates.
 	///
 	/// @see gtx_polar_coordinates
 	template <typename T, precision P>
-	GLM_FUNC_DECL detail::tvec3<T, P> euclidean(
+	detail::tvec3<T, P> euclidean(
 		detail::tvec2<T, P> const & polar);
 
 	/// @}

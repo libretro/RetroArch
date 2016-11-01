@@ -82,10 +82,10 @@ namespace glm
 	template <typename T, precision P> GLM_FUNC_QUALIFIER detail::tvec3<T, P> atan2(const detail::tvec3<T, P>& x, const detail::tvec3<T, P>& y){return atan(x, y);}	//!< \brief Arc tangent. Returns an angle whose tangent is y/x. The signs of x and y are used to determine what quadrant the angle is in. The range of values returned by this function is [-PI, PI]. Results are undefined if x and y are both 0. (From GLM_GTX_compatibility)
 	template <typename T, precision P> GLM_FUNC_QUALIFIER detail::tvec4<T, P> atan2(const detail::tvec4<T, P>& x, const detail::tvec4<T, P>& y){return atan(x, y);}	//!< \brief Arc tangent. Returns an angle whose tangent is y/x. The signs of x and y are used to determine what quadrant the angle is in. The range of values returned by this function is [-PI, PI]. Results are undefined if x and y are both 0. (From GLM_GTX_compatibility)
 
-	template <typename genType> GLM_FUNC_DECL bool isfinite(genType const & x);											//!< \brief Test whether or not a scalar or each vector component is a finite value. (From GLM_GTX_compatibility)
-	template <typename T, precision P> GLM_FUNC_DECL detail::tvec2<bool, P> isfinite(const detail::tvec2<T, P>& x);				//!< \brief Test whether or not a scalar or each vector component is a finite value. (From GLM_GTX_compatibility)
-	template <typename T, precision P> GLM_FUNC_DECL detail::tvec3<bool, P> isfinite(const detail::tvec3<T, P>& x);				//!< \brief Test whether or not a scalar or each vector component is a finite value. (From GLM_GTX_compatibility)
-	template <typename T, precision P> GLM_FUNC_DECL detail::tvec4<bool, P> isfinite(const detail::tvec4<T, P>& x);				//!< \brief Test whether or not a scalar or each vector component is a finite value. (From GLM_GTX_compatibility)
+	template <typename genType> bool isfinite(genType const & x);											//!< \brief Test whether or not a scalar or each vector component is a finite value. (From GLM_GTX_compatibility)
+	template <typename T, precision P> detail::tvec2<bool, P> isfinite(const detail::tvec2<T, P>& x);				//!< \brief Test whether or not a scalar or each vector component is a finite value. (From GLM_GTX_compatibility)
+	template <typename T, precision P> detail::tvec3<bool, P> isfinite(const detail::tvec3<T, P>& x);				//!< \brief Test whether or not a scalar or each vector component is a finite value. (From GLM_GTX_compatibility)
+	template <typename T, precision P> detail::tvec4<bool, P> isfinite(const detail::tvec4<T, P>& x);				//!< \brief Test whether or not a scalar or each vector component is a finite value. (From GLM_GTX_compatibility)
 
 	typedef bool						bool1;			//!< \brief boolean type with 1 component. (From GLM_GTX_compatibility extension)
 	typedef detail::tvec2<bool, highp>			bool2;			//!< \brief boolean type with 2 components. (From GLM_GTX_compatibility extension)
