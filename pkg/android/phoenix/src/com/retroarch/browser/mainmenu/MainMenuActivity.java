@@ -14,6 +14,7 @@ import android.os.Environment;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.widget.Toast;
 
 /**
  * {@link PreferenceActivity} subclass that provides all of the
@@ -40,10 +41,10 @@ public final class MainMenuActivity extends PreferenceActivity
 		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/com.retroarch/files";
 		retro.putExtra("EXTERNAL", external);
 
-		boolean hasPermission = (ContextCompat.checkSelfPermission(activity,
+		boolean hasPermission = (ContextCompat.checkSelfPermission(this,
 				Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
 		if (!hasPermission) {
-			ActivityCompat.requestPermissions(parentActivity,
+			ActivityCompat.requestPermissions(this,
 			new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
 			REQUEST_WRITE_STORAGE);
 		}
@@ -57,10 +58,10 @@ public final class MainMenuActivity extends PreferenceActivity
 			  case REQUEST_WRITE_STORAGE: {
 					if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
 					{
-						Toast.makeText(parentActivity, "RetroArch will be able to write to the SD card", Toast.LENGTH_LONG).show();
+						Toast.makeText(this, "RetroArch will be able to write to the SD card", Toast.LENGTH_LONG).show();
 					} else
 					{
-						Toast.makeText(parentActivity, "RetroArch won't be able to write to the SD card", Toast.LENGTH_LONG).show();
+						Toast.makeText(this, "RetroArch won't be able to write to the SD card", Toast.LENGTH_LONG).show();
 					}
 			  }
 		 }
