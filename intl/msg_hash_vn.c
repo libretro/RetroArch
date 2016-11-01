@@ -151,7 +151,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_LOAD_STATE_KEY:
             snprintf(s, len,
-                  "Loads state.");
+                  "Tải state.");
             break;
          case RARCH_FULLSCREEN_TOGGLE_KEY:
             snprintf(s, len,
@@ -241,13 +241,13 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "for the Onscreen Display text.");
          break;
       case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
-         snprintf(s, len, "Automatically load content-specific core options.");
+         snprintf(s, len, "Automatically tải content-specific core options.");
          break;
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
-         snprintf(s, len, "Automatically load override configurations.");
+         snprintf(s, len, "Automatically tải override configurations.");
          break;
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
-         snprintf(s, len, "Automatically load input remapping files.");
+         snprintf(s, len, "Automatically tải input remapping files.");
          break;
       case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
          snprintf(s, len, "Sort save states in folders \n"
@@ -597,7 +597,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CORE_LIST:
          snprintf(s, len,
-               "Load Core. \n"
+               "Tải Core. \n"
                " \n"
                "Browse for a libretro core \n"
                "implementation. Where the browser \n"
@@ -734,10 +734,10 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
          snprintf(s, len,
-               "Load Content. \n"
+               "Tải Content. \n"
                "Browse for content. \n"
                " \n"
-               "To load content, you need a \n"
+               "To tải content, you need a \n"
                "'Core' to use, and a content file. \n"
                " \n"
                "To control where the menu starts \n"
@@ -747,7 +747,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "The browser will filter out \n"
                "extensions for the last core set \n"
-               "in 'Load Core', and use that core \n"
+               "in 'Tải Core', and use that core \n"
                "when content is loaded."
                );
          break;
@@ -874,9 +874,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
          snprintf(s, len,
-               "Load Shader Preset. \n"
+               "Tải Shader Preset. \n"
                " \n"
-               " Load a "
+               " Tải a "
 #ifdef HAVE_CG
                "Cg"
 #endif
@@ -1302,7 +1302,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Sets the 'system' directory.\n"
                "Cores can query for this\n"
-               "directory to load BIOSes, \n"
+               "directory to tải BIOSes, \n"
                "system-specific configs, etc.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
@@ -1311,8 +1311,8 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Automatically saves a savestate at the \n"
                "end of RetroArch's lifetime.\n"
                " \n"
-               "RetroArch will automatically load any savestate\n"
-               "with this path on startup if 'Auto Load State\n"
+               "RetroArch will automatically tải any savestate\n"
+               "with this path on startup if 'Auto Tải State\n"
                "is enabled.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
@@ -1394,7 +1394,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG:
          snprintf(s, len,
-               "Load up a specific config file \n"
+               "Tải up a specific config file \n"
                "based on the core being used.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_FULLSCREEN:
@@ -1608,7 +1608,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
-               "Dynamically load a new wallpaper \n"
+               "Dynamically tải a new wallpaper \n"
                "depending on context.");
          break;
       case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
@@ -1756,7 +1756,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LOAD_STATE:
          snprintf(s, len,
-               "Loads state.");
+               "Tải state.");
          break;
       case MENU_ENUM_LABEL_SAVE_STATE:
          snprintf(s, len,
@@ -1833,13 +1833,13 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "RetroArch by itself does nothing. \n"
                " \n"
                "To make it do things, you need to \n"
-               "load a program into it. \n"
+               "tải a program into it. \n"
                "\n"
                "We call such a program 'Libretro core', \n"
                "or 'core' in short. \n"
                " \n"
-               "To load a core, select one from\n"
-               "'Load Core'.\n"
+               "To tải a core, select one from\n"
+               "'Tải Core'.\n"
                " \n"
 #ifdef HAVE_NETWORKING
                "You can obtain cores in several ways: \n"
@@ -1905,33 +1905,33 @@ static const char *menu_hash_to_str_vn_label_enum(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_MENU_SETTINGS:
          return "Điều chỉnh thiết lập related to the appearance of the menu screen.";
       case MSG_CONNECTION_SLOT:
-         return "Connection slot";
+         return "Khe kết nối";
       case MSG_WAITING_FOR_CLIENT:
-         return "Waiting for client ...";
+         return "Đang đợi máy khách  ...";
       case MSG_CONNECTING_TO_NETPLAY_HOST:
-         return "Connecting to netplay host";
+         return "Đang kết nối vào máy chủ netplay";
       case MSG_GOT_CONNECTION_FROM:
-         return "Got connection from";
+         return "Được kết nối từ";
       case MSG_AUTODETECT:
-         return "Autodetect";
+         return "Tự động phát hiện";
       case MSG_SUCCEEDED:
-         return "succeeded";
+         return "Đã thành công";
       case MSG_FAILED:
-         return "failed";
+         return "Bị Lỗi";
       case MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED:
-         return "Unknown netplay command received";
+         return "Netplay không biết lệnh nhận được";
       case MSG_NETPLAY_USERS_HAS_FLIPPED:
-         return "Netplay users has flipped";
+         return "Người dùng Netplay đã flipped";
       case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
-         return "File already exists. Saving to backup buffer";
+         return "Ttệp đã tồn tại. Đang lưu vào backup buffer";
       case MSG_AUTOLOADING_SAVESTATE_FROM:
-         return "Auto-loading savestate from";
+         return "Đang tự đông tải savestate từ";
       case MSG_CONNECTING_TO_PORT:
-         return "Connecting to port";
+         return "Đang kết nối vào port";
       case MSG_SETTING_DISK_IN_TRAY:
          return "Setting disk in tray";
       case MSG_AUDIO_VOLUME:
-         return "Audio volume";
+         return "Âm lượng âm thanh";
       case MSG_FAILED_TO_SET_DISK:
          return "Failed to set disk";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
@@ -3066,45 +3066,45 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_INPUT_SETTINGS:
          return "Điều chỉnh thiết lập cho joypads, bàn phím và chuột.";
       case MENU_ENUM_SUBLABEL_WIFI_SETTINGS:
-         return "Scans for wireless networks and establishes connection.";
+         return "Tìm mạng không dây và thiết lập kết nối.";
       case MENU_ENUM_SUBLABEL_SERVICES_SETTINGS:
          return "Quản lý dịch vụ của hệ điều hành.";
       case MENU_ENUM_SUBLABEL_SSH_ENABLE:
-         return "Enable or disable remote command line access.";
+         return "Bật/tắt giao thức SSH.";
       case MENU_ENUM_SUBLABEL_SAMBA_ENABLE:
-         return "Enable or disable network sharing of your folders.";
+         return "Bật/tắt chia sẻ thư mục trên mạng.";
       case MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE:
-         return "Enable or disable bluetooth.";
+         return "Bật/tắt bluetooth.";
       case MENU_ENUM_SUBLABEL_USER_LANGUAGE:
-         return "Sets the language of the interface.";
+         return "Thiết lập ngôn ngữ của giao diện .";
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
-         return "Prevents your system's screensaver from becoming active.";
+         return "Chặn tính năng screensaver (màn hình chờ).";
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "Tells the video driver to explicitly use a specified buffering mode.";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
-         return "Download and update add-ons and components for RetroArch.";
+         return "Tải/cập nhật tiện ích và thành phần của RetroArch.";
       case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
-         return "Configure controls for this user.";
+         return "Đặt cấu hình điều khiển cho người dùng này.";
       case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
-         return "Configure hotkey thiết lập.";
+         return "Đặt cấu hình thiết lập của hotkey.";
       case MSG_VALUE_SHUTTING_DOWN:
          return "Đang tắt máy...";
       case MSG_VALUE_REBOOTING:
          return "Đang khởi động lại...";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
-         return "Failed to start audio driver. Will continue without audio.";
+         return "Bị lỗi khi chạy chương trình điều khiển âm thanh. Sẽ tiếp tục chạy và bỏ âm thanh.";
       case MSG_FOUND_LAST_STATE_SLOT:
-         return "Found last state slot";
+         return "Tiềm thấy state slot xài lần trước";
       case MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT:
-         return "Connect device from a valid port.";
+         return "Kết nối thiết bị từ cổng hợp lệ.";
       case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
-         return "Disconnect device from a valid port.";
+         return "Ngắt kết nối thiết bị từ cổng hợp lệ.";
       case MSG_VALUE_DISCONNECTING_DEVICE_FROM_PORT:
-         return "Disconnecting device from port";
+         return "Đang ngắt kết nối thiết bị từ cổng";
       case MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
-         return "Bringing up command interface on port";
+         return "Đang đưa lên lệnh giao diện trên cổng";
       case MSG_LOADING_HISTORY_FILE:
-         return "Loading history file";
+         return "Đang nạp tập tin lịch sử";
       case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED:
          return "Ribbon (simplified)";
       case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON:
@@ -3168,7 +3168,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_LIBRETRO_FRONTEND:
          return "Frontend for libretro";
       case MSG_LOADING:
-         return "Loading";
+         return "Đang tải";
       case MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT:
          return "Per-Game Options: game-specific core options found at";
       case MSG_RESTORING_DEFAULT_SHADER_PRESET_TO:
@@ -3176,17 +3176,17 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case  MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY:
          return "Sorry, unimplemented: cores that don't demand content cannot participate in netplay.";
       case MSG_FOUND_AUTO_SAVESTATE_IN:
-         return "Found auto savestate in";
+         return "Tìm thấy savestate tự đông trong";
       case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT:
          return "Network Remote Base Port";
       case MSG_OVERRIDES_SAVED_SUCCESSFULLY:
          return "Overrides saved successfully.";
       case MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY:
-         return "Autoconfig file saved successfully.";
+         return "Tập tin Autoconfig đã lưu thành công.";
       case MSG_OVERRIDES_ERROR_SAVING:
          return "Error saving overrides.";
       case MSG_AUTOCONFIG_FILE_ERROR_SAVING:
-         return "Error saving autoconf file.";
+         return "Tập tin Autoconfig bị lỗi khi lưu.";
       case MSG_DOWNLOAD_FAILED:
          return "Download failed";
       case MSG_INPUT_CHEAT:
@@ -3202,7 +3202,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE:
          return "Failed to extract content from compressed file";
       case MSG_FILE_NOT_FOUND:
-         return "File not found";
+         return "Không tìm thấy tệp";
       case MSG_ERROR_SAVING_CORE_OPTIONS_FILE:
          return "Error saving core options file.";
       case MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT:
@@ -3228,11 +3228,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_DISK_CLOSED:
          return "Closed";
       case MSG_VERSION_OF_LIBRETRO_API:
-         return "Version of libretro API";
+         return "Phiên bản của libretro API";
       case MSG_COMPILED_AGAINST_API:
          return "Compiled against API";
       case MSG_FAILED_TO_LOAD:
-         return "Failed to load";
+         return "Bị lỗi khi tải";
       case MSG_CONNECTED_TO:
          return "Connected to";
       case MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR:
@@ -3304,7 +3304,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
          return "Libretro core requires content, but nothing was provided.";
       case MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT:
-         return "Content loading skipped. Implementation will load it on its own.";
+         return "Content loading skipped. Implementation will tải it on its own.";
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT:
          return "Libretro core requires special content, but none were provided.";
       case MSG_REVERTING_SAVEFILE_DIRECTORY_TO:
@@ -3428,11 +3428,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_SAVING_STATE:
          return "Saving state";
       case MSG_LOADING_STATE:
-         return "Loading state";
+         return "Đang tải state";
       case MSG_FAILED_TO_LOAD_MOVIE_FILE:
-         return "Failed to load movie file";
+         return "Failed to tải movie file";
       case MSG_FAILED_TO_LOAD_CONTENT:
-         return "Failed to load content";
+         return "Failed to tải content";
       case MSG_COULD_NOT_READ_CONTENT_FILE:
          return "Could not read content file";
       case MSG_GRAB_MOUSE_STATE:
@@ -3442,7 +3442,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_UNPAUSED:
          return "Unpaused.";
       case MSG_FAILED_TO_LOAD_OVERLAY:
-         return "Failed to load overlay.";
+         return "Failed to tải overlay.";
       case MSG_FAILED_TO_UNMUTE_AUDIO:
          return "Failed to unmute audio.";
       case MSG_AUDIO_MUTED:
@@ -3454,11 +3454,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_AUTO_SAVE_STATE_TO:
          return "Auto save state to";
       case MSG_FAILED_TO_LOAD_STATE:
-         return "Failed to load state from";
+         return "Failed to tải state from";
       case MSG_FAILED_TO_SAVE_STATE_TO:
          return "Failed to save state to";
       case MSG_FAILED_TO_UNDO_LOAD_STATE:
-         return "Failed to undo load state.";
+         return "Failed to undo tải state.";
       case MSG_FAILED_TO_UNDO_SAVE_STATE:
          return "Failed to undo save state.";
       case MSG_FAILED_TO_SAVE_SRAM:
@@ -3482,7 +3482,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_CONFIG_DIRECTORY_NOT_SET:
          return "Config directory not set. Cannot save new config.";
       case MSG_SKIPPING_SRAM_LOAD:
-         return "Skipping SRAM load.";
+         return "Skipping SRAM tải.";
       case MSG_APPENDED_DISK:
          return "Appended disk";
       case MSG_STARTING_MOVIE_PLAYBACK:
@@ -3630,7 +3630,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
          return "What Is A Core?";
       case MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT:
-         return "Loading Content";
+         return "Đang tải Content";
       case MENU_ENUM_LABEL_VALUE_HELP_LIST:
          return "Help";
       case MENU_ENUM_LABEL_VALUE_HELP_CONTROLS:
@@ -3656,7 +3656,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE:
          return "Open Archive As Folder";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
-         return "Load Archive With Core";
+         return "Tải Archive With Core";
       case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
          return "Back As Menu Toggle Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
@@ -3668,9 +3668,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
          return "Polish";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
-         return "Autoload Preferred Overlay";
+         return "Tự động tải Preferred Overlay";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
-         return "Update Core Info Files";
+         return "Cập nhật Core Info Files";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
          return "Download Content";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE:
@@ -3696,7 +3696,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5:
          return "MD5";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:
-         return "Load Content";
+         return "Tải Content";
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Ask";
       case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
@@ -3984,21 +3984,21 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO:
          return "Maximum Run Speed";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
-         return "Load Remap Files Automatically";
+         return "Tải Remap Files Automatically";
       case MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE:
-         return "Load Shader Presets Automatically";
+         return "Tải Shader Presets Automatically";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
          return "Slow-Motion Ratio";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuration Per-Core";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
-         return "Load Content-specific core options automatically";
+         return "Tải Content-specific core options automatically";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
          return "Create game-options file";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
          return "Game-options file";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "Load Override Files Automatically";
+         return "Tải Override Files Automatically";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Save Configuration On Exit";
       case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
@@ -4064,7 +4064,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY:
          return "Logging Verbosity";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
-         return "Auto Load State";
+         return "Tự động tải State";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
          return "Save State Auto Index";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
@@ -4132,7 +4132,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
          return "Downloads Dir";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY:
-         return "Load Recent";
+         return "Tải Recent";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
          return "Audio Enable";
       case MENU_ENUM_LABEL_VALUE_FPS_SHOW:
@@ -4150,11 +4150,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
-         return "Load Configuration";
+         return "Tải Configuration";
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
          return "Rewind Granularity";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
-         return "Load Remap File";
+         return "Tải Remap File";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
          return "Custom Ratio";
       case MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY:
@@ -4212,17 +4212,17 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Thiết lập";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:
-         return "Quit RetroArch";
+         return "Thoát RetroArch";
       case MENU_ENUM_LABEL_VALUE_SHUTDOWN:
-         return "Shutdown";
+         return "Tắt Máy";
       case MENU_ENUM_LABEL_VALUE_REBOOT:
-         return "Reboot";
+         return "Khởi động lại";
       case MENU_ENUM_LABEL_VALUE_HELP:
          return "help";
       case MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG:
          return "Save New Config";
       case MENU_ENUM_LABEL_VALUE_RESTART_CONTENT:
-         return "Restart";
+         return "Khởi động lại";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST:
          return "Core Updater";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
@@ -4254,7 +4254,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS:
          return "No playlists.";
       case MENU_ENUM_LABEL_VALUE_CORE_LIST:
-         return "Load Core";
+         return "Tải Core";
       case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT:
          return "Select File";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
@@ -4264,13 +4264,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAVE_STATE:
          return "Save State";
       case MENU_ENUM_LABEL_VALUE_LOAD_STATE:
-         return "Load State";
+         return "Tải State";
       case MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE:
-         return "Undo Load State";
+         return "Undo Tải State";
       case MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE:
          return "Undo Save State";
       case MSG_UNDID_LOAD_STATE:
-         return "Undid load state.";
+         return "Undid Tải state.";
       case MENU_ENUM_LABEL_VALUE_RESUME_CONTENT:
          return "Resume";
       case MENU_ENUM_LABEL_VALUE_INPUT_DRIVER:
@@ -4332,7 +4332,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS:
          return "No shader parameters.";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET:
-         return "Load Shader Preset";
+         return "Tải Shader Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
          return "Video Filter";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
@@ -4344,23 +4344,23 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ON:
          return "ON";
       case MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS:
-         return "Update Assets";
+         return "Cập nhật Assets";
       case MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA:
-         return "Update Lakka";
+         return "Cập nhật Lakka";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS:
-         return "Update Cheats";
+         return "Cập nhật Cheats";
       case MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
-         return "Update Autoconfig Profiles";
+         return "Cập nhật Autoconfig Profiles";
       case MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES:
-         return "Update Databases";
+         return "Cập nhật Databases";
       case MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS:
-         return "Update Overlays";
+         return "Cập nhật Overlays";
       case MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS:
-         return "Update Cg Shaders";
+         return "Cập nhật Cg Shaders";
       case MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS:
-         return "Update GLSL Shaders";
+         return "Cập nhật GLSL Shaders";
       case MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS:
-         return "Update Slang Shaders";
+         return "Cập nhật Slang Shaders";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Core name";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL:
@@ -4586,7 +4586,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menu File Browser";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS:
-         return "Updater";
+         return "Cập nhậtr";
       case MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS:
          return "Updater";
       case MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS:
@@ -4742,7 +4742,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY:
          return "Fast forward hold";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY:
-         return "Load state";
+         return "Tải state";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY:
          return "Save state";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY:
@@ -4812,7 +4812,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL:
          return "Bind Default All";
       case MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG:
-         return "Save Autoconfig";
+         return "Lưu Autoconfig";
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
