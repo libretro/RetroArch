@@ -2705,7 +2705,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CONFIGURATION:
          {
             unsigned i;
-            struct bool_entry bool_entries[7];
+            struct bool_entry bool_entries[6];
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
 
@@ -2720,35 +2720,35 @@ static bool setting_append_list(
             bool_entries[0].default_value  = config_save_on_exit;
             bool_entries[0].flags          = SD_FLAG_NONE;
 
-            bool_entries[2].target         = &settings->show_hidden_files;
-            bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_SHOW_HIDDEN_FILES;
-            bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES;
-            bool_entries[2].default_value  = show_hidden_files;
+            bool_entries[1].target         = &settings->show_hidden_files;
+            bool_entries[1].name_enum_idx  = MENU_ENUM_LABEL_SHOW_HIDDEN_FILES;
+            bool_entries[1].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES;
+            bool_entries[1].default_value  = show_hidden_files;
+            bool_entries[1].flags          = SD_FLAG_NONE;
+
+            bool_entries[2].target         = &settings->game_specific_options;
+            bool_entries[2].name_enum_idx  = MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS;
+            bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS;
+            bool_entries[2].default_value  = default_game_specific_options;
             bool_entries[2].flags          = SD_FLAG_NONE;
 
-            bool_entries[3].target         = &settings->game_specific_options;
-            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS;
-            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS;
-            bool_entries[3].default_value  = default_game_specific_options;
+            bool_entries[3].target         = &settings->auto_overrides_enable;
+            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE;
+            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE;
+            bool_entries[3].default_value  = default_auto_overrides_enable;
             bool_entries[3].flags          = SD_FLAG_NONE;
 
-            bool_entries[4].target         = &settings->auto_overrides_enable;
-            bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE;
-            bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE;
-            bool_entries[4].default_value  = default_auto_overrides_enable;
+            bool_entries[4].target         = &settings->auto_remaps_enable;
+            bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE;
+            bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE;
+            bool_entries[4].default_value  = default_auto_remaps_enable;
             bool_entries[4].flags          = SD_FLAG_NONE;
 
-            bool_entries[5].target         = &settings->auto_remaps_enable;
-            bool_entries[5].name_enum_idx  = MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE;
-            bool_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE;
-            bool_entries[5].default_value  = default_auto_remaps_enable;
+            bool_entries[5].target         = &settings->auto_shaders_enable;
+            bool_entries[5].name_enum_idx  = MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE;
+            bool_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE;
+            bool_entries[5].default_value  = default_auto_shaders_enable;
             bool_entries[5].flags          = SD_FLAG_NONE;
-
-            bool_entries[6].target         = &settings->auto_shaders_enable;
-            bool_entries[6].name_enum_idx  = MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE;
-            bool_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE;
-            bool_entries[6].default_value  = default_auto_shaders_enable;
-            bool_entries[6].flags          = SD_FLAG_NONE;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
