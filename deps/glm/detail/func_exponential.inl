@@ -197,22 +197,12 @@ namespace detail
 	// sqrt
 	GLM_FUNC_QUALIFIER float sqrt(float x)
 	{
-#		ifdef __CUDACC__ // Wordaround for a CUDA compiler bug up to CUDA6
-			detail::tvec1<float, highp> tmp(detail::compute_sqrt<detail::tvec1, float, highp>::call(x));
-			return tmp.x;
-#		else
-			return detail::compute_sqrt<detail::tvec1, float, highp>::call(x).x;
-#		endif
+      return detail::compute_sqrt<detail::tvec1, float, highp>::call(x).x;
 	}
 
 	GLM_FUNC_QUALIFIER double sqrt(double x)
 	{
-#		ifdef __CUDACC__ // Wordaround for a CUDA compiler bug up to CUDA6
-			detail::tvec1<double, highp> tmp(detail::compute_sqrt<detail::tvec1, double, highp>::call(x));
-			return tmp.x;
-#		else
-			return detail::compute_sqrt<detail::tvec1, double, highp>::call(x).x;
-#		endif
+      return detail::compute_sqrt<detail::tvec1, double, highp>::call(x).x;
 	}
 		
 	template <typename T, precision P, template <typename, precision> class vecType>
