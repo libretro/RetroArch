@@ -14,7 +14,6 @@
 #define GLM_FORCE_RADIANS
 #include <glm/packing.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #if GL_DEBUG
 #define GL_CHECK_ERROR() do { \
@@ -166,7 +165,7 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
 
    glUseProgram(fft->block.prog);
    glUniformMatrix4fv(glGetUniformLocation(fft->block.prog, "uMVP"),
-         1, GL_FALSE, glm::value_ptr(mvp));
+         1, GL_FALSE, (&mvp[0].x));
    glUniform2i(glGetUniformLocation(fft->block.prog, "uOffset"),
          (-int(fft->block_size) + 1) / 2, fft->output_ptr);
    glUniform4f(glGetUniformLocation(fft->block.prog, "uHeightmapParams"),
