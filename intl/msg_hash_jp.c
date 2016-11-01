@@ -3052,7 +3052,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY:
          return "遅延が減るけどビデオ途切れの危険率が増す。";
       case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
-         return "コンテンツをスキャンしたり、ダウンロードしたりすると、コレクションに入れる。";
+         return "コンテンツをスキャンしてデータベースに入れる。";
       case MENU_ENUM_SUBLABEL_NETPLAY:
          return "ネットプレイのセッションを参加やホストする。";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
@@ -3080,7 +3080,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "指定するバッファーモードをビデオドライバに伝える。";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
-         return "RetroArchにアドオンとコンポーネントをダウンロードとアップデートする。";
+         return "RetroArchにアドオン、コンポーネント、コンテンツをダウンロードする。";
       case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
          return "このユーザーの入力設定を変更する。";
       case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
@@ -3682,7 +3682,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY:
          return "フォルダをスキャン";
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
-         return "コンテンツを追加";
+         return "コンテンツをスキャン";
       case MENU_ENUM_LABEL_VALUE_INFORMATION:
          return "情報";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
@@ -3718,7 +3718,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "プレイリスト";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
-         return "No settings found.";
+         return "設定が見つかりませんでした。";
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:
          return "No performance counters.";
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
@@ -3944,7 +3944,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME:
          return "モノクローム";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED:
-         return "モノクローム Jagged";
+         return "モノクロームぎざぎざ";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI:
          return "フラットUI";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:
@@ -3964,7 +3964,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE:
          return "UI Companion Enable";
       case MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE:
-         return "Menubar";
+         return "メニューバー";
       case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
          return "Archive File Association Action";
       case MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE:
@@ -4090,7 +4090,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO:
          return "メニューが表示時に一時停止";
       case MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
-         return "Display Keyboard Overlay";
+         return "キーボードオーバーレイを表示";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
          return "ディスプレイのオーバーレイ";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX:
