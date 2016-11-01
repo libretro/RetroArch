@@ -160,7 +160,5 @@ namespace glm
 
 }// namespace glm
 
-#include "vec1.inl"
-
 #endif//GLM_GTX_vec1
 

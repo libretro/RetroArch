@@ -78,6 +78,4 @@ namespace glm
 	/// @}
 }//namespace glm
 
-#include "std_based_type.inl"
-
 #endif//GLM_GTX_std_based_type
