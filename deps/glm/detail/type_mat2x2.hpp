@@ -48,7 +48,7 @@ namespace detail
 		typedef tmat2x2<T, P> type;
 		typedef tmat2x2<T, P> transpose_type;
 
-		GLM_FUNC_DECL GLM_CONSTEXPR length_t length() const;
+		GLM_FUNC_DECL length_t length() const;
 
 		template <typename U, precision Q>
 		friend tvec2<U, Q> operator/(tmat2x2<U, Q> const & m, tvec2<U, Q> const & v);

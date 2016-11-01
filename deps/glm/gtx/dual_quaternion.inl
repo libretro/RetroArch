@@ -33,7 +33,7 @@ namespace glm{
 namespace detail
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER GLM_CONSTEXPR int tdualquat<T, P>::length() const
+	GLM_FUNC_QUALIFIER int tdualquat<T, P>::length() const
 	{
 		return 8;
 	}

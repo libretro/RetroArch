@@ -58,7 +58,7 @@ namespace detail
 		//////////////////////////////////////
 		// Helper
 
-		GLM_FUNC_DECL GLM_CONSTEXPR length_t length() const;
+		GLM_FUNC_DECL length_t length() const;
 
 		//////////////////////////////////////
 		// Data

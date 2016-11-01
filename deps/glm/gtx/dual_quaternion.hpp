@@ -63,7 +63,7 @@ namespace detail
 	public:
 		glm::detail::tquat<T, P> real, dual;
 		
-		GLM_FUNC_DECL GLM_CONSTEXPR int length() const;
+		GLM_FUNC_DECL int length() const;
 		
 		// Constructors
 		GLM_FUNC_DECL tdualquat();

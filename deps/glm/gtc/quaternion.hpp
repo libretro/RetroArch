@@ -64,7 +64,7 @@ namespace detail
 	public:
 		T x, y, z, w;
 
-		GLM_FUNC_DECL GLM_CONSTEXPR length_t length() const;
+		GLM_FUNC_DECL length_t length() const;
 
 		// Constructors
 		GLM_FUNC_DECL tquat();

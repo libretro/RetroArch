@@ -49,7 +49,7 @@ namespace detail
 		typedef tmat2x3<T, P> type;
 		typedef tmat3x2<T, P> transpose_type;
 
-		GLM_FUNC_DECL GLM_CONSTEXPR length_t length() const;
+		GLM_FUNC_DECL length_t length() const;
 
 	private:
 		// Data 

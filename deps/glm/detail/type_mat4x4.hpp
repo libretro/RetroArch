@@ -49,7 +49,7 @@ namespace detail
 		typedef tmat4x4<T, P> type;
 		typedef tmat4x4<T, P> transpose_type;
 
-		GLM_FUNC_DECL GLM_CONSTEXPR length_t length() const;
+		GLM_FUNC_DECL length_t length() const;
 
 		template <typename U, precision Q>
 		friend tvec4<U, Q> operator/(tmat4x4<U, Q> const & m, tvec4<U, Q> const & v);

@@ -152,14 +152,11 @@ namespace detail
 			std::numeric_limits<genFIType>::is_iec559 ||
 			(std::numeric_limits<genFIType>::is_signed && std::numeric_limits<genFIType>::is_integer), "'sign' only accept signed inputs");
 
-		genFIType result;
 		if(x > genFIType(0))
-			result = genFIType(1);
+			return genFIType(1);
 		else if(x < genFIType(0))
-			result = genFIType(-1);
-		else
-			result = genFIType(0);
-		return result;
+			return genFIType(-1);
+      return genFIType(0);
 	}
 	
 	VECTORIZE_VEC(sign)

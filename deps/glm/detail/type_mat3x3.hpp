@@ -48,7 +48,7 @@ namespace detail
 		typedef tmat3x3<T, P> type;
 		typedef tmat3x3<T, P> transpose_type;
 
-		GLM_FUNC_DECL GLM_CONSTEXPR length_t length() const;
+		GLM_FUNC_DECL length_t length() const;
 
 		template <typename U, precision Q>
 		friend tvec3<U, Q> operator/(tmat3x3<U, Q> const & m, tvec3<U, Q> const & v);
