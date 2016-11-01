@@ -158,6 +158,9 @@ const char *msg_hash_to_str_ru(enum msg_hash_enums msg)
          return "Файл карты памяти перенаправлен в";
       case MSG_REDIRECTING_SAVESTATE_TO:
          return "Файл сохранения перенаправлен в";
+/* TODO */
+      case MSG_APPLYING_CHEAT:
+         return "Applying cheat changes.";
       case MSG_SHADER:
          return "Шейдер";
       case MSG_APPLYING_SHADER:

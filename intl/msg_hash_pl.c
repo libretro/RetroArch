@@ -172,6 +172,9 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Przekierowywanie pliku zapisu do";
       case MSG_REDIRECTING_SAVESTATE_TO:
          return "Przekierowywanie zapisu stanu do";
+/* TODO */
+      case MSG_APPLYING_CHEAT:
+         return "Applying cheat changes.";
       case MSG_SHADER:
          return "Shader";
       case MSG_APPLYING_SHADER:
@@ -633,7 +636,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Menedżer kursorów";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
-         return "Menu główne"; 
+         return "Menu główne";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Ustawienia";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:

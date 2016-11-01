@@ -3503,7 +3503,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Redirecting save file to";
       case MSG_REDIRECTING_SAVESTATE_TO:
          return "Redirecting savestate to";
-      case MSG_SHADER:
+      case MSG_APPLYING_CHEAT:
+         return "Applying cheat changes.";
+	  case MSG_SHADER:
          return "Shader";
       case MSG_APPLYING_SHADER:
          return "Applying shader";
