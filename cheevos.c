@@ -1161,7 +1161,6 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
    if (cheevo->count)
    {
       unsigned set                 = 0;
-      //const cheevos_condset_t *end = NULL;
       cheevos_condset_t *condset   = NULL;
       cheevos_condset_t *conds     = (cheevos_condset_t*)
          calloc(cheevo->count, sizeof(cheevos_condset_t));
