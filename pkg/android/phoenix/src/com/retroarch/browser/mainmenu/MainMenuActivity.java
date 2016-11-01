@@ -15,6 +15,8 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.widget.Toast;
+import android.support.v4.app.ActivityCompat;
+
 
 /**
  * {@link PreferenceActivity} subclass that provides all of the
@@ -23,7 +25,7 @@ import android.widget.Toast;
 
 public final class MainMenuActivity extends PreferenceActivity
 {
-	private static int REQUEST_WRITE_STORAGE = 112;
+	private final static int REQUEST_WRITE_STORAGE = 112;
 	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
 			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
 	{
@@ -42,10 +44,10 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("EXTERNAL", external);
 
 		boolean hasPermission = (ContextCompat.checkSelfPermission(this,
-				Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
+				android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED);
 		if (!hasPermission) {
 			ActivityCompat.requestPermissions(this,
-			new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+			new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
 			REQUEST_WRITE_STORAGE);
 		}
 	}
