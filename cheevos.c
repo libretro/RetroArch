@@ -2332,7 +2332,7 @@ static unsigned cheevos_find_game_id_nes(
    MD5_Init(&ctx);
    count = cheevos_eval_md5(info, offset, 0x4000 * bytes, &ctx);
    count = 0x4000 * bytes - count;
-   cheevos_fill_md5(count, 0xff, &ctx);
+   cheevos_fill_md5(count, (char)0xff, &ctx);
    MD5_Final(hash, &ctx);
 
    return cheevos_get_game_id(hash, &timeout);
