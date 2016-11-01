@@ -23,6 +23,7 @@
 #define __LIBRETRO_SDK_MATH_FLOAT_MINMAX_H__
 
 #include <stdint.h>
+#include <math.h>
 
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
