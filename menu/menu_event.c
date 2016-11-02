@@ -345,10 +345,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
       {
-         unsigned i;
-
-         for (i = 0; i < osk_last_codepoint_len; i++)
-            input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+         input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
       }
 
       /* send return key to close keyboard input window */
