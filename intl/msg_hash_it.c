@@ -63,7 +63,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
             char u[501];
             char t[501];
 
-            strlcpy(t, 
+            strlcpy(t,
                   "RetroArch si basa su una forma unica di\n"
                   "sincronizzazione audio/video che necessita essere\n"
                   "calibrata rispetto alla frequenza di aggiornamento\n"
@@ -901,7 +901,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                " Possible values are [0.0, 1.0].");
          break;
       case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
-         snprintf(s, len, 
+         snprintf(s, len,
                "Turbo period.\n"
                " \n"
                "Describes speed of which turbo-enabled\n"
@@ -1099,134 +1099,134 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
 {
    switch (msg)
    {
-      case MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY:
-         return "Nessuna voce da mostrare.";
-      case MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY:
-         return "Nessun obiettivo da mostrare.";
-      case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
-         return "Obiettivi sbloccati:";
-      case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
-         return "Obiettivi bloccati:";
-      case MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR:
-         return "Avvia processore video";
-      case MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD:
-         return "Avvia Retropad remoto";
-      case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
-         return "Aggiorna miniature";
-      case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Modalità Hardcore";
-      case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
-         return "Prova non ufficiali";
-      case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
-         return "Retro Obiettivi";
-	  case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
-         return "Directory precedente";
+	  case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
+         return "Descrizione";
+	  case MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU:
+         return "Menù di controllo per tutti gli utenti";
 	  case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Abilita mappatura gamepad tastiera";
-      case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
-         return "Tipologia di mappatura gamepad tastiera";
-      case MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
-         return "Abilita tastiera ridotta";
+	  case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
+         return "Directory precedente";
 	  case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
          return "Salva override del core";
-      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
-         return "Salva override di gioco";
-      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
-         return "Salva configurazione attuale";
-      case MENU_ENUM_LABEL_VALUE_STATE_SLOT:
-         return "Slot di stato";
+      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
+         return "Password";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
          return "Obiettivi dell'account";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
          return "Nome utente";
-      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
-         return "Password";
-      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         return "Retro Obiettivi";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST:
          return "Account";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
          return "Lista degli account";
-      case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT:
-         return "Scansiona per contenuto";
-	  case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
-         return "Descrizione";
+      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
+         return "Retro Obiettivi";
+      case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
+         return "Aggiungi Contenuto";
+      case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
+         return "Chiedi";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS:
+         return "Menù di base dei controlli";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
+         return "Indietro";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
+         return "Conferma/OK";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
+         return "Info";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT:
+         return "Esci";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN:
+         return "Scorri verso il basso";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
+         return "Scorri verso l'alto";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
+         return "Predefinito";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
+         return "Tastiera a comparsa";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
+         return "Menù a comparsa";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
+         return "Modalità Hardcore";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
+         return "Obiettivi bloccati:";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
+         return "Retro Obiettivi";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
+         return "Prova non ufficiali";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
+         return "Obiettivi sbloccati:";
+      case MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS:
+         return "Menù rapido";
+      case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
+         return "Scarica contenuto";
       case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          return "Problemi Audio/Video";
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
          return "Cambia i settaggi del gamepad virtuale";
-      case MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
-         return "Che cosa è un core?";
-      case MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT:
-         return "Carica Contenuto";
-      case MENU_ENUM_LABEL_VALUE_HELP_LIST:
-         return "Aiuto";
       case MENU_ENUM_LABEL_VALUE_HELP_CONTROLS:
          return "Menù di base dei controlli";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS:
-         return "Menù di base dei controlli";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
-         return "Scorri verso l'alto";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN:
-         return "Scorri verso il basso";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
-         return "Conferma/OK";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
-         return "Indietro";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
-         return "Predefinito";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
-         return "Info";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
-         return "Menù a comparsa";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT:
-         return "Esci";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
-         return "Tastiera a comparsa";
-      case MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE:
-         return "Apri archivio come cartella";
-      case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
-         return "Carica archivio con il core";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE:
-         return "Indietro quando il menù a comparsa è abilitato";
-      case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
-         return "Combo gamepad per il menù a comparsa";
-	  case MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU:
-         return "Menù di controllo per tutti gli utenti";
-      case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
-         return "Nascondi overlay nel menù";
-      case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
-         return "Polacco";
-      case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
-         return "Autocarica overlay preferito";
-      case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
-         return "Aggiorna le info dei core";
-      case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
-         return "Scarica contenuto";
-      case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
-         return "<Scansiona questa directory>";
-      case MENU_ENUM_LABEL_VALUE_SCAN_FILE:
-         return "Scansiona file";
-      case MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY:
-         return "Scansiona directory";
-      case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
-         return "Aggiungi Contenuto";
+      case MENU_ENUM_LABEL_VALUE_HELP_LIST:
+         return "Aiuto";
+      case MENU_ENUM_LABEL_VALUE_HELP_LOADING_CONTENT:
+         return "Carica Contenuto";
+      case MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT:
+         return "Scansiona per contenuto";
+      case MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
+         return "Che cosa è un core?";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
          return "Informazioni";
-      case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER:
-         return "Usa Media Player interno";
-      case MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS:
-         return "Menù rapido";
+      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE:
+         return "Indietro quando il menù a comparsa è abilitato";
+      case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
+         return "Tipologia di mappatura gamepad tastiera";
+      case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
+         return "Combo gamepad per il menù a comparsa";
+      case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
+         return "Nascondi overlay nel menù";
+      case MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
+         return "Abilita tastiera ridotta";
+      case MENU_ENUM_LABEL_VALUE_LANG_POLISH:
+         return "Polacco";
+      case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
+         return "Carica archivio con il core";
+      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:
+         return "Carica Contenuto";
+      case MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY:
+         return "Nessun obiettivo da mostrare.";
+      case MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY:
+         return "Nessuna voce da mostrare.";
+      case MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE:
+         return "Apri archivio come cartella";
+      case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
+         return "Autocarica overlay preferito";
+      case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
+         return "Privacy";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32:
          return "CRC32";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5:
          return "MD5";
-      case MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST:
-         return "Carica Contenuto";
-      case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
-         return "Chiedi";
-      case MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS:
-         return "Privacy";
+      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
+         return "Salva configurazione attuale";
+      case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
+         return "Salva override di gioco";
+      case MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY:
+         return "Scansiona directory";
+      case MENU_ENUM_LABEL_VALUE_SCAN_FILE:
+         return "Scansiona file";
+      case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
+         return "<Scansiona questa directory>";
+      case MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD:
+         return "Avvia Retropad remoto";
+      case MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR:
+         return "Avvia processore video";
+      case MENU_ENUM_LABEL_VALUE_STATE_SLOT:
+         return "Slot di stato";
+      case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
+         return "Aggiorna miniature";
+      case MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES:
+         return "Aggiorna le info dei core";
+      case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER:
+         return "Usa Media Player interno";
 #if 0
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Menú orizzontale";
@@ -1721,7 +1721,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Gestore cursori";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
-         return "Menú principale"; 
+         return "Menú principale";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Settaggi";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:
@@ -1927,13 +1927,13 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT:
          return "Supporto BMP (RBMP)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT:
-	 return "Supporto RTGA (RTGA)";
+         return "Supporto RTGA (RTGA)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT:
          return "Supporto SDL1.2";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:
          return "Supporto SDL2";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT:
-	 return "Supporto Vulkan";
+         return "Supporto Vulkan";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT:
          return "Supporto OpenGL";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT:
