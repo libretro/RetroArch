@@ -177,7 +177,7 @@ static int sd_fat_open_r (struct _reent *r, void *fileStruct, const char *path, 
         return -1;
     }
 
-    int result = FSOpenFile(dev->pClient, dev->pCmd, real_path, mode_str, &fd, -1);
+    int result = FSOpenFile(dev->pClient, dev->pCmd, real_path, mode_str, (FSFileHandle*)&fd, -1);
 
     free(real_path);
 
@@ -740,7 +740,7 @@ static DIR_ITER *sd_fat_diropen_r (struct _reent *r, DIR_ITER *dirState, const c
 
     int dirHandle;
 
-    int result = FSOpenDir(dev->pClient, dev->pCmd, real_path, &dirHandle, -1);
+    int result = FSOpenDir(dev->pClient, dev->pCmd, real_path, (FSDirectoryHandle*)&dirHandle, -1);
 
     free(real_path);
 

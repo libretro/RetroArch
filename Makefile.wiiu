@@ -79,10 +79,7 @@ $(error "Please set WUT_ROOT in your environment. export WUT_ROOT=<path to>WUT")
 endif
 
 
-export PATH	  := $(PATH):$(DEVKITPPC)/bin:$(PORTLIBS)/bin
-export LIBOGC_INC := $(DEVKITPRO)/libogc/include
-export LIBOGC_LIB := $(DEVKITPRO)/libogc/lib/wii
-export PORTLIBS   := $(DEVKITPRO)/portlibs/ppc
+export PATH	  := $(PATH):$(DEVKITPPC)/bin
 
 PREFIX := powerpc-eabi-
 
@@ -96,7 +93,7 @@ NM      := $(PREFIX)nm
 LD      := $(CXX)
 
 
-INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -I$(WUT_ROOT)/include -I$(LIBOGC_INC)
+INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -I$(WUT_ROOT)/include
 LIBDIRS := -L.
 
 CFLAGS  := -mrvl -mcpu=750 -meabi -mhard-float
@@ -138,7 +135,6 @@ all: $(TARGET)
 
 $(TARGET): $(TARGET).elf
 
-$(TARGET).elf: $(OBJ) libretro_wiiu.a wiiu/link.ld
 
 %.o: %.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
@@ -155,9 +151,8 @@ $(TARGET).elf: $(OBJ) libretro_wiiu.a wiiu/link.ld
 %.a:
 	$(AR) -rc $@ $^
 
-$(TARGET).elf: wiiu/link.ld $(OBJ)
-#	$(LD) -T wiiu/link.ld $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
-	$(LD) -n -T wiiu/link.ld $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+$(TARGET).elf: $(OBJ) libretro_wiiu.a wiiu/link_ra.ld
+	$(LD) -n -T wiiu/link_ra.ld $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 clean:
 	rm -f $(OBJ)

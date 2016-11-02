@@ -226,43 +226,34 @@ void net_print(const char* str)
    log_write(NULL, 0, str, strlen(str));
 }
 
+void net_print_exp(const char* str)
+{
+   send(log_socket, str, strlen(str), 0);
+}
+
 static devoptab_t dotab_stdout = {
-   "stdout",   // device name
-   0,          // size of file structure
-   NULL,       // device open
-   NULL,       // device close
-   log_write,       // device write
-   NULL,       // device read
-   NULL,       // device seek
-   NULL,       // device fstat
-   NULL,       // device stat
-   NULL,       // device link
-   NULL,       // device unlink
-   NULL,       // device chdir
-   NULL,       // device rename
-   NULL,       // device mkdir
-   0,          // dirStateSize
-   NULL,       // device diropen_r
-   NULL,       // device dirreset_r
-   NULL,       // device dirnext_r
-   NULL,       // device dirclose_r
-   NULL,       // device statvfs_r
-   NULL,       // device ftrunctate_r
-   NULL,       // device fsync_r
-   NULL,       // deviceData;
+   "stdout_net", // device name
+   0,            // size of file structure
+   NULL,         // device open
+   NULL,         // device close
+   log_write,    // device write
+   NULL,
 };
 
 int __entry_menu(int argc, char **argv)
 {
    InitFunctionPointers();
+#if 1
+   setup_os_exceptions();
+#else
+   InstallExceptionHandler();
+#endif
    socket_lib_init();
    log_init("10.42.0.1");
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    memoryInitialize();
    mount_sd_fat("sd");
-   setup_os_exceptions();
-//   InstallExceptionHandler();
    VPADInit();
    OSScreenInit();
 
@@ -294,11 +285,10 @@ int __entry_menu(int argc, char **argv)
 
    main_exit(NULL);
 
-
-   printf("Unmount SD\n");
    unmount_sd_fat("sd");
-   printf("Release memory\n");
    memoryRelease();
+   fflush(stdout);
+   fflush(stderr);
    log_deinit();
 
    return 0;
