@@ -427,7 +427,7 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
 
             fill_pathname_application_special(s1, sizeof(s1),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-            fill_pathname_join(s, s1, "Roboto-Regular.ttf", len);
+            fill_pathname_join(s, s1, "font.ttf", len);
          }
 #endif
          break;
