@@ -770,9 +770,14 @@ uint64_t input_menu_keys_pressed(void)
    uint64_t             ret = 0;
    settings_t     *settings = config_get_ptr();
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
+   const struct retro_keybind *an_binds = settings->input.binds[0];
 
    if (!current_input || !current_input_data)
       return ret;
+
+   for (i = 0; i < settings->input.max_users; i++)
+      input_push_analog_dpad(settings->input.autoconf_binds[i],
+            ANALOG_DPAD_LSTICK);
 
    if (
          check_input_driver_block_hotkey(
@@ -782,14 +787,19 @@ uint64_t input_menu_keys_pressed(void)
    else
       input_driver_block_libretro_input = false;
 
+
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
       if (input_menu_keys_pressed_internal(i))
          ret |= (UINT64_C(1) << i);
    }
 
+   for (i = 0; i < settings->input.max_users; i++)
+      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
+
    if (menu_input_dialog_get_display_kb())
       return ret;
+
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN))
