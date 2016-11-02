@@ -770,7 +770,6 @@ uint64_t input_menu_keys_pressed(void)
    uint64_t             ret = 0;
    settings_t     *settings = config_get_ptr();
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
-   const struct retro_keybind *an_binds = settings->input.binds[0];
 
    if (!current_input || !current_input_data)
       return ret;
