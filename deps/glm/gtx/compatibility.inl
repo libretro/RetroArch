@@ -14,9 +14,7 @@ namespace glm
 	inline bool isfinite(
 		genType const & x)
 	{
-#		if(GLM_LANG & GLM_LANG_CXX11_FLAG)
-			return std::isfinite(x) != 0;
-#		elif(GLM_COMPILER & GLM_COMPILER_VC)
+#		if(GLM_COMPILER & GLM_COMPILER_VC)
 			return _finite(x);
 #		elif(GLM_COMPILER & GLM_COMPILER_GCC && GLM_PLATFORM & GLM_PLATFORM_ANDROID)
 			return _isfinite(x) != 0;

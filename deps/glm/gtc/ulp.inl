@@ -199,9 +199,7 @@ namespace glm
 	template <>
 	inline float next_float(float const & x)
 	{
-#		if((GLM_LANG & GLM_LANG_CXX11_FLAG))
-			return std::nextafter(x, std::numeric_limits<float>::max());
-#		elif((GLM_COMPILER & GLM_COMPILER_VC) || ((GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_PLATFORM & GLM_PLATFORM_WINDOWS)))
+#		if((GLM_COMPILER & GLM_COMPILER_VC) || ((GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_PLATFORM & GLM_PLATFORM_WINDOWS)))
 			return detail::nextafterf(x, FLT_MAX);
 #		else
 			return nextafterf(x, FLT_MAX);
@@ -211,9 +209,7 @@ namespace glm
 	template <>
 	inline double next_float(double const & x)
 	{
-#		if((GLM_LANG & GLM_LANG_CXX11_FLAG))
-			return std::nextafter(x, std::numeric_limits<double>::max());
-#		elif((GLM_COMPILER & GLM_COMPILER_VC) || ((GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_PLATFORM & GLM_PLATFORM_WINDOWS)))
+#		if((GLM_COMPILER & GLM_COMPILER_VC) || ((GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_PLATFORM & GLM_PLATFORM_WINDOWS)))
 			return detail::nextafter(x, std::numeric_limits<double>::max());
 #		else
 			return nextafter(x, DBL_MAX);
@@ -231,9 +227,7 @@ namespace glm
 
 	inline float prev_float(float const & x)
 	{
-#		if((GLM_LANG & GLM_LANG_CXX11_FLAG))
-			return std::nextafter(x, std::numeric_limits<float>::min());
-#		elif((GLM_COMPILER & GLM_COMPILER_VC) || ((GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_PLATFORM & GLM_PLATFORM_WINDOWS)))
+#		if((GLM_COMPILER & GLM_COMPILER_VC) || ((GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_PLATFORM & GLM_PLATFORM_WINDOWS)))
 			return detail::nextafterf(x, FLT_MIN);
 #		else
 			return nextafterf(x, FLT_MIN);
@@ -242,9 +236,7 @@ namespace glm
 
 	inline double prev_float(double const & x)
 	{
-#		if((GLM_LANG & GLM_LANG_CXX11_FLAG))
-			return std::nextafter(x, std::numeric_limits<double>::min());
-#		elif((GLM_COMPILER & GLM_COMPILER_VC) || ((GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_PLATFORM & GLM_PLATFORM_WINDOWS)))
+#		if((GLM_COMPILER & GLM_COMPILER_VC) || ((GLM_COMPILER & GLM_COMPILER_INTEL) && (GLM_PLATFORM & GLM_PLATFORM_WINDOWS)))
 			return _nextafter(x, DBL_MIN);
 #		else
 			return nextafter(x, DBL_MIN);
