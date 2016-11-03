@@ -42,21 +42,21 @@ struct input_keyboard_line
 };
 
 static bool input_driver_keyboard_linefeed_enable = false;
-static input_keyboard_line_t *g_keyboard_line;
+static input_keyboard_line_t *g_keyboard_line     = NULL;
+
+static void *g_keyboard_press_data                = NULL;
+
+static bool return_pressed                        = false;;
+
+static unsigned osk_last_codepoint                = 0;
+static unsigned osk_last_codepoint_len            = 0;
 
 static input_keyboard_press_t g_keyboard_press_cb;
-
-static void *g_keyboard_press_data;
-
-static bool return_pressed;
-
-static unsigned osk_last_codepoint = 0;
-static unsigned osk_last_codepoint_len = 0;
 
 static void osk_update_last_codepoint(const char *word)
 {
    const char *letter = word;
-   const char *pos = letter;
+   const char    *pos = letter;
 
    if (letter[0] == 0)
    {
@@ -68,7 +68,7 @@ static void osk_update_last_codepoint(const char *word)
    for (;;)
    {
       unsigned codepoint = utf8_walk(&letter);
-      unsigned len = letter - pos;
+      unsigned       len = letter - pos;
 
       if (letter[0] == 0)
       {
@@ -222,11 +222,12 @@ static bool input_keyboard_line_event(
 
 bool input_keyboard_line_append(const char *word)
 {
-   unsigned i = 0;
+   unsigned i   = 0;
    unsigned len = strlen(word);
-
    char *newbuf = (char*)
-         realloc(g_keyboard_line->buffer, g_keyboard_line->size + len*2);
+         realloc(g_keyboard_line->buffer,
+               g_keyboard_line->size + len*2);
+
    if (!newbuf)
       return false;
 
