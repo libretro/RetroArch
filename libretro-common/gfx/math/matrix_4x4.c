@@ -26,6 +26,8 @@
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/math/vector_3.h>
 
+#define MAT_ELEM_4X4(mat, r, c) ((mat).data[4 * (c) + (r)])
+
 void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src)
 {
    unsigned i, j;

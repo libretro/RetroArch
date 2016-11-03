@@ -30,8 +30,6 @@ typedef struct math_matrix_3x3
    float data[9];
 } math_matrix_3x3;
 
-#define MAT_ELEM_3X3(mat, r, c) ((mat).data[3 * (r) + (c)])
-
 void matrix_3x3_inits(math_matrix_3x3 *mat,
                       const float n11, const float n12, const float n13,
                       const float n21, const float n22, const float n23,

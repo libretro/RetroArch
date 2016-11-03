@@ -24,8 +24,10 @@
 #include <math.h>
 #include <string.h>
 
-#define floats_are_equal(x, y) (fabs(x - y) <= 0.00001f * ((x) > (y) ? (y) : (x)))
-#define float_is_zero(x) (floats_are_equal((x) + 1, 1))
+#define floats_are_equal(x, y)  (fabs(x - y) <= 0.00001f * ((x) > (y) ? (y) : (x)))
+#define float_is_zero(x)        (floats_are_equal((x) + 1, 1))
+
+#define MAT_ELEM_3X3(mat, r, c) ((mat).data[3 * (r) + (c)])
 
 void matrix_3x3_identity(math_matrix_3x3 *mat)
 {
