@@ -646,10 +646,9 @@ static void xmb_draw_text(xmb_handle_t *xmb,
       enum text_alignment text_align,
       unsigned width, unsigned height, font_data_t* font)
 {
-   settings_t *settings = config_get_ptr();
-   struct font_params params;
    uint8_t a8;
    uint32_t color;
+   settings_t *settings = config_get_ptr();
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
