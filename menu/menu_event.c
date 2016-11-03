@@ -296,13 +296,13 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       {
-         if (osk_ptr >= 10)
+         if (osk_ptr > 10)
             osk_ptr = osk_ptr - 11;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
-         if (osk_ptr < 44)
+         if (osk_ptr < 43)
             osk_ptr = osk_ptr + 1;
       }
 
