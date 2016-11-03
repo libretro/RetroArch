@@ -62,8 +62,6 @@ enum osk_type
 static enum osk_type osk_idx = OSK_LOWERCASE_LATIN;
 static int osk_ptr;
 static const char *osk_grid[45];
-static unsigned me_osk_last_codepoint = 0;
-static unsigned me_osk_last_codepoint_len = 0;
 
 static const char *uppercase_grid[] = {
                           "!","@","#","$","%","^","&","*","(",")","⇦",
@@ -334,11 +332,6 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       {
          if (osk_ptr >= 0)
          {
-            const char *letter = osk_grid[osk_ptr];
-
-            me_osk_last_codepoint_len = strlen(osk_grid[osk_ptr]);
-            me_osk_last_codepoint = utf8_walk(&letter);
-
             menu_event_osk_append(osk_ptr);
          }
       }
