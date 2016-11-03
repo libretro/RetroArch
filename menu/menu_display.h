@@ -233,6 +233,9 @@ void menu_display_draw_gradient(menu_display_ctx_draw_t *draw);
 void menu_display_draw_quad(int x, int y, unsigned w, unsigned h,
       unsigned width, unsigned height,
       float *color);
+void menu_display_draw_texture(int x, int y, unsigned w, unsigned h,
+      unsigned width, unsigned height,
+      float *color, uintptr_t texture);
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw);
 bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw);
 

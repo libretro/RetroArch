@@ -576,6 +576,39 @@ void menu_display_draw_quad(
    menu_display_blend_end();
 }
 
+void menu_display_draw_texture(
+      int x, int y, unsigned w, unsigned h,
+      unsigned width, unsigned height,
+      float *color, uintptr_t texture)
+{
+   menu_display_ctx_draw_t draw;
+   menu_display_ctx_rotate_draw_t rotate_draw;
+   struct video_coords coords;
+   math_matrix_4x4 mymat;
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = 0.0;
+   rotate_draw.scale_x      = 1.0;
+   rotate_draw.scale_y      = 1.0;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+   coords.vertices          = 4;
+   coords.vertex            = NULL;
+   coords.tex_coord         = NULL;
+   coords.lut_tex_coord     = NULL;
+   draw.width               = w;
+   draw.height              = h;
+   draw.coords              = &coords;
+   draw.matrix_data         = &mymat;
+   draw.prim_type           = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id         = 0;
+   coords.color             = (const float*)color;
+   menu_display_rotate_z(&rotate_draw);
+   draw.texture             = texture;
+   draw.x                   = x;
+   draw.y                   = height - y;
+   menu_display_draw(&draw);
+}
+
 void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
 {
 #if !defined(VITA)

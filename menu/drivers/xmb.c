@@ -122,6 +122,8 @@ enum
    XMB_TEXTURE_CLOCK,
    XMB_TEXTURE_POINTER,
    XMB_TEXTURE_ADD,
+   XMB_TEXTURE_KEY,
+   XMB_TEXTURE_KEY_HOVER,
    XMB_TEXTURE_LAST
 };
 
@@ -694,17 +696,17 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned 
 {
    unsigned i, width, height;
    float dark[16]=  {
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
-      0.00, 0.00, 0.00, 0.75,
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
+      0.00, 0.00, 0.00, 0.85,
    };
 
-   float light[16]=  {
-      1.00, 1.00, 1.00, 0.5,
-      1.00, 1.00, 1.00, 0.5,
-      1.00, 1.00, 1.00, 0.5,
-      1.00, 1.00, 1.00, 0.5,
+   float white[16]=  {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
    };
 
    video_driver_get_size(&width, &height);
@@ -713,23 +715,31 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned 
          width, height,
          &dark[0]);
 
-   for (i = 0; i <= 44; i++)
-   {
-      int line_y;
-      int ptr_width = height / 13;
-      line_y    = (i / 11)*height/10.0;
+   int ptr_width = height / 10;
 
+   for (i = 0; i < 44; i++)
+   {
+      int line_y = (i / 11)*height/10.0;
+
+      uintptr_t texture = xmb->textures.list[XMB_TEXTURE_KEY];
       if (i == id)
-         menu_display_draw_quad(
-               width/12.0 + (i % 11) * width/12.0 - ptr_width/2,
-               height*2.5/4.0 + line_y - ptr_width/2 - xmb->font->size / 4,
-               ptr_width, ptr_width,
-               width, height,
-               &light[0]);
+         texture = xmb->textures.list[XMB_TEXTURE_KEY_HOVER];
+
+      menu_display_blend_begin();
+
+      menu_display_draw_texture(
+            width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
+            height/2.0 + ptr_width*1.5 + line_y,
+            ptr_width, ptr_width,
+            width, height,
+            &white[0],
+            texture);
+
+      menu_display_blend_end();
 
       xmb_draw_text(xmb, grid[i],
-            width/12.0 + (i % 11) * width/12.0,
-            height*2.5/4.0 + line_y,
+            width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
+            height/2.0 + ptr_width + xmb->font->size/4.0 + line_y,
             1, 1, TEXT_ALIGN_CENTER, width, height, xmb->font);
    }
 }
@@ -745,12 +755,12 @@ static int xmb_osk_ptr_at_pos(void *data, int x, int y)
 
    video_driver_get_size(&width, &height);
 
-   for (i = 0; i <= 44; i++)
+   for (i = 0; i < 44; i++)
    {
-      int ptr_width = height / 13;
+      int ptr_width = height / 10;
       int line_y    = (i / 11)*height/10.0;
-      int ptr_x     = width/12.0 + (i % 11) * width/12.0 - ptr_width/2;
-      int ptr_y     = height*2.5/4.0 + line_y - ptr_width/2 - xmb->font->size / 4;
+      int ptr_x     = width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width;
+      int ptr_y     = height/2.0 + ptr_width*1.5 + line_y - ptr_width;
 
       if (x > ptr_x && x < ptr_x + ptr_width
        && y > ptr_y && y < ptr_y + ptr_width)
@@ -3072,6 +3082,10 @@ static const char *xmb_texture_path(unsigned id)
          return "off.png";
       case XMB_TEXTURE_ADD:
          return "add.png";
+      case XMB_TEXTURE_KEY:
+         return "key.png";
+      case XMB_TEXTURE_KEY_HOVER:
+         return "key-hover.png";
    }
 
    return NULL;
