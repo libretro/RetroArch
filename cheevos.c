@@ -930,7 +930,11 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
             break;
          }
 
-         var->value -= cheevos_locals.meminfo[i].size;
+         /* HACK subtract the correct ammount of bytes to reach the save RAM */
+         if (i == 0 && cheevos_locals.console_id == CHEEVOS_CONSOLE_NINTENDO)
+            var->value -= 0x6000;
+         else
+            var->value -= cheevos_locals.meminfo[i].size;
       }
    }
 }
