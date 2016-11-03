@@ -23,16 +23,30 @@ typedef void *GLeglImageOES;
 typedef GLint GLfixed;
 #endif
 
-#if !defined(GL_ES_VERSION_2_0)
 #if (__STDC_VERSION__ <= 199901L) || (OSX && !MAC_OS_X_VERSION_10_7)
+#ifndef GLint64
 typedef long long int GLint64;
+#endif
+
+#ifndef GLuint64
 typedef unsigned long long int GLuint64;
+#endif
+
+#ifndef GLuint64EXT
 typedef unsigned long long int GLuint64EXT;
+#endif
+
 typedef struct __GLsync *GLsync;
 #else
+
+#ifndef GLint64
 typedef int64_t  GLint64;
+#endif
+
+#ifndef GLuint64
 typedef uint64_t GLuint64;
 #endif
+
 #endif
 
 typedef void (GL_APIENTRYP RGLSYMGLBLENDBARRIERKHRPROC) (void);
