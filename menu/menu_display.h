@@ -260,8 +260,11 @@ void menu_display_draw_cursor(
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height);
 
-void menu_display_draw_text(const font_data_t *font, const char *msg, int width, int height,
-      struct font_params *params);
+void menu_display_draw_text(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, enum text_alignment text_align,
+      float scale_factor, bool shadows_enable, float shadow_offset);
 
 bool menu_display_shader_pipeline_active(void);
 

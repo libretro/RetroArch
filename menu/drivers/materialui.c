@@ -259,24 +259,6 @@ static void mui_draw_tab(mui_handle_t *mui,
          &tab_color[0]);
 }
 
-static void mui_draw_text(font_data_t *font, float x, float y, unsigned width, unsigned height,
-      const char *msg, uint32_t color, enum text_alignment text_align)
-{
-   struct font_params params;
-
-   params.x           = x / width;
-   params.y           = 1.0f - (y + font->size / 3) / height;
-   params.scale       = 1.0f;
-   params.drop_mod    = 0.0f;
-   params.drop_x      = 0.0f;
-   params.drop_y      = 0.0f;
-   params.color       = color;
-   params.full_screen = true;
-   params.text_align  = text_align;
-
-   menu_display_draw_text(font, msg, width, height, &params);
-}
-
 static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned id)
 {
    unsigned i, width, height;
@@ -324,10 +306,11 @@ static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned 
             &white[0],
             texture);
 
-      mui_draw_text(mui->font,
+      menu_display_draw_text(mui->font, grid[i],
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
-            height/2.0 + ptr_height + line_y,
-            width, height, grid[i], 0xffffffff, TEXT_ALIGN_CENTER);
+            height/2.0 + ptr_height + line_y + mui->font->size / 3,
+            width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
+            false, 0);
    }
 }
 
@@ -497,9 +480,11 @@ static void mui_render_messagebox(mui_handle_t *mui,
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         mui_draw_text(mui->font, x - longest_width/2.0, y + i * line_height,
-               width, height,
-               msg, font_color, TEXT_ALIGN_LEFT);
+         menu_display_draw_text(mui->font, msg,
+               x - longest_width/2.0,
+               y + i * line_height + mui->font->size / 3,
+               width, height, font_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+
    }
 
    if (menu_input_dialog_get_display_kb())
@@ -627,8 +612,10 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
-   mui_draw_text(mui->font, mui->margin, y + mui->line_height / 2,
-         width, height, label_str, color, TEXT_ALIGN_LEFT);
+   menu_display_draw_text(mui->font, label_str,
+         mui->margin,
+         y + mui->line_height / 2 + mui->font->size / 3,
+         width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
    {
@@ -686,9 +673,10 @@ static void mui_render_label_value(mui_handle_t *mui,
    }
 
    if (do_draw_text)
-      mui_draw_text(mui->font, width - mui->margin,
-            y + mui->line_height / 2,
-            width, height, value_str, color, TEXT_ALIGN_RIGHT);
+      menu_display_draw_text(mui->font, value_str,
+            width - mui->margin,
+            y + mui->line_height / 2 + mui->font->size / 3,
+            width, height, color, TEXT_ALIGN_RIGHT, 1.0f, false, 0);
 
    if (texture_switch)
       mui_draw_icon(
@@ -1276,8 +1264,10 @@ static void mui_frame(void *data)
       strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }
 
-   mui_draw_text(mui->font, title_margin, header_height / 2, width, height,
-         title_buf, font_header_color, TEXT_ALIGN_LEFT);
+   menu_display_draw_text(mui->font, title_buf,
+         title_margin,
+         header_height / 2 + mui->font->size / 3,
+         width, height, font_header_color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
    mui_draw_scrollbar(mui, width, height, &grey_bg[0]);
 

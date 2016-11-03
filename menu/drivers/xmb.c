@@ -648,38 +648,24 @@ static void xmb_draw_text(xmb_handle_t *xmb,
 {
    settings_t *settings = config_get_ptr();
    struct font_params params;
-   uint8_t a8                =   0;
+   uint8_t a8;
+   uint32_t color;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
 
    a8 = 255 * alpha;
 
+   /* Avoid drawing 100% transparent text */
    if (a8 == 0)
       return;
 
-   if (x < -xmb->icon.size || x > width + xmb->icon.size
-         || y < -xmb->icon.size || y > height + xmb->icon.size)
-      return;
+   color = FONT_COLOR_RGBA(255, 255, 255, a8);
 
-   params.x           = x / width;
-   params.y           = 1.0f - y / height;
-   params.scale       = scale_factor;
-   params.drop_mod    = 0.0f;
-   params.drop_x      = 0.0f;
-   params.drop_y      = 0.0f;
-   params.color       = FONT_COLOR_RGBA(255, 255, 255, a8);
-   params.full_screen = true;
-   params.text_align  = text_align;
-
-   if (settings->menu.xmb.shadows_enable)
-   {
-      params.drop_x      = xmb->shadow_offset;
-      params.drop_y      = -xmb->shadow_offset;
-      params.drop_alpha  = 0.35f;
-   }
-
-   menu_display_draw_text(font, str, width, height, &params);
+   menu_display_draw_text(font, str, x, y,
+         width, height, color, text_align, scale_factor,
+         settings->menu.xmb.shadows_enable,
+         xmb->shadow_offset);
 }
 
 static void xmb_messagebox(void *data, const char *message)
@@ -741,10 +727,11 @@ static void xmb_render_keyboard(xmb_handle_t *xmb, const char *grid[], unsigned 
 
       menu_display_blend_end();
 
-      xmb_draw_text(xmb, grid[i],
+      menu_display_draw_text(xmb->font, grid[i],
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
-            height/2.0 + ptr_height + xmb->font->size/4.0 + line_y,
-            1, 1, TEXT_ALIGN_CENTER, width, height, xmb->font);
+            height/2.0 + ptr_height + line_y + xmb->font->size / 3,
+            width, height, 0xffffffff, TEXT_ALIGN_CENTER, 1.0f,
+            false, 0);
    }
 }
 
