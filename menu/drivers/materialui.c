@@ -300,7 +300,11 @@ static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned 
          width, height,
          &dark[0]);
 
-   int ptr_width = height / 10;
+   int ptr_width = width / 11;
+   int ptr_height = height / 10;
+
+   if (ptr_width >= ptr_height)
+      ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
    {
@@ -314,15 +318,15 @@ static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned 
 
       menu_display_draw_texture(
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width,
-            height/2.0 + ptr_width*1.5 + line_y,
-            ptr_width, ptr_width,
+            height/2.0 + ptr_height*1.5 + line_y,
+            ptr_width, ptr_height,
             width, height,
             &white[0],
             texture);
 
       mui_draw_text(mui->font,
             width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width + ptr_width/2.0,
-            height/2.0 + ptr_width + line_y,
+            height/2.0 + ptr_height + line_y,
             width, height, grid[i], 0xffffffff, TEXT_ALIGN_CENTER);
    }
 }
@@ -338,15 +342,20 @@ static int mui_osk_ptr_at_pos(void *data, int x, int y)
 
    video_driver_get_size(&width, &height);
 
+   int ptr_width = width / 11;
+   int ptr_height = height / 10;
+
+   if (ptr_width >= ptr_height)
+      ptr_width = ptr_height;
+
    for (i = 0; i < 44; i++)
    {
-      int ptr_width = height / 10;
       int line_y    = (i / 11)*height/10.0;
       int ptr_x     = width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width;
-      int ptr_y     = height/2.0 + ptr_width*1.5 + line_y - ptr_width;
+      int ptr_y     = height/2.0 + ptr_height*1.5 + line_y - ptr_height;
 
       if (x > ptr_x && x < ptr_x + ptr_width
-       && y > ptr_y && y < ptr_y + ptr_width)
+       && y > ptr_y && y < ptr_y + ptr_height)
          return i;
    }
 
