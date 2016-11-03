@@ -94,8 +94,6 @@ namespace detail
 		T const & epsilon
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'areCollinear' only accept floating-point inputs");
-
 		return detail::compute_areCollinear<T, P, vecType>::call(v0, v1, epsilon);
 	}
 
@@ -107,8 +105,6 @@ namespace detail
 		T const & epsilon
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'areOrthogonal' only accept floating-point inputs");
-
 		return abs(dot(v0, v1)) <= max(
 			static_cast<T>(1),
 			length(v0)) * max(static_cast<T>(1), length(v1)) * epsilon;
@@ -121,8 +117,6 @@ namespace detail
 		T const & epsilon
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'isNormalized' only accept floating-point inputs");
-
 		return abs(length(v) - static_cast<T>(1)) <= static_cast<T>(2) * epsilon;
 	}
 
@@ -133,8 +127,6 @@ namespace detail
 		T const & epsilon
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'isNull' only accept floating-point inputs");
-
 		return length(v) <= epsilon;
 	}
 
@@ -145,8 +137,6 @@ namespace detail
 		T const & epsilon
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'isCompNull' only accept floating-point inputs");
-
 		return detail::compute_isCompNull<T, P, vecType>::call(v, epsilon);
 	}
 

@@ -178,26 +178,6 @@ namespace detail
 		X4 const & x4, Y4 const & y4, Z4 const & z4, W4 const & w4
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<X1>::is_iec559 || std::numeric_limits<X1>::is_integer, "*mat4x4 constructor only takes float and integer types, 1st parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y1>::is_iec559 || std::numeric_limits<Y1>::is_integer, "*mat4x4 constructor only takes float and integer types, 2nd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z1>::is_iec559 || std::numeric_limits<Z1>::is_integer, "*mat4x4 constructor only takes float and integer types, 3rd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W1>::is_iec559 || std::numeric_limits<W1>::is_integer, "*mat4x4 constructor only takes float and integer types, 4th parameter type invalid.");
-
-		GLM_STATIC_ASSERT(std::numeric_limits<X2>::is_iec559 || std::numeric_limits<X2>::is_integer, "*mat4x4 constructor only takes float and integer types, 5th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y2>::is_iec559 || std::numeric_limits<Y2>::is_integer, "*mat4x4 constructor only takes float and integer types, 6th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z2>::is_iec559 || std::numeric_limits<Z2>::is_integer, "*mat4x4 constructor only takes float and integer types, 7th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W2>::is_iec559 || std::numeric_limits<W2>::is_integer, "*mat4x4 constructor only takes float and integer types, 8th parameter type invalid.");
-
-		GLM_STATIC_ASSERT(std::numeric_limits<X3>::is_iec559 || std::numeric_limits<X3>::is_integer, "*mat4x4 constructor only takes float and integer types, 9th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y3>::is_iec559 || std::numeric_limits<Y3>::is_integer, "*mat4x4 constructor only takes float and integer types, 10th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z3>::is_iec559 || std::numeric_limits<Z3>::is_integer, "*mat4x4 constructor only takes float and integer types, 11th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W3>::is_iec559 || std::numeric_limits<W3>::is_integer, "*mat4x4 constructor only takes float and integer types, 12th parameter type invalid.");
-
-		GLM_STATIC_ASSERT(std::numeric_limits<X4>::is_iec559 || std::numeric_limits<X4>::is_integer, "*mat4x4 constructor only takes float and integer types, 13th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y4>::is_iec559 || std::numeric_limits<Y4>::is_integer, "*mat4x4 constructor only takes float and integer types, 14th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z4>::is_iec559 || std::numeric_limits<Z4>::is_integer, "*mat4x4 constructor only takes float and integer types, 15th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W4>::is_iec559 || std::numeric_limits<W4>::is_integer, "*mat4x4 constructor only takes float and integer types, 16th parameter type invalid.");
-
 		this->value[0] = col_type(static_cast<T>(x1), value_type(y1), value_type(z1), value_type(w1));
 		this->value[1] = col_type(static_cast<T>(x2), value_type(y2), value_type(z2), value_type(w2));
 		this->value[2] = col_type(static_cast<T>(x3), value_type(y3), value_type(z3), value_type(w3));
@@ -214,11 +194,6 @@ namespace detail
 		tvec4<V4, P> const & v4
 	)		
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<V1>::is_iec559 || std::numeric_limits<V1>::is_integer, "*mat4x4 constructor only takes float and integer types, 1st parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<V2>::is_iec559 || std::numeric_limits<V2>::is_integer, "*mat4x4 constructor only takes float and integer types, 2nd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<V3>::is_iec559 || std::numeric_limits<V3>::is_integer, "*mat4x4 constructor only takes float and integer types, 3rd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<V4>::is_iec559 || std::numeric_limits<V4>::is_integer, "*mat4x4 constructor only takes float and integer types, 4th parameter type invalid.");
-
 		this->value[0] = col_type(v1);
 		this->value[1] = col_type(v2);
 		this->value[2] = col_type(v3);

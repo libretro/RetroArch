@@ -16,8 +16,6 @@ namespace glm
 		genType const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'angle' only accept floating-point inputs");
-
 		genType const Angle(acos(clamp(dot(x, y), genType(-1), genType(1))));
 
 #ifdef GLM_FORCE_RADIANS
@@ -35,8 +33,6 @@ namespace glm
 		vecType<T, P> const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'angle' only accept floating-point inputs");
-
 		T const Angle(acos(clamp(dot(x, y), T(-1), T(1))));
 
 #ifdef GLM_FORCE_RADIANS
@@ -55,8 +51,6 @@ namespace glm
 		detail::tvec2<T, P> const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'orientedAngle' only accept floating-point inputs");
-
 		T const Dot = clamp(dot(x, y), T(-1), T(1));
 
 #ifdef GLM_FORCE_RADIANS
@@ -80,8 +74,6 @@ namespace glm
 		detail::tvec3<T, P> const & ref
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'orientedAngle' only accept floating-point inputs");
-
 		T const Dot = clamp(dot(x, y), T(-1), T(1));
 
 #ifdef GLM_FORCE_RADIANS

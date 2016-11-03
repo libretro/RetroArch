@@ -39,8 +39,6 @@ namespace glm
 		genType const & degrees
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'radians' only accept floating-point input");
-
 		return degrees * genType(0.01745329251994329576923690768489);
 	}
 
@@ -53,8 +51,6 @@ namespace glm
 		genType const & radians
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'degrees' only accept floating-point input");
-
 		return radians * genType(57.295779513082320876798154814105);
 	}
 
@@ -67,8 +63,6 @@ namespace glm
 		genType const & angle
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'sin' only accept floating-point input");
-
 		return genType(::std::sin(angle));
 	}
 
@@ -78,8 +72,6 @@ namespace glm
 	template <typename genType>
 	GLM_FUNC_QUALIFIER genType cos(genType const & angle)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'cos' only accept floating-point input");
-
 		return genType(::std::cos(angle));
 	}
 
@@ -92,8 +84,6 @@ namespace glm
 		genType const & angle
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'tan' only accept floating-point input");
-
 		return genType(::std::tan(angle));
 	}
 
@@ -106,8 +96,6 @@ namespace glm
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'asin' only accept floating-point input");
-
 		return genType(::std::asin(x));
 	}
 
@@ -120,8 +108,6 @@ namespace glm
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'acos' only accept floating-point input");
-
 		return genType(::std::acos(x));
 	}
 
@@ -135,8 +121,6 @@ namespace glm
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'atan' only accept floating-point input");
-
 		return genType(::std::atan2(y, x));
 	}
 
@@ -148,8 +132,6 @@ namespace glm
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'atan' only accept floating-point input");
-
 		return genType(::std::atan(x));
 	}
 
@@ -162,8 +144,6 @@ namespace glm
 		genType const & angle
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'sinh' only accept floating-point input");
-
 		return genType(std::sinh(angle));
 	}
 
@@ -176,8 +156,6 @@ namespace glm
 		genType const & angle
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'cosh' only accept floating-point input");
-
 		return genType(std::cosh(angle));
 	}
 
@@ -190,8 +168,6 @@ namespace glm
 		genType const & angle
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'tanh' only accept floating-point input");
-
 		return genType(std::tanh(angle));
 	}
 
@@ -204,8 +180,6 @@ namespace glm
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'asinh' only accept floating-point input");
-		
 		return (x < genType(0) ? genType(-1) : (x > genType(0) ? genType(1) : genType(0))) * log(abs(x) + sqrt(genType(1) + x * x));
 	}
 
@@ -218,8 +192,6 @@ namespace glm
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'acosh' only accept floating-point input");
-
 		if(x < genType(1))
 			return genType(0);
 		return log(x + sqrt(x * x - genType(1)));
@@ -234,8 +206,6 @@ namespace glm
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'atanh' only accept floating-point input");
-		
 		if(abs(x) >= genType(1))
 			return 0;
 		return genType(0.5) * log((genType(1) + x) / (genType(1) - x));

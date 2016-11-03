@@ -167,8 +167,6 @@ namespace glm
 	template <typename genType>
 	GLM_FUNC_QUALIFIER genType bitRevert(genType const & In)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_integer, "'bitRevert' only accept integer values");
-
 		genType Out = 0;
 		std::size_t BitSize = sizeof(genType) * 8;
 		for(std::size_t i = 0; i < BitSize; ++i)
@@ -182,8 +180,6 @@ namespace glm
 	template <typename genType>
 	GLM_FUNC_QUALIFIER genType bitRotateRight(genType const & In, std::size_t Shift)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_integer, "'bitRotateRight' only accept integer values");
-
 		std::size_t BitSize = sizeof(genType) * 8;
 		return (In << Shift) | (In >> (BitSize - Shift));
 	}
@@ -230,8 +226,6 @@ namespace glm
 	template <typename genType>
 	GLM_FUNC_QUALIFIER genType bitRotateLeft(genType const & In, std::size_t Shift)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_integer, "'bitRotateLeft' only accept integer values");
-
 		std::size_t BitSize = sizeof(genType) * 8;
 		return (In >> Shift) | (In << (BitSize - Shift));
 	}

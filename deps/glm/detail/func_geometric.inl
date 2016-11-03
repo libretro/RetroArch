@@ -85,8 +85,6 @@ namespace detail
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'length' only accept floating-point inputs");
-
 		genType sqr = x * x;
 		return sqrt(sqr);
 	}
@@ -94,8 +92,6 @@ namespace detail
 	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER T length(detail::tvec2<T, P> const & v)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'length' only accept floating-point inputs");
-
 		T sqr = v.x * v.x + v.y * v.y;
 		return sqrt(sqr);
 	}
@@ -103,8 +99,6 @@ namespace detail
 	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER T length(detail::tvec3<T, P> const & v)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'length' only accept floating-point inputs");
-
 		T sqr = v.x * v.x + v.y * v.y + v.z * v.z;
 		return sqrt(sqr);
 	}
@@ -112,8 +106,6 @@ namespace detail
 	template <typename T, precision P>
 	GLM_FUNC_QUALIFIER T length(detail::tvec4<T, P> const & v)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'length' only accept floating-point inputs");
-
 		T sqr = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
 		return sqrt(sqr);
 	}
@@ -126,8 +118,6 @@ namespace detail
 		genType const & p1
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'distance' only accept floating-point inputs");
-
 		return length(p1 - p0);
 	}
 
@@ -138,8 +128,6 @@ namespace detail
 		detail::tvec2<T, P> const & p1
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'distance' only accept floating-point inputs");
-
 		return length(p1 - p0);
 	}
 
@@ -150,8 +138,6 @@ namespace detail
 		detail::tvec3<T, P> const & p1
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'distance' only accept floating-point inputs");
-
 		return length(p1 - p0);
 	}
 
@@ -162,8 +148,6 @@ namespace detail
 		detail::tvec4<T, P> const & p1
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'distance' only accept floating-point inputs");
-
 		return length(p1 - p0);
 	}
 
@@ -175,7 +159,6 @@ namespace detail
 		T const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'dot' only accept floating-point inputs");
 		return detail::compute_dot<detail::tvec1, T, highp>::call(x, y);
 	}
 
@@ -186,7 +169,6 @@ namespace detail
 		vecType<T, P> const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'dot' only accept floating-point inputs");
 		return detail::compute_dot<vecType, T, P>::call(x, y);
 	}
 
@@ -215,8 +197,6 @@ namespace detail
 		detail::tvec3<T, P> const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'cross' only accept floating-point inputs");
-
 		return detail::tvec3<T, P>(
 			x.y * y.z - y.y * x.z,
 			x.z * y.x - y.z * x.x,
@@ -230,8 +210,6 @@ namespace detail
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'normalize' only accept floating-point inputs");
-
 		return x < genType(0) ? genType(-1) : genType(1);
 	}
 
@@ -242,8 +220,6 @@ namespace detail
 		detail::tvec2<T, P> const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'normalize' only accept floating-point inputs");
-		
 		T sqr = x.x * x.x + x.y * x.y;
 		return x * inversesqrt(sqr);
 	}
@@ -254,8 +230,6 @@ namespace detail
 		detail::tvec3<T, P> const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'normalize' only accept floating-point inputs");
-
 		T sqr = x.x * x.x + x.y * x.y + x.z * x.z;
 		return x * inversesqrt(sqr);
 	}
@@ -266,8 +240,6 @@ namespace detail
 		detail::tvec4<T, P> const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'normalize' only accept floating-point inputs");
-		
 		T sqr = x.x * x.x + x.y * x.y + x.z * x.z + x.w * x.w;
 		return x * inversesqrt(sqr);
 	}
@@ -304,8 +276,6 @@ namespace detail
 		genType const & eta
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'refract' only accept floating-point inputs");
-
 		genType dotValue = dot(N, I);
 		genType k = genType(1) - eta * eta * (genType(1) - dotValue * dotValue);
 		if(k < genType(0))
@@ -322,8 +292,6 @@ namespace detail
 		T const & eta
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'refract' only accept floating-point inputs");
-
 		T dotValue = dot(N, I);
 		T k = T(1) - eta * eta * (T(1) - dotValue * dotValue);
 		if(k < T(0))

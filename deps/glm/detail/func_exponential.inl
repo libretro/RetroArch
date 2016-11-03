@@ -85,10 +85,6 @@ namespace detail
 		genType const & y
 	)
 	{
-		GLM_STATIC_ASSERT(
-			std::numeric_limits<genType>::is_iec559,
-			"'pow' only accept floating-point inputs");
-
 		return std::pow(x, y);
 	}
 
@@ -101,10 +97,6 @@ namespace detail
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(
-			std::numeric_limits<genType>::is_iec559,
-			"'exp' only accept floating-point inputs");
-
 		return std::exp(x);
 	}
 
@@ -117,10 +109,6 @@ namespace detail
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(
-			std::numeric_limits<genType>::is_iec559,
-			"'log' only accept floating-point inputs");
-
 		return std::log(x);
 	}
 
@@ -130,10 +118,6 @@ namespace detail
 	template <typename genType>
 	GLM_FUNC_QUALIFIER genType exp2(genType const & x)
 	{
-		GLM_STATIC_ASSERT(
-			std::numeric_limits<genType>::is_iec559,
-			"'exp2' only accept floating-point inputs");
-
 		return std::exp(static_cast<genType>(0.69314718055994530941723212145818) * x);
 	}
 
@@ -143,9 +127,6 @@ namespace detail
 	template <typename genType>
 	GLM_FUNC_QUALIFIER genType log2(genType x)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559 || std::numeric_limits<genType>::is_integer,
-			"GLM core 'log2' only accept floating-point inputs. Include <glm/gtx/integer.hpp> for additional integer support.");
-
 		assert(x > genType(0)); // log2 is only defined on the range (0, inf]
 		return detail::compute_log2<std::numeric_limits<genType>::is_iec559>()(x);
 	}
@@ -208,7 +189,6 @@ namespace detail
 	template <typename T, precision P, template <typename, precision> class vecType>
 	GLM_FUNC_QUALIFIER vecType<T, P> sqrt(vecType<T, P> const & x)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'sqrt' only accept floating-point inputs");
 		return detail::compute_sqrt<vecType, T, P>::call(x);
 	}
 
@@ -229,7 +209,6 @@ namespace detail
 		vecType<T, P> const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'inversesqrt' only accept floating-point inputs");
 		return detail::compute_inversesqrt<vecType, T, P>::call(x);
 	}
 

@@ -16,8 +16,6 @@ namespace glm
 		genType const & x
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genType>::is_iec559, "'fastSqrt' only accept floating-point input");
-
 		return genType(1) / fastInverseSqrt(x);
 	}
 

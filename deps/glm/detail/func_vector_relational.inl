@@ -37,10 +37,6 @@ namespace glm
 		vecType<T, P> const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || std::numeric_limits<T>::is_integer,
-			"Invalid template instantiation of 'lessThan', GLM vector types required floating-point or integer value types vectors");
-		assert(x.length() == y.length());
-
 		typename vecType<bool, P>::bool_type Result(vecType<bool, P>::_null);
 		for(int i = 0; i < x.length(); ++i)
 			Result[i] = x[i] < y[i];
@@ -55,10 +51,6 @@ namespace glm
 		vecType<T, P> const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || std::numeric_limits<T>::is_integer,
-			"Invalid template instantiation of 'lessThanEqual', GLM vector types required floating-point or integer value types vectors");
-		assert(x.length() == y.length());
-
 		typename vecType<bool, P>::bool_type Result(vecType<bool, P>::_null);
 		for(int i = 0; i < x.length(); ++i)
 			Result[i] = x[i] <= y[i];
@@ -72,10 +64,6 @@ namespace glm
 		vecType<T, P> const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || std::numeric_limits<T>::is_integer,
-			"Invalid template instantiation of 'greaterThan', GLM vector types required floating-point or integer value types vectors");
-		assert(x.length() == y.length());
-
 		typename vecType<bool, P>::bool_type Result(vecType<bool, P>::_null);
 		for(int i = 0; i < x.length(); ++i)
 			Result[i] = x[i] > y[i];
@@ -89,10 +77,6 @@ namespace glm
 		vecType<T, P> const & y
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || std::numeric_limits<T>::is_integer,
-			"Invalid template instantiation of 'greaterThanEqual', GLM vector types required floating-point or integer value types vectors");
-		assert(x.length() == y.length());
-
 		typename vecType<bool, P>::bool_type Result(vecType<bool, P>::_null);
 		for(int i = 0; i < x.length(); ++i)
 			Result[i] = x[i] >= y[i];
