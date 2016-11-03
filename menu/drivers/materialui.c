@@ -123,7 +123,9 @@ typedef struct mui_handle
    } categories;
 
    font_data_t *font;
-   video_font_raster_block_t list_block;
+   font_data_t *font2;
+   video_font_raster_block_t raster_block;
+   video_font_raster_block_t raster_block2;
    float scroll_y;
 } mui_handle_t;
 
@@ -568,7 +570,7 @@ static void mui_render(void *data)
 }
 
 static void mui_render_label_value(mui_handle_t *mui,
-      int y, unsigned width, unsigned height,
+      int i, int y, unsigned width, unsigned height,
       uint64_t index, uint32_t color, bool selected, const char *label,
       const char *value, float *label_color)
 {
@@ -580,10 +582,11 @@ static void mui_render_label_value(mui_handle_t *mui,
       1.00, 1.00, 1.00, 1.00,
    };
 
-
    menu_animation_ctx_ticker_t ticker;
    char label_str[255];
+   char sublabel_str[255];
    char value_str[255];
+   float label_offset              = 0;
    bool switch_is_on               = true;
    int value_len                   = utf8len(value);
    int ticker_limit                = 0;
@@ -591,7 +594,7 @@ static void mui_render_label_value(mui_handle_t *mui,
    bool do_draw_text               = false;
    size_t usable_width             = width - (mui->margin * 2);
 
-   label_str[0] = value_str[0]     = '\0';
+   label_str[0] = value_str[0] = sublabel_str[0] = '\0';
 
    if (value_len * mui->glyph_width > usable_width / 2)
       value_len = (usable_width/2) / mui->glyph_width;
@@ -612,9 +615,19 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
+   label_offset = mui->font->size / 3;
+   if (menu_entry_get_sublabel(i, sublabel_str, sizeof(sublabel_str)))
+   {
+      label_offset = -mui->font->size / 3;
+      menu_display_draw_text(mui->font2, sublabel_str,
+            mui->margin,
+            y + mui->line_height / 2 + mui->font->size / 1,
+            width, height, 0x888888ff, TEXT_ALIGN_LEFT, 1.0f, false, 0);
+   }
+
    menu_display_draw_text(mui->font, label_str,
          mui->margin,
-         y + mui->line_height / 2 + mui->font->size / 3,
+         y + mui->line_height / 2 + label_offset,
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
@@ -709,7 +722,8 @@ static void mui_render_menu_list(mui_handle_t *mui,
 
    header_height = menu_display_get_header_height();
 
-   mui->list_block.carr.coords.vertices = 0;
+   mui->raster_block.carr.coords.vertices = 0;
+   mui->raster_block2.carr.coords.vertices = 0;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -739,11 +753,12 @@ static void mui_render_menu_list(mui_handle_t *mui,
 
       mui_render_label_value(
          mui,
+         i,
          y,
          width,
          height,
          *frame_count / 20,
-         entry_selected ? font_hover_color : font_normal_color, 
+         font_hover_color, 
          entry_selected,
          rich_label, 
          entry_value, 
@@ -1164,7 +1179,8 @@ static void mui_frame(void *data)
       &highlighted_entry_color[0]
    );
 
-   menu_display_font_bind_block(mui->font, &mui->list_block);
+   menu_display_font_bind_block(mui->font, &mui->raster_block);
+   menu_display_font_bind_block(mui->font2, &mui->raster_block2);
 
    mui_render_menu_list(
       mui, 
@@ -1176,6 +1192,7 @@ static void mui_frame(void *data)
    );
 
    menu_display_font_flush_block(mui->font);
+   menu_display_font_flush_block(mui->font2);
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
@@ -1304,7 +1321,7 @@ static void mui_frame(void *data)
 static void mui_layout(mui_handle_t *mui)
 {
    float scale_factor;
-   int new_font_size;
+   int new_font_size, new_font_size2;
    unsigned width, height, new_header_height;
 
    video_driver_get_size(&width, &height);
@@ -1319,11 +1336,12 @@ static void mui_layout(mui_handle_t *mui)
 
    new_header_height    = scale_factor / 3;
    new_font_size        = scale_factor / 9;
+   new_font_size2       = scale_factor / 12;
 
    mui->shadow_height   = scale_factor / 36;
    mui->scrollbar_width = scale_factor / 36;
    mui->tabs_height     = scale_factor / 3;
-   mui->line_height     = scale_factor / 3;
+   mui->line_height     = scale_factor / 2.5;
    mui->margin          = scale_factor / 9;
    mui->icon_size       = scale_factor / 3;
 
@@ -1334,6 +1352,9 @@ static void mui_layout(mui_handle_t *mui)
 
    mui->font = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
          new_font_size);
+
+   mui->font2 = menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT,
+         new_font_size2);
 
    if (mui->font) /* calculate a more realistic ticker_limit */
    {
@@ -1380,7 +1401,8 @@ static void mui_free(void *data)
    if (!mui)
       return;
 
-   video_coord_array_free(&mui->list_block.carr);
+   video_coord_array_free(&mui->raster_block.carr);
+   video_coord_array_free(&mui->raster_block2.carr);
 
    font_driver_bind_block(NULL, NULL);
 }
