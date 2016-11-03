@@ -486,13 +486,6 @@
 // http://gcc.gnu.org/projects/cxx0x.html
 // http://msdn.microsoft.com/en-us/library/vstudio/hh567368(v=vs.120).aspx
 
-// N1720
-#define GLM_HAS_STATIC_ASSERT ( \
-	(GLM_LANG & GLM_LANG_CXX11_FLAG) || \
-	((GLM_LANG & GLM_LANG_CXX0X_FLAG) && (GLM_COMPILER & GLM_COMPILER_VC) && (GLM_COMPILER >= GLM_COMPILER_VC10)) || \
-	((GLM_LANG & GLM_LANG_CXX0X_FLAG) && (GLM_COMPILER & GLM_COMPILER_GCC) && (GLM_COMPILER >= GLM_COMPILER_GCC43)) || \
-	__has_feature(cxx_static_assert))
-
 // N1988
 #define GLM_HAS_EXTENDED_INTEGER_TYPE ( \
 	(GLM_LANG & GLM_LANG_CXX11_FLAG) || \
@@ -611,20 +604,6 @@
 // Radians
 
 //#define GLM_FORCE_RADIANS
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Static assert
-
-#if GLM_HAS_STATIC_ASSERT
-#	define GLM_STATIC_ASSERT(x, message) static_assert(x, message)
-#elif(defined(BOOST_STATIC_ASSERT))
-#	define GLM_STATIC_ASSERT(x, message) BOOST_STATIC_ASSERT(x)
-#elif(GLM_COMPILER & GLM_COMPILER_VC)
-#	define GLM_STATIC_ASSERT(x, message) typedef char __CASSERT__##__LINE__[(x) ? 1 : -1]
-#else
-#	define GLM_STATIC_ASSERT(x, message)
-#	define GLM_STATIC_ASSERT_NULL
-#endif//GLM_LANG
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Qualifiers 

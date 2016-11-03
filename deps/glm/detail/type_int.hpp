@@ -171,21 +171,6 @@ namespace detail
 	typedef unsigned int				uint;
 
 	/// @}
-
-////////////////////
-// check type sizes
-#ifndef GLM_STATIC_ASSERT_NULL
-	GLM_STATIC_ASSERT(sizeof(glm::int8) == 1, "int8 size isn't 1 byte on this platform");
-	GLM_STATIC_ASSERT(sizeof(glm::int16) == 2, "int16 size isn't 2 bytes on this platform");
-	GLM_STATIC_ASSERT(sizeof(glm::int32) == 4, "int32 size isn't 4 bytes on this platform");
-	GLM_STATIC_ASSERT(sizeof(glm::int64) == 8, "int64 size isn't 8 bytes on this platform");
-
-	GLM_STATIC_ASSERT(sizeof(glm::uint8) == 1, "uint8 size isn't 1 byte on this platform");
-	GLM_STATIC_ASSERT(sizeof(glm::uint16) == 2, "uint16 size isn't 2 bytes on this platform");
-	GLM_STATIC_ASSERT(sizeof(glm::uint32) == 4, "uint32 size isn't 4 bytes on this platform");
-	GLM_STATIC_ASSERT(sizeof(glm::uint64) == 8, "uint64 size isn't 8 bytes on this platform");
-#endif//GLM_STATIC_ASSERT_NULL
-
 }//namespace glm
 
 #endif//glm_core_type_int

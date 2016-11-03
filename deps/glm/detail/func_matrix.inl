@@ -421,8 +421,6 @@ namespace detail
 	template <typename T, precision P, template <typename, precision> class matType>
 	GLM_FUNC_QUALIFIER matType<T, P> matrixCompMult(matType<T, P> const & x, matType<T, P> const & y)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'matrixCompMult' only accept floating-point inputs");
-
 		matType<T, P> result(matType<T, P>::_null);
 		for(length_t i = 0; i < result.length(); ++i)
 			result[i] = x[i] * y[i];
@@ -432,28 +430,24 @@ namespace detail
 	template<typename T, precision P, template <typename, precision> class vecTypeA, template <typename, precision> class vecTypeB>
 	GLM_FUNC_QUALIFIER typename detail::outerProduct_trait<T, P, vecTypeA, vecTypeB>::type outerProduct(vecTypeA<T, P> const & c, vecTypeB<T, P> const & r)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'outerProduct' only accept floating-point inputs");
 		return detail::compute_outerProduct<vecTypeA, vecTypeB, T, P>::call(c, r);
 	}
 
 	template <typename T, precision P, template <typename, precision> class matType>
 	GLM_FUNC_QUALIFIER typename matType<T, P>::transpose_type transpose(matType<T, P> const & m)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'transpose' only accept floating-point inputs");
 		return detail::compute_transpose<matType, T, P>::call(m);
 	}
 
 	template <typename T, precision P, template <typename, precision> class matType>
 	GLM_FUNC_QUALIFIER T determinant(matType<T, P> const & m)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'determinant' only accept floating-point inputs");
 		return detail::compute_determinant<matType, T, P>::call(m);
 	}
 
 	template <typename T, precision P, template <typename, precision> class matType>
 	GLM_FUNC_QUALIFIER matType<T, P> inverse(matType<T, P> const & m)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'inverse' only accept floating-point inputs");
 		return detail::compute_inverse<matType, T, P>::call(m);
 	}
 

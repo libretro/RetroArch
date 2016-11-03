@@ -107,8 +107,6 @@ namespace glm
 		uint & Borrow
 	)
 	{
-		GLM_STATIC_ASSERT(sizeof(uint) == sizeof(uint32), "uint and uint32 size mismatch");
-
 		Borrow = x >= y ? static_cast<uint32>(0) : static_cast<uint32>(1);
 		if(y >= x)
 			return y - x;
@@ -167,8 +165,6 @@ namespace glm
 		uint & lsb
 	)
 	{
-		GLM_STATIC_ASSERT(sizeof(uint) == sizeof(uint32), "uint and uint32 size mismatch");
-
 		uint64 Value64 = static_cast<uint64>(x) * static_cast<uint64>(y);
 		msb = Value64 >> 32;
 		lsb = Value64;
@@ -226,8 +222,6 @@ namespace glm
 		int & lsb
 	)
 	{
-		GLM_STATIC_ASSERT(sizeof(int) == sizeof(int32), "int and int32 size mismatch");
-
 		int64 Value64 = static_cast<int64>(x) * static_cast<int64>(y);
 		msb = Value64 >> 32;
 		lsb = Value64;
@@ -346,7 +340,6 @@ namespace glm
 		int const & Bits
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'bitfieldInsert' only accept integer values");
 		assert(Offset + Bits <= sizeof(genIUType));
 
 		if(Bits == 0)
@@ -408,8 +401,6 @@ namespace glm
 	template <typename genIUType>
 	GLM_FUNC_QUALIFIER genIUType bitfieldReverse(genIUType const & Value)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'bitfieldReverse' only accept integer values");
-
 		genIUType Out = 0;
 		std::size_t BitSize = sizeof(genIUType) * 8;
 		for(std::size_t i = 0; i < BitSize; ++i)
@@ -424,8 +415,6 @@ namespace glm
 	template <typename genIUType>
 	GLM_FUNC_QUALIFIER int bitCount(genIUType const & Value)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'bitCount' only accept integer values");
-
 		int Count = 0;
 		for(std::size_t i = 0; i < sizeof(genIUType) * std::size_t(8); ++i)
 		{
@@ -478,7 +467,6 @@ namespace glm
 		genIUType const & Value
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findLSB' only accept integer values");
 		if(Value == 0)
 			return -1;
 
@@ -532,7 +520,6 @@ namespace glm
 		genIUType const & Value
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
 		if(Value == 0)
 			return -1;
 
@@ -540,29 +527,6 @@ namespace glm
 		_BitScanReverse(&Result, Value);
 		return int(Result);
 	}
-/*
-// __builtin_clz seems to be buggy as it crasks for some values, from 0x00200000 to 80000000
-#elif((GLM_ARCH != GLM_ARCH_PURE) && (GLM_COMPILER & GLM_COMPILER_GCC) && (GLM_COMPILER >= GLM_COMPILER_GCC40))
-
-	template <typename genIUType>
-	GLM_FUNC_QUALIFIER int findMSB
-	(
-		genIUType const & Value
-	)
-	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
-		if(Value == 0)
-			return -1;
-
-		// clz returns the number or trailing 0-bits; see
-		// http://gcc.gnu.org/onlinedocs/gcc-4.7.1/gcc/Other-Builtins.html
-		//
-		// NoteBecause __builtin_clz only works for unsigned ints, this
-		// implementation will not work for 64-bit integers.
-		//
-		return 31 - __builtin_clzl(Value);
-	}
-*/
 #else
 
 /* SSE implementation idea
@@ -589,8 +553,6 @@ namespace glm
 		genIUType const & Value
 	)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
-		
 		if(Value == genIUType(0) || Value == genIUType(-1))
 			return -1;
 		else if(Value > 0)
