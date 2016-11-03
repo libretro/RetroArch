@@ -537,6 +537,8 @@ static bool show_hidden_files = true;
 
 static const bool overlay_hide_in_menu = true;
 
+static const bool display_keyboard_overlay = false;
+
 #ifdef HAVE_MENU
 #include "menu/menu_display.h"
 

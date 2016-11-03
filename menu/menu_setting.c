@@ -4473,7 +4473,7 @@ static bool setting_append_list(
                &settings->osk.enable,
                MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_ENABLE,
                MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE,
-               true,
+               display_keyboard_overlay,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,
