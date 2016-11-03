@@ -23,6 +23,7 @@ typedef void *GLeglImageOES;
 typedef GLint GLfixed;
 #endif
 
+#if !defined(GL_ES_VERSION_2_0)
 #if (__STDC_VERSION__ <= 199901L) || (OSX && !MAC_OS_X_VERSION_10_7)
 typedef long long int GLint64;
 typedef unsigned long long int GLuint64;
@@ -32,6 +33,8 @@ typedef struct __GLsync *GLsync;
 typedef int64_t  GLint64;
 typedef uint64_t GLuint64;
 #endif
+#endif
+
 typedef void (GL_APIENTRYP RGLSYMGLBLENDBARRIERKHRPROC) (void);
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGECONTROLKHRPROC) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGEINSERTKHRPROC) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
