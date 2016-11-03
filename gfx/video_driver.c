@@ -64,16 +64,6 @@
 
 #define FPS_UPDATE_INTERVAL 256
 
-typedef struct video_driver_state
-{
-   rarch_softfilter_t *filter;
-
-   void *buffer;
-   unsigned scale;
-   unsigned out_bpp;
-   bool out_rgb32;
-} video_driver_state_t;
-
 typedef struct video_pixel_scaler
 {
    struct scaler_ctx *scaler;
@@ -87,7 +77,11 @@ typedef struct video_pixel_scaler
 static uintptr_t video_driver_display;
 static uintptr_t video_driver_window;
 
-static video_driver_state_t video_driver_state;
+static rarch_softfilter_t *video_driver_state_filter     = NULL;
+static void               *video_driver_state_buffer     = NULL;
+static unsigned            video_driver_state_scale      = 0;
+static unsigned            video_driver_state_out_bpp    = 0;
+static bool                video_driver_state_out_rgb32  = false;
 
 static enum retro_pixel_format video_driver_pix_fmt;
 
@@ -340,14 +334,17 @@ bool video_driver_set_shader(enum rarch_shader_type type,
 
 static void deinit_video_filter(void)
 {
-   rarch_softfilter_free(video_driver_state.filter);
+   rarch_softfilter_free(video_driver_state_filter);
 #ifdef _3DS
-   linearFree(video_driver_state.buffer);
+   linearFree(video_driver_state_buffer);
 #else
-   free(video_driver_state.buffer);
+   free(video_driver_state_buffer);
 #endif
-   memset(&video_driver_state, 0,
-         sizeof(video_driver_state));
+   video_driver_state_filter    = NULL;
+   video_driver_state_buffer    = NULL;
+   video_driver_state_scale     = 0;
+   video_driver_state_out_bpp   = 0;
+   video_driver_state_out_rgb32 = false;
 }
 
 static void init_video_filter(enum retro_pixel_format colfmt)
@@ -382,39 +379,39 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    width   = geom->max_width;
    height  = geom->max_height;
 
-   video_driver_state.filter = rarch_softfilter_new(
+   video_driver_state_filter = rarch_softfilter_new(
          settings->path.softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
-   if (!video_driver_state.filter)
+   if (!video_driver_state_filter)
    {
       RARCH_ERR("Failed to load filter.\n");
       return;
    }
 
-   rarch_softfilter_get_max_output_size(video_driver_state.filter,
+   rarch_softfilter_get_max_output_size(video_driver_state_filter,
          &width, &height);
 
    pow2_x                              = next_pow2(width);
    pow2_y                              = next_pow2(height);
    maxsize                             = MAX(pow2_x, pow2_y);
-   video_driver_state.scale            = maxsize / RARCH_SCALE_BASE;
-   video_driver_state.out_rgb32        = rarch_softfilter_get_output_format(
-         video_driver_state.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
+   video_driver_state_scale            = maxsize / RARCH_SCALE_BASE;
+   video_driver_state_out_rgb32        = rarch_softfilter_get_output_format(
+         video_driver_state_filter) == RETRO_PIXEL_FORMAT_XRGB8888;
 
-   video_driver_state.out_bpp   = 
-      video_driver_state.out_rgb32 ?
+   video_driver_state_out_bpp   = 
+      video_driver_state_out_rgb32 ?
       sizeof(uint32_t) : sizeof(uint16_t);
 
    /* TODO: Aligned output. */
 #ifdef _3DS
-   video_driver_state.buffer    = linearMemAlign(width 
-         * height * video_driver_state.out_bpp, 0x80);
+   video_driver_state_buffer    = linearMemAlign(width 
+         * height * video_driver_state_out_bpp, 0x80);
 #else
-   video_driver_state.buffer    = malloc(width 
-         * height * video_driver_state.out_bpp);
+   video_driver_state_buffer    = malloc(width 
+         * height * video_driver_state_out_bpp);
 #endif
-   if (!video_driver_state.buffer)
+   if (!video_driver_state_buffer)
       goto error;
 
    return;
@@ -619,8 +616,8 @@ static bool init_video(void)
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale     = MAX(scale, 1);
 
-   if (video_driver_state.filter)
-      scale = video_driver_state.scale;
+   if (video_driver_state_filter)
+      scale = video_driver_state_scale;
 
    /* Update core-dependent aspect ratio values. */
    video_driver_set_viewport_square_pixel();
@@ -686,8 +683,8 @@ static bool init_video(void)
 #endif
    video.smooth       = settings->video.smooth;
    video.input_scale  = scale;
-   video.rgb32        = video_driver_state.filter ?
-      video_driver_state.out_rgb32 :
+   video.rgb32        = video_driver_state_filter ?
+      video_driver_state_out_rgb32 :
       (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
 
    /* Reset video frame count */
@@ -947,7 +944,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 #if 0
    for (i = 0; i < samples; i++)
       RARCH_LOG("Interval #%u: %d usec / frame.\n",
-            i, (int)video_driver_state.frame_time.samples[i]);
+            i, (int)frame_time_samples[i]);
 #endif
 
    avg = accum / samples;
@@ -1066,22 +1063,22 @@ static bool video_driver_frame_filter(const void *data,
 
    performance_counter_init(&softfilter_process, "softfilter_process");
 
-   if (!video_driver_state.filter || !data)
+   if (!video_driver_state_filter || !data)
       return false;
 
-   rarch_softfilter_get_output_size(video_driver_state.filter,
+   rarch_softfilter_get_output_size(video_driver_state_filter,
          output_width, output_height, width, height);
 
-   *output_pitch = (*output_width) * video_driver_state.out_bpp;
+   *output_pitch = (*output_width) * video_driver_state_out_bpp;
 
    performance_counter_start(&softfilter_process);
-   rarch_softfilter_process(video_driver_state.filter,
-         video_driver_state.buffer, *output_pitch,
+   rarch_softfilter_process(video_driver_state_filter,
+         video_driver_state_buffer, *output_pitch,
          data, width, height, pitch);
    performance_counter_stop(&softfilter_process);
 
    if (settings->video.post_filter_record)
-      recording_dump_frame(video_driver_state.buffer,
+      recording_dump_frame(video_driver_state_buffer,
             *output_width, *output_height, *output_pitch);
 
    return true;
@@ -1089,7 +1086,7 @@ static bool video_driver_frame_filter(const void *data,
 
 rarch_softfilter_t *video_driver_frame_filter_get_ptr(void)
 {
-   return video_driver_state.filter;
+   return video_driver_state_filter;
 }
 
 enum retro_pixel_format video_driver_get_pixel_format(void)
@@ -1711,12 +1708,12 @@ uint64_t *video_driver_get_frame_count_ptr(void)
 
 bool video_driver_frame_filter_alive(void)
 {
-   return !!video_driver_state.filter;
+   return !!video_driver_state_filter;
 }
 
 bool video_driver_frame_filter_is_32bit(void)
 {
-   return video_driver_state.out_rgb32;
+   return video_driver_state_out_rgb32;
 }
 
 void video_driver_default_settings(void)
@@ -2106,7 +2103,7 @@ void video_driver_frame(const void *data, unsigned width,
     */
    if (
          (
-             !video_driver_state.filter
+             !video_driver_state_filter
           || !settings->video.post_filter_record 
           || !data
           || video_driver_has_gpu_record()
@@ -2117,7 +2114,7 @@ void video_driver_frame(const void *data, unsigned width,
    if (video_driver_frame_filter(data, width, height, pitch,
             &output_width, &output_height, &output_pitch))
    {
-      data   = video_driver_state.buffer;
+      data   = video_driver_state_buffer;
       width  = output_width;
       height = output_height;
       pitch  = output_pitch;
