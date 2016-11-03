@@ -33,7 +33,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat3x3<T, P> affineInverse
+	inline detail::tmat3x3<T, P> affineInverse
 	(
 		detail::tmat3x3<T, P> const & m
 	)
@@ -47,7 +47,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> affineInverse
+	inline detail::tmat4x4<T, P> affineInverse
 	(
 		detail::tmat4x4<T, P> const & m
 	)
@@ -61,7 +61,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat2x2<T, P> inverseTranspose
+	inline detail::tmat2x2<T, P> inverseTranspose
 	(
 		detail::tmat2x2<T, P> const & m
 	)
@@ -78,7 +78,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat3x3<T, P> inverseTranspose
+	inline detail::tmat3x3<T, P> inverseTranspose
 	(
 		detail::tmat3x3<T, P> const & m
 	)
@@ -104,7 +104,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> inverseTranspose
+	inline detail::tmat4x4<T, P> inverseTranspose
 	(
 		detail::tmat4x4<T, P> const & m
 	)

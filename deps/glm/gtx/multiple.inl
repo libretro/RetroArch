@@ -17,7 +17,7 @@ namespace detail
 	struct higherMultiple
 	{
 		template <typename genType>
-		GLM_FUNC_QUALIFIER genType operator()
+		inline genType operator()
 		(
 			genType const & Source,
 			genType const & Multiple
@@ -28,8 +28,7 @@ namespace detail
 				genType Tmp = Source - genType(1);
 				return Tmp + (Multiple - (Tmp % Multiple));
 			}
-			else
-				return Source + (-Source % Multiple);
+         return Source + (-Source % Multiple);
 		}
 	};
 
@@ -37,7 +36,7 @@ namespace detail
 	struct higherMultiple<false>
 	{
 		template <typename genType>
-		GLM_FUNC_QUALIFIER genType operator()
+		inline genType operator()
 		(
 			genType const & Source,
 			genType const & Multiple
@@ -53,7 +52,7 @@ namespace detail
 	// higherMultiple
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType higherMultiple
+	inline genType higherMultiple
 	(
 		genType const & Source,
 		genType const & Multiple
@@ -64,7 +63,7 @@ namespace detail
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER float higherMultiple
+	inline float higherMultiple
 	(	
 		float const & Source,
 		float const & Multiple
@@ -80,7 +79,7 @@ namespace detail
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER double higherMultiple
+	inline double higherMultiple
 	(
 		double const & Source,
 		double const & Multiple
@@ -101,7 +100,7 @@ namespace detail
 	// lowerMultiple
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType lowerMultiple
+	inline genType lowerMultiple
 	(
 		genType const & Source,
 		genType const & Multiple
@@ -117,7 +116,7 @@ namespace detail
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER float lowerMultiple
+	inline float lowerMultiple
 	(
 		float const & Source,
 		float const & Multiple
@@ -133,7 +132,7 @@ namespace detail
 	}
 
 	template <>
-	GLM_FUNC_QUALIFIER double lowerMultiple
+	inline double lowerMultiple
 	(
 		double const & Source,
 		double const & Multiple

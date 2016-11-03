@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat2x2<T, P> rowMajor2
+	inline detail::tmat2x2<T, P> rowMajor2
 	(
 		detail::tvec2<T, P> const & v1, 
 		detail::tvec2<T, P> const & v2
@@ -25,7 +25,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat2x2<T, P> rowMajor2(
+	inline detail::tmat2x2<T, P> rowMajor2(
 		const detail::tmat2x2<T, P>& m)
 	{
 		detail::tmat2x2<T, P> Result;
@@ -37,7 +37,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat3x3<T, P> rowMajor3(
+	inline detail::tmat3x3<T, P> rowMajor3(
 		const detail::tvec3<T, P>& v1, 
 		const detail::tvec3<T, P>& v2, 
 		const detail::tvec3<T, P>& v3)
@@ -56,7 +56,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat3x3<T, P> rowMajor3(
+	inline detail::tmat3x3<T, P> rowMajor3(
 		const detail::tmat3x3<T, P>& m)
 	{
 		detail::tmat3x3<T, P> Result;
@@ -73,7 +73,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> rowMajor4(
+	inline detail::tmat4x4<T, P> rowMajor4(
 		const detail::tvec4<T, P>& v1, 
 		const detail::tvec4<T, P>& v2, 
 		const detail::tvec4<T, P>& v3, 
@@ -100,7 +100,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> rowMajor4(
+	inline detail::tmat4x4<T, P> rowMajor4(
 		const detail::tmat4x4<T, P>& m)
 	{
 		detail::tmat4x4<T, P> Result;
@@ -124,7 +124,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat2x2<T, P> colMajor2(
+	inline detail::tmat2x2<T, P> colMajor2(
 		const detail::tvec2<T, P>& v1, 
 		const detail::tvec2<T, P>& v2)
 	{
@@ -132,14 +132,14 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat2x2<T, P> colMajor2(
+	inline detail::tmat2x2<T, P> colMajor2(
 		const detail::tmat2x2<T, P>& m)
 	{
 		return detail::tmat2x2<T, P>(m);
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat3x3<T, P> colMajor3(
+	inline detail::tmat3x3<T, P> colMajor3(
 		const detail::tvec3<T, P>& v1, 
 		const detail::tvec3<T, P>& v2, 
 		const detail::tvec3<T, P>& v3)
@@ -148,14 +148,14 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat3x3<T, P> colMajor3(
+	inline detail::tmat3x3<T, P> colMajor3(
 		const detail::tmat3x3<T, P>& m)
 	{
 		return detail::tmat3x3<T, P>(m);
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> colMajor4(
+	inline detail::tmat4x4<T, P> colMajor4(
 		const detail::tvec4<T, P>& v1, 
 		const detail::tvec4<T, P>& v2, 
 		const detail::tvec4<T, P>& v3, 
@@ -165,7 +165,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> colMajor4(
+	inline detail::tmat4x4<T, P> colMajor4(
 		const detail::tmat4x4<T, P>& m)
 	{
 		return detail::tmat4x4<T, P>(m);

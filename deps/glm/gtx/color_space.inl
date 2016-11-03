@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> rgbColor(const detail::tvec3<T, P>& hsvColor)
+	inline detail::tvec3<T, P> rgbColor(const detail::tvec3<T, P>& hsvColor)
 	{
 		detail::tvec3<T, P> hsv = hsvColor;
 		detail::tvec3<T, P> rgbColor;
@@ -67,7 +67,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> hsvColor(const detail::tvec3<T, P>& rgbColor)
+	inline detail::tvec3<T, P> hsvColor(const detail::tvec3<T, P>& rgbColor)
 	{
 		detail::tvec3<T, P> hsv = rgbColor;
 		float Min   = min(min(rgbColor.r, rgbColor.g), rgbColor.b);
@@ -107,7 +107,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> saturation(const T s)
+	inline detail::tmat4x4<T, P> saturation(const T s)
 	{
 		detail::tvec3<T, P> rgbw = detail::tvec3<T, P>(T(0.2126), T(0.7152), T(0.0722));
 
@@ -129,19 +129,19 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> saturation(const T s, const detail::tvec3<T, P>& color)
+	inline detail::tvec3<T, P> saturation(const T s, const detail::tvec3<T, P>& color)
 	{
 		return detail::tvec3<T, P>(saturation(s) * detail::tvec4<T, P>(color, T(0)));
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> saturation(const T s, const detail::tvec4<T, P>& color)
+	inline detail::tvec4<T, P> saturation(const T s, const detail::tvec4<T, P>& color)
 	{
 		return saturation(s) * color;
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER T luminosity(const detail::tvec3<T, P>& color)
+	inline T luminosity(const detail::tvec3<T, P>& color)
 	{
 		const detail::tvec3<T, P> tmp = detail::tvec3<T, P>(0.33, 0.59, 0.11);
 		return dot(color, tmp);

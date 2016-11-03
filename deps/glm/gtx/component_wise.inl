@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER T compAdd(vecType<T, P> const & v)
+	inline T compAdd(vecType<T, P> const & v)
 	{
 		T result(0);
 		for(length_t i = 0; i < v.length(); ++i)
@@ -19,7 +19,7 @@ namespace glm
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER T compMul(vecType<T, P> const & v)
+	inline T compMul(vecType<T, P> const & v)
 	{
 		T result(1);
 		for(length_t i = 0; i < v.length(); ++i)
@@ -28,7 +28,7 @@ namespace glm
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER T compMin(vecType<T, P> const & v)
+	inline T compMin(vecType<T, P> const & v)
 	{
 		T result(v[0]);
 		for(length_t i = 1; i < v.length(); ++i)
@@ -37,7 +37,7 @@ namespace glm
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER T compMax(vecType<T, P> const & v)
+	inline T compMax(vecType<T, P> const & v)
 	{
 		T result(v[0]);
 		for(length_t i = 1; i < v.length(); ++i)

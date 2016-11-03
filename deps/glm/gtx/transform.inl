@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> translate(
+	inline detail::tmat4x4<T, P> translate(
 		detail::tvec3<T, P> const & v)
 	{
 		return translate(
@@ -18,7 +18,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> rotate(
+	inline detail::tmat4x4<T, P> rotate(
 		T angle, 
 		detail::tvec3<T, P> const & v)
 	{
@@ -27,7 +27,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> scale(
+	inline detail::tmat4x4<T, P> scale(
 		detail::tvec3<T, P> const & v)
 	{
 		return scale(

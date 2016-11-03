@@ -23,7 +23,7 @@
 
 namespace glm
 {
-	GLM_FUNC_QUALIFIER dword uint10_10_10_2_cast
+	inline dword uint10_10_10_2_cast
 	(
 		glm::vec4 const & v
 	)

@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename T>
-	GLM_FUNC_QUALIFIER T length2
+	inline T length2
 	(
 		T const & x
 	)
@@ -19,7 +19,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T length2
+	inline T length2
 	(
 		detail::tvec2<T, P> const & x
 	)
@@ -28,7 +28,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T length2
+	inline T length2
 	(
 		detail::tvec3<T, P> const & x
 	)
@@ -37,7 +37,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T length2
+	inline T length2
 	(
 		detail::tvec4<T, P> const & x
 	)
@@ -46,7 +46,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER T distance2
+	inline T distance2
 	(
 		T const & p0,
 		T const & p1
@@ -56,7 +56,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T distance2
+	inline T distance2
 	(
 		detail::tvec2<T, P> const & p0,
 		detail::tvec2<T, P> const & p1
@@ -66,7 +66,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T distance2
+	inline T distance2
 	(
 		detail::tvec3<T, P> const & p0,
 		detail::tvec3<T, P> const & p1
@@ -76,7 +76,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T distance2
+	inline T distance2
 	(
 		detail::tvec4<T, P> const & p0,
 		detail::tvec4<T, P> const & p1
@@ -86,7 +86,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T l1Norm
+	inline T l1Norm
 	(
 		detail::tvec3<T, P> const & a,
 		detail::tvec3<T, P> const & b
@@ -96,7 +96,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T l1Norm
+	inline T l1Norm
 	(
 		detail::tvec3<T, P> const & v
 	)
@@ -105,7 +105,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T l2Norm
+	inline T l2Norm
 	(
 		detail::tvec3<T, P> const & a,
 		detail::tvec3<T, P> const & b
@@ -115,7 +115,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T l2Norm
+	inline T l2Norm
 	(
 		detail::tvec3<T, P> const & v
 	)
@@ -124,7 +124,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T lxNorm
+	inline T lxNorm
 	(
 		detail::tvec3<T, P> const & x,
 		detail::tvec3<T, P> const & y,
@@ -135,7 +135,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T lxNorm
+	inline T lxNorm
 	(
 		detail::tvec3<T, P> const & v,
 		unsigned int Depth

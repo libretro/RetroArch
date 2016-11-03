@@ -10,7 +10,7 @@
 namespace glm{
 
 template <typename genType>
-GLM_FUNC_QUALIFIER genType catmullRom
+inline genType catmullRom
 (
 	genType const & v1, 
 	genType const & v2, 
@@ -33,7 +33,7 @@ GLM_FUNC_QUALIFIER genType catmullRom
 }
 
 template <typename genType>
-GLM_FUNC_QUALIFIER genType hermite
+inline genType hermite
 (
 	genType const & v1, 
 	genType const & t1, 
@@ -55,7 +55,7 @@ GLM_FUNC_QUALIFIER genType hermite
 }
 
 template <typename genType>
-GLM_FUNC_QUALIFIER genType cubic
+inline genType cubic
 (
 	genType const & v1, 
 	genType const & v2, 

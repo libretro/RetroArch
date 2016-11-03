@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType normalizeDot
+	inline genType normalizeDot
 	(
 		genType const & x, 
 		genType const & y
@@ -23,7 +23,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T normalizeDot
+	inline T normalizeDot
 	(
 		detail::tvec2<T, P> const & x, 
 		detail::tvec2<T, P> const & y
@@ -36,7 +36,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T normalizeDot
+	inline T normalizeDot
 	(
 		detail::tvec3<T, P> const & x, 
 		detail::tvec3<T, P> const & y
@@ -49,7 +49,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T normalizeDot
+	inline T normalizeDot
 	(
 		detail::tvec4<T, P> const & x, 
 		detail::tvec4<T, P> const & y
@@ -62,7 +62,7 @@ namespace glm
 	}
 
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType fastNormalizeDot
+	inline genType fastNormalizeDot
 	(
 		genType const & x, 
 		genType const & y
@@ -75,7 +75,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T fastNormalizeDot
+	inline T fastNormalizeDot
 	(
 		detail::tvec2<T, P> const & x, 
 		detail::tvec2<T, P> const & y
@@ -88,7 +88,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T fastNormalizeDot
+	inline T fastNormalizeDot
 	(
 		detail::tvec3<T, P> const & x, 
 		detail::tvec3<T, P> const & y
@@ -101,7 +101,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T fastNormalizeDot
+	inline T fastNormalizeDot
 	(
 		detail::tvec4<T, P> const & x, 
 		detail::tvec4<T, P> const & y

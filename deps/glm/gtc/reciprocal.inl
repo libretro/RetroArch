@@ -33,7 +33,7 @@ namespace glm
 {
 	// sec
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType sec
+	inline genType sec
 	(
 		genType const & angle
 	)
@@ -45,7 +45,7 @@ namespace glm
 
 	// csc
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType csc
+	inline genType csc
 	(
 		genType const & angle
 	)
@@ -57,7 +57,7 @@ namespace glm
 
 	// cot
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType cot
+	inline genType cot
 	(
 		genType const & angle
 	)
@@ -69,7 +69,7 @@ namespace glm
 
 	// asec
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType asec
+	inline genType asec
 	(
 		genType const & x
 	)
@@ -81,7 +81,7 @@ namespace glm
 
 	// acsc
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType acsc
+	inline genType acsc
 	(
 		genType const & x
 	)
@@ -93,7 +93,7 @@ namespace glm
 
 	// acot
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType acot
+	inline genType acot
 	(
 		genType const & x
 	)
@@ -106,7 +106,7 @@ namespace glm
 
 	// sech
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType sech
+	inline genType sech
 	(
 		genType const & angle
 	)
@@ -118,7 +118,7 @@ namespace glm
 
 	// csch
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType csch
+	inline genType csch
 	(
 		genType const & angle
 	)
@@ -130,7 +130,7 @@ namespace glm
 
 	// coth
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType coth
+	inline genType coth
 	(
 		genType const & angle
 	)
@@ -142,7 +142,7 @@ namespace glm
 
 	// asech
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType asech
+	inline genType asech
 	(
 		genType const & x
 	)
@@ -154,7 +154,7 @@ namespace glm
 
 	// acsch
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType acsch
+	inline genType acsch
 	(
 		genType const & x
 	)
@@ -166,7 +166,7 @@ namespace glm
 
 	// acoth
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType acoth
+	inline genType acoth
 	(
 		genType const & x
 	)

@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType angle
+	inline genType angle
 	(
 		genType const & x,
 		genType const & y
@@ -27,7 +27,7 @@ namespace glm
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType> 
-	GLM_FUNC_QUALIFIER T angle
+	inline T angle
 	(
 		vecType<T, P> const & x,
 		vecType<T, P> const & y
@@ -45,7 +45,7 @@ namespace glm
 
 	//! \todo epsilon is hard coded to 0.01
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T orientedAngle
+	inline T orientedAngle
 	(
 		detail::tvec2<T, P> const & x,
 		detail::tvec2<T, P> const & y
@@ -67,7 +67,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T orientedAngle
+	inline T orientedAngle
 	(
 		detail::tvec3<T, P> const & x,
 		detail::tvec3<T, P> const & y,

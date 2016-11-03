@@ -10,7 +10,7 @@
 namespace glm
 {
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType log(
+	inline genType log(
 		genType const & x, 
 		genType const & base)
 	{

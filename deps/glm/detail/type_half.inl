@@ -33,7 +33,7 @@
 namespace glm{
 namespace detail
 {
-	GLM_FUNC_QUALIFIER float overflow()
+	inline float overflow()
 	{
 		volatile float f = 1e10;
 
@@ -45,15 +45,15 @@ namespace detail
 
 	union uif32
 	{
-		GLM_FUNC_QUALIFIER uif32() :
+		inline uif32() :
 			i(0)
 		{}
 
-		GLM_FUNC_QUALIFIER uif32(float f) :
+		inline uif32(float f) :
 			f(f)
 		{}
 
-		GLM_FUNC_QUALIFIER uif32(uint32 i) :
+		inline uif32(uint32 i) :
 			i(i)
 		{}
 
@@ -61,7 +61,7 @@ namespace detail
 		uint32 i;
 	};
 
-	GLM_FUNC_QUALIFIER float toFloat32(int16_t value)
+	inline float toFloat32(int16_t value)
 	{
 		int s = (value >> 15) & 0x00000001;
 		int e = (value >> 10) & 0x0000001f;
@@ -135,7 +135,7 @@ namespace detail
 		return Result.f;
 	}
 
-	GLM_FUNC_QUALIFIER int16_t toFloat16(float const & f)
+	inline int16_t toFloat16(float const & f)
    {
       uif32 Entry;
       Entry.f = f;

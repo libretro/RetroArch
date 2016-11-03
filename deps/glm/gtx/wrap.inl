@@ -13,7 +13,7 @@
 namespace glm
 {
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType clamp
+	inline genType clamp
 	(
 		genType const & Texcoord
 	)
@@ -22,7 +22,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> clamp
+	inline detail::tvec2<T, P> clamp
 	(
 		detail::tvec2<T, P> const & Texcoord
 	)
@@ -34,7 +34,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> clamp
+	inline detail::tvec3<T, P> clamp
 	(
 		detail::tvec3<T, P> const & Texcoord
 	)
@@ -46,7 +46,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> clamp
+	inline detail::tvec4<T, P> clamp
 	(
 		detail::tvec4<T, P> const & Texcoord
 	)
@@ -61,7 +61,7 @@ namespace glm
 	// repeat
 
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType repeat
+	inline genType repeat
 	(
 		genType const & Texcoord
 	)
@@ -70,7 +70,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> repeat
+	inline detail::tvec2<T, P> repeat
 	(
 		detail::tvec2<T, P> const & Texcoord
 	)
@@ -82,7 +82,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> repeat
+	inline detail::tvec3<T, P> repeat
 	(
 		detail::tvec3<T, P> const & Texcoord
 	)
@@ -94,7 +94,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> repeat
+	inline detail::tvec4<T, P> repeat
 	(
 		detail::tvec4<T, P> const & Texcoord
 	)
@@ -109,7 +109,7 @@ namespace glm
 	// mirrorRepeat
 
 	template <typename genType, precision P> 
-	GLM_FUNC_QUALIFIER genType mirrorRepeat
+	inline genType mirrorRepeat
 	(
 		genType const & Texcoord
 	)
@@ -128,7 +128,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> mirrorRepeat
+	inline detail::tvec2<T, P> mirrorRepeat
 	(
 		detail::tvec2<T, P> const & Texcoord
 	)
@@ -140,7 +140,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> mirrorRepeat
+	inline detail::tvec3<T, P> mirrorRepeat
 	(
 		detail::tvec3<T, P> const & Texcoord
 	)
@@ -152,7 +152,7 @@ namespace glm
 	}
 
 	template <typename T, precision P> 
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> mirrorRepeat
+	inline detail::tvec4<T, P> mirrorRepeat
 	(
 		detail::tvec4<T, P> const & Texcoord
 	)

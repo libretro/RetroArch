@@ -41,7 +41,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_dot<detail::tvec1, T, P>
 	{
-		GLM_FUNC_QUALIFIER static T call(detail::tvec1<T, P> const & x, detail::tvec1<T, P> const & y)
+		inline static T call(detail::tvec1<T, P> const & x, detail::tvec1<T, P> const & y)
 		{
          return detail::tvec1<T, P>(x * y).x;
 		}
@@ -50,7 +50,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_dot<detail::tvec2, T, P>
 	{
-		GLM_FUNC_QUALIFIER static T call(detail::tvec2<T, P> const & x, detail::tvec2<T, P> const & y)
+		inline static T call(detail::tvec2<T, P> const & x, detail::tvec2<T, P> const & y)
 		{
 			detail::tvec2<T, P> tmp(x * y);
 			return tmp.x + tmp.y;
@@ -60,7 +60,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_dot<detail::tvec3, T, P>
 	{
-		GLM_FUNC_QUALIFIER static T call(detail::tvec3<T, P> const & x, detail::tvec3<T, P> const & y)
+		inline static T call(detail::tvec3<T, P> const & x, detail::tvec3<T, P> const & y)
 		{
 			detail::tvec3<T, P> tmp(x * y);
 			return tmp.x + tmp.y + tmp.z;
@@ -70,7 +70,7 @@ namespace detail
 	template <typename T, precision P>
 	struct compute_dot<detail::tvec4, T, P>
 	{
-		GLM_FUNC_QUALIFIER static T call(detail::tvec4<T, P> const & x, detail::tvec4<T, P> const & y)
+		inline static T call(detail::tvec4<T, P> const & x, detail::tvec4<T, P> const & y)
 		{
 			detail::tvec4<T, P> tmp(x * y);
 			return (tmp.x + tmp.y) + (tmp.z + tmp.w);
@@ -80,7 +80,7 @@ namespace detail
 
 	// length
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType length
+	inline genType length
 	(
 		genType const & x
 	)
@@ -90,21 +90,21 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T length(detail::tvec2<T, P> const & v)
+	inline T length(detail::tvec2<T, P> const & v)
 	{
 		T sqr = v.x * v.x + v.y * v.y;
 		return sqrt(sqr);
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T length(detail::tvec3<T, P> const & v)
+	inline T length(detail::tvec3<T, P> const & v)
 	{
 		T sqr = v.x * v.x + v.y * v.y + v.z * v.z;
 		return sqrt(sqr);
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T length(detail::tvec4<T, P> const & v)
+	inline T length(detail::tvec4<T, P> const & v)
 	{
 		T sqr = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
 		return sqrt(sqr);
@@ -112,7 +112,7 @@ namespace detail
 
 	// distance
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType distance
+	inline genType distance
 	(
 		genType const & p0,
 		genType const & p1
@@ -122,7 +122,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T distance
+	inline T distance
 	(
 		detail::tvec2<T, P> const & p0,
 		detail::tvec2<T, P> const & p1
@@ -132,7 +132,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T distance
+	inline T distance
 	(
 		detail::tvec3<T, P> const & p0,
 		detail::tvec3<T, P> const & p1
@@ -142,7 +142,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER T distance
+	inline T distance
 	(
 		detail::tvec4<T, P> const & p0,
 		detail::tvec4<T, P> const & p1
@@ -153,7 +153,7 @@ namespace detail
 
 	// dot
 	template <typename T>
-	GLM_FUNC_QUALIFIER T dot
+	inline T dot
 	(
 		T const & x,
 		T const & y
@@ -163,7 +163,7 @@ namespace detail
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER T dot
+	inline T dot
 	(
 		vecType<T, P> const & x,
 		vecType<T, P> const & y
@@ -173,7 +173,7 @@ namespace detail
 	}
 
 /* // SSE3
-	GLM_FUNC_QUALIFIER float dot(const tvec4<float>& x, const tvec4<float>& y)
+	inline float dot(const tvec4<float>& x, const tvec4<float>& y)
 	{
 		float Result;
 		__asm
@@ -191,7 +191,7 @@ namespace detail
 */
 	// cross
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> cross
+	inline detail::tvec3<T, P> cross
 	(
 		detail::tvec3<T, P> const & x,
 		detail::tvec3<T, P> const & y
@@ -205,7 +205,7 @@ namespace detail
 
 	// normalize
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType normalize
+	inline genType normalize
 	(
 		genType const & x
 	)
@@ -215,7 +215,7 @@ namespace detail
 
 	// According to issue 10 GLSL 1.10 specification, if length(x) == 0 then result is undefine and generate an error
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec2<T, P> normalize
+	inline detail::tvec2<T, P> normalize
 	(
 		detail::tvec2<T, P> const & x
 	)
@@ -225,7 +225,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> normalize
+	inline detail::tvec3<T, P> normalize
 	(
 		detail::tvec3<T, P> const & x
 	)
@@ -235,7 +235,7 @@ namespace detail
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec4<T, P> normalize
+	inline detail::tvec4<T, P> normalize
 	(
 		detail::tvec4<T, P> const & x
 	)
@@ -246,7 +246,7 @@ namespace detail
 
 	// faceforward
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType faceforward
+	inline genType faceforward
 	(
 		genType const & N,
 		genType const & I,
@@ -258,7 +258,7 @@ namespace detail
 
 	// reflect
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType reflect
+	inline genType reflect
 	(
 		genType const & I,
 		genType const & N
@@ -269,7 +269,7 @@ namespace detail
 
 	// refract
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType refract
+	inline genType refract
 	(
 		genType const & I,
 		genType const & N,
@@ -285,7 +285,7 @@ namespace detail
 	}
 
 	template <typename T, precision P, template <typename, precision> class vecType>
-	GLM_FUNC_QUALIFIER vecType<T, P> refract
+	inline vecType<T, P> refract
 	(
 		vecType<T, P> const & I,
 		vecType<T, P> const & N,

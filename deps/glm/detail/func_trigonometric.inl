@@ -34,7 +34,7 @@ namespace glm
 {
 	// radians
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType radians
+	inline genType radians
 	(
 		genType const & degrees
 	)
@@ -46,7 +46,7 @@ namespace glm
 	
 	// degrees
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType degrees
+	inline genType degrees
 	(
 		genType const & radians
 	)
@@ -58,7 +58,7 @@ namespace glm
 
 	// sin
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType sin
+	inline genType sin
 	(
 		genType const & angle
 	)
@@ -70,7 +70,7 @@ namespace glm
 
 	// cos
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType cos(genType const & angle)
+	inline genType cos(genType const & angle)
 	{
 		return genType(::std::cos(angle));
 	}
@@ -79,7 +79,7 @@ namespace glm
 
 	// tan
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType tan
+	inline genType tan
 	(
 		genType const & angle
 	)
@@ -91,7 +91,7 @@ namespace glm
 
 	// asin
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType asin
+	inline genType asin
 	(
 		genType const & x
 	)
@@ -103,7 +103,7 @@ namespace glm
 
 	// acos
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType acos
+	inline genType acos
 	(
 		genType const & x
 	)
@@ -115,7 +115,7 @@ namespace glm
 
 	// atan
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType atan
+	inline genType atan
 	(
 		genType const & y, 
 		genType const & x
@@ -127,7 +127,7 @@ namespace glm
 	VECTORIZE_VEC_VEC(atan)
 
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType atan
+	inline genType atan
 	(
 		genType const & x
 	)
@@ -139,7 +139,7 @@ namespace glm
 
 	// sinh
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType sinh
+	inline genType sinh
 	(
 		genType const & angle
 	)
@@ -151,7 +151,7 @@ namespace glm
 
 	// cosh
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType cosh
+	inline genType cosh
 	(
 		genType const & angle
 	)
@@ -163,7 +163,7 @@ namespace glm
 
 	// tanh
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType tanh
+	inline genType tanh
 	(
 		genType const & angle
 	)
@@ -175,7 +175,7 @@ namespace glm
 
 	// asinh
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType asinh
+	inline genType asinh
 	(
 		genType const & x
 	)
@@ -187,7 +187,7 @@ namespace glm
 
 	// acosh
 	template <typename genType> 
-	GLM_FUNC_QUALIFIER genType acosh
+	inline genType acosh
 	(
 		genType const & x
 	)
@@ -201,7 +201,7 @@ namespace glm
 
 	// atanh
 	template <typename genType>
-	GLM_FUNC_QUALIFIER genType atanh
+	inline genType atanh
 	(
 		genType const & x
 	)

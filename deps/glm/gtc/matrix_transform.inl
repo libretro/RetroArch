@@ -33,7 +33,7 @@
 namespace glm
 {
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> translate
+	inline detail::tmat4x4<T, P> translate
 	(
 		detail::tmat4x4<T, P> const & m,
 		detail::tvec3<T, P> const & v
@@ -45,7 +45,7 @@ namespace glm
 	}
 	
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> rotate
+	inline detail::tmat4x4<T, P> rotate
 	(
 		detail::tmat4x4<T, P> const & m,
 		T const & angle,
@@ -86,7 +86,7 @@ namespace glm
 	}
 		
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> rotate_slow
+	inline detail::tmat4x4<T, P> rotate_slow
 	(
 		detail::tmat4x4<T, P> const & m,
 		T const & angle, 
@@ -125,7 +125,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> scale
+	inline detail::tmat4x4<T, P> scale
 		(
 		detail::tmat4x4<T, P> const & m,
 		detail::tvec3<T, P> const & v
@@ -140,7 +140,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> scale_slow
+	inline detail::tmat4x4<T, P> scale_slow
 	(
 		detail::tmat4x4<T, P> const & m,
 		detail::tvec3<T, P> const & v
@@ -154,7 +154,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> ortho
+	inline detail::tmat4x4<T, defaultp> ortho
 	(
 		T const & left,
 		T const & right,
@@ -175,7 +175,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> ortho
+	inline detail::tmat4x4<T, defaultp> ortho
 	(
 		T const & left,
 		T const & right,
@@ -193,7 +193,7 @@ namespace glm
 	}
 
 	template <typename valType>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<valType, defaultp> frustum
+	inline detail::tmat4x4<valType, defaultp> frustum
 	(
 		valType const & left,
 		valType const & right,
@@ -215,7 +215,7 @@ namespace glm
 	}
 
 	template <typename valType>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<valType, defaultp> perspective
+	inline detail::tmat4x4<valType, defaultp> perspective
 	(
 		valType const & fovy,
 		valType const & aspect,
@@ -245,7 +245,7 @@ namespace glm
 	}
 	
 	template <typename valType>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<valType, defaultp> perspectiveFov
+	inline detail::tmat4x4<valType, defaultp> perspectiveFov
 	(
 		valType const & fov,
 		valType const & width,
@@ -277,7 +277,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> infinitePerspective
+	inline detail::tmat4x4<T, defaultp> infinitePerspective
 	(
 		T fovy,
 		T aspect,
@@ -305,7 +305,7 @@ namespace glm
 	}
 
 	template <typename T>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, defaultp> tweakedInfinitePerspective
+	inline detail::tmat4x4<T, defaultp> tweakedInfinitePerspective
 	(
 		T fovy,
 		T aspect,
@@ -333,7 +333,7 @@ namespace glm
 	}
 
 	template <typename T, typename U, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> project
+	inline detail::tvec3<T, P> project
 	(
 		detail::tvec3<T, P> const & obj,
 		detail::tmat4x4<T, P> const & model,
@@ -354,7 +354,7 @@ namespace glm
 	}
 
 	template <typename T, typename U, precision P>
-	GLM_FUNC_QUALIFIER detail::tvec3<T, P> unProject
+	inline detail::tvec3<T, P> unProject
 	(
 		detail::tvec3<T, P> const & win,
 		detail::tmat4x4<T, P> const & model,
@@ -376,7 +376,7 @@ namespace glm
 	}
 
 	template <typename T, precision P, typename U>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> pickMatrix
+	inline detail::tmat4x4<T, P> pickMatrix
 	(
 		detail::tvec2<T, P> const & center,
 		detail::tvec2<T, P> const & delta,
@@ -400,7 +400,7 @@ namespace glm
 	}
 
 	template <typename T, precision P>
-	GLM_FUNC_QUALIFIER detail::tmat4x4<T, P> lookAt
+	inline detail::tmat4x4<T, P> lookAt
 	(
 		detail::tvec3<T, P> const & eye,
 		detail::tvec3<T, P> const & center,
