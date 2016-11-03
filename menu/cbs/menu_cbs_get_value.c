@@ -1899,6 +1899,12 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
+   if (strstr(label, "joypad_index") && strstr(label, "input_player"))
+   {
+      BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label);
+      return 0;
+   }
+
 #if 0
    RARCH_LOG("MENU_SETTINGS_NONE: %d\n", MENU_SETTINGS_NONE);
    RARCH_LOG("MENU_SETTINGS_LAST: %d\n", MENU_SETTINGS_LAST);
