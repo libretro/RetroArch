@@ -112,8 +112,8 @@ void matrix_4x4_rotate_y(math_matrix_4x4 *mat, float rad)
  */
 void matrix_4x4_rotate_z(math_matrix_4x4 *mat, float rad)
 {
-   float cosine = cosf(rad);
-   float sine   = sinf(rad);
+   float cosine             = cosf(rad);
+   float sine               = sinf(rad);
 
    MAT_ELEM_4X4(*mat, 0, 0) = cosine;
    MAT_ELEM_4X4(*mat, 0, 1) = -sine;
