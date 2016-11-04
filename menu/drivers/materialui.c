@@ -263,6 +263,7 @@ static void mui_draw_tab(mui_handle_t *mui,
 
 static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned id)
 {
+   int ptr_width, ptr_height;
    unsigned i, width, height;
    float dark[16]=  {
       0.00, 0.00, 0.00, 0.85,
@@ -284,17 +285,17 @@ static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned 
          width, height,
          &dark[0]);
 
-   int ptr_width = width / 11;
-   int ptr_height = height / 10;
+   ptr_width  = width / 11;
+   ptr_height = height / 10;
 
    if (ptr_width >= ptr_height)
       ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
    {
-      int line_y = (i / 11)*height/10.0;
-
+      int line_y        = (i / 11)*height/10.0;
       uintptr_t texture = mui->textures.list[MUI_TEXTURE_KEY];
+
       if (i == id)
          texture = mui->textures.list[MUI_TEXTURE_KEY_HOVER];
 
@@ -319,6 +320,7 @@ static void mui_render_keyboard(mui_handle_t *mui, const char *grid[], unsigned 
 /* Returns the OSK key at a given position */
 static int mui_osk_ptr_at_pos(void *data, int x, int y)
 {
+   int ptr_width, ptr_height;
    unsigned i, width, height;
 
    mui_handle_t *mui = (mui_handle_t*)data;
@@ -327,8 +329,8 @@ static int mui_osk_ptr_at_pos(void *data, int x, int y)
 
    video_driver_get_size(&width, &height);
 
-   int ptr_width = width / 11;
-   int ptr_height = height / 10;
+   ptr_width  = width / 11;
+   ptr_height = height / 10;
 
    if (ptr_width >= ptr_height)
       ptr_width = ptr_height;

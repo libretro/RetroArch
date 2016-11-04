@@ -46,7 +46,7 @@ static input_keyboard_line_t *g_keyboard_line     = NULL;
 
 static void *g_keyboard_press_data                = NULL;
 
-static bool return_pressed                        = false;;
+static bool kb_return_pressed                     = false;
 
 static unsigned osk_last_codepoint                = 0;
 static unsigned osk_last_codepoint_len            = 0;
@@ -90,9 +90,9 @@ static void osk_update_last_char(const char c)
    osk_update_last_codepoint(array);
 }
 
-bool input_keyboard_return_pressed()
+bool input_keyboard_return_pressed(void)
 {
-   return return_pressed;
+   return kb_return_pressed;
 }
 
 static void input_keyboard_line_toggle_osk(bool enable)
@@ -293,7 +293,7 @@ void input_keyboard_event(bool down, unsigned code,
    static bool deferred_wait_keys;
 
    if (code == RETROK_RETURN || (!down && code == RETROK_UNKNOWN))
-      return_pressed = down;
+      kb_return_pressed = down;
 
    if (deferred_wait_keys)
    {
