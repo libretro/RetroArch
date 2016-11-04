@@ -192,7 +192,7 @@ void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y,
 void matrix_4x4_translate(math_matrix_4x4 *out, float x,
       float y, float z)
 {
-   MAT_ELEM_4X4(*out, 0, 0) = 0.0f;
+   MAT_ELEM_4X4(*out, 0, 0) = 1.0f;
    MAT_ELEM_4X4(*out, 0, 1) = 0.0f;
    MAT_ELEM_4X4(*out, 0, 2) = 0.0f;
    MAT_ELEM_4X4(*out, 0, 3) = x;
