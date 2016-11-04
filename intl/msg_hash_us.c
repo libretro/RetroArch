@@ -2958,32 +2958,12 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "xmb_show_video";
       case MENU_ENUM_LABEL_XMB_THEME:
          return "xmb_theme";
-      case MENU_ENUM_SUBLABEL_MENU_SETTINGS:
-         return "Adjusts settings related to the appearance of the menu screen.";
-      case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC:
-         return "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance.";
-      case MENU_ENUM_SUBLABEL_VIDEO_THREADED:
-         return "Improves performance at the cost of latency and more video stuttering. Use only if you cannot obtain full speed otherwise.";
-      case MSG_AUDIO_VOLUME:
-         return "Audio volume";
-      case MSG_AUTODETECT:
-         return "Autodetect";
-      case MSG_AUTOLOADING_SAVESTATE_FROM:
-         return "Auto-loading savestate from";
       case MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
          return "bringing_up_command_interface_at_port";
-      case MSG_CONNECTING_TO_NETPLAY_HOST:
-         return "Connecting to netplay host";
-      case MSG_CONNECTING_TO_PORT:
-         return "Connecting to port";
-      case MSG_CONNECTION_SLOT:
-         return "Connection slot";
       case MSG_CONNECT_DEVICE_FROM_A_VALID_PORT:
          return "connect_device_from_a_valid_port";
       case MSG_DEVICE_CONFIGURED_IN_PORT:
          return "configured in port";
-      case MSG_DEVICE_DISCONNECTED_FROM_PORT:
-        return "Device disconnected from port";
       case MSG_DEVICE_NOT_CONFIGURED:
          return "not configured";
       case MSG_DISCONNECTING_DEVICE_FROM_PORT:
@@ -2996,22 +2976,10 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "Failed to set disk";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
          return "failed_to_start_audio_driver";
-      case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
-         return "File already exists. Saving to backup buffer";
       case MSG_FOUND_LAST_STATE_SLOT:
          return "found_last_state_slot";
-      case MSG_GOT_CONNECTION_FROM:
-         return "Got connection from";
-      case MSG_NETPLAY_USERS_HAS_FLIPPED:
-         return "Netplay users has flipped";
-      case MSG_SETTING_DISK_IN_TRAY:
-         return "Setting disk in tray";
       case MSG_SUCCEEDED:
          return "succeeded";
-      case MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED:
-         return "Unknown netplay command received";
-      case MSG_WAITING_FOR_CLIENT:
-         return "Waiting for client ...";
       default:
          break;
    }
@@ -3031,6 +2999,38 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
+      case MSG_DEVICE_DISCONNECTED_FROM_PORT:
+        return "Device disconnected from port";
+      case MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED:
+         return "Unknown netplay command received";
+      case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
+         return "File already exists. Saving to backup buffer";
+      case MSG_GOT_CONNECTION_FROM:
+         return "Got connection from";
+      case MSG_NETPLAY_USERS_HAS_FLIPPED:
+         return "Netplay users has flipped";
+      case MSG_SETTING_DISK_IN_TRAY:
+         return "Setting disk in tray";
+      case MSG_WAITING_FOR_CLIENT:
+         return "Waiting for client ...";
+      case MENU_ENUM_SUBLABEL_MENU_SETTINGS:
+         return "Adjusts settings related to the appearance of the menu screen.";
+      case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC:
+         return "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance.";
+      case MENU_ENUM_SUBLABEL_VIDEO_THREADED:
+         return "Improves performance at the cost of latency and more video stuttering. Use only if you cannot obtain full speed otherwise.";
+      case MSG_AUDIO_VOLUME:
+         return "Audio volume";
+      case MSG_AUTODETECT:
+         return "Autodetect";
+      case MSG_AUTOLOADING_SAVESTATE_FROM:
+         return "Auto-loading savestate from";
+      case MSG_CONNECTING_TO_NETPLAY_HOST:
+         return "Connecting to netplay host";
+      case MSG_CONNECTING_TO_PORT:
+         return "Connecting to port";
+      case MSG_CONNECTION_SLOT:
+         return "Connection slot";
       case  MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY:
          return "Sorry, unimplemented: cores that don't demand content cannot participate in netplay.";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
