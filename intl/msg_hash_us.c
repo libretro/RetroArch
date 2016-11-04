@@ -2988,6 +2988,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 }
 #endif
 
+#define MSG_HASH(Id, org, str) case Id: return str;
+
 const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 {
 #ifdef HAVE_MENU
@@ -2999,28 +3001,7 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    switch (msg)
    {
-      case MSG_DEVICE_DISCONNECTED_FROM_PORT:
-        return "Device disconnected from port";
-      case MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED:
-         return "Unknown netplay command received";
-      case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
-         return "File already exists. Saving to backup buffer";
-      case MSG_GOT_CONNECTION_FROM:
-         return "Got connection from";
-      case MSG_NETPLAY_USERS_HAS_FLIPPED:
-         return "Netplay users has flipped";
-      case MSG_SETTING_DISK_IN_TRAY:
-         return "Setting disk in tray";
-      case MSG_WAITING_FOR_CLIENT:
-         return "Waiting for client ...";
-      case MENU_ENUM_SUBLABEL_MENU_SETTINGS:
-         return "Adjusts settings related to the appearance of the menu screen.";
-      case MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC:
-         return "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance.";
-      case MENU_ENUM_SUBLABEL_VIDEO_THREADED:
-         return "Improves performance at the cost of latency and more video stuttering. Use only if you cannot obtain full speed otherwise.";
-      case MSG_AUDIO_VOLUME:
-         return "Audio volume";
+      #include "msg_hash_us.h"
       case MSG_AUTODETECT:
          return "Autodetect";
       case MSG_AUTOLOADING_SAVESTATE_FROM:
@@ -4826,3 +4807,5 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    return "null";
 }
+
+#undef MSG_HASH
