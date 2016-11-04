@@ -44,6 +44,7 @@
 #include "verbosity.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
+#include "cheevos.h"
 
 static struct retro_core_t core;
 static unsigned            core_poll_type;
@@ -83,7 +84,7 @@ void core_set_input_state(retro_ctx_input_state_info_t *info)
  * core_init_libretro_cbs:
  * @data           : pointer to retro_callbacks object
  *
- * Initializes libretro callbacks, and binds the libretro callbacks 
+ * Initializes libretro callbacks, and binds the libretro callbacks
  * to default callback functions.
  **/
 static bool core_init_libretro_cbs(void *data)
@@ -355,6 +356,7 @@ bool core_get_system_av_info(struct retro_system_av_info *av_info)
 bool core_reset(void)
 {
    core.retro_reset();
+   cheevos_reset_game();
    return true;
 }
 
@@ -435,10 +437,10 @@ bool core_load(void)
 bool core_verify_api_version(void)
 {
    unsigned api_version = core.retro_api_version();
-   RARCH_LOG("%s: %u\n", 
+   RARCH_LOG("%s: %u\n",
          msg_hash_to_str(MSG_VERSION_OF_LIBRETRO_API),
          api_version);
-   RARCH_LOG("%s: %u\n",    
+   RARCH_LOG("%s: %u\n",
          msg_hash_to_str(MSG_COMPILED_AGAINST_API),
          RETRO_API_VERSION);
 
