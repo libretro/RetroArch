@@ -254,23 +254,26 @@ void matrix_4x4_lookat(math_matrix_4x4 *out,
 
    vec3_cross(&s[0], &f[0], up);
    vec3_normalize(&s[0]);
-
    vec3_cross(&t[0], &s[0], f);
-
-   memset(out, 0, sizeof(*out));
 
    MAT_ELEM_4X4(*out, 0, 0) = s[0];
    MAT_ELEM_4X4(*out, 0, 1) = t[0];
    MAT_ELEM_4X4(*out, 0, 2) = -f[0];
+   MAT_ELEM_4X4(*out, 0, 3) = 0.0f;
 
    MAT_ELEM_4X4(*out, 1, 0) = s[1];
    MAT_ELEM_4X4(*out, 1, 1) = t[1];
    MAT_ELEM_4X4(*out, 1, 2) = -f[1];
+   MAT_ELEM_4X4(*out, 1, 3) = 0.0f;
 
    MAT_ELEM_4X4(*out, 2, 0) = s[2];
    MAT_ELEM_4X4(*out, 2, 1) = t[2];
    MAT_ELEM_4X4(*out, 2, 2) = -f[2];
+   MAT_ELEM_4X4(*out, 2, 3) = 0.0f;
 
+   MAT_ELEM_4X4(*out, 3, 0) = 0.0f;
+   MAT_ELEM_4X4(*out, 3, 1) = 0.0f;
+   MAT_ELEM_4X4(*out, 3, 2) = 0.0f;
    MAT_ELEM_4X4(*out, 3, 3) = 1.f;
 
 #if 0
