@@ -973,6 +973,8 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_ADD_CONTENT_LIST,
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
 
+   MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
 
    MENU_ENUM_LABEL_VALUE_DONT_CARE,
    MENU_ENUM_LABEL_VALUE_LINEAR,
@@ -2013,6 +2015,8 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_CORE_CONTENT_LIST                                  0x76150c63U
 #define MENU_LABEL_DEFERRED_LAKKA_LIST                                         0x3db437c4U
 #define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
+#define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
+
 
 /* Cheevos settings */
 

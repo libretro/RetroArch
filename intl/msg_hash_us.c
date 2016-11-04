@@ -1908,6 +1908,8 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
          return "achievement_list";
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
          return "add_content";
+      case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
+         return "configurations_list";
       case MENU_ENUM_LABEL_ADD_TAB:
          return "add_tab";
       case MENU_ENUM_LABEL_ARCHIVE_MODE:
@@ -3010,6 +3012,8 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
          return "Achievement List";
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
          return "Scan Content";
+      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST:
+         return "Configurations";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
          return "Import content";
       case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:

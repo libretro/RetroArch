@@ -2869,6 +2869,29 @@ static int menu_displaylist_parse_information_list(
    return 0;
 }
 
+static int menu_displaylist_parse_configurations_list(
+      menu_displaylist_info_t *info)
+{
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
+         msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS),
+         MENU_ENUM_LABEL_CONFIGURATIONS,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
+         msg_hash_to_str(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
+         MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
+         msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
+         MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
+         MENU_SETTING_ACTION, 0, 0);
+   return 0;
+}
+
 static int menu_displaylist_parse_add_content_list(
       menu_displaylist_info_t *info)
 {
@@ -4111,6 +4134,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CONTENT_SETTINGS:
       case DISPLAYLIST_INFORMATION_LIST:
       case DISPLAYLIST_ADD_CONTENT_LIST:
+      case DISPLAYLIST_CONFIGURATIONS_LIST:
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_USER_BINDS_LIST:
@@ -4421,13 +4445,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ACTION, false);
 #endif
             menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_CONFIGURATIONS,
-                  PARSE_ACTION, false);
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG,
-                  PARSE_ACTION, false);
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
+                  MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
                   PARSE_ACTION, false);
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_HELP_LIST,
@@ -5389,6 +5407,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_ADD_CONTENT_LIST:
          ret = menu_displaylist_parse_add_content_list(info);
+
+         info->need_push    = true;
+         info->need_refresh = true;
+         break;
+      case DISPLAYLIST_CONFIGURATIONS_LIST:
+         ret = menu_displaylist_parse_configurations_list(info);
 
          info->need_push    = true;
          info->need_refresh = true;

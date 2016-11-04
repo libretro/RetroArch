@@ -3594,13 +3594,7 @@ static int xmb_list_push(void *data, void *userdata,
          entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-         entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS;
-         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
-
-         entry.enum_idx      = MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG;
-         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
-
-         entry.enum_idx      = MENU_ENUM_LABEL_SAVE_NEW_CONFIG;
+         entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS_LIST;
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
          entry.enum_idx      = MENU_ENUM_LABEL_START_VIDEO_PROCESSOR;

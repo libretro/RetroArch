@@ -2237,6 +2237,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
+               MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_CONFIGURATIONS,
                MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
                &group_info,
