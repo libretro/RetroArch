@@ -3002,26 +3002,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
    switch (msg)
    {
       #include "msg_hash_us.h"
-      case MSG_AUTODETECT:
-         return "Autodetect";
-      case MSG_AUTOLOADING_SAVESTATE_FROM:
-         return "Auto-loading savestate from";
-      case MSG_CONNECTING_TO_NETPLAY_HOST:
-         return "Connecting to netplay host";
-      case MSG_CONNECTING_TO_PORT:
-         return "Connecting to port";
-      case MSG_CONNECTION_SLOT:
-         return "Connection slot";
-      case  MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY:
-         return "Sorry, unimplemented: cores that don't demand content cannot participate in netplay.";
-      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD:
-         return "Password";
-      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
-         return "Accounts Cheevos";
-      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
-         return "Username";
-      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST:
-         return "Accounts";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
          return "Accounts List Endpoint";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:

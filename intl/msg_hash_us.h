@@ -53,3 +53,53 @@ MSG_HASH(
       "Audio volume",
       "Audio volume"
       )
+MSG_HASH(
+      MSG_AUTODETECT,
+      "Autodetect",
+      "Autodetect"
+      )
+MSG_HASH(
+      MSG_AUTOLOADING_SAVESTATE_FROM,
+      "Auto-loading savestate from",
+      "Auto-loading savestate from"
+      )
+MSG_HASH(
+      MSG_CONNECTING_TO_NETPLAY_HOST,
+      "Connecting to netplay host",
+      "Connecting to netplay host"
+      )
+MSG_HASH(
+      MSG_CONNECTING_TO_PORT,
+      "Connecting to port",
+      "Connecting to port"
+      )
+MSG_HASH(
+      MSG_CONNECTION_SLOT,
+      "Connection slot",
+      "Connection slot"
+      )
+MSG_HASH(
+      MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
+      "Sorry, unimplemented: cores that don't demand content cannot participate in netplay.",
+      "Sorry, unimplemented: cores that don't demand content cannot participate in netplay."
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+      "Password",
+      "Password"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
+      "Accounts Cheevos",
+      "Accounts Cheevos"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+      "Username",
+      "Username"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+      "Accounts",
+      "Accounts"
+      )
