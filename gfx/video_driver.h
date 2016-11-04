@@ -213,10 +213,6 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
-void video_driver_lock(void);
-void video_driver_unlock(void);
-void video_driver_lock_free(void);
-void video_driver_lock_new(void);
 void video_driver_destroy(void);
 void video_driver_set_cached_frame_ptr(const void *data);
 void video_driver_set_stub_frame(void);

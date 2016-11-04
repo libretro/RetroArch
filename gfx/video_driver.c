@@ -1293,7 +1293,7 @@ static uint8_t *video_driver_record_gpu_buffer   = NULL;
 static slock_t *display_lock                     = NULL;
 #endif
 
-void video_driver_lock(void)
+static void video_driver_lock(void)
 {
 #ifdef HAVE_THREADS
    if (!display_lock)
@@ -1302,7 +1302,7 @@ void video_driver_lock(void)
 #endif
 }
 
-void video_driver_unlock(void)
+static void video_driver_unlock(void)
 {
 #ifdef HAVE_THREADS
    if (!display_lock)
@@ -1311,7 +1311,7 @@ void video_driver_unlock(void)
 #endif
 }
 
-void video_driver_lock_free(void)
+static void video_driver_lock_free(void)
 {
 #ifdef HAVE_THREADS
    slock_free(display_lock);
@@ -1319,7 +1319,7 @@ void video_driver_lock_free(void)
 #endif
 }
 
-void video_driver_lock_new(void)
+static void video_driver_lock_new(void)
 {
    video_driver_lock_free();
 #ifdef HAVE_THREADS
