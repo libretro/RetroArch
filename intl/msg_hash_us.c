@@ -2988,7 +2988,7 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 }
 #endif
 
-#define MSG_HASH(Id, org, str) case Id: return str;
+#define MSG_HASH(Id, str) case Id: return str;
 
 const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 {
