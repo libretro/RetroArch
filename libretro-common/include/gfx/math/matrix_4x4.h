@@ -23,18 +23,49 @@
 #ifndef __LIBRETRO_SDK_GFX_MATH_MATRIX_4X4_H__
 #define __LIBRETRO_SDK_GFX_MATH_MATRIX_4X4_H__
 
+#include <retro_inline.h>
+
 /* Column-major matrix (OpenGL-style).
  * Reimplements functionality from FF OpenGL pipeline to be able 
  * to work on GLES 2.0 and modern GL variants.
  */
+
+#define MAT_ELEM_4X4(mat, row, column) ((mat).data[4 * (column) + (row)])
+
 
 typedef struct math_matrix_4x4
 {
    float data[16];
 } math_matrix_4x4;
 
+/*
+ * Sets mat to an identity matrix
+ */
+static INLINE void matrix_4x4_identity(math_matrix_4x4 *mat)
+{
+   unsigned i;
+
+   MAT_ELEM_4X4(*mat, 0, 1)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 0, 2)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 0, 3)    = 0.0f;
+
+   MAT_ELEM_4X4(*mat, 1, 0)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 1, 2)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 1, 3)    = 0.0f;
+
+   MAT_ELEM_4X4(*mat, 2, 0)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 1)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 2, 3)    = 0.0f;
+
+   MAT_ELEM_4X4(*mat, 3, 0)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 1)    = 0.0f;
+   MAT_ELEM_4X4(*mat, 3, 2)    = 0.0f;
+
+   for (i = 0; i < 4; i++)
+      MAT_ELEM_4X4(*mat, i, i) = 1.0f;
+}
+
 void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src);
-void matrix_4x4_identity(math_matrix_4x4 *mat);
 void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
 
 void matrix_4x4_rotate_x(math_matrix_4x4 *mat, float rad);
