@@ -3004,26 +3004,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
    switch (msg)
    {
       #include "msg_hash_us.h"
-      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
-         return "Accounts List Endpoint";
-      case MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         return "Retro Achievements";
-      case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST:
-         return "Achievement List";
-      case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
-         return "Scan Content";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST:
-         return "Configurations";
-      case MENU_ENUM_LABEL_VALUE_ADD_TAB:
-         return "Import content";
-      case MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE:
-         return "Archive File Association Action";
-      case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
-         return "Ask";
-      case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
-         return "Assets Dir";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
-         return "Block Frames";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
          return "Audio Device";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:

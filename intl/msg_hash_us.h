@@ -82,3 +82,43 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
       "Accounts"
       )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END,
+      "Accounts List Endpoint"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS,
+      "Retro Achievements"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+      "Achievement List"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+      "Scan Content"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+      "Configurations"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ADD_TAB,
+      "Import content"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ARCHIVE_MODE,
+      "Archive File Association Action"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE,
+      "Ask"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
+      "Assets Dir"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
+      "Block Frames"
+      )
