@@ -2499,6 +2499,25 @@ found:
    return false;
 }
 
+void cheevos_reset_game(void)
+{
+   cheevo_t *cheevo    = cheevos_locals.core.cheevos;
+   const cheevo_t *end = cheevo + cheevos_locals.core.count;
+
+   for (; cheevo < end; cheevo++)
+   {
+      cheevo->last = 1;
+   }
+
+   cheevo = cheevos_locals.unofficial.cheevos;
+   end    = cheevo + cheevos_locals.unofficial.count;
+
+   for (; cheevo < end; cheevo++)
+   {
+      cheevo->last = 1;
+   }
+}
+
 void cheevos_populate_menu(void *data)
 {
 #ifdef HAVE_MENU
