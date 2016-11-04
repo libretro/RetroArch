@@ -356,7 +356,9 @@ bool core_get_system_av_info(struct retro_system_av_info *av_info)
 bool core_reset(void)
 {
    core.retro_reset();
+#ifdef HAVE_CHEEVOS
    cheevos_reset_game();
+#endif
    return true;
 }
 
