@@ -3902,17 +3902,6 @@ static bool menu_displaylist_push_internal(
             sizeof(info->label));
 
       menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-#if 0
-#if defined(HAVE_VIDEO_PROCESSOR)
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
-            msg_hash_to_str(
-               MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
-            MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
-            0, 0, 0);
-#endif
-#endif
       menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info);
       return true;
    }
