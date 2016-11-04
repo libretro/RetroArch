@@ -24,6 +24,9 @@
 #define __LIBRETRO_SDK_GFX_MATH_MATRIX_4X4_H__
 
 #include <retro_inline.h>
+#include <retro_common_api.h>
+
+#include <gfx/math/vector_3.h>
 
 /* Column-major matrix (OpenGL-style).
  * Reimplements functionality from FF OpenGL pipeline to be able 
@@ -32,6 +35,7 @@
 
 #define MAT_ELEM_4X4(mat, row, column) ((mat).data[4 * (column) + (row)])
 
+RETRO_BEGIN_DECLS
 
 typedef struct math_matrix_4x4
 {
@@ -77,11 +81,18 @@ void matrix_4x4_ortho(math_matrix_4x4 *mat,
       float bottom, float top,
       float znear, float zfar);
 
+void matrix_4x4_lookat(math_matrix_4x4 *out,
+      vec3_t eye,
+      vec3_t center,
+      vec3_t up);
+
 void matrix_4x4_multiply(math_matrix_4x4 *out, const math_matrix_4x4 *a, const math_matrix_4x4 *b);
 
 void matrix_4x4_scale(math_matrix_4x4 *out, float x, float y, float z);
 void matrix_4x4_translate(math_matrix_4x4 *out, float x, float y, float z);
 void matrix_4x4_projection(math_matrix_4x4 *out, float y_fov, float aspect, float znear, float zfar);
+
+RETRO_END_DECLS
 
 #endif
 
