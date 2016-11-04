@@ -203,15 +203,15 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
    switch (msg)
    {
       case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         snprintf(s, len, "Login details for your \n"
-               "Retro Achievements account. \n"
+         snprintf(s, len, "你的登陆信息 \n"
+               "Retro Achievements 账号. \n"
                " \n"
-               "Visit retroachievements.org and sign up \n"
-               "for a free account. \n"
+               "访问 retroachievements.org 并注册 \n"
+               "以获取一个免费账号. \n"
                " \n"
-               "After you are done registering, you need \n"
-               "to input the username and password into \n"
-               "RetroArch.");
+               "在你注册以后, 你需要 \n"
+               "在RetroArch输入你的 \n"
+               "账号以及密码.");
          break;
       case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
          snprintf(s, len, "Username for your Retro Achievements account.");
@@ -281,24 +281,24 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "about the content.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CONFIG:
-         snprintf(s, len, "Configuration file.");
+         snprintf(s, len, "配置文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_COMPRESSED_ARCHIVE:
-         snprintf(s, len, "Compressed archive file.");
+         snprintf(s, len, "压缩归档文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_RECORD_CONFIG:
-         snprintf(s, len, "Recording configuration file.");
+         snprintf(s, len, "记录配置文件.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CURSOR:
          snprintf(s, len, "Database cursor file.");
          break;
       case MENU_ENUM_LABEL_FILE_CONFIG:
-         snprintf(s, len, "Configuration file.");
+         snprintf(s, len, "配置文件.");
          break;
       case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
          snprintf(s, len,
-               "Select this to scan the current directory \n"
-               "for content.");
+               "选择本项以扫描当前 \n"
+               "目录中的内容.");
          break;
       case MENU_ENUM_LABEL_USE_THIS_DIRECTORY:
          snprintf(s, len,
@@ -313,28 +313,28 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
          snprintf(s, len,
-               "Thumbnails Directory. \n"
+               "缩略图目录. \n"
                " \n"
-               "To store thumbnail files.");
+               "用以存放缩略图.");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
          snprintf(s, len,
-               "Core Info Directory. \n"
+               "核心Core信息目录. \n"
                " \n"
                "A directory for where to search \n"
                "for libretro core information.");
          break;
       case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
          snprintf(s, len,
-               "Playlist Directory. \n"
+               "运行列表目录. \n"
                " \n"
                "Save all playlist files to this \n"
                "directory.");
          break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(s, len,
-               "Some libretro cores might have \n"
-               "a shutdown feature. \n"
+               "某些libretro核心可能会 \n"
+               "支持关机特性. \n"
                " \n"
                "If this option is left disabled, \n"
                "selecting the shutdown procedure \n"
@@ -740,12 +740,12 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_DRIVER:
          snprintf(s, len,
-               "Current Video driver.");
+               "当前视频驱动.");
 
          if (string_is_equal(settings->video.driver, "gl"))
          {
             snprintf(s, len,
-                  "OpenGL Video driver. \n"
+                  "OpenGL视频驱动. \n"
                   " \n"
                   "This driver allows libretro GL cores to  \n"
                   "be used in addition to software-rendered \n"
@@ -759,7 +759,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal(settings->video.driver, "sdl2"))
          {
             snprintf(s, len,
-                  "SDL 2 Video driver.\n"
+                  "SDL 2 视频驱动.\n"
                   " \n"
                   "This is an SDL 2 software-rendered video \n"
                   "driver.\n"
@@ -771,7 +771,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal(settings->video.driver, "sdl1"))
          {
             snprintf(s, len,
-                  "SDL Video driver.\n"
+                  "SDL 视频驱动.\n"
                   " \n"
                   "This is an SDL 1.2 software-rendered video \n"
                   "driver.\n"
@@ -782,7 +782,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal(settings->video.driver, "d3d"))
          {
             snprintf(s, len,
-                  "Direct3D Video driver. \n"
+                  "Direct3D 视频驱动. \n"
                   " \n"
                   "Performance for software-rendered cores \n"
                   "is dependent on your graphic card's \n"
@@ -791,7 +791,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal(settings->video.driver, "exynos"))
          {
             snprintf(s, len,
-                  "Exynos-G2D Video Driver. \n"
+                  "Exynos-G2D 视频驱动. \n"
                   " \n"
                   "This is a low-level Exynos video driver. \n"
                   "Uses the G2D block in Samsung Exynos SoC \n"
@@ -803,7 +803,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal(settings->video.driver, "drm"))
          {
             snprintf(s, len,
-                  "Plain DRM Video Driver. \n"
+                  "Plain DRM 视频驱动. \n"
                   " \n"
                   "This is a low-level video driver using. \n"
                   "libdrm for hardware scaling using \n"
@@ -812,7 +812,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          else if (string_is_equal(settings->video.driver, "sunxi"))
          {
             snprintf(s, len,
-                  "Sunxi-G2D Video Driver. \n"
+                  "Sunxi-G2D 视频驱动. \n"
                   " \n"
                   "This is a low-level Sunxi video driver. \n"
                   "Uses the G2D block in Allwinner SoCs.");
@@ -820,7 +820,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN:
          snprintf(s, len,
-               "Audio DSP plugin.\n"
+               "音频DSP插件.\n"
                " Processes audio before it's sent to \n"
                "the driver."
                );
@@ -847,7 +847,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET:
          snprintf(s, len,
-               "Load Shader Preset. \n"
+               "载入预设 Shader. \n"
                " \n"
                " Load a "
 #ifdef HAVE_CG
@@ -865,7 +865,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
                "HLSL"
 #endif
-               " preset directly. \n"
+               " 预设目录. \n"
                "The menu shader menu is updated accordingly. \n"
                " \n"
                "If the CGP uses scaling methods which are not \n"
@@ -1037,11 +1037,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
          snprintf(s, len,
-               "Toggles menu.");
+               "切换菜单.");
          break;
       case MENU_ENUM_LABEL_GRAB_MOUSE_TOGGLE:
          snprintf(s, len,
-               "Toggles mouse grab.\n"
+               "切换鼠标抓取.\n"
                " \n"
                "When mouse is grabbed, RetroArch hides the \n"
                "mouse, and keeps the mouse pointer inside \n"
@@ -1270,7 +1270,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
          snprintf(s, len,
-               "System Directory. \n"
+               "系统目录. \n"
                " \n"
                "Sets the 'system' directory.\n"
                "Cores can query for this\n"
@@ -1405,7 +1405,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
          snprintf(s, len,
-               "Savefile Directory. \n"
+               "游戏存盘目录. \n"
                " \n"
                "Save all save files (*.srm) to this \n"
                "directory. This includes related files like \n"
@@ -1416,7 +1416,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len,
-               "Savestate Directory. \n"
+               "即时存档目录. \n"
                " \n"
                "Save all save states (*.state) to this \n"
                "directory.\n"
@@ -1762,7 +1762,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CHEAT_TOGGLE:
          snprintf(s, len,
-               "Toggle cheat index.\n");
+               "打开金手指索引.\n");
          break;
       case MENU_ENUM_LABEL_HOLD_FAST_FORWARD:
          snprintf(s, len,
@@ -2955,7 +2955,7 @@ static const char *menu_hash_to_str_chs_label_enum(enum msg_hash_enums msg)
       case MSG_DEVICE_DISCONNECTED_FROM_PORT:
         return "Device disconnected from port";
       case MSG_DEVICE_NOT_CONFIGURED:
-         return "not configured";
+         return "没有配置";
       case MSG_DISCONNECTING_DEVICE_FROM_PORT:
          return "disconnecting_device_from_port";
       case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
@@ -2963,11 +2963,11 @@ static const char *menu_hash_to_str_chs_label_enum(enum msg_hash_enums msg)
       case MSG_FAILED:
          return "已失败";
       case MSG_FAILED_TO_SET_DISK:
-         return "Failed to set disk";
+         return "设置磁盘失败";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
          return "failed_to_start_audio_driver";
       case MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER:
-         return "File already exists. Saving to backup buffer";
+         return "文件已存在. Saving to backup buffer";
       case MSG_FOUND_LAST_STATE_SLOT:
          return "found_last_state_slot";
       case MSG_GOT_CONNECTION_FROM:
@@ -4482,15 +4482,15 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
          return "Disconnect device from a valid port.";
       case MSG_DISK_CLOSED:
-         return "Closed";
+         return "已关闭";
       case MSG_DISK_EJECTED:
-         return "Ejected";
+         return "已弹出";
       case MSG_DOWNLOADING:
          return "正在下载";
       case MSG_DOWNLOAD_FAILED:
          return "下载失败";
       case MSG_ERROR:
-         return "Error";
+         return "错误";
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
          return "Libretro core requires content, but nothing was provided.";
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT:
@@ -4530,15 +4530,15 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_FAILED_TO_LOAD:
          return "无法加载";
       case MSG_FAILED_TO_LOAD_CONTENT:
-         return "Failed to load content";
+         return "载入内容失败";
       case MSG_FAILED_TO_LOAD_MOVIE_FILE:
-         return "Failed to load movie file";
+         return "载入视频文件失败";
       case MSG_FAILED_TO_LOAD_OVERLAY:
          return "Failed to load overlay.";
       case MSG_FAILED_TO_LOAD_STATE:
          return "Failed to load state from";
       case MSG_FAILED_TO_OPEN_LIBRETRO_CORE:
-         return "Failed to open libretro core";
+         return "打开libretro核心失败";
       case MSG_FAILED_TO_PATCH:
          return "补丁应用失败";
       case MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT:
@@ -4604,7 +4604,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_GOT_INVALID_DISK_INDEX:
          return "Got invalid disk index.";
       case MSG_GRAB_MOUSE_STATE:
-         return "Grab mouse state";
+         return "抓取鼠标状态";
       case MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING:
          return "Libretro core is hardware rendered. Must use post-shaded recording as well.";
       case MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32:
@@ -4636,11 +4636,11 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_LOADING:
          return "正在加载";
       case MSG_LOADING_CONTENT_FILE:
-         return "Loading content file";
+         return "正在加载内容文件";
       case MSG_LOADING_HISTORY_FILE:
-         return "Loading history file";
+         return "正在读取历史文件";
       case MSG_LOADING_STATE:
-         return "Loading state";
+         return "正在读取存档";
       case MSG_MEMORY:
          return "内存";
       case MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE:
@@ -4648,7 +4648,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION:
          return "Movie format seems to have a different serializer version. Will most likely fail.";
       case MSG_MOVIE_PLAYBACK_ENDED:
-         return "Movie playback ended.";
+         return "视频回放结束.";
       case MSG_MOVIE_RECORD_STOPPED:
          return "Stopping movie record.";
       case MSG_NETPLAY_FAILED:
@@ -4758,9 +4758,9 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_UNDID_LOAD_STATE:
          return "已撤销加载状态。";
       case MSG_UNDOING_SAVE_STATE:
-         return "Undoing save state";
+         return "撤销即时存档";
       case MSG_UNKNOWN:
-         return "Unknown";
+         return "未知";
       case MSG_UNPAUSED:
          return "取消暂停。";
       case MSG_UNRECOGNIZED_COMMAND:
@@ -4778,7 +4778,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_VALUE_SHUTTING_DOWN:
          return "正在关机……";
       case MSG_VERSION_OF_LIBRETRO_API:
-         return "Version of libretro API";
+         return "libretro API版本";
       case MSG_VIEWPORT_SIZE_CALCULATION_FAILED:
          return "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...";
       case MSG_VIRTUAL_DISK_TRAY:
