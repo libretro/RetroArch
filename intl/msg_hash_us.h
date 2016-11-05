@@ -278,3 +278,47 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
       "Cache Dir"
       )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+      "Allow Camera"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+      "Camera Driver"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT,
+      "Cheat"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
+      "Apply Cheat Changes"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
+      "Cheat File Dir"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
+      "Cheat File"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
+      "Load Cheat File"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
+      "Save Cheat File As"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES,
+      "Cheat Passes"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
+      "Description"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+      "Hardcore Mode"
+      )

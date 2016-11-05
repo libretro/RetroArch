@@ -3004,28 +3004,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
    switch (msg)
    {
       #include "msg_hash_us.h"
-      case MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW:
-         return "Allow Camera";
-      case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
-         return "Camera Driver";
-      case MENU_ENUM_LABEL_VALUE_CHEAT:
-         return "Cheat";
-      case MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES:
-         return "Apply Cheat Changes";
-      case MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH:
-         return "Cheat File Dir";
-      case MENU_ENUM_LABEL_VALUE_CHEAT_FILE:
-         return "Cheat File";
-      case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD:
-         return "Load Cheat File";
-      case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
-         return "Save Cheat File As";
-      case MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES:
-         return "Cheat Passes";
-      case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
-         return "Description";
-      case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Hardcore Mode";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
          return "Locked Achievements:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
