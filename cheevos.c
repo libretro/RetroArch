@@ -163,6 +163,12 @@ enum
    CHEEVOS_DIRTY_ALL         = (1 << 9) - 1
 };
 
+enum
+{
+   CHEEVOS_ACTIVE_SOFTCORE = 1 << 0,
+   CHEEVOS_ACTIVE_HARDCORE = 1 << 1
+};
+
 typedef struct
 {
    unsigned type;
@@ -208,6 +214,7 @@ typedef struct
 typedef struct
 {
    int is_element;
+   int mode;
 } cheevos_deactivate_t;
 
 typedef struct
@@ -1149,7 +1156,7 @@ static int cheevos_new_cheevo(cheevos_readud_t *ud)
    cheevo->badge       = cheevos_dupstr(&ud->badge);
    cheevo->points      = strtol(ud->points.string, NULL, 10);
    cheevo->dirty       = 0;
-   cheevo->active      = 1;
+   cheevo->active      = CHEEVOS_ACTIVE_SOFTCORE | CHEEVOS_ACTIVE_HARDCORE;
    cheevo->last        = 1;
    cheevo->modified    = 0;
 
@@ -1756,7 +1763,8 @@ static void cheevos_make_unlock_url(const cheevo_t *cheevo, char* url, size_t ur
    snprintf(
       url, url_size,
       "http://retroachievements.org/dorequest.php?r=awardachievement&u=%s&t=%s&a=%u&h=%d",
-      settings->cheevos.username, cheevos_locals.token, cheevo->id, settings->cheevos.hardcore_mode_enable
+      settings->cheevos.username, cheevos_locals.token, cheevo->id,
+      settings->cheevos.hardcore_mode_enable ? 1 : 0
    );
 
    url[url_size - 1] = 0;
@@ -1777,7 +1785,6 @@ static void cheevos_unlocked(void *task_data, void *user_data, const char *error
    else
    {
       char url[256];
-
       url[0] = '\0';
 
       RARCH_ERR("CHEEVOS error awarding achievement %u, retrying...\n", cheevo->id);
@@ -1789,23 +1796,31 @@ static void cheevos_unlocked(void *task_data, void *user_data, const char *error
 
 static void cheevos_test_cheevo_set(const cheevoset_t *set)
 {
+   settings_t *settings = config_get_ptr();
    cheevo_t *cheevo    = NULL;
    const cheevo_t *end = set->cheevos + set->count;
-   int valid;
+   int mode, valid;
+
+   if (settings->cheevos.hardcore_mode_enable)
+      mode = CHEEVOS_ACTIVE_HARDCORE;
+   else
+      mode = CHEEVOS_ACTIVE_SOFTCORE;
 
    for (cheevo = set->cheevos; cheevo < end; cheevo++)
    {
-      if (cheevo->active)
+      if (cheevo->active & mode)
       {
          valid = cheevos_test_cheevo(cheevo);
 
          if (valid && !cheevo->last)
          {
             char url[256];
-
             url[0] = '\0';
 
-            cheevo->active = 0;
+            cheevo->active &= ~mode;
+
+            if (mode == CHEEVOS_ACTIVE_HARDCORE)
+               cheevo->active &= ~CHEEVOS_ACTIVE_SOFTCORE;
 
             RARCH_LOG("CHEEVOS awarding cheevo %u: %s (%s).\n",
                   cheevo->id, cheevo->title, cheevo->description);
@@ -2012,7 +2027,7 @@ static int cheevos_deactivate__json_number(void *userdata,
       {
          if (cheevo->id == (unsigned)id)
          {
-            cheevo->active = 0;
+            cheevo->active &= ~ud->mode;
             found = 1;
             break;
          }
@@ -2027,13 +2042,14 @@ static int cheevos_deactivate__json_number(void *userdata,
          {
             if (cheevo->id == (unsigned)id)
             {
-               cheevo->active = 0;
+               cheevo->active &= ~ud->mode;
                break;
             }
          }
       }
+
       if (found)
-         RARCH_LOG("CHEEVOS deactivated unlocked cheevo %s.\n", cheevo->title);
+         RARCH_LOG("CHEEVOS deactivated unlocked cheevo %u (%s).\n", cheevo->id, cheevo->title);
       else
          RARCH_ERR("CHEEVOS unknown cheevo to deactivate: %u.\n", id);
    }
@@ -2063,7 +2079,7 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
       NULL
    };
 
-   int res;
+   int res = 0;
    cheevos_deactivate_t ud;
    const char* json             = NULL;
 
@@ -2074,6 +2090,7 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
 
       request[0] = '\0';
 
+      /* Deactivate achievements in softcore mode. */
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=0",
@@ -2083,25 +2100,56 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
       request[sizeof(request) - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-      RARCH_LOG("CHEEVOS url to get the list of unlocked cheevos: %s.\n", request);
+      RARCH_LOG("CHEEVOS url to get the list of unlocked cheevos in softcore: %s.\n", request);
 #endif
 
       if (!cheevos_http_get(&json, NULL, request, timeout))
       {
          ud.is_element = 0;
+         ud.mode = CHEEVOS_ACTIVE_SOFTCORE;
          res = jsonsax_parse(json, &handlers, (void*)&ud);
          free((void*)json);
 
          if (res == JSONSAX_OK)
+            RARCH_LOG("CHEEVOS deactivated unlocked achievements in softcore mode.\n");
+         else
          {
-            RARCH_LOG("CHEEVOS deactivated unlocked achievements.\n");
-            return 0;
+            RARCH_ERR("CHEEVOS error deactivating unlocked achievements in softcore mode.\n");
+            res = -1;
+         }
+      }
+
+      /* Deactivate achievements in hardcore mode. */
+      snprintf(
+         request, sizeof(request),
+         "http://retroachievements.org/dorequest.php?r=unlocks&u=%s&t=%s&g=%u&h=1",
+         settings->cheevos.username, cheevos_locals.token, game_id
+      );
+
+      request[sizeof(request) - 1] = 0;
+
+#ifdef CHEEVOS_LOG_URLS
+      RARCH_LOG("CHEEVOS url to get the list of unlocked cheevos in hardcore: %s.\n", request);
+#endif
+
+      if (!cheevos_http_get(&json, NULL, request, timeout))
+      {
+         ud.is_element = 0;
+         ud.mode = CHEEVOS_ACTIVE_HARDCORE;
+         res = jsonsax_parse(json, &handlers, (void*)&ud);
+         free((void*)json);
+
+         if (res == JSONSAX_OK)
+            RARCH_LOG("CHEEVOS deactivated unlocked achievements in hardcore mode.\n");
+         else
+         {
+            RARCH_ERR("CHEEVOS error deactivating unlocked achievements in hardcore mode.\n");
+            res = -1;
          }
       }
    }
 
-   RARCH_ERR("CHEEVOS error deactivating unlocked achievements.\n");
-   return -1;
+   return res;
 #else
    RARCH_LOG("CHEEVOS cheevo deactivation is disabled\n");
    return 0;
