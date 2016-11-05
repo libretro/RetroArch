@@ -53,7 +53,7 @@ static int16_t wiiu_input_state(void *data, const struct retro_keybind **binds,
 {
    wiiu_input_t *wiiu = (wiiu_input_t*)data;
 
-   if (port > 0)
+   if(!wiiu || (port > 0) || !binds || !binds[port])
       return 0;
 
    switch (device)
