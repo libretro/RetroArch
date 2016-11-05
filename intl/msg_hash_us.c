@@ -26,7 +26,7 @@
 
 int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   uint32_t driver_hash = 0;
+   uint32_t      driver_hash = 0;
    settings_t      *settings = config_get_ptr();
 
    if (msg <= MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_END &&
@@ -876,23 +876,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Load Shader Preset. \n"
                " \n"
-               " Load a "
-#ifdef HAVE_CG
-               "Cg"
-#endif
-#ifdef HAVE_GLSL
-#ifdef HAVE_CG
-               "/"
-#endif
-               "GLSL"
-#endif
-#ifdef HAVE_HLSL
-#if defined(HAVE_CG) || defined(HAVE_HLSL)
-               "/"
-#endif
-               "HLSL"
-#endif
-               " preset directly. \n"
+               " Load a shader preset directly. \n"
                "The menu shader menu is updated accordingly. \n"
                " \n"
                "If the CGP uses scaling methods which are not \n"
