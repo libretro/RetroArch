@@ -43,7 +43,6 @@
 #include "system/memory.h"
 #include "system/exception_handler.h"
 #include "system/exception.h"
-#include "utils/logger.h"
 #include <sys/iosupport.h>
 
 #include <coreinit/screen.h>
