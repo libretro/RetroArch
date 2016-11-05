@@ -1536,8 +1536,10 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
    MENU_ENUM_LABEL_SYSTEM_INFORMATION,
    MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
+   MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE,
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
    MENU_ENUM_LABEL_CORE_INFORMATION,
    MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -2153,6 +2155,7 @@ enum msg_hash_enums
 #define MENU_LABEL_FRONTEND_COUNTERS                                           0xe5696877U
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
 #define MENU_LABEL_ACHIEVEMENT_LIST                                            0x7b90fc49U
+#define MENU_LABEL_ACHIEVEMENT_LIST_HARDCORE                                   0x7c632930U
 #define MENU_LABEL_CORE_INFORMATION                                            0xb638e0d3U
 #define MENU_LABEL_CORE_OPTIONS                                                0xf65e60f9U
 #define MENU_LABEL_SHADER_OPTIONS                                              0x1f7d2fc7U

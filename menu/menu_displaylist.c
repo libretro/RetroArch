@@ -2739,11 +2739,18 @@ static int menu_displaylist_parse_load_content_settings(
 
 #ifdef HAVE_CHEEVOS
       if(settings->cheevos.enable)
+      {
          menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST),
             msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST),
             MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
             MENU_SETTING_ACTION, 0, 0);
+         menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE),
+            MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE,
+            MENU_SETTING_ACTION, 0, 0);
+      }
 #endif
    }
    else
@@ -4148,6 +4155,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_NETWORK_INFO:
       case DISPLAYLIST_SYSTEM_INFO:
       case DISPLAYLIST_ACHIEVEMENT_LIST:
+      case DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE:
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CORES_UPDATER:
@@ -5757,7 +5765,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
 #ifdef HAVE_CHEEVOS
       case DISPLAYLIST_ACHIEVEMENT_LIST:
-         cheevos_populate_menu(info);
+         cheevos_populate_menu(info, false);
+         info->need_push    = true;
+         info->need_refresh = true;
+         break;
+      case DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE:
+         cheevos_populate_menu(info, true);
          info->need_push    = true;
          info->need_refresh = true;
          break;

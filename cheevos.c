@@ -2566,7 +2566,7 @@ void cheevos_reset_game(void)
    }
 }
 
-void cheevos_populate_menu(void *data)
+void cheevos_populate_menu(void *data, bool hardcore)
 {
 #ifdef HAVE_MENU
    unsigned i;
@@ -2579,15 +2579,42 @@ void cheevos_populate_menu(void *data)
 
    for (i = 0; cheevo < end; i++, cheevo++)
    {
-      if (!cheevo->active)
+      if (!hardcore)
       {
-         menu_entries_append_enum(info->list, cheevo->title,
-               cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-               MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-         items_found++;
+         if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
+         {
+            menu_entries_append_enum(info->list, cheevo->title,
+                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+            items_found++;
+         }
+         else
+         {
+            menu_entries_append_enum(info->list, cheevo->title,
+                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+            items_found++;
+         }
+      }
+      else
+      {
+         if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
+         {
+            menu_entries_append_enum(info->list, cheevo->title,
+                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+            items_found++;
+         }
+         else
+         {
+            menu_entries_append_enum(info->list, cheevo->title,
+                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
+                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+            items_found++;
+         }
       }
    }
-
+/*
    if (settings->cheevos.test_unofficial)
    {
       cheevo = cheevos_locals.unofficial.cheevos;
@@ -2634,7 +2661,7 @@ void cheevos_populate_menu(void *data)
          }
       }
    }
-
+*/
    if (items_found == 0)
    {
       menu_entries_append_enum(info->list,
