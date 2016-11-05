@@ -1,4 +1,5 @@
 export WIILOAD=tcp:$1
+rm $2.stripped -rf
 powerpc-eabi-strip $2 -o $2.stripped
 wiiload $2.stripped
 #netcat -p 4405 -l $1
