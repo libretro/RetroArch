@@ -2739,11 +2739,18 @@ static int menu_displaylist_parse_load_content_settings(
 
 #ifdef HAVE_CHEEVOS
       if(settings->cheevos.enable)
+      {
          menu_entries_append_enum(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST),
             msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST),
             MENU_ENUM_LABEL_ACHIEVEMENT_LIST,
             MENU_SETTING_ACTION, 0, 0);
+         menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE),
+            MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE,
+            MENU_SETTING_ACTION, 0, 0);
+      }
 #endif
    }
    else
@@ -3339,6 +3346,7 @@ static int menu_displaylist_parse_cores(
          filter_ext ? info->exts : NULL,
          true, settings->show_hidden_files, true, false);
 
+
    {
       char out_dir[PATH_MAX_LENGTH];
 
@@ -3512,6 +3520,8 @@ static int menu_displaylist_parse_cores(
       }
       info->need_sort = true;
    }
+
+   info->push_builtin_cores = true;
 
    return 0;
 }
@@ -3845,6 +3855,21 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
 
+   if (info->push_builtin_cores)
+   {
+      menu_entries_prepend(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR),
+            msg_hash_to_str(MENU_ENUM_LABEL_START_VIDEO_PROCESSOR),
+            MENU_ENUM_LABEL_START_VIDEO_PROCESSOR,
+            MENU_SETTING_ACTION, 0, 0);
+
+      menu_entries_prepend(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD),
+            msg_hash_to_str(MENU_ENUM_LABEL_START_NET_RETROPAD),
+            MENU_ENUM_LABEL_START_NET_RETROPAD,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+
    if (info->need_refresh)
       menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
 
@@ -4148,6 +4173,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_NETWORK_INFO:
       case DISPLAYLIST_SYSTEM_INFO:
       case DISPLAYLIST_ACHIEVEMENT_LIST:
+      case DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE:
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CORES_UPDATER:
@@ -4390,11 +4416,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                menu_displaylist_parse_settings_enum(menu, info,
                      MENU_ENUM_LABEL_START_CORE, PARSE_ACTION, false);
 
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_START_VIDEO_PROCESSOR, PARSE_ACTION, false);
-
-            menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_START_NET_RETROPAD, PARSE_ACTION, false);
 
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
@@ -5757,7 +5778,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
 #ifdef HAVE_CHEEVOS
       case DISPLAYLIST_ACHIEVEMENT_LIST:
-         cheevos_populate_menu(info);
+         cheevos_populate_menu(info, false);
+         info->need_push    = true;
+         info->need_refresh = true;
+         break;
+      case DISPLAYLIST_ACHIEVEMENT_LIST_HARDCORE:
+         cheevos_populate_menu(info, true);
          info->need_push    = true;
          info->need_refresh = true;
          break;
@@ -6084,6 +6110,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             info->need_refresh = true;
             info->need_push    = true;
+
+
          }
          break;
       case DISPLAYLIST_DATABASES:

@@ -38,7 +38,7 @@
 
 static bool                  menu_dialog_pending_push   = false;
 static bool                  menu_dialog_active         = false;
-static unsigned              menu_dialog_current_id     = 0;
+unsigned                     menu_dialog_current_id     = 0;
 static enum menu_dialog_type menu_dialog_current_type   = MENU_DIALOG_NONE;
 static enum msg_hash_enums   menu_dialog_current_msg    = MSG_UNKNOWN;
 

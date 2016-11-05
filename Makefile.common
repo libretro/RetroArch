@@ -553,6 +553,7 @@ endif
 
 ifeq ($(HAVE_STB_FONT), 1)
    OBJ += gfx/drivers_font_renderer/stb.o
+   OBJ += gfx/drivers_font_renderer/stb_unicode.o
 endif
 
 ifeq ($(HAVE_FREETYPE), 1)

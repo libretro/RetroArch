@@ -94,6 +94,11 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
       "Achievement List"
       )
+
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
+      "Achievement List (Hardcore)"
+      )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
       "Scan Content"
