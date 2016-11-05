@@ -925,7 +925,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MSG_BYTES:
          return "octets";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Mode matériel activé : savestate et rembobinage sont désactivés.";
+         return "savestate et rembobinage sont désactivés.";
       case MSG_CONFIG_DIRECTORY_NOT_SET:
          return "Répertoire de configuration non défini. Impossible de sauvegarder le nouveau fichier.";
       case MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES:

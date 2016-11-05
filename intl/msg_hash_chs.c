@@ -3126,7 +3126,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
          return "描述";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "专家模式";
+         return "Achievements 专家模式";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
          return "已解锁的成就:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
@@ -3273,7 +3273,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "动态壁纸";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "动态壁纸目录";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "启用";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "菜单项悬停颜色";
@@ -4432,7 +4432,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
          return "Cannot infer new config path. Use current time.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "硬核模式开启：及时存档和回放被禁用.";
+         return "及时存档和回放被禁用.";
       case MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS:
          return "Comparing with known magic numbers...";
       case MSG_COMPILED_AGAINST_API:
