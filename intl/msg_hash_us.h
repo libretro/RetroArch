@@ -122,3 +122,75 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
       "Block Frames"
       )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+      "Audio Device"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+      "Audio Driver"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+      "Audio DSP Plugin"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+      "Audio Enable"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+      "Audio Filter Dir"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+      "Audio Latency (ms)"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+      "Audio Maximum Timing Skew"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+      "Audio Mute"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+      "Audio Output Rate (KHz)"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+      "Audio Rate Control Delta"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+      "Audio Resampler Driver"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+      "Audio"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+      "Audio Sync Enable"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+      "Audio Volume Level (dB)"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+      "SaveRAM Autosave Interval"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
+      "Load Override Files Automatically"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
+      "Load Remap Files Automatically"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+      "Load Shader Presets Automatically"
+      )

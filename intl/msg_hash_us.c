@@ -3004,42 +3004,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
    switch (msg)
    {
       #include "msg_hash_us.h"
-      case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
-         return "Audio Device";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:
-         return "Audio Driver";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
-         return "Audio Enable";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
-         return "Audio Filter Dir";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
-         return "Audio Latency (ms)";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
-         return "Audio Maximum Timing Skew";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
-         return "Audio Mute";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
-         return "Audio Output Rate (KHz)";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
-         return "Audio Rate Control Delta";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
-         return "Audio Resampler Driver";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
-         return "Audio";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Audio Sync Enable";
-      case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
-         return "Audio Volume Level (dB)";
-      case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
-         return "SaveRAM Autosave Interval";
-      case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
-         return "Load Override Files Automatically";
-      case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
-         return "Load Remap Files Automatically";
-      case MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE:
-         return "Load Shader Presets Automatically";
       case MENU_ENUM_LABEL_VALUE_BACK:
          return "BACK";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
