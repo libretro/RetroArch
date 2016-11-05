@@ -95,7 +95,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_ENABLE_HOTKEY:
             snprintf(s, len,
-                  "Enable other hotkeys. \n"
+                  "启用其他热键. \n"
                   " \n"
                   "If this hotkey is bound to either\n"
                   "a keyboard, joybutton or joyaxis, \n"
@@ -232,13 +232,13 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "改变屏显文字的字体。");
          break;
       case MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS:
-         snprintf(s, len, "Automatically load content-specific core options.");
+         snprintf(s, len, "自动加载游戏内容指定的核心选项.");
          break;
       case MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE:
          snprintf(s, len, "Automatically load override configurations.");
          break;
       case MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE:
-         snprintf(s, len, "Automatically load input remapping files.");
+         snprintf(s, len, "自动加载输入重映射文件.");
          break;
       case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
          snprintf(s, len, "Sort save states in folders \n"
@@ -268,17 +268,17 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "roll back to the previous save state.");
          break;
       case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
-         snprintf(s, len, "Create a screenshot. \n"
+         snprintf(s, len, "创建一份截图. \n"
                " \n"
-               "The screenshot will be stored inside the \n"
-               "Screenshot Directory.");
+               "截图文件将会存放在 \n"
+               "截图目录之中.");
          break;
       case MENU_ENUM_LABEL_RUN:
-         snprintf(s, len, "Start the content.");
+         snprintf(s, len, "启动内容.");
          break;
       case MENU_ENUM_LABEL_INFORMATION:
-         snprintf(s, len, "Show additional metadata information \n"
-               "about the content.");
+         snprintf(s, len, "显示本内容的额外 \n"
+               "元数据信息.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_CONFIG:
          snprintf(s, len, "配置文件.");
@@ -302,7 +302,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_USE_THIS_DIRECTORY:
          snprintf(s, len,
-               "Select this to set this as the directory.");
+               "选择本目录作为指定目录.");
          break;
       case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
          snprintf(s, len,
@@ -508,7 +508,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
          snprintf(s, len,
-               "Font size for on-screen messages.");
+               "屏显信息的字体大小.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
          snprintf(s, len,
@@ -524,7 +524,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_FONT_ENABLE:
          snprintf(s, len,
-               "Show and/or hide onscreen messages.");
+               "显示/隐藏屏显信息.");
          break;
       case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
       case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
@@ -565,7 +565,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE:
          snprintf(s, len,
-               "Audio output samplerate.");
+               "音频输出采样率.");
          break;
       case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
          snprintf(s, len,
@@ -577,7 +577,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CORE_LIST:
          snprintf(s, len,
-               "Load Core. \n"
+               "加载内核. \n"
                " \n"
                "Browse for a libretro core \n"
                "implementation. Where the browser \n"
@@ -726,7 +726,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
          snprintf(s, len,
-               "Loading content from history. \n"
+               "从历史记录中加载内容. \n"
                " \n"
                "As content is loaded, content and libretro \n"
                "core combinations are saved to history. \n"
@@ -983,7 +983,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_INPUT_BIND_DEVICE_TYPE:
          snprintf(s, len,
-               "Input Device Type. \n"
+               "输入设备类型. \n"
                " \n"
                "Picks which device type to use. This is \n"
                "relevant for the libretro core itself."
@@ -991,7 +991,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LIBRETRO_LOG_LEVEL:
          snprintf(s, len,
-               "Sets log level for libretro cores \n"
+               "设置libretro核心的log等级 \n"
                "(GET_LOG_INTERFACE). \n"
                " \n"
                " If a log level issued by a libretro \n"
@@ -1010,7 +1010,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
       case MENU_ENUM_LABEL_STATE_SLOT_INCREASE:
       case MENU_ENUM_LABEL_STATE_SLOT_DECREASE:
          snprintf(s, len,
-               "State slots.\n"
+               "即时存档栏位.\n"
                " \n"
                " With slot set to 0, save state name is *.state \n"
                " (or whatever defined on commandline).\n"
@@ -1019,7 +1019,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SHADER_APPLY_CHANGES:
          snprintf(s, len,
-               "Apply Shader Changes. \n"
+               "应用Shader更改. \n"
                " \n"
                "After changing shader settings, use this to \n"
                "apply changes. \n"
@@ -1073,11 +1073,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "This is driver dependent. E.g.\n"
 #ifdef HAVE_ALSA
                " \n"
-               "ALSA wants a PCM device."
+               "ALSA 需要一个PCM设备."
 #endif
 #ifdef HAVE_OSS
                " \n"
-               "OSS wants a path (e.g. /dev/dsp)."
+               "OSS 需要一个路径 (例如. /dev/dsp)."
 #endif
 #ifdef HAVE_JACK
                " \n"
@@ -1099,7 +1099,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_ENABLE_HOTKEY:
          snprintf(s, len,
-               "Enable other hotkeys.\n"
+               "启用其他热键.\n"
                " \n"
                " If this hotkey is bound to either keyboard, \n"
                "joybutton or joyaxis, all other hotkeys will \n"
@@ -1113,21 +1113,21 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_REWIND_ENABLE:
          snprintf(s, len,
-               "Enable rewinding.\n"
+               "启用回溯倒带功能.\n"
                " \n"
-               "This will take a performance hit, \n"
-               "so it is disabled by default.");
+               "这可能会严重影响性能, \n"
+               "所以缺省设置为关闭.");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
          snprintf(s, len,
-               "Core Directory. \n"
+               "核心目录. \n"
                " \n"
                "A directory for where to search for \n"
                "libretro core implementations.");
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          snprintf(s, len,
-               "Refresh Rate Auto.\n"
+               "自动匹配刷新率.\n"
                " \n"
                "The accurate refresh rate of our monitor (Hz).\n"
                "This is used to calculate audio input rate with \n"
@@ -1156,14 +1156,14 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_SCALE:
          snprintf(s, len,
-               "Fullscreen resolution.\n"
+               "全屏分辨率.\n"
                " \n"
                "Resolution of 0 uses the \n"
                "resolution of the environment.\n");
          break;
       case MENU_ENUM_LABEL_FASTFORWARD_RATIO:
          snprintf(s, len,
-               "Fastforward ratio."
+               "快进比率."
                " \n"
                "The maximum rate at which content will\n"
                "be run when using fast forward.\n"
@@ -1178,7 +1178,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX:
          snprintf(s, len,
-               "Which monitor to prefer.\n"
+               "指定输出显示器.\n"
                " \n"
                "0 (default) means no particular monitor \n"
                "is preferred, 1 and up (1 being first \n"
@@ -1252,11 +1252,11 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VOLUME_UP:
          snprintf(s, len,
-               "Increases audio volume.");
+               "调高音量.");
          break;
       case MENU_ENUM_LABEL_VOLUME_DOWN:
          snprintf(s, len,
-               "Decreases audio volume.");
+               "降低音量.");
          break;
       case MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION:
          snprintf(s, len,
@@ -1265,8 +1265,8 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_PERFCNT_ENABLE:
          snprintf(s, len,
-               "Enable or disable frontend \n"
-               "performance counters.");
+               "启用或关闭前端 \n"
+               "性能计数.");
          break;
       case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
          snprintf(s, len,
@@ -1297,15 +1297,15 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_VIDEO_VSYNC:
          snprintf(s, len,
-               "Video V-Sync.\n");
+               "视频垂直同步.\n");
          break;
       case MENU_ENUM_LABEL_VIDEO_HARD_SYNC:
          snprintf(s, len,
-               "Attempts to hard-synchronize \n"
-               "CPU and GPU.\n"
+               "尝试硬件同步 \n"
+               "CPU和GPU.\n"
                " \n"
-               "Can reduce latency at the cost of \n"
-               "performance.");
+               "可以降低潜在的性能 \n"
+               "开销.");
          break;
       case MENU_ENUM_LABEL_REWIND_GRANULARITY:
          snprintf(s, len,
@@ -4432,7 +4432,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
          return "Cannot infer new config path. Use current time.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Hardcore Mode Enabled: savestate & rewind were disabled.";
+         return "硬核模式开启：及时存档和回放被禁用.";
       case MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS:
          return "Comparing with known magic numbers...";
       case MSG_COMPILED_AGAINST_API:
@@ -4440,7 +4440,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_CONFIG_DIRECTORY_NOT_SET:
          return "Config directory not set. Cannot save new config.";
       case MSG_CONNECTED_TO:
-         return "Connected to";
+         return "连接至";
       case MSG_CONTENT_CRC32S_DIFFER:
          return "Content CRC32s differ. Cannot use different games.";
       case MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT:
@@ -4454,15 +4454,15 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM:
          return "Could not find compatible system.";
       case MSG_COULD_NOT_FIND_VALID_DATA_TRACK:
-         return "Could not find valid data track";
+         return "无法找到有效的数据轨";
       case MSG_COULD_NOT_OPEN_DATA_TRACK:
-         return "could not open data track";
+         return "无法打开数据轨";
       case MSG_COULD_NOT_READ_CONTENT_FILE:
-         return "Could not read content file";
+         return "无法读取内容文件";
       case MSG_COULD_NOT_READ_MOVIE_HEADER:
-         return "Could not read movie header.";
+         return "无法读取视频头部信息.";
       case MSG_COULD_NOT_READ_STATE_FROM_MOVIE:
-         return "Could not read state from movie.";
+         return "无法读取视频状态.";
       case MSG_CRC32_CHECKSUM_MISMATCH:
          return "CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.";
       case MSG_CUSTOM_TIMING_GIVEN:
@@ -4520,9 +4520,9 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_FAILED_TO_CREATE_THE_DIRECTORY:
          return "创建目录失败。";
       case MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE:
-         return "Failed to extract content from compressed file";
+         return "从压缩文件中提取内容失败";
       case MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT:
-         return "Failed to get nickname from client.";
+         return "从客户端获取昵称失败.";
       case MSG_FAILED_TO_LOAD:
          return "无法加载";
       case MSG_FAILED_TO_LOAD_CONTENT:
@@ -4550,25 +4550,25 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY:
          return "Failed to remove disk from tray.";
       case MSG_FAILED_TO_REMOVE_TEMPORARY_FILE:
-         return "Failed to remove temporary file";
+         return "移除临时文件失败";
       case MSG_FAILED_TO_SAVE_SRAM:
          return "Failed to save SRAM";
       case MSG_FAILED_TO_SAVE_STATE_TO:
          return "Failed to save state to";
       case MSG_FAILED_TO_SEND_NICKNAME:
-         return "Failed to send nickname.";
+         return "发送昵称失败.";
       case MSG_FAILED_TO_SEND_NICKNAME_SIZE:
-         return "Failed to send nickname size.";
+         return "发送昵称尺寸失败.";
       case MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT:
-         return "Failed to send nickname to client.";
+         return "发送昵称至客户端失败.";
       case MSG_FAILED_TO_SEND_NICKNAME_TO_HOST:
-         return "Failed to send nickname to host.";
+         return "发送昵称至宿主端失败.";
       case MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT:
-         return "Failed to send SRAM data to client.";
+         return "发送SRAM数据至客户端失败.";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
          return "音频驱动启动失败，将在无音频模式下继续启动。";
       case MSG_FAILED_TO_START_MOVIE_RECORD:
-         return "Failed to start movie record.";
+         return "启动视频录制失败.";
       case MSG_FAILED_TO_START_RECORDING:
          return "Failed to start recording.";
       case MSG_FAILED_TO_TAKE_SCREENSHOT:
@@ -4666,15 +4666,15 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_PROGRAM:
          return "RetroArch";
       case MSG_READING_FIRST_DATA_TRACK:
-         return "Reading first data track...";
+         return "读取第一条数据轨...";
       case MSG_RECEIVED:
-         return "received";
+         return "接收完毕";
       case MSG_RECORDING_TERMINATED_DUE_TO_RESIZE:
          return "Recording terminated due to resize.";
       case MSG_RECORDING_TO:
          return "Recording to";
       case MSG_REDIRECTING_CHEATFILE_TO:
-         return "Redirecting cheat file to";
+         return "重定向金手指文件至";
       case MSG_REDIRECTING_SAVEFILE_TO:
          return "Redirecting save file to";
       case MSG_REDIRECTING_SAVESTATE_TO:
@@ -4684,7 +4684,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_REMOVED_DISK_FROM_TRAY:
          return "Removed disk from tray.";
       case MSG_REMOVING_TEMPORARY_CONTENT_FILE:
-         return "Removing temporary content file";
+         return "移除临时内容文件";
       case MSG_RESET:
          return "重置";
       case MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT:
@@ -4702,11 +4702,11 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_REWIND_INIT:
          return "Initializing rewind buffer with size";
       case MSG_REWIND_INIT_FAILED:
-         return "Failed to initialize rewind buffer. Rewinding will be disabled.";
+         return "初始化回放缓存失败. 回放功能关闭.";
       case MSG_REWIND_INIT_FAILED_THREADED_AUDIO:
          return "Implementation uses threaded audio. Cannot use rewind.";
       case MSG_REWIND_REACHED_END:
-         return "Reached end of rewind buffer.";
+         return "到达回放缓存末端.";
       case MSG_SAVED_NEW_CONFIG_TO:
          return "已保存新配置到";
       case MSG_SAVED_STATE_TO_SLOT:
@@ -4740,7 +4740,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_SRAM_WILL_NOT_BE_SAVED:
          return "SRAM will not be saved.";
       case MSG_STARTING_MOVIE_PLAYBACK:
-         return "Starting movie playback.";
+         return "视频回放.";
       case MSG_STARTING_MOVIE_RECORD_TO:
          return "Starting movie record to";
       case MSG_STATE_SIZE:
