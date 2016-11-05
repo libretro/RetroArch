@@ -3004,8 +3004,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
    switch (msg)
    {
       #include "msg_hash_us.h"
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_BACK:
-         return "Back";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM:
          return "Confirm/OK";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO:

@@ -3113,8 +3113,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "メニューに切り替え";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS:
          return "Basic menu controls";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_BACK:
-         return "前";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM:
          return "確認/了承";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO:

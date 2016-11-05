@@ -3083,8 +3083,6 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "切换菜单";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS:
          return "基本菜单控制";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_BACK:
-         return "返回";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM:
          return "确认";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO:

@@ -3119,8 +3119,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Toggle Menu";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS:
          return "Basic menu controls";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_BACK:
-         return "Back";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM:
          return "Confirm/OK";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO:
