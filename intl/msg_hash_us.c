@@ -3004,28 +3004,6 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
    switch (msg)
    {
       #include "msg_hash_us.h"
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM:
-         return "Confirm/OK";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO:
-         return "Info";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT:
-         return "Quit";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP:
-         return "Scroll Up";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START:
-         return "Defaults";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD:
-         return "Toggle Keyboard";
-      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU:
-         return "Toggle Menu";
-      case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
-         return "Don't overwrite SaveRAM on loading savestate";
-      case MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE:
-         return "Bluetooth Enable";
-      case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:
-         return "Buildbot Assets URL";
-      case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:
-         return "Cache Dir";
       case MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW:
          return "Allow Camera";
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:

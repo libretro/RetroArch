@@ -234,3 +234,47 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
       "Basic menu controls"
       )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
+      "Confirm/OK"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
+      "Info"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
+      "Quit"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+      "Scroll Up"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
+      "Defaults"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
+      "Toggle Keyboard"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
+      "Toggle Menu"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+      "Don't overwrite SaveRAM on loading savestate"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
+      "Bluetooth Enable"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
+      "Buildbot Assets URL"
+      )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
+      "Cache Dir"
+      )
