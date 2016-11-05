@@ -99,7 +99,7 @@ static const char *katakana_page2_grid[] = {
                           "マ","ミ","ム","メ","モ","ン","ッ","ャ","ュ","ョ","⇧",
                           "ヤ","ユ","ヨ","ワ","ヲ","ァ","ィ","ゥ","ェ","ォ","⊕"};
 
-int menu_event_get_osk_ptr()
+int menu_event_get_osk_ptr(void)
 {
    return osk_ptr;
 }
@@ -131,7 +131,7 @@ void menu_event_osk_append(int ptr)
    }
 }
 
-const char** menu_event_get_osk_grid()
+const char** menu_event_get_osk_grid(void)
 {
    return osk_grid;
 }
