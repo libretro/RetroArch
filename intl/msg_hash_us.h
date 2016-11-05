@@ -1597,13 +1597,13 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,
       "Displays the current framerate per second onscreen.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-      "Configure hotkey settings.")
+      "Change settings for hotkey.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
       "Gamepad button combination to toggle menu.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
       "Change settings for joypads, keyboard and mouse.")
 MSG_HASH(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-      "Configure controls for this user.")
+      "Change controls for this user.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Enable or disable logging to the terminal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
