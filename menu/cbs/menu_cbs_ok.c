@@ -1499,10 +1499,14 @@ static int  generic_action_ok_help(const char *path,
          entry_idx, ACTION_OK_DL_HELP);
 }
 
+extern unsigned menu_dialog_current_id;
+
 static int action_ok_cheevos(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
+
+   menu_dialog_current_id = new_id;
 
    return generic_action_ok_help(path, label, new_id, idx, entry_idx,
          MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
