@@ -2614,35 +2614,6 @@ void cheevos_populate_menu(void *data, bool hardcore)
          }
       }
    }
-/*
-   if (settings->cheevos.test_unofficial)
-   {
-      cheevo = cheevos_locals.unofficial.cheevos;
-      end    = cheevos_locals.unofficial.cheevos
-         + cheevos_locals.unofficial.count;
-
-      for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
-      {
-         if (!cheevo->active)
-            menu_entries_append_enum(info->list, cheevo->title,
-                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-      }
-   }
-
-   cheevo = cheevos_locals.core.cheevos;
-   end    = cheevos_locals.core.cheevos + cheevos_locals.core.count;
-
-   for (i = 0; cheevo < end; i++, cheevo++)
-   {
-      if (cheevo->active)
-      {
-         menu_entries_append_enum(info->list, cheevo->title,
-               cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-               MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-         items_found++;
-      }
-   }
 
    if (settings->cheevos.test_unofficial)
    {
@@ -2652,16 +2623,43 @@ void cheevos_populate_menu(void *data, bool hardcore)
 
       for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
-         if (cheevo->active)
+         if (!hardcore)
          {
-            menu_entries_append_enum(info->list, cheevo->title,
-                  cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
-                  MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
-            items_found++;
+            if (!(cheevo->active & CHEEVOS_ACTIVE_SOFTCORE))
+            {
+               menu_entries_append_enum(info->list, cheevo->title,
+                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+               items_found++;
+            }
+            else
+            {
+               menu_entries_append_enum(info->list, cheevo->title,
+                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
+                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+               items_found++;
+            }
+         }
+         else
+         {
+            if (!(cheevo->active & CHEEVOS_ACTIVE_HARDCORE))
+            {
+               menu_entries_append_enum(info->list, cheevo->title,
+                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY,
+                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+               items_found++;
+            }
+            else
+            {
+               menu_entries_append_enum(info->list, cheevo->title,
+                     cheevo->description, MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
+                     MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
+               items_found++;
+            }
          }
       }
    }
-*/
+
    if (items_found == 0)
    {
       menu_entries_append_enum(info->list,
