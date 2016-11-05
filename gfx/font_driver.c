@@ -34,7 +34,7 @@ static const font_renderer_driver_t *font_backends[] = {
    &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#ifdef VITA
+#if defined(VITA) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX)
    &stb_unicode_font_renderer,
 #else
    &stb_font_renderer,
