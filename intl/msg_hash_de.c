@@ -482,8 +482,6 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
          return "Lade Override-Dateien automatisch";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Lade Remap-Dateien automatisch";
-      case MENU_ENUM_LABEL_VALUE_BACK:
-         return "ZURÜCK";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
          return "Blockiere SRAM-Überschreibung";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:

@@ -1018,8 +1018,6 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Carregar Automaticamente Arquivos de Sobreposição";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Carregar Automaticamente Arquivos Remapeados";
-      case MENU_ENUM_LABEL_VALUE_BACK:
-         return "VOLTAR";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
          return "Não Sobrescrever SaveRAM ao Carregar Savestate";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:

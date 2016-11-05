@@ -91,8 +91,6 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Laad Override Bestanden Automatisch";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Laad Remap Bestanden Automatisch";
-      case MENU_ENUM_LABEL_VALUE_BACK:
-         return "TERUG";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS:
          return "Basis menu besturing";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:

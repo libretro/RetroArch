@@ -194,3 +194,7 @@ MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
       "Load Shader Presets Automatically"
       )
+MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
+      "Back"
+      )

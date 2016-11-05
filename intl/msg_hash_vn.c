@@ -3099,8 +3099,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Tải Remap Files Automatically";
       case MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE:
          return "Tải Shader Presets Automatically";
-      case MENU_ENUM_LABEL_VALUE_BACK:
-         return "BACK";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
          return "Back";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:

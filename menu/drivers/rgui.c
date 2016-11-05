@@ -514,11 +514,20 @@ static void rgui_render(void *data)
    normal_color = NORMAL_COLOR(settings);
 
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
+   {
+      char back_buf[32];
+      char back_msg[32];
+
+      back_buf[0] = back_msg[0] = '\0';
+
+      strlcpy(back_buf, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK), sizeof(back_buf));
+      strlcpy(back_msg, string_to_upper(back_buf), sizeof(back_msg));
       blit_line(
             RGUI_TERM_START_X(fb_width),
             RGUI_TERM_START_X(fb_width),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BACK),
+            back_msg,
             TITLE_COLOR(settings));
+   }
 
    strlcpy(title_buf, string_to_upper(title_buf), sizeof(title_buf));
 

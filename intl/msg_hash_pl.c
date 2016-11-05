@@ -80,8 +80,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Load Override Files Automatically"; /* this one's rather complicated */
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Automatycznie wczytuj pliki remapowania";
-      case MENU_ENUM_LABEL_VALUE_BACK:
-         return "WSTECZ";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
          return "Nie nadpisuj SaveRAM przy wczytywaniu stanu";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:

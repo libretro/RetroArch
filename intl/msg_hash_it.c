@@ -2012,8 +2012,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Sì";
       case MENU_ENUM_LABEL_VALUE_NO:
          return "No";
-      case MENU_ENUM_LABEL_VALUE_BACK:
-         return "INDIETRO";
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
          return "Risoluzione schermo";
       case MENU_ENUM_LABEL_VALUE_DISABLED:

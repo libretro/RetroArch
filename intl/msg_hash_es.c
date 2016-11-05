@@ -1558,8 +1558,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Cargar autom. archivos de anulación";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Cargar autom. archivos de reasignación";
-      case MENU_ENUM_LABEL_VALUE_BACK:
-         return "BACK";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
          return "No sobrescribir SaveRAM al cargar un guardado rápido";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:

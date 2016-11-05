@@ -108,8 +108,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Charger les fichiers d'override automatiquement";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
          return "Charger les fichiers remaps automatiquement";
-      case MENU_ENUM_LABEL_VALUE_BACK:
-         return "Retour";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
          return "Ne pas écraser la SaveRAM en chargeant la savestate";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:

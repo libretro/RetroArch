@@ -3093,8 +3093,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "リマップファイルを自動的にロード";
       case MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE:
          return "Load Shader Presets Automatically";
-      case MENU_ENUM_LABEL_VALUE_BACK:
-         return "戻る";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
          return "戻る";
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
