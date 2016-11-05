@@ -133,8 +133,8 @@ static size_t audio_driver_data_ptr                      = 0;
 
 static bool  audio_driver_control                        = false; 
 static float audio_driver_input                          = 0.0f;
-static double audio_source_ratio_original                = 0.0f;;
-static double audio_source_ratio_current                 = 0.0f;;
+static double audio_source_ratio_original                = 0.0f;
+static double audio_source_ratio_current                 = 0.0f;
 static struct retro_audio_callback audio_callback        = {0};
 
 static rarch_dsp_filter_t *audio_driver_dsp              = NULL;
