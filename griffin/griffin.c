@@ -354,8 +354,11 @@ FONTS
 #include "../gfx/font_driver.c"
 
 #if defined(HAVE_STB_FONT)
+#if defined(VITA) || defined(ANDROID) || defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/drivers_font_renderer/stb_unicode.c"
+#else
 #include "../gfx/drivers_font_renderer/stb.c"
+#endif
 #endif
 
 #if defined(HAVE_FREETYPE)
