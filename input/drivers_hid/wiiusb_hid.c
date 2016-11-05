@@ -18,14 +18,15 @@
 #include <gccore.h>
 #include <rthreads/rthreads.h>
 
+#include "../input_defines.h"
 #include "../connect/joypad_connection.h"
 #include "../input_autodetect.h"
 #include "../input_hid_driver.h"
 #include "../../verbosity.h"
 
-#define WIIUSB_SC_NONE 0
-#define WIIUSB_SC_INTMSG 1
-#define WIIUSB_SC_CTRLMSG 2
+#define WIIUSB_SC_NONE     0
+#define WIIUSB_SC_INTMSG   1
+#define WIIUSB_SC_CTRLMSG  2
 #define WIIUSB_SC_CTRLMSG2 3
 
 typedef struct wiiusb_hid
@@ -36,8 +37,11 @@ typedef struct wiiusb_hid
    sthread_t *poll_thread;
    volatile bool poll_thread_quit;
 
-   bool device_detected; /* helps on knowing if a new device has been inserted */
-   bool removal_cb; /* helps on detecting that a device has just been removed */
+   /* helps on knowing if a new device has been inserted */
+   bool device_detected;
+   /* helps on detecting that a device has just been removed */
+   bool removal_cb;      
+
    bool manual_removal;
 } wiiusb_hid_t;
 
@@ -68,15 +72,26 @@ static void wiiusb_hid_process_control_message(struct wiiusb_adapter* adapter)
    switch (adapter->send_control_type)
    {
       case WIIUSB_SC_INTMSG:
-         do { r = USB_WriteIntrMsg(adapter->handle, adapter->endpoint_out, adapter->send_control_size, adapter->send_control_buffer);
+         do
+         {
+            r = USB_WriteIntrMsg(adapter->handle,
+               adapter->endpoint_out, adapter->send_control_size, adapter->send_control_buffer);
          } while (r < 0);
          break;
       case WIIUSB_SC_CTRLMSG:
-         do { r = USB_WriteCtrlMsg(adapter->handle, USB_REQTYPE_INTERFACE_SET, USB_REQ_SETREPORT, (USB_REPTYPE_FEATURE<<8) | 0xf4, 0x0, adapter->send_control_size, adapter->send_control_buffer);
+         do
+         {
+            r = USB_WriteCtrlMsg(adapter->handle, USB_REQTYPE_INTERFACE_SET,
+               USB_REQ_SETREPORT, (USB_REPTYPE_FEATURE<<8) | 0xf4, 0x0,
+               adapter->send_control_size, adapter->send_control_buffer);
          } while (r < 0);
          break;
       case WIIUSB_SC_CTRLMSG2:
-         do { r = USB_WriteCtrlMsg(adapter->handle, USB_REQTYPE_INTERFACE_SET, USB_REQ_SETREPORT, (USB_REPTYPE_OUTPUT<<8) | 0x01, 0x0, adapter->send_control_size, adapter->send_control_buffer);
+         do
+         {
+            r = USB_WriteCtrlMsg(adapter->handle, USB_REQTYPE_INTERFACE_SET,
+                  USB_REQ_SETREPORT, (USB_REPTYPE_OUTPUT<<8) | 0x01, 0x0,
+                  adapter->send_control_size, adapter->send_control_buffer);
          } while (r < 0);
          break;
       /*default:  any other case we do nothing */
@@ -91,7 +106,8 @@ static int32_t wiiusb_hid_read_cb(int32_t size, void *data)
    wiiusb_hid_t *hid = adapter ? adapter->hid : NULL;
 
    if (hid && hid->connections && size > 0)
-      pad_connection_packet(&hid->connections[adapter->slot], adapter->slot, adapter->data-1, size+1);
+      pad_connection_packet(&hid->connections[adapter->slot],
+            adapter->slot, adapter->data-1, size+1);
 
 	if (adapter)
       adapter->busy = false;
@@ -148,15 +164,18 @@ static void wiiusb_get_description(usb_device_entry *device,
    for (c = 0; c < devdesc->bNumConfigurations; c++)
    {
       const usb_configurationdesc *config = &devdesc->configurations[c];
+
       for (i = 0; i < (int)config->bNumInterfaces; i++)
       {
          const usb_interfacedesc *inter = &config->interfaces[i];
+
          for(k = 0; k < (int)inter->bNumEndpoints; k++)
          {
             const usb_endpointdesc *epdesc = &inter->endpoints[k];
             bool is_int = (epdesc->bmAttributes & 0x03) == USB_ENDPOINT_INTERRUPT;
             bool is_out = (epdesc->bEndpointAddress & 0x80) == USB_ENDPOINT_OUT;
-            bool is_in = (epdesc->bEndpointAddress & 0x80) == USB_ENDPOINT_IN;
+            bool is_in  = (epdesc->bEndpointAddress & 0x80) == USB_ENDPOINT_IN;
+
             if (is_int)
             {
                if (is_in)

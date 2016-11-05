@@ -32,6 +32,7 @@
 #include <dynamic/dylib.h>
 #endif
 
+#include "../input_defines.h"
 #include "../input_hid_driver.h"
 #define BUILDING_BTDYNAMIC
 #include "../connect/joypad_connection.h"

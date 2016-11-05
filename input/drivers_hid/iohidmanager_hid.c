@@ -22,6 +22,7 @@
 #include <IOKit/hid/IOHIDKeys.h>
 
 #include "../connect/joypad_connection.h"
+#include "../input_defines.h"
 #include "../input_autodetect.h"
 #include "../input_hid_driver.h"
 #include "../../configuration.h"

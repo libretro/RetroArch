@@ -25,8 +25,6 @@
 #include "config.h"
 #endif
 
-#include "input/input_defines.h"
-
 #define runloop_cmd_triggered(trigger_input, id) (BIT64_GET(trigger_input, id))
 
 #define runloop_cmd_press(current_input, id)     (BIT64_GET(current_input, id))
