@@ -255,7 +255,6 @@ int __entry_menu(int argc, char **argv)
    memoryInitialize();
    mount_sd_fat("sd");
    VPADInit();
-   OSScreenInit();
 
    verbosity_enable();
    DEBUG_VAR(argc);
@@ -263,7 +262,9 @@ int __entry_menu(int argc, char **argv)
    DEBUG_STR(argv[1]);
 #if 0
    int argc_ = 2;
-   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/smb3.nes", NULL};
+//   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/rom.nes", NULL};
+   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/content/rom.sfc", NULL};
+
    rarch_main(argc_, argv_, NULL);
 #else
    rarch_main(argc, argv, NULL);
@@ -284,7 +285,6 @@ int __entry_menu(int argc, char **argv)
 //   }while(frames++ < 300);
 
    main_exit(NULL);
-
    unmount_sd_fat("sd");
    memoryRelease();
    fflush(stdout);

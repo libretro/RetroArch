@@ -10,6 +10,7 @@ OBJ	+= wiiu/fs/sd_fat_devoptab.o
 OBJ	+= wiiu/fs/fs_utils.o
 OBJ	+= wiiu/system/dynamic.o
 OBJ	+= wiiu/system/dyn_stubs.o
+OBJ	+= wiiu/tex_shader.o
 
 DEFINES :=
 
