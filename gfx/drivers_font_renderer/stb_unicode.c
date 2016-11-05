@@ -23,6 +23,7 @@
 #include "../font_driver.h"
 #include "../../verbosity.h"
 
+#ifndef STB_TRUETYPE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STB_RECT_PACK_IMPLEMENTATION
 #define STBRP_STATIC
@@ -31,6 +32,7 @@
 #include "../../deps/stb/stb_rect_pack.h"
 #include "../../deps/stb/stb_truetype.h"
 #undef static
+#endif
 
 typedef struct
 {
@@ -118,8 +120,6 @@ static uint32_t font_renderer_stb_unicode_update_atlas(stb_unicode_font_renderer
    glyph->draw_offset_y  = - y1 * self->scale_factor;
    glyph->width          = self->max_glyph_width;
    glyph->height         = self->max_glyph_height;
-//      glyph->width          = (x1 + x0 ) * self->scale_factor;
-//      glyph->height         = (y1 - y0 ) * self->scale_factor;
    return id;
 }
 
@@ -203,7 +203,6 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    else
       self->scale_factor = stbtt_ScaleForPixelHeight(&self->info, font_size);
 
-//   self->line_height  = (ascent - descent + line_gap) * self->scale_factor;
    self->line_height  = (ascent - descent) * self->scale_factor;
 
    if (!font_renderer_stb_unicode_create_atlas(self, font_size))
