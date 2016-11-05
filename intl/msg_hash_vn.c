@@ -3390,7 +3390,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS:
          return "Right analog Y+ (down)";
       case MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
-         return "Autoconfig Enable";
+         return "Enable Autoconfig";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Input Axis Threshold";
       case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
@@ -3452,7 +3452,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
          return "Keyboard Gamepad Mapping Type";
       case MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS:
-         return "Max Users";
+         return "Number of Users";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "Menu Toggle Gamepad Combo";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS:
@@ -3538,7 +3538,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
          return "Input Remapping (dir)";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
-         return "Remap Binds Enable";
+         return "Enable Remap Binds";
       case MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG:
          return "Lưu Autoconfig";
       case MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS:
