@@ -1886,6 +1886,9 @@ static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
    {
       #include "msg_hash_lbl.h"
       default:
+#if 0
+         RARCH_LOG("Unimplemented: [%d]\n", msg);
+#endif
          break;
    }
 
