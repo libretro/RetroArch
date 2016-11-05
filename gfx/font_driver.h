@@ -166,6 +166,7 @@ extern font_renderer_t ctr_font;
 extern font_renderer_t vulkan_raster_font;
 
 extern font_renderer_driver_t stb_font_renderer;
+extern font_renderer_driver_t stb_unicode_font_renderer;
 extern font_renderer_driver_t freetype_font_renderer;
 extern font_renderer_driver_t coretext_font_renderer;
 extern font_renderer_driver_t bitmap_font_renderer;

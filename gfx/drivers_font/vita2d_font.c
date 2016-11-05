@@ -26,6 +26,7 @@ typedef struct
    vita2d_texture *texture;
    const font_renderer_driver_t *font_driver;
    void *font_data;
+   struct font_atlas *atlas;
 
 } vita_font_t;
 
@@ -47,7 +48,8 @@ static void *vita2d_font_init_font(void *data, const char *font_path, float font
             &font->font_data, font_path, font_size))
       goto error;
 
-   atlas = font->font_driver->get_atlas(font->font_data);
+   font->atlas = font->font_driver->get_atlas(font->font_data);
+   atlas = font->atlas;
 
    if (!atlas)
       goto error;
@@ -72,6 +74,8 @@ static void *vita2d_font_init_font(void *data, const char *font_path, float font
    for (j = 0; j < atlas->height; j++)
       for (k = 0; k < atlas->width; k++)
          tex32[k + j*stride] = frame32[k + j*pitch];
+   
+   font->atlas->dirty = false;
 
    return font;
 
@@ -160,6 +164,9 @@ static void vita2d_font_render_line(
    for (i = 0; i < msg_len; i++)
    {
       int off_x, off_y, tex_x, tex_y, width, height;
+      unsigned int stride, pitch, j, k;
+      const uint8_t         *frame32 = NULL;    
+      uint8_t                 *tex32 = NULL;
       const char *msg_tmp            = &msg[i];
       unsigned code                  = utf8_walk(&msg_tmp);
       unsigned skip                  = msg_tmp - &msg[i];
@@ -181,6 +188,20 @@ static void vita2d_font_render_line(
       tex_y  = glyph->atlas_offset_y;
       width  = glyph->width;
       height = glyph->height;
+      
+      if (font->atlas->dirty)
+      {
+        stride  = vita2d_texture_get_stride(font->texture);
+        tex32   = vita2d_texture_get_datap(font->texture);
+        frame32 = font->atlas->buffer;
+        pitch   = font->atlas->width;
+
+        for (j = 0; j < font->atlas->height; j++)
+           for (k = 0; k < font->atlas->width; k++)
+              tex32[k + j*stride] = frame32[k + j*pitch];
+              
+         font->atlas->dirty = false;
+      }
 
       vita2d_draw_texture_tint_part_scale(font->texture,
             x + off_x + delta_x * scale,
