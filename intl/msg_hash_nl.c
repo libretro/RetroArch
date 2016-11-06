@@ -64,7 +64,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
          return "Audio DSP Plugin...";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
-         return "Audio Activeren";
+         return "Activeren Audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Audio Filter Map";
       case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
@@ -892,7 +892,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
          return "Shader Preset Opslaan Als";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-         return "HW Shared Context Activeren";
+         return "Activeren Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "Hardware Bilinear Filtering";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:
