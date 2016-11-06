@@ -73,6 +73,11 @@
 #include <ogc/lwp_watchdog.h>
 #endif
 
+#ifdef WIIU
+#include <coreinit/time.h>
+#include "wiiu/system/wiiu.h"
+#endif
+
 #if defined(_3DS)
 #include <3ds/svc.h>
 #include <3ds/os.h>
@@ -169,7 +174,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
 #elif defined(_3DS)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
-   time_ticks = 0;
+   time_ticks = OSGetSystemTime();
 #elif defined(__mips__)
    struct timeval tv;
    gettimeofday(&tv,NULL);
@@ -219,7 +224,7 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(VITA)
    return sceKernelGetProcessTimeWide();
 #elif defined(WIIU)
-   return 0;
+   return ticks_to_us(OSGetSystemTime());
 #else
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif

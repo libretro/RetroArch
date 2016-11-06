@@ -262,7 +262,7 @@ int __entry_menu(int argc, char **argv)
 #if 0
    int argc_ = 2;
 //   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/rom.nes", NULL};
-   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/content/rom.sfc", NULL};
+   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/rom.sfc", NULL};
 
    rarch_main(argc_, argv_, NULL);
 #else
@@ -274,8 +274,8 @@ int __entry_menu(int argc, char **argv)
       unsigned sleep_ms = 0;
       int ret = runloop_iterate(&sleep_ms);
 
-//      if (ret == 1 && sleep_ms > 0)
-//       retro_sleep(sleep_ms);
+      if (ret == 1 && sleep_ms > 0)
+       retro_sleep(sleep_ms);
       task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
       if (ret == -1)
        break;
