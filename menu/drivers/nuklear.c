@@ -25,6 +25,7 @@
 
 #include <retro_assert.h>
 #include <compat/posix_string.h>
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
