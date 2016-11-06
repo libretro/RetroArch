@@ -21,6 +21,10 @@
 #include "../menu_navigation.h"
 #include "../../file_path_special.h"
 
+#ifdef HAVE_CHEEVOS
+#include "../../cheevos.h"
+#endif
+
 #ifndef BIND_ACTION_SUBLABEL
 #define BIND_ACTION_SUBLABEL(cbs, name) \
    cbs->action_sublabel = name; \
@@ -330,12 +334,32 @@ static int action_bind_sublabel_video_threaded(
    return 0;
 }
 
+static int action_bind_sublabel_cheevos_entry(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+#ifdef HAVE_CHEEVOS
+   cheevos_ctx_desc_t desc_info;
+   unsigned new_id = type - MENU_SETTINGS_CHEEVOS_START;
+   desc_info.idx   = new_id;
+   desc_info.s     = s;
+   desc_info.len   = len;
+   cheevos_get_description(&desc_info);
+
+   strlcpy(s, desc_info.s, len);
+#endif
+   return 0;
+}
+
 static int action_bind_sublabel_config_save_on_exit(
       file_list_t *list,
       unsigned type, unsigned i,
       const char *label, const char *path,
       char *s, size_t len)
 {
+
    strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT), len);
    return 0;
 }
@@ -352,6 +376,10 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);
+            break;
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);
             break;
