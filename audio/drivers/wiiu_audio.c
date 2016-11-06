@@ -98,18 +98,25 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
    }
    ax->buffer_l = malloc(AX_AUDIO_SIZE);
    ax->buffer_r = malloc(AX_AUDIO_SIZE);
+   memset(ax->buffer_l,0,AX_AUDIO_SIZE);
+   memset(ax->buffer_r,0,AX_AUDIO_SIZE);
+   DCFlushRange(ax->buffer_l,AX_AUDIO_SIZE);
+   DCFlushRange(ax->buffer_r,AX_AUDIO_SIZE);
+
    ax->offsets_l.data = ax->buffer_l;
    ax->offsets_l.currentOffset = 0;
    ax->offsets_l.loopOffset = 0;
    ax->offsets_l.endOffset = AX_AUDIO_COUNT;
    ax->offsets_l.loopingEnabled = AX_VOICE_LOOP_ENABLED;
    ax->offsets_l.dataType = AX_VOICE_FORMAT_LPCM16;
+
    ax->offsets_r.data = ax->buffer_r;
    ax->offsets_r.currentOffset = 0;
    ax->offsets_r.loopOffset = 0;
    ax->offsets_r.endOffset = AX_AUDIO_COUNT;
    ax->offsets_r.loopingEnabled = AX_VOICE_LOOP_ENABLED;
    ax->offsets_r.dataType = AX_VOICE_FORMAT_LPCM16;
+
    AXSetVoiceOffsets(ax->voice_l, &ax->offsets_l);
    AXSetVoiceOffsets(ax->voice_r, &ax->offsets_r);
 

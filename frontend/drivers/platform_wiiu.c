@@ -248,7 +248,9 @@ int __entry_menu(int argc, char **argv)
    InstallExceptionHandler();
 #endif
    socket_lib_init();
+#if 0
    log_init("10.42.0.1");
+#endif
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
    memoryInitialize();
