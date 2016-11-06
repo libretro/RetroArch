@@ -4224,7 +4224,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
          return "Crop Overscan (Reload)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
-         return "Disable Desktop Composition";
+         return "Disable Composition";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER:
          return "Video Driver";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
