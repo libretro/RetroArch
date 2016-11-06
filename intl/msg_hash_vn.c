@@ -4232,11 +4232,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
          return "Flicker filter";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE:
-         return "Enable OSD Message";
+         return "Enable OSD Notification";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH:
-         return "OSD Message Font";
+         return "OSD Notification Font";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE:
-         return "OSD Message Size";
+         return "OSD Notification Size";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT:
          return "Force aspect ratio";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
@@ -4258,9 +4258,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "Max swapchain images";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
-         return "OSD Message X Position";
+         return "OSD Notification X Position";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
-         return "OSD Message Y Position";
+         return "OSD Notification Y Position";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Monitor Index";
       case MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
