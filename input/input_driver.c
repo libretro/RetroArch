@@ -453,7 +453,25 @@ int16_t input_state(unsigned port, unsigned device,
    }
 
    if (settings->input.remap_binds_enable)
-      input_remapping_state(port, &device, &idx, &id);
+   {
+      switch (device)
+      {
+         case RETRO_DEVICE_JOYPAD:
+            if (id < RARCH_FIRST_CUSTOM_BIND)
+               id = settings->input.remap_ids[port][id];
+            break;
+         case RETRO_DEVICE_ANALOG:
+            if (idx < 2 && id < 2)
+            {
+               unsigned new_id = RARCH_FIRST_CUSTOM_BIND + (idx * 2 + id);
+
+               new_id = settings->input.remap_ids[port][new_id];
+               idx   = (new_id & 2) >> 1;
+               id    = new_id & 1;
+            }
+            break;
+      }
+   }
 
    if (!input_driver_flushing_input 
          && !input_driver_block_libretro_input)
