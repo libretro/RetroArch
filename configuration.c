@@ -194,6 +194,8 @@ const char *config_get_default_audio(void)
          return "ps3";
       case AUDIO_WII:
          return "gx";
+      case AUDIO_WIIU:
+         return "AX";
       case AUDIO_PSP:
 #ifdef VITA
          return "vita";
