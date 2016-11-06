@@ -3184,9 +3184,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Save Configuration On Exit";
-      case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Ask For Confirmation On Exit";
+         return "Save Config on Exit";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Collections";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
