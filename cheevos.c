@@ -77,17 +77,17 @@ enum
 {
    /* Don't change those, the values match the console IDs
     * at retroachievements.org. */
-   CHEEVOS_CONSOLE_MEGA_DRIVE = 1,
-   CHEEVOS_CONSOLE_NINTENDO_64 = 2,
-   CHEEVOS_CONSOLE_SUPER_NINTENDO = 3,
-   CHEEVOS_CONSOLE_GAMEBOY = 4,
-   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE = 5,
-   CHEEVOS_CONSOLE_GAMEBOY_COLOR = 6,
-   CHEEVOS_CONSOLE_NINTENDO = 7,
-   CHEEVOS_CONSOLE_PC_ENGINE = 8,
-   CHEEVOS_CONSOLE_SEGA_CD = 9,
-   CHEEVOS_CONSOLE_SEGA_32X = 10,
-   CHEEVOS_CONSOLE_MASTER_SYSTEM = 11
+   CHEEVOS_CONSOLE_MEGA_DRIVE       = 1,
+   CHEEVOS_CONSOLE_NINTENDO_64      = 2,
+   CHEEVOS_CONSOLE_SUPER_NINTENDO   = 3,
+   CHEEVOS_CONSOLE_GAMEBOY          = 4,
+   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE  = 5,
+   CHEEVOS_CONSOLE_GAMEBOY_COLOR    = 6,
+   CHEEVOS_CONSOLE_NINTENDO         = 7,
+   CHEEVOS_CONSOLE_PC_ENGINE        = 8,
+   CHEEVOS_CONSOLE_SEGA_CD          = 9,
+   CHEEVOS_CONSOLE_SEGA_32X         = 10,
+   CHEEVOS_CONSOLE_MASTER_SYSTEM    = 11
 };
 
 enum
@@ -279,7 +279,7 @@ static cheevos_locals_t cheevos_locals =
    true,
    {NULL, 0},
    {NULL, 0},
-   {0},
+   {0}
 };
 
 static int cheats_are_enabled  = 0;
