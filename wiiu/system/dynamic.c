@@ -8,11 +8,11 @@
 
 #undef EXPORT
 #undef EXPORT_BEGIN
-#undef EXPORT_END
+//#undef EXPORT_END
 
 #define EXPORT(name)       do{if(OSDynLoad_FindExport(handle, 0, #name, &addr_##name) < 0)OSFatal("Function " # name " is NULL");} while(0)
 #define EXPORT_BEGIN(lib)  OSDynLoad_Acquire(#lib, &handle)
-#define EXPORT_END()       OSDynLoad_Release(handle)
+//#define EXPORT_END()       OSDynLoad_Release(handle)
 
 void InitFunctionPointers(void)
 {
