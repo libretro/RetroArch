@@ -262,7 +262,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Beperk Maximale Afspeelsnelheid";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
-         return "Frame Throttle";
+         return "Throttling";
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Frontend Prestatie Tellers";
       case MENU_ENUM_LABEL_VALUE_HELP:
@@ -632,7 +632,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
          return "Geavanceerde instellingen weergeven";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
-         return "Slow-Motion Ratio";
+         return "Slow Motion Ratio";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
          return "Saves Sorteren In Map";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE:

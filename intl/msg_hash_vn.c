@@ -3316,13 +3316,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FALSE:
          return "False";
       case MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO:
-         return "Maximum Run Speed";
+         return "Fast Forward Ratio";
       case MENU_ENUM_LABEL_VALUE_FPS_SHOW:
          return "Display Framerate";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limit Maximum Run Speed";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
-         return "Frame Throttle";
+         return "Throttling";
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Frontend Counters";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
@@ -3646,7 +3646,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MENU_DRIVER:
          return "Menu Driver";
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE:
-         return "Throttle Menu Framerate";
+         return "Throttle Framerate in Menu";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menu File Browser";
       case MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER:
@@ -3976,7 +3976,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHUTDOWN:
          return "Tắt Máy";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
-         return "Slow-Motion Ratio";
+         return "Slow Motion Ratio";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
          return "Sort Content Saves in Folders";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
