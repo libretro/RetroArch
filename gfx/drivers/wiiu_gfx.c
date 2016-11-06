@@ -87,6 +87,8 @@ typedef struct
 
    wiiu_render_mode_t render_mode;
    int frames;
+   bool noblock;
+   int syncframes;
 } wiiu_video_t;
 
 static const wiiu_render_mode_t wiiu_render_mode_map[] =
@@ -316,6 +318,8 @@ static void* wiiu_gfx_init(const video_info_t* video,
       *input = wiiuinput ? &input_wiiu : NULL;
       *input_data = wiiuinput;
    }
+   wiiu->noblock = false;
+   wiiu->syncframes = 60;
 
    return wiiu;
 }
@@ -374,6 +378,10 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    int i;
 
    wiiu_video_t* wiiu = (wiiu_video_t*) data;
+   if(wiiu->menu.enable || wiiu->noblock == false)
+      wiiu->syncframes = 60;
+   else if(wiiu->syncframes > 0)
+      wiiu->syncframes--;
    GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
    //   GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.3f, 0.8f, 1.0f);
    /* can't call GX2ClearColor after GX2SetContextState for whatever reason */
@@ -438,7 +446,8 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
    GX2SwapScanBuffers();
    GX2Flush();
-   GX2WaitForVsync();
+   if(wiiu->syncframes)
+      GX2WaitForVsync();
    printf("\rframe : %5i", wiiu->frames++);
    fflush(stdout);
 
@@ -447,8 +456,12 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
 static void wiiu_gfx_set_nonblock_state(void* data, bool toggle)
 {
-   (void)data;
-   (void)toggle;
+   wiiu_video_t* wiiu = (wiiu_video_t*) data;
+
+   if (!wiiu)
+      return;
+
+   wiiu->noblock = toggle;
 }
 
 static bool wiiu_gfx_alive(void* data)
