@@ -474,11 +474,14 @@ static int16_t dinput_input_state(void *data,
 
       case RETRO_DEVICE_ANALOG:
          if (binds[port])
+         {
             ret = dinput_pressed_analog(di, binds[port], idx, id);
-         if (!ret && binds[port])
-            ret = input_joypad_analog(di->joypad, port,
+            if (!ret)
+               ret = input_joypad_analog(di->joypad, port,
                   idx, id, settings->input.binds[port]);
-         return ret;
+            return ret;
+         }
+         return 0;
 
       case RETRO_DEVICE_MOUSE:
          return dinput_mouse_state(di, id);
