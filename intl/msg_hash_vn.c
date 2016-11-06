@@ -446,7 +446,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "If enabled, every content loaded \n"
                "in RetroArch will be automatically \n"
-               "added to the recent history list.");
+               "added to the recent history playlist.");
          break;
       case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
          snprintf(s, len,
@@ -3060,25 +3060,25 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Ask";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
-         return "Assets Dir";
+         return "Assets (dir)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
-         return "Audio Device";
+         return "Audio Device...";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:
          return "Audio Driver";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
+         return "Audio DSP Plugin...";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
-         return "Audio Enable";
+         return "Enable Audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
-         return "Audio Filter Dir";
+         return "Audio Filter (dir)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
          return "Audio Latency (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
          return "Audio Maximum Timing Skew";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
-         return "Audio Mute";
+         return "Enable Audio Mute";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "Audio Output Rate (KHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
@@ -3088,11 +3088,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
          return "Audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Audio Sync Enable";
+         return "Enable Audio Sync";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Audio Volume Level (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
-         return "SaveRAM Autosave Interval";
+         return "Save SRAM Periodically";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Tải Override Files Automatically";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
@@ -3134,15 +3134,15 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU:
          return "Toggle Menu";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
-         return "Don't overwrite SaveRAM on loading savestate";
+         return "Disable SRAM when Loading Savestate";
       case MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE:
          return "Bluetooth Enable";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "Buildbot Assets URL";
       case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:
-         return "Cache Dir";
+         return "Cache (dir)";
       case MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW:
-         return "Allow Camera";
+         return "Enable Camera";
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
          return "Camera Driver";
       case MENU_ENUM_LABEL_VALUE_CHEAT:
@@ -3150,7 +3150,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES:
          return "Apply Cheat Changes";
       case MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH:
-         return "Cheat File Dir";
+         return "Cheat File (dir)";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE:
          return "Cheat File";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD:
@@ -3162,7 +3162,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
          return "Description";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Hardcore Mode";
+         return "Achievements Hardcore Mode";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
          return "Locked Achievements:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
@@ -3170,7 +3170,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retro Achievements";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
-         return "Test unofficial";
+         return "Test Unofficial Achievements";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
          return "Unlocked Achievements:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY:
@@ -3184,23 +3184,21 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Save Configuration On Exit";
-      case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Ask For Confirmation On Exit";
+         return "Save Config on Exit";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Collections";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
-         return "Content Database Dir";
+         return "Content Database (dir)";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DIR:
-         return "Content Dir";
+         return "Content (dir)";
       case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
-         return "History List Size";
+         return "Number of Items in History Playlist";
       case MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS:
          return "Quick Menu";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR:
-         return "Core Assets Dir";
+         return "Core Assets (dir)";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Downloads Dir";
+         return "Downloads (dir)";
       case MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS:
          return "Cheats";
       case MENU_ENUM_LABEL_VALUE_CORE_COUNTERS:
@@ -3240,11 +3238,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_SETTINGS:
          return "Core";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
-         return "Automatically start a core";
+         return "Start Core Automatically";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuration Per-Core";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
-         return "Automatically extract downloaded archive";
+         return "Extract Archive Automatically";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
          return "Buildbot Cores URL";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST:
@@ -3256,7 +3254,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CPU_CORES:
          return "CPU Cores:";
       case MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY:
-         return "Cursor Dir";
+         return "Cursor (dir)";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursor Manager";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
@@ -3292,7 +3290,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DONT_CARE:
          return "Don't care";
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return "Downloads Dir";
+         return "Downloads (dir)";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE:
          return "Download Core...";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
@@ -3304,12 +3302,12 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
          return "Driver";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
-         return "Dummy On Core Shutdown";
+         return "Dummy on Core Shutdown";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamic Wallpaper";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Dynamic Wallpapers Dir";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+         return "Dynamic Wallpapers (dir)";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "Enable";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Menu entry hover color";
@@ -3318,13 +3316,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FALSE:
          return "False";
       case MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO:
-         return "Maximum Run Speed";
+         return "Fast Forward Ratio";
       case MENU_ENUM_LABEL_VALUE_FPS_SHOW:
          return "Display Framerate";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limit Maximum Run Speed";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
-         return "Frame Throttle";
+         return "Throttling";
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Frontend Counters";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
@@ -3350,7 +3348,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
          return "What Is A Core?";
       case MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE:
-         return "History List Enable";
+         return "Enable History Playlist";
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "History";
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
@@ -3390,7 +3388,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS:
          return "Right analog Y+ (down)";
       case MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE:
-         return "Autoconfig Enable";
+         return "Enable Autoconfig";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Input Axis Threshold";
       case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
@@ -3452,7 +3450,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
          return "Keyboard Gamepad Mapping Type";
       case MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS:
-         return "Max Users";
+         return "Number of Users";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "Menu Toggle Gamepad Combo";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS:
@@ -3500,7 +3498,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_RESET:
          return "Reset game";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND:
-         return "Rewind";
+         return "Rewinding";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY:
          return "Save state";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT:
@@ -3520,9 +3518,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP:
          return "Volume +";
       case MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
-         return "Display Keyboard Overlay";
+         return "Enable Keyboard Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
-         return "Display Overlay";
+         return "Enable Display Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
          return "Hide Overlay In Menu";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
@@ -3536,9 +3534,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH:
          return "Prefer Front Touch";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Input Remapping Dir";
+         return "Input Remapping (dir)";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
-         return "Remap Binds Enable";
+         return "Enable Remap Binds";
       case MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG:
          return "Lưu Autoconfig";
       case MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS:
@@ -3556,11 +3554,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS:
          return "Internal storage status";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Input Device Autoconfig Dir";
+         return "Input Device Autoconfig (dir)";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "Joypad Driver";
       case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Keyboard Overlay Preset";
+         return "Load Keyboard Overlay Preset...";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
          return "Lakka Services";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
@@ -3596,11 +3594,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LEFT_ANALOG:
          return "Left Analog";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH:
-         return "Core Dir";
+         return "Core (dir)";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH:
-         return "Core Info Dir";
+         return "Core Info (dir)";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
-         return "Core Logging Level";
+         return "Core Verbosity Level";
       case MENU_ENUM_LABEL_VALUE_LINEAR:
          return "Linear";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
@@ -3620,7 +3618,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS:
          return "Logging";
       case MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY:
-         return "Logging Verbosity";
+         return "Enable Verbose Logging";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_ENUM_LABEL_VALUE_MANAGEMENT:
@@ -3648,7 +3646,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MENU_DRIVER:
          return "Menu Driver";
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE:
-         return "Throttle Menu Framerate";
+         return "Throttle Framerate in Menu";
       case MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS:
          return "Menu File Browser";
       case MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER:
@@ -3764,17 +3762,17 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OPTIONAL:
          return "Optional";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "OSK Overlay Dir";
+         return "OSK Overlay (dir)";
       case MENU_ENUM_LABEL_VALUE_OVERLAY:
          return "Overlay";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
          return "Tự động tải Preferred Overlay";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Overlay Dir";
+         return "Overlay (dir)";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Overlay Opacity";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
-         return "Overlay Preset";
+         return "Load Display Overlay Preset...";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE:
          return "Overlay Scale";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
@@ -3786,15 +3784,15 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO:
          return "Pause when menu activated";
       case MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE:
-         return "Don't run in background";
+         return "Pause on Background";
       case MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE:
-         return "Performance Counters";
+         return "Enable Performance Counters";
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
-         return "Playlists";
+         return "Playlist";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
-         return "Playlist Dir";
+         return "Playlist (dir)";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Playlists";
+         return "Playlist";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
          return "Touch Support";
       case MENU_ENUM_LABEL_VALUE_PORT:
@@ -3864,21 +3862,21 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REBOOT:
          return "Khởi động lại";
       case MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
-         return "Recording Config Dir";
+         return "Recording Config (dir)";
       case MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
-         return "Recording Output Dir";
+         return "Recording Output (dir)";
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
          return "Recording";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
-         return "Record Config";
+         return "Load Record Config";
       case MENU_ENUM_LABEL_VALUE_RECORD_DRIVER:
          return "Record Driver";
       case MENU_ENUM_LABEL_VALUE_RECORD_ENABLE:
-         return "Record Enable";
+         return "Enable Recording";
       case MENU_ENUM_LABEL_VALUE_RECORD_PATH:
-         return "Output File";
+         return "Save Record as...";
       case MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
-         return "Use Output Dir";
+         return "Save Record in Output (dir)";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE:
          return "Remap File";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
@@ -3904,15 +3902,15 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS:
          return "Retro Achievements";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
-         return "Rewind Enable";
+         return "Enable Rewinding";
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
          return "Rewind Granularity";
       case MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS:
-         return "Rewind";
+         return "Rewinding";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
-         return "File Browser Dir";
+         return "File Browser (dir)";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
-         return "Config Dir";
+         return "Config (dir)";
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
          return "Show Start Screen";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
@@ -3922,15 +3920,15 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE:
          return "SAMBA Enable";
       case MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY:
-         return "Savefile Dir";
+         return "Savefile (dir)";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
-         return "Save State Auto Index";
+         return "Index Savestates Automatically";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
          return "Tự động tải State";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
-         return "Auto Save State";
+         return "Save Savestate Automatically";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY:
-         return "Savestate Dir";
+         return "Savestate (dir)";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
          return "Save Current Config";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
@@ -3950,7 +3948,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
          return "<Scan This Directory>";
       case MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY:
-         return "Screenshot Dir";
+         return "Screenshot (dir)";
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
          return "Screen Resolution";
       case MENU_ENUM_LABEL_VALUE_SEARCH:
@@ -3978,11 +3976,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHUTDOWN:
          return "Tắt Máy";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
-         return "Slow-Motion Ratio";
+         return "Slow Motion Ratio";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
-         return "Sort Saves In Folders";
+         return "Sort Content Saves in Folders";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
-         return "Sort Savestates In Folders";
+         return "Sort Savestates in Folders";
       case MENU_ENUM_LABEL_VALUE_SSH_ENABLE:
          return "SSH Enable";
       case MENU_ENUM_LABEL_VALUE_START_CORE:
@@ -4004,7 +4002,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "System BGM Enable";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "System/BIOS Dir";
+         return "System & BIOS (dir)";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "System Information";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
@@ -4148,7 +4146,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
          return "Thumbnails";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY:
-         return "Thumbnails Dir";
+         return "Thumbnails (dir)";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
          return "Thumbnails Updater";
       case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS:
@@ -4224,21 +4222,21 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN:
          return "Crop Overscan (Reload)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
-         return "Disable Desktop Composition";
+         return "Disable Composition";
       case MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER:
          return "Video Driver";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
          return "Video Filter";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
-         return "Video Filter Dir";
+         return "Video Filter (dir)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
          return "Flicker filter";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE:
-         return "Display OSD Message";
+         return "Enable OSD Notification";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH:
-         return "OSD Message Font";
+         return "OSD Notification Font";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE:
-         return "OSD Message Size";
+         return "OSD Notification Size";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT:
          return "Force aspect ratio";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE:
@@ -4250,7 +4248,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA:
          return "Video Gamma";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD:
-         return "GPU Record Enable";
+         return "Use GPU Recording";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
          return "GPU Screenshot Enable";
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC:
@@ -4260,13 +4258,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES:
          return "Max swapchain images";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X:
-         return "OSD Message X Position";
+         return "OSD Notification X Position";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y:
-         return "OSD Message Y Position";
+         return "OSD Notification Y Position";
       case MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Monitor Index";
       case MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
-         return "Post filter record Enable";
+         return "Use Post Filter Recording";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE:
          return "Refresh Rate";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
@@ -4280,7 +4278,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS:
          return "Video";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR:
-         return "Video Shader Dir";
+         return "Video Shader (dir)";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
          return "Shader Passes";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
@@ -4296,7 +4294,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME:
          return "Save Game Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-         return "HW Shared Context Enable";
+         return "Enable Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "HW Bilinear Filtering";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:
@@ -4444,7 +4442,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_APPENDED_DISK:
          return "Appended disk";
       case MSG_APPLICATION_DIR:
-         return "Application Dir";
+         return "Application (dir)";
       case MSG_APPLYING_CHEAT:
          return "Applying cheat changes.";
       case MSG_APPLYING_SHADER:
@@ -4470,7 +4468,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
          return "Cannot infer new config path. Use current time.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Hardcore Mode Enabled: savestate & rewind were disabled.";
+         return "Savestating & rewinding will be disabled for all games.";
       case MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS:
          return "Comparing with known magic numbers...";
       case MSG_COMPILED_AGAINST_API:
@@ -4538,7 +4536,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_ERROR_SAVING_SHADER_PRESET:
          return "Error saving shader preset.";
       case MSG_EXTERNAL_APPLICATION_DIR:
-         return "External Application Dir";
+         return "External Application (dir)";
       case MSG_EXTRACTING:
          return "Extracting";
       case MSG_EXTRACTING_FILE:

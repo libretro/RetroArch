@@ -479,7 +479,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
          return "Dossier des playlists";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Playlists";
+         return "Playlist";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
          return "Support du tactile";
       case MENU_ENUM_LABEL_VALUE_PORT:
@@ -629,7 +629,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "Musique du système activée";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Dossier système/BIOS";
+         return "Dossier système & BIOS";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informations du système";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
@@ -925,7 +925,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MSG_BYTES:
          return "octets";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Mode matériel activé : savestate et rembobinage sont désactivés.";
+         return "savestate et rembobinage sont désactivés.";
       case MSG_CONFIG_DIRECTORY_NOT_SET:
          return "Répertoire de configuration non défini. Impossible de sauvegarder le nouveau fichier.";
       case MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES:

@@ -445,7 +445,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "If enabled, every content loaded \n"
                "in RetroArch will be automatically \n"
-               "added to the recent history list.");
+               "added to the recent history playlist.");
          break;
       case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
          snprintf(s, len,
@@ -1310,7 +1310,7 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
                "end of RetroArch's lifetime.\n"
                " \n"
                "RetroArch will automatically load any savestate\n"
-               "with this path on startup if 'Auto Load State\n"
+               "with this path on startup if 'Load Savestate Automatically\n"
                "is enabled.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
@@ -3156,7 +3156,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
          return "Description";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "ハードコアモード";
+         return "Achievements ハードコアモード";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
          return "Locked Achievements:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
@@ -3303,7 +3303,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "ダイナミック壁紙";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "ダイナミック壁紙のディレクトリー";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "有効";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Menu entry hover color";
@@ -3998,7 +3998,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "System BGM Enable";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "システム/BIOSのディレクトリー";
+         return "システム & BIOSのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "システム情報";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
@@ -4464,7 +4464,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
          return "Cannot infer new config path. Use current time.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Hardcore Mode Enabled: savestate & rewind were disabled.";
+         return "Savestating & rewinding will be disabled for all games.";
       case MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS:
          return "Comparing with known magic numbers...";
       case MSG_COMPILED_AGAINST_API:

@@ -62,9 +62,9 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:
          return "Audio Driver";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
+         return "Audio DSP Plugin...";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
-         return "Audio Activeren";
+         return "Activeren Audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Audio Filter Map";
       case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
@@ -72,7 +72,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
          return "Audio Maximale Timing Onevenredigheid";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
-         return "Audio Mute"; /* TODO/FIXME */
+         return "Enable Audio Mute"; /* TODO/FIXME */
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "Audio Uitvoer Frequentie (KHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
@@ -86,7 +86,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Audio Uitgangsniveau (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
-         return "SaveRAM Autosave Interval";
+         return "Save SRAM Periodically";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Laad Override Bestanden Automatisch";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
@@ -262,7 +262,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Beperk Maximale Afspeelsnelheid";
       case MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS:
-         return "Frame Throttle";
+         return "Throttling";
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Frontend Prestatie Tellers";
       case MENU_ENUM_LABEL_VALUE_HELP:
@@ -368,7 +368,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH:
          return "Core Info Map";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
-         return "Core Logging Niveau";
+         return "Core Verbosity Niveau";
       case MENU_ENUM_LABEL_VALUE_LINEAR:
          return "Linear";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
@@ -484,7 +484,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Overlay Transparentie";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
-         return "Overlay Preset";
+         return "Load Display Overlay Preset...";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE:
          return "Overlay Schalering";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
@@ -578,7 +578,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
          return "Rewind Granulariteit";
       case MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS:
-         return "Rewind";
+         return "Rewinding";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Bestandsbeheer Map";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -632,7 +632,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
          return "Geavanceerde instellingen weergeven";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
-         return "Slow-Motion Ratio";
+         return "Slow Motion Ratio";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
          return "Saves Sorteren In Map";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
@@ -646,7 +646,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "Systeem BGM";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Systeem/BIOS Map";
+         return "Systeem & BIOS Map";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Systeem Informatie";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
@@ -892,7 +892,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
          return "Shader Preset Opslaan Als";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-         return "HW Shared Context Activeren";
+         return "Activeren Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "Hardware Bilinear Filtering";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:

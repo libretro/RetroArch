@@ -729,7 +729,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "end of RetroArch's lifetime.\n"
                " \n"
                "RetroArch will automatically load any savestate\n"
-               "with this path on startup if 'Auto Load State\n"
+               "with this path on startup if 'Load Savestate Automatically\n"
                "is enabled.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
@@ -1146,7 +1146,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
          return "Menù a comparsa";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Modalità Hardcore";
+         return "Achievements Modalità Hardcore";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
          return "Obiettivi bloccati:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
@@ -1260,7 +1260,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Scheda Playlist";
 #else
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
-         return "Playlists tab";
+         return "Playlist";
 #endif
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Nessun settaggio trovato.";
@@ -1381,7 +1381,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
          return "Directory del database";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Directory System/BIOS";
+         return "Directory System & BIOS";
       case MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Directory Trucchi";
 	  case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:
@@ -2126,7 +2126,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Cerca:";
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
          return "Usa visualizzatore di immagini interno";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "Attivare";
       case MENU_ENUM_LABEL_VALUE_START_CORE:
          return "Avvia Core";

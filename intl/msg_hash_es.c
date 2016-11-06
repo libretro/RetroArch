@@ -1272,7 +1272,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
          return "Descripción";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Modo Extremo";
+         return "Logros Modo Extremo";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retrologros";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
@@ -1354,7 +1354,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_BYTES:
          return "bytes";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Modo Extremo Activado: guardar estado y reboninar se han desactivado.";
+         return "guardar estado y reboninar se han desactivado.";
       case MSG_CONFIG_DIRECTORY_NOT_SET:
          return "No se ha asignado la carpeta de configuración. No se puede guardar la nueva configuración.";
       case MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES:
@@ -1692,7 +1692,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Fondo de pantalla dinámico";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Carpeta de fondos de pantalla dinámicos";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "Activar";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Color de entrada resaltada del menú";
@@ -2051,7 +2051,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "Activar música del sistema";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Carpeta de sistema/BIOS";
+         return "Carpeta de sistema & BIOS";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Información del sistema";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:

@@ -1284,7 +1284,7 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "end of RetroArch's lifetime.\n"
                " \n"
                "RetroArch will automatically load any savestate\n"
-               "with this path on startup if 'Auto Load State\n"
+               "with this path on startup if 'Load Savestate Automatically\n"
                "is enabled.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
@@ -3126,7 +3126,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
          return "描述";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "专家模式";
+         return "Achievements 专家模式";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
          return "已解锁的成就:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
@@ -3268,12 +3268,12 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
          return "驱动";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
-         return "Dummy On Core Shutdown";
+         return "Dummy on Core Shutdown";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "动态壁纸";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "动态壁纸目录";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "启用";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "菜单项悬停颜色";
@@ -3968,7 +3968,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "启用系统背景音乐";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "系统/BIOS目录";
+         return "系统 & BIOS目录";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "系统信息";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
@@ -4432,7 +4432,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
          return "Cannot infer new config path. Use current time.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "硬核模式开启：及时存档和回放被禁用.";
+         return "及时存档和回放被禁用.";
       case MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS:
          return "Comparing with known magic numbers...";
       case MSG_COMPILED_AGAINST_API:
