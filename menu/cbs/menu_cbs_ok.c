@@ -1506,7 +1506,7 @@ static int action_ok_cheevos(const char *path,
 {
    unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
 
-   menu_dialog_current_id = new_id;
+   menu_dialog_set_current_id(new_id);
 
    return generic_action_ok_help(path, label, new_id, idx, entry_idx,
          MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,

@@ -38,7 +38,7 @@
 
 static bool                  menu_dialog_pending_push   = false;
 static bool                  menu_dialog_active         = false;
-unsigned                     menu_dialog_current_id     = 0;
+static unsigned              menu_dialog_current_id     = 0;
 static enum menu_dialog_type menu_dialog_current_type   = MENU_DIALOG_NONE;
 static enum msg_hash_enums   menu_dialog_current_msg    = MSG_UNKNOWN;
 
@@ -298,6 +298,11 @@ void menu_dialog_push(void)
          sizeof(info.label));
 
    menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
+}
+
+void menu_dialog_set_current_id(unsigned id)
+{
+   menu_dialog_current_id   = id;
 }
 
 void menu_dialog_reset(void)
