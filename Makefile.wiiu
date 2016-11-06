@@ -45,7 +45,7 @@ else
 #	OBJ += menu/drivers_display/menu_display_wiiu.o
 	OBJ += input/drivers/wiiu_input.o
 	OBJ += input/drivers_joypad/wiiu_joypad.o
-#	OBJ += audio/drivers/wiiu_audio.o
+	OBJ += audio/drivers/wiiu_audio.o
 	OBJ += frontend/drivers/platform_wiiu.o
 	OBJ += gfx/video_filters/2xsai.o
 	OBJ += gfx/video_filters/super2xsai.o

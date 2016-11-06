@@ -96,6 +96,9 @@ static const audio_driver_t *audio_drivers[] = {
 #ifdef GEKKO
    &audio_gx,
 #endif
+#ifdef WIIU
+   &audio_ax,
+#endif
 #ifdef EMSCRIPTEN
    &audio_rwebaudio,
 #endif
