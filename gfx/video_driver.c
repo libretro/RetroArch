@@ -2078,7 +2078,7 @@ void video_driver_frame(const void *data, unsigned width,
    const char *msg        = NULL;
    settings_t *settings   = config_get_ptr();
 
-   if (!video_driver_is_active())
+   if (!video_driver_active)
       return;
 
    if (video_driver_scaler_ptr && data &&
