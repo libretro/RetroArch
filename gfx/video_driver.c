@@ -111,6 +111,35 @@ static const video_poke_interface_t *video_driver_poke   = NULL;
  * being passed to video driver. */
 static video_pixel_scaler_t *video_driver_scaler_ptr     = NULL;
 
+/* Graphics driver requires RGBA byte order data (ABGR on little-endian)
+ * for 32-bit.
+ * This takes effect for overlay and shader cores that wants to load
+ * data into graphics driver. Kinda hackish to place it here, it is only
+ * used for GLES.
+ * TODO: Refactor this better. */
+static struct retro_hw_render_callback hw_render;
+
+static const struct retro_hw_render_context_negotiation_interface *hw_render_context_negotiation = NULL;
+
+static bool video_driver_use_rgba                        = false;
+static bool video_driver_data_own                        = false;
+static bool video_driver_active                          = false;
+
+static video_driver_frame_t frame_bak                    = NULL;
+
+/* If set during context deinit, the driver should keep
+ * graphics context alive to avoid having to reset all 
+ * context state. */
+static bool video_driver_cache_context                   = false;
+
+/* Set to true by driver if context caching succeeded. */
+static bool video_driver_cache_context_ack               = false;
+static uint8_t *video_driver_record_gpu_buffer           = NULL;
+
+#ifdef HAVE_THREADS
+static slock_t *display_lock                             = NULL;
+#endif
+
 struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { "4:3",           1.3333f },
    { "16:9",          1.7778f },
@@ -1266,29 +1295,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 #endif
 }
 
-/* Graphics driver requires RGBA byte order data (ABGR on little-endian)
- * for 32-bit.
- * This takes effect for overlay and shader cores that wants to load
- * data into graphics driver. Kinda hackish to place it here, it is only
- * used for GLES.
- * TODO: Refactor this better. */
-static struct retro_hw_render_callback hw_render;
-static const struct retro_hw_render_context_negotiation_interface *hw_render_context_negotiation;
-
-static bool video_driver_use_rgba                = false;
-static bool video_driver_data_own                = false;
-static bool video_driver_active                  = false;
-static video_driver_frame_t frame_bak            = NULL;
-/* If set during context deinit, the driver should keep
- * graphics context alive to avoid having to reset all 
- * context state. */
-static bool video_driver_cache_context           = false;
-/* Set to true by driver if context caching succeeded. */
-static bool video_driver_cache_context_ack       = false;
-static uint8_t *video_driver_record_gpu_buffer   = NULL;
-#ifdef HAVE_THREADS
-static slock_t *display_lock                     = NULL;
-#endif
 
 static void video_driver_lock(void)
 {
