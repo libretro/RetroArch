@@ -801,42 +801,9 @@ static enum runloop_state runloop_check_state(
       }
    }
 
-#ifdef HAVE_MENU
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-   {
-      menu_ctx_iterate_t iter;
-      bool skip = false;
-#ifdef HAVE_OVERLAY
-      skip = osk_enable && input_keyboard_return_pressed();
-#endif
+   if (menu_driver_is_binding_state())
+      trigger_input = 0;
 
-      if (menu_driver_is_binding_state())
-         trigger_input = 0;
-
-      if (!skip)
-      {
-         enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-         bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
-
-         focused                 = focused && !ui_companion_is_on_foreground();
-
-         iter.action             = action;
-
-         if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-
-         if (focused || !runloop_idle)
-            menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
-
-         if (!focused)
-            return RUNLOOP_STATE_SLEEP;
-
-         if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
-            return RUNLOOP_STATE_QUIT;
-      }
-   }
-#endif
-   
    if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
 
@@ -882,6 +849,39 @@ static enum runloop_state runloop_check_state(
    if (runloop_iterate_time_to_exit(
             runloop_cmd_press(trigger_input, RARCH_QUIT_KEY)) != 1)
       return RUNLOOP_STATE_QUIT;
+
+      #ifdef HAVE_MENU
+         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+         {
+            menu_ctx_iterate_t iter;
+            bool skip = false;
+      #ifdef HAVE_OVERLAY
+            skip = osk_enable && input_keyboard_return_pressed();
+      #endif
+
+            if (!skip)
+            {
+               enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
+               bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
+
+               focused                 = focused && !ui_companion_is_on_foreground();
+
+               iter.action             = action;
+
+               if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+                  rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+
+               if (focused || !runloop_idle)
+                  menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+
+               if (!focused)
+                  return RUNLOOP_STATE_SLEEP;
+
+               if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
+                  return RUNLOOP_STATE_QUIT;
+            }
+         }
+      #endif
 
    if (runloop_idle)
       return RUNLOOP_STATE_SLEEP;
