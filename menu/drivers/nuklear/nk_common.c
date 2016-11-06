@@ -46,24 +46,22 @@ struct nk_device device;
 struct nk_image nk_common_image_load(const char *filename)
 {
     int x,y,n;
-    GLuint tex;
-    unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
+    struct texture_image ti;
+    uintptr_t tex;
 
-    if (!data)
+    ti.width  = 0;
+    ti.height = 0;
+    ti.pixels = NULL;
+
+    image_texture_load(&ti, filename);
+
+    if (!ti.pixels)
        printf("Failed to load image: %s\n", filename);
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-#endif
+    video_driver_texture_load(&ti, TEXTURE_FILTER_MIPMAP_NEAREST, &tex);
 
-    stbi_image_free(data);
+    image_texture_free(&ti);
+
     return nk_image_id((int)tex);
 }
 
