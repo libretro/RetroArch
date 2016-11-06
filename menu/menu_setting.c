@@ -5351,7 +5351,7 @@ static bool setting_append_list(
                list, list_info,
                &settings->cheevos.enable,
                MENU_ENUM_LABEL_CHEEVOS_ENABLE,
-               MENU_ENUM_LABEL_VALUE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
                cheevos_enable,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,

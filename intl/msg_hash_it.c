@@ -2126,7 +2126,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Cerca:";
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
          return "Usa visualizzatore di immagini interno";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "Attivare";
       case MENU_ENUM_LABEL_VALUE_START_CORE:
          return "Avvia Core";

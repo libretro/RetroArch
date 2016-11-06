@@ -3303,7 +3303,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "ダイナミック壁紙";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "ダイナミック壁紙のディレクトリー";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "有効";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Menu entry hover color";

@@ -3273,7 +3273,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "动态壁纸";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "动态壁纸目录";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "启用";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "菜单项悬停颜色";

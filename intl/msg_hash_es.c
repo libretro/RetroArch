@@ -1692,7 +1692,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Fondo de pantalla dinámico";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Carpeta de fondos de pantalla dinámicos";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "Activar";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Color de entrada resaltada del menú";

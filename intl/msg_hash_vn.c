@@ -3309,7 +3309,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Dynamic Wallpaper";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Dynamic Wallpapers Dir";
-      case MENU_ENUM_LABEL_VALUE_ENABLE:
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "Enable";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Menu entry hover color";
