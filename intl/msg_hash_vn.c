@@ -3244,7 +3244,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuration Per-Core";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
-         return "Automatically extract downloaded archive";
+         return "Extract Archives Automatically";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
          return "Buildbot Cores URL";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST:
