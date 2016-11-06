@@ -569,7 +569,7 @@ static bool init_video_pixel_converter(unsigned size)
 
    /* If pixel format is not 0RGB1555, we don't need to do
     * any internal pixel conversion. */
-   if (video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
+   if (video_driver_pix_fmt != RETRO_PIXEL_FORMAT_0RGB1555)
       return true;
 
    /* No need to perform pixel conversion for HW rendering contexts. */
@@ -2083,7 +2083,9 @@ void video_driver_frame(const void *data, unsigned width,
    if (!video_driver_is_active())
       return;
 
-   if (video_driver_scaler_ptr &&
+   if (video_driver_scaler_ptr && data &&
+         (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555) &&
+         (data != RETRO_HW_FRAME_BUFFER_VALID) &&
          video_pixel_frame_scale(
             video_driver_scaler_ptr->scaler,
             video_driver_scaler_ptr->scaler_out,
