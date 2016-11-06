@@ -3521,7 +3521,6 @@ static int menu_displaylist_parse_cores(
       info->need_sort = true;
    }
 
-   info->push_builtin_cores = true;
 
    return 0;
 }
@@ -6110,9 +6109,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             info->need_refresh = true;
             info->need_push    = true;
-
-
          }
+         info->push_builtin_cores = true;
          break;
       case DISPLAYLIST_DATABASES:
       case DISPLAYLIST_SHADER_PASS:
