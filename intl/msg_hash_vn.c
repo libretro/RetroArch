@@ -3520,9 +3520,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP:
          return "Volume +";
       case MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE:
-         return "Display Keyboard Overlay";
+         return "Enable Keyboard Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE:
-         return "Display Overlay";
+         return "Enable Display Overlay";
       case MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU:
          return "Hide Overlay In Menu";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
@@ -3560,7 +3560,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "Joypad Driver";
       case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Keyboard Overlay Preset";
+         return "Load Keyboard Overlay Preset...";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
          return "Lakka Services";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
@@ -3774,7 +3774,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Overlay Opacity";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
-         return "Overlay Preset";
+         return "Load Overlay Preset...";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE:
          return "Overlay Scale";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
@@ -4234,7 +4234,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
          return "Flicker filter";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE:
-         return "Display OSD Message";
+         return "Enable OSD Message";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH:
          return "OSD Message Font";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE:
