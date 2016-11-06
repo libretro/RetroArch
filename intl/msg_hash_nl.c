@@ -368,7 +368,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH:
          return "Core Info Map";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
-         return "Core Logging Niveau";
+         return "Core Verbosity Niveau";
       case MENU_ENUM_LABEL_VALUE_LINEAR:
          return "Linear";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:

@@ -3598,7 +3598,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH:
          return "Core Info (dir)";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
-         return "Core Logging Level";
+         return "Core Verbosity Level";
       case MENU_ENUM_LABEL_VALUE_LINEAR:
          return "Linear";
       case MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE:
@@ -3618,7 +3618,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS:
          return "Logging";
       case MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY:
-         return "Logging Verbosity";
+         return "Enable Verbose Logging";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
          return "Main Menu";
       case MENU_ENUM_LABEL_VALUE_MANAGEMENT:
@@ -3786,7 +3786,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE:
          return "Pause on Background";
       case MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE:
-         return "Performance Counters";
+         return "Enable Performance Counters";
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "Playlists";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
