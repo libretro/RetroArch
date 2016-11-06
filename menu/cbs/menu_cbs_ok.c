@@ -1489,7 +1489,7 @@ static int action_ok_shader_pass_load(const char *path,
          ACTION_OK_LOAD_SHADER_PASS, MENU_ENUM_LABEL_SHADER_OPTIONS);
 }
 
-static int  generic_action_ok_help(const char *path,
+int  generic_action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum msg_hash_enums id, enum menu_dialog_type id2)
 {
@@ -1498,20 +1498,6 @@ static int  generic_action_ok_help(const char *path,
    return generic_action_ok_displaylist_push(path, NULL, lbl, id2, idx,
          entry_idx, ACTION_OK_DL_HELP);
 }
-
-#if 0
-static int action_ok_cheevos(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
-
-   menu_dialog_set_current_id(new_id);
-
-   return generic_action_ok_help(path, label, new_id, idx, entry_idx,
-         MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
-         MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION);
-}
-#endif
 
 static void menu_input_st_cheat_cb(void *userdata, const char *str)
 {
@@ -3975,12 +3961,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_OK(cbs, NULL);
    }
-#if 0
-   else if ((type >= MENU_SETTINGS_CHEEVOS_START))
-   {
-      BIND_ACTION_OK(cbs, action_ok_cheevos);
-   }
-#endif
    else if (type >= MENU_SETTINGS_CHEAT_BEGIN
          && type <= MENU_SETTINGS_CHEAT_END)
    {
