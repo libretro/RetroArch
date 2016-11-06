@@ -1381,7 +1381,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
          return "Directory del database";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Directory System/BIOS";
+         return "Directory System & BIOS";
       case MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH:
          return "Directory Trucchi";
 	  case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:

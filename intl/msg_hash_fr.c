@@ -629,7 +629,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "Musique du système activée";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "Dossier système/BIOS";
+         return "Dossier système & BIOS";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informations du système";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
