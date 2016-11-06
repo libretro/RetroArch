@@ -83,7 +83,7 @@ static unsigned            video_driver_state_scale      = 0;
 static unsigned            video_driver_state_out_bpp    = 0;
 static bool                video_driver_state_out_rgb32  = false;
 
-static enum retro_pixel_format video_driver_pix_fmt;
+static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
 static const void *frame_cache_data                      = NULL;
 static unsigned frame_cache_width                        = 0;
@@ -1060,11 +1060,8 @@ static bool video_driver_frame_filter(const void *data,
 {
    static struct retro_perf_counter softfilter_process = {0};
    settings_t *settings = config_get_ptr();
-
+   
    performance_counter_init(&softfilter_process, "softfilter_process");
-
-   if (!video_driver_state_filter || !data)
-      return false;
 
    rarch_softfilter_get_output_size(video_driver_state_filter,
          output_width, output_height, width, height);
@@ -2111,7 +2108,8 @@ void video_driver_frame(const void *data, unsigned width,
       )
       recording_dump_frame(data, width, height, pitch);
 
-   if (video_driver_frame_filter(data, width, height, pitch,
+   if (data && video_driver_state_filter &&
+         video_driver_frame_filter(data, width, height, pitch,
             &output_width, &output_height, &output_pitch))
    {
       data   = video_driver_state_buffer;
