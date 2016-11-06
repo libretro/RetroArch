@@ -3142,7 +3142,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:
          return "Cache (dir)";
       case MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW:
-         return "Allow Camera";
+         return "Enable Camera";
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
          return "Camera Driver";
       case MENU_ENUM_LABEL_VALUE_CHEAT:
