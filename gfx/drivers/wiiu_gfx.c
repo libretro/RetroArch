@@ -273,7 +273,7 @@ static void* wiiu_gfx_init(const video_info_t* video,
 
    wiiu->texture.surface.image = MEM2_alloc(wiiu->texture.surface.imageSize,
                                  wiiu->texture.surface.alignment);
-   //   memset(wiiu->texture.surface.image, 0x88, wiiu->texture.surface.imageSize);
+   memset(wiiu->texture.surface.image, 0x0, wiiu->texture.surface.imageSize);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->texture.surface.image,
                  wiiu->texture.surface.imageSize);
 
@@ -293,10 +293,7 @@ static void* wiiu_gfx_init(const video_info_t* video,
    wiiu->menu.texture.surface.image = MEM2_alloc(wiiu->menu.texture.surface.imageSize,
                                       wiiu->menu.texture.surface.alignment);
 
-   for (i = 0; i < wiiu->menu.texture.surface.imageSize / 4; i++)
-      ((uint32_t*)wiiu->menu.texture.surface.image)[i] = 0xFFFFFFFF;
-
-   ((uint32_t*)wiiu->menu.texture.surface.image)[0] = 0xFF0000FF;
+   memset(wiiu->menu.texture.surface.image, 0x0, wiiu->menu.texture.surface.imageSize);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
 
