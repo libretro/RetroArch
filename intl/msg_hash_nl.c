@@ -484,7 +484,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Overlay Transparentie";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
-         return "Load Overlay Preset...";
+         return "Load Display Overlay Preset...";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE:
          return "Overlay Schalering";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
