@@ -84,7 +84,7 @@ static unsigned font_renderer_stb_unicode_get_slot(stb_unicode_font_renderer_t *
 static uint32_t font_renderer_stb_unicode_update_atlas(
       stb_unicode_font_renderer_t *self, uint32_t charcode)
 {
-   int y0, x1, advance_width, left_side_bearing;
+   int advance_width, left_side_bearing;
    int id, glyph_index, offset_x, offset_y;
    struct font_glyph *glyph = NULL;
    uint8_t *dst             = NULL;
@@ -116,7 +116,7 @@ static uint32_t font_renderer_stb_unicode_update_atlas(
                              self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
 
    stbtt_GetGlyphHMetrics(&self->info, glyph_index, &advance_width, &left_side_bearing);
-   stbtt_GetGlyphBox(&self->info, glyph_index, &x0, &y0, &x1, &y1);
+   stbtt_GetGlyphBox(&self->info, glyph_index, &x0, NULL, NULL, &y1);
 
    glyph->advance_x      = advance_width * self->scale_factor;
    glyph->atlas_offset_x = offset_x;
