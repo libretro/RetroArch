@@ -2078,8 +2078,6 @@ void video_driver_frame(const void *data, unsigned width,
    const char *msg        = NULL;
    settings_t *settings   = config_get_ptr();
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL,   &msg);
-
    if (!video_driver_is_active())
       return;
 
@@ -2122,7 +2120,8 @@ void video_driver_frame(const void *data, unsigned width,
    }
 
    video_driver_msg[0] = '\0';
-   if (msg)
+
+   if (runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &msg))
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
 
    if (!current_video || !current_video->frame(
