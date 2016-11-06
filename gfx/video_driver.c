@@ -1859,11 +1859,6 @@ void video_driver_set_active(void)
    video_driver_active = true;
 }
 
-void video_driver_unset_active(void)
-{
-   video_driver_active = false;
-}
-
 bool video_driver_is_active(void)
 {
    return video_driver_active;
@@ -2126,7 +2121,7 @@ void video_driver_frame(const void *data, unsigned width,
             video_driver_data, data, width, height,
             video_driver_frame_count,
             pitch, video_driver_msg))
-      video_driver_unset_active();
+      video_driver_active = false;
 
    video_driver_frame_count++;
 }

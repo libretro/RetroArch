@@ -269,7 +269,6 @@ void video_driver_set_video_cache_context_ack(void);
 void video_driver_unset_video_cache_context_ack(void);
 bool video_driver_is_video_cache_context_ack(void);
 void video_driver_set_active(void);
-void video_driver_unset_active(void);
 bool video_driver_is_active(void);
 bool video_driver_has_gpu_record(void);
 uint8_t *video_driver_get_gpu_record(void);
