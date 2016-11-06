@@ -62,7 +62,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:
          return "Audio Driver";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
+         return "Audio DSP Plugin...";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
          return "Audio Activeren";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
@@ -72,7 +72,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
          return "Audio Maximale Timing Onevenredigheid";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
-         return "Audio Mute"; /* TODO/FIXME */
+         return "Enable Audio Mute"; /* TODO/FIXME */
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "Audio Uitvoer Frequentie (KHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:

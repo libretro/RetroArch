@@ -3064,13 +3064,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
-         return "Audio Device";
+         return "Audio Device...";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER:
          return "Audio Driver";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN:
-         return "Audio DSP Plugin";
+         return "Audio DSP Plugin...";
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
-         return "Audio Enable";
+         return "Enable Audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
          return "Audio Filter (dir)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
@@ -3078,7 +3078,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
          return "Audio Maximum Timing Skew";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MUTE:
-         return "Audio Mute";
+         return "Enable Audio Mute";
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "Audio Output Rate (KHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
@@ -3088,7 +3088,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
          return "Audio";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SYNC:
-         return "Audio Sync Enable";
+         return "Enable Audio Sync";
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Audio Volume Level (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
