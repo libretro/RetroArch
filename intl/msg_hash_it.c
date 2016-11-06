@@ -1260,7 +1260,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Scheda Playlist";
 #else
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
-         return "Playlists tab";
+         return "Playlist";
 #endif
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Nessun settaggio trovato.";

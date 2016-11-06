@@ -446,7 +446,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "If enabled, every content loaded \n"
                "in RetroArch will be automatically \n"
-               "added to the recent history list.");
+               "added to the recent history playlist.");
          break;
       case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
          snprintf(s, len,
@@ -3192,7 +3192,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONTENT_DIR:
          return "Content (dir)";
       case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
-         return "History List Size";
+         return "Number of Items in History Playlist";
       case MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS:
          return "Quick Menu";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR:
@@ -3348,7 +3348,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE:
          return "What Is A Core?";
       case MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE:
-         return "Enable History List";
+         return "Enable History Playlist";
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "History";
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
@@ -3788,11 +3788,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE:
          return "Enable Performance Counters";
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
-         return "Playlists";
+         return "Playlist";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
          return "Playlist (dir)";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Playlists";
+         return "Playlist";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
          return "Touch Support";
       case MENU_ENUM_LABEL_VALUE_PORT:

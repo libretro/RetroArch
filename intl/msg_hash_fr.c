@@ -479,7 +479,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
          return "Dossier des playlists";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
-         return "Playlists";
+         return "Playlist";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
          return "Support du tactile";
       case MENU_ENUM_LABEL_VALUE_PORT:

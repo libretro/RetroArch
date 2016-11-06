@@ -446,7 +446,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "If enabled, every content loaded \n"
                "in RetroArch will be automatically \n"
-               "added to the recent history list.");
+               "added to the recent history playlist.");
          break;
       case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
          snprintf(s, len,
