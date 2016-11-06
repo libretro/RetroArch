@@ -1272,7 +1272,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
          return "Descripción";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Achievements Modo Extremo";
+         return "Logros Modo Extremo";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retrologros";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
