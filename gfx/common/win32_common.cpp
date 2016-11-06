@@ -53,22 +53,23 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 }
 #endif
 
-extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
-
-bool doubleclick_on_titlebar = false;
-unsigned g_resize_width;
-unsigned g_resize_height;
-bool g_restore_desktop;
-static unsigned g_pos_x = CW_USEDEFAULT;
-static unsigned g_pos_y = CW_USEDEFAULT;
-static bool g_resized;
-bool g_inited;
-static bool g_quit;
-ui_window_win32_t main_window;
-
+extern "C" bool dinput_handle_message(void *dinput, UINT message,
+      WPARAM wParam, LPARAM lParam);
 extern void *dinput_wgl;
-static void *curD3D = NULL;
 extern void *dinput;
+
+unsigned g_resize_width             = 0;
+unsigned g_resize_height            = 0;
+static bool g_resized               = false;
+bool g_restore_desktop              = false;
+static bool doubleclick_on_titlebar = false;
+bool g_inited                       = false;
+static bool g_quit                  = false;
+static unsigned g_pos_x             = CW_USEDEFAULT;
+static unsigned g_pos_y             = CW_USEDEFAULT;
+static void *curD3D                 = NULL;
+
+ui_window_win32_t main_window;
 
 /* Power Request APIs */
 
@@ -120,10 +121,10 @@ extern "C"
 		return doubleclick_on_titlebar;
 	}
 
-        void unset_doubleclick_on_titlebar(void)
-        {
-           doubleclick_on_titlebar = false;
-        }
+   void unset_doubleclick_on_titlebar(void)
+   {
+      doubleclick_on_titlebar = false;
+   }
 };
 
 INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message, 
@@ -163,26 +164,23 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
             case IDOK:
             case IDCANCEL:
                EndDialog(hDlg, LOWORD(wParam));
-               return FALSE;
-
+               break;
             case ID_CORELISTBOX:
-               {
-                  switch (HIWORD(wParam)) 
-                  { 
-                     case LBN_SELCHANGE:
-                        {
-                           int lbItem;
-                           const core_info_t *info = NULL;
-                           HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
-                           lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
-                           core_info_get_list(&core_info_list);
-                           core_info_list_get_supported_cores(core_info_list,
-                                 path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
-                           info = (const core_info_t*)&core_info[lbItem];
-                           runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
-                        } 
-                        break;
-                  }
+               switch (HIWORD(wParam)) 
+               { 
+                  case LBN_SELCHANGE:
+                     {
+                        int lbItem;
+                        const core_info_t *info = NULL;
+                        HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
+                        lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
+                        core_info_get_list(&core_info_list);
+                        core_info_list_get_supported_cores(core_info_list,
+                              path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
+                        info = (const core_info_t*)&core_info[lbItem];
+                        runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
+                     } 
+                     break;
                }
                return TRUE;
          }
@@ -229,7 +227,8 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    HMONITOR *hm_to_use  = (HMONITOR*)hm_data;
 
    if (!win32_monitor_last)
-      win32_monitor_last = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
+      win32_monitor_last = MonitorFromWindow(GetDesktopWindow(),
+            MONITOR_DEFAULTTONEAREST);
 
    *hm_to_use = win32_monitor_last;
    fs_monitor = settings->video.monitor_index;
@@ -574,7 +573,8 @@ void win32_monitor_init(void)
    g_quit              = false;
 }
 
-bool win32_monitor_set_fullscreen(unsigned width, unsigned height, unsigned refresh, char *dev_name)
+bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
+      unsigned refresh, char *dev_name)
 {
 #ifndef _XBOX
    DEVMODE devmode;
@@ -586,8 +586,10 @@ bool win32_monitor_set_fullscreen(unsigned width, unsigned height, unsigned refr
    devmode.dmDisplayFrequency = refresh;
    devmode.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
 
-   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u @ %uHz on device %s.\n", width, height, refresh, dev_name);
-   return ChangeDisplaySettingsEx(dev_name, &devmode, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
+   RARCH_LOG("[WGL]: Setting fullscreen to %ux%u @ %uHz on device %s.\n",
+         width, height, refresh, dev_name);
+   return ChangeDisplaySettingsEx(dev_name, &devmode,
+         NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
 #endif
 }
 
@@ -601,10 +603,12 @@ void win32_show_cursor(bool state)
 #endif
 }
 
-void win32_check_window(bool *quit, bool *resize, unsigned *width, unsigned *height)
+void win32_check_window(bool *quit, bool *resize,
+      unsigned *width, unsigned *height)
 {
 #ifndef _XBOX
-   const ui_application_t *application = ui_companion_driver_get_application_ptr();
+   const ui_application_t *application = 
+      ui_companion_driver_get_application_ptr();
    if (application)
       application->process_events();
 #endif
@@ -687,7 +691,8 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
     * for black frame insertion using video.refresh_rate set to half
     * of the display refresh rate, as well as higher vsync swap intervals. */
    float refresh_mod    = settings->video.black_frame_insertion ? 2.0f : 1.0f;
-   unsigned refresh     = roundf(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
+   unsigned refresh     = roundf(settings->video.refresh_rate 
+         * refresh_mod * settings->video.swap_interval);
 
    if (fullscreen)
    {
@@ -736,7 +741,8 @@ void win32_set_window(unsigned *width, unsigned *height,
       if (!fullscreen && settings->ui.menubar_enable)
       {
          RECT rc_temp = {0, 0, (LONG)*height, 0x7FFF};
-         SetMenu(main_window.hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         SetMenu(main_window.hwnd,
+               LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
          SendMessage(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
          g_resize_height = *height += rc_temp.top + rect->top;
          SetWindowPos(main_window.hwnd, NULL, 0, 0, *width, *height, SWP_NOMOVE);
@@ -777,7 +783,8 @@ bool win32_set_video_mode(void *data,
 
    windowed_full   = settings->video.windowed_fullscreen;
 
-   win32_set_style(&current_mon, &hm_to_use, &width, &height, fullscreen, windowed_full, &rect, &mon_rect, &style);
+   win32_set_style(&current_mon, &hm_to_use, &width, &height,
+         fullscreen, windowed_full, &rect, &mon_rect, &style);
 
    if (!win32_window_create(data, style, &mon_rect, width, height, fullscreen))
       return false;
