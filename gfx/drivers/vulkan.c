@@ -1492,7 +1492,7 @@ static void vulkan_inject_black_frame(vk_t *vk)
 
    vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-         VK_ACCESS_TRANSFER_WRITE_BIT, 0,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
@@ -1818,7 +1818,7 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             0,
-            0,
+            VK_ACCESS_MEMORY_READ_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
@@ -1832,7 +1832,7 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            0,
+            VK_ACCESS_MEMORY_READ_BIT,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
    }
