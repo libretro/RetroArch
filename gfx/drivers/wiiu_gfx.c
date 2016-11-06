@@ -112,15 +112,6 @@ static wiiu_set_position(position_t* position, GX2ColorBuffer* draw_buffer, floa
    position[3].x = -1.0f;
    position[3].y =  1.0f;
 
-   DEBUG_FLOAT(position[0].x);
-   DEBUG_FLOAT(position[0].y);
-   DEBUG_FLOAT(position[1].x);
-   DEBUG_FLOAT(position[1].y);
-   DEBUG_FLOAT(position[2].x);
-   DEBUG_FLOAT(position[2].y);
-   DEBUG_FLOAT(position[3].x);
-   DEBUG_FLOAT(position[3].y);
-
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, position, 4 * sizeof(*position));
 }
 
@@ -306,10 +297,6 @@ static void* wiiu_gfx_init(const video_info_t* video,
       ((uint32_t*)wiiu->menu.texture.surface.image)[i] = 0xFFFFFFFF;
 
    ((uint32_t*)wiiu->menu.texture.surface.image)[0] = 0xFF0000FF;
-   DEBUG_VAR(wiiu->menu.texture.surface.width);
-   DEBUG_VAR(wiiu->menu.texture.surface.height);
-   DEBUG_VAR(wiiu->menu.texture.surface.alignment);
-   DEBUG_VAR(wiiu->menu.texture.surface.imageSize);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
 
@@ -332,8 +319,6 @@ static void* wiiu_gfx_init(const video_info_t* video,
       *input = wiiuinput ? &input_wiiu : NULL;
       *input_data = wiiuinput;
    }
-
-   DEBUG_LINE();
 
    return wiiu;
 }
@@ -378,7 +363,6 @@ static void wiiu_gfx_free(void* data)
 
 
    free(wiiu);
-   DEBUG_LINE();
 }
 
 static bool wiiu_gfx_frame(void* data, const void* frame,
@@ -580,9 +564,6 @@ static void wiiu_set_texture_frame(void* data, const void* frame, bool rgb32,
 
    const uint16_t* src = frame;
    uint16_t* dst = (uint16_t*)wiiu->menu.texture.surface.image;
-
-   DEBUG_VAR(width);
-   DEBUG_VAR(height);
 
    for (i = 0; i < height; i++)
    {
