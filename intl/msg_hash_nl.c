@@ -578,7 +578,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
          return "Rewind Granulariteit";
       case MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS:
-         return "Rewind";
+         return "Rewinding";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Bestandsbeheer Map";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:

@@ -3500,7 +3500,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_META_RESET:
          return "Reset game";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND:
-         return "Rewind";
+         return "Rewinding";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY:
          return "Save state";
       case MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT:
@@ -3904,11 +3904,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS:
          return "Retro Achievements";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
-         return "Rewind Enable";
+         return "Enable Rewinding";
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
          return "Rewind Granularity";
       case MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS:
-         return "Rewind";
+         return "Rewinding";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "File Browser (dir)";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
