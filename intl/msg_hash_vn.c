@@ -3786,7 +3786,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO:
          return "Pause when menu activated";
       case MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE:
-         return "Don't run in background";
+         return "Pause on Background";
       case MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE:
          return "Performance Counters";
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
