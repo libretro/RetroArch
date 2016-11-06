@@ -4478,12 +4478,12 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RECORD_ENABLE,
                PARSE_ONLY_BOOL, false);
-       menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_RECORD_PATH,
-               PARSE_ONLY_STRING, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RECORD_CONFIG,
                PARSE_ONLY_PATH, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RECORD_PATH,
+               PARSE_ONLY_STRING, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RECORD_USE_OUTPUT_DIRECTORY,
                PARSE_ONLY_BOOL, false);
