@@ -83,9 +83,12 @@ static unsigned font_renderer_stb_unicode_get_slot(stb_unicode_font_renderer_t *
 
 static uint32_t font_renderer_stb_unicode_update_atlas(stb_unicode_font_renderer_t *self, uint32_t charcode)
 {
+   int y0, x1, advance_width, left_side_bearing;
    int id, glyph_index, offset_x, offset_y;
-   struct font_glyph *glyph;
-   uint8_t *dst;
+   struct font_glyph *glyph = NULL;
+   uint8_t *dst             = NULL;
+   int x0                   = 0;
+   int y1                   = 0;
 
    if(charcode > 0xFFFF)
       return 0;
@@ -100,38 +103,40 @@ static uint32_t font_renderer_stb_unicode_update_atlas(stb_unicode_font_renderer
 
    glyph                    = &self->glyphs[id];
 
-   glyph_index = stbtt_FindGlyphIndex(&self->info, charcode);
+   glyph_index              = stbtt_FindGlyphIndex(&self->info, charcode);
 
-   offset_x = (id % 16) * self->max_glyph_width;
-   offset_y = (id / 16) * self->max_glyph_height;
+   offset_x                 = (id % 16) * self->max_glyph_width;
+   offset_y                 = (id / 16) * self->max_glyph_height;
 
-   dst = self->atlas.buffer + offset_x + offset_y * self->atlas.width;
+   dst                      = self->atlas.buffer + offset_x + offset_y 
+                              * self->atlas.width;
 
    stbtt_MakeGlyphBitmap(&self->info, dst, self->max_glyph_width, self->max_glyph_height,
                              self->atlas.width, self->scale_factor, self->scale_factor, glyph_index);
 
-   int x0, y0, x1, y1, advance_width, left_side_bearing;
    stbtt_GetGlyphHMetrics(&self->info, glyph_index, &advance_width, &left_side_bearing);
    stbtt_GetGlyphBox(&self->info, glyph_index, &x0, &y0, &x1, &y1);
-   glyph->advance_x = advance_width * self->scale_factor;
+
+   glyph->advance_x      = advance_width * self->scale_factor;
    glyph->atlas_offset_x = offset_x;
    glyph->atlas_offset_y = offset_y;
    glyph->draw_offset_x  = x0 * self->scale_factor;
    glyph->draw_offset_y  = - y1 * self->scale_factor;
    glyph->width          = self->max_glyph_width;
    glyph->height         = self->max_glyph_height;
+
    return id;
 }
 
 static bool font_renderer_stb_unicode_create_atlas(stb_unicode_font_renderer_t *self, float font_size)
 {
-   int i, id;
+   int i;
 
-   self->max_glyph_width = font_size < 0 ? -font_size : font_size;
+   self->max_glyph_width  = font_size < 0 ? -font_size : font_size;
    self->max_glyph_height = font_size < 0 ? -font_size : font_size;
-   self->atlas.width  = self->max_glyph_width * 16;
-   self->atlas.height = self->max_glyph_height * 16;
-   self->atlas.buffer = (uint8_t*)calloc(self->atlas.height, self->atlas.width);
+   self->atlas.width      = self->max_glyph_width * 16;
+   self->atlas.height     = self->max_glyph_height * 16;
+   self->atlas.buffer     = (uint8_t*)calloc(self->atlas.height, self->atlas.width);
 
    if (!self->atlas.buffer)
       return false;
@@ -140,7 +145,7 @@ static bool font_renderer_stb_unicode_create_atlas(stb_unicode_font_renderer_t *
 
    for (i = 0; i < 256; ++i)
    {
-      id = font_renderer_stb_unicode_update_atlas(self, i);
+      int id = font_renderer_stb_unicode_update_atlas(self, i);
       if(id)
          self->last_used[id] = self->usage_counter++;
 
