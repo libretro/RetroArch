@@ -262,11 +262,8 @@ const struct retro_hw_render_context_negotiation_interface
 *video_driver_get_context_negotiation_interface(void);
 void video_driver_set_context_negotiation_interface(const struct 
       retro_hw_render_context_negotiation_interface *iface);
-void video_driver_set_video_cache_context(void);
-void video_driver_unset_video_cache_context(void);
 bool video_driver_is_video_cache_context(void);
 void video_driver_set_video_cache_context_ack(void);
-void video_driver_unset_video_cache_context_ack(void);
 bool video_driver_is_video_cache_context_ack(void);
 void video_driver_set_active(void);
 bool video_driver_is_active(void);
@@ -368,6 +365,8 @@ bool video_driver_set_viewport(unsigned width, unsigned height,
 void video_driver_get_size(unsigned *width, unsigned *height);
 
 void video_driver_set_size(unsigned *width, unsigned *height);
+
+void video_driver_unset_video_cache_context_ack(void);
 
 float video_driver_get_aspect_ratio(void);
 
@@ -482,6 +481,8 @@ bool video_driver_texture_load(void *data,
       uintptr_t *id);
 
 bool video_driver_texture_unload(uintptr_t *id);
+
+void video_driver_reinit(void);
 
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;

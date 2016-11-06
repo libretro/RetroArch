@@ -1933,28 +1933,15 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_REINIT:
-         {
-            struct retro_hw_render_callback *hwr =
-               video_driver_get_hw_context();
-
-            if (hwr->cache_context)
-               video_driver_set_video_cache_context();
-            else
-               video_driver_unset_video_cache_context();
-
-            video_driver_unset_video_cache_context_ack();
-            command_event(CMD_EVENT_RESET_CONTEXT, NULL);
-            video_driver_unset_video_cache_context();
-
-            /* Poll input to avoid possibly stale data to corrupt things. */
-            input_driver_poll();
+         video_driver_reinit();
+         /* Poll input to avoid possibly stale data to corrupt things. */
+         input_driver_poll();
 
 #ifdef HAVE_MENU
-            menu_display_set_framebuffer_dirty_flag();
-            if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-               command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
+         menu_display_set_framebuffer_dirty_flag();
+         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+            command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
 #endif
-         }
          break;
       case CMD_EVENT_CHEATS_DEINIT:
          cheat_manager_state_free();

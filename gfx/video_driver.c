@@ -1784,6 +1784,21 @@ void video_driver_save_settings(config_file_t *conf)
          global->console.screen.flicker_filter_index);
 }
 
+void video_driver_reinit(void)
+{
+   struct retro_hw_render_callback *hwr =
+      video_driver_get_hw_context();
+
+   if (hwr->cache_context)
+   video_driver_cache_context    = true;
+   else
+      video_driver_cache_context = false;
+
+   video_driver_cache_context_ack = false;
+   command_event(CMD_EVENT_RESET_CONTEXT, NULL);
+   video_driver_cache_context = false;
+}
+
 void video_driver_set_own_driver(void)
 {
    video_driver_data_own = true;
@@ -1828,16 +1843,6 @@ void video_driver_set_context_negotiation_interface(
       const struct retro_hw_render_context_negotiation_interface *iface)
 {
    hw_render_context_negotiation = iface;
-}
-
-void video_driver_set_video_cache_context(void)
-{
-   video_driver_cache_context = true;
-}
-
-void video_driver_unset_video_cache_context(void)
-{
-   video_driver_cache_context = false;
 }
 
 bool video_driver_is_video_cache_context(void)
