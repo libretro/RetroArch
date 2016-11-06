@@ -81,7 +81,8 @@ static unsigned font_renderer_stb_unicode_get_slot(stb_unicode_font_renderer_t *
    return oldest;
 }
 
-static uint32_t font_renderer_stb_unicode_update_atlas(stb_unicode_font_renderer_t *self, uint32_t charcode)
+static uint32_t font_renderer_stb_unicode_update_atlas(
+      stb_unicode_font_renderer_t *self, uint32_t charcode)
 {
    int y0, x1, advance_width, left_side_bearing;
    int id, glyph_index, offset_x, offset_y;
@@ -128,7 +129,8 @@ static uint32_t font_renderer_stb_unicode_update_atlas(stb_unicode_font_renderer
    return id;
 }
 
-static bool font_renderer_stb_unicode_create_atlas(stb_unicode_font_renderer_t *self, float font_size)
+static bool font_renderer_stb_unicode_create_atlas(
+      stb_unicode_font_renderer_t *self, float font_size)
 {
    int i;
 
@@ -180,13 +182,10 @@ static const struct font_glyph *font_renderer_stb_unicode_get_glyph(
 static void *font_renderer_stb_unicode_init(const char *font_path, float font_size)
 {
    int ascent, descent, line_gap;
-   stb_unicode_font_renderer_t *self = (stb_unicode_font_renderer_t*) calloc(1, sizeof(*self));
+   stb_unicode_font_renderer_t *self = 
+      (stb_unicode_font_renderer_t*)calloc(1, sizeof(*self));
 
-
-   if (!self)
-      goto error;
-
-   if (font_size < 1.0)
+   if (!self || font_size < 1.0)
       goto error;
 
    /* See https://github.com/nothings/stb/blob/master/stb_truetype.h#L539 */
@@ -195,13 +194,11 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    if (!filestream_read_file(font_path, (void**)&self->font_data, NULL))
       goto error;
 
-   if (!stbtt_InitFont(&self->info, self->font_data, stbtt_GetFontOffsetForIndex(self->font_data, 0)))
+   if (!stbtt_InitFont(&self->info, self->font_data,
+            stbtt_GetFontOffsetForIndex(self->font_data, 0)))
       goto error;
 
-
-
    stbtt_GetFontVMetrics(&self->info, &ascent, &descent, &line_gap);
-
 
    if (font_size < 0)
       self->scale_factor = stbtt_ScaleForMappingEmToPixels(&self->info, -font_size);
