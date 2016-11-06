@@ -65,9 +65,6 @@ bool win32_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen);
 
-bool win32_monitor_set_fullscreen(unsigned width,
-      unsigned height, unsigned refresh, char *dev_name);
-
 #ifndef _XBOX
 RETRO_BEGIN_DECLS
 
