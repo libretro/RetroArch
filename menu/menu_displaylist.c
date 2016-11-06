@@ -4580,25 +4580,25 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,
+               PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,
                PARSE_ONLY_UINT, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,
+               MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,
                PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;

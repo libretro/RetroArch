@@ -729,7 +729,7 @@ int menu_hash_get_help_it_enum(enum msg_hash_enums msg, char *s, size_t len)
                "end of RetroArch's lifetime.\n"
                " \n"
                "RetroArch will automatically load any savestate\n"
-               "with this path on startup if 'Auto Load State\n"
+               "with this path on startup if 'Load Savestate Automatically\n"
                "is enabled.");
          break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:

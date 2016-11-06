@@ -185,7 +185,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-      "SaveRAM Autosave Interval"
+      "Save SRAM Periodically"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
@@ -269,7 +269,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-      "Don't overwrite SaveRAM on loading savestate"
+      "Disable SRAM when Loading Savestate"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
@@ -1115,11 +1115,11 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
       "Savefile (dir)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-      "Save State Auto Index")
+      "Index Savestates Automatically")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-      "Auto Load State")
+      "Load Savestate Automatically")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-      "Auto Save State")
+      "Save Savestate Automatically")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
       "Savestate (dir)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
@@ -1171,9 +1171,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHUTDOWN,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
       "Slow-Motion Ratio")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-      "Sort Saves In Folders")
+      "Sort Content Saves in Folders")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-      "Sort Savestates In Folders")
+      "Sort Savestates in Folders")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
       "SSH Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_START_CORE,

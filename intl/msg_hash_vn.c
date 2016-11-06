@@ -3092,7 +3092,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Audio Volume Level (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
-         return "SaveRAM Autosave Interval";
+         return "Save SRAM Periodically";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Tải Override Files Automatically";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
@@ -3134,7 +3134,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU:
          return "Toggle Menu";
       case MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE:
-         return "Don't overwrite SaveRAM on loading savestate";
+         return "Disable SRAM when Loading Savestate";
       case MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE:
          return "Bluetooth Enable";
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:
@@ -3922,11 +3922,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY:
          return "Savefile (dir)";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
-         return "Save State Auto Index";
+         return "Index Savestates Automatically";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
          return "Tự động tải State";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
-         return "Auto Save State";
+         return "Save Savestate Automatically";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY:
          return "Savestate (dir)";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
@@ -3978,9 +3978,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
          return "Slow-Motion Ratio";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE:
-         return "Sort Saves In Folders";
+         return "Sort Content Saves in Folders";
       case MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE:
-         return "Sort Savestates In Folders";
+         return "Sort Savestates in Folders";
       case MENU_ENUM_LABEL_VALUE_SSH_ENABLE:
          return "SSH Enable";
       case MENU_ENUM_LABEL_VALUE_START_CORE:

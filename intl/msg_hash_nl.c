@@ -86,7 +86,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME:
          return "Audio Uitgangsniveau (dB)";
       case MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL:
-         return "SaveRAM Autosave Interval";
+         return "Save SRAM Periodically";
       case MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Laad Override Bestanden Automatisch";
       case MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE:
