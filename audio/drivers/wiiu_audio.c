@@ -120,15 +120,15 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
    AXVoiceVeData ve = {0x4000, 0};
    AXSetVoiceVe(ax->voice_l, &ve);
    AXSetVoiceVe(ax->voice_r, &ve);
-   AXVoiceDeviceMixData mix = {0};
-   mix.bus[0].volume = 0x4000;
-   mix.bus[1].volume = 0x0000;
-   AXSetVoiceDeviceMix(ax->voice_l, AX_DEVICE_TYPE_DRC, 0, &mix);
-   AXSetVoiceDeviceMix(ax->voice_l, AX_DEVICE_TYPE_TV, 0, &mix);
-   mix.bus[0].volume = 0x0000;
-   mix.bus[1].volume = 0x4000;
-   AXSetVoiceDeviceMix(ax->voice_r, AX_DEVICE_TYPE_DRC, 0, &mix);
-   AXSetVoiceDeviceMix(ax->voice_r, AX_DEVICE_TYPE_TV, 0, &mix);
+   u32 mix[24]= {0};
+   mix[0] = 0x80000000;
+   AXSetVoiceDeviceMix(ax->voice_l, AX_DEVICE_TYPE_DRC, 0, (AXVoiceDeviceMixData*)mix);
+   AXSetVoiceDeviceMix(ax->voice_l, AX_DEVICE_TYPE_TV, 0, (AXVoiceDeviceMixData*)mix);
+   mix[0] = 0;
+   mix[4] = 0x80000000;
+   AXSetVoiceDeviceMix(ax->voice_r, AX_DEVICE_TYPE_DRC, 0, (AXVoiceDeviceMixData*)mix);
+   AXSetVoiceDeviceMix(ax->voice_r, AX_DEVICE_TYPE_TV, 0, (AXVoiceDeviceMixData*)mix);
+
    AXSetVoiceState(ax->voice_l, AX_VOICE_STATE_PLAYING);
    AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_PLAYING);
 
