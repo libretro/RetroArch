@@ -897,9 +897,9 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_XMB_FONT:
          return "XMB : Police";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME:
-         return "Dégradé de font d'écran";
+         return "Dégradé de fond d'écran";
       case MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE:
-         return "Font d'écran animé";
+         return "Fond d'écran animé";
       case MENU_ENUM_LABEL_VALUE_XMB_SCALE_FACTOR:
          return "XMB : Zoom";
       case MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE:
