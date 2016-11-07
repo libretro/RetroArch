@@ -39,6 +39,7 @@
 static uint64_t pad_state;
 static int16_t analog_state[1][2][2];
 extern uint64_t lifecycle_state;
+static bool wiiu_pad_inited = false;
 
 static const char *wiiu_joypad_name(unsigned pad)
 {
@@ -50,6 +51,9 @@ static void wiiu_joypad_autodetect_add(unsigned autoconf_pad)
    settings_t *settings = config_get_ptr();
    autoconfig_params_t params = {{0}};
 
+   if (!settings->input.autodetect_enable)
+      return;
+
    strlcpy(settings->input.device_names[autoconf_pad],
          wiiu_joypad_name(autoconf_pad),
          sizeof(settings->input.device_names[autoconf_pad]));
@@ -59,15 +63,6 @@ static void wiiu_joypad_autodetect_add(unsigned autoconf_pad)
    strlcpy(params.name, wiiu_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, wiiu_joypad.ident, sizeof(params.driver));
    input_config_autoconfigure_joypad(&params);
-}
-
-static bool wiiu_joypad_init(void *data)
-{
-   wiiu_joypad_autodetect_add(0);
-
-   (void)data;
-
-   return true;
 }
 
 static bool wiiu_joypad_button(unsigned port_num, uint16_t key)
@@ -159,7 +154,7 @@ static void wiiu_joypad_poll(void)
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   if((vpad.tpNormal.touched) && (vpad.tpNormal.x > 200))
+   if((vpad.tpNormal.touched) && (vpad.tpNormal.x > 200) && (vpad.tpNormal.validity) == 0)
       BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 
    /* panic button */
@@ -168,18 +163,26 @@ static void wiiu_joypad_poll(void)
       (vpad.hold & VPAD_BUTTON_STICK_R) &&
       (vpad.hold & VPAD_BUTTON_STICK_L))
       command_event(CMD_EVENT_QUIT, NULL);
+}
 
+static bool wiiu_joypad_init(void *data)
+{
+   wiiu_joypad_autodetect_add(0);
+   wiiu_joypad_poll();
+   wiiu_pad_inited = true;
+   (void)data;
+
+   return true;
 }
 
 static bool wiiu_joypad_query_pad(unsigned pad)
 {
-   /* FIXME */
-   return pad < MAX_USERS && pad_state;
+   return pad < MAX_USERS && wiiu_pad_inited;
 }
-
 
 static void wiiu_joypad_destroy(void)
 {
+   wiiu_pad_inited = false;
 }
 
 input_device_driver_t wiiu_joypad = {

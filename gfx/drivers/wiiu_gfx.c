@@ -144,6 +144,14 @@ static void* wiiu_gfx_init(const video_info_t* video,
    if (!wiiu)
       return NULL;
 
+   void* wiiuinput   = NULL;
+   if (input && input_data)
+   {
+      wiiuinput = input_wiiu.init();
+      *input = wiiuinput ? &input_wiiu : NULL;
+      *input_data = wiiuinput;
+   }
+
    /* video init */
    wiiu->cmd_buffer = MEM2_alloc(0x400000, 0x40);
    u32 init_attributes[] =
@@ -210,8 +218,6 @@ static void* wiiu_gfx_init(const video_info_t* video,
    GX2SetSwapInterval(1);
 
    /* init shader */
-
-
    //   wiiu->shader = MEM2_alloc(sizeof(*wiiu->shader), GX2_VERTEX_BUFFER_ALIGNMENT);
    wiiu->shader = MEM2_alloc(sizeof(tex_shader), 0x1000);
    memcpy(wiiu->shader, &tex_shader, sizeof(tex_shader));
@@ -303,21 +309,22 @@ static void* wiiu_gfx_init(const video_info_t* video,
    GX2InitSampler(&wiiu->sampler_nearest, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_POINT);
    GX2InitSampler(&wiiu->sampler_linear, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
 
-
    /* set Texture and Sampler */
    GX2SetPixelTexture(&wiiu->texture, wiiu->shader->sampler.location);
    GX2SetPixelSampler(&wiiu->sampler_linear, wiiu->shader->sampler.location);
 
+   /* clear leftover image */
+   GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
+   GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_DRC);
+   GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_TV);
+
+   GX2SwapScanBuffers();
+   GX2Flush();
+   GX2WaitForVsync();
+
    GX2SetTVEnable(GX2_ENABLE);
    GX2SetDRCEnable(GX2_ENABLE);
 
-   if (input && input_data)
-   {
-      void* wiiuinput   = NULL;
-      wiiuinput = input_wiiu.init();
-      *input = wiiuinput ? &input_wiiu : NULL;
-      *input_data = wiiuinput;
-   }
    wiiu->noblock = false;
    wiiu->syncframes = 60;
 
@@ -330,8 +337,15 @@ static void wiiu_gfx_free(void* data)
    if (!wiiu)
       return;
 
+   /* clear leftover image */
+   GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
+   GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_DRC);
+   GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_TV);
+
+   GX2SwapScanBuffers();
    GX2Flush();
    GX2DrawDone();
+   GX2WaitForVsync();
    GX2Shutdown();
 
    GX2SetTVEnable(GX2_DISABLE);
