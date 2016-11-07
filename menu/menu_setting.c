@@ -131,6 +131,46 @@ static void setting_get_string_representation_uint_video_monitor_index(void *dat
       strlcpy(s, "0 (Auto)", len);
 }
 
+static void setting_get_string_representation_uint_custom_viewport_width(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+   
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   struct retro_game_geometry  *geom = (struct retro_game_geometry*)
+      &av_info->geometry;
+   
+   if (*setting->value.target.unsigned_integer%geom->base_width == 0)
+      snprintf(s, len, "%u (%ux)",
+            *setting->value.target.unsigned_integer,
+            *setting->value.target.unsigned_integer / geom->base_width);
+   else
+      snprintf(s, len, "%u",
+            *setting->value.target.unsigned_integer);
+}
+
+static void setting_get_string_representation_uint_custom_viewport_height(void *data,
+      char *s, size_t len)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!setting)
+      return;
+   
+   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+   struct retro_game_geometry  *geom = (struct retro_game_geometry*)
+   &av_info->geometry;
+   
+   if (*setting->value.target.unsigned_integer%geom->base_height == 0)
+      snprintf(s, len, "%u (%ux)",
+            *setting->value.target.unsigned_integer,
+            *setting->value.target.unsigned_integer / geom->base_height);
+   else
+      snprintf(s, len, "%u",
+            *setting->value.target.unsigned_integer);
+}
+
 static int setting_uint_action_left_custom_viewport_width(void *data, bool wraparound)
 {
    video_viewport_t vp;
@@ -3219,6 +3259,8 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+         (*list)[list_info->index - 1].get_string_representation =
+         &setting_get_string_representation_uint_custom_viewport_width;
          (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_width;
          (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_width;
          (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_width;
@@ -3239,6 +3281,8 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 0, 1, true, false);
+         (*list)[list_info->index - 1].get_string_representation =
+         &setting_get_string_representation_uint_custom_viewport_height;
          (*list)[list_info->index - 1].action_start = &setting_action_start_custom_viewport_height;
          (*list)[list_info->index - 1].action_left  = setting_uint_action_left_custom_viewport_height;
          (*list)[list_info->index - 1].action_right = setting_uint_action_right_custom_viewport_height;
