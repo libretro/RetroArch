@@ -855,6 +855,7 @@ static enum runloop_state runloop_check_state(
          {
             menu_ctx_iterate_t iter;
             bool skip = false;
+            core_poll();
       #ifdef HAVE_OVERLAY
             skip = osk_enable && input_keyboard_return_pressed();
       #endif
