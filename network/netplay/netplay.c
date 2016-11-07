@@ -1623,13 +1623,6 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
                netplay_flip_users(netplay_data);
          }
          break;
-      case RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE:
-         {
-            bool *state = (bool*)data;
-            if (*state)
-               command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-         }
-         break;
       case RARCH_NETPLAY_CTL_PAUSE:
          netplay_frontend_paused(netplay_data, true);
          break;
