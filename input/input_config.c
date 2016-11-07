@@ -466,7 +466,7 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    if (string_is_equal(key, file_path_str(FILE_PATH_NUL)))
       *key = '\0';
 
-   snprintf(keybuf, sizeof(keybuf), "(Key: %s)", key);
+   snprintf(keybuf, sizeof(keybuf), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
    strlcat(buf, keybuf, size);
 #endif
 }

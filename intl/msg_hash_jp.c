@@ -3175,6 +3175,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Config";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
          return "設定をロード";
+      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST:
+         return "設定ファイル";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "設定";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
@@ -3443,6 +3445,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Xボタン(上面)";
       case MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y:
          return "Yボタン(左)";
+      case MENU_ENUM_LABEL_VALUE_INPUT_KEY:
+         return "(キー: %s)";
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
          return "Keyboard Gamepad Mapping Type";
       case MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS:
@@ -3714,7 +3718,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NONE:
          return "無し";
       case MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE:
-         return "N/A";
+         return "該当なし";
       case MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY:
          return "No achievements to display.";
       case MENU_ENUM_LABEL_VALUE_NO_CORE:
@@ -3854,7 +3858,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "コンテンツをスタート";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING:
-         return "TGDB Rating";
+         return "TGDB評価";
       case MENU_ENUM_LABEL_VALUE_REBOOT:
          return "再起動";
       case MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
@@ -4460,7 +4464,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
          return "Bringing up command interface on port";
       case MSG_BYTES:
-         return "bytes";
+         return "バイト";
       case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
          return "Cannot infer new config path. Use current time.";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
@@ -4516,9 +4520,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_DOWNLOADING:
          return "ダウンロード中";
       case MSG_DOWNLOAD_FAILED:
-         return "Download failed";
+         return "ダウンロード失敗";
       case MSG_ERROR:
-         return "Error";
+         return "エラー";
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
          return "Libretro core requires content, but nothing was provided.";
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT:
@@ -4556,9 +4560,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT:
          return "Failed to get nickname from client.";
       case MSG_FAILED_TO_LOAD:
-         return "Failed to load";
+         return "ロードに失敗";
       case MSG_FAILED_TO_LOAD_CONTENT:
-         return "Failed to load content";
+         return "コンテンツをロードに失敗しました。";
       case MSG_FAILED_TO_LOAD_MOVIE_FILE:
          return "Failed to load movie file";
       case MSG_FAILED_TO_LOAD_OVERLAY:
@@ -4614,7 +4618,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_FATAL_ERROR_RECEIVED_IN:
          return "Fatal error received in";
       case MSG_FILE_NOT_FOUND:
-         return "File not found";
+         return "そのようなファイルはありません。";
       case MSG_FOUND_AUTO_SAVESTATE_IN:
          return "Found auto savestate in";
       case MSG_FOUND_DISK_LABEL:
@@ -4664,11 +4668,11 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_LOADING:
          return "ロード中";
       case MSG_LOADING_CONTENT_FILE:
-         return "Loading content file";
+         return "コンテンツをロード中";
       case MSG_LOADING_HISTORY_FILE:
          return "Loading history file";
       case MSG_LOADING_STATE:
-         return "Loading state";
+         return "保存状態をロード中";
       case MSG_MEMORY:
          return "メモリ";
       case MSG_MOVIE_FILE_IS_NOT_A_VALID_BSV1_FILE:
@@ -4718,7 +4722,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_REMOVING_TEMPORARY_CONTENT_FILE:
          return "Removing temporary content file";
       case MSG_RESET:
-         return "Reset";
+         return "リセット";
       case MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT:
          return "Restarting recording due to driver reinit.";
       case MSG_RESTORED_OLD_SAVE_STATE:
@@ -4748,11 +4752,11 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_SAVING_RAM_TYPE:
          return "Saving RAM type";
       case MSG_SAVING_STATE:
-         return "Saving state";
+         return "状態を保存中";
       case MSG_SCANNING:
          return "スキャン中";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
-         return "Scanning of directory finished";
+         return "ディレクトリーのスキャンは完了しました。";
       case MSG_SENDING_COMMAND:
          return "Sending command";
       case MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED:
@@ -4780,7 +4784,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_STATE_SLOT:
          return "保存状態のスロット";
       case MSG_TAKING_SCREENSHOT:
-         return "Taking screenshot.";
+         return "スクリーンショットを撮っています。";
       case MSG_TO:
          return "to";
       case MSG_UNDID_LOAD_STATE:

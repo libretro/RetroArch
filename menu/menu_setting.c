@@ -4111,7 +4111,7 @@ static bool setting_append_list(
                unsigned user_value = user + 1;
 
                snprintf(binds_list[user],  sizeof(binds_list[user]), "%d_input_binds_list", user_value);
-               snprintf(binds_label[user], sizeof(binds_label[user]), "Input User %d Binds", user_value);
+               snprintf(binds_label[user], sizeof(binds_label[user]), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS), user_value);
 
                CONFIG_ACTION_ALT(
                      list, list_info,
