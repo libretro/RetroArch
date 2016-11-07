@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# usage:
+# copy core libs (*_libretro_wiiu.a), info files (https://github.com/libretro/libretro-super/tree/master/dist/info)
+# and icons (https://github.com/libretro/retroarch-assets/tree/master/pkg/wiiu) to this directory then run
+# the script. the output will be in retroarch/pkg/wiiu
+
 RARCH_VERSION=1.3.6
 
 platform=wiiu
@@ -20,7 +25,7 @@ gen_meta_xml()
       echo '<app version="1">' >> "$libretro"_meta.xml
       echo '  <name>'$corename'</name>' >> "$libretro"_meta.xml
       echo '  <coder>'$authors'</coder>' >> "$libretro"_meta.xml
-      echo '  <version>1.36</version>' >> "$libretro"_meta.xml
+      echo '  <version>'$RARCH_VERSION'</version>' >> "$libretro"_meta.xml
       echo '  <release_date>'`date +%Y%m%d%H%M%S`'</release_date>' >> "$libretro"_meta.xml
       echo '  <short_description>RetroArch</short_description>' >> "$libretro"_meta.xml
       echo '  <long_description>'$display_name'</long_description>' >> "$libretro"_meta.xml
