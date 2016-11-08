@@ -22,6 +22,7 @@
 #include <coreinit/cache.h>
 #include "gx2.h"
 #include "system/memory.h"
+#include "system/wiiu.h"
 #include "tex_shader.h"
 
 #include "wiiu_dbg.h"
@@ -462,7 +463,21 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    GX2Flush();
    if(wiiu->syncframes)
       GX2WaitForVsync();
-   printf("\rframe : %5i", wiiu->frames++);
+
+   static u32 lastTick , currentTick;
+   currentTick = OSGetSystemTick();
+   u32 diff = currentTick - lastTick;
+   static float fps;
+   static u32 frames;
+   frames++;
+   if(diff > wiiu_timer_clock)
+   {
+      fps = (float)frames * ((float) wiiu_timer_clock / (float) diff);
+      lastTick = currentTick;
+      frames = 0;
+   }
+
+   printf("\rfps: %8.4f frames : %5i", fps, wiiu->frames++);
    fflush(stdout);
 
    return true;
@@ -476,6 +491,7 @@ static void wiiu_gfx_set_nonblock_state(void* data, bool toggle)
       return;
 
    wiiu->noblock = toggle;
+   GX2SetSwapInterval(!toggle);
 }
 
 static bool wiiu_gfx_alive(void* data)
