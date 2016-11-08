@@ -771,7 +771,7 @@ static void menu_action_setting_disp_set_label_wifi_is_online(
    *w = 19;
 
    if (driver_wifi_ssid_is_online(i))
-      strlcpy(s, "Online", len);
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE), len);
 }
 
 static void menu_action_setting_disp_set_label_xmb_menu_color_theme(
