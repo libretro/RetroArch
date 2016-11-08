@@ -35,6 +35,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/video_frame.h>
 
 #ifdef HAVE_RBMP
 #include <formats/rbmp.h>
@@ -54,7 +55,6 @@
 #include "../msg_hash.h"
 
 #include "../gfx/video_driver.h"
-#include "../gfx/video_frame.h"
 
 #include "tasks_internal.h"
 

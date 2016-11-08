@@ -35,6 +35,7 @@
 #include <retro_inline.h>
 #include <retro_assert.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/video_frame.h>
 #include <string/stdstring.h>
 
 #include "../../configuration.h"
@@ -43,7 +44,6 @@
 #include "../../runloop.h"
 
 #include "../video_context_driver.h"
-#include "../video_frame.h"
 
 #include "../font_driver.h"
 

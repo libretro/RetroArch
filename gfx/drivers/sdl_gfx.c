@@ -19,6 +19,7 @@
 
 #include <retro_assert.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/video_frame.h>
 #include <retro_assert.h>
 #include "../../verbosity.h"
 
@@ -37,7 +38,6 @@
 #include "../../runloop.h"
 #include "../../performance_counters.h"
 
-#include "../video_frame.h"
 #include "../video_context_driver.h"
 #include "../font_driver.h"
 

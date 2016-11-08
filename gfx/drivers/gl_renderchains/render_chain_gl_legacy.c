@@ -38,6 +38,7 @@
 #include <libretro.h>
 
 #include <gfx/gl_capabilities.h>
+#include <gfx/video_frame.h>
 
 #include "../../../driver.h"
 #include "../../../configuration.h"
@@ -56,7 +57,6 @@
 
 #include "../../font_driver.h"
 #include "../../video_context_driver.h"
-#include "../../video_frame.h"
 
 #ifdef HAVE_GLSL
 #include "../../drivers_shader/shader_glsl.h"

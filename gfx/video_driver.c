@@ -26,6 +26,7 @@
 #include <retro_assert.h>
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/video_frame.h>
 #include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
@@ -40,7 +41,6 @@
 #include "../menu/menu_setting.h"
 #endif
 
-#include "video_frame.h"
 #include "video_thread_wrapper.h"
 #include "video_context_driver.h"
 
