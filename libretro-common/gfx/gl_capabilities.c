@@ -303,7 +303,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          if (gl_query_extension("BGRA8888") && !strstr(renderer, "VideoCore"))
             return true;
 #else
-         /* TODO/FIXME - implement this for non-GLES? */
+         return true;
 #endif
          break;
       case GL_CAPS_NONE:
