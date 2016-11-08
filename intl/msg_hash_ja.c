@@ -2965,9 +2965,9 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_VIDEO_THREADED:
          return "パフォーマンスを改良するけど、ビデオの遅延と途切れが増す。フルスピードを取得しない時だけで使用する。";
       case MSG_AUDIO_VOLUME:
-         return "Audio volume";
+         return "音量";
       case MSG_AUTODETECT:
-         return "Autodetect";
+         return "自動検出";
       case MSG_AUTOLOADING_SAVESTATE_FROM:
          return "Auto-loading savestate from";
       case MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT:
@@ -2985,13 +2985,13 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
       case MSG_DEVICE_DISCONNECTED_FROM_PORT:
         return "Device disconnected from port";
       case MSG_DEVICE_NOT_CONFIGURED:
-         return "not configured";
+         return "設定されていない";
       case MSG_DISCONNECTING_DEVICE_FROM_PORT:
          return "disconnecting_device_from_port";
       case MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT:
          return "disconnect_device_from_a_valid_port";
       case MSG_FAILED:
-         return "failed";
+         return "失敗";
       case MSG_FAILED_TO_SET_DISK:
          return "Failed to set disk";
       case MSG_FAILED_TO_START_AUDIO_DRIVER:
@@ -3007,11 +3007,11 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
       case MSG_SETTING_DISK_IN_TRAY:
          return "Setting disk in tray";
       case MSG_SUCCEEDED:
-         return "succeeded";
+         return "成功しました";
       case MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED:
          return "Unknown netplay command received";
       case MSG_WAITING_FOR_CLIENT:
-         return "Waiting for client ...";
+         return "クライアントに待機中";
       default:
          break;
    }
@@ -3045,6 +3045,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Retro Achievements";
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST:
          return "Achievement List";
+      case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE:
+         return "Achievement List (Hardcore)";
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
          return "コンテンツをスキャン";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
@@ -3154,7 +3156,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEAT_NUM_PASSES:
          return "チートのパス";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
-         return "Description";
+         return "説明";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
          return "ハードコアモード";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
@@ -3172,7 +3174,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "閉じる";
       case MENU_ENUM_LABEL_VALUE_CONFIG:
-         return "Config";
+         return "コンフィグ";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
          return "設定をロード";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST:
@@ -3751,6 +3753,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "OFF";
       case MENU_ENUM_LABEL_VALUE_ON:
          return "ON";
+      case MENU_ENUM_LABEL_VALUE_ONLINE:
+         return "オンライン";
       case MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER:
          return "オンラインアップデーター";
       case MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS:
@@ -4337,6 +4341,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "モノクローム";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_JAGGED:
          return "モノクロームぎざぎざ";
+      case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE:
+         return "ネオアクティブ";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL:
          return "ピクセル";
       case MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE:
