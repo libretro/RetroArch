@@ -233,10 +233,10 @@ void matrix_4x4_projection(math_matrix_4x4 *out,
    MAT_ELEM_4X4(*out, 2, 0) = 0.0f;
    MAT_ELEM_4X4(*out, 2, 1) = 0.0f;
    MAT_ELEM_4X4(*out, 2, 2) = -((zfar + znear) / delta_z);
-   MAT_ELEM_4X4(*out, 2, 3) = -1.f;
+   MAT_ELEM_4X4(*out, 2, 3) = -((2.f * zfar * znear) / delta_z);
    MAT_ELEM_4X4(*out, 3, 0) = 0.0f;
    MAT_ELEM_4X4(*out, 3, 1) = 0.0f;
-   MAT_ELEM_4X4(*out, 3, 2) = -((2.f * zfar * znear) / delta_z);
+   MAT_ELEM_4X4(*out, 3, 2) = -1.f;
    MAT_ELEM_4X4(*out, 3, 3) = 1.0f;
 }
 
