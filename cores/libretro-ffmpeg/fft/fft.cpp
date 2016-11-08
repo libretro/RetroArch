@@ -181,6 +181,26 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
 
    matrix_4x4_projection(&mvp_persp, (float)M_HALF_PI, (float)width / height, 1.0f, 500.0f);
    matrix_4x4_lookat(&mvp_lookat, eye, center, up);
+#if 1
+   printf("mvp_lookat: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
+         MAT_ELEM_4X4(mvp_lookat, 0, 0),
+         MAT_ELEM_4X4(mvp_lookat, 0, 1),
+         MAT_ELEM_4X4(mvp_lookat, 0, 2),
+         MAT_ELEM_4X4(mvp_lookat, 0, 3),
+         MAT_ELEM_4X4(mvp_lookat, 1, 0),
+         MAT_ELEM_4X4(mvp_lookat, 1, 1),
+         MAT_ELEM_4X4(mvp_lookat, 1, 2),
+         MAT_ELEM_4X4(mvp_lookat, 1, 3),
+         MAT_ELEM_4X4(mvp_lookat, 2, 0),
+         MAT_ELEM_4X4(mvp_lookat, 2, 1),
+         MAT_ELEM_4X4(mvp_lookat, 2, 2),
+         MAT_ELEM_4X4(mvp_lookat, 2, 3),
+         MAT_ELEM_4X4(mvp_lookat, 3, 0),
+         MAT_ELEM_4X4(mvp_lookat, 3, 1),
+         MAT_ELEM_4X4(mvp_lookat, 3, 2),
+         MAT_ELEM_4X4(mvp_lookat, 3, 3)
+         );
+#endif
    matrix_4x4_multiply(&mvp, &mvp_persp, &mvp_lookat);
 #endif
 
