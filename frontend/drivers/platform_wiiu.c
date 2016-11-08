@@ -169,7 +169,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu = {
 static int log_socket = -1;
 static volatile int log_lock = 0;
 
-void log_init(const char * ipString)
+void log_init(const char * ipString, int port)
 {
 	log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (log_socket < 0)
@@ -178,7 +178,7 @@ void log_init(const char * ipString)
 	struct sockaddr_in connect_addr;
 	memset(&connect_addr, 0, sizeof(connect_addr));
 	connect_addr.sin_family = AF_INET;
-	connect_addr.sin_port = 4405;
+	connect_addr.sin_port = port;
 	inet_aton(ipString, &connect_addr.sin_addr);
 
 	if(connect(log_socket, (struct sockaddr*)&connect_addr, sizeof(connect_addr)) < 0)
@@ -248,8 +248,8 @@ int __entry_menu(int argc, char **argv)
    InstallExceptionHandler();
 #endif
    socket_lib_init();
-#if 0
-   log_init("10.42.0.1");
+#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
+   log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
 #endif
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
@@ -290,7 +290,9 @@ int __entry_menu(int argc, char **argv)
    memoryRelease();
    fflush(stdout);
    fflush(stderr);
+#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
    log_deinit();
+#endif
 
    return 0;
 }
