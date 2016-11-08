@@ -107,7 +107,7 @@ static bool input_remote_init_network(input_remote_t *handle,
 
    if (!socket_bind(handle->net_fd[user], res))
    {
-      RARCH_ERR("Failed to bind socket.\n");
+      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
       goto error;
    }
 
