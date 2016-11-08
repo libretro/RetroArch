@@ -1408,7 +1408,9 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_LIBRETRO_ABI_BREAK:
          return "se ha compilado con una versión distinta a esta implementación de libretro.";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "Carga rápida desde la ranura";
+         return "Carga rápida desde la ranura #%d.";
+      case MSG_LOADED_STATE_FROM_SLOT_AUTO:
+         return "Carga rápida desde la ranura #-1 (auto).";
       case MSG_LOADING_CONTENT_FILE:
          return "Cargando archivo de contenido";
       case MSG_LOADING_STATE:
@@ -1456,7 +1458,9 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MSG_REWIND_REACHED_END:
          return "Se ha llegado al final del búfer de rebobinado.";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "Guardando rápidamente a la ranura";
+         return "Guardando rápidamente a la ranura #%d.";
+      case MSG_SAVED_STATE_TO_SLOT_AUTO:
+         return "Guardando rápidamente a la ranura #-1 (auto).";
       case MSG_SAVED_SUCCESSFULLY_TO:
          return "Partida guardada en";
       case MSG_SAVING_RAM_TYPE:

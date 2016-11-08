@@ -4666,7 +4666,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_LIBRETRO_FRONTEND:
          return "Frontend for libretro";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "Loaded state from slot";
+         return "Loaded state from slot #%d.";
+      case MSG_LOADED_STATE_FROM_SLOT_AUTO:
+         return "Loaded state from slot -1 (auto).";
       case MSG_LOADING:
          return "Đang tải";
       case MSG_LOADING_CONTENT_FILE:
@@ -4748,7 +4750,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_SAVED_NEW_CONFIG_TO:
          return "Saved new config to";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "Saved state to slot";
+         return "Saved state to slot #%d.";
+      case MSG_SAVED_STATE_TO_SLOT_AUTO:
+         return "Saved state to slot #-1 (auto).";
       case MSG_SAVED_SUCCESSFULLY_TO:
          return "Saved successfully to";
       case MSG_SAVING_RAM_TYPE:

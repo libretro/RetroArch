@@ -242,7 +242,7 @@ OBJ += intl/msg_hash_de.o \
        intl/msg_hash_es.o \
        intl/msg_hash_fr.o \
        intl/msg_hash_it.o \
-       intl/msg_hash_jp.o \
+       intl/msg_hash_ja.o \
        intl/msg_hash_nl.o \
        intl/msg_hash_pl.o \
        intl/msg_hash_pt.o \

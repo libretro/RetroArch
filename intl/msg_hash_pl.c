@@ -913,7 +913,9 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MSG_LIBRETRO_ABI_BREAK:
          return "został skompilowany dla innej wersji libretro, różnej od obecnie używanej.";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "Wczytano stan ze slotu";
+         return "Wczytano stan ze slotu #%d.";
+      case MSG_LOADED_STATE_FROM_SLOT_AUTO:
+         return "Wczytano stan ze slotu #-1 (auto).";
       case MSG_LOADING_CONTENT_FILE:
          return "Wczytywanie pliku treści";
       case MSG_LOADING_STATE:
@@ -961,7 +963,9 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MSG_REWIND_REACHED_END:
          return "W buforze przewijania nie ma więcej danych.";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "Zapisano stan w slocie";
+         return "Zapisano stan w slocie #%d.";
+      case MSG_SAVED_STATE_TO_SLOT_AUTO:
+         return "Zapisano stan w slocie #-1 (auto).";
       case MSG_SAVED_SUCCESSFULLY_TO:
          return "Pomyślnie zapisano do";
       case MSG_SAVING_RAM_TYPE:

@@ -88,7 +88,9 @@ const char *msg_hash_to_str_ru(enum msg_hash_enums msg)
       case MSG_LIBRETRO_ABI_BREAK:
          return "скомпилировано для другой версии libretro.";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "Загружено сохранение из слота";
+         return "Загружено сохранение из слота #%d.";
+      case MSG_LOADED_STATE_FROM_SLOT_AUTO:
+         return "Загружено сохранение из слота #-1 (auto).";
       case MSG_LOADING_CONTENT_FILE:
          return "Загружен файл контента";
       case MSG_LOADING_STATE:
@@ -136,7 +138,9 @@ const char *msg_hash_to_str_ru(enum msg_hash_enums msg)
       case MSG_REWIND_REACHED_END:
          return "Достигнут предел буфера перемотки.";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "Сохранено в слот";
+         return "Сохранено в слот #%d.";
+      case MSG_SAVED_STATE_TO_SLOT_AUTO:
+         return "Сохранено в слот #-1 (auto).";
       case MSG_SAVED_SUCCESSFULLY_TO:
          return "Успешно сохранено в";
       case MSG_SAVING_RAM_TYPE:

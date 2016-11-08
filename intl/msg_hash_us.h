@@ -1867,7 +1867,9 @@ MSG_HASH(MSG_LIBRETRO_ABI_BREAK,
 MSG_HASH(MSG_LIBRETRO_FRONTEND,
       "Frontend for libretro")
 MSG_HASH(MSG_LOADED_STATE_FROM_SLOT,
-      "Loaded state from slot")
+      "Loaded state from slot #%d.")
+MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
+      "Loaded state from slot #-1 (auto).")
 MSG_HASH(MSG_LOADING,
       "Loading")
 MSG_HASH(MSG_LOADING_CONTENT_FILE,
@@ -1949,7 +1951,9 @@ MSG_HASH(MSG_REWIND_REACHED_END,
 MSG_HASH(MSG_SAVED_NEW_CONFIG_TO,
       "Saved new config to")
 MSG_HASH(MSG_SAVED_STATE_TO_SLOT,
-      "Saved state to slot")
+      "Saved state to slot #%d.")
+MSG_HASH(MSG_SAVED_STATE_TO_SLOT_AUTO,
+      "Saved state to slot #-1 (auto).")
 MSG_HASH(MSG_SAVED_SUCCESSFULLY_TO,
       "Saved successfully to")
 MSG_HASH(MSG_SAVING_RAM_TYPE,

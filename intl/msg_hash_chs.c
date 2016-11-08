@@ -4628,7 +4628,9 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_LIBRETRO_FRONTEND:
          return "为libretro而设计的前端";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "加载状态从槽";
+         return "加载状态从槽 #%d.";
+      case MSG_LOADED_STATE_FROM_SLOT_AUTO:
+         return "加载状态从槽 #-1 (auto).";
       case MSG_LOADING:
          return "正在加载";
       case MSG_LOADING_CONTENT_FILE:
@@ -4710,7 +4712,9 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MSG_SAVED_NEW_CONFIG_TO:
          return "已保存新配置到";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "保存状态至槽";
+         return "保存状态至槽 #%d.";
+      case MSG_SAVED_STATE_TO_SLOT_AUTO:
+         return "保存状态至槽 #-1 (auto).";
       case MSG_SAVED_SUCCESSFULLY_TO:
          return "成功保存至";
       case MSG_SAVING_RAM_TYPE:

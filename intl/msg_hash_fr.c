@@ -983,7 +983,9 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MSG_LIBRETRO_ABI_BREAK:
          return "est compilé avec une version différente de la bibliothèque libretro actuelle.";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "Chargement du savestate à partir du slot";
+         return "Chargement du savestate à partir du slot #%d.";
+      case MSG_LOADED_STATE_FROM_SLOT_AUTO:
+         return "Chargement du savestate à partir du slot #-1 (auto).";
       case MSG_LOADING_CONTENT_FILE:
          return "Chargement du contenu";
       case MSG_LOADING_STATE:
@@ -1031,7 +1033,9 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
       case MSG_REWIND_REACHED_END:
          return "Atteinte de la fin du tampon de rembobinage.";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "Savestate vers slot";
+         return "Savestate vers slot #%d.";
+      case MSG_SAVED_STATE_TO_SLOT_AUTO:
+         return "Savestate vers slot #-1 (auto).";
       case MSG_SAVED_SUCCESSFULLY_TO:
          return "Sauvegarde réussie vers";
       case MSG_SAVING_RAM_TYPE:

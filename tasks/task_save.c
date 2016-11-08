@@ -594,10 +594,9 @@ static void task_save_handler(retro_task_t *task)
       else
       {
          if (settings->state_slot < 0)
-            snprintf(msg, sizeof(msg), "%s #-1 (auto).",
-                  msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
+            strlcpy(msg, msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT_AUTO), sizeof(msg));
          else
-            snprintf(msg, sizeof(msg), "%s #%d.", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
                   settings->state_slot);
       }
 
@@ -784,10 +783,9 @@ static void task_load_handler(retro_task_t *task)
       else
       {
          if (settings->state_slot < 0)
-            snprintf(msg, sizeof(msg), "%s #-1 (auto).",
-                  msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
+            strlcpy(msg, msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO), sizeof(msg));
          else
-            snprintf(msg, sizeof(msg), "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
+            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
                   settings->state_slot);
 
          if (!task->mute)

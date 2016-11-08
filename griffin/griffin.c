@@ -813,7 +813,7 @@ RETROARCH
 #include "../intl/msg_hash_eo.c"
 #include "../intl/msg_hash_fr.c"
 #include "../intl/msg_hash_it.c"
-#include "../intl/msg_hash_jp.c"
+#include "../intl/msg_hash_ja.c"
 #include "../intl/msg_hash_nl.c"
 #include "../intl/msg_hash_pt.c"
 #include "../intl/msg_hash_pl.c"

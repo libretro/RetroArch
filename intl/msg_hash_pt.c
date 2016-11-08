@@ -1837,7 +1837,9 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
       case MSG_GRAB_MOUSE_STATE:
          return "Obter estado do mouse";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "Estado carregado do slot";
+         return "Estado carregado do slot #%d.";
+      case MSG_LOADED_STATE_FROM_SLOT_AUTO:
+         return "Estado carregado do slot #-1 (auto).";
       case MSG_LOADING_STATE:
          return "Carregando estado";
       case MSG_PAUSED:
@@ -1863,7 +1865,9 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
       case MSG_REWIND_REACHED_END:
          return "Final do buffer de retrocesso atingido.";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "Estado salvo no slot";
+         return "Estado salvo no slot #%d.";
+      case MSG_SAVED_STATE_TO_SLOT_AUTO:
+         return "Estado salvo no slot #-1 (auto).";
       case MSG_SAVED_SUCCESSFULLY_TO:
          return "Salvo com sucesso em";
       case MSG_SAVING_RAM_TYPE:

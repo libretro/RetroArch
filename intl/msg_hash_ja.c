@@ -4664,7 +4664,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_LIBRETRO_FRONTEND:
          return "libretroのフロントエンド";
       case MSG_LOADED_STATE_FROM_SLOT:
-         return "Loaded state from slot";
+         return "スロット%dから保存状態をロードしました。";
+      case MSG_LOADED_STATE_FROM_SLOT_AUTO:
+         return "スロット-1 (自動)から保存状態をロードしました。";
       case MSG_LOADING:
          return "ロード中";
       case MSG_LOADING_CONTENT_FILE:
@@ -4746,7 +4748,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_SAVED_NEW_CONFIG_TO:
          return "Saved new config to";
       case MSG_SAVED_STATE_TO_SLOT:
-         return "Saved state to slot";
+         return "スロット%dに状態を保存しました。";
+      case MSG_SAVED_STATE_TO_SLOT_AUTO:
+         return "スロット-1 (自動)に状態を保存しました。";
       case MSG_SAVED_SUCCESSFULLY_TO:
          return "Saved successfully to";
       case MSG_SAVING_RAM_TYPE:
@@ -4780,7 +4784,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_STARTING_MOVIE_RECORD_TO:
          return "Starting movie record to";
       case MSG_STATE_SIZE:
-         return "State size";
+         return "状態のサイズ";
       case MSG_STATE_SLOT:
          return "保存状態のスロット";
       case MSG_TAKING_SCREENSHOT:
