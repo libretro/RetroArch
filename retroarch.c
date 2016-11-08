@@ -499,7 +499,7 @@ static void retroarch_parse_input(int argc, char *argv[])
 #ifndef HAVE_MENU
    if (argc == 1)
    {
-      printf("No arguments supplied and no menu builtin, displaying help...\n");
+      printf("%s\n", msg_hash_to_str(MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN));
       retroarch_print_help(argv[0]);
       exit(0);
    }
@@ -1032,7 +1032,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
       RARCH_LOG_OUTPUT("=== Build =======================================\n");
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
-      fprintf(stderr, "Capabilities: %s\n", str);
+      fprintf(stderr, "%s: %s\n", msg_hash_to_str(MSG_CAPABILITIES), str);
       fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
@@ -1573,24 +1573,31 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
          break;
       case RARCH_CAPABILITIES_COMPILER:
 #if defined(_MSC_VER)
-         snprintf(s, len, "Compiler: MSVC (%d) %u-bit", _MSC_VER, (unsigned)
+         snprintf(s, len, "%s: MSVC (%d) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
+               _MSC_VER, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #elif defined(__SNC__)
-         snprintf(s, len, "Compiler: SNC (%d) %u-bit",
+         snprintf(s, len, "%s: SNC (%d) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
                __SN_VER__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(_WIN32) && defined(__GNUC__)
-         snprintf(s, len, "Compiler: MinGW (%d.%d.%d) %u-bit",
+         snprintf(s, len, "%s: MinGW (%d.%d.%d) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #elif defined(__clang__)
-         snprintf(s, len, "Compiler: Clang/LLVM (%s) %u-bit",
+         snprintf(s, len, "%s: Clang/LLVM (%s) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
                __clang_version__, (unsigned)(CHAR_BIT * sizeof(size_t)));
 #elif defined(__GNUC__)
-         snprintf(s, len, "Compiler: GCC (%d.%d.%d) %u-bit",
+         snprintf(s, len, "%s: GCC (%d.%d.%d) %u-bit",
+               msg_hash_to_str(MSG_COMPILER),
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, (unsigned)
                (CHAR_BIT * sizeof(size_t)));
 #else
-         snprintf(s, len, "Unknown compiler %u-bit",
+         snprintf(s, len, "%s %u-bit",
+               msg_hash_to_str(MSG_UNKNOWN_COMPILER),
                (unsigned)(CHAR_BIT * sizeof(size_t)));
 #endif
          break;

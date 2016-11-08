@@ -1,4 +1,12 @@
 MSG_HASH(
+      MSG_COMPILER,
+      "Compiler"
+      )
+MSG_HASH(
+      MSG_UNKNOWN_COMPILER,
+      "Unknown compiler"
+      )
+MSG_HASH(
       MSG_DEVICE_DISCONNECTED_FROM_PORT,
       "Device disconnected from port"
       )
@@ -13,6 +21,10 @@ MSG_HASH(
 MSG_HASH(
       MSG_GOT_CONNECTION_FROM,
       "Got connection from"
+      )
+MSG_HASH(
+      MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
+      "No arguments supplied and no menu builtin, displaying help..."
       )
 MSG_HASH(
       MSG_NETPLAY_USERS_HAS_FLIPPED,
@@ -49,6 +61,10 @@ MSG_HASH(
 MSG_HASH(
       MSG_AUTOLOADING_SAVESTATE_FROM,
       "Auto-loading savestate from"
+      )
+MSG_HASH(
+      MSG_CAPABILITIES,
+      "Capabilities"
       )
 MSG_HASH(
       MSG_CONNECTING_TO_NETPLAY_HOST,
