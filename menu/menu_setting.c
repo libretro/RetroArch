@@ -134,13 +134,14 @@ static void setting_get_string_representation_uint_video_monitor_index(void *dat
 static void setting_get_string_representation_uint_custom_viewport_width(void *data,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   struct retro_game_geometry  *geom    = NULL;
+   struct retro_system_av_info *av_info = NULL;
+   rarch_setting_t *setting             = (rarch_setting_t*)data;
    if (!setting)
       return;
    
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   struct retro_game_geometry  *geom = (struct retro_game_geometry*)
-      &av_info->geometry;
+   av_info = video_viewport_get_system_av_info();
+   geom    = (struct retro_game_geometry*)&av_info->geometry;
    
    if (*setting->value.target.unsigned_integer%geom->base_width == 0)
       snprintf(s, len, "%u (%ux)",
@@ -154,13 +155,14 @@ static void setting_get_string_representation_uint_custom_viewport_width(void *d
 static void setting_get_string_representation_uint_custom_viewport_height(void *data,
       char *s, size_t len)
 {
-   rarch_setting_t *setting = (rarch_setting_t*)data;
+   struct retro_game_geometry  *geom    = NULL;
+   struct retro_system_av_info *av_info = NULL;
+   rarch_setting_t *setting             = (rarch_setting_t*)data;
    if (!setting)
       return;
    
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   struct retro_game_geometry  *geom = (struct retro_game_geometry*)
-   &av_info->geometry;
+   av_info = video_viewport_get_system_av_info();
+   geom    = (struct retro_game_geometry*)&av_info->geometry;
    
    if (*setting->value.target.unsigned_integer%geom->base_height == 0)
       snprintf(s, len, "%u (%ux)",
