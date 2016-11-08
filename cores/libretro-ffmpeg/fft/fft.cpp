@@ -186,6 +186,9 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
 #endif
    glm::mat4 mvp_lookat = glm::lookAt(eye, center, up);
 #ifdef GLM_USE_DEBUG
+   printf("eye %.2f %.2f %.2f\n", eye.x, eye.y, eye.z);
+   printf("center %.2f %.2f %.2f\n", center.x, center.y, center.z);
+   printf("up %.2f %.2f %.2f\n", up.x, up.y, up.z);
    printf("mvp_lookat: \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n %.2f, %.2f, %.2f, %.2f \n\n",
          mvp_lookat[0][0],
          mvp_lookat[0][1],
@@ -269,6 +272,9 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
          MAT_ELEM_4X4(mvp_persp, 3, 2),
          MAT_ELEM_4X4(mvp_persp, 3, 3)
          );
+   printf("eye %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+   printf("center %.2f %.2f %.2f\n", center[0], center[1], center[2]);
+   printf("up %.2f %.2f %.2f\n", up[0], up[1], up[2]);
 #endif
    matrix_4x4_lookat(&mvp_lookat, eye, center, up);
 #ifdef GLM_USE_DEBUG
