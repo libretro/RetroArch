@@ -105,13 +105,23 @@ static void task_screenshot_handler(retro_task_t *task)
       ret = true;
    state->surf->Release();
 #elif defined(HAVE_RPNG)
-   video_frame_convert_to_bgr24(
-         &state->scaler,
-         state->out_buffer,
-         (const uint8_t*)state->frame + ((int)state->height - 1) * state->pitch,
-         state->width, state->height,
-         -state->pitch,
-         state->bgr24);
+   {
+      struct scaler_ctx *scaler = (struct scaler_ctx*)&state->scaler;
+
+      if (state->bgr24)
+         scaler->in_fmt   = SCALER_FMT_BGR24;
+      else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+         scaler->in_fmt   = SCALER_FMT_ARGB8888;
+      else
+         scaler->in_fmt   = SCALER_FMT_RGB565;
+
+      video_frame_convert_to_bgr24(
+            scaler,
+            state->out_buffer,
+            (const uint8_t*)state->frame + ((int)state->height - 1) * state->pitch,
+            state->width, state->height,
+            -state->pitch);
+   }
 
    scaler_ctx_gen_reset(&state->scaler);
 

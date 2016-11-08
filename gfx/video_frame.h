@@ -60,8 +60,7 @@ void video_frame_convert_argb8888_to_abgr8888(
 void video_frame_convert_to_bgr24(
       void *data,
       void *output, const void *input,
-      int width, int height, int in_pitch,
-      bool bgr24);
+      int width, int height, int in_pitch);
 
 void video_frame_convert_rgba_to_bgr(
       const void *src_data,

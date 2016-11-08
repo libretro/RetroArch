@@ -17,9 +17,6 @@
 
 #include <libretro.h>
 
-#include "../performance_counters.h"
-
-#include "video_driver.h"
 #include "video_frame.h"
 
 void video_frame_convert_rgb16_to_rgb32(
@@ -148,8 +145,7 @@ void video_frame_convert_argb8888_to_abgr8888(
 void video_frame_convert_to_bgr24(
       void *data,
       void *output, const void *input,
-      int width, int height, int in_pitch,
-      bool bgr24)
+      int width, int height, int in_pitch)
 {
    struct scaler_ctx *scaler = (struct scaler_ctx*)data;
 
@@ -157,12 +153,6 @@ void video_frame_convert_to_bgr24(
    scaler->in_height   = height;
    scaler->out_width   = width;
    scaler->out_height  = height;
-   if (bgr24)
-      scaler->in_fmt   = SCALER_FMT_BGR24;
-   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-      scaler->in_fmt   = SCALER_FMT_ARGB8888;
-   else
-      scaler->in_fmt   = SCALER_FMT_RGB565;
    scaler->out_fmt     = SCALER_FMT_BGR24;
    scaler->scaler_type = SCALER_TYPE_POINT;
    scaler_ctx_gen_filter(scaler);
@@ -197,10 +187,6 @@ bool video_pixel_frame_scale(
       size_t pitch)
 {
    struct scaler_ctx *scaler = (struct scaler_ctx*)scaler_data;
-   static struct retro_perf_counter video_frame_conv = {0};
-
-   performance_counter_init(&video_frame_conv, "video_frame_conv");
-   performance_counter_start(&video_frame_conv);
 
    scaler->in_width      = width;
    scaler->in_height     = height;
@@ -210,8 +196,6 @@ bool video_pixel_frame_scale(
    scaler->out_stride    = width * sizeof(uint16_t);
 
    scaler_ctx_scale(scaler, output, data);
-
-   performance_counter_stop(&video_frame_conv);
 
    return true;
 }
