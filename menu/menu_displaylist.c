@@ -3287,9 +3287,13 @@ static int menu_displaylist_parse_playlists(
          continue;
 
       /* Need to preserve slash first time. */
-      path      = str_list->elems[i].data;
+      path = str_list->elems[i].data;
 
-      if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)))
+      if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)) ||
+         (strstr(path, file_path_str(FILE_PATH_CONTENT_HISTORY))) ||
+         (strstr(path, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY))) ||
+         (strstr(path, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY))) ||
+         (strstr(path, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY))))
          continue;
 
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
