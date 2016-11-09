@@ -1,4 +1,5 @@
 TARGET		    := retroarch_wiiu
+RPX_BUILD	     = 0
 DEBUG                = 0
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
@@ -6,14 +7,17 @@ WHOLE_ARCHIVE_LINK   = 0
 PC_DEVELOPMENT_IP_ADDRESS  =
 PC_DEVELOPMENT_TCP_PORT	   =
 
-OBJ	:=
-OBJ	+= wiiu/system/memory.o
-OBJ	+= wiiu/system/exception_handler.o
-OBJ	+= wiiu/fs/sd_fat_devoptab.o
-OBJ	+= wiiu/fs/fs_utils.o
-OBJ	+= wiiu/system/dynamic.o
-OBJ	+= wiiu/system/dyn_stubs.o
-OBJ	+= wiiu/tex_shader.o
+OBJ :=
+OBJ += wiiu/system/memory.o
+OBJ += wiiu/system/exception_handler.o
+OBJ += wiiu/fs/sd_fat_devoptab.o
+OBJ += wiiu/fs/fs_utils.o
+OBJ += wiiu/tex_shader.o
+
+ifneq ($(RPX_BUILD), 1)
+OBJ += wiiu/system/dynamic.o
+OBJ += wiiu/system/dyn_stubs.o
+endif
 
 DEFINES :=
 
@@ -96,6 +100,7 @@ STRIP   := $(PREFIX)strip
 NM      := $(PREFIX)nm
 LD      := $(CXX)
 
+ELF2RPL   := $(WUT_ROOT)/tools/bin/elf2rpl
 
 INCDIRS := -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include -Iwiiu -I$(WUT_ROOT)/include
 LIBDIRS := -L.
@@ -133,20 +138,30 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_START := -Wl,--whole-archive
    WHOLE_END := -Wl,--no-whole-archive
 endif
-
-
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
-LDFLAGS  += -nostartfiles -Wl,-Map,$(notdir $@).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc
+ifeq ($(RPX_BUILD), 1)
+   CFLAGS   += -fno-builtin -ffreestanding -DRPX_BUILD
+   LIBDIRS  += -L$(WUT_ROOT)/lib -L$(DEVKITPPC)/lib
+   LDFLAGS  += -T $(WUT_ROOT)/rules/rpl.ld -pie -fPIE -z common-page-size=64 -z max-page-size=64
+   LDFLAGS  += -lcoreinit -lgx2 -lnsysnet -lproc_ui -lsndcore2 -lsysapp -lvpad
+else
+   LDFLAGS  += -n -T wiiu/link_ra.ld
+endif
+
+LDFLAGS  +=  -nostartfiles -Wl,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc
 LDFLAGS  += -Wl,-wrap,malloc_usable_size,-wrap,_malloc_r,-wrap,_free_r,-wrap,_realloc_r,-wrap,_calloc_r,-wrap,_memalign_r
-LDFLAGS  += -Wl,-wrap,_malloc_usable_size_r,-wrap,valloc,-wrap,_valloc_r,-wrap,_pvalloc_r,--gc-sections
+LDFLAGS  += -Wl,-wrap,_malloc_usable_size_r,-wrap,valloc,-wrap,_valloc_r,-wrap,_pvalloc_r,-wrap,__eabi,--gc-sections
+
+
 
 LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
 
-all: $(TARGET)
-
-$(TARGET): $(TARGET).elf
-
+ifeq ($(RPX_BUILD), 1)
+all: $(TARGET).elf $(TARGET).rpx
+else
+all: $(TARGET).elf
+endif
 
 %.o: %.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
@@ -164,10 +179,14 @@ $(TARGET): $(TARGET).elf
 	$(AR) -rc $@ $^
 
 $(TARGET).elf: $(OBJ) libretro_wiiu.a wiiu/link_ra.ld
-	$(LD) -n -T wiiu/link_ra.ld $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+
+%.rpx: %.elf
+	@$(ELF2RPL) $(notdir $<) $@
 
 clean:
 	rm -f $(OBJ)
 	rm -f $(TARGET).elf
+	rm -f $(TARGET).rpx
 
-.PHONY: $(BUILD) clean all
+.PHONY: clean all

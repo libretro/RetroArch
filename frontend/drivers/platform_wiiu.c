@@ -45,7 +45,8 @@
 #include "system/exception.h"
 #include <sys/iosupport.h>
 
-#include <coreinit/screen.h>
+#include <coreinit/foreground.h>
+#include <proc_ui/procui.h>
 #include <vpad/input.h>
 
 #include "wiiu_dbg.h"
@@ -54,8 +55,11 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+//#define WIIU_SD_PATH "/vol/external01/"
+#define WIIU_SD_PATH "sd:/"
+
 static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
-static const char* elf_path_cst = "sd:/retroarch/retroarch.elf";
+static const char* elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
 
 static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -134,7 +138,7 @@ static int frontend_wiiu_parse_drive_list(void *data)
       return -1;
 
    menu_entries_append_enum(list,
-         "sd:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         WIIU_SD_PATH, "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 
    return 0;
 }
@@ -237,11 +241,36 @@ static devoptab_t dotab_stdout = {
    NULL,         // device close
    log_write,    // device write
    NULL,
+   /* ... */
 };
 
+#ifdef RPX_BUILD
+void __wrap___eabi(void)
+{
+}
+void __init(void)
+{
+}
+int main(int argc, char **argv);
+void SaveCallback()
+{
+   OSSavesDone_ReadyToRelease(); // Required
+}
+__attribute__((noreturn))
+void _start(int argc, char **argv)
+{
+   ProcUIInit(&SaveCallback);
+   int ret = main(argc, argv);
+   ProcUIShutdown();
+   exit(ret);
+}
+int main(int argc, char **argv)
+{
+#else
 int __entry_menu(int argc, char **argv)
 {
    InitFunctionPointers();
+#endif
 #if 1
    setup_os_exceptions();
 #else
@@ -263,8 +292,8 @@ int __entry_menu(int argc, char **argv)
    DEBUG_STR(argv[1]);
 #if 0
    int argc_ = 2;
-//   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/rom.nes", NULL};
-   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/rom.sfc", NULL};
+//   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.nes", NULL};
+   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.sfc", NULL};
 
    rarch_main(argc_, argv_, NULL);
 #else
