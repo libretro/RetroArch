@@ -3782,7 +3782,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
          return "OSDオーバーレイ";
       case MENU_ENUM_LABEL_VALUE_PAL60_ENABLE:
-         return "Use PAL60 Mode";
+         return "PAL60モードを使用";
       case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
          return "親ディレクトリー";
       case MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO:
@@ -3808,11 +3808,11 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:
          return "終了";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG:
-         return "Analog supported";
+         return "アナログ対応";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING:
-         return "BBFC Rating";
+         return "BBFC評価";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING:
-         return "CERO Rating";
+         return "CERO評価";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP:
          return "Co-op supported";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32:
@@ -3822,19 +3822,19 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER:
          return "開発者";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
-         return "Edge Magazine Issue";
+         return "Edge雑誌の発行";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING:
-         return "Edge Magazine Rating";
+         return "Edge雑誌の評価";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW:
-         return "Edge Magazine Review";
+         return "Edge雑誌のレビュー";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING:
-         return "ELSPA Rating";
+         return "ELSPA評価";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW:
          return "Enhancement Hardware";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING:
-         return "ESRB Rating";
+         return "ESRB評価";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
-         return "Famitsu Magazine Rating";
+         return "ファミ通の評価";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE:
          return "フランチャイズ";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE:
@@ -3846,7 +3846,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN:
          return "元";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING:
-         return "PEGI Rating";
+         return "PEGI評価";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER:
          return "出版社";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH:
@@ -3854,9 +3854,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR:
          return "発売年";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE:
-         return "Rumble supported";
+         return "振動の対応";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL:
-         return "Serial";
+         return "シリアル";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1:
          return "SHA1";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
@@ -4162,7 +4162,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE:
          return "日付と時刻を表示";
       case MENU_ENUM_LABEL_VALUE_TITLE_COLOR:
-         return "Menu title color";
+         return "メニューのタイトル色";
       case MENU_ENUM_LABEL_VALUE_TRUE:
          return "真";
       case MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE:
@@ -4178,7 +4178,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE:
          return "状態の保存を前に戻す";
       case MENU_ENUM_LABEL_VALUE_UNKNOWN:
-         return "Unknown";
+         return "不明";
       case MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS:
          return "アップデーター";
       case MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS:
@@ -4473,12 +4473,16 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "バイト";
       case MSG_CANNOT_INFER_NEW_CONFIG_PATH:
          return "Cannot infer new config path. Use current time.";
+      case MSG_CAPABILITIES:
+         return "対応された機能";
       case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
          return "Hardcore Mode Enabled: savestate & rewind were disabled.";
       case MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS:
          return "Comparing with known magic numbers...";
       case MSG_COMPILED_AGAINST_API:
          return "Compiled against API";
+      case MSG_COMPILER:
+         return "コンパイラ";
       case MSG_CONFIG_DIRECTORY_NOT_SET:
          return "Config directory not set. Cannot save new config.";
       case MSG_CONNECTED_TO:
@@ -4695,6 +4699,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "Failed to initialize netplay.";
       case MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED:
          return "Movie playback has started. Cannot start netplay.";
+      case MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN:
+         return "No arguments supplied and no menu builtin, displaying help...";
       case MSG_NO_CONTENT_STARTING_DUMMY_CORE:
          return "No content, starting dummy core.";
       case MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET:
@@ -4802,7 +4808,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MSG_UNDOING_SAVE_STATE:
          return "Undoing save state";
       case MSG_UNKNOWN:
-         return "Unknown";
+         return "不明";
+      case MSG_UNKNOWN_COMPILER:
+         return "不明なコンパイラ";
       case MSG_UNPAUSED:
          return "Unpaused.";
       case MSG_UNRECOGNIZED_COMMAND:
