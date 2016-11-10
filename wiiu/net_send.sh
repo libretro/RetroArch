@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [$1 -eq ''] ; then
+if [ -z $1 ] ; then
    echo
    echo "usage: $0 <WiiU-ip> <elf>"
    echo
