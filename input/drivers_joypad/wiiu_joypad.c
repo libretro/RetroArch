@@ -129,6 +129,9 @@ static void wiiu_joypad_poll(void)
    VPADReadError vpadError;
    VPADRead(0, &vpad, 1, &vpadError);
 
+   if(vpadError)
+      return;
+
    pad_state = 0;
    pad_state |= (vpad.hold & VPAD_BUTTON_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
    pad_state |= (vpad.hold & VPAD_BUTTON_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
