@@ -506,7 +506,7 @@ static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
       memcpy(*buffer, data, elems * sizeof(GLfloat));
 #endif
       glBufferData(GL_ARRAY_BUFFER, elems * sizeof(GLfloat),
-            data, GL_STATIC_DRAW);
+            data, GL_STREAM_DRAW);
       *buffer_elems = elems;
    }
 }
