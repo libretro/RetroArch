@@ -725,7 +725,7 @@ static void *gl_glsl_init(void *data, const char *path)
    config_file_t *conf        = NULL;
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)
+   glsl_shader_data_t   *glsl = (glsl_shader_data_t*)
       calloc(1, sizeof(glsl_shader_data_t));
 
    if (!glsl)
@@ -991,8 +991,8 @@ static void gl_glsl_set_uniform_parameter(
       struct uniform_info *param,
       void *uniform_data)
 {
-   GLint location = 0;
-   glsl_shader_data_t              *glsl = (glsl_shader_data_t*)data;
+   GLint            location = 0;
+   glsl_shader_data_t  *glsl = (glsl_shader_data_t*)data;
 
    if (!param)
       return;
@@ -1052,15 +1052,16 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    GLfloat buffer[512];
    struct glsl_attrib attribs[32];
    float input_size[2], output_size[2], texture_size[2];
-   unsigned texunit = 1;
-   const struct shader_uniforms *uni = NULL;
-   size_t size = 0, attribs_size = 0;
-   const struct video_tex_info *info = (const struct video_tex_info*)_info;
-   const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
+   unsigned                           texunit = 1;
+   const struct          shader_uniforms *uni = NULL;
+   size_t                                size = 0;
+   size_t                        attribs_size = 0;
+   const struct video_tex_info          *info = (const struct video_tex_info*)_info;
+   const struct video_tex_info     *prev_info = (const struct video_tex_info*)_prev_info;
    const struct video_tex_info *feedback_info = (const struct video_tex_info*)_feedback_info;
-   const struct video_tex_info *fbo_info = (const struct video_tex_info*)_fbo_info;
-   struct glsl_attrib *attr = (struct glsl_attrib*)attribs;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
+   const struct video_tex_info      *fbo_info = (const struct video_tex_info*)_fbo_info;
+   struct glsl_attrib                   *attr = (struct glsl_attrib*)attribs;
+   glsl_shader_data_t                   *glsl = (glsl_shader_data_t*)shader_data;
 
    if (!glsl)
       return;
@@ -1139,7 +1140,14 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          attribs_size++;
          attr++;
 
-         memcpy(buffer + size, info->coord, 8 * sizeof(GLfloat));
+         buffer[size ]       = info->coord[0];
+         buffer[size + 1]    = info->coord[1];
+         buffer[size + 2]    = info->coord[2];
+         buffer[size + 3]    = info->coord[3];
+         buffer[size + 4]    = info->coord[4];
+         buffer[size + 5]    = info->coord[5];
+         buffer[size + 6]    = info->coord[6];
+         buffer[size + 7]    = info->coord[7];
          size += 8;
       }
 
@@ -1168,7 +1176,14 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          attribs_size++;
          attr++;
 
-         memcpy(buffer + size, feedback_info->coord, 8 * sizeof(GLfloat));
+         buffer[size  ]      = feedback_info->coord[0];
+         buffer[size + 1]    = feedback_info->coord[1];
+         buffer[size + 2]    = feedback_info->coord[2];
+         buffer[size + 3]    = feedback_info->coord[3];
+         buffer[size + 4]    = feedback_info->coord[4];
+         buffer[size + 5]    = feedback_info->coord[5];
+         buffer[size + 6]    = feedback_info->coord[6];
+         buffer[size + 7]    = feedback_info->coord[7];
          size += 8;
       }
 
@@ -1197,7 +1212,14 @@ static void gl_glsl_set_params(void *data, void *shader_data,
             attribs_size++;
             attr++;
 
-            memcpy(buffer + size, fbo_info[i].coord, 8 * sizeof(GLfloat));
+            buffer[size  ]      = fbo_info[i].coord[0];
+            buffer[size + 1]    = fbo_info[i].coord[1];
+            buffer[size + 2]    = fbo_info[i].coord[2];
+            buffer[size + 3]    = fbo_info[i].coord[3];
+            buffer[size + 4]    = fbo_info[i].coord[4];
+            buffer[size + 5]    = fbo_info[i].coord[5];
+            buffer[size + 6]    = fbo_info[i].coord[6];
+            buffer[size + 7]    = fbo_info[i].coord[7];
             size += 8;
          }
       }
@@ -1230,7 +1252,14 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          attribs_size++;
          attr++;
 
-         memcpy(buffer + size, prev_info[i].coord, 8 * sizeof(GLfloat));
+         buffer[size  ]      = prev_info[i].coord[0];
+         buffer[size + 1]    = prev_info[i].coord[1];
+         buffer[size + 2]    = prev_info[i].coord[2];
+         buffer[size + 3]    = prev_info[i].coord[3];
+         buffer[size + 4]    = prev_info[i].coord[4];
+         buffer[size + 5]    = prev_info[i].coord[5];
+         buffer[size + 6]    = prev_info[i].coord[6];
+         buffer[size + 7]    = prev_info[i].coord[7];
          size += 8;
       }
    }
@@ -1301,13 +1330,14 @@ fallback:
 
 #define gl_glsl_set_coord_array(attr, coord1, coord2, coords, size, multiplier) \
 { \
+      unsigned y; \
       attr->loc    = coord1; \
       attr->size   = multiplier; \
       attr->offset = size * sizeof(GLfloat); \
       attribs_size++; \
       attr++; \
-      memcpy(buffer + size, coord2,  \
-            multiplier * coords->vertices * sizeof(GLfloat)); \
+      for (y = 0; y < (multiplier * coords->vertices); y++) \
+         buffer[y + size] = coord2[y]; \
       size += multiplier * coords->vertices; \
 }
 
@@ -1317,10 +1347,11 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
    GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];
    GLfloat *buffer;
    struct glsl_attrib attribs[4];
-   size_t attribs_size = 0, size = 0;
-   struct glsl_attrib *attr = NULL;
+   size_t               attribs_size = 0;
+   size_t                       size = 0;
+   struct glsl_attrib          *attr = NULL;
    const struct shader_uniforms *uni = NULL;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
+   glsl_shader_data_t          *glsl = (glsl_shader_data_t*)shader_data;
 
    if (!glsl || !glsl->shader->modern || !coords)
       goto fallback;
