@@ -216,7 +216,6 @@ static void* wiiu_gfx_init(const video_info_t* video,
                       GX2_DISABLE,         GX2_BLEND_MODE_ONE, GX2_BLEND_MODE_ZERO, GX2_BLEND_COMBINE_MODE_ADD);
 #endif
    GX2SetCullOnlyControl(GX2_FRONT_FACE_CCW, GX2_DISABLE, GX2_DISABLE);
-   GX2SetSwapInterval(0);
 
    /* init shader */
    //   wiiu->shader = MEM2_alloc(sizeof(*wiiu->shader), GX2_VERTEX_BUFFER_ALIGNMENT);
@@ -326,7 +325,8 @@ static void* wiiu_gfx_init(const video_info_t* video,
    GX2SetTVEnable(GX2_ENABLE);
    GX2SetDRCEnable(GX2_ENABLE);
 
-   wiiu->vsync = true;
+   wiiu->vsync = video->vsync;
+   GX2SetSwapInterval(!!video->vsync);
 
    return wiiu;
 }
@@ -412,6 +412,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
       else
          wiiu->last_vsync = last_vsync;
    }
+   GX2WaitForFlip();
 
    static u32 lastTick , currentTick;
    currentTick = OSGetSystemTick();
@@ -502,8 +503,8 @@ static void wiiu_gfx_set_nonblock_state(void* data, bool toggle)
    if (!wiiu)
       return;
 
-   wiiu->vsync = !toggle;
-   /* GX2SetSwapInterval(!toggle); */ /* do we need this ? */
+   wiiu->vsync = !toggle;   
+   GX2SetSwapInterval(!toggle);  /* do we need this ? */
 }
 
 static bool wiiu_gfx_alive(void* data)
