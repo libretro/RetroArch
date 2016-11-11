@@ -1354,16 +1354,25 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
    if (!glsl || !glsl->shader->modern || !coords)
       goto fallback;
 
+   attr = attribs;
+   uni  = &glsl->uniforms[glsl->active_idx];
+
    buffer = short_buffer;
    if (coords->vertices > 4)
-      buffer = (GLfloat*)calloc(coords->vertices *
-            (2 + 2 + 4 + 2), sizeof(*buffer));
+   {
+      size_t elems = 0;
+      elems += (uni->color >= 0) * 4;
+      elems += (uni->tex_coord >= 0) * 2;
+      elems += (uni->vertex_coord >= 0) * 2;
+      elems += (uni->lut_tex_coord >= 0) * 2;
+
+      elems *= coords->vertices * sizeof(GLfloat);
+
+      buffer = (GLfloat*)malloc(elems);
+   }
 
    if (!buffer)
       goto fallback;
-
-   attr = attribs;
-   uni  = &glsl->uniforms[glsl->active_idx];
 
    if (uni->tex_coord >= 0)
       gl_glsl_set_coord_array(attr, uni->tex_coord, coords->tex_coord, coords, size, 2);
