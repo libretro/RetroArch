@@ -43,6 +43,18 @@ enum
    POLL_TYPE_LATE
 };
 
+typedef struct rarch_memory_descriptor
+{
+   struct retro_memory_descriptor core;
+   size_t disconnect_mask;
+} rarch_memory_descriptor_t;
+
+typedef struct rarch_memory_map
+{
+   rarch_memory_descriptor_t *descriptors;
+   unsigned num_descriptors;
+} rarch_memory_map_t;
+
 typedef struct rarch_system_info
 {
    struct retro_system_info info;
@@ -68,7 +80,7 @@ typedef struct rarch_system_info
       unsigned size;
    } ports;
    
-   struct retro_memory_map mmaps;
+   rarch_memory_map_t mmaps;
 } rarch_system_info_t;
 
 typedef struct retro_ctx_input_state_info
