@@ -299,7 +299,9 @@ static ssize_t sd_fat_write_r (struct _reent *r, int fd, const char *ptr, size_t
         memcpy(tmpBuf, ptr + done, write_size);
 
         int result = FSWriteFile(file->dev->pClient, file->dev->pCmd, tmpBuf, 0x01, write_size, file->fd, 0, -1);
+#if 0
         FSFlushFile(file->dev->pClient, file->dev->pCmd, file->fd, -1);
+#endif
         if(result < 0)
         {
             r->_errno = result;

@@ -45,7 +45,8 @@
 #include "system/exception.h"
 #include <sys/iosupport.h>
 
-#include <coreinit/screen.h>
+#include <coreinit/foreground.h>
+#include <proc_ui/procui.h>
 #include <vpad/input.h>
 
 #include "wiiu_dbg.h"
@@ -54,8 +55,11 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+//#define WIIU_SD_PATH "/vol/external01/"
+#define WIIU_SD_PATH "sd:/"
+
 static enum frontend_fork wiiu_fork_mode = FRONTEND_FORK_NONE;
-static const char* elf_path_cst = "sd:/retroarch/retroarch.elf";
+static const char* elf_path_cst = WIIU_SD_PATH "retroarch/retroarch.elf";
 
 static void frontend_wiiu_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -134,7 +138,7 @@ static int frontend_wiiu_parse_drive_list(void *data)
       return -1;
 
    menu_entries_append_enum(list,
-         "sd:/", "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
+         WIIU_SD_PATH, "", MSG_UNKNOWN, FILE_TYPE_DIRECTORY, 0, 0);
 
    return 0;
 }
@@ -169,7 +173,7 @@ frontend_ctx_driver_t frontend_ctx_wiiu = {
 static int log_socket = -1;
 static volatile int log_lock = 0;
 
-void log_init(const char * ipString)
+void log_init(const char * ipString, int port)
 {
 	log_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (log_socket < 0)
@@ -178,7 +182,7 @@ void log_init(const char * ipString)
 	struct sockaddr_in connect_addr;
 	memset(&connect_addr, 0, sizeof(connect_addr));
 	connect_addr.sin_family = AF_INET;
-	connect_addr.sin_port = 4405;
+	connect_addr.sin_port = port;
 	inet_aton(ipString, &connect_addr.sin_addr);
 
 	if(connect(log_socket, (struct sockaddr*)&connect_addr, sizeof(connect_addr)) < 0)
@@ -237,19 +241,44 @@ static devoptab_t dotab_stdout = {
    NULL,         // device close
    log_write,    // device write
    NULL,
+   /* ... */
 };
 
+#ifdef RPX_BUILD
+void __wrap___eabi(void)
+{
+}
+void __init(void)
+{
+}
+int main(int argc, char **argv);
+void SaveCallback()
+{
+   OSSavesDone_ReadyToRelease(); // Required
+}
+__attribute__((noreturn))
+void _start(int argc, char **argv)
+{
+   ProcUIInit(&SaveCallback);
+   int ret = main(argc, argv);
+   ProcUIShutdown();
+   exit(ret);
+}
+int main(int argc, char **argv)
+{
+#else
 int __entry_menu(int argc, char **argv)
 {
    InitFunctionPointers();
+#endif
 #if 1
    setup_os_exceptions();
 #else
    InstallExceptionHandler();
 #endif
    socket_lib_init();
-#if 0
-   log_init("10.42.0.1");
+#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
+   log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
 #endif
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
@@ -263,8 +292,8 @@ int __entry_menu(int argc, char **argv)
    DEBUG_STR(argv[1]);
 #if 0
    int argc_ = 2;
-//   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/rom.nes", NULL};
-   char* argv_[] = {"sd:/retroarch/retroarch.elf", "sd:/rom.sfc", NULL};
+//   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.nes", NULL};
+   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.sfc", NULL};
 
    rarch_main(argc_, argv_, NULL);
 #else
@@ -290,7 +319,9 @@ int __entry_menu(int argc, char **argv)
    memoryRelease();
    fflush(stdout);
    fflush(stderr);
+#if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
    log_deinit();
+#endif
 
    return 0;
 }

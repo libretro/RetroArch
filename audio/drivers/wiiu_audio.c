@@ -106,14 +106,14 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
    ax->offsets_l.data = ax->buffer_l;
    ax->offsets_l.currentOffset = 0;
    ax->offsets_l.loopOffset = 0;
-   ax->offsets_l.endOffset = AX_AUDIO_COUNT;
+   ax->offsets_l.endOffset = AX_AUDIO_COUNT - 1;
    ax->offsets_l.loopingEnabled = AX_VOICE_LOOP_ENABLED;
    ax->offsets_l.dataType = AX_VOICE_FORMAT_LPCM16;
 
    ax->offsets_r.data = ax->buffer_r;
    ax->offsets_r.currentOffset = 0;
    ax->offsets_r.loopOffset = 0;
-   ax->offsets_r.endOffset = AX_AUDIO_COUNT;
+   ax->offsets_r.endOffset = AX_AUDIO_COUNT - 1;
    ax->offsets_r.loopingEnabled = AX_VOICE_LOOP_ENABLED;
    ax->offsets_r.dataType = AX_VOICE_FORMAT_LPCM16;
 
@@ -124,7 +124,7 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
    AXSetVoiceSrcType(ax->voice_r, AX_VOICE_SRC_TYPE_NONE);
    AXSetVoiceSrcRatio(ax->voice_l, 1.0f);
    AXSetVoiceSrcRatio(ax->voice_r, 1.0f);
-   AXVoiceVeData ve = {0x4000, 0};
+   AXVoiceVeData ve = {0x8000, 0};
    AXSetVoiceVe(ax->voice_l, &ve);
    AXSetVoiceVe(ax->voice_r, &ve);
    u32 mix[24]= {0};
@@ -248,7 +248,7 @@ static bool ax_audio_start(void* data)
 
    if(!ax->playing)
    {
-      AXVoiceVeData ve = {0x4000, 0};
+      AXVoiceVeData ve = {0x8000, 0};
       AXSetVoiceVe(ax->voice_l, &ve);
       AXSetVoiceVe(ax->voice_r, &ve);
 

@@ -129,6 +129,9 @@ static void wiiu_joypad_poll(void)
    VPADReadError vpadError;
    VPADRead(0, &vpad, 1, &vpadError);
 
+   if(vpadError)
+      return;
+
    pad_state = 0;
    pad_state |= (vpad.hold & VPAD_BUTTON_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
    pad_state |= (vpad.hold & VPAD_BUTTON_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
@@ -154,7 +157,8 @@ static void wiiu_joypad_poll(void)
 
    BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
-   if((vpad.tpNormal.touched) && (vpad.tpNormal.x > 200) && (vpad.tpNormal.validity) == 0)
+   if(((vpad.tpNormal.touched) && (vpad.tpNormal.x > 200) && (vpad.tpNormal.validity) == 0) ||
+      (vpad.trigger & VPAD_BUTTON_HOME))
       BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
 
    /* panic button */

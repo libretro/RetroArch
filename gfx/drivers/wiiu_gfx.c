@@ -22,6 +22,7 @@
 #include <coreinit/cache.h>
 #include "gx2.h"
 #include "system/memory.h"
+#include "system/wiiu.h"
 #include "tex_shader.h"
 
 #include "wiiu_dbg.h"
@@ -87,8 +88,8 @@ typedef struct
 
    wiiu_render_mode_t render_mode;
    int frames;
-   bool noblock;
-   int syncframes;
+   OSTime last_vsync;
+   bool vsync;
 } wiiu_video_t;
 
 static const wiiu_render_mode_t wiiu_render_mode_map[] =
@@ -206,7 +207,7 @@ static void* wiiu_gfx_init(const video_info_t* video,
    GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
    GX2SetDepthOnlyControl(GX2_DISABLE, GX2_DISABLE, GX2_COMPARE_FUNC_ALWAYS);
    GX2SetColorControl(GX2_LOGIC_OP_COPY, 1, GX2_DISABLE, GX2_ENABLE);
-#if 0
+#if 1
    GX2SetBlendControl(GX2_RENDER_TARGET_0, GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA,
                       GX2_BLEND_COMBINE_MODE_ADD,
                       GX2_ENABLE,          GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
@@ -215,7 +216,6 @@ static void* wiiu_gfx_init(const video_info_t* video,
                       GX2_DISABLE,         GX2_BLEND_MODE_ONE, GX2_BLEND_MODE_ZERO, GX2_BLEND_COMBINE_MODE_ADD);
 #endif
    GX2SetCullOnlyControl(GX2_FRONT_FACE_CCW, GX2_DISABLE, GX2_DISABLE);
-   GX2SetSwapInterval(1);
 
    /* init shader */
    //   wiiu->shader = MEM2_alloc(sizeof(*wiiu->shader), GX2_VERTEX_BUFFER_ALIGNMENT);
@@ -325,8 +325,8 @@ static void* wiiu_gfx_init(const video_info_t* video,
    GX2SetTVEnable(GX2_ENABLE);
    GX2SetDRCEnable(GX2_ENABLE);
 
-   wiiu->noblock = false;
-   wiiu->syncframes = 60;
+   wiiu->vsync = video->vsync;
+   GX2SetSwapInterval(!!video->vsync);
 
    return wiiu;
 }
@@ -384,28 +384,61 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
                            unsigned width, unsigned height, uint64_t frame_count,
                            unsigned pitch, const char* msg)
 {
-   (void)frame;
-   (void)width;
-   (void)height;
-   (void)pitch;
    (void)msg;
    int i;
 
    wiiu_video_t* wiiu = (wiiu_video_t*) data;
-   if(wiiu->menu.enable || wiiu->noblock == false)
-      wiiu->syncframes = 60;
-   else if(wiiu->syncframes > 0)
-      wiiu->syncframes--;
-   GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
-   //   GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.3f, 0.8f, 1.0f);
-   /* can't call GX2ClearColor after GX2SetContextState for whatever reason */
-   GX2SetContextState(wiiu->ctx_state);
 
    if (!width || !height)
    {
       GX2WaitForVsync();
-      return;
+      return true;
    }
+
+   if(wiiu->vsync)
+   {
+      uint32_t swap_count;
+      uint32_t flip_count;
+      OSTime last_flip;
+      OSTime last_vsync;
+
+      GX2GetSwapStatus(&swap_count, &flip_count, &last_flip, &last_vsync);
+
+      if(wiiu->last_vsync >= last_vsync)
+      {
+         GX2WaitForVsync();
+         wiiu->last_vsync = last_vsync + ms_to_ticks(17);
+      }
+      else
+         wiiu->last_vsync = last_vsync;
+   }
+   GX2WaitForFlip();
+
+   static u32 lastTick , currentTick;
+   currentTick = OSGetSystemTick();
+   u32 diff = currentTick - lastTick;
+   static float fps;
+   static u32 frames;
+   frames++;
+   if(diff > wiiu_timer_clock)
+   {
+      fps = (float)frames * ((float) wiiu_timer_clock / (float) diff);
+      lastTick = currentTick;
+      frames = 0;
+   }
+#if 0
+   static u32 last_frame_tick;
+   if (!(wiiu->menu.enable))
+      printf("\r frame time : %10.6f ms            \n", (float)(currentTick - last_frame_tick) * 1000.0f / (float)wiiu_timer_clock);
+   last_frame_tick = currentTick;
+#endif
+   printf("\rfps: %8.8f frames : %5i", fps, wiiu->frames++);
+   fflush(stdout);
+
+   GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
+   /* can't call GX2ClearColor after GX2SetContextState for whatever reason */
+   GX2SetContextState(wiiu->ctx_state);
+
 
    if(frame)
    {
@@ -423,7 +456,6 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
       for (i = 0; i < height; i++)
       {
-//         memcpy(dst, src, width * sizeof(uint16_t));
          int j;
          for(j = 0; j < width; j++)
             dst[j] = __builtin_bswap16(src[j]);
@@ -460,10 +492,6 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
    GX2SwapScanBuffers();
    GX2Flush();
-   if(wiiu->syncframes)
-      GX2WaitForVsync();
-   printf("\rframe : %5i", wiiu->frames++);
-   fflush(stdout);
 
    return true;
 }
@@ -475,7 +503,8 @@ static void wiiu_gfx_set_nonblock_state(void* data, bool toggle)
    if (!wiiu)
       return;
 
-   wiiu->noblock = toggle;
+   wiiu->vsync = !toggle;   
+   GX2SetSwapInterval(!toggle);  /* do we need this ? */
 }
 
 static bool wiiu_gfx_alive(void* data)

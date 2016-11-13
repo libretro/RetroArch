@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 //#define DEBUG_HOLD() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);wait_for_input();}while(0)
-#define DEBUG_LINE() do{printf("%s:%d.\n",__FUNCTION__, __LINE__);fflush(stdout);}while(0)
+#define DEBUG_LINE() do{printf("%s@%s:%d.\n",__FUNCTION__, __FILE__, __LINE__);fflush(stdout);}while(0)
 #define DEBUG_STR(X) printf( "%s: %s\n", #X, (char*)(X))
 #define DEBUG_VAR(X) printf( "%-20s: 0x%08X\n", #X, (u32)(X))
 #define DEBUG_VAR2(X) printf( "%-20s: 0x%08X (%i)\n", #X, (u32)(X), (int)(X))
