@@ -1477,31 +1477,48 @@ static unsigned cheevos_get_var_value(cheevos_var_t *var)
       {
          live_val = memory[0];
 
-         if (var->size > CHEEVOS_VAR_SIZE_BIT_0
-               && var->size <= CHEEVOS_VAR_SIZE_BIT_7)
-            live_val = (live_val &
-                  (1 << (var->size - CHEEVOS_VAR_SIZE_BIT_0))) != 0;
-         else
+         switch (var->size)
          {
-            switch (var->size)
-            {
-               case CHEEVOS_VAR_SIZE_NIBBLE_LOWER:
-                  live_val &= 0x0f;
-                  break;
-               case CHEEVOS_VAR_SIZE_NIBBLE_UPPER:
-                  live_val = (live_val >> 4) & 0x0f;
-                  break;
-               case CHEEVOS_VAR_SIZE_EIGHT_BITS:
-                  break;
-               case CHEEVOS_VAR_SIZE_SIXTEEN_BITS:
-                  live_val |= memory[1] << 8;
-                  break;
-               case CHEEVOS_VAR_SIZE_THIRTYTWO_BITS:
-                  live_val |= memory[1] << 8;
-                  live_val |= memory[2] << 16;
-                  live_val |= memory[3] << 24;
-                  break;
-            }
+            case CHEEVOS_VAR_SIZE_BIT_0:
+               live_val &= 1;
+               break;
+            case CHEEVOS_VAR_SIZE_BIT_1:
+               live_val = (live_val >> 1) & 1;
+               break;
+            case CHEEVOS_VAR_SIZE_BIT_2:
+               live_val = (live_val >> 2) & 1;
+               break;
+            case CHEEVOS_VAR_SIZE_BIT_3:
+               live_val = (live_val >> 3) & 1;
+               break;
+            case CHEEVOS_VAR_SIZE_BIT_4:
+               live_val = (live_val >> 4) & 1;
+               break;
+            case CHEEVOS_VAR_SIZE_BIT_5:
+               live_val = (live_val >> 5) & 1;
+               break;
+            case CHEEVOS_VAR_SIZE_BIT_6:
+               live_val = (live_val >> 6) & 1;
+               break;
+            case CHEEVOS_VAR_SIZE_BIT_7:
+               live_val = (live_val >> 7) & 1;
+               break;
+            case CHEEVOS_VAR_SIZE_NIBBLE_LOWER:
+               live_val &= 0x0f;
+               break;
+            case CHEEVOS_VAR_SIZE_NIBBLE_UPPER:
+               live_val = (live_val >> 4) & 0x0f;
+               break;
+            case CHEEVOS_VAR_SIZE_EIGHT_BITS:
+               break;
+            case CHEEVOS_VAR_SIZE_SIXTEEN_BITS:
+               live_val |= memory[1] << 8;
+               break;
+            case CHEEVOS_VAR_SIZE_THIRTYTWO_BITS:
+               live_val |= memory[1] << 8;
+               live_val |= memory[2] << 16;
+               live_val |= memory[3] << 24;
+               break;
          }
       }
 
