@@ -18,6 +18,7 @@
 #include <stddef.h>
 
 #include <compat/strl.h>
+#include <compat/strcasestr.h>
 
 #include <lists/file_list.h>
 #include <lists/dir_list.h>
