@@ -307,7 +307,7 @@ int __entry_menu(int argc, char **argv)
 
       if (ret == 1 && sleep_ms > 0)
        retro_sleep(sleep_ms);
-      task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+      task_queue_ctl(TASK_QUEUE_CTL_WAIT, NULL);
       if (ret == -1)
        break;
 
