@@ -190,7 +190,10 @@ static int setting_uint_action_left_custom_viewport_width(void *data, bool wrapa
    if (custom->width <= 1)
       custom->width = 1;
    else if (settings->video.scale_integer)
-      custom->width -= geom->base_width;
+   {
+      if (custom->width > geom->base_width)
+         custom->width -= geom->base_width;
+   }
    else
       custom->width -= 1;
 
@@ -242,7 +245,10 @@ static int setting_uint_action_left_custom_viewport_height(void *data, bool wrap
    if (custom->height <= 1)
       custom->height = 1;
    else if (settings->video.scale_integer)
-      custom->height -= geom->base_height;
+   {
+      if (custom->height > geom->base_height)
+         custom->height -= geom->base_height;
+   }
    else
       custom->height -= 1;
 
