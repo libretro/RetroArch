@@ -2505,6 +2505,17 @@ bool cheevos_load(const void *data)
    cheevos_locals.meminfo[3].id = RETRO_MEMORY_RTC;
    core_get_memory(&cheevos_locals.meminfo[3]);
 
+#ifdef CHEEVOS_VERBOSE
+   RARCH_LOG("CHEEVOS system RAM: %p %u\n",
+      cheevos_locals.meminfo[0].data, cheevos_locals.meminfo[0].size);
+   RARCH_LOG("CHEEVOS save RAM:   %p %u\n",
+      cheevos_locals.meminfo[1].data, cheevos_locals.meminfo[1].size);
+   RARCH_LOG("CHEEVOS video RAM:  %p %u\n",
+      cheevos_locals.meminfo[2].data, cheevos_locals.meminfo[2].size);
+   RARCH_LOG("CHEEVOS RTC:        %p %u\n",
+      cheevos_locals.meminfo[3].data, cheevos_locals.meminfo[3].size);
+#endif
+
    /* Bail out if cheevos are disabled.
     * But set the above anyways, command_read_ram needs it. */
    if (!settings->cheevos.enable)
