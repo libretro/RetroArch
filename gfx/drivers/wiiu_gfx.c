@@ -647,7 +647,7 @@ static void wiiu_gfx_set_nonblock_state(void* data, bool toggle)
    if (!wiiu)
       return;
 
-   wiiu->vsync = !toggle;   
+   wiiu->vsync = !toggle;
    GX2SetSwapInterval(!toggle);  /* do we need this ? */
 }
 
@@ -690,14 +690,16 @@ static void wiiu_gfx_set_rotation(void* data,
                                   unsigned rotation)
 {
    wiiu_video_t* wiiu = (wiiu_video_t*) data;
-   wiiu->rotation = rotation;
+   if(wiiu)
+      wiiu->rotation = rotation;
 }
 
 static void wiiu_gfx_viewport_info(void* data,
                                    struct video_viewport* vp)
 {
    wiiu_video_t* wiiu = (wiiu_video_t*) data;
-   *vp = wiiu->vp;
+   if(wiiu)
+      *vp = wiiu->vp;
 }
 
 static bool wiiu_gfx_read_viewport(void* data, uint8_t* buffer)
@@ -720,7 +722,8 @@ static void wiiu_gfx_unload_texture(void* data, uintptr_t handle)
 static void wiiu_gfx_set_filtering(void* data, unsigned index, bool smooth)
 {
    wiiu_video_t* wiiu = (wiiu_video_t*) data;
-   wiiu->smooth = smooth;
+   if(wiiu)
+      wiiu->smooth = smooth;
 }
 
 
@@ -776,7 +779,8 @@ static void wiiu_gfx_set_texture_enable(void* data, bool state, bool full_screen
 {
    (void) full_screen;
    wiiu_video_t* wiiu = (wiiu_video_t*) data;
-   wiiu->menu.enable = state;
+   if(wiiu)
+      wiiu->menu.enable = state;
 
 }
 
