@@ -2816,7 +2816,9 @@ bool cheevos_test(void)
       if (settings->cheevos.test_unofficial)
          cheevos_test_cheevo_set(&cheevos_locals.unofficial);
 
-      //cheevos_test_leaderboards();
+#if 0
+      cheevos_test_leaderboards();
+#endif
    }
 
    return true;
