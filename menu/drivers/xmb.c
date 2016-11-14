@@ -861,8 +861,17 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
-   tmp = string_replace_substring(entry.path, "/", "-");
-
+   tmp = string_replace_substring(entry.path, "&", "_");
+   tmp = string_replace_substring(entry.path, "\", "_");
+   tmp = string_replace_substring(entry.path, "/", "_");
+   tmp = string_replace_substring(entry.path, "?", "_");
+   tmp = string_replace_substring(entry.path, ":", "_");   
+   tmp = string_replace_substring(entry.path, "<", "_");
+   tmp = string_replace_substring(entry.path, ">", "_");
+   tmp = string_replace_substring(entry.path, ":", "_");   
+   tmp = string_replace_substring(entry.path, "*", "_");
+   tmp = string_replace_substring(entry.path, "|", "_");
+                                  
    if (tmp)
    {
       char tmp_new[PATH_MAX_LENGTH];
