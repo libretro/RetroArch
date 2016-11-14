@@ -19,9 +19,13 @@
 #endif
 .align 4
 .globl process_sinc_neon_asm
+#ifndef __MACH__
 .type process_sinc_neon_asm, %function
+#endif
 .globl _process_sinc_neon_asm
+#ifndef __MACH__
 .type _process_sinc_neon_asm, %function
+#endif
 # void process_sinc_neon(float *out, const float *left, const float *right, const float *coeff, unsigned taps)
 # Assumes taps is >= 8, and a multiple of 8.
 process_sinc_neon_asm:
