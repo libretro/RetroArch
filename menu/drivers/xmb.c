@@ -865,7 +865,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters in the entry name with underscores
     */
-   char *scrub_char_pointer = 0;
+   char *scrub_char_pointer = NULL;
    tmp = strdup(entry.path);
    
    while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
