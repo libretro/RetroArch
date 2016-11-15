@@ -82,6 +82,20 @@ size_t hack_shader_pass = 0;
 char *core_buf;
 size_t core_len;
 
+char lakka_project[128];
+
+static char * lakka_get_project()
+{
+   FILE *command_file = NULL;
+   command_file = popen("cat /etc/release | cut -d - -f 1", "r");
+   fgets(lakka_project, sizeof(lakka_project), command_file);
+   size_t len = strlen(lakka_project);
+   if (len > 0 && lakka_project[len-1] == '\n')
+      lakka_project[--len] = '\0';
+   pclose(command_file);
+   return lakka_project;
+}
+
 static void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
 {
    char subdir_path[PATH_MAX_LENGTH];
@@ -2107,7 +2121,7 @@ static int generic_action_ok_network(const char *path,
          /* TODO unhardcode this path */
          fill_pathname_join(url_path,
                file_path_str(FILE_PATH_LAKKA_URL),
-               LAKKA_PROJECT, sizeof(url_path));
+               lakka_get_project(), sizeof(url_path));
          fill_pathname_join(url_path, url_path,
                file_path_str(FILE_PATH_INDEX_URL),
                sizeof(url_path));
@@ -2376,7 +2390,7 @@ static int action_ok_download_generic(const char *path,
 #ifdef HAVE_LAKKA
          /* TODO unhardcode this path*/
          fill_pathname_join(s, file_path_str(FILE_PATH_LAKKA_URL),
-               LAKKA_PROJECT, sizeof(s));
+               lakka_get_project(), sizeof(s));
 #endif
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
