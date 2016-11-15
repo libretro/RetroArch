@@ -865,40 +865,13 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    char *scrub_char_pointer = 0;
    tmp = strdup(entry.path);
    
-   while ((scrub_char_pointer = strchr(tmp, '&')) != NULL) {
-      *scrub_char_pointer = '_';
-   }
-   while ((scrub_char_pointer = strchr(tmp, '\\')) != NULL) {
-      *scrub_char_pointer = '_';
-   }
-   while ((scrub_char_pointer = strchr(tmp, '/')) != NULL) {
-      *scrub_char_pointer = '_';
-   }
-   while ((scrub_char_pointer = strchr(tmp, '?')) != NULL) {
-      *scrub_char_pointer = '_';
-   }
-   while ((scrub_char_pointer = strchr(tmp, ':')) != NULL) {
-      *scrub_char_pointer = '_';
-   }
-   while ((scrub_char_pointer = strchr(tmp, '`')) != NULL) {
-      *scrub_char_pointer = '_';
-   }
-   while ((scrub_char_pointer = strchr(tmp, '<')) != NULL) {
-      *scrub_char_pointer = '_';
-   }
-   while ((scrub_char_pointer = strchr(tmp, '>')) != NULL) {
-      *scrub_char_pointer = '_';
-   }
-   while ((scrub_char_pointer = strchr(tmp, '*')) != NULL) {
-      *scrub_char_pointer = '_';
-   }
-   while ((scrub_char_pointer = strchr(tmp, '|')) != NULL) {
+   while(scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\|"))
+   {
       *scrub_char_pointer = '_';
    }
 
    /* Look for thumbnail file with the scrubbed filename */
-   
-   if (tmp)
+  if (tmp)
    {
       char tmp_new[PATH_MAX_LENGTH];
 
