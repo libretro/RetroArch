@@ -865,7 +865,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    char *scrub_char_pointer = 0;
    tmp = strdup(entry.path);
    
-   while(scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\|"))
+   while(scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|"))
    {
       *scrub_char_pointer = '_';
    }
