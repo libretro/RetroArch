@@ -866,7 +866,8 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    tmp = string_replace_substring(entry.path, "\\", "_");
    tmp = string_replace_substring(entry.path, "/", "_");
    tmp = string_replace_substring(entry.path, "\?", "_");
-   tmp = string_replace_substring(entry.path, ":", "_");   
+   tmp = string_replace_substring(entry.path, ":", "_");  
+   tmp = string_replace_substring(entry.path, ";", "_");
    tmp = string_replace_substring(entry.path, "<", "_");
    tmp = string_replace_substring(entry.path, ">", "_");
    tmp = string_replace_substring(entry.path, "*", "_");
