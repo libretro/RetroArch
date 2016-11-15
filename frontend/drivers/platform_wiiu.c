@@ -48,6 +48,7 @@
 #include <coreinit/foreground.h>
 #include <proc_ui/procui.h>
 #include <vpad/input.h>
+#include <sysapp/launch.h>
 
 #include "wiiu_dbg.h"
 
@@ -244,52 +245,34 @@ static devoptab_t dotab_stdout = {
    /* ... */
 };
 
-#ifdef RPX_BUILD
-void __wrap___eabi(void)
-{
-}
-void __init(void)
-{
-}
-int main(int argc, char **argv);
 void SaveCallback()
 {
-   OSSavesDone_ReadyToRelease(); // Required
+   OSSavesDone_ReadyToRelease();
 }
-__attribute__((noreturn))
-void _start(int argc, char **argv)
-{
-   ProcUIInit(&SaveCallback);
-   int ret = main(argc, argv);
-   ProcUIShutdown();
-   exit(ret);
-}
+
 int main(int argc, char **argv)
-{
-#else
-int __entry_menu(int argc, char **argv)
-{
-   InitFunctionPointers();
-#endif
+{   
 #if 1
    setup_os_exceptions();
 #else
    InstallExceptionHandler();
 #endif
+
+   ProcUIInit(&SaveCallback);
+
    socket_lib_init();
 #if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
    log_init(PC_DEVELOPMENT_IP_ADDRESS, PC_DEVELOPMENT_TCP_PORT);
-#endif
    devoptab_list[STD_OUT] = &dotab_stdout;
    devoptab_list[STD_ERR] = &dotab_stdout;
-   memoryInitialize();
-   mount_sd_fat("sd");
+#endif
    VPADInit();
 
    verbosity_enable();
    DEBUG_VAR(argc);
    DEBUG_STR(argv[0]);
    DEBUG_STR(argv[1]);
+   fflush(stdout);
 #if 0
    int argc_ = 2;
 //   char* argv_[] = {WIIU_SD_PATH "retroarch/retroarch.elf", WIIU_SD_PATH "rom.nes", NULL};
@@ -299,7 +282,6 @@ int __entry_menu(int argc, char **argv)
 #else
    rarch_main(argc, argv, NULL);
 #endif
-//   int frames = 0;
    do
    {
       unsigned sleep_ms = 0;
@@ -312,21 +294,57 @@ int __entry_menu(int argc, char **argv)
        break;
 
    }while(1);
-//   }while(frames++ < 300);
 
    main_exit(NULL);
-   unmount_sd_fat("sd");
-   memoryRelease();
    fflush(stdout);
    fflush(stderr);
+   ProcUIShutdown();
+
 #if defined(PC_DEVELOPMENT_IP_ADDRESS) && defined(PC_DEVELOPMENT_TCP_PORT)
    log_deinit();
 #endif
-
    return 0;
 }
 
 unsigned long _times_r(struct _reent *r, struct tms *tmsbuf)
 {
    return 0;
+}
+
+void __eabi()
+{
+
+}
+
+void _init();
+void _fini();
+int __entry_menu(int argc, char **argv)
+{
+   InitFunctionPointers();
+   memoryInitialize();
+   mount_sd_fat("sd");
+
+   _init();
+   int ret = main(argc, argv);
+   _fini();
+
+   unmount_sd_fat("sd");
+   memoryRelease();
+   return ret;
+}
+
+__attribute__((noreturn))
+void _start(int argc, char **argv)
+{
+   memoryInitialize();
+   mount_sd_fat("sd");
+
+//   _init();
+   int ret = main(argc, argv);
+//   _fini();
+
+   unmount_sd_fat("sd");
+   memoryRelease();
+   SYSRelaunchTitle(argc, argv);
+   exit(ret);
 }
