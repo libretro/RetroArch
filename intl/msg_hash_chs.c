@@ -3126,6 +3126,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
          return "描述";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
+/* FIXME? Translate 'Achievements Hardcore Mode' */
          return "专家模式";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
          return "已解锁的成就:";
@@ -3134,6 +3135,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retro 成就";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
+/* FIXME? Translate 'Test Unofficial Achievements' */
          return "非官方测试";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
          return "未解锁的成就:";
@@ -3274,6 +3276,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "动态壁纸目录";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
+/* FIXME? Translate 'Enable Achievements' */
          return "启用";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "菜单项悬停颜色";

@@ -1146,12 +1146,14 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
          return "Menù a comparsa";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
+/* FIXME? Translate 'Achievements Hardcore Mode' */
          return "Modalità Hardcore";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
          return "Obiettivi bloccati:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retro Obiettivi";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
+/* FIXME? Translate 'Test Unofficial Achievements' */
          return "Prova non ufficiali";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
          return "Obiettivi sbloccati:";
@@ -2127,6 +2129,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
          return "Usa visualizzatore di immagini interno";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
+/* FIXME? Translate 'Enable Achievements' */
          return "Attivare";
       case MENU_ENUM_LABEL_VALUE_START_CORE:
          return "Avvia Core";
