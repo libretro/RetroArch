@@ -892,7 +892,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    while ((scrub_char_pointer = strchr (tmp, '*')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, '_')) != NULL) {
+   while ((scrub_char_pointer = strchr (tmp, '|')) != NULL) {
       *scrub_char_pointer = '_';
    }
 
