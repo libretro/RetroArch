@@ -862,16 +862,39 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
    /* Scrub characters that are not cross-platform safe from 'display name' in playlist and replace with underscore */
-   tmp = string_replace_substring(entry.path, "&", "_");
-   tmp = string_replace_substring(entry.path, "\\", "_");
-   tmp = string_replace_substring(entry.path, "/", "_");
-   tmp = string_replace_substring(entry.path, "\?", "_");
-   tmp = string_replace_substring(entry.path, ":", "_");  
-   tmp = string_replace_substring(entry.path, ";", "_");
-   tmp = string_replace_substring(entry.path, "<", "_");
-   tmp = string_replace_substring(entry.path, ">", "_");
-   tmp = string_replace_substring(entry.path, "*", "_");
-   tmp = string_replace_substring(entry.path, "|", "_");
+   char *scrub_char_pointer = 0;
+   *tmp = *entry.path;
+   
+   while ((scrub_char_pointer = strchr (tmp, '&')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
+   while ((scrub_char_pointer = strchr (tmp, '\\')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
+   while ((scrub_char_pointer = strchr (tmp, '/')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
+   while ((scrub_char_pointer = strchr (tmp, '?')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
+   while ((scrub_char_pointer = strchr (tmp, ':')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
+   while ((scrub_char_pointer = strchr (tmp, '`')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
+   while ((scrub_char_pointer = strchr (tmp, '<')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
+   while ((scrub_char_pointer = strchr (tmp, '>')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
+   while ((scrub_char_pointer = strchr (tmp, '*')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
+   while ((scrub_char_pointer = strchr (tmp, '_')) != NULL) {
+      *scrub_char_pointer = '_';
+   }
 
    /* Look for thumbnail file with the scrubbed filename */
    
