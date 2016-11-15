@@ -40,6 +40,16 @@ static int action_bind_sublabel_generic(
    return 0;
 }
 
+static int action_bind_sublabel_cheevos_hardcore_mode_enable(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE), len);
+   return 0;
+}
+
 static int action_bind_sublabel_menu_settings_list(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -379,6 +389,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_hardcore_mode_enable);
             break;
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);
