@@ -863,36 +863,36 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    /* Scrub characters that are not cross-platform safe from 'display name' in playlist and replace with underscore */
    char *scrub_char_pointer = 0;
-   *tmp = *entry.path;
+   tmp = strdup(entry.path);
    
-   while ((scrub_char_pointer = strchr (tmp, '&')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, '&')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, '\\')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, '\\')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, '/')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, '/')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, '?')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, '?')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, ':')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, ':')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, '`')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, '`')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, '<')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, '<')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, '>')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, '>')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, '*')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, '*')) != NULL) {
       *scrub_char_pointer = '_';
    }
-   while ((scrub_char_pointer = strchr (tmp, '|')) != NULL) {
+   while ((scrub_char_pointer = strchr(tmp, '|')) != NULL) {
       *scrub_char_pointer = '_';
    }
 
