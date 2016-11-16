@@ -40,6 +40,16 @@ static int action_bind_sublabel_generic(
    return 0;
 }
 
+static int action_bind_sublabel_core_settings_list(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CORE_SETTINGS), len);
+   return 0;
+}
+
 static int action_bind_sublabel_cheevos_hardcore_mode_enable(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -453,6 +463,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_user_bind_settings);
             break;
+
          case MENU_ENUM_LABEL_NETPLAY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_settings);
             break;
@@ -473,6 +484,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_AUDIO_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_settings_list);
+            break;
+         case MENU_ENUM_LABEL_CORE_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_settings_list);
             break;
          case MENU_ENUM_LABEL_INPUT_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_settings_list);
