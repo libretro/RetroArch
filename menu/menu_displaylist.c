@@ -2823,12 +2823,16 @@ static int menu_displaylist_parse_horizontal_content_actions(
 static int menu_displaylist_parse_information_list(
       menu_displaylist_info_t *info)
 {
+   core_info_t *core_info    = NULL;
 
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
-         msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION),
-         MENU_ENUM_LABEL_CORE_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0);
+   core_info_get_current_core(&core_info);
+
+   if (core_info && core_info->config_data)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION),
+            MENU_ENUM_LABEL_CORE_INFORMATION,
+            MENU_SETTING_ACTION, 0, 0);
 
 #ifdef HAVE_NETWORKING
 #ifndef HAVE_SOCKET_LEGACY
