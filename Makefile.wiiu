@@ -154,11 +154,7 @@ else
    LDFLAGS  += -T wiiu/link_elf.ld
 endif
 
-LDFLAGS  += -Wl,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc
-LDFLAGS  += -Wl,-wrap,malloc_usable_size,-wrap,_malloc_r,-wrap,_free_r,-wrap,_realloc_r,-wrap,_calloc_r,-wrap,_memalign_r
-LDFLAGS  += -Wl,-wrap,_malloc_usable_size_r,-wrap,valloc,-wrap,_valloc_r,-wrap,_pvalloc_r,--gc-sections
-
-
+LDFLAGS  += -Wl,--gc-sections
 
 LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
 
