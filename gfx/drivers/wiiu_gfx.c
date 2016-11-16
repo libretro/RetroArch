@@ -398,10 +398,19 @@ static void* wiiu_gfx_init(const video_info_t* video,
    wiiu->texture.surface.height   = video->input_scale * RARCH_SCALE_BASE;
    wiiu->texture.surface.depth    = 1;
    wiiu->texture.surface.dim      = GX2_SURFACE_DIM_TEXTURE_2D;
-   wiiu->texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R5_G6_B5;
    wiiu->texture.surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
    wiiu->texture.viewNumSlices    = 1;
-   wiiu->texture.compMap          = GX2_COMP_SEL(_B, _G, _R, _1);
+   wiiu->rgb32 = video->rgb32;
+   if(wiiu->rgb32)
+   {
+      wiiu->texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
+      wiiu->texture.compMap          = GX2_COMP_SEL(_G, _B, _A, _1);
+   }
+   else
+   {
+      wiiu->texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R5_G6_B5;
+      wiiu->texture.compMap          = GX2_COMP_SEL(_B, _G, _R, _1);
+   }
    GX2CalcSurfaceSizeAndAlignment(&wiiu->texture.surface);
    GX2InitTextureRegs(&wiiu->texture);
 
@@ -593,18 +602,35 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
       wiiu->width = width;
       wiiu->height = height;
-
-      const uint16_t* src = frame;
-      uint16_t* dst = (uint16_t*)wiiu->texture.surface.image;
-
-      for (i = 0; i < height; i++)
+      if(wiiu->rgb32)
       {
-         int j;
-         for(j = 0; j < width; j++)
-            dst[j] = __builtin_bswap16(src[j]);
-         dst += wiiu->texture.surface.pitch;
-         src += pitch / 2;
+         const uint32_t* src = frame;
+         uint32_t* dst = (uint32_t*)wiiu->texture.surface.image;
+
+         for (i = 0; i < height; i++)
+         {
+            int j;
+            for(j = 0; j < width; j++)
+               dst[j] = src[j];
+            dst += wiiu->texture.surface.pitch;
+            src += pitch / 4;
+         }
       }
+      else
+      {
+         const uint16_t* src = frame;
+         uint16_t* dst = (uint16_t*)wiiu->texture.surface.image;
+
+         for (i = 0; i < height; i++)
+         {
+            int j;
+            for(j = 0; j < width; j++)
+               dst[j] = __builtin_bswap16(src[j]);
+            dst += wiiu->texture.surface.pitch;
+            src += pitch / 2;
+         }
+      }
+
 
       GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->texture.surface.image,
                     wiiu->texture.surface.imageSize);
