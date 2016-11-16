@@ -82,9 +82,10 @@ size_t hack_shader_pass = 0;
 char *core_buf;
 size_t core_len;
 
-char lakka_project[128];
+#ifdef HAVE_LAKKA
+static char lakka_project[128];
 
-static char * lakka_get_project()
+static char *lakka_get_project(void)
 {
    FILE *command_file = NULL;
    command_file = popen("cat /etc/release | cut -d - -f 1", "r");
@@ -95,6 +96,7 @@ static char * lakka_get_project()
    pclose(command_file);
    return lakka_project;
 }
+#endif
 
 static void cb_net_generic_subdir(void *task_data, void *user_data, const char *err)
 {
