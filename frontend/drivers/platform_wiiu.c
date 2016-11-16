@@ -316,17 +316,17 @@ void __eabi()
 
 }
 
-void _init();
-void _fini();
+void __init();
+void __fini();
 int __entry_menu(int argc, char **argv)
 {
    InitFunctionPointers();
    memoryInitialize();
    mount_sd_fat("sd");
 
-   _init();
+   __init();
    int ret = main(argc, argv);
-   _fini();
+   __fini();
 
    unmount_sd_fat("sd");
    memoryRelease();
@@ -339,9 +339,9 @@ void _start(int argc, char **argv)
    memoryInitialize();
    mount_sd_fat("sd");
 
-//   _init();
+//   __init();
    int ret = main(argc, argv);
-//   _fini();
+//   __fini();
 
    unmount_sd_fat("sd");
    memoryRelease();

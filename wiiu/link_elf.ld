@@ -27,7 +27,6 @@ SECTIONS
 	/* Program */
 	.init          :
 	{
-		_init = .;
 		KEEP (*crt0.o(*.init))
 		KEEP (*(.init))
 	} :text = 0
@@ -86,7 +85,6 @@ SECTIONS
 
 	.fini      :
 	{
-	        _fini = .;
 		KEEP (*(.fini))
 		. = ALIGN(32);   /* REQUIRED. LD is flaky without it. */
 	} = 0
