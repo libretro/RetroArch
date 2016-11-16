@@ -38,42 +38,42 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
       {
          case RARCH_FAST_FORWARD_KEY:
             snprintf(s, len,
-                  "Bật/tắt between fast-forwarding and \n"
-                  "normal speed."
+                  "Chọn giữa tốc độ nhanh và \n"
+                  "bình thường."
                   );
             break;
          case RARCH_FAST_FORWARD_HOLD_KEY:
             snprintf(s, len,
-                  "Hold for fast-forward. \n"
+                  "Nhấn nút để xem nhanh. \n"
                   " \n"
-                  "Releasing button disables fast-forward."
+                  "Thả nút để ngừng xem nhanh."
                   );
             break;
          case RARCH_PAUSE_TOGGLE:
             snprintf(s, len,
-                  "Toggle between paused and non-paused state.");
+                  "Bật/tắt chức năng tạm dừng.");
             break;
          case RARCH_FRAMEADVANCE:
             snprintf(s, len,
-                  "Frame advance when content is paused.");
+                  "Xem Frame kế tiếp khi đã tạm dừng.");
             break;
          case RARCH_SHADER_NEXT:
             snprintf(s, len,
-                  "Applies next shader in directory.");
+                  "Áp dụng shader kế tiếp trong thư mục.");
             break;
          case RARCH_SHADER_PREV:
             snprintf(s, len,
-                  "Applies previous shader in directory.");
+                  "Áp dụng shader trước trong thư mục.");
             break;
          case RARCH_CHEAT_INDEX_PLUS:
          case RARCH_CHEAT_INDEX_MINUS:
          case RARCH_CHEAT_TOGGLE:
             snprintf(s, len,
-                  "Cheats.");
+                  "Gian lận.");
             break;
          case RARCH_RESET:
             snprintf(s, len,
-                  "Reset the content.");
+                  "Đặt lại nội dung.");
             break;
          case RARCH_SCREENSHOT:
             snprintf(s, len,
@@ -93,7 +93,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_SLOWMOTION:
             snprintf(s, len,
-                  "Hold for slowmotion.");
+                  "Nhấn để xem chậm.");
             break;
          case RARCH_ENABLE_HOTKEY:
             snprintf(s, len,
@@ -122,20 +122,20 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_OVERLAY_NEXT:
             snprintf(s, len,
-                  "Switches to next overlay. Wraps around.");
+                  "Đổi qua overlay kế tiếp.");
             break;
          case RARCH_DISK_EJECT_TOGGLE:
             snprintf(s, len,
-                  "Bật/tắt eject for disks. \n"
+                  "Bật/tắt nhả đĩa. \n"
                   " \n"
-                  "Used for multiple-disk content. ");
+                  "Được sử dụng cho nội dung có nhiều đĩa. ");
             break;
          case RARCH_DISK_NEXT:
          case RARCH_DISK_PREV:
             snprintf(s, len,
-                  "Cycles through disk images. Use after ejecting. \n"
+                  "Xem qua các đĩa game. Sử dụng sau khi nhả đĩa. \n"
                   " \n"
-                  "Complete by toggling eject again.");
+                  "Bấm nút 'Bật/tắt nhả đĩa' để chọn đĩa.");
             break;
          case RARCH_GRAB_MOUSE_TOGGLE:
             snprintf(s, len,
@@ -159,7 +159,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_QUIT_KEY:
             snprintf(s, len,
-                  "Key to exit RetroArch cleanly. \n"
+                  "Nút để an toàn thoát RetroArch. \n"
                   " \n"
                   "Killing it in any hard way (SIGKILL, etc.) will \n"
                   "terminate RetroArch without saving RAM, etc."
@@ -182,17 +182,17 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
             break;
          case RARCH_SAVE_STATE_KEY:
             snprintf(s, len,
-                  "Saves state.");
+                  "Lưu state.");
             break;
          case RARCH_REWIND:
             snprintf(s, len,
-                  "Hold button down to rewind. \n"
+                  "Giữ nút đễ quay lại. \n"
                   " \n"
-                  "Rewinding must be enabled.");
+                  "Cần phải bật chức năng quay lại.");
             break;
          case RARCH_MOVIE_RECORD_TOGGLE:
             snprintf(s, len,
-                  "Toggle between recording and not.");
+                  "Bật/tắt ghi chép video.");
             break;
          default:
             if (string_is_empty(s))
@@ -206,21 +206,21 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
    switch (msg)
    {
       case MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         snprintf(s, len, "Login details for your \n"
-               "Retro Achievements account. \n"
+         snprintf(s, len, "Chi tiết đăng nhập cho tài khoản \n"
+               "Retro Achievements của bạn. \n"
                " \n"
-               "Visit retroachievements.org and sign up \n"
-               "for a free account. \n"
+               "Truy cập retroachievements.org đễ \n"
+               "đăng ký tài khoản miễn phí. \n"
                " \n"
-               "After you are done registering, you need \n"
-               "to input the username and password into \n"
+               "Sau khi đăng ký, bạn phải \n"
+               "cung cấp tên tài khoản và mật mã vào \n"
                "RetroArch.");
          break;
       case MENU_ENUM_LABEL_CHEEVOS_USERNAME:
-         snprintf(s, len, "Username for your Retro Achievements account.");
+         snprintf(s, len, "Tên tài khoản của Retro Achievements.");
          break;
       case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
-         snprintf(s, len, "Password for your Retro Achievements account.");
+         snprintf(s, len, "Mật mã của Retro Achievements tài khoản.");
          break;
       case MENU_ENUM_LABEL_USER_LANGUAGE:
          snprintf(s, len, "Localizes the menu and all onscreen messages \n"
@@ -280,7 +280,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len, "Create a screenshot. \n"
                " \n"
                "The screenshot will be stored inside the \n"
-               "Screenshot Directory.");
+               "Screenshot Thư mục.");
          break;
       case MENU_ENUM_LABEL_RUN:
          snprintf(s, len, "Start the content.");
@@ -306,39 +306,39 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY:
          snprintf(s, len,
-               "Select this to scan the current directory \n"
+               "Select this to scan the current thư mục \n"
                "for content.");
          break;
       case MENU_ENUM_LABEL_USE_THIS_DIRECTORY:
          snprintf(s, len,
-               "Select this to set this as the directory.");
+               "Select this to set this as the thư mục.");
          break;
       case MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY:
          snprintf(s, len,
-               "Content Database Directory. \n"
+               "Content Database thư mục. \n"
                " \n"
                "Path to content database \n"
-               "directory.");
+               "thư mục.");
          break;
       case MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY:
          snprintf(s, len,
-               "Thumbnails Directory. \n"
+               "Thumbnails thư mục. \n"
                " \n"
                "To store thumbnail files.");
          break;
       case MENU_ENUM_LABEL_LIBRETRO_INFO_PATH:
          snprintf(s, len,
-               "Core Info Directory. \n"
+               "Core Info thư mục. \n"
                " \n"
-               "A directory for where to search \n"
+               "A thư mục for where to search \n"
                "for libretro core information.");
          break;
       case MENU_ENUM_LABEL_PLAYLIST_DIRECTORY:
          snprintf(s, len,
-               "Playlist Directory. \n"
+               "Playlist thư mục. \n"
                " \n"
                "Save all playlist files to this \n"
-               "directory.");
+               "thư mục.");
          break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(s, len,
@@ -357,7 +357,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
-               "Go back to the parent directory.");
+               "Go back to the parent thư mục.");
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_SHADER_PRESET:
          snprintf(s, len,
@@ -431,16 +431,16 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY:
          snprintf(s, len,
-               "Directory. \n"
+               "thư mục. \n"
                " \n"
-               "Select it to open this directory.");
+               "Select it to open this thư mục.");
          break;
       case MENU_ENUM_LABEL_CACHE_DIRECTORY:
          snprintf(s, len,
-               "Cache Directory. \n"
+               "Cache thư mục. \n"
                " \n"
                "Content decompressed by RetroArch will be \n"
-               "temporarily extracted to this directory.");
+               "temporarily extracted to this thư mục.");
          break;
       case MENU_ENUM_LABEL_HISTORY_LIST_ENABLE:
          snprintf(s, len,
@@ -450,9 +450,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY:
          snprintf(s, len,
-               "File Browser Directory. \n"
+               "File Browser thư mục. \n"
                " \n"
-               "Sets start directory for menu file browser.");
+               "Sets start thư mục for menu file browser.");
          break;
       case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          snprintf(s, len,
@@ -601,12 +601,12 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "Browse for a libretro core \n"
                "implementation. Where the browser \n"
-               "starts depends on your Core Directory \n"
+               "starts depends on your Core thư mục \n"
                "path. If blank, it will start in root. \n"
                " \n"
-               "If Core Directory is a directory, the menu \n"
+               "If Core thư mục is a thư mục, the menu \n"
                "will use that as top folder. If Core \n"
-               "Directory is a full path, it will start \n"
+               "thư mục is a full path, it will start \n"
                "in the folder where the file is.");
          break;
       case MENU_ENUM_LABEL_VALUE_MENU_ENUM_CONTROLS_PROLOG:
@@ -742,7 +742,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                " \n"
                "To control where the menu starts \n"
                "to browse for content, set  \n"
-               "'File Browser Directory'. \n"
+               "'File Browser thư mục'. \n"
                "If not set, it will start in root. \n"
                " \n"
                "The browser will filter out \n"
@@ -759,7 +759,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "core combinations are saved to history. \n"
                " \n"
                "The history is saved to a file in the same \n"
-               "directory as the RetroArch config file. If \n"
+               "thư mục as the RetroArch config file. If \n"
                "no config file was loaded in startup, history \n"
                "will not be saved or loaded, and will not exist \n"
                "in the main menu."
@@ -956,7 +956,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "All shaders must be of the same \n"
                "type (i.e. CG, GLSL or HLSL). \n"
                " \n"
-               "Set Shader Directory to set where \n"
+               "Set Shader thư mục to set where \n"
                "the browser starts to look for \n"
                "shaders."
                );
@@ -1060,7 +1060,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "settings are saved to a temporary file (either \n"
                "menu.cgp or menu.glslp) and loaded. The file \n"
                "persists after RetroArch exits. The file is \n"
-               "saved to Shader Directory."
+               "saved to Shader thư mục."
                );
          break;
       case MENU_ENUM_LABEL_MENU_TOGGLE:
@@ -1148,9 +1148,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_LIBRETRO_DIR_PATH:
          snprintf(s, len,
-               "Core Directory. \n"
+               "Core thư mục. \n"
                " \n"
-               "A directory for where to search for \n"
+               "A thư mục for where to search for \n"
                "libretro core implementations.");
          break;
       case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
@@ -1298,11 +1298,11 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SYSTEM_DIRECTORY:
          snprintf(s, len,
-               "System Directory. \n"
+               "System thư mục. \n"
                " \n"
-               "Sets the 'system' directory.\n"
+               "Sets the 'system' thư mục.\n"
                "Cores can query for this\n"
-               "directory to tải BIOSes, \n"
+               "thư mục to tải BIOSes, \n"
                "system-specific configs, etc.");
          break;
       case MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE:
@@ -1419,9 +1419,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY:
          snprintf(s, len,
-               "Screenshot Directory. \n"
+               "Screenshot thư mục. \n"
                " \n"
-               "Directory to dump screenshots to."
+               "thư mục to dump screenshots to."
                );
          break;
       case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
@@ -1433,10 +1433,10 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVEFILE_DIRECTORY:
          snprintf(s, len,
-               "Savefile Directory. \n"
+               "Savefile thư mục. \n"
                " \n"
                "Save all save files (*.srm) to this \n"
-               "directory. This includes related files like \n"
+               "thư mục. This includes related files like \n"
                ".bsv, .rt, .psrm, etc...\n"
                " \n"
                "This will be overridden by explicit command line\n"
@@ -1444,17 +1444,17 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SAVESTATE_DIRECTORY:
          snprintf(s, len,
-               "Savestate Directory. \n"
+               "Savestate thư mục. \n"
                " \n"
                "Save all save states (*.state) to this \n"
-               "directory.\n"
+               "thư mục.\n"
                " \n"
                "This will be overridden by explicit command line\n"
                "options.");
          break;
       case MENU_ENUM_LABEL_ASSETS_DIRECTORY:
          snprintf(s, len,
-               "Assets Directory. \n"
+               "Assets thư mục. \n"
                " \n"
                " This location is queried by default when \n"
                "menu interfaces try to look for loadable \n"
@@ -1462,7 +1462,7 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          snprintf(s, len,
-               "Dynamic Wallpapers Directory. \n"
+               "Dynamic Wallpapers thư mục. \n"
                " \n"
                " The place to store wallpapers that will \n"
                "be loaded dynamically by the menu depending \n"
@@ -1613,12 +1613,12 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL:
          snprintf(s, len,
-               "URL to core updater directory on the \n"
+               "URL to core updater thư mục on the \n"
                "Libretro buildbot.");
          break;
       case MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL:
          snprintf(s, len,
-               "URL to assets updater directory on the \n"
+               "URL to assets updater thư mục on the \n"
                "Libretro buildbot.");
          break;
       case MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE:
@@ -1629,9 +1629,9 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_OVERLAY_DIRECTORY:
          snprintf(s, len,
-               "Overlay Directory. \n"
+               "Overlay thư mục. \n"
                " \n"
-               "Defines a directory where overlays are \n"
+               "Defines a thư mục where overlays are \n"
                "kept for easy access.");
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
@@ -1776,11 +1776,11 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_SHADER_PREV:
          snprintf(s, len,
-               "Applies previous shader in directory.");
+               "Áp dụng previous shader in thư mục.");
          break;
       case MENU_ENUM_LABEL_SHADER_NEXT:
          snprintf(s, len,
-               "Applies next shader in directory.");
+               "Áp dụng next shader in thư mục.");
          break;
       case MENU_ENUM_LABEL_RESET:
          snprintf(s, len,
@@ -3114,39 +3114,39 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_HEADER_OPACITY:
          return "Header Opacity";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE:
-         return "Blue";
+         return "Xanh Dương";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY:
-         return "Blue Grey";
+         return "Xanh Dương Xám";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED:
-         return "Red";
+         return "Đỏ";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW:
-         return "Yellow";
+         return "Vàng";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD:
-         return "Shield";
+         return "NVIDIA Shield";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN:
-         return "Green";
+         return "Xanh Lá Cây";
       case MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE:
-         return "Dark Blue";
+         return "Xanh Dương Đậm";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN:
-         return "Plain";
+         return "Đơn Giản";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED:
-         return "Legacy Red";
+         return "Đỏ (Củ)";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE:
-         return "Dark Purple";
+         return "Tím Đậm";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE:
-         return "Midnight Blue";
+         return "Xanh Dương Midnight";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN:
          return "Golden";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE:
-         return "Electric Blue";
+         return "Xanh Dương Electric";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN:
          return "Apple Green";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA:
          return "Undersea";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED:
-         return "Volcanic Red";
+         return "Đỏ (Núi Lửa)";
       case MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK:
-         return "Dark";
+         return "Tối Đen";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY:
          return "Unlocked";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
@@ -3154,19 +3154,19 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE:
          return "Late";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL:
-         return "Normal";
+         return "Bình thường";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY:
-         return "Early";
+         return "Sớm";
       case MSG_INTERNAL_MEMORY:
-         return "Internal Memory";
+         return "Bộ nhớ trong";
       case MSG_EXTERNAL_APPLICATION_DIR:
-         return "External Application Dir";
+         return "Thư mục của ứng dụng ngoại";
       case MSG_APPLICATION_DIR:
-         return "Application Dir";
+         return "Thư mục của ứng dụng";
       case MSG_PROGRAM:
          return "RetroArch";
       case MSG_LIBRETRO_FRONTEND:
-         return "Frontend for libretro";
+         return "Frontend cho libretro";
       case MSG_LOADING:
          return "Đang tải";
       case MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT:
@@ -3198,7 +3198,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY:
          return "Core options file created successfully.";
       case MSG_FAILED_TO_CREATE_THE_DIRECTORY:
-         return "Failed to create the directory.";
+         return "Failed to create the thư mục.";
       case MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE:
          return "Failed to extract content from compressed file";
       case MSG_FILE_NOT_FOUND:
@@ -3308,9 +3308,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT:
          return "Libretro core requires special content, but none were provided.";
       case MSG_REVERTING_SAVEFILE_DIRECTORY_TO:
-         return "Reverting savefile directory to";
+         return "Reverting savefile thư mục to";
       case MSG_REVERTING_SAVESTATE_DIRECTORY_TO:
-         return "Reverting savestate directory to";
+         return "Reverting savestate thư mục to";
       case MSG_COULD_NOT_READ_MOVIE_HEADER:
          return "Could not read movie header.";
       case MSG_FAILED_TO_OPEN_LIBRETRO_CORE:
@@ -3480,7 +3480,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_BYTES:
          return "bytes";
       case MSG_CONFIG_DIRECTORY_NOT_SET:
-         return "Config directory not set. Cannot save new config.";
+         return "Config thư mục not set. Cannot save new config.";
       case MSG_SKIPPING_SRAM_LOAD:
          return "Skipping SRAM tải.";
       case MSG_APPENDED_DISK:
@@ -3494,7 +3494,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_LOADED_STATE_FROM_SLOT:
          return "Loaded state from slot";
       case MSG_SCANNING_OF_DIRECTORY_FINISHED:
-         return "Scanning of directory finished";
+         return "Scanning of thư mục finished";
       case MSG_SCANNING:
          return "Scanning";
       case MSG_REDIRECTING_CHEATFILE_TO:
@@ -3506,9 +3506,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MSG_SHADER:
          return "Shader";
       case MSG_APPLYING_SHADER:
-         return "Applying shader";
+         return "Đang áp dụng shader";
       case MSG_FAILED_TO_APPLY_SHADER:
-         return "Failed to apply shader.";
+         return "Failed to áp dụng shader.";
       case MSG_STARTING_MOVIE_RECORD_TO:
          return "Starting movie record to";
       case MSG_FAILED_TO_START_MOVIE_RECORD:
@@ -3550,7 +3550,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS:
          return "Internal storage status";
       case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
-         return "Parent directory";
+         return "Parent thư mục";
       case MENU_ENUM_LABEL_VALUE_MORE:
          return "...";
       case MENU_ENUM_LABEL_VALUE_RUN:
@@ -3676,11 +3676,11 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE:
          return "Download Core...";
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
-         return "<Scan This Directory>";
+         return "<Scan This thư mục>";
       case MENU_ENUM_LABEL_VALUE_SCAN_FILE:
          return "Scan File";
       case MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY:
-         return "Scan Directory";
+         return "Scan thư mục";
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
          return "Add Content";
       case MENU_ENUM_LABEL_VALUE_INFORMATION:
@@ -3768,7 +3768,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
          return "Flicker filter";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT:
-         return "<Content dir>";
+         return "<Content thư mục>";
       case MENU_ENUM_LABEL_VALUE_UNKNOWN:
          return "Unknown";
       case MENU_ENUM_LABEL_VALUE_DONT_CARE:
@@ -3790,21 +3790,21 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONTENT_DIR:
          return "Content Dir";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "Input Remapping Dir";
+         return "Input Remapping thư mục";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "Input Device Autoconfig Dir";
+         return "Input Device Autoconfig thư mục";
       case MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
-         return "Recording Config Dir";
+         return "Recording Config thư mục";
       case MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
-         return "Recording Output Dir";
+         return "Recording Output thư mục";
       case MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY:
-         return "Screenshot Dir";
+         return "Screenshot thư mục";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
-         return "Playlist Dir";
+         return "Playlist thư mục";
       case MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY:
-         return "Savefile Dir";
+         return "Savefile thư mục";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY:
-         return "Savestate Dir";
+         return "Savestate thư mục";
       case MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE:
          return "stdin Commands";
       case MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE:
@@ -3818,7 +3818,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RECORD_PATH:
          return "Output File";
       case MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
-         return "Use Output Dir";
+         return "Use Output thư mục";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
          return "Record Config";
       case MENU_ENUM_LABEL_VALUE_CONFIG:
@@ -3826,41 +3826,41 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
          return "Post filter record Enable";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "Downloads Dir";
+         return "Downloads thư mục";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
-         return "Assets Dir";
+         return "Assets thư mục";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "Dynamic Wallpapers Dir";
+         return "Dynamic Wallpapers thư mục";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY:
-         return "Thumbnails Dir";
+         return "Thumbnails thư mục";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
-         return "File Browser Dir";
+         return "File Browser thư mục";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
-         return "Config Dir";
+         return "Config thư mục";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH:
-         return "Core Info Dir";
+         return "Core Info thư mục";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH:
-         return "Core Dir";
+         return "Core thư mục";
       case MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY:
-         return "Cursor Dir";
+         return "Cursor thư mục";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
-         return "Content Database Dir";
+         return "Content Database thư mục";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "System/BIOS Dir";
+         return "System/BIOS thư mục";
       case MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH:
-         return "Cheat File Dir";
+         return "Cheat File thư mục";
       case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:
-         return "Cache Dir";
+         return "Cache thư mục";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
-         return "Audio Filter Dir";
+         return "Audio Filter thư mục";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR:
-         return "Video Shader Dir";
+         return "Video Shader thư mục";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
-         return "Video Filter Dir";
+         return "Video Filter thư mục";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "Overlay Dir";
+         return "Overlay thư mục";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "OSK Overlay Dir";
+         return "OSK Overlay thư mục";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT:
          return "Netplay P2 Uses C1";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE:
@@ -4120,9 +4120,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME:
          return "Save Game Remap File";
       case MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES:
-         return "Apply Cheat Changes";
+         return "Áp dụng Cheat Changes";
       case MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES:
-         return "Apply Shader Changes";
+         return "Áp dụng Shader Changes";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "Rewind Enable";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
@@ -4158,7 +4158,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
          return "Custom Ratio";
       case MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY:
-         return "<Use this directory>";
+         return "<Use this thư mục>";
       case MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Start Content";
       case MENU_ENUM_LABEL_VALUE_DISK_OPTIONS:
@@ -4248,7 +4248,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_INFORMATION:
          return "Core Information";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND:
-         return "Directory not found.";
+         return "thư mục not found.";
       case MENU_ENUM_LABEL_VALUE_NO_ITEMS:
          return "No items.";
       case MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS:
@@ -4600,7 +4600,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_USER_SETTINGS:
          return "User";
       case MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS:
-         return "Directory";
+         return "thư mục";
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
          return "Recording";
       case MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
