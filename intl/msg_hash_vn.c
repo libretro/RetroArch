@@ -3872,15 +3872,15 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
          return "Recording";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
-         return "Load Record Config...";
+         return "Load Recording Config...";
       case MENU_ENUM_LABEL_VALUE_RECORD_DRIVER:
          return "Record Driver";
       case MENU_ENUM_LABEL_VALUE_RECORD_ENABLE:
          return "Enabel Recording";
       case MENU_ENUM_LABEL_VALUE_RECORD_PATH:
-         return "Save Record Output as...";
+         return "Save Recording Output as...";
       case MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
-         return "Save Record in Output Dir";
+         return "Save Recordings in Output Dir";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE:
          return "Remap File";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
@@ -4252,7 +4252,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA:
          return "Video Gamma";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD:
-         return "Enable GPU Recording";
+         return "Use GPU Recording";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
          return "GPU Screenshot Enable";
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC:
