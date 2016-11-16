@@ -3872,15 +3872,15 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
          return "Recording";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
-         return "Record Config";
+         return "Load Record Config...";
       case MENU_ENUM_LABEL_VALUE_RECORD_DRIVER:
          return "Record Driver";
       case MENU_ENUM_LABEL_VALUE_RECORD_ENABLE:
-         return "Record Enable";
+         return "Enabel Recording";
       case MENU_ENUM_LABEL_VALUE_RECORD_PATH:
-         return "Output File";
+         return "Save Record Output as...";
       case MENU_ENUM_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY:
-         return "Use Output Dir";
+         return "Save Record in Output Dir";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE:
          return "Remap File";
       case MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD:
@@ -4252,7 +4252,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA:
          return "Video Gamma";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD:
-         return "GPU Record Enable";
+         return "Enable GPU Recording";
       case MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT:
          return "GPU Screenshot Enable";
       case MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC:
@@ -4268,7 +4268,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX:
          return "Monitor Index";
       case MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD:
-         return "Post filter record Enable";
+         return "Enable Post Filter Recording";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE:
          return "Refresh Rate";
       case MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO:
