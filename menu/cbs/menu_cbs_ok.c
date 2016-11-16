@@ -87,12 +87,15 @@ static char lakka_project[128];
 
 static char *lakka_get_project(void)
 {
-   FILE *command_file = NULL;
-   command_file = popen("cat /etc/release | cut -d - -f 1", "r");
+   size_t len;
+   FILE *command_file = popen("cat /etc/release | cut -d - -f 1", "r");
+
    fgets(lakka_project, sizeof(lakka_project), command_file);
-   size_t len = strlen(lakka_project);
+   len = strlen(lakka_project);
+
    if (len > 0 && lakka_project[len-1] == '\n')
       lakka_project[--len] = '\0';
+
    pclose(command_file);
    return lakka_project;
 }
