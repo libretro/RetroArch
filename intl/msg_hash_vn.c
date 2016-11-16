@@ -3240,7 +3240,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_SETTINGS:
          return "Core";
       case MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
-         return "Automatically start a core";
+/* FIXME? Translate 'Start a Core Automatically' */
+         return "Start a Core Automatically";
       case MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuration Per-Core";
       case MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE:
@@ -3304,7 +3305,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
          return "Driver";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
-         return "Dummy On Core Shutdown";
+/* FIXME? Translate 'Load Dummy on Core Shutdown' */
+         return "Load Dummy on Core Shutdown";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamic Wallpaper";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
@@ -4296,7 +4298,8 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME:
          return "Save Game Preset";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-         return "HW Shared Context Enable";
+/* FIXME? Translate 'Enable Hardware Shared Context' */
+         return "Enable Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "HW Bilinear Filtering";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:

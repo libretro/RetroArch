@@ -3270,7 +3270,8 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
          return "驱动";
       case MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
-         return "Dummy On Core Shutdown";
+/* FIXME? Translate 'Load Dummy on Core Shutdown' */
+         return "Load Dummy on Core Shutdown";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "动态壁纸";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
