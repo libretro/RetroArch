@@ -384,6 +384,17 @@ static int action_bind_sublabel_config_save_on_exit(
    return 0;
 }
 
+static int action_bind_sublabel_video_shared_context(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT), len);
+   return 0;
+}
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -396,6 +407,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_shared_context);
+            break;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
          case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);

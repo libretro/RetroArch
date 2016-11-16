@@ -39,6 +39,10 @@ MSG_HASH(
       "Waiting for client ..."
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+      "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
       "Adjusts settings related to the appearance of the menu screen."
       )
