@@ -143,10 +143,13 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 ifeq ($(RPX_BUILD), 1)
    CFLAGS   += -fno-builtin -ffreestanding -DRPX_BUILD
    LIBDIRS  += -L$(WUT_ROOT)/lib -L$(DEVKITPPC)/lib
+   LDFLAGS  += -pie -fPIE
+   LDFLAGS  += -z common-page-size=64 -z max-page-size=64
+   LDFLAGS  += -lcoreinit -lgx2 -lnsysnet -lproc_ui -lsndcore2 -lsysapp -lvpad
    LDFLAGS  += -T $(WUT_ROOT)/rules/rpl.ld
 #   LDFLAGS  += -T wiiu/link_rpl.ld
-   LDFLAGS  += -pie -fPIE -z common-page-size=64 -z max-page-size=64
-   LDFLAGS  += -lcoreinit -lgx2 -lnsysnet -lproc_ui -lsndcore2 -lsysapp -lvpad
+   LDFLAGS  += -nostartfiles
+
 else
    LDFLAGS  += -T wiiu/link_elf.ld
 endif
@@ -180,7 +183,7 @@ endif
 %.a:
 	$(AR) -rc $@ $^
 
-$(TARGET).elf: $(OBJ) libretro_wiiu.a wiiu/link_elf.ld
+$(TARGET).elf: $(OBJ) libretro_wiiu.a wiiu/link_elf.ld wiiu/link_rpl.ld
 	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 %.rpx: %.elf
