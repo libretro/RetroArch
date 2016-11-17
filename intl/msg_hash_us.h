@@ -1610,6 +1610,8 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "Shader Preset")
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "Enable or disable savestates, cheats, rewind, fast-forward, pause, and slow-motion for all games.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+      "Change drivers for the system.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
       "Change settings for the achievements.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
