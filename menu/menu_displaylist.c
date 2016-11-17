@@ -2901,36 +2901,11 @@ static int menu_displaylist_parse_configurations_list(
          msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
          MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
          MENU_SETTING_ACTION, 0, 0);
-/*
-   menu_displaylist_parse_settings_enum(menu, info,
-         MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
-         PARSE_ONLY_BOOL, false);
-   menu_displaylist_parse_settings_enum(menu, info,
-         MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG,
-         PARSE_ONLY_BOOL, false);
-   menu_displaylist_parse_settings_enum(menu, info,
-         MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,
-         PARSE_ONLY_BOOL, false);
-   menu_displaylist_parse_settings_enum(menu, info,
-         MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
-         PARSE_ONLY_BOOL, false);
-   menu_displaylist_parse_settings_enum(menu, info,
-         MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
-         PARSE_ONLY_BOOL, false);
-   menu_displaylist_parse_settings_enum(menu, info,
-         MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,
-         PARSE_ONLY_BOOL, false); */
 
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT),
          msg_hash_to_str(MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT),
          MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
-         MENU_SETTING_ACTION, 0, 0);
-
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG),
-         msg_hash_to_str(MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG),
-         MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG,
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(info->list,

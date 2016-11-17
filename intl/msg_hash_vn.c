@@ -3184,9 +3184,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Save Configuration On Exit";
+         return "Save Configuration on Exit";
       case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Ask For Confirmation On Exit";
+         return "Ask for Confirmation on Exit";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Collections";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
@@ -3934,13 +3934,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY:
          return "Savestate Dir";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
-         return "Save Current Config";
+         return "Save Current Configuration";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
          return "Save Core Overrides";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
          return "Save Game Overrides";
       case MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG:
-         return "Save New Config";
+         return "Create New Configuration";
       case MENU_ENUM_LABEL_VALUE_SAVE_STATE:
          return "Save State";
       case MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS:
@@ -3976,7 +3976,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
          return "Show Advanced thiết lập";
       case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
-         return "Show Hidden Files and Folders";
+         return "Show Hidden Files & Folders";
       case MENU_ENUM_LABEL_VALUE_SHUTDOWN:
          return "Tắt Máy";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
