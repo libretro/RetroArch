@@ -40,6 +40,16 @@ static int action_bind_sublabel_generic(
    return 0;
 }
 
+static int action_bind_sublabel_retro_achievements_settings_list(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS), len);
+   return 0;
+}
+
 static int action_bind_sublabel_recording_settings_list(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -526,6 +536,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CORE_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_settings_list);
+            break;
+         case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_retro_achievements_settings_list);
             break;
          case MENU_ENUM_LABEL_INPUT_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_settings_list);
