@@ -2278,7 +2278,8 @@ static void xmb_draw_bg(
       menu_display_draw_gradient(&draw);
 
       draw.pipeline.id = VIDEO_SHADER_MENU_SEC;
-      if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_RIBBON)
+      if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_RIBBON ||
+            settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_SNOW)
          draw.pipeline.id  = VIDEO_SHADER_MENU;
 
       menu_display_draw_pipeline(&draw);
@@ -2798,35 +2799,62 @@ static void xmb_ribbon_set_vertex(float *ribbon_verts, unsigned idx, unsigned ro
 static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
    video_coords_t coords;
-   float ribbon_verts[2 * XMB_RIBBON_VERTICES];
-   float dummy[4 * XMB_RIBBON_VERTICES];
-   unsigned i, r, c, col;
-   video_coord_array_t *ca   = NULL;
+   unsigned vertices_total;
+   unsigned r, c, col;
+   unsigned i                = 0;
+   float *ribbon_verts       = NULL;
+   float *dummy              = NULL;
+   settings_t *settings      = config_get_ptr();
+   video_coord_array_t *ca   = menu_display_get_coords_array();
 
-   memset(&dummy[0], 0, 4 * XMB_RIBBON_VERTICES * sizeof(float));
-   ca = menu_display_get_coords_array();
-
-   /* Set up vertices */
-   i = 0;
-   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
+   if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_SNOW)
    {
-      for (c = 0; c < XMB_RIBBON_COLS; c++)
+      vertices_total  = 4;
+      ribbon_verts    = (float*)calloc(2 * vertices_total, sizeof(float));
+
+      ribbon_verts[0] = -1.0f;
+      ribbon_verts[1] = -1.0f;
+      ribbon_verts[2] =  1.0f;
+      ribbon_verts[3] = -1.0f;
+      ribbon_verts[4] = -1.0f;
+      ribbon_verts[5] =  1.0f;
+      ribbon_verts[6] =  1.0f;
+      ribbon_verts[7] =  1.0f;
+
+   }
+   else
+   {
+      vertices_total = XMB_RIBBON_VERTICES;
+      ribbon_verts   = (float*)calloc(2 * vertices_total, sizeof(float));
+
+      /* Set up vertices */
+      for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
       {
-         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
-         xmb_ribbon_set_vertex(ribbon_verts, i, r, col);
-         xmb_ribbon_set_vertex(ribbon_verts, i + 2, r + 1, col);
-         i += 4;
+         for (c = 0; c < XMB_RIBBON_COLS; c++)
+         {
+            col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
+            xmb_ribbon_set_vertex(ribbon_verts, i,     r,     col);
+            xmb_ribbon_set_vertex(ribbon_verts, i + 2, r + 1, col);
+            i  += 4;
+         }
       }
    }
+
+   dummy                = (float*)calloc(4 * vertices_total, sizeof(float));
 
    coords.color         = dummy;
    coords.vertex        = ribbon_verts;
    coords.tex_coord     = dummy;
    coords.lut_tex_coord = dummy;
-   coords.vertices      = XMB_RIBBON_VERTICES;
+   coords.vertices      = vertices_total;
 
-   video_coord_array_append(ca, &coords, XMB_RIBBON_VERTICES);
+   free(dummy);
+   free(ribbon_verts);
+
+   video_coord_array_append(ca, &coords, coords.vertices);
 }
+
+
 
 static void *xmb_init(void **userdata)
 {
@@ -2901,6 +2929,7 @@ static void *xmb_init(void **userdata)
    menu_display_allocate_white_texture();
 
    xmb_init_horizontal_list(xmb);
+
    xmb_init_ribbon(xmb);
 
    return menu;

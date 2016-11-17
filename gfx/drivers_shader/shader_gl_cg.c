@@ -41,6 +41,7 @@
 
 #ifdef HAVE_SHADERPIPELINE
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
+#include "../drivers/gl_shaders/pipeline_snow.cg.h"
 #endif
 
 #include "../include/Cg/cg.h"

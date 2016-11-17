@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *stock_vertex_xmb_simple_modern = GLSL(
+static const char *stock_vertex_xmb_snow = GLSL(
    in vec3 VertexCoord;
    uniform float time;
 
@@ -24,10 +24,6 @@ static const char *stock_vertex_xmb_simple_modern = GLSL(
    void main()
    {
      vec3 v = vec3(VertexCoord.x, 0.0, VertexCoord.y);
-     //vec3 v2 = v;
-     //v2.x = v2.x + time/2.0;
-     //v2.z = v.z * 3.0;
-     //v.y = -cos((v.x+v.z/3.0+time)*2.0)/10.0 - noise(v2.xyz)/4.0;
      gl_Position = vec4(v, 1.0);
    }
 );

@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *stock_fragment_xmb_simple = GLSL(
+static const char *stock_fragment_xmb_snow = GLSL(
 	uniform float time;
 	vec2 res = vec2(1920*3, 1080*3);
 

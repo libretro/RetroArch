@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *stock_xmb_simple = CG(
+static const char *stock_xmb_snow = CG(
    struct input
    {
       float time;
