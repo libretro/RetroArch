@@ -1614,6 +1614,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Change drivers for the system.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
       "Change settings for the achievements.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+      "Change settings for configurations, content overrides, core overrides, remaps and more.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "Change settings for the core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
