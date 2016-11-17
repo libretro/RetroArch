@@ -328,18 +328,21 @@ static void frontend_win32_attach_console(void)
    {
       AllocConsole();
       AttachConsole( GetCurrentProcessId()) ;
+      freopen( "CON", "w", stdout );
+      freopen( "CON", "w", stderr );
    }
-   freopen( "CON", "w", stdout );
-   freopen( "CON", "w", stderr );
 #endif
 }
 
 static void frontend_win32_detach_console(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
-   HWND wnd = GetConsoleWindow();
-   FreeConsole();
-   PostMessage(wnd, WM_CLOSE, 0, 0);
+   if (!AttachConsole(ATTACH_PARENT_PROCESS))
+   {
+      HWND wnd = GetConsoleWindow();
+      FreeConsole();
+      PostMessage(wnd, WM_CLOSE, 0, 0);
+   }
 #endif
 }
 
