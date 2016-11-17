@@ -43,15 +43,17 @@ retro_perf_tick_t cpu_features_get_perf_counter(void);
 /**
  * cpu_features_get_time_usec:
  *
- * Gets time in microseconds.  *
- * Returns: time in microseconds.
+ * Gets time in microseconds, from an undefined epoch.
+ * The epoch may change between computers or across reboots.
+ *
+ * Returns: time in microseconds
  **/
 retro_time_t cpu_features_get_time_usec(void);
 
 /**
  * cpu_features_get:
  *
- * Gets CPU features..
+ * Gets CPU features.
  *
  * Returns: bitmask of all CPU features available.
  **/

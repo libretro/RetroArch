@@ -24,7 +24,13 @@
 #endif
 .align 4
 .globl resampler_CC_downsample_neon
+#ifndef __MACH__
+.type resampler_CC_downsample_neon, %function
+#endif
 .globl _resampler_CC_downsample_neon
+#ifndef __MACH__
+.type _resampler_CC_downsample_neon, %function
+#endif
 
 # size_t resampler_CC_downsample_neon(float *outp, const float *inp,
 #       rarch_CC_resampler_t* re_, size_t input_frames, float ratio);
@@ -196,7 +202,13 @@ bx lr
 
 .align 4
 .globl resampler_CC_upsample_neon
+#ifndef __MACH__
+.type resampler_CC_upsample_neon, %function
+#endif
 .globl _resampler_CC_upsample_neon
+#ifndef __MACH__
+.type _resampler_CC_upsample_neon, %function
+#endif
 
 # size_t resampler_CC_upsample_neon(float *outp, const float *inp,
 #       rarch_CC_resampler_t* re_, size_t input_frames, float ratio);

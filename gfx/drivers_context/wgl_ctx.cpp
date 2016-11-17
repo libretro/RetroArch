@@ -125,9 +125,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
    hwr = video_driver_get_hw_context();
 
    debug            = hwr->debug_context;
-#ifdef _WIN32
    dll_handle       = dylib_load("OpenGL32.dll");
-#endif
    g_hdc            = GetDC(hwnd);
    setup_pixel_format(g_hdc);
 
@@ -591,9 +589,9 @@ static bool gfx_ctx_wgl_has_windowed(void *data)
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
-   void *func = (void *)wglGetProcAddress(symbol);
+   gfx_ctx_proc_t func = (gfx_ctx_proc_t)wglGetProcAddress(symbol);
    if (func)
-      return (gfx_ctx_proc_t)wglGetProcAddress(symbol);
+      return func;
 #endif
    return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
 }

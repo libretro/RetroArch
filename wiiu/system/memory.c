@@ -22,16 +22,6 @@
 #include <coreinit/frameheap.h>
 #include <coreinit/expandedheap.h>
 
-#define MEMORY_ARENA_1          0
-#define MEMORY_ARENA_2          1
-#define MEMORY_ARENA_3          2
-#define MEMORY_ARENA_4          3
-#define MEMORY_ARENA_5          4
-#define MEMORY_ARENA_6          5
-#define MEMORY_ARENA_7          6
-#define MEMORY_ARENA_8          7
-#define MEMORY_ARENA_FG_BUCKET  8
-
 static MEMExpandedHeap* mem1_heap;
 static MEMExpandedHeap* bucket_heap;
 
@@ -53,150 +43,58 @@ void memoryInitialize(void)
 void memoryRelease(void)
 {
     MEMDestroyExpHeap(mem1_heap);
-    MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_1), 3);
+    MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1), MEM_FRAME_HEAP_FREE_ALL);
     mem1_heap = NULL;
 
     MEMDestroyExpHeap(bucket_heap);
-    MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_FG_BUCKET), 3);
+    MEMFreeToFrmHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_FG), MEM_FRAME_HEAP_FREE_ALL);
     bucket_heap = NULL;
 }
 
-#if 0
-//!-------------------------------------------------------------------------------------------
-//! wraps
-//!-------------------------------------------------------------------------------------------
-void *__wrap_malloc(size_t size)
+void* _memalign_r(struct _reent *r, size_t alignment, size_t size)
 {
-    // pointer to a function resolve
-   if(!size)
-      return NULL;
-	return ((void * (*)(size_t))(*pMEMAllocFromDefaultHeap))(size);
+   return MEMAllocFromExpHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), size, alignment);
 }
 
-void *__wrap_memalign(size_t align, size_t size)
+void* _malloc_r(struct _reent *r, size_t size)
 {
-    if (align < 4)
-        align = 4;
-    if(!size)
-       return NULL;
-    // pointer to a function resolve
-    return ((void * (*)(size_t, size_t))(*pMEMAllocFromDefaultHeapEx))(size, align);
+   return _memalign_r(r, 4, size);
 }
 
-void __wrap_free(void *p)
+void _free_r(struct _reent *r, void *ptr)
 {
-    // pointer to a function resolve
-    if(p != 0)
-        ((void (*)(void *))(*pMEMFreeToDefaultHeap))(p);
-}
-
-void *__wrap_calloc(size_t n, size_t size)
-{
-    void *p = __wrap_malloc(n * size);
-	if (p != 0) {
-		memset(p, 0, n * size);
-	}
-	return p;
-}
-
-size_t __wrap_malloc_usable_size(void *p)
-{
-    //! TODO: this is totally wrong and needs to be addressed
-	return 0x7FFFFFFF;
-}
-
-void *__wrap_realloc(void *p, size_t size)
-{
-    void *new_ptr = __wrap_malloc(size);
-	if (p != 0 && new_ptr != 0)
-	{
-		memcpy(new_ptr, p, __wrap_malloc_usable_size(p) < size ? __wrap_malloc_usable_size(p) : size);
-		__wrap_free(p);
-	}
-	return new_ptr;
-}
-
-//!-------------------------------------------------------------------------------------------
-//! reent versions
-//!-------------------------------------------------------------------------------------------
-void *__wrap__malloc_r(struct _reent *r, size_t size)
-{
-	return __wrap_malloc(size);
-}
-
-void *__wrap__calloc_r(struct _reent *r, size_t n, size_t size)
-{
-    return __wrap_calloc(n, size);
-}
-
-void *__wrap__memalign_r(struct _reent *r, size_t align, size_t size)
-{
-    return __wrap_memalign(align, size);
-}
-
-void __wrap__free_r(struct _reent *r, void *p)
-{
-    __wrap_free(p);
-}
-
-size_t __wrap__malloc_usable_size_r(struct _reent *r, void *p)
-{
-    return __wrap_malloc_usable_size(p);
-}
-
-void *__wrap__realloc_r(struct _reent *r, void *p, size_t size)
-{
-    return __wrap_realloc(p, size);
-}
-#else
-
-void *
-__wrap_memalign(size_t alignment, size_t size) {
-   return MEMAllocFromExpHeapEx(MEMGetBaseHeapHandle(MEMORY_ARENA_2), size, alignment);
-}
-
-void *
-__wrap_malloc(size_t size) {
-   return __wrap_memalign(4, size);
-}
-
-void
-__wrap_free(void *ptr) {
    if (ptr) {
-      MEMFreeToExpHeap(MEMGetBaseHeapHandle(MEMORY_ARENA_2), ptr);
+      MEMFreeToExpHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), ptr);
    }
 }
 
-size_t
-__wrap_malloc_usable_size(void *ptr) {
+size_t _malloc_usable_size_r(struct _reent *r, void *ptr)
+{
    return MEMGetSizeForMBlockExpHeap(ptr);
 }
 
-void *
-__wrap_realloc(void *ptr, size_t size) {
-   if (!ptr) {
-      return __wrap_malloc(size);
-   }
+void * _realloc_r(struct _reent *r, void *ptr, size_t size)
+{
+   if (!ptr)
+      return _malloc_r(r, size);
 
-   if (__wrap_malloc_usable_size(ptr) >= size) {
+   if (_malloc_usable_size_r(r, ptr) >= size)
       return ptr;
-   }
 
-   void *realloc_ptr = __wrap_malloc(size);
+   void *realloc_ptr = _malloc_r(r, size);
 
-   if(!realloc_ptr) {
+   if(!realloc_ptr)
       return NULL;
-   }
 
-   memcpy(realloc_ptr, ptr, __wrap_malloc_usable_size(ptr));
-   __wrap_free(ptr);
+   memcpy(realloc_ptr, ptr, _malloc_usable_size_r(r, ptr));
+   _free_r(r, ptr);
 
    return realloc_ptr;
 }
 
-void *
-__wrap_calloc(size_t num, size_t size) {
-   void *ptr = __wrap_malloc(num*size);
+void* _calloc_r(struct _reent *r, size_t num, size_t size)
+{
+   void *ptr = _malloc_r(r, num*size);
 
    if(ptr) {
       memset(ptr, 0, num*size);
@@ -205,60 +103,24 @@ __wrap_calloc(size_t num, size_t size) {
    return ptr;
 }
 
-void *
-__wrap_valloc(size_t size) {
-   return __wrap_memalign(64, size);
+void * _valloc_r(struct _reent *r, size_t size)
+{
+   return _memalign_r(r, 64, size);
 }
 
 
-
-void *
-__wrap__memalign_r(struct _reent *r, size_t alignment, size_t size) {
-   return __wrap_memalign(alignment, size);
-}
-
-void *
-__wrap__malloc_r(struct _reent *r, size_t size) {
-   return __wrap_malloc(size);
-}
-
-void
-__wrap__free_r(struct _reent *r, void *ptr) {
-   return __wrap_free(ptr);
-}
-
-void *
-__wrap__realloc_r(struct _reent *r, void *ptr, size_t size) {
-   return __wrap_realloc(ptr, size);
-}
-
-void *
-__wrap__calloc_r(struct _reent *r, size_t num, size_t size) {
-   return __wrap_calloc(num, size);
-}
-
-size_t
-__wrap__malloc_usable_size_r(struct _reent *r, void *ptr) {
-   return __wrap_malloc_usable_size(ptr);
-}
-
-void *
-__wrap__valloc_r(struct _reent *r, size_t size) {
-   return __wrap_valloc(size);
-}
-
-#endif
 //!-------------------------------------------------------------------------------------------
 //! some wrappers
 //!-------------------------------------------------------------------------------------------
 void * MEM2_alloc(unsigned int size, unsigned int align)
 {
-    return __wrap_memalign(align, size);
+    return MEMAllocFromExpHeapEx(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), size, align);
 }
 
 void MEM2_free(void *ptr)
 {
-    __wrap_free(ptr);
+   if (ptr)
+      MEMFreeToExpHeap(MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM2), ptr);
 }
 
 void * MEM1_alloc(unsigned int size, unsigned int align)

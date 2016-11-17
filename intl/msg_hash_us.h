@@ -39,6 +39,10 @@ MSG_HASH(
       "Waiting for client ..."
       )
 MSG_HASH(
+      MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+      "Give hardware-rendered cores their own private context. Avoids having to assume hardware state changes inbetween frames."
+      )
+MSG_HASH(
       MENU_ENUM_SUBLABEL_MENU_SETTINGS,
       "Adjusts settings related to the appearance of the menu screen."
       )
@@ -341,7 +345,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-      "Hardcore Mode"
+      "Achievements Hardcore Mode"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS,
@@ -357,7 +361,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-      "Test unofficial"
+      "Test Unofficial Achievements"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS,
@@ -451,7 +455,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
       "Core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
-      "Automatically start a core")
+      "Start a Core Automatically")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG,
       "Configuration Per-Core")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
@@ -515,13 +519,13 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DPI_OVERRIDE_VALUE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
       "Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-      "Dummy On Core Shutdown")
+      "Load Dummy on Core Shutdown")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
       "Dynamic Wallpaper")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
       "Dynamic Wallpapers Dir")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-      "Enable")
+      "Enable Achievements")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR,
       "Menu entry hover color")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_ENTRY_NORMAL_COLOR,
@@ -1511,7 +1515,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
       "Save Game Preset")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-      "HW Shared Context Enable")
+      "Enable Hardware Shared Context")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
       "HW Bilinear Filtering")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
@@ -1604,6 +1608,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_YES,
       "Yes")
 MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
       "Shader Preset")
+MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+      "Enable or disable savestates, cheats, rewind, fast-forward, pause, and slow-motion for all games.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+      "Change settings for the core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
       "Scan contents and add to the database.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
@@ -1628,6 +1636,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
       "Enable or disable logging to the terminal.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETPLAY,
       "Join or host a netplay session.")
+MSG_HASH(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+      "Display information for core, network, and system.\nDisplay manager for database and cursor.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
       "Download add-ons, components and contents for RetroArch.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAMBA_ENABLE,

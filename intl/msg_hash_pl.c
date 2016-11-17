@@ -829,7 +829,7 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS:
          return "Zapisz preset shadera jako";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT:
-         return "HW Shared Context Enable";
+         return "Enable Hardware Shared Context";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH:
          return "Sprzętowe filtrowanie dwuliniowe";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER:

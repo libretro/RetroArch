@@ -18,6 +18,7 @@
 #include <stddef.h>
 
 #include <compat/strl.h>
+#include <compat/strcasestr.h>
 
 #include <lists/file_list.h>
 #include <lists/dir_list.h>
@@ -2822,12 +2823,16 @@ static int menu_displaylist_parse_horizontal_content_actions(
 static int menu_displaylist_parse_information_list(
       menu_displaylist_info_t *info)
 {
+   core_info_t *core_info    = NULL;
 
-   menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
-         msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION),
-         MENU_ENUM_LABEL_CORE_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0);
+   core_info_get_current_core(&core_info);
+
+   if (core_info && core_info->config_data)
+      menu_entries_append_enum(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_INFORMATION),
+            MENU_ENUM_LABEL_CORE_INFORMATION,
+            MENU_SETTING_ACTION, 0, 0);
 
 #ifdef HAVE_NETWORKING
 #ifndef HAVE_SOCKET_LEGACY
@@ -3290,10 +3295,7 @@ static int menu_displaylist_parse_playlists(
       path = str_list->elems[i].data;
 
       if (!strstr(path, file_path_str(FILE_PATH_LPL_EXTENSION)) ||
-         (strstr(path, file_path_str(FILE_PATH_CONTENT_HISTORY))) ||
-         (strstr(path, file_path_str(FILE_PATH_CONTENT_MUSIC_HISTORY))) ||
-         (strstr(path, file_path_str(FILE_PATH_CONTENT_VIDEO_HISTORY))) ||
-         (strstr(path, file_path_str(FILE_PATH_CONTENT_IMAGE_HISTORY))))
+         ((strcasestr(path, "content") && strcasestr(path, "history"))))
          continue;
 
       file_type = FILE_TYPE_PLAYLIST_COLLECTION;
@@ -4958,6 +4960,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ONLY_BOOL, false) != -1)
                count++;
 
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_UPDATER_SETTINGS,   PARSE_ACTION, false) != -1)
+               count++;
+
             if (count == 0)
                menu_entries_append_enum(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
@@ -5225,9 +5231,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN,
                PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
-               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -5376,8 +5379,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,  PARSE_ACTION, false);
 #endif
-         ret = menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_UPDATER_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_WIFI_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,

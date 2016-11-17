@@ -27,7 +27,13 @@
 
 .align 4
 .globl convert_s16_float_asm
+#ifndef __MACH__
+.type convert_s16_float_asm, %function
+#endif
 .globl _convert_s16_float_asm
+#ifndef __MACH__
+.type _convert_s16_float_asm, %function
+#endif
 # convert_s16_float_asm(float *out, const int16_t *in, size_t samples, const float *gain)
 convert_s16_float_asm:
 _convert_s16_float_asm:

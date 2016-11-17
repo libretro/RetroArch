@@ -1272,10 +1272,11 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION:
          return "Descripción";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
-         return "Modo Extremo";
+         return "Logros Modo Extremo";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "Retrologros";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
+/* FIXME? Translate 'Test Unofficial Achievements' */
          return "Probar versión no oficial";
       case MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS:
          return "Menú rápido";
@@ -1697,6 +1698,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Carpeta de fondos de pantalla dinámicos";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
+/* FIXME? Translate 'Enable Achievements' */
          return "Activar";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
          return "Color de entrada resaltada del menú";
