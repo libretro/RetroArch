@@ -964,6 +964,17 @@ static void *gl_glsl_init(void *data, const char *path)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_SEC].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_SEC]);
+
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow : stock_vertex_xmb_snow_legacy;
+   shader_prog_info.fragment = stock_fragment_xmb_snow;
+
+   gl_glsl_compile_program(
+         glsl,
+         VIDEO_SHADER_MENU_3,
+         &glsl->prg[VIDEO_SHADER_MENU_3],
+         &shader_prog_info);
+   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_3].id,
+         &glsl->uniforms[VIDEO_SHADER_MENU_3]);
 #endif
 
    gl_glsl_reset_attrib(glsl);

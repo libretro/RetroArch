@@ -170,6 +170,7 @@ static void menu_display_gl_draw_pipeline(void *data)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_SEC:
+      case VIDEO_SHADER_MENU_3:
          {
             static float t                    = 0;
             video_shader_ctx_info_t shader_info;

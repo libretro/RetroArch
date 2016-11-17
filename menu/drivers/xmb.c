@@ -2278,9 +2278,18 @@ static void xmb_draw_bg(
       menu_display_draw_gradient(&draw);
 
       draw.pipeline.id = VIDEO_SHADER_MENU_SEC;
-      if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_RIBBON ||
-            settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_SNOW)
-         draw.pipeline.id  = VIDEO_SHADER_MENU;
+
+      switch (settings->menu.xmb.shader_pipeline)
+      {
+         case XMB_SHADER_PIPELINE_RIBBON:
+            draw.pipeline.id  = VIDEO_SHADER_MENU;
+            break;
+         case XMB_SHADER_PIPELINE_SNOW:
+            draw.pipeline.id  = VIDEO_SHADER_MENU_3;
+            break;
+         default:
+            break;
+      }
 
       menu_display_draw_pipeline(&draw);
    }
@@ -2807,40 +2816,27 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    settings_t *settings      = config_get_ptr();
    video_coord_array_t *ca   = menu_display_get_coords_array();
 
+   vertices_total = XMB_RIBBON_VERTICES;
+
    if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_SNOW)
-   {
-      vertices_total  = 4;
-      ribbon_verts    = (float*)calloc(2 * vertices_total, sizeof(float));
-
-      ribbon_verts[0] = -1.0f;
-      ribbon_verts[1] = -1.0f;
-      ribbon_verts[2] =  1.0f;
-      ribbon_verts[3] = -1.0f;
-      ribbon_verts[4] = -1.0f;
-      ribbon_verts[5] =  1.0f;
-      ribbon_verts[6] =  1.0f;
-      ribbon_verts[7] =  1.0f;
-
-   }
+      dummy                = (float*)calloc(4 * 4, sizeof(float));
    else
-   {
-      vertices_total = XMB_RIBBON_VERTICES;
-      ribbon_verts   = (float*)calloc(2 * vertices_total, sizeof(float));
+      dummy          = (float*)calloc(4 * vertices_total, sizeof(float));
 
-      /* Set up vertices */
-      for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
+   ribbon_verts   = (float*)calloc(2 * vertices_total, sizeof(float));
+
+
+   /* Set up vertices */
+   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
+   {
+      for (c = 0; c < XMB_RIBBON_COLS; c++)
       {
-         for (c = 0; c < XMB_RIBBON_COLS; c++)
-         {
-            col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
-            xmb_ribbon_set_vertex(ribbon_verts, i,     r,     col);
-            xmb_ribbon_set_vertex(ribbon_verts, i + 2, r + 1, col);
-            i  += 4;
-         }
+         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
+         xmb_ribbon_set_vertex(ribbon_verts, i,     r,     col);
+         xmb_ribbon_set_vertex(ribbon_verts, i + 2, r + 1, col);
+         i  += 4;
       }
    }
-
-   dummy                = (float*)calloc(4 * vertices_total, sizeof(float));
 
    coords.color         = dummy;
    coords.vertex        = ribbon_verts;
