@@ -3564,7 +3564,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
          return "Keyboard Overlay Preset";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
-         return "Lakka Services";
+         return "Services";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
          return "Tiếng Trung Quốc (Chữ Hán giản thể)";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL:
