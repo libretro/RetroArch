@@ -939,7 +939,7 @@ static void *gl_glsl_init(void *data, const char *path)
 #ifdef HAVE_SHADERPIPELINE
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_ribbon_simple_legacy;
-   shader_prog_info.fragment = stock_fragment_xmb_simple;
+   shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
 #else
    shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
    shader_prog_info.fragment = stock_fragment_xmb;
@@ -955,7 +955,7 @@ static void *gl_glsl_init(void *data, const char *path)
          &glsl->uniforms[VIDEO_SHADER_MENU]);
 
    shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_ribbon_simple_legacy;
-   shader_prog_info.fragment = stock_fragment_xmb_simple;
+   shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
 
    gl_glsl_compile_program(
          glsl,
