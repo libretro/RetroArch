@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *stock_vertex_xmb_legacy = GLSL(
+static const char *stock_vertex_xmb_ribbon_legacy = GLSL(
    attribute vec3 VertexCoord;
    uniform float time;
    varying vec3 fragVertexEc;

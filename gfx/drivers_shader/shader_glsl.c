@@ -941,7 +941,7 @@ static void *gl_glsl_init(void *data, const char *path)
    shader_prog_info.vertex   = stock_vertex_xmb_simple_legacy;
    shader_prog_info.fragment = stock_fragment_xmb_simple;
 #else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_modern : stock_vertex_xmb_legacy;
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
    shader_prog_info.fragment = stock_fragment_xmb;
 #endif
    shader_prog_info.is_file  = false;
