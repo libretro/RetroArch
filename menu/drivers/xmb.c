@@ -861,9 +861,20 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
-   tmp = string_replace_substring(entry.path, "/", "-");
+   /* Scrub characters that are not cross-platform and/or violate the No-Intro filename standard:
+    * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
+    * Replace these characters in the entry name with underscores
+    */
+   char *scrub_char_pointer = NULL;
+   tmp = strdup(entry.path);
+   
+   while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
+   {
+      *scrub_char_pointer = '_';
+   }
 
-   if (tmp)
+   /* Look for thumbnail file with this scrubbed filename */
+  if (tmp)
    {
       char tmp_new[PATH_MAX_LENGTH];
 
