@@ -2818,11 +2818,7 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
 
    vertices_total = XMB_RIBBON_VERTICES;
 
-   if (settings->menu.xmb.shader_pipeline == XMB_SHADER_PIPELINE_SNOW)
-      dummy                = (float*)calloc(4 * 4, sizeof(float));
-   else
-      dummy          = (float*)calloc(4 * vertices_total, sizeof(float));
-
+   dummy          = (float*)calloc(4 * vertices_total, sizeof(float));
    ribbon_verts   = (float*)calloc(2 * vertices_total, sizeof(float));
 
 
