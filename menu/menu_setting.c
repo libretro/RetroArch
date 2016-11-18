@@ -4045,6 +4045,7 @@ static bool setting_append_list(
                   SD_FLAG_NONE
                   );
 
+#if 0
             CONFIG_BOOL(
                   list, list_info,
                   &settings->input.input_descriptor_label_show,
@@ -4076,6 +4077,7 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_ADVANCED
                   );
+#endif
 
             END_SUB_GROUP(list, list_info, parent_group);
 
