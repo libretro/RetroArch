@@ -135,7 +135,7 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Cheat Passes";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "Afsluiten";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
+      case MENU_ENUM_LABEL_VALUE_CONFIG_LOAD:
          return "Laad Configuratie";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuratie";

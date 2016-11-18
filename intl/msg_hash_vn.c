@@ -2040,7 +2040,7 @@ static const char *menu_hash_to_str_vn_label_enum(enum msg_hash_enums msg)
          return "unload_core";
       case MENU_ENUM_LABEL_COLLECTION:
          return "collection";
-      case MENU_ENUM_LABEL_CONFIGURATIONS:
+      case MENU_ENUM_LABEL_CONFIG_LOAD:
          return "configurations";
       case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
          return "configuration_settings";
@@ -3179,7 +3179,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Close";
       case MENU_ENUM_LABEL_VALUE_CONFIG:
          return "Config";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
+      case MENU_ENUM_LABEL_VALUE_CONFIG_LOAD:
          return "Tải Configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuration";

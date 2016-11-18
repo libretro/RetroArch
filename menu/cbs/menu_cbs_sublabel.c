@@ -471,7 +471,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);
             break;
-         case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
+         case MENU_ENUM_LABEL_CONFIGURATIONS_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_configurations_settings_list);
             break;
          case MENU_ENUM_LABEL_VIDEO_THREADED:

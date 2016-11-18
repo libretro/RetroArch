@@ -441,7 +441,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = path;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
-      case ACTION_OK_DL_CONFIGURATIONS_LIST:
+      case ACTION_OK_DL_CONFIGURATIONS_SETTINGS:
          info.type          = type;
          info.directory_ptr = idx;
          if (string_is_empty(settings->directory.menu_config))
@@ -2818,7 +2818,7 @@ static int action_ok_configurations_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
-         entry_idx, ACTION_OK_DL_CONFIGURATIONS_LIST);
+         entry_idx, ACTION_OK_DL_CONFIGURATIONS_SETTINGS);
 }
 
 static int action_ok_saving_list(const char *path,
@@ -3711,7 +3711,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NETPLAY:
          case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
          case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
-         case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
+         case MENU_ENUM_LABEL_CONFIGURATIONS_SETTINGS:
          case MENU_ENUM_LABEL_HELP_LIST:
          case MENU_ENUM_LABEL_INFORMATION_LIST:
          case MENU_ENUM_LABEL_CONTENT_SETTINGS:
@@ -3769,7 +3769,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
             BIND_ACTION_OK(cbs, action_ok_disk_image_append_list);
             break;
-         case MENU_ENUM_LABEL_CONFIGURATIONS:
+         case MENU_ENUM_LABEL_CONFIG_LOAD:
             BIND_ACTION_OK(cbs, action_ok_configurations_list);
             break;
          case MENU_ENUM_LABEL_SAVING_SETTINGS:

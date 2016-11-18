@@ -2008,7 +2008,7 @@ static const char *menu_hash_to_str_chs_label_enum(enum msg_hash_enums msg)
          return "unload_core";
       case MENU_ENUM_LABEL_COLLECTION:
          return "collection";
-      case MENU_ENUM_LABEL_CONFIGURATIONS:
+      case MENU_ENUM_LABEL_CONFIG_LOAD:
          return "configurations";
       case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
          return "configuration_settings";
@@ -3145,7 +3145,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "关闭";
       case MENU_ENUM_LABEL_VALUE_CONFIG:
          return "配置";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
+      case MENU_ENUM_LABEL_VALUE_CONFIG_LOAD:
          return "加载配置";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "配置";

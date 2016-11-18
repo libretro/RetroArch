@@ -124,7 +124,7 @@ MSG_HASH(
       "Scan Content"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+      MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS,
       "Configurations"
       )
 MSG_HASH(
@@ -380,7 +380,7 @@ MSG_HASH(
       "Config"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+      MENU_ENUM_LABEL_VALUE_CONFIG_LOAD,
       "Load Configuration..."
       )
 MSG_HASH(

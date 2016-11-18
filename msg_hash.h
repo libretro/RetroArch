@@ -984,8 +984,8 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_ADD_CONTENT_LIST,
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
 
-   MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   MENU_ENUM_LABEL_CONFIGURATIONS_SETTINGS,
+   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS,
 
    MENU_ENUM_LABEL_VALUE_DONT_CARE,
    MENU_ENUM_LABEL_VALUE_LINEAR,
@@ -1715,8 +1715,8 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    MENU_ENUM_LABEL_DELETE_ENTRY,
    MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-   MENU_ENUM_LABEL_CONFIGURATIONS,
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   MENU_ENUM_LABEL_CONFIG_LOAD,
+   MENU_ENUM_LABEL_VALUE_CONFIG_LOAD,
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
    MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS,
    MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_AS,
@@ -2037,7 +2037,7 @@ enum msg_hash_enums
 #define MENU_LABEL_DEFERRED_CORE_CONTENT_LIST                                  0x76150c63U
 #define MENU_LABEL_DEFERRED_LAKKA_LIST                                         0x3db437c4U
 #define MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST                            0x10b41d97U
-#define MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST                                0x679a1b0bU
+#define MENU_LABEL_DEFERRED_CONFIGURATIONS_SETTINGS                            0x679a1b0bU
 
 
 /* Cheevos settings */
@@ -2195,7 +2195,7 @@ enum msg_hash_enums
 #define MENU_LABEL_CUSTOM_BIND                                                 0x1e84b3fcU
 #define MENU_LABEL_CUSTOM_BIND_ALL                                             0x79ac14f4U
 #define MENU_LABEL_CUSTOM_BIND_DEFAULTS                                        0xe88f7b13U
-#define MENU_LABEL_CONFIGURATIONS                                              0x3e930a50U
+#define MENU_LABEL_CONFIG_LOAD                                                 0x3e930a50U
 #define MENU_LABEL_REMAP_FILE_SAVE_CORE                                        0x7c9d4c8fU
 #define MENU_LABEL_REMAP_FILE_SAVE_GAME                                        0x7c9f41e0U
 #define MENU_LABEL_CONTENT_COLLECTION_LIST                                     0x32d1df83U
