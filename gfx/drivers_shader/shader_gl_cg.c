@@ -1071,7 +1071,7 @@ static void *gl_cg_init(void *data, const char *path)
    gl_cg_set_shaders(cg->prg[1].fprg, cg->prg[1].vprg);
 
 #ifdef HAVE_SHADERPIPELINE
-   shader_prog_info.combined = stock_xmb_simple;
+   shader_prog_info.combined = stock_xmb_ribbon_simple;
    shader_prog_info.is_file  = false;
 
    gl_cg_compile_program(
@@ -1081,7 +1081,7 @@ static void *gl_cg_init(void *data, const char *path)
          &shader_prog_info);
    gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU);
 
-   shader_prog_info.combined = stock_xmb_simple;
+   shader_prog_info.combined = stock_xmb_ribbon_simple;
    shader_prog_info.is_file  = false;
 
    gl_cg_compile_program(
