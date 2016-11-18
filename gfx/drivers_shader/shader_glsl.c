@@ -966,9 +966,9 @@ static void *gl_glsl_init(void *data, const char *path)
          &glsl->uniforms[VIDEO_SHADER_MENU_SEC]);
 
 #if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_snow;
+   shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
 #else
-   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow : stock_vertex_xmb_snow_legacy;
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
 #endif
    shader_prog_info.fragment = stock_fragment_xmb_snow;
 

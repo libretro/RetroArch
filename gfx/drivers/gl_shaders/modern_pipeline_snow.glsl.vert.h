@@ -2,7 +2,7 @@
 
 /* Need to duplicate these to work around broken stuff on Android.
  * Must enforce alpha = 1.0 or 32-bit games can potentially go black. */
-static const char *stock_vertex_xmb_snow = GLSL(
+static const char *stock_vertex_xmb_snow_modern = GLSL(
    attribute vec2 TexCoord;
    attribute vec2 VertexCoord;
    attribute vec4 Color;
