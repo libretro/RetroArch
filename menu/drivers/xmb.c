@@ -2844,10 +2844,10 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    coords.lut_tex_coord = dummy;
    coords.vertices      = vertices_total;
 
+   video_coord_array_append(ca, &coords, coords.vertices);
+
    free(dummy);
    free(ribbon_verts);
-
-   video_coord_array_append(ca, &coords, coords.vertices);
 }
 
 
