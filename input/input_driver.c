@@ -817,14 +817,23 @@ uint64_t input_menu_keys_pressed(void)
    if (menu_input_dialog_get_display_kb())
       return ret;
 
-
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_A);
+   {
+      if (!settings->input.menu_swap_ok_cancel_buttons)
+         BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_A);
+      else
+         BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_B);
+   }
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_BACKSPACE))
-      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_B);
+   {
+      if (!settings->input.menu_swap_ok_cancel_buttons)
+         BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_B);
+      else
+         BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_A);
+   }
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_SPACE))

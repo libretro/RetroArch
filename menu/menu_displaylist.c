@@ -5318,6 +5318,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO, PARSE_ONLY_UINT, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_INPUT_SWAP_OK_CANCEL, PARSE_ONLY_BOOL, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU, PARSE_ONLY_BOOL, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE, PARSE_ONLY_BOOL, false);
