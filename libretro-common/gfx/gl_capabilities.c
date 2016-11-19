@@ -120,6 +120,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
       major = minor = 0;
 
    (void)vendor;
+   (void)renderer;
 
    switch (enum_idx)
    {
