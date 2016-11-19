@@ -520,19 +520,6 @@ const char *config_get_default_menu(void)
    return "null";
 }
 
-static unsigned config_menu_btn_ok_default(void)
-{
-   if (g_defaults.menu.controls.set)
-      return g_defaults.menu.controls.menu_btn_ok;
-   return default_menu_btn_ok;
-}
-
-static unsigned config_menu_btn_cancel_default(void)
-{
-   if (g_defaults.menu.controls.set)
-      return g_defaults.menu.controls.menu_btn_cancel;
-   return default_menu_btn_cancel;
-}
 #endif
 
 bool config_overlay_enable_default(void)
@@ -895,12 +882,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("keyboard_gamepad_mapping_type",&settings->input.keyboard_gamepad_mapping_type, true, 1, false);
    SETTING_INT("input_poll_type_behavior",     &settings->input.poll_type_behavior, true, 2, false);
 #ifdef HAVE_MENU
-   SETTING_INT("menu_ok_btn",                  &settings->menu_ok_btn,     true, config_menu_btn_ok_default(), false);
-   SETTING_INT("menu_cancel_btn",              &settings->menu_cancel_btn, true, config_menu_btn_cancel_default(), false);
-   SETTING_INT("menu_search_btn",              &settings->menu_search_btn, true, default_menu_btn_search, false);
-   SETTING_INT("menu_info_btn",                &settings->menu_info_btn,   true, default_menu_btn_info, false);
-   SETTING_INT("menu_default_btn",             &settings->menu_default_btn, true, default_menu_btn_default, false);
-   SETTING_INT("menu_scroll_down_btn",         &settings->menu_scroll_down_btn, true, default_menu_btn_scroll_down, false);
+
 #endif
    SETTING_INT("video_monitor_index",          &settings->video.monitor_index, true, monitor_index, false);
    SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x,  true, fullscreen_x, false);
@@ -911,7 +893,6 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_INT("network_remote_base_port",     &settings->network_remote_base_port, true, network_remote_base_port, false);
 #endif
-   SETTING_INT("menu_scroll_up_btn",           &settings->menu_scroll_up_btn, true, default_menu_btn_scroll_up, false);
 #ifdef HAVE_GEKKO
    SETTING_INT("video_viwidth",                &settings->video.viwidth, true, video_viwidth, false);
 #endif

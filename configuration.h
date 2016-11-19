@@ -454,14 +454,6 @@ typedef struct settings
    bool sort_savefiles_enable;
    bool sort_savestates_enable;
 
-   unsigned menu_ok_btn;
-   unsigned menu_cancel_btn;
-   unsigned menu_search_btn;
-   unsigned menu_default_btn;
-   unsigned menu_info_btn;
-   unsigned menu_scroll_down_btn;
-   unsigned menu_scroll_up_btn;
-
    char username[32];
 #ifdef HAVE_LANGEXTRA
    unsigned int user_language;

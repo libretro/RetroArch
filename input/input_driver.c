@@ -820,23 +820,23 @@ uint64_t input_menu_keys_pressed(void)
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN))
-      BIT64_SET(ret, settings->menu_ok_btn);
+      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_A);
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_BACKSPACE))
-      BIT64_SET(ret, settings->menu_cancel_btn);
+      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_B);
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_SPACE))
-      BIT64_SET(ret, settings->menu_default_btn);
+      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_START);
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_SLASH))
-      BIT64_SET(ret, settings->menu_search_btn);
+      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_X);
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_RSHIFT))
-      BIT64_SET(ret, settings->menu_info_btn);
+      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_SELECT);
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_RIGHT))
