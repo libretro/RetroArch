@@ -168,6 +168,10 @@ MSG_HASH(
       "Audio Filter Dir"
       )
 MSG_HASH(
+      MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST,
+      "Turbo/Deadzone"
+      )
+MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
       "Audio Latency (ms)"
       )

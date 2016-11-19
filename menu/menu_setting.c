@@ -4085,7 +4085,7 @@ static bool setting_append_list(
             START_SUB_GROUP(
                   list,
                   list_info,
-                  "Turbo/Deadzone",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TURBO_DEADZONE_LIST),
                   &group_info,
                   &subgroup_info,
                   parent_group);
