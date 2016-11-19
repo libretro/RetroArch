@@ -2824,7 +2824,6 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    unsigned i                = 0;
    float *ribbon_verts       = NULL;
    float *dummy              = NULL;
-   settings_t *settings      = config_get_ptr();
    video_coord_array_t *ca   = menu_display_get_coords_array();
 
    vertices_total = XMB_RIBBON_VERTICES;
