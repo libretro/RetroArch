@@ -296,6 +296,8 @@ typedef struct settings
       unsigned menu_toggle_gamepad_combo;
       bool back_as_menu_toggle_enable;
       bool all_users_control_menu;
+
+      bool menu_swap_ok_cancel_buttons;
 #if defined(VITA)
       bool backtouch_enable;
       bool backtouch_toggle;
