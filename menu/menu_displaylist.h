@@ -165,6 +165,7 @@ typedef struct menu_displaylist_info
    bool need_push;
    bool need_clear;
    bool push_builtin_cores;
+   bool download_core;
    bool need_navigation_clear;
    file_list_t *list;
    file_list_t *menu_list;

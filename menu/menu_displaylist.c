@@ -3379,6 +3379,8 @@ static int menu_displaylist_parse_cores(
       return 0;
    }
 
+   info->download_core = true;
+
    dir_list_sort(str_list, true);
 
    list_size = str_list->size;
@@ -3390,13 +3392,6 @@ static int menu_displaylist_parse_cores(
             msg_hash_to_str(MENU_ENUM_LABEL_NO_ITEMS),
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0);
-#ifdef HAVE_NETWORKING
-      menu_entries_append_enum(info->list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
-            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-            MENU_SETTING_ACTION, 0, 0);
-#endif
 
       string_list_free(str_list);
 
@@ -3874,6 +3869,17 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
             MENU_ENUM_LABEL_START_NET_RETROPAD,
             MENU_SETTING_ACTION, 0, 0);
    }
+
+#ifdef HAVE_NETWORKING
+   if (info->download_core)
+   {
+      menu_entries_prepend(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
+            msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
+            MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+            MENU_SETTING_ACTION, 0, 0);
+   }
+#endif
 
    if (info->need_refresh)
       menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
@@ -5816,13 +5822,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
                      MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
                      0, 0, 0);
-#ifdef HAVE_NETWORKING
-               menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
-                     MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-                     MENU_SETTING_ACTION, 0, 0);
-#endif
+               info->download_core = true;
             }
             else
             {
