@@ -206,30 +206,29 @@ bool video_shader_driver_init(video_shader_ctx_init_t *init)
 
 bool video_shader_driver_get_feedback_pass(unsigned *data)
 {
-   if (!current_shader || !current_shader->get_feedback_pass)
-      return false;
-   if (!current_shader->get_feedback_pass(shader_data, data))
-      return false;
-   return true;
+   if (     current_shader 
+         && current_shader->get_feedback_pass
+         && current_shader->get_feedback_pass(shader_data, data))
+      return true;
+   return false;
 }
 
 bool video_shader_driver_mipmap_input(unsigned *index)
 {
-   if (!current_shader)
-      return false;
-   if (!current_shader->mipmap_input(shader_data, *index))
-      return false;
-   return true;
+   if (     current_shader 
+         && current_shader->mipmap_input(shader_data, *index))
+      return true;
+   return false;
 }
 
 bool video_shader_driver_set_coords(video_shader_ctx_coords_t *coords)
 {
-   if (!current_shader || !current_shader->set_coords)
-      return false;
-   if (!current_shader->set_coords(coords->handle_data,
+   if (     current_shader 
+         && current_shader->set_coords
+         && current_shader->set_coords(coords->handle_data,
             shader_data, (const struct video_coords*)coords->data))
-      return false;
-   return true;
+      return true;
+   return false;
 }
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler)
@@ -259,23 +258,24 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
 
 bool video_shader_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
 {
-   if (!current_shader || !current_shader->set_mvp)
-      return false;
-   if (!mvp || !mvp->matrix)
-      return false;
-   if (!current_shader->set_mvp(mvp->data, shader_data, mvp->matrix))
-      return false;
-   return true;
+   if (     mvp 
+         && mvp->matrix
+         && current_shader
+         && current_shader->set_mvp
+         && current_shader->set_mvp(mvp->data, shader_data, mvp->matrix))
+      return true;
+   return false;
 }
 
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
 {
-   if (!current_shader || !current_shader->filter_type || !filter)
-      return false;
-   if (!current_shader->filter_type(shader_data,
+   if (     filter
+         && current_shader 
+         && current_shader->filter_type 
+         && current_shader->filter_type(shader_data,
             filter->index, filter->smooth))
-      return false;
-   return true;
+      return true;
+   return false;
 }
 
 bool video_shader_driver_compile_program(struct shader_program_info *program_info)
