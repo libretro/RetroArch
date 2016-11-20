@@ -26,9 +26,12 @@
 #include "../../config.h"
 #endif
 
-
-#include "ui_qt.h"
+#ifdef HAVE_QT_WRAPPER
 #include "qt/wrapper/wrapper.h"
+#else
+#include "ui_qt.h"
+#endif
+
 #include "../ui_companion_driver.h"
 #include "../../core.h"
 #include "../../configuration.h"
@@ -151,9 +154,16 @@ const ui_companion_driver_t ui_companion_qt = {
    NULL,
    NULL,
    NULL,
+#ifdef HAVE_QT_WRAPPER
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+#else
    &ui_browser_window_qt,
    &ui_msg_window_qt,
    &ui_window_qt,
    &ui_application_qt,
+#endif
    "qt",
 };

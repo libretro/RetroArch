@@ -273,7 +273,8 @@ endif
 # Qt
 
 ifeq ($(HAVE_QT_WRAPPER), 1)
-LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -L./ui/drivers/qt/obj/
+OBJ += ui/drivers/ui_qt.o
+LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -L./ui/drivers/qt/build/release/
 LIBS += -lwrapper
 endif
 

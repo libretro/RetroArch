@@ -30,7 +30,7 @@ ApplicationWindow {
     initialPage: Page {
         id: page
 
-        title: "RetroArch"
+        title: "QT!"
 
         tabs: navDrawer.enabled ? [] : sectionTitles
 

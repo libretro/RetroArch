@@ -28,6 +28,9 @@
 
 
 static const ui_companion_driver_t *ui_companion_drivers[] = {
+#ifdef HAVE_QT_WRAPPER
+   &ui_companion_qt,
+#endif
 #if defined(_WIN32) && !defined(_XBOX)
    &ui_companion_win32,
 #endif
