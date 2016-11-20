@@ -279,7 +279,9 @@ bool video_shader_driver_deinit(void);
 
 bool video_shader_driver_set_parameter(struct uniform_info *param);
 
-bool video_shader_driver_set_parameters(video_shader_ctx_params_t *params);
+#define video_shader_driver_set_parameters(params) \
+   if (current_shader && current_shader->set_params) \
+      current_shader->set_params(params.data, shader_data, params.width, params.height, params.tex_width, params.tex_height, params.out_width, params.out_height, params.frame_counter, params.info, params.prev_info, params.feedback_info, params.fbo_info, params.fbo_info_cnt)
 
 bool video_shader_driver_init_first(void);
 
