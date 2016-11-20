@@ -3042,11 +3042,11 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END:
          return "Accounts List Endpoint";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS:
-         return "Retro Achievements";
+         return "レトロ実績";
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST:
-         return "Achievement List";
+         return "実績表";
       case MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE:
-         return "Achievement List (Hardcore)";
+         return "実績表(ハードコア)";
       case MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST:
          return "コンテンツをスキャン";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
@@ -3160,17 +3160,17 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
          return "ハードコアモード";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
-         return "Locked Achievements:";
+         return "解除された実績:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY:
          return "ロックされている";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS:
          return "レトロ";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
-         return "非公式をテスト";
+         return "非公式実績をテスト";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
-         return "Unlocked Achievements:";
+         return "解除可能の実績:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY:
-         return "アンロックされている";
+         return "解除されている";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "閉じる";
       case MENU_ENUM_LABEL_VALUE_CONFIG:
@@ -3722,7 +3722,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE:
          return "該当なし";
       case MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY:
-         return "No achievements to display.";
+         return "表示する実績はありません。";
       case MENU_ENUM_LABEL_VALUE_NO_CORE:
          return "コアはありません";
       case MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE:
@@ -3900,11 +3900,11 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_RESUME_CONTENT:
          return "再開";
       case MENU_ENUM_LABEL_VALUE_RETROKEYBOARD:
-         return "RetroKeyboard";
+         return "レトロキーボード";
       case MENU_ENUM_LABEL_VALUE_RETROPAD:
          return "レトロパッド";
       case MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS:
-         return "Retro Achievements";
+         return "レトロ実績";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
          return "巻き戻しを有効";
       case MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY:
@@ -3973,6 +3973,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "リボン";
       case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED:
          return "リボン (単純)";
+      case MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW:
+         return "雪";
       case MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
          return "詳細設定を表示";
       case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
@@ -4397,12 +4399,20 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "オーディオ出力の設定を変更する。";
       case MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE:
          return "Bluetoothを有効する。";
+      case MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE:
+         return "保存状態、チート、巻き戻し、早送り、一時停止、スローモーションを全部のゲームに無効する。";
       case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
          return "終了時に設定を自動的に保存する。";
+      case MENU_ENUM_SUBLABEL_CORE_SETTINGS:
+         return "コアの設定を変更する。";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "CPUのコア数";
+      case MENU_ENUM_SUBLABEL_DRIVER_SETTINGS:
+         return "システムのドライバを変更する。";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
          return "画面で現在のフレームレートを表示する。";
+      case MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST:
+         return "コア、ネットワーク、システムの詳細を表示する。\nデータベースとカーソルのマネジャーを表示する。";
       case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
          return "ホットキー設定を変更する。";
       case MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
@@ -4417,6 +4427,10 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "ネットプレイのセッションを参加やホストする。";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
          return "RetroArchにアドオン、コンポーネント、コンテンツをダウンロードする。";
+      case MENU_ENUM_SUBLABEL_RECORDING_SETTINGS:
+         return "録画の設定を変更する。";
+      case MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS:
+         return "実績関係の設定を変更する。";
       case MENU_ENUM_SUBLABEL_SAMBA_ENABLE:
          return "フォルダのネットワーク共有を有効する。";
       case MENU_ENUM_SUBLABEL_SERVICES_SETTINGS:
