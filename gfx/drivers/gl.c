@@ -1273,7 +1273,7 @@ static bool gl_frame(void *data, const void *frame,
    }
 #endif
 
-   if (font_driver_has_render_msg() && msg)
+   if (msg)
       font_driver_render_msg(NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY

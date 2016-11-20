@@ -1503,7 +1503,7 @@ static bool d3d_frame(void *data, const void *frame,
       return false;
    }
 
-   if (font_driver_has_render_msg() && msg)
+   if (msg)
    {
       struct font_params font_parms = {0};
       font_driver_render_msg(NULL, msg, &font_parms);

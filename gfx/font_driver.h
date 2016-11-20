@@ -138,8 +138,6 @@ typedef struct
 int font_renderer_create_default(const void **driver,
       void **handle, const char *font_path, unsigned font_size);
       
-bool font_driver_has_render_msg(void);
-
 void font_driver_render_msg(void *font_data, const char *msg, const struct font_params *params);
 
 void font_driver_bind_block(void *font_data, void *block);

@@ -278,11 +278,6 @@ static bool font_init_first(
    return false;
 }
 
-bool font_driver_has_render_msg(void)
-{
-   return true;
-}
-
 void font_driver_render_msg(void *font_data,
       const char *msg, const struct font_params *params)
 {
