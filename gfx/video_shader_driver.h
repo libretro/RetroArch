@@ -301,9 +301,14 @@ bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
 
 bool video_shader_driver_compile_program(struct shader_program_info *program_info);
 
-bool video_shader_driver_use(video_shader_ctx_info_t *shader_info);
+#define video_shader_driver_use(shader_info) \
+   if (current_shader) \
+      current_shader->use(shader_info.data, shader_data, shader_info.idx, shader_info.set_active)
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
+
+extern const shader_backend_t *current_shader;
+extern void *shader_data;
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;

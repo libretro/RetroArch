@@ -85,11 +85,11 @@ static void menu_display_gl_blend_begin(void)
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   shader_info.data = NULL;
-   shader_info.idx  = VIDEO_SHADER_STOCK_BLEND;
+   shader_info.data       = NULL;
+   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 }
 
 static void menu_display_gl_blend_end(void)
@@ -179,7 +179,7 @@ static void menu_display_gl_draw_pipeline(void *data)
             shader_info.idx        = draw->pipeline.id;
             shader_info.set_active = true;
 
-            video_shader_driver_use(&shader_info);
+            video_shader_driver_use(shader_info);
 
             t += 0.01;
 

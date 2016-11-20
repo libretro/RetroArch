@@ -204,11 +204,11 @@ static void menu_display_d3d_draw_pipeline(void *data)
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_SEC:
       case VIDEO_SHADER_MENU_3:
-         shader_info.data       = NULL;
-         shader_info.idx        = draw->pipeline.id;
-         shader_info.set_active = true;
+         shader_info.data                = NULL;
+         shader_info.idx                 = draw->pipeline.id;
+         shader_info.set_active          = true;
 
-         video_shader_driver_use(&shader_info);
+         video_shader_driver_use(shader_info);
 
          t += 0.01;
 

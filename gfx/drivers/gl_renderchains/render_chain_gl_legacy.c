@@ -302,7 +302,7 @@ void gl_renderchain_render(gl_t *gl,
       shader_info.idx        = i + 1;
       shader_info.set_active = true;
 
-      video_shader_driver_use(&shader_info);
+      video_shader_driver_use(shader_info);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
       mip_level = i + 1;
@@ -377,7 +377,7 @@ void gl_renderchain_render(gl_t *gl,
    shader_info.idx        = gl->fbo_pass + 1;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 

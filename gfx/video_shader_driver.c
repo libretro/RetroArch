@@ -38,8 +38,8 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-static const shader_backend_t *current_shader = NULL;
-static void *shader_data                      = NULL;
+const shader_backend_t *current_shader = NULL;
+void *shader_data                      = NULL;
 
 static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type type)
 {
@@ -284,14 +284,6 @@ bool video_shader_driver_compile_program(struct shader_program_info *program_inf
       return false;
    return current_shader->compile_program(program_info->data,
          program_info->idx, NULL, program_info);
-}
-
-bool video_shader_driver_use(video_shader_ctx_info_t *shader_info)
-{
-   if (!current_shader || !shader_info)
-      return false;
-   current_shader->use(shader_info->data, shader_data, shader_info->idx, shader_info->set_active);
-   return true;
 }
 
 bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap)

@@ -234,7 +234,7 @@ static void gl_render_overlay(gl_t *gl)
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
@@ -826,7 +826,7 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
    shader_info.idx        = idx;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
    gl_set_viewport(gl, width, height, false, true);
 }
 
@@ -1041,7 +1041,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 
    gl->coords.vertices  = 4;
 
@@ -1109,7 +1109,7 @@ static bool gl_frame(void *data, const void *frame,
    shader_info.idx        = 1;
    shader_info.set_active = true;
 
-   video_shader_driver_use(&shader_info);
+   video_shader_driver_use(shader_info);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1293,7 +1293,7 @@ static bool gl_frame(void *data, const void *frame,
       shader_info.idx        = 0;
       shader_info.set_active = true;
 
-      video_shader_driver_use(&shader_info);
+      video_shader_driver_use(shader_info);
 
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
