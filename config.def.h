@@ -625,7 +625,12 @@ static bool back_as_menu_toggle_enable = true;
 #endif
 
 static bool all_users_control_menu = false;
+
+#if defined(ANDROID)
+static bool menu_swap_ok_cancel_buttons = true;
+#else
 static bool menu_swap_ok_cancel_buttons = false;
+#endif
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;
