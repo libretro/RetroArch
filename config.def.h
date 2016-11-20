@@ -625,6 +625,7 @@ static bool back_as_menu_toggle_enable = true;
 #endif
 
 static bool all_users_control_menu = false;
+static bool menu_swap_ok_cancel_buttons = false;
 
 /* Crop overscanned frames. */
 static const bool crop_overscan = true;

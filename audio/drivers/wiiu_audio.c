@@ -117,7 +117,7 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
    AXSetVoiceSrcType(ax->voice_r, AX_VOICE_SRC_TYPE_NONE);
    AXSetVoiceSrcRatio(ax->voice_l, 1.0f);
    AXSetVoiceSrcRatio(ax->voice_r, 1.0f);
-   AXVoiceVeData ve = {0x8000, 0};
+   AXVoiceVeData ve = {0xFFFF, 0};
    AXSetVoiceVe(ax->voice_l, &ve);
    AXSetVoiceVe(ax->voice_r, &ve);
    u32 mix[24] = {0};

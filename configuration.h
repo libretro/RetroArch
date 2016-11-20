@@ -296,6 +296,8 @@ typedef struct settings
       unsigned menu_toggle_gamepad_combo;
       bool back_as_menu_toggle_enable;
       bool all_users_control_menu;
+
+      bool menu_swap_ok_cancel_buttons;
 #if defined(VITA)
       bool backtouch_enable;
       bool backtouch_toggle;
@@ -453,14 +455,6 @@ typedef struct settings
 
    bool sort_savefiles_enable;
    bool sort_savestates_enable;
-
-   unsigned menu_ok_btn;
-   unsigned menu_cancel_btn;
-   unsigned menu_search_btn;
-   unsigned menu_default_btn;
-   unsigned menu_info_btn;
-   unsigned menu_scroll_down_btn;
-   unsigned menu_scroll_up_btn;
 
    char username[32];
 #ifdef HAVE_LANGEXTRA
