@@ -2539,7 +2539,7 @@ bool config_load_shader_preset(void)
       return true;
    }
 
-   for(idx = FILE_PATH_CGP_EXTENSION; idx < FILE_PATH_SLANGP_EXTENSION; idx++)
+   for(idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
    {
       config_file_t *new_conf = NULL;
 
