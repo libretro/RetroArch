@@ -137,15 +137,6 @@ bool video_shader_driver_deinit(void)
    return true;
 }
 
-bool video_shader_driver_set_parameter(struct uniform_info *param)
-{
-   if (!current_shader || !param)
-      return false;
-   current_shader->set_uniform_parameter(shader_data,
-         param, NULL);
-   return true;
-}
-
 /* Finds first suitable shader context driver. */
 bool video_shader_driver_init_first(void)
 {

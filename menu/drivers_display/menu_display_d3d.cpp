@@ -221,7 +221,7 @@ static void menu_display_d3d_draw_pipeline(void *data)
          uniform_param.lookup.ident      = "time";
          uniform_param.result.f.v0       = t;
 
-         video_shader_driver_set_parameter(&uniform_param);
+         video_shader_driver_set_parameter(uniform_param);
          break;
    }
 #endif

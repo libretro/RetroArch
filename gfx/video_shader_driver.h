@@ -277,7 +277,9 @@ bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader);
 
 bool video_shader_driver_deinit(void);
 
-bool video_shader_driver_set_parameter(struct uniform_info *param);
+#define video_shader_driver_set_parameter(param) \
+   if (current_shader && current_shader->set_uniform_parameter) \
+      current_shader->set_uniform_parameter(shader_data, &param, NULL)
 
 #define video_shader_driver_set_parameters(params) \
    if (current_shader && current_shader->set_params) \
