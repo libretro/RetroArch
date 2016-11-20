@@ -93,8 +93,8 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
-static const gfx_ctx_driver_t *current_video_context = NULL;
-static void *video_context_data                      = NULL;
+const gfx_ctx_driver_t *current_video_context = NULL;
+void *video_context_data                      = NULL;
 
 /**
  * find_video_context_driver_driver_index:
@@ -349,34 +349,6 @@ void video_context_driver_destroy(void)
    current_video_context = NULL;
 }
 
-bool video_context_driver_update_window_title(void)
-{
-   if (current_video_context && current_video_context->update_window_title)
-   {
-      current_video_context->update_window_title(video_context_data);
-      return true;
-   }
-   return false;
-}
-
-bool video_context_driver_swap_buffers(void)
-{
-   if (current_video_context && current_video_context->swap_buffers)
-   {
-      current_video_context->swap_buffers(video_context_data);
-      return true;
-   }
-   return false;
-}
-
-bool video_context_driver_focus(void)
-{
-   if (video_context_data && current_video_context->has_focus &&
-         current_video_context->has_focus(video_context_data))
-      return true;
-   return false;
-}
-
 bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
 {
    if (!video_context_data || !aspect)
@@ -386,13 +358,6 @@ bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
    *aspect->aspect = current_video_context->translate_aspect(
          video_context_data, aspect->width, aspect->height);
    return true;
-}
-
-bool video_context_driver_has_windowed(void)
-{
-   if (video_context_data && current_video_context->has_windowed(video_context_data))
-      return true;
-   return false;
 }
 
 void video_context_driver_free(void)
