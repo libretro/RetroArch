@@ -855,6 +855,14 @@ uint64_t input_menu_keys_pressed(void)
       BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_UP);
 
    if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_PAGEUP))
+      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_L);
+
+   if (current_input->input_state(current_input_data, binds, 0,
+      RETRO_DEVICE_KEYBOARD, 0, RETROK_PAGEDOWN))
+      BIT64_SET(ret, RETRO_DEVICE_ID_JOYPAD_R);
+
+   if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, settings->input.binds[0][RARCH_QUIT_KEY].key ))
       BIT64_SET(ret, RARCH_QUIT_KEY);
 
