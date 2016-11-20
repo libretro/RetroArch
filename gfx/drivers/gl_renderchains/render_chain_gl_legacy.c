@@ -337,7 +337,7 @@ void gl_renderchain_render(gl_t *gl,
       coords.handle_data  = NULL;
       coords.data         = &gl->coords;
 
-      video_shader_driver_set_coords(&coords);
+      video_shader_driver_set_coords(coords);
 
       mvp.data = gl;
       mvp.matrix = &gl->mvp;
@@ -413,7 +413,7 @@ void gl_renderchain_render(gl_t *gl,
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(&coords);
+   video_shader_driver_set_coords(coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp;

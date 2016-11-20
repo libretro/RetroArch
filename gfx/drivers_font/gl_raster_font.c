@@ -259,7 +259,7 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font, const video_coords_t
    coords_data.handle_data = NULL;
    coords_data.data        = coords;
 
-   video_shader_driver_set_coords(&coords_data);
+   video_shader_driver_set_coords(coords_data);
 
    mvp.data = font->gl;
    mvp.matrix = &font->gl->mvp_no_rot;

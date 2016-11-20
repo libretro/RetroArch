@@ -291,7 +291,9 @@ bool video_shader_driver_get_feedback_pass(unsigned *data);
 
 bool video_shader_driver_mipmap_input(unsigned *index);
 
-bool video_shader_driver_set_coords(video_shader_ctx_coords_t *coords);
+#define video_shader_driver_set_coords(coords) \
+   if (current_shader && current_shader->set_coords) \
+      current_shader->set_coords(coords.handle_data, shader_data, (const struct video_coords*)coords.data)
 
 bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
 

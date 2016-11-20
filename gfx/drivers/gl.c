@@ -244,7 +244,7 @@ static void gl_render_overlay(gl_t *gl)
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(&coords);
+   video_shader_driver_set_coords(coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp_no_rot;
@@ -520,7 +520,6 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
 {
    GLfloat xamt, yamt;
    bool set_coords = false;
-
 
    if ((width != gl->last_width[gl->tex_index] ||
             height != gl->last_height[gl->tex_index]) && gl->empty_buf)
@@ -1048,7 +1047,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(&coords);
+   video_shader_driver_set_coords(coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp_no_rot;
@@ -1247,7 +1246,7 @@ static bool gl_frame(void *data, const void *frame,
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_set_coords(&coords);
+   video_shader_driver_set_coords(coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp;
