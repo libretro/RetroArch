@@ -269,7 +269,6 @@ const gfx_ctx_driver_t *video_context_driver_init_first(void *data,
 bool video_context_driver_check_window(gfx_ctx_size_t *size_data)
 {
    if (     video_context_data 
-         && size_data 
          && current_video_context 
          && current_video_context->check_window)
    {
