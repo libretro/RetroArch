@@ -175,7 +175,7 @@ static void menu_display_d3d_draw(void *data)
       mat                         = (math_matrix_4x4*)
          menu_display_d3d_get_default_mvp();
    video_shader_driver_set_coords(d3d, draw->coords);
-   video_shader_driver_set_mvp(d3d, mat);
+   video_shader_driver_set_mvp(mat);
 #endif
 
    d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)

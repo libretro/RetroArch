@@ -234,17 +234,6 @@ bool video_shader_driver_info(video_shader_ctx_info_t *shader_info)
    return true;
 }
 
-bool video_shader_driver_set_mvp(video_shader_ctx_mvp_t *mvp)
-{
-   if (     mvp 
-         && mvp->matrix
-         && current_shader
-         && current_shader->set_mvp
-         && current_shader->set_mvp(mvp->data, shader_data, mvp->matrix))
-      return true;
-   return false;
-}
-
 bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter)
 {
    if (     filter

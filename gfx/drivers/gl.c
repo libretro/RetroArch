@@ -249,7 +249,7 @@ static void gl_render_overlay(gl_t *gl)
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp_no_rot;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -1053,7 +1053,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp_no_rot;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
 
    glEnable(GL_BLEND);
 
@@ -1252,7 +1252,7 @@ static bool gl_frame(void *data, const void *frame,
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

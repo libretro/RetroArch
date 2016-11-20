@@ -264,7 +264,7 @@ static void gl_raster_font_draw_vertices(gl_raster_t *font, const video_coords_t
    mvp.data = font->gl;
    mvp.matrix = &font->gl->mvp_no_rot;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }

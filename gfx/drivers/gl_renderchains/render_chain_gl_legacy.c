@@ -342,7 +342,7 @@ void gl_renderchain_render(gl_t *gl,
       mvp.data = gl;
       mvp.matrix = &gl->mvp;
 
-      video_shader_driver_set_mvp(&mvp);
+      video_shader_driver_set_mvp(mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -418,7 +418,7 @@ void gl_renderchain_render(gl_t *gl,
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp;
 
-   video_shader_driver_set_mvp(&mvp);
+   video_shader_driver_set_mvp(mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_info.coord;
