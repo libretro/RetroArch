@@ -45,11 +45,24 @@
 #include "menu_animation.h"
 #include "menu_display.h"
 
-
+#define PARTICLES_COUNT            100
 
 uintptr_t menu_display_white_texture;
 
 static enum menu_toggle_reason menu_display_toggle_reason = MENU_TOGGLE_REASON_NONE;
+
+static video_coord_array_t menu_disp_ca;
+
+static unsigned menu_display_framebuf_width      = 0;
+static unsigned menu_display_framebuf_height     = 0;
+static size_t menu_display_framebuf_pitch        = 0;
+static unsigned menu_display_header_height       = 0;
+static bool menu_display_msg_force               = false;
+static bool menu_display_font_alloc_framebuf     = false;
+static bool menu_display_framebuf_dirty          = false;
+static const uint8_t *menu_display_font_framebuf = NULL;
+static msg_queue_t *menu_display_msg_queue       = NULL;
+static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D
@@ -160,18 +173,6 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
          break;
    }
 }
-
-static video_coord_array_t menu_disp_ca;
-static unsigned menu_display_framebuf_width      = 0;
-static unsigned menu_display_framebuf_height     = 0;
-static size_t menu_display_framebuf_pitch        = 0;
-static unsigned menu_display_header_height       = 0;
-static bool menu_display_msg_force               = false;
-static bool menu_display_font_alloc_framebuf     = false;
-static bool menu_display_framebuf_dirty          = false;
-static const uint8_t *menu_display_font_framebuf = NULL;
-static msg_queue_t *menu_display_msg_queue       = NULL;
-static menu_display_ctx_driver_t *menu_disp      = NULL;
 
 void menu_display_blend_begin(void)
 {
@@ -778,8 +779,6 @@ void menu_display_push_quad(
 
    video_coord_array_append(ca, &coords, 3);
 }
-
-#define PARTICLES_COUNT            100
 
 void menu_display_snow(int width, int height)
 {

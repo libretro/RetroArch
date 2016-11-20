@@ -90,7 +90,7 @@ static menu_handle_t *menu_driver_data          = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata                      = NULL;
 
-bool menu_driver_is_binding_state()
+bool menu_driver_is_binding_state(void)
 {
    return menu_driver_is_binding;
 }
