@@ -132,7 +132,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Fusionner les sous-groupes";
       case MENU_ENUM_LABEL_VALUE_CONFIG_LOAD:
          return "Charger une configuration";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS:
          return "Configurations";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Sauver la config en quittant";

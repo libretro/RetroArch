@@ -2010,7 +2010,7 @@ static const char *menu_hash_to_str_chs_label_enum(enum msg_hash_enums msg)
          return "collection";
       case MENU_ENUM_LABEL_CONFIG_LOAD:
          return "configurations";
-      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_CONFIGURATIONS_SETTINGS:
          return "configuration_settings";
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          return "config_save_on_exit";
@@ -2090,7 +2090,7 @@ static const char *menu_hash_to_str_chs_label_enum(enum msg_hash_enums msg)
          return "deferred_archive_open_detect_core";
       case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
          return "deferred_audio_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST:
+      case MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_SETTINGS:
          return "deferred_configuration_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST:
          return "deferred_core_content_dirs_list";
@@ -3147,7 +3147,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "配置";
       case MENU_ENUM_LABEL_VALUE_CONFIG_LOAD:
          return "加载配置";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS:
          return "配置";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "退出时保存配置";

@@ -384,10 +384,6 @@ MSG_HASH(
       "Load Configuration..."
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-      "Configuration"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
       "Save Configuration on Exit"
       )
@@ -1614,7 +1610,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Change drivers for the system.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
       "Change settings for the achievements.")
-MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_SETTINGS,
       "Change settings for configurations, content overrides, core overrides, remaps and more.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "Change settings for the core.")

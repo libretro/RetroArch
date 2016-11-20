@@ -420,7 +420,7 @@ static int action_bind_sublabel_configurations_settings_list(
       char *s, size_t len)
 {
 
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS), len);
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CONFIGURATIONS_SETTINGS), len);
    return 0;
 }
 

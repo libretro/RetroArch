@@ -2908,6 +2908,13 @@ static int menu_displaylist_parse_configurations_list(
          MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
          MENU_SETTING_ACTION, 0, 0);
 
+/* You may want to check for show_advanced_settings here */
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG),
+         msg_hash_to_str(MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG),
+         MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG,
+         MENU_SETTING_ACTION, 0, 0);
+
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS),
          msg_hash_to_str(MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS),

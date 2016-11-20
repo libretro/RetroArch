@@ -1589,7 +1589,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Cerrar";
       case MENU_ENUM_LABEL_VALUE_CONFIG_LOAD:
          return "Cargar configuración";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS:
          return "Configuración";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Guardar configuración al salir";

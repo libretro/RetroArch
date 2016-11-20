@@ -1270,7 +1270,7 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Nessun contatore di performance.";
       case MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS:
          return "Driver";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS:
          return "Configurazione";
       case MENU_ENUM_LABEL_VALUE_CORE_SETTINGS:
          return "Core";

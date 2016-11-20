@@ -510,7 +510,7 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
          return "Untergruppen einklappen";
       case MENU_ENUM_LABEL_VALUE_CONFIG_LOAD:
          return "Lade Konfigurationsdatei"; /* FIXME/UPDATE */
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS:
          return "Konfigurations-Einstellungen";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Speichere Konfiguration beim Beenden";
