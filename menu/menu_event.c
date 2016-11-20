@@ -185,6 +185,7 @@ void menu_event_keyboard_set(bool down, enum retro_key key)
 
 unsigned menu_event(uint64_t input, uint64_t trigger_input)
 {
+   unsigned menu_ok_btn, menu_cancel_btn;
    menu_animation_ctx_delta_t delta;
    float delta_time;
    /* Used for key repeat */
@@ -347,9 +348,10 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
       trigger_input = 0;
    }
-   unsigned menu_ok_btn = settings->input.menu_swap_ok_cancel_buttons ? 
+
+   menu_ok_btn     = settings->input.menu_swap_ok_cancel_buttons ? 
       RETRO_DEVICE_ID_JOYPAD_A: RETRO_DEVICE_ID_JOYPAD_B;
-   unsigned menu_cancel_btn = settings->input.menu_swap_ok_cancel_buttons ? 
+   menu_cancel_btn = settings->input.menu_swap_ok_cancel_buttons ? 
       RETRO_DEVICE_ID_JOYPAD_B: RETRO_DEVICE_ID_JOYPAD_A;
 
    if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))

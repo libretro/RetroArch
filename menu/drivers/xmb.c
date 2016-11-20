@@ -833,9 +833,10 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
-   char         *tmp    = NULL;
-   settings_t *settings = config_get_ptr();
-   xmb_handle_t *xmb    = (xmb_handle_t*)data;
+   char             *tmp    = NULL;
+   char *scrub_char_pointer = NULL;
+   settings_t     *settings = config_get_ptr();
+   xmb_handle_t     *xmb    = (xmb_handle_t*)data;
    if (!xmb)
       return;
 
@@ -865,7 +866,6 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters in the entry name with underscores
     */
-   char *scrub_char_pointer = NULL;
    tmp = strdup(entry.path);
    
    while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
