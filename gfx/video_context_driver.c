@@ -332,10 +332,8 @@ bool video_context_driver_bind_hw_render(bool *enable)
 
 void video_context_driver_make_current(bool release)
 {
-   if (!current_video_context || !current_video_context->make_current)
-      return;
-
-   current_video_context->make_current(release);
+   if (current_video_context && current_video_context->make_current)
+      current_video_context->make_current(release);
 }
 
 bool video_context_driver_set(const gfx_ctx_driver_t *data)
@@ -353,27 +351,30 @@ void video_context_driver_destroy(void)
 
 bool video_context_driver_update_window_title(void)
 {
-   if (!current_video_context || !current_video_context->update_window_title)
-      return false;
-   current_video_context->update_window_title(video_context_data);
-   return true;
+   if (current_video_context && current_video_context->update_window_title)
+   {
+      current_video_context->update_window_title(video_context_data);
+      return true;
+   }
+   return false;
 }
 
 bool video_context_driver_swap_buffers(void)
 {
-   if (!current_video_context || !current_video_context->swap_buffers)
-      return false;
-   current_video_context->swap_buffers(video_context_data);
-   return true;
+   if (current_video_context && current_video_context->swap_buffers)
+   {
+      current_video_context->swap_buffers(video_context_data);
+      return true;
+   }
+   return false;
 }
 
 bool video_context_driver_focus(void)
 {
-   if (!video_context_data || !current_video_context->has_focus)
-      return false;
-   if (!current_video_context->has_focus(video_context_data))
-      return false;
-   return true;
+   if (video_context_data && current_video_context->has_focus &&
+         current_video_context->has_focus(video_context_data))
+      return true;
+   return false;
 }
 
 bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
@@ -389,11 +390,9 @@ bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect)
 
 bool video_context_driver_has_windowed(void)
 {
-   if (!video_context_data)
-      return false;
-   if (!current_video_context->has_windowed(video_context_data))
-      return false;
-   return true;
+   if (video_context_data && current_video_context->has_windowed(video_context_data))
+      return true;
+   return false;
 }
 
 void video_context_driver_free(void)
