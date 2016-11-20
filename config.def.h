@@ -626,7 +626,7 @@ static bool back_as_menu_toggle_enable = true;
 
 static bool all_users_control_menu = false;
 
-#if defined(ANDROID)
+#if defined(ANDROID) || defined(_WIN32)
 static bool menu_swap_ok_cancel_buttons = true;
 #else
 static bool menu_swap_ok_cancel_buttons = false;

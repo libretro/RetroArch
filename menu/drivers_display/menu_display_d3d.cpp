@@ -23,7 +23,6 @@
 
 #include "../menu_display.h"
 
-#include "../../config.def.h"
 #include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
