@@ -3200,6 +3200,33 @@ bool config_save_overrides(int override_type)
          }
       }
 
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char cfg[64];
+
+         cfg[0] = '\0';
+         if (settings->input.device[i] != overrides->input.device[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+            config_set_int(conf, cfg, overrides->input.device[i]);
+         }
+         if (settings->input.joypad_map[i] != overrides->input.joypad_map[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
+            config_set_int(conf, cfg, overrides->input.joypad_map[i]);
+         }
+         if (settings->input.libretro_device[i] != overrides->input.libretro_device[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
+            config_set_int(conf, cfg, overrides->input.libretro_device[i]);
+         }
+         if (settings->input.analog_dpad_mode[i] != overrides->input.analog_dpad_mode[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
+            config_set_int(conf, cfg, overrides->input.analog_dpad_mode[i]);
+         }
+      }
+
       ret = false;
 
       switch (override_type)
