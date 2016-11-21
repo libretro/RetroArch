@@ -31,6 +31,14 @@
    cbs->action_sublabel_ident = #name;
 #endif
 
+#define default_sublabel_macro(func_name, lbl) \
+  static int (func_name)(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len) \
+{ \
+   strlcpy(s, msg_hash_to_str(lbl), len); \
+   return 0; \
+}
+
+
 static int action_bind_sublabel_generic(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -40,359 +48,52 @@ static int action_bind_sublabel_generic(
    return 0;
 }
 
-static int action_bind_sublabel_driver_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_retro_achievements_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_recording_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_core_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CORE_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_information_list_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST), len);
-   return 0;
-}
-
-static int action_bind_sublabel_cheevos_hardcore_mode_enable(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE), len);
-   return 0;
-}
-
-static int action_bind_sublabel_menu_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_MENU_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_video_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_suspend_screensaver_enable(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE), len);
-   return 0;
-}
-
-static int action_bind_sublabel_audio_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_input_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_wifi_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_WIFI_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_services_settings_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_SERVICES_SETTINGS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_ssh_enable(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_SSH_ENABLE), len);
-   return 0;
-}
-
-static int action_bind_sublabel_samba_enable(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_SAMBA_ENABLE), len);
-   return 0;
-}
-
-static int action_bind_sublabel_bluetooth_enable(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE), len);
-   return 0;
-}
-
-static int action_bind_sublabel_user_language(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_USER_LANGUAGE), len);
-   return 0;
-}
-
-static int action_bind_sublabel_max_swapchain_images(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES), len);
-   return 0;
-}
-
-static int action_bind_sublabel_online_updater(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ONLINE_UPDATER), len);
-   return 0;
-}
-
-static int action_bind_sublabel_fps_show(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_FPS_SHOW), len);
-   return 0;
-}
-
-static int action_bind_sublabel_netplay_settings(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_NETPLAY), len);
-   return 0;
-}
-
-static int action_bind_sublabel_user_bind_settings(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_USER_BINDS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_input_hotkey_settings(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_add_content_list(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST), len);
-   return 0;
-}
-
-static int action_bind_sublabel_video_frame_delay(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY), len);
-   return 0;
-}
-
-static int action_bind_sublabel_video_black_frame_insertion(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION), len);
-   return 0;
-}
-
-static int action_bind_sublabel_systeminfo_cpu_cores(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CPU_CORES), len);
-   return 0;
-}
-
-static int action_bind_sublabel_toggle_gamepad_combo(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO), len);
-   return 0;
-}
-
-static int action_bind_sublabel_show_hidden_files(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES), len);
-   return 0;
-}
-
-static int action_bind_sublabel_log_verbosity(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_LOG_VERBOSITY), len);
-   return 0;
-}
-
-static int action_bind_sublabel_video_monitor_index(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX), len);
-   return 0;
-}
-
-static int action_bind_sublabel_video_refresh_rate_auto(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO), len);
-   return 0;
-}
-
-static int action_bind_sublabel_video_hard_sync(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC), len);
-   return 0;
-}
-
-static int action_bind_sublabel_video_hard_sync_frames(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES), len);
-   return 0;
-}
-
-static int action_bind_sublabel_video_threaded(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_THREADED), len);
-   return 0;
-}
+default_sublabel_macro(action_bind_sublabel_driver_settings_list,             MENU_ENUM_SUBLABEL_DRIVER_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_retro_achievements_settings_list, MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_recording_settings_list,       MENU_ENUM_SUBLABEL_RECORDING_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_core_settings_list,            MENU_ENUM_SUBLABEL_CORE_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_information_list_list,         MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST)
+default_sublabel_macro(action_bind_sublabel_cheevos_hardcore_mode_enable,  MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE)
+default_sublabel_macro(action_bind_sublabel_menu_settings_list,            MENU_ENUM_SUBLABEL_MENU_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_video_settings_list,           MENU_ENUM_SUBLABEL_VIDEO_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_suspend_screensaver_enable,    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE)
+default_sublabel_macro(action_bind_sublabel_audio_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_input_settings_list,           MENU_ENUM_SUBLABEL_INPUT_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_wifi_settings_list,            MENU_ENUM_SUBLABEL_WIFI_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_services_settings_list,        MENU_ENUM_SUBLABEL_SERVICES_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_ssh_enable,                    MENU_ENUM_SUBLABEL_SSH_ENABLE)
+default_sublabel_macro(action_bind_sublabel_samba_enable,                  MENU_ENUM_SUBLABEL_SAMBA_ENABLE )
+default_sublabel_macro(action_bind_sublabel_bluetooth_enable,              MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE )
+default_sublabel_macro(action_bind_sublabel_user_language,                 MENU_ENUM_SUBLABEL_USER_LANGUAGE)
+default_sublabel_macro(action_bind_sublabel_max_swapchain_images,          MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES )
+default_sublabel_macro(action_bind_sublabel_online_updater,                MENU_ENUM_SUBLABEL_ONLINE_UPDATER)
+default_sublabel_macro(action_bind_sublabel_fps_show,                      MENU_ENUM_SUBLABEL_FPS_SHOW)
+default_sublabel_macro(action_bind_sublabel_netplay_settings,              MENU_ENUM_SUBLABEL_NETPLAY)
+default_sublabel_macro(action_bind_sublabel_user_bind_settings,            MENU_ENUM_SUBLABEL_INPUT_USER_BINDS)
+default_sublabel_macro(action_bind_sublabel_input_hotkey_settings,         MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS)
+default_sublabel_macro(action_bind_sublabel_add_content_list,              MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST)
+default_sublabel_macro(action_bind_sublabel_video_frame_delay,             MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY)
+default_sublabel_macro(action_bind_sublabel_video_black_frame_insertion,   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION)
+default_sublabel_macro(action_bind_sublabel_systeminfo_cpu_cores,          MENU_ENUM_SUBLABEL_CPU_CORES)
+default_sublabel_macro(action_bind_sublabel_toggle_gamepad_combo,          MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO)
+default_sublabel_macro(action_bind_sublabel_show_hidden_files,             MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES)
+default_sublabel_macro(action_bind_sublabel_log_verbosity,                 MENU_ENUM_SUBLABEL_LOG_VERBOSITY)
+default_sublabel_macro(action_bind_sublabel_video_monitor_index,           MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX)
+default_sublabel_macro(action_bind_sublabel_video_refresh_rate_auto,       MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO)
+default_sublabel_macro(action_bind_sublabel_video_hard_sync,               MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC)
+default_sublabel_macro(action_bind_sublabel_video_hard_sync_frames,        MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES)
+default_sublabel_macro(action_bind_sublabel_video_threaded,                MENU_ENUM_SUBLABEL_VIDEO_THREADED)
+default_sublabel_macro(action_bind_sublabel_config_save_on_exit,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT)
+default_sublabel_macro(action_bind_sublabel_video_shared_context,          MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT)
+default_sublabel_macro(action_bind_sublabel_audio_latency,                 MENU_ENUM_SUBLABEL_AUDIO_LATENCY)
+default_sublabel_macro(action_bind_sublabel_audio_rate_control_delta,      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA)
+default_sublabel_macro(action_bind_sublabel_audio_mute,                    MENU_ENUM_SUBLABEL_AUDIO_MUTE)
+default_sublabel_macro(action_bind_sublabel_camera_allow,                  MENU_ENUM_SUBLABEL_CAMERA_ALLOW)
+default_sublabel_macro(action_bind_sublabel_location_allow,                MENU_ENUM_SUBLABEL_LOCATION_ALLOW)
+default_sublabel_macro(action_bind_sublabel_input_max_users,               MENU_ENUM_SUBLABEL_INPUT_MAX_USERS)
+default_sublabel_macro(action_bind_sublabel_input_poll_type_behavior,      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR)
+default_sublabel_macro(action_bind_sublabel_input_all_users_control_menu,  MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU)
+default_sublabel_macro(action_bind_sublabel_audio_volume,                  MENU_ENUM_SUBLABEL_AUDIO_VOLUME)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -410,127 +111,6 @@ static int action_bind_sublabel_cheevos_entry(
 
    strlcpy(s, desc_info.s, len);
 #endif
-   return 0;
-}
-
-static int action_bind_sublabel_config_save_on_exit(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT), len);
-   return 0;
-}
-
-static int action_bind_sublabel_video_shared_context(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT), len);
-   return 0;
-}
-
-static int action_bind_sublabel_audio_latency(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_AUDIO_LATENCY), len);
-   return 0;
-}
-
-static int action_bind_sublabel_audio_rate_control_delta(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA), len);
-   return 0;
-}
-
-static int action_bind_sublabel_audio_mute(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_AUDIO_MUTE), len);
-   return 0;
-}
-
-static int action_bind_sublabel_camera_allow(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CAMERA_ALLOW), len);
-   return 0;
-}
-
-static int action_bind_sublabel_location_allow(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_LOCATION_ALLOW), len);
-   return 0;
-}
-
-static int action_bind_sublabel_input_max_users(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_MAX_USERS), len);
-   return 0;
-}
-
-static int action_bind_sublabel_input_poll_type_behavior(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR), len);
-   return 0;
-}
-
-static int action_bind_sublabel_input_all_users_control_menu(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU), len);
-   return 0;
-}
-
-static int action_bind_sublabel_audio_volume(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-
-   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_AUDIO_VOLUME), len);
    return 0;
 }
 
