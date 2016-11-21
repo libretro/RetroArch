@@ -38,7 +38,9 @@
 default_sublabel_macro(action_bind_sublabel_driver_settings_list,             MENU_ENUM_SUBLABEL_DRIVER_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_retro_achievements_settings_list, MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_saving_settings_list,          MENU_ENUM_SUBLABEL_SAVING_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_logging_settings_list,         MENU_ENUM_SUBLABEL_LOGGING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_playlist_settings_list,        MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_network_settings_list,         MENU_ENUM_SUBLABEL_NETWORK_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_recording_settings_list,       MENU_ENUM_SUBLABEL_RECORDING_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_core_settings_list,            MENU_ENUM_SUBLABEL_CORE_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_information_list_list,         MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST)
@@ -257,8 +259,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SAVING_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_saving_settings_list);
             break;
+         case MENU_ENUM_LABEL_LOGGING_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_logging_settings_list);
+            break;
          case MENU_ENUM_LABEL_PLAYLIST_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_settings_list);
+            break;
+         case MENU_ENUM_LABEL_NETWORK_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_network_settings_list);
             break;
          case MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_retro_achievements_settings_list);

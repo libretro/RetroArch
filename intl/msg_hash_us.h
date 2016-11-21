@@ -1626,8 +1626,12 @@ MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
       "Change settings for the recording.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
       "Change settings for the saving.")
+MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+      "Change settings for the logging.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
       "Change settings for the playlists.")
+MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+      "Change settings for the network.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
       "Scan contents and add to the database.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
