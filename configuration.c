@@ -1627,6 +1627,28 @@ static void config_read_keybinds_conf(config_file_t *conf)
       read_keybinds_user(conf, i);
 }
 
+static bool check_shader_compatibility(enum file_path_enum enum_idx)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (string_is_equal("vulkan", settings->video.driver))
+   {
+      if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
+         return false;
+      return true;
+   }
+
+   if (string_is_equal("gl", settings->video.driver) || 
+       string_is_equal("d3d9", settings->video.driver))
+   {
+      if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
+         return false;
+      return true;
+   }
+
+   return false;
+}
+
 #if 0
 static bool config_read_keybinds(const char *path)
 {
@@ -2150,6 +2172,19 @@ static bool config_load_file(const char *path, bool set_defaults,
    config_read_keybinds_conf(conf);
 
    ret = true;
+   
+   for(i = FILE_PATH_CGP_EXTENSION; i <= FILE_PATH_SLANGP_EXTENSION; i++)
+   {
+      if(strstr(file_path_str((enum file_path_enum)(i)), path_get_extension(settings->path.shader)))
+      {
+         if (!check_shader_compatibility(i))
+         {
+            RARCH_LOG("Incompatible shader for backend %s, clearing...\n", settings->video.driver);
+            settings->path.shader[0] = '\0';
+            break;
+         }
+      }
+   }
 
 end:
    if (conf)
@@ -2434,28 +2469,6 @@ bool config_load_remap(void)
    return false;
 }
 
-static bool check_shader_compatibility(enum file_path_enum enum_idx)
-{
-   settings_t *settings = config_get_ptr();
-
-   if (string_is_equal("vulkan", settings->video.driver))
-   {
-      if (enum_idx != FILE_PATH_SLANGP_EXTENSION)
-         return false;
-      return true;
-   }
-
-   if (string_is_equal("gl", settings->video.driver) || 
-       string_is_equal("d3d9", settings->video.driver))
-   {
-      if (enum_idx == FILE_PATH_SLANGP_EXTENSION)
-         return false;
-      return true;
-   }
-
-   return false;
-}
-
 /**
  * config_load_shader_preset:
  *
@@ -2502,7 +2515,7 @@ bool config_load_shader_preset(void)
 
    RARCH_LOG("Shaders: preset directory: %s\n", shader_directory);
 
-   for(idx = FILE_PATH_CGP_EXTENSION; idx < FILE_PATH_SLANGP_EXTENSION; idx++)
+   for(idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
    {
       config_file_t *new_conf = NULL;
 
@@ -2539,7 +2552,7 @@ bool config_load_shader_preset(void)
       return true;
    }
 
-   for(idx = FILE_PATH_CGP_EXTENSION; idx < FILE_PATH_SLANGP_EXTENSION; idx++)
+   for(idx = FILE_PATH_CGP_EXTENSION; idx <= FILE_PATH_SLANGP_EXTENSION; idx++)
    {
       config_file_t *new_conf = NULL;
 
@@ -3197,6 +3210,33 @@ bool config_save_overrides(int override_type)
                   path_overrides[i].ident, path_overrides[i].ptr);
             config_set_path(conf, path_overrides[i].ident,
                   path_overrides[i].ptr);
+         }
+      }
+
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char cfg[64];
+
+         cfg[0] = '\0';
+         if (settings->input.device[i] != overrides->input.device[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_device_p%u", i + 1);
+            config_set_int(conf, cfg, overrides->input.device[i]);
+         }
+         if (settings->input.joypad_map[i] != overrides->input.joypad_map[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_player%u_joypad_index", i + 1);
+            config_set_int(conf, cfg, overrides->input.joypad_map[i]);
+         }
+         if (settings->input.libretro_device[i] != overrides->input.libretro_device[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
+            config_set_int(conf, cfg, overrides->input.libretro_device[i]);
+         }
+         if (settings->input.analog_dpad_mode[i] != overrides->input.analog_dpad_mode[i])
+         {
+            snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
+            config_set_int(conf, cfg, overrides->input.analog_dpad_mode[i]);
          }
       }
 
