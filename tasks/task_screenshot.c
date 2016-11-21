@@ -58,7 +58,8 @@
 
 #include "tasks_internal.h"
 
-typedef struct {
+typedef struct
+{
 #ifdef _XBOX1
    D3DSurface *surf;
 #endif
@@ -85,9 +86,9 @@ typedef struct {
 static void task_screenshot_handler(retro_task_t *task)
 {
    screenshot_task_state_t *state = (screenshot_task_state_t*)task->state;
-   char *msg = NULL;
-   bool is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool ret = false;
+   char *msg                      = NULL;
+   bool is_paused                 = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+   bool ret                       = false;
 
    if (task->progress == 100)
    {
@@ -175,16 +176,19 @@ static bool screenshot_dump(
       unsigned height,
       int pitch, bool bgr24, void *userbuf)
 {
+#ifdef _XBOX1
+   d3d_video_t *d3d               = (d3d_video_t*)video_driver_get_ptr(true);
+#endif
    settings_t *settings           = config_get_ptr();
-   retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t *task             = (retro_task_t*)calloc(1, sizeof(*task));
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
 
-   state->bgr24 = bgr24;
-   state->height = height;
-   state->width = width;
-   state->pitch = pitch;
-   state->frame = frame;
+   state->bgr24   = bgr24;
+   state->height  = height;
+   state->width   = width;
+   state->pitch   = pitch;
+   state->frame   = frame;
    state->userbuf = userbuf;
 
    if (settings->auto_screenshot_filename)
@@ -196,10 +200,7 @@ static bool screenshot_dump(
    fill_pathname_join(state->filename, folder, state->shotname, sizeof(state->filename));
 
 #ifdef _XBOX1
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(true);
-
    d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &state->surf);
-
 #elif defined(HAVE_RPNG)
    state->out_buffer = (uint8_t*)malloc(width * height * 3);
    if (!state->out_buffer)
@@ -211,10 +212,10 @@ static bool screenshot_dump(
    }
 #endif
 
-   task->type = TASK_TYPE_BLOCKING;
-   task->state = state;
+   task->type    = TASK_TYPE_BLOCKING;
+   task->state   = state;
    task->handler = task_screenshot_handler;
-   task->title = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+   task->title   = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
    return true;
@@ -270,8 +271,8 @@ error:
 
 static bool take_screenshot_raw(const char *name_base, void *userbuf)
 {
-   unsigned width, height;
    size_t pitch;
+   unsigned width, height;
    char screenshot_path[PATH_MAX_LENGTH];
    const void *data                      = NULL;
    settings_t *settings                  = config_get_ptr();
@@ -304,7 +305,8 @@ static bool take_screenshot_choice(const char *name_base)
    settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
-   if (string_is_empty(settings->directory.screenshot) && (!*name_base))
+   if (      string_is_empty(settings->directory.screenshot) 
+         && (!string_is_empty(name_base)))
       return false;
 
    if (video_driver_supports_viewport_read())
@@ -325,8 +327,8 @@ static bool take_screenshot_choice(const char *name_base)
 
    if (video_driver_supports_read_frame_raw())
    {
-      unsigned old_width, old_height;
       size_t old_pitch;
+      unsigned old_width, old_height;
       bool ret             = false;
       void *frame_data     = NULL;
       const void* old_data = NULL;
