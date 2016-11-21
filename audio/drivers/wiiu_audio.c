@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2014-2016 - Ali Bouhlel
+ *  Copyright (C)      2016 - FIX94
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -61,11 +62,6 @@ typedef struct
 #define AX_AUDIO_RATE               48000
 //#define ax_audio_ticks_to_samples(ticks)     (((ticks) * 64) / 82875)
 //#define ax_audio_samples_to_ticks(samples)   (((samples) * 82875) / 64)
-
-static inline int ax_diff(int v1, int v2)
-{
-   return ((v1 - v2) << (32u - AX_AUDIO_COUNT_SHIFT)) >> (32u - AX_AUDIO_COUNT_SHIFT);
-}
 
 AXResult ax_aux_callback(void* data, ax_audio_t* ax)
 {
@@ -165,38 +161,31 @@ static void ax_audio_free(void* data)
    AXQuit();
 }
 
-static void ax_audio_buffer_write(ax_audio_t* ax, const uint16_t* src, int count)
+static bool ax_audio_stop(void* data)
 {
-   uint16_t* dst_l = ax->buffer_l + ax->pos;
-   uint16_t* dst_r = ax->buffer_r + ax->pos;
-   uint16_t* dst_l_max = ax->buffer_l + AX_AUDIO_COUNT;
+   ax_audio_t* ax = (ax_audio_t*)data;
 
-   while(count-- && (dst_l < dst_l_max))
-   {
-      *dst_l++ = *src++;
-      *dst_r++ = *src++;
-   }
-   DCFlushRange(ax->buffer_l + ax->pos, (dst_l - ax->pos - ax->buffer_l) << 1);
-   DCFlushRange(ax->buffer_r + ax->pos, (dst_r - ax->pos - ax->buffer_r) << 1);
-
-   if(++count)
-   {
-      dst_l = ax->buffer_l;
-      dst_r = ax->buffer_r;
-
-      while(count-- && (dst_l < dst_l_max))
-      {
-         *dst_l++ = *src++;
-         *dst_r++ = *src++;
-      }
-      DCFlushRange(ax->buffer_l, (dst_l - ax->buffer_l) << 1);
-      DCFlushRange(ax->buffer_r, (dst_r - ax->buffer_r) << 1);
-   }
-   ax->pos = dst_l - ax->buffer_l;
-   ax->pos &= AX_AUDIO_COUNT_MASK;
-
+   AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
+   return true;
 }
-static bool ax_audio_start(void* data);
+
+static bool ax_audio_start(void* data)
+{
+   ax_audio_t* ax = (ax_audio_t*)data;
+
+   /* Prevents restarting audio when the menu
+    * is toggled off on shutdown */
+
+   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
+      return true;
+
+   //set back to playing on enough buffered data
+   if(ax->written > AX_AUDIO_SAMPLE_MIN)
+      AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
+
+   return true;
+}
+
 static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
 {
    static struct retro_perf_counter ax_audio_write_perf = {0};
@@ -204,15 +193,11 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    const uint16_t* src = buf;
    int i;
 
-   performance_counter_init(&ax_audio_write_perf, "ax_audio_write");
-   performance_counter_start(&ax_audio_write_perf);
+   if(!size || (size & 0x3))
+      return 0;
 
    int count = size >> 2;
-   if(count == 0 || (size % 4))
-   {
-      count = 0;
-      goto wiiu_audio_end;
-   }
+
    if(count > AX_AUDIO_COUNT)
       count = AX_AUDIO_COUNT;
 
@@ -220,10 +205,8 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    if (ax->nonblocking)
    {
       if(countAvail < AX_AUDIO_SAMPLE_COUNT)
-	  {
-	     count = 0;
-	     goto wiiu_audio_end;
-	  }
+         return 0;
+
       if(count > countAvail)
          count = countAvail;
    }
@@ -236,7 +219,9 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       } while(AXIsMultiVoiceRunning(ax->mvoice) && countAvail < count);
    }
 
-//   ax_audio_buffer_write(ax, buf, count);
+   performance_counter_init(&ax_audio_write_perf, "ax_audio_write");
+   performance_counter_start(&ax_audio_write_perf);
+
    //write in new data
    size_t startPos = ax->pos;
    int flushP2needed = 0;
@@ -279,41 +264,15 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       ax_audio_start(ax);
    }
 
-wiiu_audio_end:
    performance_counter_stop(&ax_audio_write_perf);
 
    return (count << 2);
-}
-
-static bool ax_audio_stop(void* data)
-{
-   ax_audio_t* ax = (ax_audio_t*)data;
-
-   AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
-   return true;
 }
 
 static bool ax_audio_alive(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
    return AXIsMultiVoiceRunning(ax->mvoice);
-}
-
-static bool ax_audio_start(void* data)
-{
-   ax_audio_t* ax = (ax_audio_t*)data;
-
-   /* Prevents restarting audio when the menu
-    * is toggled off on shutdown */
-
-   if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
-      return true;
-
-   //set back to playing on enough buffered data
-   if(ax->written > AX_AUDIO_SAMPLE_MIN)
-      AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
-
-   return true;
 }
 
 static void ax_audio_set_nonblock_state(void* data, bool state)
