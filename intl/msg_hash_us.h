@@ -2084,5 +2084,5 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-      "Allows any user to control the menu. When disabled, only User 1 can control the menu."
+      "Allows any user to control the menu. If disabled, only User 1 can control the menu."
       )
