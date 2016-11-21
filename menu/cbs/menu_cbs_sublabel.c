@@ -446,6 +446,17 @@ static int action_bind_sublabel_audio_latency(
    return 0;
 }
 
+static int action_bind_sublabel_audio_rate_control_delta(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA), len);
+   return 0;
+}
+
 static int action_bind_sublabel_audio_mute(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -469,6 +480,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_rate_control_delta);
+            break;
          case MENU_ENUM_LABEL_AUDIO_MUTE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mute);
             break;
