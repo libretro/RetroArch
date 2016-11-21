@@ -582,15 +582,12 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    printf("\rfps: %8.8f frames : %5i", fps, wiiu->frames++);
    fflush(stdout);
 
-
    if (wiiu->should_resize)
       wiiu_gfx_update_viewport(wiiu);
-
 
    GX2ClearColor(&wiiu->color_buffer, 0.0f, 0.0f, 0.0f, 1.0f);
    /* can't call GX2ClearColor after GX2SetContextState for whatever reason */
    GX2SetContextState(wiiu->ctx_state);
-
 
    if(frame)
    {
@@ -655,6 +652,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
       GX2SetPixelSampler(&wiiu->sampler_linear, wiiu->shader->sampler.location);
 
       GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
+      GX2DrawDone();
    }
 
    GX2CopyColorBufferToScanBuffer(&wiiu->color_buffer, GX2_SCAN_TARGET_DRC);

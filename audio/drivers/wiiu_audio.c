@@ -25,7 +25,7 @@
 #include <coreinit/time.h>
 #include <coreinit/cache.h>
 #include <coreinit/thread.h>
-
+#include <coreinit/spinlock.h>
 
 #include "wiiu/wiiu_dbg.h"
 #include "wiiu/system/memory.h"
@@ -44,16 +44,20 @@ typedef struct
    bool nonblocking;
 
    uint32_t pos;
+   uint32_t written;
+   OSSpinLock spinlock;
 } ax_audio_t;
 
-#define AX_AUDIO_COUNT_SHIFT        13u
+//4096 samples main buffer, 85ms total
+#define AX_AUDIO_COUNT_SHIFT        12u
 #define AX_AUDIO_COUNT              (1u << AX_AUDIO_COUNT_SHIFT)
 #define AX_AUDIO_COUNT_MASK         (AX_AUDIO_COUNT - 1u)
 #define AX_AUDIO_SIZE               (AX_AUDIO_COUNT << 1u)
 #define AX_AUDIO_SIZE_MASK          (AX_AUDIO_SIZE - 1u)
 
-//#define AX_AUDIO_FRAME_COUNT        144
-#define AX_AUDIO_FRAME_COUNT        160
+#define AX_AUDIO_SAMPLE_COUNT       144 //3ms
+#define AX_AUDIO_SAMPLE_MIN         (AX_AUDIO_SAMPLE_COUNT * 6) //18ms
+#define AX_AUDIO_SAMPLE_LOAD        (AX_AUDIO_SAMPLE_COUNT * 8) //24ms
 #define AX_AUDIO_RATE               48000
 //#define ax_audio_ticks_to_samples(ticks)     (((ticks) * 64) / 82875)
 //#define ax_audio_samples_to_ticks(samples)   (((samples) * 82875) / 64)
@@ -65,15 +69,16 @@ static inline int ax_diff(int v1, int v2)
 
 AXResult ax_aux_callback(void* data, ax_audio_t* ax)
 {
-   AXVoiceOffsets offsets;
-   AXGetVoiceOffsets(ax->voice_l, &offsets);
-
-   if (ax_diff(offsets.currentOffset, ax->pos) < 0)
+   OSUninterruptibleSpinLock_Acquire(&ax->spinlock);
+   //buffer underrun, stop playback to let if fill up
+   if(ax->written < AX_AUDIO_SAMPLE_MIN)
    {
       AXSetVoiceState(ax->voice_l, AX_VOICE_STATE_STOPPED);
       AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_STOPPED);
    }
-
+   else //all good, play back frame
+      ax->written -= AX_AUDIO_SAMPLE_COUNT;
+   OSUninterruptibleSpinLock_Release(&ax->spinlock);
    return AX_RESULT_SUCCESS;
 }
 
@@ -99,6 +104,10 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
 
    ax->buffer_l = MEM1_alloc(AX_AUDIO_SIZE, 0x100);
    ax->buffer_r = MEM1_alloc(AX_AUDIO_SIZE, 0x100);
+   memset(ax->buffer_l,0,AX_AUDIO_SIZE);
+   memset(ax->buffer_r,0,AX_AUDIO_SIZE);
+   DCFlushRange(ax->buffer_l,AX_AUDIO_SIZE);
+   DCFlushRange(ax->buffer_r,AX_AUDIO_SIZE);
 
    AXVoiceOffsets offsets;
 
@@ -133,10 +142,13 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
    AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_STOPPED);
 
    ax->pos = 0;
+   ax->written = 0;
 
    config_get_ptr()->audio.out_rate = AX_AUDIO_RATE;
 
    AXRegisterAuxCallback(AX_DEVICE_TYPE_DRC, 0, 0, (AXAuxCallback)ax_aux_callback, ax);
+
+   OSInitSpinLock(&ax->spinlock);
 
    return ax;
 }
@@ -184,7 +196,7 @@ static void ax_audio_buffer_write(ax_audio_t* ax, const uint16_t* src, int count
    ax->pos &= AX_AUDIO_COUNT_MASK;
 
 }
-
+static bool ax_audio_start(void* data);
 static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
 {
    static struct retro_perf_counter ax_audio_write_perf = {0};
@@ -196,48 +208,79 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    performance_counter_start(&ax_audio_write_perf);
 
    int count = size >> 2;
-   AXVoiceOffsets offsets;
-   AXGetVoiceOffsets(ax->voice_l, &offsets);
-
-   if((((offsets.currentOffset  - ax->pos) & AX_AUDIO_COUNT_MASK) < (AX_AUDIO_COUNT >> 2)) ||
-      (((ax->pos - offsets.currentOffset ) & AX_AUDIO_COUNT_MASK) < (AX_AUDIO_COUNT >> 4)) ||
-      (((offsets.currentOffset  - ax->pos) & AX_AUDIO_COUNT_MASK) < (size >> 2)))
+   if(count == 0 || (size % 4))
    {
-      if (ax->nonblocking)
-         ax->pos = (offsets.currentOffset + (AX_AUDIO_COUNT >> 1)) & AX_AUDIO_COUNT_MASK;
-      else
-      {
-         do{
-            retro_sleep(1);
-            AXGetVoiceOffsets(ax->voice_l, &offsets);
-         }while(AXIsVoiceRunning(ax->voice_l) &&
-               (((offsets.currentOffset - ax->pos) & AX_AUDIO_COUNT_MASK) < (AX_AUDIO_COUNT >> 1) ||
-                (((ax->pos - offsets.currentOffset) & AX_AUDIO_COUNT_MASK) < (AX_AUDIO_COUNT >> 4))));
-      }
+      count = 0;
+      goto wiiu_audio_end;
    }
 
+   size_t countAvail = AX_AUDIO_COUNT - ax->written;
+   if (ax->nonblocking)
+   {
+      if(countAvail < AX_AUDIO_SAMPLE_COUNT)
+	  {
+	     count = 0;
+	     goto wiiu_audio_end;
+	  }
+      if(count > countAvail)
+         count = countAvail;
+   }
+   else if(countAvail < count)
+   {
+      //sync, wait for free memory
+      do {
+         OSYieldThread();
+		 countAvail = AX_AUDIO_COUNT - ax->written;
+      } while(AXIsVoiceRunning(ax->voice_l) && countAvail < count);
+   }
 
 //   ax_audio_buffer_write(ax, buf, count);
-
-   for (i = 0; i < (size >> 1); i += 2)
+   //write in new data
+   size_t startPos = ax->pos;
+   int flushP2needed = 0;
+   int flushP2 = 0;
+   for (i = 0; i < (count << 1); i += 2)
    {
       ax->buffer_l[ax->pos] = src[i];
       ax->buffer_r[ax->pos] = src[i + 1];
       ax->pos++;
       ax->pos &= AX_AUDIO_COUNT_MASK;
+      //wrapped around, make sure to store cache
+      if(ax->pos == 0)
+      {
+         flushP2needed = 1;
+         flushP2 = ((count << 1) - i);
+         DCStoreRangeNoSync(ax->buffer_l+startPos, (AX_AUDIO_COUNT-startPos) << 1);
+         DCStoreRangeNoSync(ax->buffer_r+startPos, (AX_AUDIO_COUNT-startPos) << 1);
+      }
    }
-   DCFlushRange(ax->buffer_l, AX_AUDIO_SIZE);
-   DCFlushRange(ax->buffer_r, AX_AUDIO_SIZE);
+   //standard cache store case
+   if(!flushP2needed)
+   {
+      DCStoreRangeNoSync(ax->buffer_l+startPos, count << 1);
+      DCStoreRange(ax->buffer_r+startPos, count << 1);
+   } //store the rest after wrap
+   else if(flushP2 > 0)
+   {
+      DCStoreRangeNoSync(ax->buffer_l, flushP2);
+      DCStoreRange(ax->buffer_r, flushP2);
+   }
+   //add in new audio data
+   OSUninterruptibleSpinLock_Acquire(&ax->spinlock);
+   ax->written += count;
+   OSUninterruptibleSpinLock_Release(&ax->spinlock);
 
-//   if(!AXIsVoiceRunning(ax->voice_l) && (((ax->pos - offsets.currentOffset) & AX_AUDIO_COUNT_MASK) > AX_AUDIO_FRAME_COUNT))
-//   {
-      AXSetVoiceState(ax->voice_l, AX_VOICE_STATE_PLAYING);
-      AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_PLAYING);
-//   }
+   //possibly buffer underrun
+   if(!AXIsVoiceRunning(ax->voice_l))
+   {
+      //checks if it can be started
+      ax_audio_start(ax);
+   }
 
+wiiu_audio_end:
    performance_counter_stop(&ax_audio_write_perf);
 
-   return size;
+   return (count << 2);
 }
 
 static bool ax_audio_stop(void* data)
@@ -265,8 +308,25 @@ static bool ax_audio_start(void* data)
    if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
       return true;
 
-   AXSetVoiceState(ax->voice_l, AX_VOICE_STATE_PLAYING);
-   AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_PLAYING);
+   //for safety first
+   ax_audio_stop(data);
+
+   //reset offset to last load offset
+   AXVoiceOffsets offsets;
+   uint32_t lastOffset = ((ax->pos - ((ax->written)<<1)) & AX_AUDIO_COUNT_MASK);
+   AXGetVoiceOffsets(ax->voice_l, &offsets);
+   offsets.currentOffset = lastOffset;
+   AXSetVoiceOffsets(ax->voice_l, &offsets);
+   AXGetVoiceOffsets(ax->voice_r, &offsets);
+   offsets.currentOffset = lastOffset;
+   AXSetVoiceOffsets(ax->voice_r, &offsets);
+
+   //set back to playing on enough buffered data
+   if(ax->written > AX_AUDIO_SAMPLE_MIN)
+   {
+      AXSetVoiceState(ax->voice_l, AX_VOICE_STATE_PLAYING);
+      AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_PLAYING);
+   }
 
    return true;
 }
@@ -276,7 +336,11 @@ static void ax_audio_set_nonblock_state(void* data, bool state)
    ax_audio_t* ax = (ax_audio_t*)data;
 
    if (ax)
+   {
+      if(state != ax->nonblocking)
+         ax_audio_start(data);
       ax->nonblocking = state;
+   }
 }
 
 static bool ax_audio_use_float(void* data)
@@ -289,10 +353,9 @@ static size_t ax_audio_write_avail(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
 
-   AXVoiceOffsets offsets;
-   AXGetVoiceOffsets(ax->voice_l, &offsets);
+   size_t ret = AX_AUDIO_COUNT - ax->written;
 
-   return (offsets.currentOffset - ax->pos) & AX_AUDIO_COUNT_MASK;
+   return (ret < AX_AUDIO_SAMPLE_COUNT ? 0 : ret);
 }
 
 static size_t ax_audio_buffer_size(void* data)
