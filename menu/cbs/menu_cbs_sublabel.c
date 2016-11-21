@@ -435,6 +435,28 @@ static int action_bind_sublabel_video_shared_context(
    return 0;
 }
 
+static int action_bind_sublabel_audio_latency(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_AUDIO_LATENCY), len);
+   return 0;
+}
+
+static int action_bind_sublabel_audio_mute(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_AUDIO_MUTE), len);
+   return 0;
+}
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -447,6 +469,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_AUDIO_MUTE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_mute);
+            break;
+         case MENU_ENUM_LABEL_AUDIO_LATENCY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_latency);
+            break;
          case MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_shared_context);
             break;

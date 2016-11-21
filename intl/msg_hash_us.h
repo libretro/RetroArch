@@ -2060,3 +2060,7 @@ MSG_HASH(MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
       "Viewport size calculation failed! Will continue using raw data. This will probably not work right ...")
 MSG_HASH(MSG_VIRTUAL_DISK_TRAY,
       "virtual disk tray.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+      "Desired audio latency in milliseconds. Might not be honored if the audio driver can't provide given latency.")
+MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+      "Mute/unmute audio.")
