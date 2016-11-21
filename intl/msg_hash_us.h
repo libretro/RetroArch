@@ -124,7 +124,7 @@ MSG_HASH(
       "Scan Content"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+      MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS,
       "Configurations"
       )
 MSG_HASH(
@@ -213,11 +213,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-      "Load Override Files Automatically"
+      "Load Core Overrides Automatically"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-      "Load Remap Files Automatically"
+      "Load Remaps Automatically"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -384,20 +384,16 @@ MSG_HASH(
       "Config"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-      "Load Configuration"
-      )
-MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-      "Configuration"
+      MENU_ENUM_LABEL_VALUE_CONFIG_LOAD,
+      "Load Configuration..."
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-      "Save Configuration On Exit"
+      "Save Configuration on Exit"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT,
-      "Ask For Confirmation On Exit"
+      "Ask for Confirmation on Exit"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
@@ -547,7 +543,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
       "Frontend Counters")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-      "Load Content-specific core options automatically")
+      "Load Content Overrides Automatically")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
       "Create game-options file")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
@@ -1163,7 +1159,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
       "Save Game Overrides")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-      "Save New Configuration")
+      "Create New Configuration")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVE_STATE,
       "Save State")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
@@ -1201,7 +1197,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
       "Show Advanced Settings")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
-      "Show Hidden Files and Folders")
+      "Show Hidden Files & Folders")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SHUTDOWN,
       "Shutdown")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
@@ -1622,6 +1618,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
       "Change drivers for the system.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
       "Change settings for the achievements.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_SETTINGS,
+      "Change settings for configurations, content overrides, core overrides, remaps and more.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "Change settings for the core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,

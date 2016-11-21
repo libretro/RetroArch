@@ -1042,9 +1042,9 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Códigos de Cheat";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "Fechar";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
+      case MENU_ENUM_LABEL_VALUE_CONFIG_LOAD:
          return "Carregar Configuração";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS:
          return "Configurações";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Salvar Configuração ao Sair";

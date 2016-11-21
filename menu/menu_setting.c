@@ -139,10 +139,10 @@ static void setting_get_string_representation_uint_custom_viewport_width(void *d
    rarch_setting_t *setting             = (rarch_setting_t*)data;
    if (!setting)
       return;
-   
+
    av_info = video_viewport_get_system_av_info();
    geom    = (struct retro_game_geometry*)&av_info->geometry;
-   
+
    if (*setting->value.target.unsigned_integer%geom->base_width == 0)
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
@@ -160,10 +160,10 @@ static void setting_get_string_representation_uint_custom_viewport_height(void *
    rarch_setting_t *setting             = (rarch_setting_t*)data;
    if (!setting)
       return;
-   
+
    av_info = video_viewport_get_system_av_info();
    geom    = (struct retro_game_geometry*)&av_info->geometry;
-   
+
    if (*setting->value.target.unsigned_integer%geom->base_height == 0)
       snprintf(s, len, "%u (%ux)",
             *setting->value.target.unsigned_integer,
@@ -732,7 +732,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return -1;
 }
 
-static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting, 
+static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
       const char *label)
 {
    uint32_t needle        = msg_hash_calculate(label);
@@ -762,7 +762,7 @@ static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
    return NULL;
 }
 
-static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting, 
+static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting,
      enum msg_hash_enums enum_idx)
 {
    rarch_setting_t **list = &setting;
@@ -1022,10 +1022,10 @@ static int setting_action_start_libretro_device_type(void *data)
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system)
          && system)
    {
-      /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an
        * older core which doesn't use SET_CONTROLLER_INFO. */
       if (!system->ports.size)
          devices[types++] = RETRO_DEVICE_ANALOG;
@@ -1129,7 +1129,7 @@ static int setting_action_left_libretro_device_type(
 
    if (system)
    {
-      /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an
        * older core which doesn't use SET_CONTROLLER_INFO. */
       if (!system->ports.size)
          devices[types++] = RETRO_DEVICE_ANALOG;
@@ -1193,10 +1193,10 @@ static int setting_action_right_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system)
          && system)
    {
-      /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an
        * older core which doesn't use SET_CONTROLLER_INFO. */
       if (!system->ports.size)
          devices[types++] = RETRO_DEVICE_ANALOG;
@@ -1337,7 +1337,7 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
 
    target    = (struct retro_keybind*)
       &settings->input.binds[setting->index_offset][0];
-   def_binds =  (setting->index_offset) ? 
+   def_binds =  (setting->index_offset) ?
       retro_keybinds_rest : retro_keybinds_1;
 
    if (!target)
@@ -1454,7 +1454,7 @@ static void get_string_representation_bind_device(void * data, char *s,
  * Get associated label of a setting.
  **/
 void menu_setting_get_label(void *data, char *s,
-      size_t len, unsigned *w, unsigned type, 
+      size_t len, unsigned *w, unsigned type,
       const char *menu_label, const char *label, unsigned idx)
 {
    rarch_setting_t *setting = NULL;
@@ -1584,7 +1584,7 @@ void general_write_handler(void *data)
          {
             menu_displaylist_info_t info = {0};
             info.list          = menu_stack;
-            info.type          = 0; 
+            info.type          = 0;
             info.directory_ptr = 0;
             strlcpy(info.label,
                   msg_hash_to_str(MENU_ENUM_LABEL_HELP), sizeof(info.label));
@@ -1639,14 +1639,14 @@ void general_write_handler(void *data)
          break;
       case MENU_ENUM_LABEL_LOG_VERBOSITY:
          {
-            if (setting 
-                  && setting->value.target.boolean 
+            if (setting
+                  && setting->value.target.boolean
                   && *setting->value.target.boolean)
                verbosity_enable();
             else
                verbosity_disable();
 
-            if (setting 
+            if (setting
                   && setting->value.target.boolean
                   && *setting->value.target.boolean)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
@@ -1684,7 +1684,7 @@ void general_write_handler(void *data)
          {
 #if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
             cellSysutilEnableBgmPlayback();
-#endif         
+#endif
          }
          else
          {
@@ -1718,7 +1718,7 @@ void general_write_handler(void *data)
 #ifdef HAVE_NETWORKING
          {
             bool val = (settings->netplay.sync_frames > 0);
-            
+
             if (val)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
             else
@@ -1976,7 +1976,7 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_right  = &setting_action_right_libretro_device_type;
       (*list)[list_info->index - 1].action_select = &setting_action_right_libretro_device_type;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_libretro_device_type;
-      (*list)[list_info->index - 1].get_string_representation = 
+      (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_libretro_device;
       menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE + user));
 
@@ -1997,7 +1997,7 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_right  = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_select = &setting_action_right_analog_dpad_mode;
       (*list)[list_info->index - 1].action_start = &setting_action_start_analog_dpad_mode;
-      (*list)[list_info->index - 1].get_string_representation = 
+      (*list)[list_info->index - 1].get_string_representation =
          &setting_get_string_representation_uint_analog_dpad_mode;
       menu_settings_list_current_add_enum_idx(list, list_info, (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
 
@@ -2075,7 +2075,7 @@ static bool setting_append_list_input_player_options(
          )
       {
          if (system->input_desc_btn[user][i])
-            strlcat(label, 
+            strlcat(label,
                   system->input_desc_btn[user][i],
                   sizeof(label));
          else
@@ -2285,16 +2285,16 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
-               MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+               MENU_ENUM_LABEL_CONFIGURATIONS_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS,
                &group_info,
                &subgroup_info,
                parent_group);
 
          CONFIG_ACTION(
                list, list_info,
-               MENU_ENUM_LABEL_CONFIGURATIONS,
-               MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+               MENU_ENUM_LABEL_CONFIG_LOAD,
+               MENU_ENUM_LABEL_VALUE_CONFIG_LOAD,
                &group_info,
                &subgroup_info,
                parent_group);
@@ -2417,14 +2417,6 @@ static bool setting_append_list(
                   &subgroup_info,
                   parent_group);
          }
-
-         CONFIG_ACTION(
-               list, list_info,
-               MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,
-               MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-               &group_info,
-               &subgroup_info,
-               parent_group);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2763,9 +2755,9 @@ static bool setting_append_list(
             unsigned i;
             struct bool_entry bool_entries[6];
             START_GROUP(list, list_info, &group_info,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), parent_group);
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS), parent_group);
 
-            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS);
+            parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
                   parent_group);
@@ -2866,7 +2858,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 3, 1.0, true, true);
-            (*list)[list_info->index - 1].get_string_representation = 
+            (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_libretro_log_level;
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -2975,7 +2967,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_AUTOSAVE_INIT);
             menu_settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-            (*list)[list_info->index - 1].get_string_representation = 
+            (*list)[list_info->index - 1].get_string_representation =
                &setting_get_string_representation_uint_autosave_interval;
 #endif
 
@@ -3100,7 +3092,7 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
-         (*list)[list_info->index - 1].get_string_representation = 
+         (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_video_monitor_index;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -3169,7 +3161,7 @@ static bool setting_append_list(
          (*list)[list_info->index - 1].action_start  = &setting_action_start_video_refresh_rate_auto;
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_video_refresh_rate_auto;
          (*list)[list_info->index - 1].action_select = &setting_action_ok_video_refresh_rate_auto;
-         (*list)[list_info->index - 1].get_string_representation = 
+         (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_st_float_video_refresh_rate_auto;
 
          if (string_is_equal(settings->video.driver, "gl"))
@@ -3218,7 +3210,7 @@ static bool setting_append_list(
                true,
                true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-         (*list)[list_info->index - 1].get_string_representation = 
+         (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_aspect_ratio_index;
 
          CONFIG_INT(
@@ -3396,7 +3388,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
-         (*list)[list_info->index - 1].get_string_representation = 
+         (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_video_rotation;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
@@ -3719,7 +3711,7 @@ static bool setting_append_list(
                &settings->audio.latency,
                MENU_ENUM_LABEL_AUDIO_LATENCY,
                MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-               g_defaults.settings.out_latency ? 
+               g_defaults.settings.out_latency ?
                g_defaults.settings.out_latency : out_latency,
                &group_info,
                &subgroup_info,
@@ -3884,7 +3876,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
-          
+
 #ifdef VITA
             CONFIG_BOOL(
                   list, list_info,
@@ -4119,7 +4111,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 1.00, 0.001, true, true);
-            
+
             CONFIG_UINT(
                   list, list_info,
                   &settings->input.bind_timeout,
@@ -4334,7 +4326,7 @@ static bool setting_append_list(
                      &retro_keybinds_1[i],
                      &group_info, &subgroup_info, parent_group);
                (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
-               menu_settings_list_current_add_enum_idx(list, list_info, 
+               menu_settings_list_current_add_enum_idx(list, list_info,
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i));
             }
 
@@ -5483,7 +5475,7 @@ static bool setting_append_list(
                sizeof(settings->network.buildbot_url),
                MENU_ENUM_LABEL_CORE_UPDATER_BUILDBOT_URL,
                MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-               buildbot_server_url, 
+               buildbot_server_url,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -5497,7 +5489,7 @@ static bool setting_append_list(
                sizeof(settings->network.buildbot_assets_url),
                MENU_ENUM_LABEL_BUILDBOT_ASSETS_URL,
                MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-               buildbot_assets_server_url, 
+               buildbot_assets_server_url,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -5861,7 +5853,7 @@ static bool setting_append_list(
                true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_REFRESH);
-         (*list)[list_info->index - 1].get_string_representation = 
+         (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_uint_user_language;
 #endif
 
@@ -5926,7 +5918,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         (*list)[list_info->index - 1].get_string_representation = 
+         (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_cheevos_password;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 #endif
@@ -6417,7 +6409,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
 {
    unsigned i;
    rarch_setting_t* resized_list        = NULL;
-   enum settings_list_type list_types[] = 
+   enum settings_list_type list_types[] =
    {
       SETTINGS_LIST_MAIN_MENU,
       SETTINGS_LIST_DRIVERS,

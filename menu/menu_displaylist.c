@@ -2885,9 +2885,9 @@ static int menu_displaylist_parse_configurations_list(
       menu_displaylist_info_t *info)
 {
    menu_entries_append_enum(info->list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
-         msg_hash_to_str(MENU_ENUM_LABEL_CONFIGURATIONS),
-         MENU_ENUM_LABEL_CONFIGURATIONS,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIG_LOAD),
+         msg_hash_to_str(MENU_ENUM_LABEL_CONFIG_LOAD),
+         MENU_ENUM_LABEL_CONFIG_LOAD,
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_append_enum(info->list,
@@ -2901,6 +2901,46 @@ static int menu_displaylist_parse_configurations_list(
          msg_hash_to_str(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
          MENU_ENUM_LABEL_SAVE_NEW_CONFIG,
          MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT),
+         msg_hash_to_str(MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT),
+         MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
+         MENU_SETTING_ACTION, 0, 0);
+
+/* You may want to check for show_advanced_settings here */
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SPECIFIC_CONFIG),
+         msg_hash_to_str(MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG),
+         MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS),
+         msg_hash_to_str(MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS),
+         MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE),
+         msg_hash_to_str(MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE),
+         MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE),
+         msg_hash_to_str(MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE),
+         MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES),
+         msg_hash_to_str(MENU_ENUM_LABEL_SHOW_HIDDEN_FILES),
+         MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,
+         MENU_SETTING_ACTION, 0, 0);
+
+   info->need_refresh = true;
+   info->need_push    = true;
    return 0;
 }
 
@@ -4159,7 +4199,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CONTENT_SETTINGS:
       case DISPLAYLIST_INFORMATION_LIST:
       case DISPLAYLIST_ADD_CONTENT_LIST:
-      case DISPLAYLIST_CONFIGURATIONS_LIST:
+      case DISPLAYLIST_CONFIGURATIONS_SETTINGS:
       case DISPLAYLIST_SCAN_DIRECTORY_LIST:
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_USER_BINDS_LIST:
@@ -4205,7 +4245,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
       case DISPLAYLIST_DRIVER_SETTINGS_LIST:
       case DISPLAYLIST_VIDEO_SETTINGS_LIST:
-      case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
       case DISPLAYLIST_LOGGING_SETTINGS_LIST:
       case DISPLAYLIST_SAVING_SETTINGS_LIST:
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
@@ -4466,7 +4505,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   PARSE_ACTION, false);
 #endif
             menu_displaylist_parse_settings_enum(menu, info,
-                  MENU_ENUM_LABEL_CONFIGURATIONS_LIST,
+                  MENU_ENUM_LABEL_CONFIGURATIONS_SETTINGS,
                   PARSE_ACTION, false);
             menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_HELP_LIST,
@@ -4563,29 +4602,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_WIFI_DRIVER,
                PARSE_ONLY_STRING_OPTIONS, false);
-
-         info->need_refresh = true;
-         info->need_push    = true;
-         break;
-      case DISPLAYLIST_CONFIGURATION_SETTINGS_LIST:
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CORE_SPECIFIC_CONFIG,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,
-               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -5367,8 +5383,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_CORE_SETTINGS,    PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,   PARSE_ACTION, false);
-         ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SAVING_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_LOGGING_SETTINGS,   PARSE_ACTION, false);
@@ -5433,7 +5447,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          info->need_refresh = true;
          break;
-      case DISPLAYLIST_CONFIGURATIONS_LIST:
+      case DISPLAYLIST_CONFIGURATIONS_SETTINGS:
          ret = menu_displaylist_parse_configurations_list(info);
 
          info->need_push    = true;

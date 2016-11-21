@@ -1683,7 +1683,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_filter);
             break;
-         case MENU_ENUM_LABEL_CONFIGURATIONS:
+         case MENU_ENUM_LABEL_CONFIG_LOAD:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_configurations);
             break;

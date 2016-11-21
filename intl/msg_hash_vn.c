@@ -2040,9 +2040,9 @@ static const char *menu_hash_to_str_vn_label_enum(enum msg_hash_enums msg)
          return "unload_core";
       case MENU_ENUM_LABEL_COLLECTION:
          return "collection";
-      case MENU_ENUM_LABEL_CONFIGURATIONS:
+      case MENU_ENUM_LABEL_CONFIG_LOAD:
          return "configurations";
-      case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_CONFIGURATIONS_SETTINGS:
          return "configuration_settings";
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          return "config_save_on_exit";
@@ -2122,7 +2122,7 @@ static const char *menu_hash_to_str_vn_label_enum(enum msg_hash_enums msg)
          return "deferred_archive_open_detect_core";
       case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
          return "deferred_audio_settings_list";
-      case MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST:
+      case MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_SETTINGS:
          return "deferred_configuration_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST:
          return "deferred_core_content_dirs_list";
@@ -3179,14 +3179,14 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Close";
       case MENU_ENUM_LABEL_VALUE_CONFIG:
          return "Config";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
+      case MENU_ENUM_LABEL_VALUE_CONFIG_LOAD:
          return "Tải Configuration";
-      case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
+      case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS:
          return "Configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Save Configuration On Exit";
+         return "Save Configuration on Exit";
       case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Ask For Confirmation On Exit";
+         return "Ask for Confirmation on Exit";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Collections";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
@@ -3934,13 +3934,13 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY:
          return "Savestate Dir";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
-         return "Save Current Config";
+         return "Save Current Configuration";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
          return "Save Core Overrides";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME:
          return "Save Game Overrides";
       case MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG:
-         return "Save New Config";
+         return "Create New Configuration";
       case MENU_ENUM_LABEL_VALUE_SAVE_STATE:
          return "Save State";
       case MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS:
@@ -3976,7 +3976,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS:
          return "Show Advanced thiết lập";
       case MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES:
-         return "Show Hidden Files and Folders";
+         return "Show Hidden Files & Folders";
       case MENU_ENUM_LABEL_VALUE_SHUTDOWN:
          return "Tắt Máy";
       case MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO:
