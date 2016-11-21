@@ -2086,3 +2086,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
       "Allows any user to control the menu. If disabled, only User 1 can control the menu."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+      "Audio volume (in dB). 0 dB is normal volume, no gain applied."
+      )
