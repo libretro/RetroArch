@@ -2066,5 +2066,5 @@ MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_MUTE,
       "Mute/unmute audio.")
 MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-      "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain then."
+      "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
       )
