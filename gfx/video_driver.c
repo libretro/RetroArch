@@ -1570,17 +1570,13 @@ void video_driver_set_aspect_ratio(void)
 
 void video_driver_show_mouse(void)
 {
-   if (!video_driver_poke)
-      return;
-   if (video_driver_poke->show_mouse)
+   if (video_driver_poke && video_driver_poke->show_mouse)
       video_driver_poke->show_mouse(video_driver_data, true);
 }
 
 void video_driver_hide_mouse(void)
 {
-   if (!video_driver_poke)
-      return;
-   if (video_driver_poke->show_mouse)
+   if (video_driver_poke && video_driver_poke->show_mouse)
       video_driver_poke->show_mouse(video_driver_data, false);
 }
 
