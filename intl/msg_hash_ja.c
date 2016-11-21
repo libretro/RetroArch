@@ -3054,7 +3054,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_ASK_ARCHIVE:
          return "Ask";
       case MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY:
-         return "資産のディレクトリー";
+         return "資産";
       case MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES:
          return "Block Frames";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
@@ -3066,7 +3066,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE:
          return "オーディオを有効";
       case MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR:
-         return "オーディオフィルターのディレクトリー";
+         return "オーディオフィルター";
       case MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY:
          return "オーディオの遅延 (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW:
@@ -3076,7 +3076,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE:
          return "オーディオの出力レート(KHz)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA:
-         return "オーディオのレートコントロールデルタ";
+         return "ダイナミックオーディオレートコントロール";
       case MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER:
          return "オーディをリサンプルのドライバ";
       case MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS:
@@ -3134,7 +3134,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL:
          return "Buildbotの資産URL";
       case MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY:
-         return "キャッシュのディレクトリー";
+         return "キャッシュ";
       case MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW:
          return "カメラを許す";
       case MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER:
@@ -3144,7 +3144,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES:
          return "チートの変更点を適用";
       case MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH:
-         return "チートファイルのディレクトリー";
+         return "チートファイル";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE:
          return "チートファイル";
       case MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD:
@@ -3186,17 +3186,17 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "コレクション";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
-         return "コンテンツデータベースのディレクトリー";
+         return "コンテンツデータベース";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DIR:
-         return "コンテンツのディレクトリー";
+         return "コンテンツ";
       case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
          return "履歴リストのサイズ";
       case MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS:
          return "クイックメニュー";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR:
-         return "コアの資産ディレクトリー";
+         return "コアの資産";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
-         return "ダウンロードのディレクトリー";
+         return "ダウンロード";
       case MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS:
          return "チート";
       case MENU_ENUM_LABEL_VALUE_CORE_COUNTERS:
@@ -3252,7 +3252,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CPU_CORES:
          return "CPUコア数:";
       case MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY:
-         return "カーソルのディレクトリー";
+         return "カーソル";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "カーソルマネージャー";
       case MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO:
@@ -3288,7 +3288,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DONT_CARE:
          return "Don't care";
       case MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST:
-         return "ダウンロードのディレクトリー";
+         return "ダウンロード";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE:
          return "コアをダウンロード...";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
@@ -3304,7 +3304,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "ダイナミック壁紙";
       case MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
-         return "ダイナミック壁紙のディレクトリー";
+         return "ダイナミック壁紙";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE:
          return "有効";
       case MENU_ENUM_LABEL_VALUE_ENTRY_HOVER_COLOR:
@@ -3532,7 +3532,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH:
          return "Prefer Front Touch";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
-         return "入力リマップのディレクトリー";
+         return "入力リマップ";
       case MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE:
          return "リマップバインドを有効";
       case MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG:
@@ -3552,7 +3552,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_INTERNAL_STORAGE_STATUS:
          return "Internal storage status";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
-         return "入力デバイスの自動設定ディレクトリー";
+         return "入力デバイスの自動設定";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "ジョイパッドのドライバ";
       case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
@@ -3592,9 +3592,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LEFT_ANALOG:
          return "左のアナログ";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH:
-         return "コアのディレクトリー";
+         return "コア";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH:
-         return "コア情報のディレクトリー";
+         return "コア情報";
       case MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL:
          return "コアのログ出力レベル";
       case MENU_ENUM_LABEL_VALUE_LINEAR:
@@ -3614,7 +3614,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER:
          return "ロケーションのドライバ";
       case MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS:
-         return "ログ";
+         return "ログの設定を変更する。";
       case MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY:
          return "ログの出力レベル";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
@@ -3762,13 +3762,13 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_OPTIONAL:
          return "任意";
       case MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY:
-         return "OSKオーバーレイのディレクトリー";
+         return "OSKオーバーレイ";
       case MENU_ENUM_LABEL_VALUE_OVERLAY:
          return "オーバーレイ";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED:
          return "優先オーバーレイを自動ロード";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY:
-         return "オーバーレイのディレクトリー";
+         return "オーバーレイ";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "オーバーレイの不透明性";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
@@ -3790,7 +3790,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
          return "プレイリスト";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY:
-         return "プレイリストのディレクトリー";
+         return "プレイリスト";
       case MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS:
          return "プレイリスト";
       case MENU_ENUM_LABEL_VALUE_POINTER_ENABLE:
@@ -3862,9 +3862,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REBOOT:
          return "再起動";
       case MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY:
-         return "録画設定のディレクトリー";
+         return "録画設定";
       case MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY:
-         return "録画の出力ディレクトリー";
+         return "録画の出力";
       case MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS:
          return "録画";
       case MENU_ENUM_LABEL_VALUE_RECORD_CONFIG:
@@ -3899,6 +3899,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "レトロキーボード";
       case MENU_ENUM_LABEL_VALUE_RETROPAD:
          return "レトロパッド";
+      case MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG:
+         return "レトロパッド(アナログ付)";
       case MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS:
          return "レトロ実績";
       case MENU_ENUM_LABEL_VALUE_REWIND_ENABLE:
@@ -3908,9 +3910,9 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS:
          return "巻き戻し";
       case MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
-         return "ファイルブラウザーのディレクトリー";
+         return "ファイルブラウザー";
       case MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
-         return "設定のディレクトリー";
+         return "設定";
       case MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN:
          return "スタート画面を表示";
       case MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG:
@@ -3920,7 +3922,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE:
          return "SAMBAを有効";
       case MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY:
-         return "セーブファイルのディレクトリー";
+         return "セーブファイル";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX:
          return "保存状態の自動インデックス";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD:
@@ -3928,7 +3930,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE:
          return "自動的に状態を保存";
       case MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY:
-         return "保存状態のディレクトリー";
+         return "保存状態";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG:
          return "現在の設定を保存";
       case MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE:
@@ -3948,7 +3950,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
          return "<このフォルダをスキャン>";
       case MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY:
-         return "スクリーンショットのディレクトリー";
+         return "スクリーンショット";
       case MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION:
          return "スクリーン解像度";
       case MENU_ENUM_LABEL_VALUE_SEARCH:
@@ -4004,7 +4006,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "System BGM Enable";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "システム/BIOSのディレクトリー";
+         return "システム/BIOS";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "システム情報";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
@@ -4148,7 +4150,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS:
          return "サムネイル";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY:
-         return "サムネイルのディレクトリー";
+         return "サムネイル";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
          return "サムネイルのアップデーター";
       case MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS:
@@ -4230,7 +4232,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER:
          return "ビデオのフィルター";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR:
-         return "ビデオフィルターのディレクトリー";
+         return "ビデオフィルター";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER:
          return "Flicker filter";
       case MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE:
@@ -4280,7 +4282,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS:
          return "ビデオ";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR:
-         return "ビデオシェーダーのディレクトリー";
+         return "ビデオシェーダー";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES:
          return "シェーダーのパス数";
       case MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
@@ -4391,10 +4393,20 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "シェーダーのプリセット";
       case MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST:
          return "コンテンツをスキャンしてデータベースに入れる。";
+      case MENU_ENUM_SUBLABEL_AUDIO_LATENCY:
+         return "ミリ秒でのオーディオ遅延。ドライバ対応による。";
+      case MENU_ENUM_SUBLABEL_AUDIO_MUTE:
+         return "オーディオを消音する。";
       case MENU_ENUM_SUBLABEL_AUDIO_SETTINGS:
          return "オーディオ出力の設定を変更する。";
+      case MENU_ENUM_SUBLABEL_AUDIO_SYNC:
+         return "オーディオを同期する。推奨。";
+      case MENU_ENUM_SUBLABEL_AUDIO_VOLUME:
+         return "dBでのオーディオ音量。0dBは普通の音量で、ゲインが無し。";
       case MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE:
          return "Bluetoothを有効する。";
+      case MENU_ENUM_SUBLABEL_CAMERA_ALLOW:
+         return "コアでのカメラ使用を許す。";
       case MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE:
          return "保存状態、チート、巻き戻し、早送り、一時停止、スローモーションを全部のゲームに無効する。";
       case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
@@ -4403,32 +4415,52 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "コアの設定を変更する。";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "CPUのコア数";
+      case MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS:
+         return "このシステムの初期ディレクトリーを変更する。";
       case MENU_ENUM_SUBLABEL_DRIVER_SETTINGS:
          return "システムのドライバを変更する。";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
          return "画面で現在のフレームレートを表示する。";
+      case MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS:
+         return "巻き戻し、早送り、スローモーションの設定を変更する。";
       case MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST:
          return "コア、ネットワーク、システムの詳細を表示する。\nデータベースとカーソルのマネジャーを表示する。";
+      case MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU:
+         return "どれでもユーザーがメニューを操作できる。オフにすると、ユーザー１のみが操作できる。";
       case MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS:
          return "ホットキー設定を変更する。";
+      case MENU_ENUM_SUBLABEL_INPUT_MAX_USERS:
+         return "RetroArchに最大対応のユーザー数";
       case MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
          return "メニューに切り替えるゲームパッドのボタンコンボ";
       case MENU_ENUM_SUBLABEL_INPUT_SETTINGS:
          return "ゲームパッド、キーボード、マウスの設定を変更する。";
       case MENU_ENUM_SUBLABEL_INPUT_USER_BINDS:
          return "このユーザーの入力設定を変更する。";
+      case MENU_ENUM_SUBLABEL_LOCATION_ALLOW:
+         return "コアでの位置情報サービスを許す。";
       case MENU_ENUM_SUBLABEL_LOG_VERBOSITY:
          return "端末にログすることを有効と無効。";
+      case MENU_ENUM_SUBLABEL_LOGGING_SETTINGS:
+         return "ログの設定を変更する。";
       case MENU_ENUM_SUBLABEL_NETPLAY:
          return "ネットプレイのセッションを参加やホストする。";
+      case MENU_ENUM_SUBLABEL_NETWORK_SETTINGS:
+         return "ネットワークの設定を変更する。";
       case MENU_ENUM_SUBLABEL_ONLINE_UPDATER:
          return "RetroArchにアドオン、コンポーネント、コンテンツをダウンロードする。";
+      case MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS:
+         return "プレイリストの設定を変更する。";
+      case MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS:
+         return "プライバシー設定を変更する。";
       case MENU_ENUM_SUBLABEL_RECORDING_SETTINGS:
          return "録画の設定を変更する。";
       case MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS:
          return "実績関係の設定を変更する。";
       case MENU_ENUM_SUBLABEL_SAMBA_ENABLE:
          return "フォルダのネットワーク共有を有効する。";
+      case MENU_ENUM_SUBLABEL_SAVING_SETTINGS:
+         return "保存関係の設定を変更する。";
       case MENU_ENUM_SUBLABEL_SERVICES_SETTINGS:
          return "OS関係のサービスを管理する。";
       case MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES:
@@ -4437,6 +4469,8 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "SSHでのアクセスを有効する。";
       case MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE:
          return "システムのスクリーンセーバーをアクティブになることを予防する。";
+      case MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS:
+         return "ユーザーインタフェースの設定を変更する。";
       case MENU_ENUM_SUBLABEL_USER_LANGUAGE:
          return "インタフェースの言語を変更する。";
       case MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION:

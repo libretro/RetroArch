@@ -459,7 +459,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
             name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD);
             break;
          case RETRO_DEVICE_ANALOG:
-            name = "RetroPad w/ Analog";
+            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG);
             break;
          default:
             name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
