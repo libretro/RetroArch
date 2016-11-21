@@ -101,8 +101,8 @@ static retro_time_t video_driver_frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_C
 static uint64_t video_driver_frame_time_count            = 0;
 static uint64_t video_driver_frame_count                 = 0;
 
-static void *video_driver_data                           = NULL;
-static video_driver_t *current_video                     = NULL;
+void *video_driver_data                                  = NULL;
+video_driver_t *current_video                            = NULL;
 
 /* Interface for "poking". */
 static const video_poke_interface_t *video_driver_poke   = NULL;
@@ -1668,40 +1668,11 @@ void video_driver_apply_state_changes(void)
 
 bool video_driver_read_viewport(uint8_t *buffer)
 {
-   if (!current_video->read_viewport)
-      return false;
-   if (!current_video->read_viewport(video_driver_data, buffer))
-      return false;
+   if (     current_video->read_viewport
+         && current_video->read_viewport(video_driver_data, buffer))
+      return true;
 
-   return true;
-}
-
-bool video_driver_cached_frame_has_valid_framebuffer(void)
-{
-   if (!frame_cache_data)
-      return false;
-   return frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
-}
-
-bool video_driver_is_alive(void)
-{
-   if (current_video)
-      return current_video->alive(video_driver_data);
-   return true;
-}
-
-bool video_driver_is_focused(void)
-{
-   return current_video->focus(video_driver_data);
-}
-
-bool video_driver_has_windowed(void)
-{
-#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
    return false;
-#else
-   return current_video->has_windowed(video_driver_data);
-#endif
 }
 
 uint64_t *video_driver_get_frame_count_ptr(void)
@@ -1902,29 +1873,26 @@ void video_driver_gpu_record_deinit(void)
 bool video_driver_get_current_software_framebuffer(struct retro_framebuffer *fb)
 {
    if (
-         !video_driver_poke || 
-         !video_driver_poke->get_current_software_framebuffer)
-      return false;
-   if (!video_driver_poke->get_current_software_framebuffer(
+            video_driver_poke 
+         && video_driver_poke->get_current_software_framebuffer
+         && video_driver_poke->get_current_software_framebuffer(
             video_driver_data, fb))
-      return false;
+      return true;
 
-   return true;
+   return false;
 }
 
 bool video_driver_get_hw_render_interface(
       const struct retro_hw_render_interface **iface)
 {
    if (
-         !video_driver_poke || 
-         !video_driver_poke->get_hw_render_interface)
-      return false;
-
-   if (!video_driver_poke->get_hw_render_interface(
+            video_driver_poke 
+         && video_driver_poke->get_hw_render_interface
+         && video_driver_poke->get_hw_render_interface(
             video_driver_data, iface))
-      return false;
+      return true;
 
-   return true;
+   return false;
 }
 
 bool video_driver_get_viewport_info(struct video_viewport *viewport)

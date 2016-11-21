@@ -213,6 +213,18 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
+#define video_driver_is_alive()   ((current_video) ? current_video->alive(video_driver_data) : true)
+
+#define video_driver_is_focused() (current_video->focus(video_driver_data))
+
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+#define video_driver_has_windowed() (false)
+#else
+#define video_driver_has_windowed() (current_video->has_windowed(video_driver_data))
+#endif
+
+#define video_driver_cached_frame_has_valid_framebuffer() (frame_cache_data ? (frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID) : false)
+
 void video_driver_destroy(void);
 void video_driver_set_cached_frame_ptr(const void *data);
 void video_driver_set_stub_frame(void);
@@ -240,11 +252,7 @@ void video_driver_set_nonblock_state(bool toggle);
 bool video_driver_find_driver(void);
 void video_driver_apply_state_changes(void);
 bool video_driver_read_viewport(uint8_t *buffer);
-bool video_driver_cached_frame_has_valid_framebuffer(void);
 bool video_driver_cached_frame(void);
-bool video_driver_is_alive(void);
-bool video_driver_is_focused(void);
-bool video_driver_has_windowed(void);
 uint64_t *video_driver_get_frame_count_ptr(void);
 bool video_driver_frame_filter_alive(void);
 bool video_driver_frame_filter_is_32bit(void);
@@ -505,6 +513,9 @@ extern video_driver_t video_sunxi;
 extern video_driver_t video_drm;
 extern video_driver_t video_xshm;
 extern video_driver_t video_null;
+
+extern void *video_driver_data;
+extern video_driver_t *current_video;
 
 RETRO_END_DECLS
 
