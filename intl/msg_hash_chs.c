@@ -3972,7 +3972,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "启用系统背景音乐";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "系统/BIOS目录";
+         return "系统 / BIOS目录";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "系统信息";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:

@@ -4008,7 +4008,7 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "System BGM Enable";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "システム/BIOSのディレクトリー";
+         return "システム / BIOSのディレクトリー";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "システム情報";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
