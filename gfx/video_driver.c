@@ -85,7 +85,7 @@ static bool                video_driver_state_out_rgb32  = false;
 
 static enum retro_pixel_format video_driver_pix_fmt      = RETRO_PIXEL_FORMAT_0RGB1555;
 
-static const void *frame_cache_data                      = NULL;
+const void *frame_cache_data                             = NULL;
 static unsigned frame_cache_width                        = 0;
 static unsigned frame_cache_height                       = 0;
 static size_t frame_cache_pitch                          = 0;

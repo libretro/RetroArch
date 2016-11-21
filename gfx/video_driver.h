@@ -514,6 +514,8 @@ extern video_driver_t video_drm;
 extern video_driver_t video_xshm;
 extern video_driver_t video_null;
 
+extern const void *frame_cache_data;
+
 extern void *video_driver_data;
 extern video_driver_t *current_video;
 
