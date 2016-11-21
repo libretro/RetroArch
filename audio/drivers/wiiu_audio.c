@@ -106,18 +106,18 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
    DCFlushRange(ax->buffer_r,AX_AUDIO_SIZE);
 
    //shared by both voices
-   AXVoiceOffsets offsets;
-   offsets.currentOffset = 0;
-   offsets.loopOffset = 0;
-   offsets.endOffset = AX_AUDIO_COUNT - 1;
-   offsets.loopingEnabled = AX_VOICE_LOOP_ENABLED;
-   offsets.dataType = AX_VOICE_FORMAT_LPCM16;
+   AXVoiceOffsets offsets[2];
+   offsets[0].currentOffset = 0;
+   offsets[0].loopOffset = 0;
+   offsets[0].endOffset = AX_AUDIO_COUNT - 1;
+   offsets[0].loopingEnabled = AX_VOICE_LOOP_ENABLED;
+   offsets[0].dataType = AX_VOICE_FORMAT_LPCM16;
+   memcpy(&offsets[1], &offsets[0], sizeof(AXVoiceOffsets));
 
-   offsets.data = ax->buffer_l;
-   AXSetVoiceOffsets(ax->mvoice->v[0], &offsets);
-
-   offsets.data = ax->buffer_r;
-   AXSetVoiceOffsets(ax->mvoice->v[1], &offsets);
+   //different buffers per voice
+   offsets[0].data = ax->buffer_l;
+   offsets[1].data = ax->buffer_r;
+   AXSetMultiVoiceOffsets(ax->mvoice, offsets);
 
    AXSetMultiVoiceSrcType(ax->mvoice, AX_VOICE_SRC_TYPE_NONE);
    AXSetMultiVoiceSrcRatio(ax->mvoice, 1.0f);
@@ -125,15 +125,8 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
    AXVoiceVeData ve = {0xF000, 0};
    AXSetMultiVoiceVe(ax->mvoice, &ve);
 
-   u32 mix[24] = {0};
-   mix[0] = 0x80000000;
-   AXSetVoiceDeviceMix(ax->mvoice->v[0], AX_DEVICE_TYPE_DRC, 0, (AXVoiceDeviceMixData*)mix);
-   AXSetVoiceDeviceMix(ax->mvoice->v[0], AX_DEVICE_TYPE_TV, 0, (AXVoiceDeviceMixData*)mix);
-
-   mix[0] = 0;
-   mix[4] = 0x80000000;
-   AXSetVoiceDeviceMix(ax->mvoice->v[1], AX_DEVICE_TYPE_DRC, 0, (AXVoiceDeviceMixData*)mix);
-   AXSetVoiceDeviceMix(ax->mvoice->v[1], AX_DEVICE_TYPE_TV, 0, (AXVoiceDeviceMixData*)mix);
+   AXSetMultiVoiceDeviceMix(ax->mvoice, AX_DEVICE_TYPE_DRC, 0, 0, 0x8000, 0);
+   AXSetMultiVoiceDeviceMix(ax->mvoice, AX_DEVICE_TYPE_TV, 0, 0, 0x8000, 0);
 
    AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
 

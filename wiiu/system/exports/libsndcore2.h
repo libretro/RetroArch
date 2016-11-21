@@ -3,6 +3,8 @@ EXPORT_BEGIN(sndcore2.rpl);
 
 #include "../rpl/libsndcore2/exports.h"
 EXPORT(AXAcquireMultiVoice);
+EXPORT(AXSetMultiVoiceDeviceMix);
+EXPORT(AXSetMultiVoiceOffsets);
 EXPORT(AXSetMultiVoiceState);
 EXPORT(AXSetMultiVoiceVe);
 EXPORT(AXSetMultiVoiceSrcType);
