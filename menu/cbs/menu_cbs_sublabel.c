@@ -14,12 +14,9 @@
  */
 
 #include <compat/strl.h>
-#include <file/file_path.h>
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_navigation.h"
-#include "../../file_path_special.h"
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos.h"
@@ -36,16 +33,6 @@
 { \
    strlcpy(s, msg_hash_to_str(lbl), len); \
    return 0; \
-}
-
-
-static int action_bind_sublabel_generic(
-      file_list_t *list,
-      unsigned type, unsigned i,
-      const char *label, const char *path,
-      char *s, size_t len)
-{
-   return 0;
 }
 
 default_sublabel_macro(action_bind_sublabel_driver_settings_list,             MENU_ENUM_SUBLABEL_DRIVER_SETTINGS)
@@ -111,6 +98,15 @@ static int action_bind_sublabel_cheevos_entry(
 
    strlcpy(s, desc_info.s, len);
 #endif
+   return 0;
+}
+
+static int action_bind_sublabel_generic(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
    return 0;
 }
 
