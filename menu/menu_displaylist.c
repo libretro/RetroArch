@@ -5302,11 +5302,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
                PARSE_ONLY_UINT, false);
-#ifdef ANDROID
-         ret = menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_INPUT_BACK_AS_MENU_TOGGLE_ENABLE,
-               PARSE_ONLY_BOOL, false);
-#endif
 #ifdef VITA
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_TOUCH_ENABLE,
