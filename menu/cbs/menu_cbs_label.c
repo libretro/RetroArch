@@ -18,7 +18,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_navigation.h"
 #include "../../file_path_special.h"
 
 #ifndef BIND_ACTION_LABEL
