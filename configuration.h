@@ -294,7 +294,6 @@ typedef struct settings
       bool input_descriptor_hide_unbound;
 
       unsigned menu_toggle_gamepad_combo;
-      bool back_as_menu_toggle_enable;
       bool all_users_control_menu;
 
       bool menu_swap_ok_cancel_buttons;

@@ -295,8 +295,6 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Autoconfiguratie Activeren";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "Invoer As Threshold"; /* TODO/FIXME */
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE:
-         return "Terug als Menu Schakelaar";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND:
          return "Verbergen Niet-gemapte Core Input Descripties";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:

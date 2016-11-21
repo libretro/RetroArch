@@ -1298,8 +1298,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "¿Qué es un núcleo?";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
          return "Información";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
-         return "Permitir alternar Back como menú";
       case MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE:
          return "Activar asignar mando al teclado";
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:

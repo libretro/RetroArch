@@ -2306,8 +2306,6 @@ static const char *menu_hash_to_str_jp_label_enum(enum msg_hash_enums msg)
          return "input_autodetect_enable";
       case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
          return "input_axis_threshold";
-      case MENU_ENUM_LABEL_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
-         return "back_as_menu_toggle_enable";
       case MENU_ENUM_LABEL_INPUT_BIND_MODE:
          return "input_bind_mode";
       case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
@@ -3391,8 +3389,6 @@ const char *msg_hash_to_str_jp(enum msg_hash_enums msg)
          return "自動コンフィグを有効";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "入力軸のしきい値";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
-         return "Back As Menu Toggle Enable";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL:
          return "全てをバインド";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL:

@@ -1177,8 +1177,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Che cosa è un core?";
       case MENU_ENUM_LABEL_VALUE_INFORMATION_LIST:
          return "Informazioni";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE:
-         return "Indietro quando il menù a comparsa è abilitato";
       case MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
          return "Tipologia di mappatura gamepad tastiera";
       case MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:

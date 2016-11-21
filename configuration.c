@@ -697,7 +697,6 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("ui_companion_enable",           &settings->ui.companion_enable, true, ui_companion_enable, false);
    SETTING_BOOL("video_gpu_record",              &settings->video.gpu_record, true, gpu_record, false);
    SETTING_BOOL("input_remap_binds_enable",      &settings->input.remap_binds_enable, true, true, false);
-   SETTING_BOOL("back_as_menu_toggle_enable",    &settings->input.back_as_menu_toggle_enable, true, true, false);
    SETTING_BOOL("all_users_control_menu",        &settings->input.all_users_control_menu, true, all_users_control_menu, false);
    SETTING_BOOL("menu_swap_ok_cancel_buttons",                 &settings->input.menu_swap_ok_cancel_buttons, true, menu_swap_ok_cancel_buttons, false);
 #ifdef HAVE_NETWORKING

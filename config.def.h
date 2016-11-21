@@ -620,10 +620,6 @@ static unsigned input_backtouch_enable       = false;
 static unsigned input_backtouch_toggle       = false;
 #endif
 
-#ifdef ANDROID
-static bool back_as_menu_toggle_enable = true;
-#endif
-
 static bool all_users_control_menu = false;
 
 #if defined(ANDROID) || defined(_WIN32)

@@ -2276,8 +2276,6 @@ static const char *menu_hash_to_str_chs_label_enum(enum msg_hash_enums msg)
          return "input_autodetect_enable";
       case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
          return "input_axis_threshold";
-      case MENU_ENUM_LABEL_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
-         return "back_as_menu_toggle_enable";
       case MENU_ENUM_LABEL_INPUT_BIND_MODE:
          return "input_bind_mode";
       case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
@@ -3361,8 +3359,6 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "启用自动配置";
       case MENU_ENUM_LABEL_VALUE_INPUT_AXIS_THRESHOLD:
          return "输入轴阈值";
-      case MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_ENUM_TOGGLE_ENABLE:
-         return "将返回作为菜单切出键";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL:
          return "绑定全部";
       case MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL:
