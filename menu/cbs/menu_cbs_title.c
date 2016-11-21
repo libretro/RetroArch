@@ -119,7 +119,7 @@ static int action_get_add_content_list(const char *path, const char *label,
 static int action_get_configurations_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST), len);
    return 0;
 }
 
@@ -224,7 +224,7 @@ static int action_get_video_settings_list(const char *path, const char *label,
 static int action_get_configuration_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_SETTINGS), len);
+   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS), len);
    return 0;
 }
 
@@ -913,7 +913,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       return 0;
    }
 
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_SETTINGS)))
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST)))
    {
       BIND_ACTION_GET_TITLE(cbs, action_get_configuration_settings_list);
       return 0;
@@ -1091,7 +1091,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_CORE_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
             break;
-         case MENU_ENUM_LABEL_CONFIG_LOAD:
+         case MENU_ENUM_LABEL_CONFIGURATIONS:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_configurations);
             break;
          case MENU_ENUM_LABEL_JOYPAD_AUTOCONFIG_DIR:
@@ -1205,7 +1205,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_add_content_list);
             break;
-         case MENU_ENUM_LABEL_CONFIGURATIONS_SETTINGS:
+         case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_configurations_list);
             break;
          case MENU_ENUM_LABEL_CORE_OPTIONS:
@@ -1247,7 +1247,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_video_settings_list);
             break;
-         case MENU_ENUM_LABEL_DEFERRED_CONFIGURATIONS_SETTINGS:
+         case MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_configuration_settings_list);
             break;
          case MENU_ENUM_LABEL_DEFERRED_LOGGING_SETTINGS_LIST:
@@ -1401,7 +1401,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DEFERRED_CORE_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_core_list);
             break;
-         case MENU_LABEL_CONFIG_LOAD:
+         case MENU_LABEL_CONFIGURATIONS:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_configurations);
             break;
          case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
@@ -1512,7 +1512,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);
             break;
-         case MENU_LABEL_DEFERRED_CONFIGURATIONS_SETTINGS:
+         case MENU_LABEL_DEFERRED_CONFIGURATIONS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_configurations_list);
             break;
          case MENU_LABEL_ADD_CONTENT_LIST:
