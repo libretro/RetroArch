@@ -2076,3 +2076,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
       "Allow or disallow location services access by cores."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
+      "Maximum amount of users supported by RetroArch."
+      )
