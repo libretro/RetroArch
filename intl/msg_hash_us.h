@@ -2068,3 +2068,11 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
       "Helps smooth out imperfections in timing when synchronizing audio and video at the same time. Be aware that if disabled, proper synchronization is nearly impossible to obtain."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+      "Allow or disallow camera access by cores."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
+      "Allow or disallow location services access by cores."
+      )

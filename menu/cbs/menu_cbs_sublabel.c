@@ -468,6 +468,28 @@ static int action_bind_sublabel_audio_mute(
    return 0;
 }
 
+static int action_bind_sublabel_camera_allow(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_CAMERA_ALLOW), len);
+   return 0;
+}
+
+static int action_bind_sublabel_location_allow(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_LOCATION_ALLOW), len);
+   return 0;
+}
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -480,6 +502,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_LOCATION_ALLOW:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_location_allow);
+            break;
+         case MENU_ENUM_LABEL_CAMERA_ALLOW:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_camera_allow);
+            break;
          case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_rate_control_delta);
             break;
