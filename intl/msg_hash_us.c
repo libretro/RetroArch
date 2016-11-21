@@ -1681,7 +1681,9 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "3 - Press Start + Select simultaneously.");
          break;
       case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
-         snprintf(s, len, "Allow any RetroPad to control the menu.");
+         snprintf(s, len, "Allows any user to control the menu. \n"
+               " \n"
+               "When disabled, only user 1 can control the menu.");
          break;
       case MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE:
          snprintf(s, len,
