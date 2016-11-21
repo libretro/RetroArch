@@ -764,10 +764,6 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    return -1;
 }
 
-void runloop_external_state_checks(uint64_t trigger_input)
-{
-}
-
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
