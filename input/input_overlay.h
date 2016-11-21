@@ -94,6 +94,8 @@ enum overlay_image_transfer_status
 
 struct overlay
 {
+   unsigned id;
+
    struct overlay_desc *descs;
    size_t size;
    size_t pos;

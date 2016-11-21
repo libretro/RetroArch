@@ -525,8 +525,9 @@ static void mui_render(void *data)
 
    if (settings->menu.pointer.enable)
    {
-      int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-      float    old_accel_val, new_accel_val;
+      int16_t        pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+      float    old_accel_val   = 0.0f;
+      float new_accel_val      = 0.0f;
       unsigned new_pointer_val = 
          (pointer_y - mui->line_height + mui->scroll_y - 16)
          / mui->line_height;
