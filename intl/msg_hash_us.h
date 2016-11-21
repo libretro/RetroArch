@@ -1634,6 +1634,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "Change settings for the logging.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
       "Change settings for the user interface.")
+MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
+      "Accounts, Username, Language.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
       "Change your privacy settings.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
