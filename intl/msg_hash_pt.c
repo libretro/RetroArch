@@ -1519,7 +1519,7 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE:
          return "Ativar Sistema BGM";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY:
-         return "System/BIOS";
+         return "System / BIOS";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION:
          return "Informação de Sistema";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_7ZIP_SUPPORT:
