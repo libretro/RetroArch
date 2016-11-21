@@ -1624,6 +1624,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "Change settings for the core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
       "Change settings for the recording.")
+MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+      "Change settings for the saving.")
 MSG_HASH(MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
       "Scan contents and add to the database.")
 MSG_HASH(MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
