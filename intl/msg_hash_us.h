@@ -1624,10 +1624,18 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "Change settings for the core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
       "Change settings for the recording.")
+MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+      "Change settings for rewinding, fast-forwarding, and slow-motion.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
       "Change settings for the saving.")
 MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "Change settings for the logging.")
+MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+      "Change settings for the user interface.")
+MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+      "Change your privacy settings.")
+MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+      "Change default directories for this system.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
       "Change settings for the playlists.")
 MSG_HASH(MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
