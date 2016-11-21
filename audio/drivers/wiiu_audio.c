@@ -231,7 +231,7 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       do {
          OSYieldThread();
 		 countAvail = AX_AUDIO_COUNT - ax->written;
-      } while(AXIsVoiceRunning(ax->voice_l) && countAvail < count && countAvail < AX_AUDIO_SAMPLE_COUNT);
+      } while(AXIsVoiceRunning(ax->voice_l) && countAvail < count);
    }
 
 //   ax_audio_buffer_write(ax, buf, count);
