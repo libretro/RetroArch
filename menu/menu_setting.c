@@ -2704,7 +2704,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CORE:
          {
             unsigned i;
-            struct bool_entry bool_entries[3];
+            struct bool_entry bool_entries[4];
 
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -2734,6 +2734,12 @@ static bool setting_append_list(
             bool_entries[2].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
             bool_entries[2].default_value  = true;
             bool_entries[2].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[3].target         = &settings->video.allow_rotate; 
+            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
+            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
+            bool_entries[3].default_value  = allow_rotate;
+            bool_entries[3].flags          = SD_FLAG_ADVANCED;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {
@@ -3562,22 +3568,6 @@ static bool setting_append_list(
                SD_FLAG_NONE
                );
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->video.allow_rotate,
-               MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE,
-               MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
-               allow_rotate,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_ADVANCED
-               );
 
          CONFIG_BOOL(
                list, list_info,
