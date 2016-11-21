@@ -29,6 +29,7 @@
 
 #include "wiiu/wiiu_dbg.h"
 #include "wiiu/system/memory.h"
+#include "wiiu/multivoice.h"
 
 #include "audio/audio_driver.h"
 #include "configuration.h"
@@ -37,8 +38,7 @@
 
 typedef struct
 {
-   AXVoice* voice_l;
-   AXVoice* voice_r;
+   AXMVoice* mvoice;
    uint16_t* buffer_l;
    uint16_t* buffer_r;
    bool nonblocking;
@@ -72,12 +72,11 @@ AXResult ax_aux_callback(void* data, ax_audio_t* ax)
    OSUninterruptibleSpinLock_Acquire(&ax->spinlock);
    //buffer underrun, stop playback to let if fill up
    if(ax->written < AX_AUDIO_SAMPLE_MIN)
-   {
-      AXSetVoiceState(ax->voice_l, AX_VOICE_STATE_STOPPED);
-      AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_STOPPED);
-   }
-   else //all good, play back frame
-      ax->written -= AX_AUDIO_SAMPLE_COUNT;
+      AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
+   //make sure to update written value if voice is running
+   if(AXIsMultiVoiceRunning(ax->mvoice))
+      ax->written -= (ax->written < AX_AUDIO_SAMPLE_COUNT ? ax->written : AX_AUDIO_SAMPLE_COUNT);
+
    OSUninterruptibleSpinLock_Release(&ax->spinlock);
    return AX_RESULT_SUCCESS;
 }
@@ -93,10 +92,11 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
 
    AXInitWithParams(&init);
 
-   ax->voice_l = AXAcquireVoice(10, NULL, ax);
-   ax->voice_r = AXAcquireVoice(10, NULL, ax);
+   u16 setup_buf[0x30] = {0};
+   setup_buf[0x25] = 2; //we request 2 channels
+   AXAcquireMultiVoice(31, NULL, 0, setup_buf, &ax->mvoice);
 
-   if (!ax->voice_l || !ax->voice_r)
+   if (!ax->mvoice || ax->mvoice->channels != 2)
    {
       free(ax);
       return NULL;
@@ -109,37 +109,37 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
    DCFlushRange(ax->buffer_l,AX_AUDIO_SIZE);
    DCFlushRange(ax->buffer_r,AX_AUDIO_SIZE);
 
+   //shared by both voices
    AXVoiceOffsets offsets;
-
-   offsets.data = ax->buffer_l;
    offsets.currentOffset = 0;
    offsets.loopOffset = 0;
    offsets.endOffset = AX_AUDIO_COUNT - 1;
    offsets.loopingEnabled = AX_VOICE_LOOP_ENABLED;
    offsets.dataType = AX_VOICE_FORMAT_LPCM16;
-   AXSetVoiceOffsets(ax->voice_l, &offsets);
+
+   offsets.data = ax->buffer_l;
+   AXSetVoiceOffsets(ax->mvoice->v[0], &offsets);
 
    offsets.data = ax->buffer_r;
-   AXSetVoiceOffsets(ax->voice_r, &offsets);
+   AXSetVoiceOffsets(ax->mvoice->v[1], &offsets);
 
-   AXSetVoiceSrcType(ax->voice_l, AX_VOICE_SRC_TYPE_NONE);
-   AXSetVoiceSrcType(ax->voice_r, AX_VOICE_SRC_TYPE_NONE);
-   AXSetVoiceSrcRatio(ax->voice_l, 1.0f);
-   AXSetVoiceSrcRatio(ax->voice_r, 1.0f);
-   AXVoiceVeData ve = {0xFFFF, 0};
-   AXSetVoiceVe(ax->voice_l, &ve);
-   AXSetVoiceVe(ax->voice_r, &ve);
+   AXSetMultiVoiceSrcType(ax->mvoice, AX_VOICE_SRC_TYPE_NONE);
+   AXSetMultiVoiceSrcRatio(ax->mvoice, 1.0f);
+
+   AXVoiceVeData ve = {0xF000, 0};
+   AXSetMultiVoiceVe(ax->mvoice, &ve);
+
    u32 mix[24] = {0};
    mix[0] = 0x80000000;
-   AXSetVoiceDeviceMix(ax->voice_l, AX_DEVICE_TYPE_DRC, 0, (AXVoiceDeviceMixData*)mix);
-   AXSetVoiceDeviceMix(ax->voice_l, AX_DEVICE_TYPE_TV, 0, (AXVoiceDeviceMixData*)mix);
+   AXSetVoiceDeviceMix(ax->mvoice->v[0], AX_DEVICE_TYPE_DRC, 0, (AXVoiceDeviceMixData*)mix);
+   AXSetVoiceDeviceMix(ax->mvoice->v[0], AX_DEVICE_TYPE_TV, 0, (AXVoiceDeviceMixData*)mix);
+
    mix[0] = 0;
    mix[4] = 0x80000000;
-   AXSetVoiceDeviceMix(ax->voice_r, AX_DEVICE_TYPE_DRC, 0, (AXVoiceDeviceMixData*)mix);
-   AXSetVoiceDeviceMix(ax->voice_r, AX_DEVICE_TYPE_TV, 0, (AXVoiceDeviceMixData*)mix);
+   AXSetVoiceDeviceMix(ax->mvoice->v[1], AX_DEVICE_TYPE_DRC, 0, (AXVoiceDeviceMixData*)mix);
+   AXSetVoiceDeviceMix(ax->mvoice->v[1], AX_DEVICE_TYPE_TV, 0, (AXVoiceDeviceMixData*)mix);
 
-   AXSetVoiceState(ax->voice_l, AX_VOICE_STATE_STOPPED);
-   AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_STOPPED);
+   AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
 
    ax->pos = 0;
    ax->written = 0;
@@ -158,7 +158,7 @@ static void ax_audio_free(void* data)
    ax_audio_t* ax = (ax_audio_t*)data;
 
    AXRegisterAuxCallback(AX_DEVICE_TYPE_DRC, 0, 0, NULL, NULL);
-
+   AXFreeMultiVoice(ax->mvoice);
    MEM1_free(ax->buffer_l);
    MEM1_free(ax->buffer_r);
    free(ax);
@@ -213,6 +213,8 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       count = 0;
       goto wiiu_audio_end;
    }
+   if(count > AX_AUDIO_COUNT)
+      count = AX_AUDIO_COUNT;
 
    size_t countAvail = AX_AUDIO_COUNT - ax->written;
    if (ax->nonblocking)
@@ -230,8 +232,8 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       //sync, wait for free memory
       do {
          OSYieldThread();
-		 countAvail = AX_AUDIO_COUNT - ax->written;
-      } while(AXIsVoiceRunning(ax->voice_l) && countAvail < count);
+         countAvail = AX_AUDIO_COUNT - ax->written;
+      } while(AXIsMultiVoiceRunning(ax->mvoice) && countAvail < count);
    }
 
 //   ax_audio_buffer_write(ax, buf, count);
@@ -271,7 +273,7 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    OSUninterruptibleSpinLock_Release(&ax->spinlock);
 
    //possibly buffer underrun
-   if(!AXIsVoiceRunning(ax->voice_l))
+   if(!AXIsMultiVoiceRunning(ax->mvoice))
    {
       //checks if it can be started
       ax_audio_start(ax);
@@ -287,15 +289,14 @@ static bool ax_audio_stop(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
 
-   AXSetVoiceState(ax->voice_l, AX_VOICE_STATE_STOPPED);
-   AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_STOPPED);
+   AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
    return true;
 }
 
 static bool ax_audio_alive(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
-   return AXIsVoiceRunning(ax->voice_l);
+   return AXIsMultiVoiceRunning(ax->mvoice);
 }
 
 static bool ax_audio_start(void* data)
@@ -308,25 +309,9 @@ static bool ax_audio_start(void* data)
    if (runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
       return true;
 
-   //for safety first
-   ax_audio_stop(data);
-
-   //reset offset to last load offset
-   AXVoiceOffsets offsets;
-   uint32_t lastOffset = ((ax->pos - ((ax->written)<<1)) & AX_AUDIO_COUNT_MASK);
-   AXGetVoiceOffsets(ax->voice_l, &offsets);
-   offsets.currentOffset = lastOffset;
-   AXSetVoiceOffsets(ax->voice_l, &offsets);
-   AXGetVoiceOffsets(ax->voice_r, &offsets);
-   offsets.currentOffset = lastOffset;
-   AXSetVoiceOffsets(ax->voice_r, &offsets);
-
    //set back to playing on enough buffered data
    if(ax->written > AX_AUDIO_SAMPLE_MIN)
-   {
-      AXSetVoiceState(ax->voice_l, AX_VOICE_STATE_PLAYING);
-      AXSetVoiceState(ax->voice_r, AX_VOICE_STATE_PLAYING);
-   }
+      AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
 
    return true;
 }
@@ -337,8 +322,6 @@ static void ax_audio_set_nonblock_state(void* data, bool state)
 
    if (ax)
    {
-      if(state != ax->nonblocking)
-         ax_audio_start(data);
       ax->nonblocking = state;
    }
 }
