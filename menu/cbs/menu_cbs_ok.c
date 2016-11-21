@@ -1758,10 +1758,11 @@ static int generic_action_ok_remap_file_save(const char *path,
    switch (action_type)
    {
       case ACTION_OK_REMAP_FILE_SAVE_CORE:
-         fill_pathname_join(file, core_name, core_name, sizeof(file));
+         if (!string_is_empty(core_name))
+            fill_pathname_join(file, core_name, core_name, sizeof(file));
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
-         if (core_name)
+         if (!string_is_empty(core_name))
             fill_pathname_join(file, core_name,
                   path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(file));
          break;

@@ -744,12 +744,10 @@ void menu_display_push_quad(
       const float *colors, int x1, int y1,
       int x2, int y2)
 {
-   menu_display_ctx_coord_draw_t coord_draw;
    float vertex[8];
    video_coords_t coords;
-   video_coord_array_t *ca   = NULL;
-
-   ca = menu_display_get_coords_array();
+   menu_display_ctx_coord_draw_t coord_draw;
+   video_coord_array_t *ca = menu_display_get_coords_array();
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
