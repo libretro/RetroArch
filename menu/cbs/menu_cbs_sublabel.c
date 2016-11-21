@@ -501,6 +501,28 @@ static int action_bind_sublabel_input_max_users(
    return 0;
 }
 
+static int action_bind_sublabel_input_poll_type_behavior(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR), len);
+   return 0;
+}
+
+static int action_bind_sublabel_input_all_users_control_menu(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+
+   strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU), len);
+   return 0;
+}
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
@@ -513,6 +535,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_INPUT_ALL_USERS_CONTROL_MENU:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_all_users_control_menu);
+            break;
+         case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_poll_type_behavior);
+            break;
          case MENU_ENUM_LABEL_INPUT_MAX_USERS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_max_users);
             break;

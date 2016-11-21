@@ -2080,3 +2080,11 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
       "Maximum amount of users supported by RetroArch."
       )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+      "Influence how input polling is done inside RetroArch. Setting it to 'Early' or 'Late' can result in less latency, depending on your configuration."
+      )
+MSG_HASH(
+      MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+      "Allows any user to control the menu. When disabled, only User 1 can control the menu."
+      )
