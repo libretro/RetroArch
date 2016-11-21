@@ -1617,13 +1617,15 @@ MSG_HASH(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
 MSG_HASH(MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
       "Enable or disable savestates, cheats, rewind, fast-forward, pause, and slow-motion for all games.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-      "Change drivers for the system.")
+      "Change drivers for this system.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
       "Change settings for the achievements.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "Change settings for the core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
       "Change settings for the recording.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+      "Change settings for display overlay, keyboard overlay and onscreen notifications.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
       "Change settings for rewinding, fast-forwarding, and slow-motion.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
@@ -1632,6 +1634,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
       "Change settings for the logging.")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
       "Change settings for the user interface.")
+MSG_HASH(MENU_ENUM_SUBLABEL_USER_SETTINGS,
+      "Accounts, Username, Language.")
 MSG_HASH(MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
       "Change your privacy settings.")
 MSG_HASH(MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
@@ -1696,6 +1700,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
       "Adjusts settings for video output.")
 MSG_HASH(MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
       "Scans for wireless networks and establishes connection.")
+MSG_HASH(MENU_ENUM_SUBLABEL_HELP_LIST,
+      "Learn more about how it works.")
 MSG_HASH(MSG_APPENDED_DISK,
       "Appended disk")
 MSG_HASH(MSG_APPLICATION_DIR,
