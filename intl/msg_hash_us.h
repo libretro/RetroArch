@@ -1624,6 +1624,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_CORE_SETTINGS,
       "Change settings for the core.")
 MSG_HASH(MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
       "Change settings for the recording.")
+MSG_HASH(MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+      "Change settings for display overlay, keyboard overlay and onscreen notifications.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
       "Change settings for rewinding, fast-forwarding, and slow-motion.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
