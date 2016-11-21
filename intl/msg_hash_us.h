@@ -2098,3 +2098,7 @@ MSG_HASH(
       MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
       "Audio volume (in dB). 0 dB is normal volume, no gain applied."
       )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   "Synchronize audio. Recommended."
+   )
