@@ -199,6 +199,11 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
+   
+   menu_ok_btn     = settings->input.menu_swap_ok_cancel_buttons ? 
+      RETRO_DEVICE_ID_JOYPAD_A: RETRO_DEVICE_ID_JOYPAD_B;
+   menu_cancel_btn = settings->input.menu_swap_ok_cancel_buttons ? 
+      RETRO_DEVICE_ID_JOYPAD_B: RETRO_DEVICE_ID_JOYPAD_A;
 
    if (input)
    {
@@ -329,7 +334,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
             osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
       }
 
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A))
+      if (trigger_input & (UINT64_C(1) << menu_cancel_btn))
       {
          if (osk_ptr >= 0)
          {
@@ -337,7 +342,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
          }
       }
 
-      if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B))
+      if (trigger_input & (UINT64_C(1) << menu_ok_btn))
       {
          input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
       }
@@ -348,11 +353,6 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 
       trigger_input = 0;
    }
-
-   menu_ok_btn     = settings->input.menu_swap_ok_cancel_buttons ? 
-      RETRO_DEVICE_ID_JOYPAD_A: RETRO_DEVICE_ID_JOYPAD_B;
-   menu_cancel_btn = settings->input.menu_swap_ok_cancel_buttons ? 
-      RETRO_DEVICE_ID_JOYPAD_B: RETRO_DEVICE_ID_JOYPAD_A;
 
    if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       ret = MENU_ACTION_UP;
