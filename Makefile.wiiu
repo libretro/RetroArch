@@ -14,7 +14,9 @@ OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
 OBJ += wiiu/tex_shader.o
 
-ifneq ($(RPX_BUILD), 1)
+ifeq ($(RPX_BUILD), 1)
+OBJ += wiiu/system/stubs_rpl.o
+else
 OBJ += wiiu/system/dynamic.o
 OBJ += wiiu/system/stubs_elf.o
 endif
@@ -145,7 +147,6 @@ ifeq ($(RPX_BUILD), 1)
    LIBDIRS  += -L$(WUT_ROOT)/lib -L$(DEVKITPPC)/lib
    LDFLAGS  += -pie -fPIE
    LDFLAGS  += -z common-page-size=64 -z max-page-size=64
-   LDFLAGS  += -lcoreinit -lgx2 -lnsysnet -lproc_ui -lsndcore2 -lsysapp -lvpad
    LDFLAGS  += -T $(WUT_ROOT)/rules/rpl.ld
 #   LDFLAGS  += -T wiiu/link_rpl.ld
    LDFLAGS  += -nostartfiles

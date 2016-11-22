@@ -16,7 +16,7 @@
    bctr
 
 #define IMPORT_BEGIN(lib)
-#define IMPORT_END()
+#define IMPORT_END(lib)
 
 .align 2;
 .section ".text";

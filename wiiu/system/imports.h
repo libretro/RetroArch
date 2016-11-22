@@ -63,7 +63,7 @@ IMPORT(FSGetMountSource);
 IMPORT(FSMount);
 IMPORT(FSUnmount);
 
-IMPORT_END();
+IMPORT_END(coreinit);
 
 /* nsysnet */
 IMPORT_BEGIN(nsysnet);
@@ -75,7 +75,7 @@ IMPORT(connect);
 IMPORT(send);
 IMPORT(inet_aton);
 
-IMPORT_END();
+IMPORT_END(nsysnet);
 
 /* gx2 */
 IMPORT_BEGIN(gx2);
@@ -122,7 +122,7 @@ IMPORT(GX2DrawEx);
 IMPORT(GX2WaitForFlip);
 IMPORT(GX2GetSwapStatus);
 
-IMPORT_END();
+IMPORT_END(gx2);
 
 /* proc_ui */
 IMPORT_BEGIN(proc_ui);
@@ -130,7 +130,7 @@ IMPORT_BEGIN(proc_ui);
 IMPORT(ProcUIInit);
 IMPORT(ProcUIShutdown);
 
-IMPORT_END();
+IMPORT_END(proc_ui);
 
 /* sndcore2 */
 IMPORT_BEGIN(sndcore2);
@@ -148,14 +148,14 @@ IMPORT(AXSetMultiVoiceSrcRatio);
 IMPORT(AXIsMultiVoiceRunning);
 IMPORT(AXFreeMultiVoice);
 
-IMPORT_END();
+IMPORT_END(sndcore2);
 
 /* sysapp */
 IMPORT_BEGIN(sysapp);
 
 IMPORT(SYSRelaunchTitle);
 
-IMPORT_END();
+IMPORT_END(sysapp);
 
 /* vpad */
 IMPORT_BEGIN(vpad);
@@ -163,4 +163,4 @@ IMPORT_BEGIN(vpad);
 IMPORT(VPADRead);
 IMPORT(VPADInit);
 
-IMPORT_END();
+IMPORT_END(vpad);
