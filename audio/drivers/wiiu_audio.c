@@ -57,8 +57,8 @@ typedef struct
 #define AX_AUDIO_SIZE_MASK          (AX_AUDIO_SIZE - 1u)
 
 #define AX_AUDIO_SAMPLE_COUNT       144 //3ms
-#define AX_AUDIO_SAMPLE_MIN         (AX_AUDIO_SAMPLE_COUNT * 6) //18ms
-#define AX_AUDIO_SAMPLE_LOAD        (AX_AUDIO_SAMPLE_COUNT * 8) //24ms
+#define AX_AUDIO_SAMPLE_MIN         (AX_AUDIO_SAMPLE_COUNT * 11) //33ms
+#define AX_AUDIO_SAMPLE_LOAD        (AX_AUDIO_SAMPLE_COUNT * 14) //42ms
 #define AX_AUDIO_RATE               48000
 //#define ax_audio_ticks_to_samples(ticks)     (((ticks) * 64) / 82875)
 //#define ax_audio_samples_to_ticks(samples)   (((samples) * 82875) / 64)
