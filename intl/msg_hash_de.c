@@ -506,8 +506,6 @@ const char *msg_hash_to_str_de(enum msg_hash_enums msg)
          return "Cheat-Durchgänge";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "Schließe";
-      case MENU_ENUM_LABEL_VALUE_COLLAPSE_SUBGROUPS_ENABLE:
-         return "Untergruppen einklappen";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
          return "Lade Konfigurationsdatei"; /* FIXME/UPDATE */
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:

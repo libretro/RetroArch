@@ -128,8 +128,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Nombre de passages";
       case MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT:
          return "Quitter";
-      case MENU_ENUM_LABEL_VALUE_COLLAPSE_SUBGROUPS_ENABLE:
-         return "Fusionner les sous-groupes";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATIONS:
          return "Charger une configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
