@@ -1529,7 +1529,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
       "Soft Filter Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-      "VSync Swap Interval")
+      "Vertical Sync (Vsync) Swap Interval")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
       "Video")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
@@ -1547,7 +1547,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
       "Set VI Screen Width")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-      "VSync")
+      "Vertical Sync (Vsync)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
       "Windowed Fullscreen Mode")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
@@ -2133,4 +2133,16 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
    "Describes how long the period of a turbo-enabled button should be. Numbers are described in frames."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   "Synchronizes the output video of the graphics card to the refresh rate of the monitor. Recommended."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
+   "Allow cores to set rotation. When disabled, rotation requests are ignored. Useful for setups where one manually rotates the monitor."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   "Some cores might have a shutdown feature. If enabled, it will prevent the core from shutting RetroArch down. Instead, it loads a dummy core."
    )

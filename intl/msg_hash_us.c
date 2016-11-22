@@ -342,7 +342,7 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN:
          snprintf(s, len,
-               "Some libretro cores might have \n"
+               "Some cores might have \n"
                "a shutdown feature. \n"
                " \n"
                "If this option is left disabled, \n"
