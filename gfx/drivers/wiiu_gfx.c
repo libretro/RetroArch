@@ -16,6 +16,7 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
+#include "performance_counters.h"
 
 #include <string.h>
 #include <coreinit/screen.h>
@@ -474,6 +475,9 @@ static void* wiiu_gfx_init(const video_info_t* video,
    wiiu->vp.full_height = 480;
    video_driver_set_size(&wiiu->vp.width, &wiiu->vp.height);
 
+   float refresh_rate = 60.0f / 1.001f;
+   driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
+
    return wiiu;
 }
 static void wiiu_gfx_free(void* data)
@@ -582,6 +586,10 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
    printf("\rfps: %8.8f frames : %5i", fps, wiiu->frames++);
    fflush(stdout);
 
+   static struct retro_perf_counter gfx_frame_perf = {0};
+   performance_counter_init(&gfx_frame_perf, "gfx_frame");
+   performance_counter_start(&gfx_frame_perf);
+
    if (wiiu->should_resize)
       wiiu_gfx_update_viewport(wiiu);
 
@@ -660,6 +668,7 @@ static bool wiiu_gfx_frame(void* data, const void* frame,
 
    GX2SwapScanBuffers();
    GX2Flush();
+   performance_counter_stop(&gfx_frame_perf);
 
    return true;
 }
