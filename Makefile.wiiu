@@ -16,7 +16,7 @@ OBJ += wiiu/tex_shader.o
 
 ifneq ($(RPX_BUILD), 1)
 OBJ += wiiu/system/dynamic.o
-OBJ += wiiu/system/dyn_stubs.o
+OBJ += wiiu/system/stubs_elf.o
 endif
 
 DEFINES :=
