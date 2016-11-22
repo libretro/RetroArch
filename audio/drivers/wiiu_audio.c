@@ -63,20 +63,29 @@ typedef struct
 //#define ax_audio_ticks_to_samples(ticks)     (((ticks) * 64) / 82875)
 //#define ax_audio_samples_to_ticks(samples)   (((samples) * 82875) / 64)
 
-AXResult ax_aux_callback(void* data, ax_audio_t* ax)
+static volatile ax_audio_t *wiiu_cb_ax = NULL;
+void wiiu_ax_callback(void)
 {
-   OSUninterruptibleSpinLock_Acquire(&ax->spinlock);
-   //buffer underrun, stop playback to let if fill up
-   if(ax->written < AX_AUDIO_SAMPLE_MIN)
-      AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
-   //make sure to update written value if voice is running
-   if(AXIsMultiVoiceRunning(ax->mvoice))
-      ax->written -= (ax->written < AX_AUDIO_SAMPLE_COUNT ? ax->written : AX_AUDIO_SAMPLE_COUNT);
+   //possibly called before unregister
+   if(wiiu_cb_ax == NULL)
+      return;
 
-   OSUninterruptibleSpinLock_Release(&ax->spinlock);
-   return AX_RESULT_SUCCESS;
+   ax_audio_t *ax = (ax_audio_t*)wiiu_cb_ax;
+   if(AXIsMultiVoiceRunning(ax->mvoice))
+   {
+      if(OSUninterruptibleSpinLock_TryAcquire(&ax->spinlock))
+      {
+         //buffer underrun, stop playback to let it fill up
+         if(ax->written < AX_AUDIO_SAMPLE_MIN)
+            AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
+         else //make sure to update written value if voice is running
+            ax->written -= AX_AUDIO_SAMPLE_COUNT;
+         OSUninterruptibleSpinLock_Release(&ax->spinlock);
+      }
+   }
 }
 
+extern void AXRegisterFrameCallback(void *cb);
 static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
 {
    ax_audio_t* ax = (ax_audio_t*)calloc(1, sizeof(ax_audio_t));
@@ -135,9 +144,10 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
 
    config_get_ptr()->audio.out_rate = AX_AUDIO_RATE;
 
-   AXRegisterAuxCallback(AX_DEVICE_TYPE_DRC, 0, 0, (AXAuxCallback)ax_aux_callback, ax);
-
    OSInitSpinLock(&ax->spinlock);
+
+   wiiu_cb_ax = ax;
+   AXRegisterFrameCallback(wiiu_ax_callback);
 
    return ax;
 }
@@ -145,13 +155,15 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency)
 static void ax_audio_free(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
+   wiiu_cb_ax = NULL;
 
-   AXRegisterAuxCallback(AX_DEVICE_TYPE_DRC, 0, 0, NULL, NULL);
+   AXRegisterFrameCallback(NULL);
    AXFreeMultiVoice(ax->mvoice);
+   AXQuit();
+
    MEM1_free(ax->buffer_l);
    MEM1_free(ax->buffer_r);
    free(ax);
-   AXQuit();
 }
 
 static bool ax_audio_stop(void* data)
