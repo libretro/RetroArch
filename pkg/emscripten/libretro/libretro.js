@@ -48,6 +48,20 @@ var showError = function(error) {
 function cleanupStorage()
 {
    localStorage.clear();
+   if (BrowserFS.FileSystem.IndexedDB.isAvailable()) 
+   {
+      var req = indexedDB.deleteDatabase("RetroArch");
+      req.onsuccess = function () {
+         console.log("Deleted database successfully");
+      };
+      req.onerror = function () {
+         console.log("Couldn't delete database");
+      };
+      req.onblocked = function () {
+         console.log("Couldn't delete database due to the operation being blocked");
+      };
+   }
+
    document.getElementById("btnClean").disabled = true;
 }
 
