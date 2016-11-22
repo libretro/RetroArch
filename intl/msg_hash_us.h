@@ -2118,3 +2118,19 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    "Synchronize audio. Recommended."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD,
+   "How far an axis must be tilted to result in a button press."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   "Amount of seconds to wait until proceeding to the next bind."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Describes the period of which turbo-enabled buttons toggle. Numbers are described in frames."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+   "Describes how long the period of a turbo-enabled button should be. Numbers are described in frames."
+   )

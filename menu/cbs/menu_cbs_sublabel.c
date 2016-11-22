@@ -91,9 +91,12 @@ default_sublabel_macro(action_bind_sublabel_location_allow,                MENU_
 default_sublabel_macro(action_bind_sublabel_input_max_users,               MENU_ENUM_SUBLABEL_INPUT_MAX_USERS)
 default_sublabel_macro(action_bind_sublabel_input_poll_type_behavior,      MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR)
 default_sublabel_macro(action_bind_sublabel_input_all_users_control_menu,  MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU)
+default_sublabel_macro(action_bind_sublabel_input_bind_timeout,            MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT)
 default_sublabel_macro(action_bind_sublabel_audio_volume,                  MENU_ENUM_SUBLABEL_AUDIO_VOLUME)
 default_sublabel_macro(action_bind_sublabel_audio_sync,                    MENU_ENUM_SUBLABEL_AUDIO_SYNC)
-
+default_sublabel_macro(action_bind_sublabel_axis_threshold,                MENU_ENUM_SUBLABEL_INPUT_AXIS_THRESHOLD)
+default_sublabel_macro(action_bind_sublabel_input_turbo_period,            MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD)
+default_sublabel_macro(action_bind_sublabel_input_duty_cycle,              MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE)
 
 static int action_bind_sublabel_cheevos_entry(
       file_list_t *list,
@@ -135,6 +138,18 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
+         case MENU_ENUM_LABEL_INPUT_DUTY_CYCLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_duty_cycle);
+            break;
+         case MENU_ENUM_LABEL_INPUT_TURBO_PERIOD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_turbo_period);
+            break;
+         case MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_bind_timeout);
+            break;
+         case MENU_ENUM_LABEL_INPUT_AXIS_THRESHOLD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_axis_threshold);
+            break;
          case MENU_ENUM_LABEL_AUDIO_SYNC:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_audio_sync);
             break;
