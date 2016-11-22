@@ -57,8 +57,9 @@ typedef struct
 #define AX_AUDIO_SIZE_MASK          (AX_AUDIO_SIZE - 1u)
 
 #define AX_AUDIO_SAMPLE_COUNT       144 //3ms
-#define AX_AUDIO_SAMPLE_MIN         (AX_AUDIO_SAMPLE_COUNT * 10) //30ms
+#define AX_AUDIO_SAMPLE_MIN         (AX_AUDIO_SAMPLE_COUNT * 6) //18ms
 #define AX_AUDIO_SAMPLE_LOAD        (AX_AUDIO_SAMPLE_COUNT * 11) //33ms
+#define AX_AUDIO_MAX_FREE           (AX_AUDIO_COUNT - AX_AUDIO_SAMPLE_COUNT)
 #define AX_AUDIO_RATE               48000
 //#define ax_audio_ticks_to_samples(ticks)     (((ticks) * 64) / 82875)
 //#define ax_audio_samples_to_ticks(samples)   (((samples) * 82875) / 64)
@@ -202,67 +203,73 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    if(!size || (size & 0x3))
       return 0;
 
+   //measure copy performance from here
+   performance_counter_init(&ax_audio_write_perf, "ax_audio_write");
+   performance_counter_start(&ax_audio_write_perf);
+
    int count = size >> 2;
 
-   if(count > AX_AUDIO_COUNT)
-      count = AX_AUDIO_COUNT;
+   if(count > AX_AUDIO_MAX_FREE)
+      count = AX_AUDIO_MAX_FREE;
 
-   size_t countAvail = AX_AUDIO_COUNT - ax->written;
+   size_t countAvail = (ax->written > AX_AUDIO_MAX_FREE ? 0 : (AX_AUDIO_MAX_FREE - ax->written));
    if (ax->nonblocking)
    {
+      //not enough available for 3ms of data
       if(countAvail < AX_AUDIO_SAMPLE_COUNT)
-         return 0;
-
-      if(count > countAvail)
-         count = countAvail;
+         count = 0;
    }
    else if(countAvail < count)
    {
       //sync, wait for free memory
-      do {
-         OSYieldThread();
-         countAvail = AX_AUDIO_COUNT - ax->written;
-      } while(AXIsMultiVoiceRunning(ax->mvoice) && countAvail < count);
-   }
-
-   performance_counter_init(&ax_audio_write_perf, "ax_audio_write");
-   performance_counter_start(&ax_audio_write_perf);
-
-   //write in new data
-   size_t startPos = ax->pos;
-   int flushP2needed = 0;
-   int flushP2 = 0;
-   for (i = 0; i < (count << 1); i += 2)
-   {
-      ax->buffer_l[ax->pos] = src[i];
-      ax->buffer_r[ax->pos] = src[i + 1];
-      ax->pos++;
-      ax->pos &= AX_AUDIO_COUNT_MASK;
-      //wrapped around, make sure to store cache
-      if(ax->pos == 0)
+      while(AXIsMultiVoiceRunning(ax->mvoice) && (countAvail < count))
       {
-         flushP2needed = 1;
-         flushP2 = ((count << 1) - i);
-         DCStoreRangeNoSync(ax->buffer_l+startPos, (AX_AUDIO_COUNT-startPos) << 1);
-         DCStoreRangeNoSync(ax->buffer_r+startPos, (AX_AUDIO_COUNT-startPos) << 1);
+         OSYieldThread(); //gives threads with same priority time to run
+         countAvail = (ax->written > AX_AUDIO_MAX_FREE ? 0 : (AX_AUDIO_MAX_FREE - ax->written));
       }
    }
-   //standard cache store case
-   if(!flushP2needed)
+   //over available space, do as much as possible
+   if(count > countAvail)
+      count = countAvail;
+   //make sure we have input size
+   if(count > 0)
    {
-      DCStoreRangeNoSync(ax->buffer_l+startPos, count << 1);
-      DCStoreRange(ax->buffer_r+startPos, count << 1);
-   } //store the rest after wrap
-   else if(flushP2 > 0)
-   {
-      DCStoreRangeNoSync(ax->buffer_l, flushP2);
-      DCStoreRange(ax->buffer_r, flushP2);
-   }
-   //add in new audio data
-   if(OSUninterruptibleSpinLock_Acquire(&ax->spinlock))
-   {
-      ax->written += count;
-      OSUninterruptibleSpinLock_Release(&ax->spinlock);
+      //write in new data
+      size_t startPos = ax->pos;
+      int flushP2needed = 0;
+      int flushP2 = 0;
+      for (i = 0; i < (count << 1); i += 2)
+      {
+         ax->buffer_l[ax->pos] = src[i];
+         ax->buffer_r[ax->pos] = src[i + 1];
+         ax->pos++;
+         ax->pos &= AX_AUDIO_COUNT_MASK;
+         //wrapped around, make sure to store cache
+         if(ax->pos == 0)
+         {
+            flushP2needed = 1;
+            flushP2 = ((count << 1) - i);
+            DCStoreRangeNoSync(ax->buffer_l+startPos, (AX_AUDIO_COUNT-startPos) << 1);
+            DCStoreRangeNoSync(ax->buffer_r+startPos, (AX_AUDIO_COUNT-startPos) << 1);
+         }
+      }
+      //standard cache store case
+      if(!flushP2needed)
+      {
+         DCStoreRangeNoSync(ax->buffer_l+startPos, count << 1);
+         DCStoreRange(ax->buffer_r+startPos, count << 1);
+      } //store the rest after wrap
+      else if(flushP2 > 0)
+      {
+         DCStoreRangeNoSync(ax->buffer_l, flushP2);
+         DCStoreRange(ax->buffer_r, flushP2);
+      }
+      //add in new audio data
+      if(OSUninterruptibleSpinLock_Acquire(&ax->spinlock))
+      {
+         ax->written += count;
+         OSUninterruptibleSpinLock_Release(&ax->spinlock);
+      }
    }
    //possibly buffer underrun
    if(!AXIsMultiVoiceRunning(ax->mvoice))
@@ -270,9 +277,9 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       //checks if it can be started
       ax_audio_start(ax);
    }
-
+   //done copying new data
    performance_counter_stop(&ax_audio_write_perf);
-
+   //return what was actually copied
    return (count << 2);
 }
 
@@ -287,9 +294,7 @@ static void ax_audio_set_nonblock_state(void* data, bool state)
    ax_audio_t* ax = (ax_audio_t*)data;
 
    if (ax)
-   {
       ax->nonblocking = state;
-   }
 }
 
 static bool ax_audio_use_float(void* data)
