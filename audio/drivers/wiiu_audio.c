@@ -78,7 +78,8 @@ void wiiu_ax_callback(void)
          //buffer underrun, stop playback to let it fill up
          if(ax->written < AX_AUDIO_SAMPLE_MIN)
             AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
-         else //make sure to update written value if voice is running
+         //make sure to update written value if voice is running
+         if(AXIsMultiVoiceRunning(ax->mvoice))
             ax->written -= AX_AUDIO_SAMPLE_COUNT;
          OSUninterruptibleSpinLock_Release(&ax->spinlock);
       }
