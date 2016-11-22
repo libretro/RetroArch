@@ -73,7 +73,7 @@ void wiiu_ax_callback(void)
    ax_audio_t *ax = (ax_audio_t*)wiiu_cb_ax;
    if(AXIsMultiVoiceRunning(ax->mvoice))
    {
-      if(OSUninterruptibleSpinLock_TryAcquire(&ax->spinlock))
+      if(OSUninterruptibleSpinLock_Acquire(&ax->spinlock))
       {
          //buffer underrun, stop playback to let it fill up
          if(ax->written < AX_AUDIO_SAMPLE_MIN)
@@ -258,10 +258,11 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       DCStoreRange(ax->buffer_r, flushP2);
    }
    //add in new audio data
-   OSUninterruptibleSpinLock_Acquire(&ax->spinlock);
-   ax->written += count;
-   OSUninterruptibleSpinLock_Release(&ax->spinlock);
-
+   if(OSUninterruptibleSpinLock_Acquire(&ax->spinlock))
+   {
+      ax->written += count;
+      OSUninterruptibleSpinLock_Release(&ax->spinlock);
+   }
    //possibly buffer underrun
    if(!AXIsMultiVoiceRunning(ax->mvoice))
    {
