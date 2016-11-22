@@ -140,7 +140,12 @@ static bool connmanctl_connect_ssid(unsigned i, const char* passphrase)
    const char *line = lines->elems[i].data;
 
    static struct string_list* list = NULL;
-   list = string_split(line, " ");
+   // connmanctl services outputs a 4 character prefixed lines, either whispace
+   // or an identifier. i.e.:
+   // $ connmanctl services
+   //     '*A0 SSID some_unique_id'
+   //     '    SSID some_another_unique_id'
+   list = string_split(line+4, " ");
    if(!list)
        return false;
 
