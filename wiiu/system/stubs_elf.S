@@ -1,4 +1,4 @@
-/*#define EXPORT(name) \
+/*#define IMPORT(name) \
    .global name; \
    name: \
       lis %r11, addr_##name@h; \
@@ -6,7 +6,7 @@
       mtctr %r11; \
       bctr*/
 
-#define EXPORT(name) \
+#define IMPORT(name) \
    .global name; \
    name: \
    lis %r11, addr_##name@h; \
@@ -15,11 +15,11 @@
    mtctr %r11; \
    bctr
 
-#define EXPORT_BEGIN(lib)
-#define EXPORT_END()
+#define IMPORT_BEGIN(lib)
+#define IMPORT_END(lib)
 
 .align 2;
 .section ".text";
 
-#include "exports/all.h"
+#include "imports.h"
 
