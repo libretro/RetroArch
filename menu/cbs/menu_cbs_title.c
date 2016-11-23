@@ -46,138 +46,32 @@ static void sanitize_to_string(char *s, const char *label, size_t len)
    replace_chars(s, '_', ' ');
 }
 
-static int action_get_user_accounts_cheevos_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
-   return 0;
+#define default_title_macro(func_name, lbl) \
+  static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
+{ \
+   sanitize_to_string(s, msg_hash_to_str(lbl), len); \
+   return 0; \
 }
 
-static int action_get_download_core_content_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT), len);
-   return 0;
-}
-
-static int action_get_user_accounts_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST), len);
-   return 0;
-}
-
-static int action_get_core_information_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), len);
-   return 0;
-}
-
-static int action_get_core_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST), len);
-   return 0;
-}
-
-static int action_get_online_updater_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER), len);
-   return 0;
-}
-
-static int action_get_netplay_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY), len);
-   return 0;
-}
-
-static int action_get_online_thumbnails_updater_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST), len);
-   return 0;
-}
-
-static int action_get_core_updater_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST), len);
-   return 0;
-}
-
-static int action_get_add_content_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST), len);
-   return 0;
-}
-
-static int action_get_configurations_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST), len);
-   return 0;
-}
-
-static int action_get_core_options_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS), len);
-   return 0;
-}
-
-static int action_get_load_recent_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY), len);
-   return 0;
-}
-
-static int action_get_quick_menu_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS), len);
-   return 0;
-}
-
-static int action_get_input_remapping_options_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS), len);
-   return 0;
-}
-
-static int action_get_shader_options_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), len);
-   return 0;
-}
-
-static int action_get_disk_options_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS), len);
-   return 0;
-}
-
-static int action_get_frontend_counters_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS), len);
-   return 0;
-}
-
-static int action_get_core_counters_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS), len);
-   return 0;
-}
+default_title_macro(action_get_user_accounts_cheevos_list,     MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS)
+default_title_macro(action_get_download_core_content_list,     MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT)
+default_title_macro(action_get_user_accounts_list,             MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST )
+default_title_macro(action_get_core_information_list,          MENU_ENUM_LABEL_VALUE_CORE_INFORMATION)
+default_title_macro(action_get_core_list,                      MENU_ENUM_LABEL_VALUE_CORE_LIST)
+default_title_macro(action_get_online_updater_list,            MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER)
+default_title_macro(action_get_netplay_list,                   MENU_ENUM_LABEL_VALUE_NETPLAY)
+default_title_macro(action_get_online_thumbnails_updater_list, MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST )
+default_title_macro(action_get_core_updater_list,              MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST)
+default_title_macro(action_get_add_content_list,               MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
+default_title_macro(action_get_configurations_list,            MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
+default_title_macro(action_get_core_options_list,              MENU_ENUM_LABEL_VALUE_CORE_OPTIONS )
+default_title_macro(action_get_load_recent_list,               MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY)
+default_title_macro(action_get_quick_menu_list,                MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS)
+default_title_macro(action_get_input_remapping_options_list,   MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS)
+default_title_macro(action_get_shader_options_list,            MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS)
+default_title_macro(action_get_disk_options_list,              MENU_ENUM_LABEL_VALUE_DISK_OPTIONS)
+default_title_macro(action_get_frontend_counters_list,         MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS)
+default_title_macro(action_get_core_counters_list,             MENU_ENUM_LABEL_VALUE_CORE_COUNTERS)
 
 static int action_get_recording_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
