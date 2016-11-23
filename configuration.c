@@ -2176,7 +2176,7 @@ static bool config_load_file(const char *path, bool set_defaults,
    {
       if(strstr(file_path_str((enum file_path_enum)(i)), path_get_extension(settings->path.shader)))
       {
-         if (!check_shader_compatibility(i))
+         if (!check_shader_compatibility((enum file_path_enum)i))
          {
             RARCH_LOG("Incompatible shader for backend %s, clearing...\n", settings->video.driver);
             settings->path.shader[0] = '\0';
