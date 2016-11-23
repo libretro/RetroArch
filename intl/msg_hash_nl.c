@@ -299,10 +299,6 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Verbergen Niet-gemapte Core Input Descripties";
       case MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW:
          return "Descriptie Labels Weergeven";
-      case MENU_ENUM_LABEL_VALUE_INPUT_DRIVER:
-         return "Input Driver";
-      case MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE:
-         return "Duty Cycle"; /* TODO/FIXME */
       case MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS:
          return "Invoer Hotkey Binds";
       case MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS:
@@ -413,8 +409,6 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Navigatie Wrap-Around";
       case MENU_ENUM_LABEL_VALUE_NEAREST:
          return "Nearest";
-      case MENU_ENUM_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT: /* TODO: Original string changed */
-         return "Swap Netplay Input";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Netplay Vertraging Frames";
       case MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE:
@@ -481,12 +475,8 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "Overlay Map";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Overlay Transparentie";
-      case MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET:
-         return "Overlay Preset";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE:
          return "Overlay Schalering";
-      case MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS:
-         return "Onscreen Overlay";
       case MENU_ENUM_LABEL_VALUE_PAL60_ENABLE:
          return "PAL60 Mode Activeren";
       case MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO:
@@ -908,8 +898,6 @@ const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
          return "VI Scherm Breedte Instellen";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC:
          return "VSync";
-      case MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN:
-         return "Windowed Fullscreen Mode"; /* TODO/FIXME */
       case MENU_ENUM_LABEL_VALUE_YES:
          return "Ja";
       default:
