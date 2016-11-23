@@ -185,7 +185,7 @@ $(TARGET).rpx.elf: $(OBJ) $(RPX_OBJ) libretro_wiiu.a wiiu/link_elf.ld
 	$(LD) $(OBJ) $(RPX_OBJ) $(LDFLAGS) $(RPX_LDFLAGS) $(LIBDIRS)  $(LIBS) -o $@
 
 $(TARGET).rpx: $(TARGET).rpx.elf
-	$(ELF2RPL) $(notdir $<) $@
+	-$(ELF2RPL) $(notdir $<) $@
 
 clean:
 	rm -f $(OBJ)
