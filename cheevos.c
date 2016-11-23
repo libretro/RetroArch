@@ -18,6 +18,7 @@
 
 #include <formats/jsonsax.h>
 #include <streams/file_stream.h>
+#include <compat/strl.h>
 #include <rhash.h>
 #include <libretro.h>
 
@@ -311,8 +312,7 @@ static void cheevos_log_url(const char* format, const char* url)
    char* aux;
    char* next;
    
-   strncpy(copy, url, sizeof(copy));
-   copy[sizeof(copy) - 1] = 0;
+   strlcpy(copy, url, sizeof(copy));
    
    aux = strstr(copy, "?p=");
    
@@ -465,13 +465,12 @@ static void cheevos_log_cheevo(const cheevo_t* cheevo,
    char memaddr[256];
    size_t length;
 
-   length = memaddr_ud->length + 1;
+   length = memaddr_ud->length;
 
-   if (length >= sizeof(memaddr))
+   if (length > sizeof(memaddr))
       length = sizeof(memaddr);
 
-   strncpy(memaddr, memaddr_ud->string, length - 1);
-   memaddr[length - 1] = 0;
+   strlcpy(memaddr, memaddr_ud->string, length);
 
    RARCH_LOG("CHEEVOS cheevo %p\n", cheevo);
    RARCH_LOG("CHEEVOS   id:      %u\n", cheevo->id);
@@ -753,8 +752,7 @@ static int cheevos_get_value(const char *json, unsigned key_hash,
    if ((jsonsax_parse(json, &handlers, (void*)&ud) == JSONSAX_OK)
          && ud.value && ud.length < length)
    {
-      strncpy(value, ud.value, length);
-      value[ud.length] = 0;
+      strlcpy(value, ud.value, length);
       return 0;
    }
 
@@ -2816,17 +2814,15 @@ void cheevos_populate_menu(void *data, bool hardcore)
 
 bool cheevos_get_description(cheevos_ctx_desc_t *desc)
 {
-   cheevo_t *cheevos        = cheevos_locals.core.cheevos;
+   cheevo_t *cheevos = cheevos_locals.core.cheevos;
 
    if (desc->idx >= cheevos_locals.core.count)
    {
-      cheevos       = cheevos_locals.unofficial.cheevos;
-      desc->idx    -= cheevos_locals.unofficial.count;
+      cheevos    = cheevos_locals.unofficial.cheevos;
+      desc->idx -= cheevos_locals.unofficial.count;
    }
 
-   strncpy(desc->s, cheevos[desc->idx].description, desc->len);
-   desc->s[desc->len - 1] = 0;
-
+   strlcpy(desc->s, cheevos[desc->idx].description, desc->len);
    return true;
 }
 
