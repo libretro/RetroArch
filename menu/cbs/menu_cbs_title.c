@@ -72,6 +72,13 @@ static int action_get_title_action_generic(const char *path, const char *label,
    return fill_title(s, msg_hash_to_str(lbl), path, len); \
 }
 
+#define default_title_copy_macro(func_name, lbl) \
+  static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
+{ \
+   strlcpy(s, msg_hash_to_str(lbl), len); \
+   return 0; \
+}
+
 default_title_macro(action_get_user_accounts_cheevos_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS)
 default_title_macro(action_get_download_core_content_list,      MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT)
 default_title_macro(action_get_user_accounts_list,              MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST)
@@ -165,21 +172,8 @@ default_fill_title_macro(action_get_title_extraction_directory,   MENU_ENUM_LABE
 default_fill_title_macro(action_get_title_menu,                   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS)
 default_fill_title_macro(action_get_title_font_path,              MENU_ENUM_LABEL_VALUE_XMB_FONT)
 
-static int action_get_title_help(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   strlcpy(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HELP_LIST), len);
-   return 0;
-}
-
-static int action_get_title_input_settings(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   strlcpy(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS), len);
-   return 0;
-}
+default_title_copy_macro(action_get_title_help,                   MENU_ENUM_LABEL_VALUE_HELP_LIST)
+default_title_copy_macro(action_get_title_input_settings,         MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
 
 static int action_get_title_generic(char *s, size_t len, const char *path,
       const char *text)
