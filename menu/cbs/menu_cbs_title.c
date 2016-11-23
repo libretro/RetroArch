@@ -46,11 +46,30 @@ static void sanitize_to_string(char *s, const char *label, size_t len)
    replace_chars(s, '_', ' ');
 }
 
+static int fill_title(char *s, const char *title, const char *path, size_t len)
+{
+   fill_pathname_join_delim(s, title, path, ' ', len);
+   return 0;
+}
+
+static int action_get_title_action_generic(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, label, len);
+   return 0;
+}
+
 #define default_title_macro(func_name, lbl) \
   static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
 { \
    sanitize_to_string(s, msg_hash_to_str(lbl), len); \
    return 0; \
+}
+
+#define default_fill_title_macro(func_name, lbl) \
+  static int (func_name)(const char *path, const char *label, unsigned menu_type, char *s, size_t len) \
+{ \
+   return fill_title(s, msg_hash_to_str(lbl), path, len); \
 }
 
 default_title_macro(action_get_user_accounts_cheevos_list,      MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS)
@@ -108,129 +127,21 @@ default_title_macro(action_get_network_information_list,        MENU_ENUM_LABEL_
 default_title_macro(action_get_settings_list,                   MENU_ENUM_LABEL_VALUE_SETTINGS)
 default_title_macro(action_get_title_information_list,          MENU_ENUM_LABEL_VALUE_INFORMATION_LIST)
 
-
-static int action_get_title_action_generic(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, label, len);
-   return 0;
-}
-
-static int fill_title(char *s, const char *title, const char *path, size_t len)
-{
-   fill_pathname_join_delim(s, title, path, ' ', len);
-   return 0;
-}
-
-static int action_get_title_disk_image_append(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND),
-         path, len);
-}
-
-static int action_get_title_cheat_file_load(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILE),
-        path, len);
-}
-
-static int action_get_title_remap_file_load(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE), path, len);
-}
-
-static int action_get_title_overlay(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY), path, len);
-}
-
-static int action_get_title_video_filter(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER), path, len);
-}
-
-static int action_get_title_cheat_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH), path, len);
-}
-
-static int action_get_title_core_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH), path, len);
-}
-
-static int action_get_title_core_info_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH), path, len);
-}
-
-static int action_get_title_audio_filter(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
-}
-
-static int action_get_title_font_path(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, "Font", path, len);
-}
-
-static int action_get_title_video_shader_preset(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO), path, len);
-}
-
-static int action_get_title_deferred_core_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES),
-         path, len);
-}
-
-static int action_get_title_configurations(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONFIG), path, len);
-}
-
-static int action_get_title_content_database_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY), path, len);
-}
-
-static int action_get_title_savestate_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY), path, len);
-}
-
-static int action_get_title_dynamic_wallpapers_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY), path, len);
-}
+default_fill_title_macro(action_get_title_disk_image_append,    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND)
+default_fill_title_macro(action_get_title_cheat_file_load,      MENU_ENUM_LABEL_VALUE_CHEAT_FILE)
+default_fill_title_macro(action_get_title_remap_file_load,      MENU_ENUM_LABEL_VALUE_REMAP_FILE)
+default_fill_title_macro(action_get_title_overlay,              MENU_ENUM_LABEL_VALUE_OVERLAY)
+default_fill_title_macro(action_get_title_video_filter,         MENU_ENUM_LABEL_VALUE_VIDEO_FILTER)
+default_fill_title_macro(action_get_title_cheat_directory,      MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH)
+default_fill_title_macro(action_get_title_core_directory,       MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH)
+default_fill_title_macro(action_get_title_core_info_directory,  MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH)
+default_fill_title_macro(action_get_title_audio_filter,         MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR)
+default_fill_title_macro(action_get_title_video_shader_preset,  MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
+default_fill_title_macro(action_get_title_deferred_core_list,   MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES)
+default_fill_title_macro(action_get_title_configurations,       MENU_ENUM_LABEL_VALUE_CONFIG)
+default_fill_title_macro(action_get_title_content_database_directory, MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY)
+default_fill_title_macro(action_get_title_savestate_directory,  MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY)
+default_fill_title_macro(action_get_title_dynamic_wallpapers_directory, MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY)
 
 static int action_get_title_core_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
@@ -370,6 +281,12 @@ static int action_get_title_menu(const char *path, const char *label,
 {
    return fill_title(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS), path, len);
+}
+
+static int action_get_title_font_path(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   return fill_title(s, "Font", path, len);
 }
 
 static int action_get_title_help(const char *path, const char *label, 
