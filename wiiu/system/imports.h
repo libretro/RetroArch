@@ -23,10 +23,12 @@ IMPORT(OSJoinThread);
 IMPORT(OSYieldThread);
 IMPORT(OSGetSystemTime);
 IMPORT(OSGetSystemTick);
+IMPORT(OSGetSymbolName);
 
 IMPORT(exit);
 IMPORT(_Exit);
 IMPORT(__os_snprintf);
+IMPORT(DisassemblePPCRange);
 
 IMPORT(DCFlushRange);
 IMPORT(DCStoreRange);
