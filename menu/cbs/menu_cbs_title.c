@@ -146,118 +146,23 @@ default_fill_title_macro(action_get_title_core_assets_directory, MENU_ENUM_LABEL
 default_fill_title_macro(action_get_title_config_directory,      MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY)
 default_fill_title_macro(action_get_title_input_remapping_directory,    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY)
 default_fill_title_macro(action_get_title_autoconfig_directory,  MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR )
-
-static int action_get_title_playlist_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY), path, len);
-}
-
-static int action_get_title_browser_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY), path, len);
-}
-
-static int action_get_title_content_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_DIR), path, len);
-}
-
-static int action_get_title_screenshot_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY), path, len);
-}
-
-static int action_get_title_cursor_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY), path, len);
-}
-
-static int action_get_title_onscreen_overlay_keyboard_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY), path, len);
-}
-
-static int action_get_title_recording_config_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY), path, len);
-}
-
-static int action_get_title_recording_output_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY), path, len);
-}
-
-static int action_get_title_video_shader_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR), path, len);
-}
-
-static int action_get_title_audio_filter_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
-}
-
-static int action_get_title_video_filter_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR), path, len);
-}
-
-static int action_get_title_savefile_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY), path, len);
-}
-
-static int action_get_title_overlay_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY), path, len);
-}
-
-static int action_get_title_system_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY), path, len);
-}
-
-static int action_get_title_assets_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY), path, len);
-}
-
-static int action_get_title_extraction_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY), path, len);
-}
-
-static int action_get_title_menu(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS), path, len);
-}
+default_fill_title_macro(action_get_title_playlist_directory,    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY)
+default_fill_title_macro(action_get_title_browser_directory,     MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY)
+default_fill_title_macro(action_get_title_content_directory,     MENU_ENUM_LABEL_VALUE_CONTENT_DIR)
+default_fill_title_macro(action_get_title_screenshot_directory,  MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY)
+default_fill_title_macro(action_get_title_cursor_directory,      MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY)
+default_fill_title_macro(action_get_title_onscreen_overlay_keyboard_directory, MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY)
+default_fill_title_macro(action_get_title_recording_config_directory, MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY)
+default_fill_title_macro(action_get_title_recording_output_directory, MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY)
+default_fill_title_macro(action_get_title_video_shader_directory, MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR)
+default_fill_title_macro(action_get_title_audio_filter_directory, MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR)
+default_fill_title_macro(action_get_title_video_filter_directory, MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR)
+default_fill_title_macro(action_get_title_savefile_directory,     MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY)
+default_fill_title_macro(action_get_title_overlay_directory,      MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY)
+default_fill_title_macro(action_get_title_system_directory,       MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY)
+default_fill_title_macro(action_get_title_assets_directory,       MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY)
+default_fill_title_macro(action_get_title_extraction_directory,   MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY)
+default_fill_title_macro(action_get_title_menu,                   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS)
 
 static int action_get_title_font_path(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
