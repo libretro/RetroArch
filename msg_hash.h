@@ -25,6 +25,8 @@
 
 #include "input/input_defines.h"
 
+#define MSG_HASH(Id, str) case Id: return str;
+
 RETRO_BEGIN_DECLS
 
 enum msg_file_type

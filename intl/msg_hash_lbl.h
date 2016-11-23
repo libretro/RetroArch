@@ -1076,19 +1076,13 @@ MSG_HASH(MSG_CONNECT_DEVICE_FROM_A_VALID_PORT,
       "connect_device_from_a_valid_port")
 MSG_HASH(MSG_DEVICE_CONFIGURED_IN_PORT,
       "configured in port")
-MSG_HASH(MSG_DEVICE_NOT_CONFIGURED,
-      "not configured")
 MSG_HASH(MSG_DISCONNECTING_DEVICE_FROM_PORT,
       "disconnecting_device_from_port")
 MSG_HASH(MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
       "disconnect_device_from_a_valid_port")
-MSG_HASH(MSG_FAILED,
-      "failed")
 MSG_HASH(MSG_FAILED_TO_SET_DISK,
       "Failed to set disk")
 MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
       "failed_to_start_audio_driver")
 MSG_HASH(MSG_FOUND_LAST_STATE_SLOT,
       "found_last_state_slot")
-MSG_HASH(MSG_SUCCEEDED,
-      "succeeded")

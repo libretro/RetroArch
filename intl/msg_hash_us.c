@@ -1870,8 +1870,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
    return 0;
 }
 
-#define MSG_HASH(Id, str) case Id: return str;
-
 #ifdef HAVE_MENU
 static const char *menu_hash_to_str_us_label_enum(enum msg_hash_enums msg)
 {
@@ -1919,5 +1917,3 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 
    return "null";
 }
-
-#undef MSG_HASH
