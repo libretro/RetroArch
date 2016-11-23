@@ -62,6 +62,10 @@
  * from retroachievements.org. */
 #undef CHEEVOS_JSON_OVERRIDE
 
+/* Define this macro to have the password and token logged. THIS WILL DISCLOSE
+ * THE USER'S PASSWORD, TAKE CARE! */
+#undef CHEEVOS_LOG_PASSWORD
+
 /* C89 wants only int values in enums. */
 #define CHEEVOS_JSON_KEY_GAMEID       0xb4960eecU
 #define CHEEVOS_JSON_KEY_ACHIEVEMENTS 0x69749ae1U
@@ -296,6 +300,43 @@ static int cheats_were_enabled = 0;
 /*****************************************************************************
 Supporting functions.
 *****************************************************************************/
+
+#ifdef CHEEVOS_LOG_URLS
+static void cheevos_log_url(const char* format, const char* url)
+{
+#ifdef CHEEVOS_LOG_PASSWORD
+   RARCH_LOG(format, url);
+#else
+   char copy[256];
+   char* aux;
+   
+   strncpy(copy, url, sizeof(copy));
+   copy[sizeof(copy) - 1] = 0;
+   
+   aux = strstr(copy, "p=");
+   
+   if (aux != NULL)
+   {
+      aux += 2;
+      
+      while (*aux != 0 && *aux != '&')
+         *aux++ = 'X';
+   }
+   
+   aux = strstr(copy, "t=");
+   
+   if (aux != NULL)
+   {
+      aux += 2;
+      
+      while (*aux != 0 && *aux != '&')
+         *aux++ = 'X';
+   }
+   
+   RARCH_LOG(format, copy);
+#endif
+}
+#endif
 
 #ifdef CHEEVOS_VERBOSE
 static void cheevos_add_char(char** aux, size_t* left, char k)
@@ -1781,7 +1822,7 @@ static int cheevos_login(retro_time_t *timeout)
    request[sizeof(request) - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-   RARCH_LOG("CHEEVOS url to login: %s\n", request);
+   cheevos_log_url("CHEEVOS url to login: %s\n", request);
 #endif
 
    if (!cheevos_http_get(&json, NULL, request, timeout))
@@ -1818,7 +1859,7 @@ static void cheevos_make_unlock_url(const cheevo_t *cheevo, char* url, size_t ur
    url[url_size - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-   RARCH_LOG("CHEEVOS url to award the cheevo: %s\n", url);
+   cheevos_log_url("CHEEVOS url to award the cheevo: %s\n", url);
 #endif
 }
 
@@ -1942,7 +1983,7 @@ static int cheevos_get_by_game_id(const char **json,
       request[sizeof(request) - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-      RARCH_LOG("CHEEVOS url to get the list of cheevos: %s\n", request);
+      cheevos_log_url("CHEEVOS url to get the list of cheevos: %s\n", request);
 #endif
 
       if (!cheevos_http_get(json, NULL, request, timeout))
@@ -1987,7 +2028,7 @@ static unsigned cheevos_get_game_id(unsigned char *hash, retro_time_t *timeout)
    request[sizeof(request) - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-   RARCH_LOG("CHEEVOS url to get the game's id: %s\n", request);
+   cheevos_log_url("CHEEVOS url to get the game's id: %s\n", request);
 #endif
 
    if (!cheevos_http_get(&json, NULL, request, timeout))
@@ -2021,7 +2062,7 @@ static void cheevos_make_playing_url(unsigned game_id, char* url, size_t url_siz
    url[url_size - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-   RARCH_LOG("CHEEVOS url to post the 'playing' activity: %s\n", url);
+   cheevos_log_url("CHEEVOS url to post the 'playing' activity: %s\n", url);
 #endif
 }
 
@@ -2148,7 +2189,7 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
       request[sizeof(request) - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-      RARCH_LOG("CHEEVOS url to get the list of unlocked cheevos in softcore: %s\n", request);
+      cheevos_log_url("CHEEVOS url to get the list of unlocked cheevos in softcore: %s\n", request);
 #endif
 
       if (!cheevos_http_get(&json, NULL, request, timeout))
@@ -2177,7 +2218,7 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
       request[sizeof(request) - 1] = 0;
 
 #ifdef CHEEVOS_LOG_URLS
-      RARCH_LOG("CHEEVOS url to get the list of unlocked cheevos in hardcore: %s\n", request);
+      cheevos_log_url("CHEEVOS url to get the list of unlocked cheevos in hardcore: %s\n", request);
 #endif
 
       if (!cheevos_http_get(&json, NULL, request, timeout))
@@ -2601,7 +2642,7 @@ found:
       fclose(file);
    }
 #else
-   if (!cheevos_get_by_game_id(&json, game_id, &timeout))
+   if (cheevos_get_by_game_id(&json, game_id, &timeout) == 0 && json != NULL)
 #endif
    {
       if (!cheevos_parse(json))
