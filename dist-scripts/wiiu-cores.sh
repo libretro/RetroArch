@@ -36,7 +36,7 @@ gen_meta_xml()
       echo '  <version>'$RARCH_VERSION' ('$date')</version>' >> "$1"_meta.xml
       echo '  <release_date>'$date'</release_date>' >> "$1"_meta.xml
       echo '  <short_description>RetroArch</short_description>' >> "$1"_meta.xml
-      echo '  <long_description>'$display_name'\n\nSystem: '$systemname'\nLicense: '$license'</long_description>' >> "$1"_meta.xml
+      echo -e '  <long_description>'$display_name'\n\nSystem: '$systemname'\nLicense: '$license'</long_description>' >> "$1"_meta.xml
       echo '  <category>emu</category>' >> "$1"_meta.xml
       echo '  <url>https://github.com/libretro</url>' >> "$1"_meta.xml
       echo '</app>' >> "$1"_meta.xml
