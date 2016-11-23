@@ -20,34 +20,34 @@
       bctr;
 
 /*#define IMPORT_END() .align 2;*/
-#define IMPORT_END(lib)
+#define IMPORT_END()
 
 #include "imports.h"
 
 
-#undef IMPORT_BEGIN
+#undef IMPORT_BEGIN 
 #undef IMPORT
 #undef IMPORT_END
 
 #define IMPORT_BEGIN(lib) \
+.section ".rodata.rplNames"; \
+   1: \
+   .string #lib; \
 .section ".data.rplFuncStubs"; \
 .align 2; \
-   fstubBegin_##lib:
+   2:
 
 #define IMPORT(name) \
    .global name##_stub; \
    name##_stub: \
    .long name;
 
-#define IMPORT_END(lib) \
-   fstubEnd_##lib: \
-.section ".rodata.rplNames"; \
-   lib##_name: \
-   .string #lib; \
+#define IMPORT_END() \
+   3: \
 .section ".lib.rplLibs"; \
    .align 2; \
-   .long lib##_name; \
-   .long fstubBegin_##lib; \
-   .long fstubEnd_##lib
+   .long 1b; \
+   .long 2b; \
+   .long 3b
 
 #include "imports.h"
