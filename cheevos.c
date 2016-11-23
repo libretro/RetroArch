@@ -309,28 +309,53 @@ static void cheevos_log_url(const char* format, const char* url)
 #else
    char copy[256];
    char* aux;
+   char* next;
    
    strncpy(copy, url, sizeof(copy));
    copy[sizeof(copy) - 1] = 0;
    
-   aux = strstr(copy, "p=");
+   aux = strstr(copy, "?p=");
+   
+   if (aux == NULL)
+      aux = strstr(copy, "&p=");
    
    if (aux != NULL)
    {
-      aux += 2;
+      aux += 3;
+      next = strchr(aux, '&');
       
-      while (*aux != 0 && *aux != '&')
-         *aux++ = 'X';
+      if (next != NULL)
+      {
+         do
+         {
+            *aux++ = *next++;
+         }
+         while (next[-1] != 0);
+      }
+      else
+         *aux = 0;
    }
    
-   aux = strstr(copy, "t=");
+   aux = strstr(copy, "?t=");
+   
+   if (aux == NULL)
+      aux = strstr(copy, "&t=");
    
    if (aux != NULL)
    {
-      aux += 2;
+      aux += 3;
+      next = strchr(aux, '&');
       
-      while (*aux != 0 && *aux != '&')
-         *aux++ = 'X';
+      if (next != NULL)
+      {
+         do
+         {
+            *aux++ = *next++;
+         }
+         while (next[-1] != 0);
+      }
+      else
+         *aux = 0;
    }
    
    RARCH_LOG(format, copy);
