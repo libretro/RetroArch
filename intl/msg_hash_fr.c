@@ -56,9 +56,7 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
 {
    switch (msg)
    {
-      case MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES:
-         return "audio_block_frames";
-      case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
+      case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
          return "Taille de l'historique";
       case MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST:
          return "Comptes en ligne";
@@ -138,8 +136,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "Collections";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
          return "Dossier des bases de données de contenus";
-      case MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE:
-         return "Taille de l'historique";
       case MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS:
          return "Menu rapide";
       case MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY:
@@ -906,8 +902,6 @@ const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
          return "XMB : Theme";
       case MENU_ENUM_LABEL_VALUE_YES:
          return "Oui";
-      case MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER:
-         return "video_filter_flicker";
       case MSG_APPENDED_DISK:
          return "Disque fusionné";
       case MSG_APPLYING_SHADER:
