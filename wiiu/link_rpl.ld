@@ -112,18 +112,22 @@ SECTIONS {
 
    .ctors ALIGN(256) :
    {
+      __CTOR_LIST__ = .;
       KEEP (*crtbegin.o(.ctors)) /* MUST be first -- GCC requires it */
       KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
       KEEP (*(SORT(.ctors.*)))
       KEEP (*(.ctors))
+      __CTOR_END__ = .;
    } : hdr_data
 
    .dtors ALIGN(256) :
    {
+      __DTOR_LIST__ = .;
       KEEP (*crtbegin.o(.dtors))
       KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
       KEEP (*(SORT(.dtors.*)))
       KEEP (*(.dtors))
+      __DTOR_END__ = .;
    } : hdr_data
 
    __bss_start__ = .;

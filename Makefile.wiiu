@@ -1,5 +1,6 @@
 TARGET		    := retroarch_wiiu
-RPX_BUILD	     = 0
+BUILD_HBL_ELF	     = 1
+BUILD_RPX	     = 1
 DEBUG                = 0
 GRIFFIN_BUILD        = 0
 WHOLE_ARCHIVE_LINK   = 0
@@ -13,13 +14,6 @@ OBJ += wiiu/system/exception_handler.o
 OBJ += wiiu/fs/sd_fat_devoptab.o
 OBJ += wiiu/fs/fs_utils.o
 OBJ += wiiu/tex_shader.o
-
-ifeq ($(RPX_BUILD), 1)
-OBJ += wiiu/system/stubs_rpl.o
-else
-OBJ += wiiu/system/dynamic.o
-OBJ += wiiu/system/stubs_elf.o
-endif
 
 DEFINES :=
 
@@ -142,28 +136,32 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
-ifeq ($(RPX_BUILD), 1)
-   CFLAGS   += -fno-builtin -ffreestanding -DRPX_BUILD
-   LIBDIRS  += -L$(WUT_ROOT)/lib -L$(DEVKITPPC)/lib
-   LDFLAGS  += -pie -fPIE
-   LDFLAGS  += -z common-page-size=64 -z max-page-size=64
-   LDFLAGS  += -T $(WUT_ROOT)/rules/rpl.ld
-#   LDFLAGS  += -T wiiu/link_rpl.ld
-   LDFLAGS  += -nostartfiles
-
-else
-   LDFLAGS  += -T wiiu/link_elf.ld
-endif
-
 LDFLAGS  += -Wl,--gc-sections
 
 LIBS	:= $(WHOLE_START) -lretro_wiiu $(WHOLE_END) -lm
 
-ifeq ($(RPX_BUILD), 1)
-all: $(TARGET).elf $(TARGET).rpx
-else
-all: $(TARGET).elf
+
+RPX_OBJ           = wiiu/system/stubs_rpl.o
+HBL_ELF_OBJ       = wiiu/system/dynamic.o wiiu/system/stubs_elf.o
+
+RPX_LDFLAGS      := -L$(WUT_ROOT)/lib -L$(DEVKITPPC)/lib
+RPX_LDFLAGS      += -pie -fPIE
+RPX_LDFLAGS      += -z common-page-size=64 -z max-page-size=64
+RPX_LDFLAGS      += -T wiiu/link_rpl.ld
+RPX_LDFLAGS      += -nostartfiles
+
+HBL_ELF_LDFLAGS  := -T wiiu/link_elf.ld
+
+TARGETS :=
+ifeq ($(BUILD_RPX), 1)
+TARGETS += $(TARGET).rpx
 endif
+
+ifeq ($(BUILD_HBL_ELF), 1)
+TARGETS += $(TARGET).elf
+endif
+
+all: $(TARGETS)
 
 %.o: %.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
@@ -180,15 +178,21 @@ endif
 %.a:
 	$(AR) -rc $@ $^
 
-$(TARGET).elf: $(OBJ) libretro_wiiu.a wiiu/link_elf.ld wiiu/link_rpl.ld
-	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+$(TARGET).elf: $(OBJ) $(HBL_ELF_OBJ) libretro_wiiu.a wiiu/link_elf.ld
+	$(LD) $(OBJ) $(HBL_ELF_OBJ) $(LDFLAGS) $(HBL_ELF_LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
-%.rpx: %.elf
+$(TARGET).rpx.elf: $(OBJ) $(RPX_OBJ) libretro_wiiu.a wiiu/link_elf.ld
+	$(LD) $(OBJ) $(RPX_OBJ) $(LDFLAGS) $(RPX_LDFLAGS) $(LIBDIRS)  $(LIBS) -o $@
+
+$(TARGET).rpx: $(TARGET).rpx.elf
 	$(ELF2RPL) $(notdir $<) $@
 
 clean:
 	rm -f $(OBJ)
+	rm -f $(RPX_OBJ)
+	rm -f $(HBL_ELF_OBJ)
 	rm -f $(TARGET).elf
+	rm -f $(TARGET).rpx.elf
 	rm -f $(TARGET).rpx
 
 .PHONY: clean all
