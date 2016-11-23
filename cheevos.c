@@ -2244,13 +2244,10 @@ static size_t cheevos_eval_md5(
       size_t size = 0;
       RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
 
-      filestream_seek(file, offset, SEEK_SET);
-
       if (!file)
          return 0;
 
-      if (max_size == 0)
-         max_size = (size_t)-1;
+      filestream_seek(file, offset, SEEK_SET);
 
       for (;;)
       {
@@ -2258,7 +2255,7 @@ static size_t cheevos_eval_md5(
          ssize_t num_read;
          size_t to_read = sizeof(buffer);
 
-         if (to_read > max_size)
+         if (max_size != 0 && to_read > max_size)
             to_read = max_size;
 
          num_read = filestream_read(file, (void*)buffer, to_read);
@@ -2268,7 +2265,9 @@ static size_t cheevos_eval_md5(
 
          MD5_Update(ctx, (void*)buffer, num_read);
          size += num_read;
-         max_size -= num_read;
+         
+         if (max_size != 0)
+            max_size -= num_read;
       }
 
       filestream_close(file);
@@ -2328,9 +2327,10 @@ static unsigned cheevos_find_game_id_snes(
       return 0;
    }
 
-   cheevos_fill_md5(CHEEVOS_EIGHT_MB - count, 0, &ctx);
+   if (count < CHEEVOS_EIGHT_MB)
+      cheevos_fill_md5(CHEEVOS_EIGHT_MB - count, 0, &ctx);
+   
    MD5_Final(hash, &ctx);
-
    return cheevos_get_game_id(hash, &timeout);
 }
 
@@ -2347,9 +2347,10 @@ static unsigned cheevos_find_game_id_genesis(
       return 0;
    }
 
-   cheevos_fill_md5(CHEEVOS_SIX_MB - count, 0, &ctx);
+   if (count < CHEEVOS_SIX_MB)
+      cheevos_fill_md5(CHEEVOS_SIX_MB - count, 0, &ctx);
+   
    MD5_Final(hash, &ctx);
-
    return cheevos_get_game_id(hash, &timeout);
 }
 
