@@ -14,21 +14,31 @@ mkdir -p ../pkg/wiiu/wiiu/apps/
 
 make -C ../ -f Makefile.${platform} clean || exit 1
 
+lookup()
+{
+   cat | grep "$1 = " | sed "s/$1 = \"//" | sed s/\"//
+}
+
 gen_meta_xml()
 {
    info="$1"_libretro.info
    if [  -e $info ] ; then
-      display_name=`cat $info | grep "display_name = " | sed "s/display_name = \"//" | sed s/\"//`
-      corename=`cat $info | grep "corename = " | sed "s/corename = \"//" | sed s/\"//`
-      authors=`cat $info | grep "authors = " | sed "s/authors = \"//" | sed s/\"// | sed s/\|/\ -\ /g`
+      display_name=`cat $info | lookup "display_name"`
+      corename=`cat $info | lookup "corename"`
+      authors=`cat $info | lookup "authors" | sed s/\|/\ -\ /g`
+      systemname=`cat $info | lookup "systemname"`
+      license=`cat $info | lookup "license"`
+      date=`date +%Y%m%d%H%M%S`
       echo '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' > "$1"_meta.xml
       echo '<app version="1">' >> "$1"_meta.xml
       echo '  <name>'$corename'</name>' >> "$1"_meta.xml
       echo '  <coder>'$authors'</coder>' >> "$1"_meta.xml
-      echo '  <version>'$RARCH_VERSION'</version>' >> "$1"_meta.xml
-      echo '  <release_date>'`date +%Y%m%d%H%M%S`'</release_date>' >> "$1"_meta.xml
+      echo '  <version>'$RARCH_VERSION' ('$date')</version>' >> "$1"_meta.xml
+      echo '  <release_date>'$date'</release_date>' >> "$1"_meta.xml
       echo '  <short_description>RetroArch</short_description>' >> "$1"_meta.xml
-      echo '  <long_description>'$display_name'</long_description>' >> "$1"_meta.xml
+      echo '  <long_description>'$display_name'\n\nSystem: '$systemname'\nLicense: '$license'</long_description>' >> "$1"_meta.xml
+      echo '  <category>emu</category>' >> "$1"_meta.xml
+      echo '  <url>https://github.com/libretro</url>' >> "$1"_meta.xml
       echo '</app>' >> "$1"_meta.xml
    fi
 }
