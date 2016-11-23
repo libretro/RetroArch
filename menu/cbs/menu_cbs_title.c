@@ -139,37 +139,13 @@ default_fill_title_macro(action_get_title_audio_filter,         MENU_ENUM_LABEL_
 default_fill_title_macro(action_get_title_video_shader_preset,  MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO)
 default_fill_title_macro(action_get_title_deferred_core_list,   MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES)
 default_fill_title_macro(action_get_title_configurations,       MENU_ENUM_LABEL_VALUE_CONFIG)
-default_fill_title_macro(action_get_title_content_database_directory, MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY)
-default_fill_title_macro(action_get_title_savestate_directory,  MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY)
+default_fill_title_macro(action_get_title_content_database_directory,   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY)
+default_fill_title_macro(action_get_title_savestate_directory,          MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY)
 default_fill_title_macro(action_get_title_dynamic_wallpapers_directory, MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY)
-
-static int action_get_title_core_assets_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR), path, len);
-}
-
-static int action_get_title_config_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY), path, len);
-}
-
-static int action_get_title_input_remapping_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY), path, len);
-}
-
-static int action_get_title_autoconfig_directory(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return fill_title(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR), path, len);
-}
+default_fill_title_macro(action_get_title_core_assets_directory, MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR)
+default_fill_title_macro(action_get_title_config_directory,      MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY)
+default_fill_title_macro(action_get_title_input_remapping_directory,    MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY)
+default_fill_title_macro(action_get_title_autoconfig_directory,  MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR )
 
 static int action_get_title_playlist_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
