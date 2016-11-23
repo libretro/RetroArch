@@ -80,48 +80,12 @@ default_title_macro(action_get_core_settings_list,              MENU_ENUM_LABEL_
 default_title_macro(action_get_video_settings_list,             MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS )
 default_title_macro(action_get_configuration_settings_list,     MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS  )
 default_title_macro(action_get_saving_settings_list,            MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS)
-
-static int action_get_logging_settings_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS), len);
-   return 0;
-}
-
-static int action_get_frame_throttle_settings_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS), len);
-   return 0;
-}
-
-static int action_get_rewind_settings_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS), len);
-   return 0;
-}
-
-static int action_get_onscreen_display_settings_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS), len);
-   return 0;
-}
-
-static int action_get_onscreen_notifications_settings_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS), len);
-   return 0;
-}
-
-static int action_get_onscreen_overlay_settings_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS), len);
-   return 0;
-}
+default_title_macro(action_get_logging_settings_list,           MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS )
+default_title_macro(action_get_frame_throttle_settings_list,    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS)
+default_title_macro(action_get_rewind_settings_list,            MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS)
+default_title_macro(action_get_onscreen_display_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS)
+default_title_macro(action_get_onscreen_notifications_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS)
+default_title_macro(action_get_onscreen_overlay_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS)
 
 static int action_get_menu_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
