@@ -4211,6 +4211,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST:
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
+      case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
       case DISPLAYLIST_MENU_SETTINGS_LIST:
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
@@ -4660,6 +4661,13 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,   PARSE_ACTION, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,   PARSE_ACTION, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
+      case DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_VIDEO_FONT_ENABLE,
                PARSE_ONLY_BOOL, false);

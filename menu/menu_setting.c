@@ -2487,6 +2487,14 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
                MENU_ENUM_LABEL_MENU_SETTINGS,
                MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
                &group_info,

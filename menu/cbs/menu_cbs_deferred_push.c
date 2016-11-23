@@ -150,6 +150,11 @@ static int deferred_push_onscreen_display_settings_list(menu_displaylist_info_t 
    return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST);
 }
 
+static int deferred_push_onscreen_notifications_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST);
+}
+
 static int deferred_push_onscreen_overlay_settings_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST);
@@ -745,6 +750,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_DISPLAY_SETTINGS_LIST)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_display_settings_list);
+      return 0;
+   }
+   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)))
+   {
+      BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_onscreen_notifications_settings_list);
       return 0;
    }
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST)))
