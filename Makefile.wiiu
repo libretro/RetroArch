@@ -111,7 +111,7 @@ else
 endif
 LDFLAGS := $(CFLAGS)
 
-ASFLAGS := $(CFLAGS) -mregnames $(INCDIRS)
+ASFLAGS := $(CFLAGS) -mregnames
 
 CFLAGS +=  -ffast-math -Werror=implicit-function-declaration
 #CFLAGS += -fomit-frame-pointer -mword-relocations
@@ -161,22 +161,37 @@ ifeq ($(BUILD_HBL_ELF), 1)
 TARGETS += $(TARGET).elf
 endif
 
+DEPFLAGS    = -MT $@ -MMD -MP -MF $*.Tdepend
+POSTCOMPILE = mv -f $*.Tdepend $*.depend
+
+
 all: $(TARGETS)
 
 %.o: %.cpp
-	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
+%.o: %.cpp %.depend
+	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(POSTCOMPILE)
 
 %.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
+%.o: %.c %.depend
+	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(POSTCOMPILE)
 
-%.o: %.s
-	$(CC) -c -o $@ $< $(ASFLAGS)
 
 %.o: %.S
-	$(CC) -c -o $@ $< $(ASFLAGS)
+%.o: %.S %.depend
+	$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(POSTCOMPILE)
 
+%.o: %.s
+%.o: %.s %.depend
+	$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(POSTCOMPILE)
 %.a:
 	$(AR) -rc $@ $^
+
+%.depend: ;
+
 
 $(TARGET).elf: $(OBJ) $(HBL_ELF_OBJ) libretro_wiiu.a wiiu/link_elf.ld
 	$(LD) $(OBJ) $(HBL_ELF_OBJ) $(LDFLAGS) $(HBL_ELF_LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
@@ -188,11 +203,10 @@ $(TARGET).rpx: $(TARGET).rpx.elf
 	-$(ELF2RPL) $(notdir $<) $@
 
 clean:
-	rm -f $(OBJ)
-	rm -f $(RPX_OBJ)
-	rm -f $(HBL_ELF_OBJ)
-	rm -f $(TARGET).elf
-	rm -f $(TARGET).rpx.elf
-	rm -f $(TARGET).rpx
+	rm -f $(OBJ) $(RPX_OBJ) $(HBL_ELF_OBJ) $(TARGET).elf $(TARGET).rpx.elf $(TARGET).rpx
+	rm -f $(OBJ:.o=.depend) $(RPX_OBJ:.o=.depend) $(HBL_ELF_OBJ:.o=.depend)
 
 .PHONY: clean all
+.PRECIOUS: %.depend
+
+-include $(OBJ:.o=.depend) $(RPX_OBJ:.o=.depend) $(HBL_ELF_OBJ:.o=.depend)
