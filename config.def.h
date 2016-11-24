@@ -421,6 +421,15 @@ static const bool windowed_fullscreen = true;
  * specific monitors, 1 being the first monitor. */
 static const unsigned monitor_index = 0;
 
+/* Window */
+#ifdef _WIN32
+/* Window size. A value of 0 uses window scale
+ * multiplied by the core framebuffer size. */
+static const unsigned window_x = 0;
+static const unsigned window_y = 0;
+
+#endif
+
 /* Fullscreen resolution. A value of 0 uses the desktop
  * resolution. */
 static const unsigned fullscreen_x = 0;

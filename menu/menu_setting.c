@@ -3153,7 +3153,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
          }
-
          CONFIG_FLOAT(
                list, list_info,
                &settings->video.refresh_rate,
@@ -3331,6 +3330,32 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
+#ifdef _WIN32
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->video.window_x,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 7680, 8, true, true);
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->video.window_y,
+                  MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+                  0,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
+#endif
          }
 
          CONFIG_BOOL(
