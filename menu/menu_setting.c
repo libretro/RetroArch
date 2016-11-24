@@ -3330,7 +3330,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
-#ifdef _WIN32
             CONFIG_UINT(
                   list, list_info,
                   &settings->video.window_x,
@@ -3355,7 +3354,6 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 4320, 8, true, true);
-#endif
          }
 
          CONFIG_BOOL(
