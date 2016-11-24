@@ -368,7 +368,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_suspend_screensaver_enable);
             break;
-         case MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE:
+         case MENU_ENUM_LABEL_VIDEO_SCALE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_scale);
             break;
          default:
