@@ -674,7 +674,6 @@ static bool init_video(void)
    }
    else
    {
-#ifdef _WIN32
       if(settings->video.window_x || settings->video.window_y)
       {
          width = settings->video.window_x;
@@ -682,7 +681,6 @@ static bool init_video(void)
       }
       else
       {
-#endif
          if (settings->video.force_aspect)
          {
             /* Do rounding here to simplify integer scale correctness. */
@@ -693,9 +691,7 @@ static bool init_video(void)
          else
             width  = roundf(geom->base_width   * settings->video.scale);
          height = roundf(geom->base_height * settings->video.scale);
-#ifdef _WIN32
       }
-#endif
    }
 
    if (width && height)
