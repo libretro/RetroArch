@@ -66,6 +66,14 @@
 #define NETPLAY_QUIRK_MAP_PLATFORM_DEPENDENT \
    (RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT)
 
+/* Compression protocols supported */
+#define NETPLAY_COMPRESSION_ZLIB (1<<0)
+#if HAVE_ZLIB
+#define NETPLAY_COMPRESSION_SUPPORTED NETPLAY_COMPRESSION_ZLIB
+#else
+#define NETPLAY_COMPRESSION_SUPPORTED 0
+#endif
+
 struct delta_frame
 {
    bool used; /* a bit derpy, but this is how we know if the delta's been used at all */
@@ -121,6 +129,9 @@ struct netplay
 
    struct delta_frame *buffer;
    size_t buffer_size;
+
+   /* Which compression algorithm are we using for this connection? */
+   int compression;
 
    /* A buffer into which to compress frames for transfer */
    uint8_t *zbuffer;

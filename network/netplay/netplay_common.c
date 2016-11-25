@@ -166,8 +166,9 @@ bool netplay_handshake(netplay_t *netplay)
    char msg[512];
    uint32_t *content_crc_ptr = NULL;
    void *sram                = NULL;
-   uint32_t header[4]        = {0};
+   uint32_t header[5]        = {0};
    bool is_server            = netplay->is_server;
+   int compression           = 0;
 
    msg[0] = '\0';
 
@@ -182,6 +183,7 @@ bool netplay_handshake(netplay_t *netplay)
    header[1] = htonl(netplay_impl_magic());
    header[2] = htonl(mem_info.size);
    header[3] = htonl(local_pmagic);
+   header[4] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
       return false;
@@ -229,6 +231,13 @@ bool netplay_handshake(netplay_t *netplay)
       RARCH_ERR("Platform mismatch with a platform-sensitive core.\n");
       return false;
    }
+
+   /* Check what compression is supported */
+   compression = ntohl(header[4]);
+   compression &= NETPLAY_COMPRESSION_SUPPORTED;
+   /* If multiple compression algorithms were supported, we would need to
+    * explicitly choose the best here */
+   netplay->compression = compression;
 
    /* Client sends nickname first, server replies with nickname */
    if (!is_server)

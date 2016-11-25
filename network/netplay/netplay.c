@@ -23,12 +23,15 @@
 #include <string.h>
 
 #include <compat/strl.h>
-#include <compat/zlib.h>
 #include <retro_assert.h>
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <features/features_cpu.h>
 #include <retro_endianness.h>
+
+#if HAVE_ZLIB
+#include <compat/zlib.h>
+#endif
 
 #include "netplay_private.h"
 
@@ -586,7 +589,9 @@ static bool netplay_get_cmd(netplay_t *netplay)
          {
             uint32_t frame;
             uint32_t isize;
+#if HAVE_ZLIB
             z_stream stream;
+#endif
 
             /* Make sure we're ready for it */
             if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
@@ -655,24 +660,33 @@ static bool netplay_get_cmd(netplay_t *netplay)
             }
 
             /* And uncompress it */
-            memset(&stream, 0, sizeof(stream));
-            inflateInit(&stream);
-            stream.next_in = netplay->zbuffer;
-            stream.avail_in = cmd_size - 2*sizeof(uint32_t);
-            stream.next_out = (Bytef *) netplay->buffer[netplay->read_ptr].state;
-            stream.avail_out = netplay->state_size;
-            if (inflate(&stream, 1) == Z_STREAM_ERROR)
+#if HAVE_ZLIB
+            if (netplay->compression == NETPLAY_COMPRESSION_ZLIB)
             {
-               RARCH_ERR("CMD_LOAD_SAVESTATE failed to uncompress savestate.\n");
-               return netplay_cmd_nak(netplay);
-            }
+               memset(&stream, 0, sizeof(stream));
+               inflateInit(&stream);
+               stream.next_in = netplay->zbuffer;
+               stream.avail_in = cmd_size - 2*sizeof(uint32_t);
+               stream.next_out = (Bytef *) netplay->buffer[netplay->read_ptr].state;
+               stream.avail_out = netplay->state_size;
+               if (inflate(&stream, 1) == Z_STREAM_ERROR)
+               {
+                  RARCH_ERR("CMD_LOAD_SAVESTATE failed to uncompress savestate.\n");
+                  return netplay_cmd_nak(netplay);
+               }
 
-            if (stream.total_out != netplay->state_size)
-            {
-               RARCH_ERR("CMD_LOAD_SAVESTATE received too-short savestate.\n");
-               return netplay_cmd_nak(netplay);
+               if (stream.total_out != netplay->state_size)
+               {
+                  RARCH_ERR("CMD_LOAD_SAVESTATE received too-short savestate.\n");
+                  return netplay_cmd_nak(netplay);
+               }
+               inflateEnd(&stream);
             }
-            inflateEnd(&stream);
+            else
+#endif
+            {
+               memcpy(netplay->buffer[netplay->read_ptr].state, netplay->zbuffer, netplay->state_size);
+            }
 
             /* Skip ahead if it's past where we are */
             if (frame > netplay->self_frame_count)
@@ -1441,7 +1455,10 @@ void netplay_load_savestate(netplay_t *netplay,
 {
    uint32_t header[4];
    retro_ctx_serialize_info_t tmp_serial_info;
+   size_t zbuffer_used;
+#if HAVE_ZLIB
    z_stream stream;
+#endif
 
    if (!netplay->has_connection)
       return;
@@ -1492,23 +1509,42 @@ void netplay_load_savestate(netplay_t *netplay,
       return;
 
    /* Compress it */
-   memset(&stream, 0, sizeof(stream));
-   deflateInit(&stream, Z_DEFAULT_COMPRESSION);
-   stream.next_in = (Bytef *) serial_info->data_const;
-   stream.avail_in = serial_info->size;
-   stream.next_out = netplay->zbuffer;
-   stream.avail_out = netplay->zbuffer_size;
-   if (deflate(&stream, 1) == Z_STREAM_ERROR)
+#if HAVE_ZLIB
+   if (netplay->compression == NETPLAY_COMPRESSION_ZLIB)
    {
-      hangup(netplay);
-      return;
+       memset(&stream, 0, sizeof(stream));
+       deflateInit(&stream, Z_DEFAULT_COMPRESSION);
+       stream.next_in = (Bytef *) serial_info->data_const;
+       stream.avail_in = serial_info->size;
+       stream.next_out = netplay->zbuffer;
+       stream.avail_out = netplay->zbuffer_size;
+       if (deflate(&stream, 1) == Z_STREAM_ERROR)
+       {
+           hangup(netplay);
+           return;
+       }
+       if (stream.total_in != serial_info->size)
+       {
+           hangup(netplay);
+           return;
+       }
+       zbuffer_used = stream.total_out;
+       deflateEnd(&stream);
    }
-   if (stream.total_in != serial_info->size)
+   else
+#endif
    {
-      hangup(netplay);
-      return;
+      if (serial_info->size < netplay->zbuffer_size)
+      {
+         memcpy(netplay->zbuffer, serial_info->data_const, serial_info->size);
+         zbuffer_used = serial_info->size;
+      }
+      else
+      {
+         memcpy(netplay->zbuffer, serial_info->data_const, netplay->zbuffer_size);
+         zbuffer_used = netplay->zbuffer_size;
+      }
    }
-   deflateEnd(&stream);
 
    /* And send it to the peer */
    header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
@@ -1523,7 +1559,7 @@ void netplay_load_savestate(netplay_t *netplay,
    }
 
    if (!socket_send_all_blocking(netplay->fd,
-            netplay->zbuffer, stream.total_out, false))
+            netplay->zbuffer, zbuffer_used, false))
    {
       hangup(netplay);
       return;

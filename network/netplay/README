@@ -151,7 +151,8 @@ Payload:
     }
 Description:
     Cause the other side to load a savestate, notionally one which the sending
-    side has also loaded. The serialized savestate is zlib compressed.
+    side has also loaded. If both sides support zlib compression, the
+    serialized state is zlib compressed. Otherwise it is uncompressed.
 
 Command: PAUSE
 Payload: None
