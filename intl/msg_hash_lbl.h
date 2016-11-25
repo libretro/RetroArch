@@ -1096,3 +1096,5 @@ MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST,
       "database_cursor_list")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
       "database_cursor_list_entry_developer")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
+      "database_cursor_list_entry_publisher")
