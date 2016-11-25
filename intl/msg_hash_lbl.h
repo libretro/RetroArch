@@ -1090,3 +1090,9 @@ MSG_HASH(MSG_FAILED_TO_START_AUDIO_DRIVER,
       "failed_to_start_audio_driver")
 MSG_HASH(MSG_FOUND_LAST_STATE_SLOT,
       "found_last_state_slot")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_SELECTION,
+      "database_selection")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST,
+      "database_cursor_list")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
+      "database_cursor_list_entry_developer")

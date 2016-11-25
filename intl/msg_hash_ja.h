@@ -2170,3 +2170,11 @@ MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "設定されていない"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
+   "Database Cursor List"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
+   "Database Cursor List - Filter : Developer"
+   )

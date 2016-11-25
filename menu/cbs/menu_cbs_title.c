@@ -208,17 +208,8 @@ static int action_get_title_generic(char *s, size_t len, const char *path,
 } \
 
 default_title_generic_macro(action_get_title_deferred_database_manager_list,MENU_ENUM_LABEL_VALUE_DATABASE_SELECTION) 
-static int action_get_title_deferred_cursor_manager_list(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List");
-}
-
-static int action_get_title_list_rdb_entry_developer(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Developer ");
-}
+default_title_generic_macro(action_get_title_deferred_cursor_manager_list,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST) 
+default_title_generic_macro(action_get_title_list_rdb_entry_developer,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER) 
 
 static int action_get_title_list_rdb_entry_publisher(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
