@@ -996,10 +996,13 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
             var->value += 0x1f0000;
             break;
          case CHEEVOS_CONSOLE_SUPER_NINTENDO:
-            if (var->value < 0x20000) /* Work RAM */
+            if (var->value < 0x020000) /* Work RAM */
                var->value += 0x7e0000;
-            else                      /* Save RAM */
-               var->value -= 0x1a000;
+            else                       /* Save RAM */
+            {
+               var->value -= 0x020000;
+               var->value += 0x006000;
+            }
             break;
          default:
             break;
