@@ -2188,3 +2188,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLED,
    "Enabled"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_PATH,
+   "Content History Path"
+   )
