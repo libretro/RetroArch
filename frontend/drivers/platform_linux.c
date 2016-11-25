@@ -1533,7 +1533,7 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.cheats,
                         internal_storage_app_path, "cheats", sizeof(g_defaults.dir.cheats));
 
-                  if(!string_is_empty(screenshot_dir &&) test_permissions(screenshot_dir))
+                  if(!string_is_empty(screenshot_dir) && test_permissions(screenshot_dir))
                   {
                      fill_pathname_join(g_defaults.dir.screenshot,
                            screenshot_dir, "", sizeof(g_defaults.dir.screenshot));
@@ -1570,7 +1570,7 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.cheats,
                         app_dir, "cheats", sizeof(g_defaults.dir.cheats));
 
-                  if(!string_is_empty(screenshot_dir &&) test_permissions(screenshot_dir))
+                  if(!string_is_empty(screenshot_dir) && test_permissions(screenshot_dir))
                   {
                      fill_pathname_join(g_defaults.dir.screenshot,
                            screenshot_dir, "", sizeof(g_defaults.dir.screenshot));
