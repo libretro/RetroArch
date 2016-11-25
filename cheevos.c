@@ -18,7 +18,6 @@
 
 #include <formats/jsonsax.h>
 #include <streams/file_stream.h>
-#include <compat/strl.h>
 #include <rhash.h>
 #include <libretro.h>
 
@@ -312,7 +311,8 @@ static void cheevos_log_url(const char* format, const char* url)
    char* aux;
    char* next;
    
-   strlcpy(copy, url, sizeof(copy));
+   strncpy(copy, url, sizeof(copy));
+   copy[sizeof(copy) - 1] = 0;
    
    aux = strstr(copy, "?p=");
    
@@ -465,12 +465,13 @@ static void cheevos_log_cheevo(const cheevo_t* cheevo,
    char memaddr[256];
    size_t length;
 
-   length = memaddr_ud->length;
+   length = memaddr_ud->length + 1;
 
-   if (length > sizeof(memaddr))
+   if (length >= sizeof(memaddr))
       length = sizeof(memaddr);
 
-   strlcpy(memaddr, memaddr_ud->string, length);
+   strncpy(memaddr, memaddr_ud->string, length - 1);
+   memaddr[length - 1] = 0;
 
    RARCH_LOG("CHEEVOS cheevo %p\n", cheevo);
    RARCH_LOG("CHEEVOS   id:      %u\n", cheevo->id);
@@ -752,7 +753,8 @@ static int cheevos_get_value(const char *json, unsigned key_hash,
    if ((jsonsax_parse(json, &handlers, (void*)&ud) == JSONSAX_OK)
          && ud.value && ud.length < length)
    {
-      strlcpy(value, ud.value, length);
+      strncpy(value, ud.value, length);
+      value[ud.length] = 0;
       return 0;
    }
 
@@ -983,9 +985,8 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
 
       switch (cheevos_locals.console_id)
       {
+         /* Patch the address to correctly map it to the mmaps */
          case CHEEVOS_CONSOLE_GAMEBOY_ADVANCE:
-            /* Patch the address to correctly map it to the mmaps */
-
             if (var->value < 0x8000) /* Internal RAM */
                var->value += 0x3000000;
             else                     /* Work RAM */
@@ -993,6 +994,12 @@ void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
             break;
          case CHEEVOS_CONSOLE_PC_ENGINE:
             var->value += 0x1f0000;
+            break;
+         case CHEEVOS_CONSOLE_SUPER_NINTENDO:
+            if (var->value < 0x20000) /* Work RAM */
+               var->value += 0x7e0000;
+            else                      /* Save RAM */
+               var->value -= 0x1a000;
             break;
          default:
             break;
@@ -1509,18 +1516,25 @@ Test all the achievements (call once per frame).
 
 uint8_t *cheevos_get_memory(const cheevos_var_t *var)
 {
+   uint8_t *memory;
+   
    if (var->bank_id >= 0)
    {
       rarch_system_info_t *system;
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
       if (system->mmaps.num_descriptors != 0)
-         return (uint8_t *)system->mmaps.descriptors[var->bank_id].core.ptr + var->value;
-
-      return (uint8_t *)cheevos_locals.meminfo[var->bank_id].data + var->value;
+         memory = (uint8_t *)system->mmaps.descriptors[var->bank_id].core.ptr;
+      else
+         memory = (uint8_t *)cheevos_locals.meminfo[var->bank_id].data;
+      
+      if (memory)
+         memory += var->value;
    }
-
-   return NULL;
+   else
+      memory = NULL;
+   
+   return memory;
 }
 
 static unsigned cheevos_get_var_value(cheevos_var_t *var)
@@ -2570,7 +2584,6 @@ bool cheevos_load(const void *data)
    cheevos_locals.meminfo[3].id = RETRO_MEMORY_RTC;
    core_get_memory(&cheevos_locals.meminfo[3]);
 
-#ifdef CHEEVOS_VERBOSE
    RARCH_LOG("CHEEVOS system RAM: %p %u\n",
       cheevos_locals.meminfo[0].data, cheevos_locals.meminfo[0].size);
    RARCH_LOG("CHEEVOS save RAM:   %p %u\n",
@@ -2579,7 +2592,6 @@ bool cheevos_load(const void *data)
       cheevos_locals.meminfo[2].data, cheevos_locals.meminfo[2].size);
    RARCH_LOG("CHEEVOS RTC:        %p %u\n",
       cheevos_locals.meminfo[3].data, cheevos_locals.meminfo[3].size);
-#endif
 
    /* Bail out if cheevos are disabled.
     * But set the above anyways, command_read_ram needs it. */
@@ -2814,15 +2826,17 @@ void cheevos_populate_menu(void *data, bool hardcore)
 
 bool cheevos_get_description(cheevos_ctx_desc_t *desc)
 {
-   cheevo_t *cheevos = cheevos_locals.core.cheevos;
+   cheevo_t *cheevos        = cheevos_locals.core.cheevos;
 
    if (desc->idx >= cheevos_locals.core.count)
    {
-      cheevos    = cheevos_locals.unofficial.cheevos;
-      desc->idx -= cheevos_locals.unofficial.count;
+      cheevos       = cheevos_locals.unofficial.cheevos;
+      desc->idx    -= cheevos_locals.unofficial.count;
    }
 
-   strlcpy(desc->s, cheevos[desc->idx].description, desc->len);
+   strncpy(desc->s, cheevos[desc->idx].description, desc->len);
+   desc->s[desc->len - 1] = 0;
+
    return true;
 }
 
