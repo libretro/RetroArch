@@ -1108,3 +1108,9 @@ MSG_HASH(MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
       "detect_core_list_ok")
 MSG_HASH(MENU_ENUM_LABEL_NO_DISK,
       "no_disk")
+MSG_HASH(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS,
+      "deferred_rpl_entry_actions")
+MSG_HASH(MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
+      "menu_throttle_framerate")
+MSG_HASH(MENU_ENUM_LABEL_OVERLAY_SETTINGS,
+      "overlay_settings")

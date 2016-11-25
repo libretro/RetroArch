@@ -1911,6 +1911,9 @@ const char *msg_hash_to_str_us(enum msg_hash_enums msg)
       default:
 #if 0
          RARCH_LOG("Unimplemented: [%d]\n", msg);
+         {
+            RARCH_LOG("[%d] : %s\n", msg - 1, msg_hash_to_str(((enum msg_hash_enums)(msg - 1))));
+         }
 #endif
          break;
    }
