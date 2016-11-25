@@ -732,7 +732,9 @@ static void *drm_gfx_init(const video_info_t *video,
       return NULL;
    }
    else
-      RARCH_LOG ("DRM: Init succesful.\n");
+   {
+      RARCH_LOG ("DRM: Init successful.\n");
+   }
 
    _drmvars->kms_width  = drm.current_mode->hdisplay;  
    _drmvars->kms_height = drm.current_mode->vdisplay;  
