@@ -757,9 +757,14 @@ bool core_info_database_supports_content_path(const char *database_path, const c
          const core_info_t *info = &core_info_curr_list->list[i];
 
          if (string_list_find_elem(info->databases_list, database))
+         {
             if (string_list_find_elem(info->supported_extensions_list, "zip") ||
                 string_list_find_elem(info->supported_extensions_list, "7z"))
-                return false;
+            {
+               free(database);
+               return false;
+            }
+         }
       }
    }
 
