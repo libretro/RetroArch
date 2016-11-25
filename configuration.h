@@ -54,6 +54,8 @@ typedef struct settings
       char driver[32];
       char context_driver[32];
       float scale;
+      unsigned window_x;
+      unsigned window_y;
       bool fullscreen;
       bool windowed_fullscreen;
       unsigned monitor_index;

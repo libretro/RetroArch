@@ -1552,6 +1552,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
       "Vertical Sync (Vsync)")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
       "Windowed Fullscreen Mode")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+      "Window Width")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+      "Window Height")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
       "Wi-Fi Driver")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
@@ -1686,6 +1690,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_SSH_ENABLE,
       "Enable or disable remote command line access.")
 MSG_HASH(MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
       "Prevents your system's screensaver from becoming active.")
+MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+      "Sets the window size relative to the core viewport size. Alternatively you can set a window width and height below for a fixed window size")
 MSG_HASH(MENU_ENUM_SUBLABEL_USER_LANGUAGE,
       "Sets the language of the interface.")
 MSG_HASH(MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,

@@ -674,16 +674,24 @@ static bool init_video(void)
    }
    else
    {
-      if (settings->video.force_aspect)
+      if(settings->video.window_x || settings->video.window_y)
       {
-         /* Do rounding here to simplify integer scale correctness. */
-         unsigned base_width =
-            roundf(geom->base_height * video_driver_get_aspect_ratio());
-         width  = roundf(base_width * settings->video.scale);
+         width = settings->video.window_x;
+         height = settings->video.window_y;
       }
       else
-         width  = roundf(geom->base_width   * settings->video.scale);
-      height = roundf(geom->base_height * settings->video.scale);
+      {
+         if (settings->video.force_aspect)
+         {
+            /* Do rounding here to simplify integer scale correctness. */
+            unsigned base_width =
+               roundf(geom->base_height * video_driver_get_aspect_ratio());
+            width  = roundf(base_width * settings->video.scale);
+         }
+         else
+            width  = roundf(geom->base_width   * settings->video.scale);
+         height = roundf(geom->base_height * settings->video.scale);
+      }
    }
 
    if (width && height)

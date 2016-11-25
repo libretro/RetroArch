@@ -887,6 +887,8 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("video_monitor_index",          &settings->video.monitor_index, true, monitor_index, false);
    SETTING_INT("video_fullscreen_x",           &settings->video.fullscreen_x,  true, fullscreen_x, false);
    SETTING_INT("video_fullscreen_y",           &settings->video.fullscreen_y,  true, fullscreen_y, false);
+   SETTING_INT("video_window_x",               &settings->video.window_x,  true, fullscreen_x, false);
+   SETTING_INT("video_window_y",               &settings->video.window_y,  true, fullscreen_y, false);
 #ifdef HAVE_COMMAND
    SETTING_INT("network_cmd_port",             &settings->network_cmd_port,    true, network_cmd_port, false);
 #endif

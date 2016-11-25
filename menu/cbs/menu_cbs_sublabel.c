@@ -54,6 +54,7 @@ default_sublabel_macro(action_bind_sublabel_cheevos_hardcore_mode_enable,  MENU_
 default_sublabel_macro(action_bind_sublabel_menu_settings_list,            MENU_ENUM_SUBLABEL_MENU_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_video_settings_list,           MENU_ENUM_SUBLABEL_VIDEO_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_suspend_screensaver_enable,    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE)
+default_sublabel_macro(action_bind_sublabel_video_window_scale,            MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE)
 default_sublabel_macro(action_bind_sublabel_audio_settings_list,           MENU_ENUM_SUBLABEL_AUDIO_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_input_settings_list,           MENU_ENUM_SUBLABEL_INPUT_SETTINGS)
 default_sublabel_macro(action_bind_sublabel_wifi_settings_list,            MENU_ENUM_SUBLABEL_WIFI_SETTINGS)
@@ -366,6 +367,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_suspend_screensaver_enable);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SCALE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_window_scale);
             break;
          default:
          case MSG_UNKNOWN:
