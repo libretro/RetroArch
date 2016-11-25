@@ -2011,7 +2011,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       menu_entry_get_value(i, list, entry_value, sizeof(entry_value));
 
-      if (string_is_equal(entry_value, "disabled") ||
+      if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) || 
          (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
@@ -2019,7 +2019,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          else
             do_draw_text = true;
       }
-      else if (string_is_equal(entry_value, "enabled") ||
+      else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) || 
             (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])

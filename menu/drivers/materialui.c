@@ -633,7 +633,7 @@ static void mui_render_label_value(mui_handle_t *mui,
          y + mui->line_height / 2 + label_offset,
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
-   if (string_is_equal(value, "disabled") || 
+   if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) || 
          (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
@@ -644,7 +644,7 @@ static void mui_render_label_value(mui_handle_t *mui,
       else
          do_draw_text = true;
    }
-   else if (string_is_equal(value, "enabled") || 
+   else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) || 
             (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
