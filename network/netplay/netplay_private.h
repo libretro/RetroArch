@@ -35,7 +35,7 @@
 #define MAX_SPECTATORS 16
 #define RARCH_DEFAULT_PORT 55435
 
-#define NETPLAY_PROTOCOL_VERSION 2
+#define NETPLAY_PROTOCOL_VERSION 3
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
@@ -121,6 +121,10 @@ struct netplay
 
    struct delta_frame *buffer;
    size_t buffer_size;
+
+   /* A buffer into which to compress frames for transfer */
+   uint8_t *zbuffer;
+   size_t zbuffer_size;
 
    /* Pointer where we are now. */
    size_t self_ptr; 
