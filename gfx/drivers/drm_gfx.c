@@ -728,6 +728,7 @@ static void *drm_gfx_init(const video_info_t *video,
    if (!init_drm())
    {
       RARCH_ERR ("DRM: Failed to initialize DRM\n");
+      free(_drmvars);
       return NULL;
    }
    else
