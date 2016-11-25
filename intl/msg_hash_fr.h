@@ -2150,9 +2150,9 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER,
-   "Database Cursor List - Filter : Developer"
+   "Database - Filter : Developer"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "Database Cursor List - Filter : Publisher"
+   "Database - Filter : Publisher"
    )
