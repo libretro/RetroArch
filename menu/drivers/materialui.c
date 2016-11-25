@@ -633,18 +633,22 @@ static void mui_render_label_value(mui_handle_t *mui,
          y + mui->line_height / 2 + label_offset,
          width, height, color, TEXT_ALIGN_LEFT, 1.0f, false, 0);
 
-   if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
+   if (string_is_equal(value, "disabled") || 
+         (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
    {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF]) {
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+      {
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
          switch_is_on = false;
       }
       else
          do_draw_text = true;
    }
-   else if (string_is_equal(value, "enabled") || string_is_equal(value, "on"))
+   else if (string_is_equal(value, "enabled") || 
+            (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
    {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON]) {
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+      {
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
          switch_is_on = true;
       }
@@ -654,11 +658,6 @@ static void mui_render_label_value(mui_handle_t *mui,
    else
    {
       enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(value));
-
-      if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-         type = FILE_TYPE_BOOL_OFF;
-      else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
-         type = FILE_TYPE_BOOL_ON;
 
       switch (type)
       {

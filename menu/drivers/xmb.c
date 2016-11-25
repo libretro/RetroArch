@@ -2012,7 +2012,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       menu_entry_get_value(i, list, entry_value, sizeof(entry_value));
 
       if (string_is_equal(entry_value, "disabled") ||
-            string_is_equal(entry_value, "off"))
+         (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF];
@@ -2020,7 +2020,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             do_draw_text = true;
       }
       else if (string_is_equal(entry_value, "enabled") ||
-            string_is_equal(entry_value, "on"))
+            (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON])
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON];
@@ -2030,11 +2030,6 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       else
       {
          enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(entry_value));
-
-         if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
-            type = FILE_TYPE_BOOL_OFF;
-         else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
-            type = FILE_TYPE_BOOL_ON;
 
          switch (type)
          {
