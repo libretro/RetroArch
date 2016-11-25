@@ -653,7 +653,14 @@ static void mui_render_label_value(mui_handle_t *mui,
    }
    else
    {
-      switch (msg_hash_to_file_type(msg_hash_calculate(value)))
+      enum msg_file_type type = msg_hash_to_file_type(msg_hash_calculate(value));
+
+      if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         type = FILE_TYPE_BOOL_OFF;
+      else if (string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
+         type = FILE_TYPE_BOOL_ON;
+
+      switch (type)
       {
          case FILE_TYPE_COMPRESSED:
          case FILE_TYPE_MORE:
