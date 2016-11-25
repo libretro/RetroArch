@@ -1494,7 +1494,7 @@ static void frontend_linux_get_env(int *argc,
                   app_dir, "database/cursors", sizeof(g_defaults.dir.cursor));
             fill_pathname_join(g_defaults.dir.wallpapers,
                   app_dir, "assets/wallpapers", sizeof(g_defaults.dir.wallpapers));
-            if(*downloads_dir && test_permissions(downloads_dir))
+            if(!string_is_empty(downloads_dir) && test_permissions(downloads_dir))
             {
                fill_pathname_join(g_defaults.dir.core_assets,
                      downloads_dir, "", sizeof(g_defaults.dir.core_assets));
@@ -1510,24 +1510,10 @@ static void frontend_linux_get_env(int *argc,
                "RetroArch", "[ENV]: default download folder: [%s]",
                g_defaults.dir.core_assets);
 
-            if(*screenshot_dir && test_permissions(screenshot_dir))
-            {
-               fill_pathname_join(g_defaults.dir.screenshot,
-                     screenshot_dir, "", sizeof(g_defaults.dir.screenshot));
-            }
-            else
-            {
-               fill_pathname_join(g_defaults.dir.screenshot,
-                     app_dir, "screenshots", sizeof(g_defaults.dir.screenshot));
-               path_mkdir(g_defaults.dir.screenshot);
-            }
-
-            __android_log_print(ANDROID_LOG_INFO,
-               "RetroArch", "[ENV]: default screenshot folder: [%s]",
-               g_defaults.dir.screenshot);
-
             switch (perms)
             {
+               /* Set defaults for this since we can't guarantee saving on content dir will
+                  work in this case */
                case INTERNAL_STORAGE_APPDIR_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
                         internal_storage_app_path, "saves", sizeof(g_defaults.dir.sram));
@@ -1547,19 +1533,25 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.cheats,
                         internal_storage_app_path, "cheats", sizeof(g_defaults.dir.cheats));
 
-                  /* TODO/FIXME - Test if this is needed at all, as far as I know,
-                   * every directory we set in g_defaults already gets created if it
-                   * doesn't exist already */
+                  if(!string_is_empty(screenshot_dir &&) test_permissions(screenshot_dir))
+                  {
+                     fill_pathname_join(g_defaults.dir.screenshot,
+                           screenshot_dir, "", sizeof(g_defaults.dir.screenshot));
+                  }
+                  else
+                  {
+                     fill_pathname_join(g_defaults.dir.screenshot,
+                           internal_storage_app_path, "screenshots", sizeof(g_defaults.dir.screenshot));
+                     path_mkdir(g_defaults.dir.screenshot);
+                  }
+
                   path_mkdir(g_defaults.dir.sram);
                   path_mkdir(g_defaults.dir.savestate);
                   path_mkdir(g_defaults.dir.system);
-                  path_mkdir(g_defaults.dir.menu_config);
-                  path_mkdir(g_defaults.dir.remap);
-                  path_mkdir(g_defaults.dir.thumbnails);
-                  path_mkdir(g_defaults.dir.playlist);
-                  path_mkdir(g_defaults.dir.cheats);
                   break;
                case INTERNAL_STORAGE_NOT_WRITABLE:
+                  /* Set defaults for this since we can't guarantee saving on content dir will
+                     work in this case */
                   fill_pathname_join(g_defaults.dir.sram,
                         app_dir, "saves", sizeof(g_defaults.dir.sram));
                   fill_pathname_join(g_defaults.dir.savestate,
@@ -1578,19 +1570,25 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.cheats,
                         app_dir, "cheats", sizeof(g_defaults.dir.cheats));
 
-                  /* TODO/FIXME - Test if this is needed at all, as far as I know,
-                   * every directory we set in g_defaults already gets created if it
-                   * doesn't exist already */
+                  if(!string_is_empty(screenshot_dir &&) test_permissions(screenshot_dir))
+                  {
+                     fill_pathname_join(g_defaults.dir.screenshot,
+                           screenshot_dir, "", sizeof(g_defaults.dir.screenshot));
+                  }
+                  else
+                  {
+                     fill_pathname_join(g_defaults.dir.screenshot,
+                           app_dir, "screenshots", sizeof(g_defaults.dir.screenshot));
+                     path_mkdir(g_defaults.dir.screenshot);
+                  }
+
                   path_mkdir(g_defaults.dir.sram);
                   path_mkdir(g_defaults.dir.savestate);
                   path_mkdir(g_defaults.dir.system);
-                  path_mkdir(g_defaults.dir.menu_config);
-                  path_mkdir(g_defaults.dir.remap);
-                  path_mkdir(g_defaults.dir.thumbnails);
-                  path_mkdir(g_defaults.dir.playlist);
-                  path_mkdir(g_defaults.dir.cheats);
                   break;
                case INTERNAL_STORAGE_WRITABLE:
+                  /* Don't set defaults for saves, states, system or screenshots
+                     in this case to be able to honour saving on content dir */
                   fill_pathname_join(g_defaults.dir.menu_config,
                         internal_storage_path, "RetroArch/config", sizeof(g_defaults.dir.menu_config));
                   fill_pathname_join(g_defaults.dir.remap,
@@ -1601,38 +1599,14 @@ static void frontend_linux_get_env(int *argc,
                         internal_storage_path, "RetroArch/playlists", sizeof(g_defaults.dir.playlist));
                   fill_pathname_join(g_defaults.dir.cheats,
                         internal_storage_path, "RetroArch/cheats", sizeof(g_defaults.dir.cheats));
-
-                  /* TODO/FIXME - Test if this is needed at all, as far as I know,
-                   * every directory we set in g_defaults already gets created if it
-                   * doesn't exist already */
-                  path_mkdir(g_defaults.dir.menu_config);
-                  path_mkdir(g_defaults.dir.remap);
-                  path_mkdir(g_defaults.dir.thumbnails);
-                  path_mkdir(g_defaults.dir.playlist);
-                  path_mkdir(g_defaults.dir.cheats);
                default:
                   break;
             }
-
-            /* create save and system directories in the internal dir too */
-            fill_pathname_join(buf, app_dir, "saves", sizeof(buf));
-            path_mkdir(buf);
-
-            fill_pathname_join(buf, app_dir, "states", sizeof(buf));
-            path_mkdir(buf);
-
-            fill_pathname_join(buf, app_dir, "system", sizeof(buf));
-            path_mkdir(buf);
-
-            /* create save and system directories in the internal sd too */
-            fill_pathname_join(buf, internal_storage_app_path, "saves", sizeof(buf));
-            path_mkdir(buf);
-
-            fill_pathname_join(buf, internal_storage_app_path, "states", sizeof(buf));
-            path_mkdir(buf);
-
-            fill_pathname_join(buf, internal_storage_app_path, "system", sizeof(buf));
-            path_mkdir(buf);
+            path_mkdir(g_defaults.dir.menu_config);
+            path_mkdir(g_defaults.dir.remap);
+            path_mkdir(g_defaults.dir.thumbnails);
+            path_mkdir(g_defaults.dir.playlist);
+            path_mkdir(g_defaults.dir.cheats);
 
             __android_log_print(ANDROID_LOG_INFO,
                "RetroArch", "[ENV]: default savefile folder: [%s]",
@@ -1643,6 +1617,9 @@ static void frontend_linux_get_env(int *argc,
             __android_log_print(ANDROID_LOG_INFO,
                "RetroArch", "[ENV]: default system folder: [%s]",
                g_defaults.dir.system);
+            __android_log_print(ANDROID_LOG_INFO,
+               "RetroArch", "[ENV]: default screenshot folder: [%s]",
+               g_defaults.dir.screenshot);
          }
       }
    }
