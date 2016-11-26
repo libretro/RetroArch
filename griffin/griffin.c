@@ -65,6 +65,16 @@ ARCHIVE FILE
 #endif
 
 /*============================================================
+COMPRESSION
+============================================================ */
+#include "../libretro-common/streams/trans_stream.c"
+#include "../libretro-common/streams/trans_stream_pipe.c"
+
+#ifdef HAVE_ZLIB
+#include "../libretro-common/streams/trans_stream_zlib.c"
+#endif
+
+/*============================================================
 ENCODINGS
 ============================================================ */
 #include "../libretro-common/encodings/encoding_utf.c"
