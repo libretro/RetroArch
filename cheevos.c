@@ -462,11 +462,9 @@ static void cheevos_log_cheevo(const cheevo_t* cheevo,
       const cheevos_field_t* memaddr_ud)
 {
    char memaddr[256];
+   size_t length = memaddr_ud->length < sizeof(memaddr) ? memaddr_ud->length + 1 : sizeof(memaddr);
    
-   strlcpy(memaddr, memaddr_ud->string, sizeof(memaddr));
-   
-   if (memaddr_ud->length < sizeof(memaddr))
-      memaddr[memaddr_ud->length] = 0;
+   strlcpy(memaddr, memaddr_ud->string, length);
 
    RARCH_LOG("CHEEVOS cheevo %p\n", cheevo);
    RARCH_LOG("CHEEVOS   id:      %u\n", cheevo->id);
