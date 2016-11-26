@@ -469,7 +469,7 @@ static void cheevos_log_cheevo(const cheevo_t* cheevo,
    RARCH_LOG("CHEEVOS   badge:   %s\n", cheevo->badge);
    RARCH_LOG("CHEEVOS   points:  %u\n", cheevo->points);
    RARCH_LOG("CHEEVOS   sets:    TBD\n");
-   RARCH_LOG("CHEEVOS   memaddr: %.*s\n", memaddr_ud->length, memaddr_ud->string);
+   RARCH_LOG("CHEEVOS   memaddr: %.*s\n", (int)memaddr_ud->length, memaddr_ud->string);
 }
 
 static void cheevos_add_var_size(char** aux, size_t* left,
