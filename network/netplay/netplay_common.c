@@ -232,12 +232,35 @@ bool netplay_handshake(netplay_t *netplay)
       return false;
    }
 
+   /* Clear any existing compression */
+   if (netplay->compression_stream)
+      netplay->compression_backend->stream_free(netplay->compression_stream);
+   if (netplay->decompression_stream)
+      netplay->decompression_backend->stream_free(netplay->decompression_stream);
+
    /* Check what compression is supported */
    compression = ntohl(header[4]);
    compression &= NETPLAY_COMPRESSION_SUPPORTED;
-   /* If multiple compression algorithms were supported, we would need to
-    * explicitly choose the best here */
-   netplay->compression = compression;
+   if (compression & NETPLAY_COMPRESSION_ZLIB)
+   {
+      netplay->compression_backend = trans_stream_get_zlib_deflate_backend();
+      if (!netplay->compression_backend)
+         netplay->compression_backend = trans_stream_get_pipe_backend();
+   }
+   else
+   {
+      netplay->compression_backend = trans_stream_get_pipe_backend();
+   }
+   netplay->decompression_backend = netplay->compression_backend->reverse;
+
+   /* Allocate our compression stream */
+   netplay->compression_stream = netplay->compression_backend->stream_new();
+   netplay->decompression_stream = netplay->decompression_backend->stream_new();
+   if (!netplay->compression_stream || !netplay->decompression_stream)
+   {
+      RARCH_ERR("Failed to allocate compression transcoder!\n");
+      return false;
+   }
 
    /* Client sends nickname first, server replies with nickname */
    if (!is_server)

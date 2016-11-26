@@ -21,6 +21,7 @@
 
 #include <net/net_compat.h>
 #include <features/features_cpu.h>
+#include <streams/trans_stream.h>
 #include <retro_endianness.h>
 
 #include "../../core.h"
@@ -130,8 +131,11 @@ struct netplay
    struct delta_frame *buffer;
    size_t buffer_size;
 
-   /* Which compression algorithm are we using for this connection? */
-   int compression;
+   /* Compression transcoder */
+   const struct trans_stream_backend *compression_backend;
+   void *compression_stream;
+   const struct trans_stream_backend *decompression_backend;
+   void *decompression_stream;
 
    /* A buffer into which to compress frames for transfer */
    uint8_t *zbuffer;
