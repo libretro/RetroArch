@@ -977,7 +977,9 @@ endif
 
 # Compression/Archive
 
-OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o
+OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream.o \
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o
 
 ifeq ($(HAVE_7ZIP),1)
    CFLAGS  += -I$(DEPS_DIR)/7zip
@@ -1003,7 +1005,8 @@ endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o
+   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
+          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1

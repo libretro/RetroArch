@@ -584,6 +584,8 @@ static bool netplay_get_cmd(netplay_t *netplay)
       case NETPLAY_CMD_LOAD_SAVESTATE:
          {
             uint32_t frame;
+            uint32_t isize;
+            uint32_t rd, wn;
 
             /* Make sure we're ready for it */
             if (netplay->quirks & NETPLAY_QUIRK_INITIALIZATION)
@@ -612,9 +614,9 @@ static bool netplay_get_cmd(netplay_t *netplay)
              * (strangely) force a rewind to the frame we're already on, so it
              * gets loaded. This is just to avoid having reloading implemented in
              * too many places. */
-            if (cmd_size > netplay->state_size + sizeof(uint32_t))
+            if (cmd_size > netplay->zbuffer_size + 2*sizeof(uint32_t))
             {
-               RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected save state size.\n");
+               RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected payload size.\n");
                return netplay_cmd_nak(netplay);
             }
 
@@ -631,13 +633,33 @@ static bool netplay_get_cmd(netplay_t *netplay)
                return netplay_cmd_nak(netplay);
             }
 
+            if (!socket_receive_all_blocking(netplay->fd, &isize, sizeof(isize)))
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive inflated size.\n");
+               return netplay_cmd_nak(netplay);
+            }
+            isize = ntohl(isize);
+
+            if (isize != netplay->state_size)
+            {
+               RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected save state size.\n");
+               return netplay_cmd_nak(netplay);
+            }
+
             if (!socket_receive_all_blocking(netplay->fd,
-                     netplay->buffer[netplay->read_ptr].state,
-                     cmd_size - sizeof(uint32_t)))
+                     netplay->zbuffer, cmd_size - 2*sizeof(uint32_t)))
             {
                RARCH_ERR("CMD_LOAD_SAVESTATE failed to receive savestate.\n");
                return netplay_cmd_nak(netplay);
             }
+
+            /* And decompress it */
+            netplay->decompression_backend->set_in(netplay->decompression_stream,
+               netplay->zbuffer, cmd_size - 2*sizeof(uint32_t));
+            netplay->decompression_backend->set_out(netplay->decompression_stream,
+               netplay->buffer[netplay->read_ptr].state, netplay->state_size);
+            netplay->decompression_backend->trans(netplay->decompression_stream,
+               true, &rd, &wn, NULL);
 
             /* Skip ahead if it's past where we are */
             if (frame > netplay->self_frame_count)
@@ -1101,6 +1123,15 @@ bool netplay_init_serialization(netplay_t *netplay)
       }
    }
 
+   netplay->zbuffer_size = netplay->state_size * 2;
+   netplay->zbuffer = (uint8_t *) calloc(netplay->zbuffer_size, 1);
+   if (!netplay->zbuffer)
+   {
+      netplay->quirks |= NETPLAY_QUIRK_NO_TRANSMISSION;
+      netplay->zbuffer_size = 0;
+      return false;
+   }
+
    return true;
 }
 
@@ -1292,7 +1323,8 @@ void netplay_free(netplay_t *netplay)
 
       free(netplay->spectate.input);
    }
-   else
+
+   if (netplay->buffer)
    {
       for (i = 0; i < netplay->buffer_size; i++)
          if (netplay->buffer[i].state)
@@ -1300,6 +1332,12 @@ void netplay_free(netplay_t *netplay)
 
       free(netplay->buffer);
    }
+
+   if (netplay->zbuffer)
+      free(netplay->zbuffer);
+
+   if (netplay->compression_stream)
+      netplay->compression_backend->stream_free(netplay->compression_stream);
 
    if (netplay->addr)
       freeaddrinfo_retro(netplay->addr);
@@ -1391,8 +1429,9 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
 void netplay_load_savestate(netplay_t *netplay,
       retro_ctx_serialize_info_t *serial_info, bool save)
 {
-   uint32_t header[3];
+   uint32_t header[4];
    retro_ctx_serialize_info_t tmp_serial_info;
+   uint32_t rd, wn;
 
    if (!netplay->has_connection)
       return;
@@ -1442,10 +1481,23 @@ void netplay_load_savestate(netplay_t *netplay,
             | NETPLAY_QUIRK_NO_TRANSMISSION))
       return;
 
-   /* And send it to the peer (FIXME: this is an ugly way to do this) */
+   /* Compress it */
+   netplay->compression_backend->set_in(netplay->compression_stream,
+      serial_info->data_const, serial_info->size);
+   netplay->compression_backend->set_out(netplay->compression_stream,
+      netplay->zbuffer, netplay->zbuffer_size);
+   if (!netplay->compression_backend->trans(netplay->compression_stream,
+      true, &rd, &wn, NULL))
+   {
+      hangup(netplay);
+      return;
+   }
+
+   /* And send it to the peer */
    header[0] = htonl(NETPLAY_CMD_LOAD_SAVESTATE);
-   header[1] = htonl(serial_info->size + sizeof(uint32_t));
+   header[1] = htonl(wn + 2*sizeof(uint32_t));
    header[2] = htonl(netplay->self_frame_count);
+   header[3] = htonl(serial_info->size);
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
    {
@@ -1454,7 +1506,7 @@ void netplay_load_savestate(netplay_t *netplay,
    }
 
    if (!socket_send_all_blocking(netplay->fd,
-            serial_info->data_const, serial_info->size, false))
+            netplay->zbuffer, wn, false))
    {
       hangup(netplay);
       return;

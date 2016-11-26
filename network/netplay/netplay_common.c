@@ -166,8 +166,9 @@ bool netplay_handshake(netplay_t *netplay)
    char msg[512];
    uint32_t *content_crc_ptr = NULL;
    void *sram                = NULL;
-   uint32_t header[4]        = {0};
+   uint32_t header[5]        = {0};
    bool is_server            = netplay->is_server;
+   int compression           = 0;
 
    msg[0] = '\0';
 
@@ -182,6 +183,7 @@ bool netplay_handshake(netplay_t *netplay)
    header[1] = htonl(netplay_impl_magic());
    header[2] = htonl(mem_info.size);
    header[3] = htonl(local_pmagic);
+   header[4] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
       return false;
@@ -227,6 +229,36 @@ bool netplay_handshake(netplay_t *netplay)
        (local_pmagic != remote_pmagic))
    {
       RARCH_ERR("Platform mismatch with a platform-sensitive core.\n");
+      return false;
+   }
+
+   /* Clear any existing compression */
+   if (netplay->compression_stream)
+      netplay->compression_backend->stream_free(netplay->compression_stream);
+   if (netplay->decompression_stream)
+      netplay->decompression_backend->stream_free(netplay->decompression_stream);
+
+   /* Check what compression is supported */
+   compression = ntohl(header[4]);
+   compression &= NETPLAY_COMPRESSION_SUPPORTED;
+   if (compression & NETPLAY_COMPRESSION_ZLIB)
+   {
+      netplay->compression_backend = trans_stream_get_zlib_deflate_backend();
+      if (!netplay->compression_backend)
+         netplay->compression_backend = trans_stream_get_pipe_backend();
+   }
+   else
+   {
+      netplay->compression_backend = trans_stream_get_pipe_backend();
+   }
+   netplay->decompression_backend = netplay->compression_backend->reverse;
+
+   /* Allocate our compression stream */
+   netplay->compression_stream = netplay->compression_backend->stream_new();
+   netplay->decompression_stream = netplay->decompression_backend->stream_new();
+   if (!netplay->compression_stream || !netplay->decompression_stream)
+   {
+      RARCH_ERR("Failed to allocate compression transcoder!\n");
       return false;
    }
 

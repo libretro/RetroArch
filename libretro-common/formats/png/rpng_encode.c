@@ -26,7 +26,7 @@
 
 #include <encodings/crc32.h>
 #include <streams/file_stream.h>
-#include <file/archive_file.h>
+#include <streams/trans_stream.h>
 
 #include "rpng_internal.h"
 
@@ -213,7 +213,7 @@ static bool rpng_save_image(const char *path,
    bool ret = true;
    struct png_ihdr ihdr = {0};
 
-   const struct file_archive_file_backend *stream_backend = NULL;
+   const struct trans_stream_backend *stream_backend = NULL;
    size_t encode_buf_size  = 0;
    uint8_t *encode_buf     = NULL;
    uint8_t *deflate_buf    = NULL;
@@ -225,11 +225,13 @@ static bool rpng_save_image(const char *path,
    uint8_t *prev_encoded   = NULL;
    uint8_t *encode_target  = NULL;
    void *stream            = NULL;
+   uint32_t total_in       = 0;
+   uint32_t total_out      = 0;
    RFILE *file             = filestream_open(path, RFILE_MODE_WRITE, -1);
    if (!file)
       GOTO_END_ERROR();
 
-   stream_backend = file_archive_get_zlib_file_backend();
+   stream_backend = trans_stream_get_zlib_deflate_backend();
 
    if (filestream_write(file, png_magic, sizeof(png_magic)) != sizeof(png_magic))
       GOTO_END_ERROR();
@@ -328,26 +330,23 @@ static bool rpng_save_image(const char *path,
    if (!stream)
       GOTO_END_ERROR();
 
-   stream_backend->stream_set(
+   stream_backend->set_in(
          stream,
-         encode_buf_size,
-         encode_buf_size * 2,
          encode_buf,
-         deflate_buf + 8);
+         encode_buf_size);
+   stream_backend->set_out(
+         stream,
+         deflate_buf + 8,
+         encode_buf_size * 2);
 
-   stream_backend->stream_compress_init(stream, 9);
-
-   if (stream_backend->stream_compress_data_to_file(stream) != 1)
+   if (!stream_backend->trans(stream, true, &total_in, &total_out, NULL))
    {
-      stream_backend->stream_compress_free(stream);
       GOTO_END_ERROR();
    }
 
-   stream_backend->stream_compress_free(stream);
-
    memcpy(deflate_buf + 4, "IDAT", 4);
-   dword_write_be(deflate_buf + 0,        ((uint32_t)stream_backend->stream_get_total_out(stream)));
-   if (!png_write_idat(file, deflate_buf, ((size_t)stream_backend->stream_get_total_out(stream) + 8)))
+   dword_write_be(deflate_buf + 0,        ((uint32_t)total_out));
+   if (!png_write_idat(file, deflate_buf, ((size_t)total_out + 8)))
       GOTO_END_ERROR();
 
    if (!png_write_iend(file))
