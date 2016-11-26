@@ -132,6 +132,7 @@ mg_static_assert(sizeof(void *) >= sizeof(int), "data type size check");
 #include <mach/mach_time.h>
 #include <assert.h>
 
+#include <compat/strl.h>
 
 /* clock_gettime is not implemented on OSX */
 int clock_gettime(int clk_id, struct timespec *t);
