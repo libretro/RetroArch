@@ -2076,9 +2076,9 @@ static void vulkan_set_texture_frame(void *data,
    uint8_t *dst                       = NULL;
    const uint8_t *src                 = NULL;
    vk_t *vk                           = (vk_t*)data;
-   unsigned index                     = vk->context->current_swapchain_index;
-   struct vk_texture *texture         = &vk->menu.textures[index];
-   struct vk_texture *texture_optimal = &vk->menu.textures_optimal[index];
+   unsigned index                     = 0;
+   struct vk_texture *texture         = NULL;
+   struct vk_texture *texture_optimal = NULL;
    const VkComponentMapping br_swizzle = {
       VK_COMPONENT_SWIZZLE_B,
       VK_COMPONENT_SWIZZLE_G,
@@ -2088,6 +2088,10 @@ static void vulkan_set_texture_frame(void *data,
 
    if (!vk)
       return;
+
+   index           = vk->context->current_swapchain_index;
+   texture         = &vk->menu.textures[index];
+   texture_optimal = &vk->menu.textures_optimal[index];
 
    /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
     * just apply the swizzle in the image view instead. */
