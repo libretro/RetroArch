@@ -1,4 +1,5 @@
 LOCAL_PATH := $(call my-dir)
+
 include $(CLEAR_VARS)
 
 RARCH_DIR := ../../../..
@@ -12,6 +13,11 @@ DEFINES     :=
 
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 DEPS_DIR          := $(RARCH_DIR)/deps
+
+GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+ifneq ($(GIT_VERSION),)
+   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
+endif
 
 include $(CLEAR_VARS)
 ifeq ($(TARGET_ARCH),arm)
