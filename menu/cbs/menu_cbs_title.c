@@ -223,12 +223,7 @@ default_title_generic_macro(action_get_title_list_rdb_entry_pegi_rating,MENU_ENU
 default_title_generic_macro(action_get_title_list_rdb_entry_cero_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING) 
 default_title_generic_macro(action_get_title_list_rdb_entry_bbfc_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING) 
 default_title_generic_macro(action_get_title_list_rdb_entry_max_users,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS) 
-
-static int action_get_title_list_rdb_entry_database_info(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Info ");
-}
+default_title_generic_macro(action_get_title_list_rdb_entry_database_info,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO) 
 
 static int action_get_title_default(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
