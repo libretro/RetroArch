@@ -168,6 +168,7 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          }
          break;
       default:
+         sprintf(s, "Windows %i.%i", *major, *minor);
          break;
    }
 }

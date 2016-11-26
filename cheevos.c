@@ -461,13 +461,6 @@ static void cheevos_log_cond(const cheevos_cond_t* cond)
 static void cheevos_log_cheevo(const cheevo_t* cheevo,
       const cheevos_field_t* memaddr_ud)
 {
-   char memaddr[256];
-   
-   strlcpy(memaddr, memaddr_ud->string, sizeof(memaddr));
-   
-   if (memaddr_ud->length < sizeof(memaddr))
-      memaddr[memaddr_ud->length] = 0;
-
    RARCH_LOG("CHEEVOS cheevo %p\n", cheevo);
    RARCH_LOG("CHEEVOS   id:      %u\n", cheevo->id);
    RARCH_LOG("CHEEVOS   title:   %s\n", cheevo->title);
@@ -476,7 +469,7 @@ static void cheevos_log_cheevo(const cheevo_t* cheevo,
    RARCH_LOG("CHEEVOS   badge:   %s\n", cheevo->badge);
    RARCH_LOG("CHEEVOS   points:  %u\n", cheevo->points);
    RARCH_LOG("CHEEVOS   sets:    TBD\n");
-   RARCH_LOG("CHEEVOS   memaddr: %s\n", memaddr);
+   RARCH_LOG("CHEEVOS   memaddr: %s\n", memaddr_ud->string);
 }
 
 static void cheevos_add_var_size(char** aux, size_t* left,
