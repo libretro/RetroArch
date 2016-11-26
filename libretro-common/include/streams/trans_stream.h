@@ -56,6 +56,9 @@ struct trans_stream_backend
    /* Free it */
    void  (*stream_free)(void *);
 
+   /* (Optional) Set extra properties, defined per transcoder */
+   bool  (*define)(void *, const char *, uint32_t);
+
    /* Set our input source */
    void  (*set_in)(void *, const uint8_t *, uint32_t);
 

@@ -88,6 +88,7 @@ const struct trans_stream_backend pipe_backend = {
    &pipe_backend,
    pipe_stream_new,
    pipe_stream_free,
+   NULL,
    pipe_set_in,
    pipe_set_out,
    pipe_trans

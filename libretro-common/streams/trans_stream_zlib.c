@@ -29,12 +29,24 @@
 struct zlib_trans_stream
 {
    z_stream z;
+   int ex; /* window_bits or level */
    bool inited;
 };
 
-static void *zlib_stream_new(void)
+static void *zlib_deflate_stream_new(void)
 {
-   return (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
+   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
+   if (ret)
+      ret->ex = 9;
+   return (void *) ret;
+}
+
+static void *zlib_inflate_stream_new(void)
+{
+   struct zlib_trans_stream *ret = (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
+   if (ret)
+      ret->ex = MAX_WBITS;
+   return (void *) ret;
 }
 
 static void zlib_deflate_stream_free(void *data)
@@ -53,6 +65,28 @@ static void zlib_inflate_stream_free(void *data)
    free(z);
 }
 
+static bool zlib_deflate_define(void *data, const char *prop, uint32_t val)
+{
+   struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   if (!strcmp(prop, "level"))
+   {
+      z->ex = (int) val;
+      return true;
+   }
+   return false;
+}
+
+static bool zlib_inflate_define(void *data, const char *prop, uint32_t val)
+{
+   struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   if (!strcmp(prop, "window_bits"))
+   {
+      z->ex = (int) val;
+      return true;
+   }
+   return false;
+}
+
 static void zlib_deflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
 {
    struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
@@ -60,7 +94,7 @@ static void zlib_deflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
    z->z.avail_in = in_size;
    if (!z->inited)
    {
-      deflateInit(&z->z, 9);
+      deflateInit(&z->z, z->ex);
       z->inited = true;
    }
 }
@@ -72,7 +106,7 @@ static void zlib_inflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
    z->z.avail_in = in_size;
    if (!z->inited)
    {
-      inflateInit(&z->z);
+      inflateInit2(&z->z, z->ex);
       z->inited = true;
    }
 }
@@ -97,7 +131,7 @@ static bool zlib_deflate_trans(
 
    if (!zt->inited)
    {
-      deflateInit(z, 9);
+      deflateInit(z, zt->ex);
       zt->inited = true;
    }
 
@@ -159,7 +193,7 @@ static bool zlib_inflate_trans(
 
    if (!zt->inited)
    {
-      inflateInit(z);
+      inflateInit2(z, zt->ex);
       zt->inited = true;
    }
 
@@ -211,8 +245,9 @@ static bool zlib_inflate_trans(
 const struct trans_stream_backend zlib_deflate_backend = {
    "zlib_deflate",
    &zlib_inflate_backend,
-   zlib_stream_new,
+   zlib_deflate_stream_new,
    zlib_deflate_stream_free,
+   zlib_deflate_define,
    zlib_deflate_set_in,
    zlib_set_out,
    zlib_deflate_trans
@@ -221,8 +256,9 @@ const struct trans_stream_backend zlib_deflate_backend = {
 const struct trans_stream_backend zlib_inflate_backend = {
    "zlib_inflate",
    &zlib_deflate_backend,
-   zlib_stream_new,
+   zlib_inflate_stream_new,
    zlib_inflate_stream_free,
+   zlib_inflate_define,
    zlib_inflate_set_in,
    zlib_set_out,
    zlib_inflate_trans
