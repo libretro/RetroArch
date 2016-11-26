@@ -5654,8 +5654,8 @@ mg_modify_passwords_file(const char *fname,
   }
 
   /* Create a temporary file name. Length has been checked before. */
-  strcpy(tmp, fname);
-  strcat(tmp, ".tmp");
+  strlcpy(tmp, fname,  sizeof(tmp));
+  strlcat(tmp, ".tmp", sizeof(tmp));
 
   /* Create the file if does not exist */
   /* Use of fopen here is OK, since fname is only ASCII */
