@@ -1114,3 +1114,27 @@ MSG_HASH(MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
       "menu_throttle_framerate")
 MSG_HASH(MENU_ENUM_LABEL_OVERLAY_SETTINGS,
       "overlay_settings")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,
+      "database_cursor_list_entry_origin")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE,
+      "database_cursor_list_entry_franchise")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING,
+      "database_cursor_list_entry_esrb_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING,
+      "database_cursor_list_entry_elspa_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING,
+      "database_cursor_list_entry_pegi_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING,
+      "database_cursor_list_entry_cero_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING,
+      "database_cursor_list_entry_bbfc_rating")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS,
+      "database_cursor_list_entry_max_users")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH,
+      "database_cursor_list_releasedate_by_month")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR,
+      "database_cursor_list_releasedate_by_year")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE,
+      "database_cursor_list_edge_magazine_issue")
+MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
+      "database_cursor_list_edge_magazine_rating")

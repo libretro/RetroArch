@@ -211,83 +211,23 @@ default_title_generic_macro(action_get_title_deferred_database_manager_list,MENU
 default_title_generic_macro(action_get_title_deferred_cursor_manager_list,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST) 
 default_title_generic_macro(action_get_title_list_rdb_entry_developer,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DEVELOPER) 
 default_title_generic_macro(action_get_title_list_rdb_entry_publisher,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER) 
-
-static int action_get_title_list_rdb_entry_origin(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Origin ");
-}
-
-static int action_get_title_list_rdb_entry_franchise(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Franchise ");
-}
-
-static int action_get_title_list_rdb_entry_edge_magazine_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Edge Magazine Rating ");
-}
-
-static int action_get_title_list_rdb_entry_edge_magazine_issue(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Edge Magazine Issue ");
-}
-
-static int action_get_title_list_rdb_entry_releasedate_by_month(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Releasedate By Month ");
-}
-
-static int action_get_title_list_rdb_entry_releasedate_by_year(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Releasedate By Year ");
-}
-
-static int action_get_title_list_rdb_entry_esrb_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: ESRB Rating ");
-}
+default_title_generic_macro(action_get_title_list_rdb_entry_origin,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN) 
+default_title_generic_macro(action_get_title_list_rdb_entry_franchise,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_FRANCHISE) 
+default_title_generic_macro(action_get_title_list_rdb_entry_edge_magazine_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING) 
+default_title_generic_macro(action_get_title_list_rdb_entry_edge_magazine_issue,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_ISSUE) 
+default_title_generic_macro(action_get_title_list_rdb_entry_releasedate_by_month,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_MONTH) 
+default_title_generic_macro(action_get_title_list_rdb_entry_releasedate_by_year,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_RELEASEDATE_BY_YEAR) 
+default_title_generic_macro(action_get_title_list_rdb_entry_esrb_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ESRB_RATING) 
+default_title_generic_macro(action_get_title_list_rdb_entry_elspa_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ELSPA_RATING) 
+default_title_generic_macro(action_get_title_list_rdb_entry_pegi_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PEGI_RATING) 
+default_title_generic_macro(action_get_title_list_rdb_entry_cero_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_CERO_RATING) 
+default_title_generic_macro(action_get_title_list_rdb_entry_bbfc_rating,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_BBFC_RATING) 
+default_title_generic_macro(action_get_title_list_rdb_entry_max_users,MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_MAX_USERS) 
 
 static int action_get_title_list_rdb_entry_database_info(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
    return action_get_title_generic(s, len, path, "Database Info ");
-}
-
-static int action_get_title_list_rdb_entry_elspa_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Databsae Cursor List - Filter: ELSPA Rating ");
-}
-
-static int action_get_title_list_rdb_entry_pegi_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: PEGI Rating ");
-}
-
-static int action_get_title_list_rdb_entry_cero_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: CERO Rating ");
-}
-
-static int action_get_title_list_rdb_entry_bbfc_rating(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: BBFC Rating ");
-}
-
-static int action_get_title_list_rdb_entry_max_users(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   return action_get_title_generic(s, len, path, "Database Cursor List - Filter: Max Users ");
 }
 
 static int action_get_title_default(const char *path, const char *label, 
