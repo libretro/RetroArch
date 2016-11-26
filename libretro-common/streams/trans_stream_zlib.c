@@ -1,0 +1,199 @@
+/* Copyright  (C) 2016 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (trans_stream_zlib.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#include <stdlib.h>
+#include <string.h>
+
+#include <compat/zlib.h>
+#include <streams/trans_stream.h>
+
+struct zlib_trans_stream
+{
+   z_stream z;
+   bool inited;
+};
+
+static void *zlib_stream_new(void)
+{
+   return (struct zlib_trans_stream*)calloc(1, sizeof(struct zlib_trans_stream));
+}
+
+static void zlib_deflate_stream_free(void *data)
+{
+   struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   if (z->inited)
+      deflateEnd(&z->z);
+   free(z);
+}
+
+static void zlib_inflate_stream_free(void *data)
+{
+   struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   if (z->inited)
+      inflateEnd(&z->z);
+   free(z);
+}
+
+static void zlib_deflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
+{
+   struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   z->z.next_in = (uint8_t *) in;
+   z->z.avail_in = in_size;
+   if (!z->inited)
+   {
+      deflateInit(&z->z, Z_DEFAULT_COMPRESSION);
+      z->inited = true;
+   }
+}
+
+static void zlib_inflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
+{
+   struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   z->z.next_in = (uint8_t *) in;
+   z->z.avail_in = in_size;
+   if (!z->inited)
+   {
+      deflateInit(&z->z, Z_DEFAULT_COMPRESSION);
+      z->inited = true;
+   }
+}
+
+static void zlib_set_out(void *data, uint8_t *out, uint32_t out_size)
+{
+   struct zlib_trans_stream *z = (struct zlib_trans_stream *) data;
+   z->z.next_out = out;
+   z->z.avail_out = out_size;
+}
+
+static bool zlib_deflate_trans(
+   void *data, bool flush,
+   uint32_t *rd, uint32_t *wn,
+   enum trans_stream_error *error)
+{
+   int ret;
+   uint32_t pre_avail_in, pre_avail_out;
+   struct zlib_trans_stream *zt = (struct zlib_trans_stream *) data;
+   z_stream *z = &zt->z;
+
+   if (!zt->inited)
+   {
+      deflateInit(z, Z_DEFAULT_COMPRESSION);
+      zt->inited = true;
+   }
+
+   pre_avail_in = z->avail_in;
+   pre_avail_out = z->avail_out;
+   ret = deflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
+
+   if (ret != Z_OK && ret != Z_STREAM_END)
+   {
+      if (error)
+         *error = TRANS_STREAM_ERROR_OTHER;
+      return false;
+   }
+
+   *error = TRANS_STREAM_ERROR_NONE;
+   if (z->avail_out == 0)
+   {
+      /* Filled buffer, maybe an error */
+      if (z->avail_in != 0)
+         *error = TRANS_STREAM_ERROR_BUFFER_FULL;
+   }
+
+   *rd = z->avail_in - pre_avail_in;
+   *wn = z->avail_out - pre_avail_out;
+
+   if (flush && !*error)
+   {
+      deflateEnd(z);
+      zt->inited = false;
+   }
+
+   return !*error;
+}
+
+static bool zlib_inflate_trans(
+   void *data, bool flush,
+   uint32_t *rd, uint32_t *wn,
+   enum trans_stream_error *error)
+{
+   int ret;
+   uint32_t pre_avail_in, pre_avail_out;
+   struct zlib_trans_stream *zt = (struct zlib_trans_stream *) data;
+   z_stream *z = &zt->z;
+
+   if (!zt->inited)
+   {
+      inflateInit(z);
+      zt->inited = true;
+   }
+
+   pre_avail_in = z->avail_in;
+   pre_avail_out = z->avail_out;
+   ret = inflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
+
+   if (ret != Z_OK && ret != Z_STREAM_END)
+   {
+      if (error)
+         *error = TRANS_STREAM_ERROR_OTHER;
+      return false;
+   }
+
+   *error = TRANS_STREAM_ERROR_NONE;
+   if (z->avail_out == 0)
+   {
+      /* Filled buffer, maybe an error */
+      if (z->avail_in != 0)
+         *error = TRANS_STREAM_ERROR_BUFFER_FULL;
+   }
+
+   *rd = z->avail_in - pre_avail_in;
+   *wn = z->avail_out - pre_avail_out;
+
+   if (flush && !*error)
+   {
+      inflateEnd(z);
+      zt->inited = false;
+   }
+
+   return !*error;
+}
+
+const struct trans_stream_backend zlib_deflate_backend = {
+   "zlib_deflate",
+   &zlib_inflate_backend,
+   zlib_stream_new,
+   zlib_deflate_stream_free,
+   zlib_deflate_set_in,
+   zlib_set_out,
+   zlib_deflate_trans
+};
+
+const struct trans_stream_backend zlib_inflate_backend = {
+   "zlib_inflate",
+   &zlib_deflate_backend,
+   zlib_stream_new,
+   zlib_inflate_stream_free,
+   zlib_inflate_set_in,
+   zlib_set_out,
+   zlib_inflate_trans
+};
