@@ -60,7 +60,7 @@ static void zlib_deflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
    z->z.avail_in = in_size;
    if (!z->inited)
    {
-      deflateInit(&z->z, Z_DEFAULT_COMPRESSION);
+      deflateInit(&z->z, 9);
       z->inited = true;
    }
 }
@@ -72,7 +72,7 @@ static void zlib_inflate_set_in(void *data, const uint8_t *in, uint32_t in_size)
    z->z.avail_in = in_size;
    if (!z->inited)
    {
-      deflateInit(&z->z, Z_DEFAULT_COMPRESSION);
+      inflateInit(&z->z);
       z->inited = true;
    }
 }
@@ -89,46 +89,61 @@ static bool zlib_deflate_trans(
    uint32_t *rd, uint32_t *wn,
    enum trans_stream_error *error)
 {
-   int ret;
+   int zret;
+   bool ret;
    uint32_t pre_avail_in, pre_avail_out;
    struct zlib_trans_stream *zt = (struct zlib_trans_stream *) data;
    z_stream *z = &zt->z;
 
    if (!zt->inited)
    {
-      deflateInit(z, Z_DEFAULT_COMPRESSION);
+      deflateInit(z, 9);
       zt->inited = true;
    }
 
    pre_avail_in = z->avail_in;
    pre_avail_out = z->avail_out;
-   ret = deflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
+   zret = deflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
 
-   if (ret != Z_OK && ret != Z_STREAM_END)
+   if (zret == Z_OK)
+   {
+      if (error)
+         *error = TRANS_STREAM_ERROR_AGAIN;
+   }
+   else if (zret == Z_STREAM_END)
+   {
+      if (error)
+         *error = TRANS_STREAM_ERROR_NONE;
+   }
+   else
    {
       if (error)
          *error = TRANS_STREAM_ERROR_OTHER;
       return false;
    }
+   ret = true;
 
-   *error = TRANS_STREAM_ERROR_NONE;
    if (z->avail_out == 0)
    {
       /* Filled buffer, maybe an error */
       if (z->avail_in != 0)
-         *error = TRANS_STREAM_ERROR_BUFFER_FULL;
+      {
+         ret = false;
+         if (error)
+            *error = TRANS_STREAM_ERROR_BUFFER_FULL;
+      }
    }
 
-   *rd = z->avail_in - pre_avail_in;
-   *wn = z->avail_out - pre_avail_out;
+   *rd = pre_avail_in - z->avail_in;
+   *wn = pre_avail_out - z->avail_out;
 
-   if (flush && !*error)
+   if (flush && zret == Z_STREAM_END)
    {
       deflateEnd(z);
       zt->inited = false;
    }
 
-   return !*error;
+   return ret;
 }
 
 static bool zlib_inflate_trans(
@@ -136,7 +151,8 @@ static bool zlib_inflate_trans(
    uint32_t *rd, uint32_t *wn,
    enum trans_stream_error *error)
 {
-   int ret;
+   int zret;
+   bool ret;
    uint32_t pre_avail_in, pre_avail_out;
    struct zlib_trans_stream *zt = (struct zlib_trans_stream *) data;
    z_stream *z = &zt->z;
@@ -149,33 +165,47 @@ static bool zlib_inflate_trans(
 
    pre_avail_in = z->avail_in;
    pre_avail_out = z->avail_out;
-   ret = inflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
+   zret = inflate(z, flush ? Z_FINISH : Z_NO_FLUSH);
 
-   if (ret != Z_OK && ret != Z_STREAM_END)
+   if (zret == Z_OK)
+   {
+      if (error)
+         *error = TRANS_STREAM_ERROR_AGAIN;
+   }
+   else if (zret == Z_STREAM_END)
+   {
+      if (error)
+         *error = TRANS_STREAM_ERROR_NONE;
+   }
+   else
    {
       if (error)
          *error = TRANS_STREAM_ERROR_OTHER;
       return false;
    }
+   ret = true;
 
-   *error = TRANS_STREAM_ERROR_NONE;
    if (z->avail_out == 0)
    {
       /* Filled buffer, maybe an error */
       if (z->avail_in != 0)
-         *error = TRANS_STREAM_ERROR_BUFFER_FULL;
+      {
+         ret = false;
+         if (error)
+            *error = TRANS_STREAM_ERROR_BUFFER_FULL;
+      }
    }
 
-   *rd = z->avail_in - pre_avail_in;
-   *wn = z->avail_out - pre_avail_out;
+   *rd = pre_avail_in - z->avail_in;
+   *wn = pre_avail_out - z->avail_out;
 
-   if (flush && !*error)
+   if (flush && zret == Z_STREAM_END)
    {
       inflateEnd(z);
       zt->inited = false;
    }
 
-   return !*error;
+   return ret;
 }
 
 const struct trans_stream_backend zlib_deflate_backend = {
