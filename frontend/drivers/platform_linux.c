@@ -1293,8 +1293,8 @@ static void frontend_linux_get_env(int *argc,
 
       __android_log_print(ANDROID_LOG_INFO,
          "RetroArch", "[ENV]: libretro path: [%s]\n", core_path);
-      if (args && *core_path)
-         args->libretro_path = core_path;
+      /*if (args && *core_path)
+         args->libretro_path = core_path;*/
    }
 
    /* Content. */
