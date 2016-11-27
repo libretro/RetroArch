@@ -605,14 +605,6 @@ static bool default_auto_shaders_enable = true;
 static bool default_sort_savefiles_enable = false;
 static bool default_sort_savestates_enable = false;
 
-static unsigned default_menu_btn_ok          = RETRO_DEVICE_ID_JOYPAD_A;
-static unsigned default_menu_btn_cancel      = RETRO_DEVICE_ID_JOYPAD_B;
-static unsigned default_menu_btn_search      = RETRO_DEVICE_ID_JOYPAD_X;
-static unsigned default_menu_btn_default     = RETRO_DEVICE_ID_JOYPAD_START;
-static unsigned default_menu_btn_info        = RETRO_DEVICE_ID_JOYPAD_SELECT;
-static unsigned default_menu_btn_scroll_down = RETRO_DEVICE_ID_JOYPAD_R;
-static unsigned default_menu_btn_scroll_up   = RETRO_DEVICE_ID_JOYPAD_L;
-
 #if defined(__CELLOS_LV2__) || defined(_XBOX1) || defined(_XBOX360)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 #elif defined(VITA)
