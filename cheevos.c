@@ -2335,7 +2335,12 @@ static size_t cheevos_eval_md5(
          size += num_read;
          
          if (max_size != 0)
+         {
             max_size -= num_read;
+            
+            if (max_size == 0)
+               break;
+         }
       }
 
       filestream_close(file);
