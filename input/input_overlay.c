@@ -74,7 +74,7 @@ struct input_overlay
    enum overlay_status state;
 };
 
-static input_overlay_t *overlay_ptr = NULL;
+input_overlay_t *overlay_ptr = NULL;
 
 /**
  * input_overlay_scale:
@@ -150,9 +150,6 @@ void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 {
    size_t i;
     
-   /* TODO/FIXME - Bad hackery. Should get rid of this */
-   if (!ol)
-      ol = overlay_ptr;
    if (!ol)
       return;
 

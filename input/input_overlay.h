@@ -244,6 +244,9 @@ bool input_overlay_is_alive(input_overlay_t *ol);
 
 void input_overlay_loaded(void *task_data, void *user_data, const char *err);
 
+/* FIXME - temporary. Globals are bad */
+extern input_overlay_t *overlay_ptr;
+
 RETRO_END_DECLS
 
 #endif

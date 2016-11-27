@@ -2184,7 +2184,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_scale_factor(NULL, settings->input.overlay_scale);
+         input_overlay_set_scale_factor(overlay_ptr, settings->input.overlay_scale);
 #endif
          break;
       case CMD_EVENT_OVERLAY_SET_ALPHA_MOD:
