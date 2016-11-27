@@ -206,7 +206,7 @@ static void input_overlay_load_active(input_overlay_t *ol, float opacity)
       ol->iface->load(ol->iface_data, ol->active->load_images,
             ol->active->load_images_size);
 
-   input_overlay_set_alpha_mod(opacity);
+   input_overlay_set_alpha_mod(ol, opacity);
    input_overlay_set_vertex_geom(ol);
 
    if (ol->iface->full_screen)
@@ -392,7 +392,7 @@ static void input_overlay_post_poll(input_overlay_t *ol, float opacity)
 {
    size_t i;
 
-   input_overlay_set_alpha_mod(opacity);
+   input_overlay_set_alpha_mod(ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -433,7 +433,7 @@ static void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
 
    ol->blocked = false;
 
-   input_overlay_set_alpha_mod(opacity);
+   input_overlay_set_alpha_mod(ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -456,9 +456,8 @@ static void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
  * Switch to the next available overlay
  * screen.
  **/
-void input_overlay_next(float opacity)
+void input_overlay_next(input_overlay_t *ol, float opacity)
 {
-   input_overlay_t *ol      = overlay_ptr;
    if (!ol)
       return;
 
@@ -570,10 +569,9 @@ abort_load:
  * Sets a modulating factor for alpha channel. Default is 1.0.
  * The alpha factor is applied for all overlays.
  **/
-void input_overlay_set_alpha_mod(float mod)
+void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 {
    unsigned i;
-   input_overlay_t *ol      = overlay_ptr;
 
    if (!ol)
       return;
@@ -589,9 +587,8 @@ bool input_overlay_is_alive(input_overlay_t *ol)
    return false;
 }
 
-bool input_overlay_key_pressed(int key)
+bool input_overlay_key_pressed(input_overlay_t *ol, int key)
 {
-   input_overlay_t             *ol  = overlay_ptr;
    input_overlay_state_t *ol_state  = ol ? &ol->overlay_state : NULL;
    if (!ol)
       return false;
@@ -694,9 +691,9 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
       if (ol_state->analog[j])
          continue;
 
-      if (input_overlay_key_pressed(bind_plus))
+      if (input_overlay_key_pressed(ol, bind_plus))
          ol_state->analog[j] += 0x7fff;
-      if (input_overlay_key_pressed(bind_minus))
+      if (input_overlay_key_pressed(ol, bind_minus))
          ol_state->analog[j] -= 0x7fff;
    }
 
@@ -749,7 +746,7 @@ void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (input_overlay_key_pressed(id))
+         if (input_overlay_key_pressed(ol, id))
             *ret |= 1;
          break;
       case RETRO_DEVICE_KEYBOARD:

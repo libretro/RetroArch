@@ -2046,7 +2046,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_NEXT:
 #ifdef HAVE_OVERLAY
-         input_overlay_next(settings->input.overlay_opacity);
+         input_overlay_next(overlay_ptr, settings->input.overlay_opacity);
 #endif
          break;
       case CMD_EVENT_DSP_FILTER_DEINIT:
@@ -2189,7 +2189,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_SET_ALPHA_MOD:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_alpha_mod(settings->input.overlay_opacity);
+         input_overlay_set_alpha_mod(overlay_ptr, settings->input.overlay_opacity);
 #endif
          break;
       case CMD_EVENT_AUDIO_REINIT:

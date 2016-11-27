@@ -208,7 +208,7 @@ void input_overlay_init(void);
  * Sets a modulating factor for alpha channel. Default is 1.0.
  * The alpha factor is applied for all overlays.
  **/
-void input_overlay_set_alpha_mod(float mod);
+void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 
 /**
  * input_overlay_set_scale_factor:
@@ -224,7 +224,7 @@ void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
  * Switch to the next available overlay
  * screen.
  **/
-void input_overlay_next(float opacity);
+void input_overlay_next(input_overlay_t *ol, float opacity);
 
 /*
  * input_poll_overlay:
@@ -238,7 +238,7 @@ void input_state_overlay(int16_t *ret,
       unsigned port, unsigned device, unsigned idx,
       unsigned id);
 
-bool input_overlay_key_pressed(int key);
+bool input_overlay_key_pressed(input_overlay_t *ol, int key);
 
 bool input_overlay_is_alive(input_overlay_t *ol);
 

@@ -636,7 +636,7 @@ static INLINE bool input_keys_pressed_internal(unsigned i,
    }
 
 #ifdef HAVE_OVERLAY
-   if (input_overlay_key_pressed(i))
+   if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
       return true;
 #endif
 
@@ -741,7 +741,7 @@ static INLINE bool input_menu_keys_pressed_internal(unsigned i)
    }
 
 #ifdef HAVE_OVERLAY
-   if (input_overlay_key_pressed(i))
+   if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
       return true;
 #endif
 
