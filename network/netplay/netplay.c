@@ -657,7 +657,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
             netplay->decompression_backend->set_in(netplay->decompression_stream,
                netplay->zbuffer, cmd_size - 2*sizeof(uint32_t));
             netplay->decompression_backend->set_out(netplay->decompression_stream,
-               netplay->buffer[netplay->read_ptr].state, netplay->state_size);
+               (uint8_t*)netplay->buffer[netplay->read_ptr].state, netplay->state_size);
             netplay->decompression_backend->trans(netplay->decompression_stream,
                true, &rd, &wn, NULL);
 
@@ -1483,7 +1483,7 @@ void netplay_load_savestate(netplay_t *netplay,
 
    /* Compress it */
    netplay->compression_backend->set_in(netplay->compression_stream,
-      serial_info->data_const, serial_info->size);
+      (const uint8_t*)serial_info->data_const, serial_info->size);
    netplay->compression_backend->set_out(netplay->compression_stream,
       netplay->zbuffer, netplay->zbuffer_size);
    if (!netplay->compression_backend->trans(netplay->compression_stream,
