@@ -480,7 +480,8 @@ int16_t input_state(unsigned port, unsigned device,
                current_input_data, libretro_input_binds, port, device, idx, id);
 
 #ifdef HAVE_OVERLAY
-      input_state_overlay(&res, port, device, idx, id);
+      if (overlay_ptr)
+         input_state_overlay(overlay_ptr, &res, port, device, idx, id);
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD

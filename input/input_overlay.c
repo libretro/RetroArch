@@ -488,12 +488,10 @@ static bool input_overlay_full_screen(input_overlay_t *ol)
  *
  * Frees overlay handle.
  **/
-void input_overlay_free(void)
+void input_overlay_free(input_overlay_t *ol)
 {
-   input_overlay_t *ol      = overlay_ptr;
    if (!ol)
       return;
-   overlay_ptr = NULL;
 
    input_overlay_free_overlays(ol);
 
@@ -734,10 +732,9 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
       input_overlay_poll_clear(ol, opacity);
 }
 
-void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned idx,
+void input_state_overlay(input_overlay_t *ol, int16_t *ret, unsigned port, unsigned device, unsigned idx,
       unsigned id)
 {
-   input_overlay_t             *ol = overlay_ptr;
    input_overlay_state_t *ol_state = ol ? &ol->overlay_state : NULL;
 
    if (!ol || port != 0)

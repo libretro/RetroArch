@@ -2034,7 +2034,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_DEINIT:
 #ifdef HAVE_OVERLAY
-         input_overlay_free();
+         input_overlay_free(overlay_ptr);
+         overlay_ptr = NULL;
 #endif
          break;
       case CMD_EVENT_OVERLAY_INIT:

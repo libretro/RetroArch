@@ -191,7 +191,7 @@ typedef struct
  *
  * Frees overlay handle.
  **/
-void input_overlay_free(void);
+void input_overlay_free(input_overlay_t *ol);
 
 void input_overlay_free_overlay(struct overlay *overlay);
 
@@ -234,8 +234,8 @@ void input_overlay_next(input_overlay_t *ol, float opacity);
  **/
 void input_poll_overlay(input_overlay_t *ol, float opacity);
 
-void input_state_overlay(int16_t *ret,
-      unsigned port, unsigned device, unsigned idx,
+void input_state_overlay(input_overlay_t *ol,
+      int16_t *ret, unsigned port, unsigned device, unsigned idx,
       unsigned id);
 
 bool input_overlay_key_pressed(input_overlay_t *ol, int key);
