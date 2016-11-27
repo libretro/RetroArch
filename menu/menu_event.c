@@ -394,7 +394,7 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
 #ifdef HAVE_OVERLAY
    if (!mouse_enabled)
       mouse_enabled = !(settings->input.overlay_enable
-            && input_overlay_is_alive(NULL));
+            && input_overlay_is_alive(overlay_ptr));
 #endif
 
    if (!(menu_input = menu_input_get_ptr()))

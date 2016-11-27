@@ -584,11 +584,9 @@ void input_overlay_set_alpha_mod(float mod)
 
 bool input_overlay_is_alive(input_overlay_t *ol)
 {
-   if (!ol)
-      ol = overlay_ptr;
-   if (!ol)
-      return false;
-   return ol->alive;
+   if (ol)
+      return ol->alive;
+   return false;
 }
 
 bool input_overlay_key_pressed(int key)
@@ -614,9 +612,6 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
    settings_t *settings            = config_get_ptr();
    input_overlay_state_t *ol_state = NULL;
    
-   if (!ol)
-      ol = overlay_ptr;
-
    if (!input_overlay_is_alive(ol))
       return;
 

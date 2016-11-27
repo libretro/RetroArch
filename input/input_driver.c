@@ -408,7 +408,7 @@ void input_poll(void)
    }
 
 #ifdef HAVE_OVERLAY
-   input_poll_overlay(NULL, settings->input.overlay_opacity);
+   input_poll_overlay(overlay_ptr, settings->input.overlay_opacity);
 #endif
 
 #ifdef HAVE_COMMAND
