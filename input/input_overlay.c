@@ -492,6 +492,7 @@ void input_overlay_free(input_overlay_t *ol)
 {
    if (!ol)
       return;
+   overlay_ptr = NULL;
 
    input_overlay_free_overlays(ol);
 
