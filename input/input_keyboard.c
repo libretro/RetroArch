@@ -95,19 +95,6 @@ bool input_keyboard_return_pressed(void)
    return kb_return_pressed;
 }
 
-static void input_keyboard_line_toggle_osk(bool enable)
-{
-   settings_t *settings = config_get_ptr();
-
-   if (!settings->osk.enable)
-      return;
-
-   if (enable)
-      input_driver_keyboard_linefeed_enable = true;
-   else
-      input_driver_keyboard_linefeed_enable = false;
-}
-
 /**
  * input_keyboard_line_free:
  * @state                    : Input keyboard line handle.
@@ -121,8 +108,6 @@ static void input_keyboard_line_free(input_keyboard_line_t *state)
 
    free(state->buffer);
    free(state);
-
-   input_keyboard_line_toggle_osk(false);
 }
 
 /**
@@ -146,8 +131,6 @@ static input_keyboard_line_t *input_keyboard_line_new(void *userdata,
 
    state->cb       = cb;
    state->userdata = userdata;
-
-   input_keyboard_line_toggle_osk(true);
 
    return state;
 }

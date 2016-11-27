@@ -313,13 +313,6 @@ typedef struct settings
 
    struct
    {
-      bool enable;
-      float opacity;
-      float scale;
-   } osk;
-
-   struct
-   {
       unsigned mode;
    } archive;
 
@@ -498,15 +491,6 @@ const char *config_get_default_wifi(void);
  * Returns: Default location driver.
  **/
 const char *config_get_default_location(void);
-
-/**
- * config_get_default_osk:
- *
- * Gets default OSK driver.
- *
- * Returns: Default OSK driver.
- **/
-const char *config_get_default_osk(void);
 
 /**
  * config_get_default_video:
