@@ -55,6 +55,7 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../playlist.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -837,6 +838,9 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    char *scrub_char_pointer = NULL;
    settings_t     *settings = config_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
+   playlist_t     *playlist = NULL;
+   const char    *core_name = NULL;
+
    if (!xmb)
       return;
 
@@ -852,6 +856,22 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    entry.spacing       = 0;
 
    menu_entry_get(&entry, 0, i, NULL, true);
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   if (playlist)
+   {
+      playlist_get_index(playlist, i,
+            NULL, NULL, NULL, &core_name, NULL, NULL);
+
+      if (core_name && string_is_equal(core_name, "imageviewer"))
+      {
+         printf("%s\n", entry.label);
+         strlcpy(xmb->thumbnail_file_path, entry.label,
+               sizeof(xmb->thumbnail_file_path));
+         return;
+      }
+   }
 
    fill_pathname_join(
          xmb->thumbnail_file_path,
