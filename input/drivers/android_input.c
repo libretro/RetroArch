@@ -645,7 +645,6 @@ static void handle_hotplug(android_input_data_t *android_data,
    char name_buf[256];
    int vendorId                 = 0;
    int productId                = 0;
-   bool back_mapped             = false;
    settings_t         *settings = config_get_ptr();
 
    device_name[0] = device_model[0] = name_buf[0] = '\0';
@@ -893,7 +892,6 @@ static void handle_hotplug(android_input_data_t *android_data,
 
    if (settings->input.autodetect_enable)
    {
-      bool      autoconfigured;
       autoconfig_params_t params   = {{0}};
 
       RARCH_LOG("Pads Connected: %d Port: %d\n %s VID/PID: %d/%d\n",
@@ -908,14 +906,7 @@ static void handle_hotplug(android_input_data_t *android_data,
       settings->input.vid[*port] = params.vid;
 
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      autoconfigured = input_config_autoconfigure_joypad(&params);
-
-      if (autoconfigured)
-      {
-         if (settings->input.autoconf_binds[*port]
-               [RARCH_MENU_TOGGLE].joykey != 0)
-            back_mapped = true;
-      }
+      input_config_autoconfigure_joypad(&params);
    }
 
    if (!string_is_empty(name_buf))
