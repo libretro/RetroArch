@@ -45,6 +45,8 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 
+#define OSK_CHARS_PER_LINE 11
+
 static unsigned char menu_keyboard_key_state[RETROK_LAST];
 
 enum osk_type
@@ -304,13 +306,13 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          if (osk_ptr < 33)
-            osk_ptr = osk_ptr + 11;
+            osk_ptr = osk_ptr + OSK_CHARS_PER_LINE;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP))
       {
-         if (osk_ptr > 10)
-            osk_ptr = osk_ptr - 11;
+         if (osk_ptr >= OSK_CHARS_PER_LINE)
+            osk_ptr = osk_ptr - OSK_CHARS_PER_LINE;
       }
 
       if (trigger_input & (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT))
