@@ -305,8 +305,8 @@ static bool take_screenshot_choice(const char *name_base)
    settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
-   if (      string_is_empty(settings->directory.screenshot) 
-         && (!string_is_empty(name_base)))
+   if (     string_is_empty(settings->directory.screenshot)
+         && string_is_empty(name_base))
       return false;
 
    if (video_driver_supports_viewport_read())
