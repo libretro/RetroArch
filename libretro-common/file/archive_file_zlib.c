@@ -61,7 +61,7 @@ static bool zlib_stream_decompress_data_to_file_init(
       goto error;
 
    if (zlib_inflate_backend.define)
-      zlib_inflate_backend.define(handle->stream, "window_bits", -MAX_WBITS);
+      zlib_inflate_backend.define(handle->stream, "window_bits", (uint32_t)-MAX_WBITS);
 
    handle->data = (uint8_t*)malloc(size);
 
