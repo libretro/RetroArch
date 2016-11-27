@@ -866,7 +866,6 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
       if (core_name && string_is_equal(core_name, "imageviewer"))
       {
-         printf("%s\n", entry.label);
          strlcpy(xmb->thumbnail_file_path, entry.label,
                sizeof(xmb->thumbnail_file_path));
          return;
