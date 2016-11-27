@@ -272,10 +272,6 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":\\thumbnails", sizeof(g_defaults.dir.thumbnails));
    fill_pathname_expand_special(g_defaults.dir.overlay,
       ":\\overlays", sizeof(g_defaults.dir.overlay));
-   fill_pathname_expand_special(g_defaults.dir.osk_overlay,
-      ":\\overlays", sizeof(g_defaults.dir.osk_overlay));
-   fill_pathname_expand_special(g_defaults.dir.osk_overlay,
-      ":\\overlays", sizeof(g_defaults.dir.osk_overlay));
    fill_pathname_expand_special(g_defaults.dir.core,
       ":\\cores", sizeof(g_defaults.dir.core));
    fill_pathname_expand_special(g_defaults.dir.core_info,

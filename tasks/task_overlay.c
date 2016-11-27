@@ -799,9 +799,7 @@ bool task_push_overlay_load_default(
       retro_task_callback_t cb, void *user_data)
 {
    settings_t *settings = config_get_ptr();
-   bool osk_enable      = input_driver_is_onscreen_keyboard_enabled();
-   const char *path     = osk_enable ? settings->path.osk_overlay : 
-      settings->path.overlay;
+   const char *path     = settings->path.overlay;
 
    if (string_is_empty(path))
       return false;

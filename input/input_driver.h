@@ -281,12 +281,6 @@ void input_driver_unset_own_driver(void);
 
 bool input_driver_owns_driver(void);
 
-void input_driver_set_onscreen_keyboard_enabled(void);
-
-void input_driver_unset_onscreen_keyboard_enabled(void);
-
-bool input_driver_is_onscreen_keyboard_enabled(void);
-
 void input_driver_deinit_command(void);
 
 bool input_driver_init_command(void);

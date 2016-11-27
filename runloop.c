@@ -773,7 +773,6 @@ static enum runloop_state runloop_check_state(
    static bool old_focus            = true;
 #ifdef HAVE_OVERLAY
    static char prev_overlay_restore = false;
-   bool osk_enable                  = input_driver_is_onscreen_keyboard_enabled();
 #endif
 #ifdef HAVE_NETWORKING
    bool tmp                         = false;
@@ -820,17 +819,9 @@ static enum runloop_state runloop_check_state(
 
 
 #ifdef HAVE_OVERLAY
-   if (osk_enable && !input_keyboard_ctl(
+   if (input_keyboard_ctl(
             RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
    {
-      input_driver_unset_onscreen_keyboard_enabled();
-      prev_overlay_restore  = true;
-      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-   }
-   else if (!osk_enable && input_keyboard_ctl(
-            RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-   {
-      input_driver_set_onscreen_keyboard_enabled();
       prev_overlay_restore  = false;
       command_event(CMD_EVENT_OVERLAY_INIT, NULL);
    }
@@ -850,13 +841,8 @@ static enum runloop_state runloop_check_state(
          if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
          {
             menu_ctx_iterate_t iter;
-            bool skip = false;
             core_poll();
-      #ifdef HAVE_OVERLAY
-            skip = osk_enable && input_keyboard_return_pressed();
-      #endif
 
-            if (!skip)
             {
                enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
                bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;

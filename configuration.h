@@ -359,7 +359,6 @@ typedef struct settings
    {
       char cheat_database[PATH_MAX_LENGTH];
       char content_database[PATH_MAX_LENGTH];
-      char osk_overlay[PATH_MAX_LENGTH];
       char overlay[PATH_MAX_LENGTH];
       char menu_wallpaper[PATH_MAX_LENGTH];
       char audio_dsp_plugin[PATH_MAX_LENGTH];

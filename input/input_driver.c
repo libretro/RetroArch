@@ -113,7 +113,6 @@ const input_driver_t *current_input               = NULL;
 void *current_input_data                          = NULL;
 static bool input_driver_block_hotkey             = false;
 static bool input_driver_block_libretro_input     = false;
-static bool input_driver_osk_enabled              = false;
 static bool input_driver_nonblock_state           = false;
 static bool input_driver_flushing_input           = false;
 static bool input_driver_data_own                 = false;
@@ -1062,21 +1061,6 @@ void input_driver_unset_own_driver(void)
 bool input_driver_owns_driver(void)
 {
    return input_driver_data_own;
-}
-
-void input_driver_set_onscreen_keyboard_enabled(void)
-{
-   input_driver_osk_enabled = true;
-}
-
-void input_driver_unset_onscreen_keyboard_enabled(void)
-{
-   input_driver_osk_enabled = false;
-}
-
-bool input_driver_is_onscreen_keyboard_enabled(void)
-{
-   return input_driver_osk_enabled;
 }
 
 bool input_driver_init_command(void)

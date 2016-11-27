@@ -4698,9 +4698,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_INPUT_OVERLAY_HIDE_IN_MENU,
                PARSE_ONLY_BOOL, false);
          menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_ENABLE,
-               PARSE_ONLY_BOOL, false);
-         menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_OVERLAY_PRESET,
                PARSE_ONLY_PATH, false);
          menu_displaylist_parse_settings_enum(menu, info,
@@ -4709,9 +4706,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_OVERLAY_SCALE,
                PARSE_ONLY_FLOAT, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET,
-               PARSE_ONLY_PATH, false);
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -5077,9 +5071,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                PARSE_ONLY_DIR, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
-               PARSE_ONLY_DIR, false);
-         menu_displaylist_parse_settings_enum(menu, info,
-               MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
                PARSE_ONLY_DIR, false);
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SCREENSHOT_DIRECTORY,

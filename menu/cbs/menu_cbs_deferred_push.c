@@ -693,11 +693,6 @@ static int deferred_push_input_overlay(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_OVERLAYS);
 }
 
-static int deferred_push_input_osk_overlay(menu_displaylist_info_t *info)
-{
-   return deferred_push_dlist(info, DISPLAYLIST_OVERLAYS);
-}
-
 static int deferred_push_video_font_path(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_FONTS);
@@ -1065,9 +1060,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_INPUT_OVERLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
                break;
-            case MENU_ENUM_LABEL_INPUT_OSK_OVERLAY:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_osk_overlay);
-               break;
             case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
                break;
@@ -1327,9 +1319,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_INPUT_OVERLAY:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_overlay);
-               break;
-            case MENU_LABEL_INPUT_OSK_OVERLAY:
-               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_osk_overlay);
                break;
             case MENU_LABEL_VIDEO_FONT_PATH:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);

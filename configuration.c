@@ -617,8 +617,6 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #ifdef HAVE_OVERLAY
    SETTING_PATH("input_overlay",
          settings->path.overlay, false, NULL, true);
-   SETTING_PATH("input_osk_overlay",
-         settings->path.osk_overlay, false, NULL, true);
 #endif
    SETTING_PATH("video_font_path",
          settings->path.font, false, NULL, true);
@@ -667,10 +665,6 @@ static int populate_settings_path(settings_t *settings, struct config_path_setti
 #ifdef HAVE_OVERLAY
    SETTING_PATH("overlay_directory",
          settings->directory.overlay, true, NULL, true);
-#endif
-#ifdef HAVE_OVERLAY
-   SETTING_PATH("osk_overlay_directory",
-         dir_get_ptr(RARCH_DIR_OSK_OVERLAY), true, NULL, true);
 #endif
 #ifndef HAVE_DYNAMIC
    SETTING_PATH("libretro_path", 
@@ -795,7 +789,6 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("input_overlay_enable",         &settings->input.overlay_enable, true, config_overlay_enable_default(), false);
    SETTING_BOOL("input_overlay_enable_autopreferred", &settings->input.overlay_enable_autopreferred, true, true, false);
    SETTING_BOOL("input_overlay_hide_in_menu",   &settings->input.overlay_hide_in_menu, true, overlay_hide_in_menu, false);
-   SETTING_BOOL("input_osk_overlay_enable",     &settings->osk.enable, true, true, false);
 #endif
 #ifdef HAVE_COMMAND
    SETTING_BOOL("network_cmd_enable",           &settings->network_cmd_enable, true, network_cmd_enable, false);
@@ -1266,31 +1259,8 @@ static void config_set_defaults(void)
                   sizeof(settings->path.overlay));
 #endif
    }
-
-   if (!string_is_empty(g_defaults.dir.osk_overlay))
-   {
-      char temp_path[PATH_MAX_LENGTH];
-
-      temp_path[0] = '\0';
-
-      fill_pathname_expand_special(temp_path,
-            g_defaults.dir.osk_overlay, sizeof(temp_path));
-
-      dir_set(RARCH_DIR_OSK_OVERLAY, temp_path);
-   }
-   else
-   {
-      char temp_path[PATH_MAX_LENGTH];
-
-      temp_path[0] = '\0';
-
-      strlcpy(temp_path,
-            settings->directory.overlay,
-            sizeof(temp_path));
-
-      dir_set(RARCH_DIR_OSK_OVERLAY, temp_path);
-   }
 #endif
+
 #ifdef HAVE_MENU
    if (!string_is_empty(g_defaults.dir.menu_config))
       strlcpy(settings->directory.menu_config,
@@ -2109,8 +2079,6 @@ static bool config_load_file(const char *path, bool set_defaults,
 #ifdef HAVE_OVERLAY
    if (string_is_equal(settings->directory.overlay, "default"))
       *settings->directory.overlay = '\0';
-   if (string_is_equal(dir_get(RARCH_DIR_OSK_OVERLAY), "default"))
-      dir_clear(RARCH_DIR_OSK_OVERLAY);
 #endif
    if (string_is_equal(settings->directory.system, "default"))
       *settings->directory.system = '\0';

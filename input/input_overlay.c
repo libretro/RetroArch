@@ -523,7 +523,7 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
    /* We can't display when the menu is up */
    if (settings->input.overlay_hide_in_menu && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
-      if (!input_driver_is_onscreen_keyboard_enabled() && settings->input.overlay_enable)
+      if (settings->input.overlay_enable)
          goto abort_load;
    }
 #endif
@@ -545,11 +545,8 @@ void input_overlay_loaded(void *task_data, void *user_data, const char *err)
    ol->iface_data = video_driver_get_ptr(true);
 
    input_overlay_load_active(ol, settings->input.overlay_opacity);
+   input_overlay_enable(ol, settings->input.overlay_enable);
 
-   if (input_driver_is_onscreen_keyboard_enabled())
-      input_overlay_enable(ol, settings->osk.enable);
-   else
-      input_overlay_enable(ol, settings->input.overlay_enable);
    input_overlay_set_scale_factor(ol, settings->input.overlay_scale);
 
    ol->next_index = (ol->index + 1) % ol->size;

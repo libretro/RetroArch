@@ -4550,22 +4550,6 @@ static bool setting_append_list(
                );
          (*list)[list_info->index - 1].change_handler = overlay_enable_toggle_change_handler;
 
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->osk.enable,
-               MENU_ENUM_LABEL_INPUT_OSK_OVERLAY_ENABLE,
-               MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_ENABLE,
-               display_keyboard_overlay,
-               MENU_ENUM_LABEL_VALUE_OFF,
-               MENU_ENUM_LABEL_VALUE_ON,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler,
-               SD_FLAG_NONE
-               );
-
          CONFIG_PATH(
                list, list_info,
                settings->path.overlay,
@@ -4616,20 +4600,6 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
 
          START_SUB_GROUP(list, list_info, "Onscreen Keyboard Overlay", &group_info, &subgroup_info, parent_group);
-
-         CONFIG_PATH(
-               list, list_info,
-               settings->path.osk_overlay,
-               sizeof(settings->path.osk_overlay),
-               MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET,
-               MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET,
-               dir_get_ptr(RARCH_DIR_OSK_OVERLAY),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-         menu_settings_list_current_add_values(list, list_info, "cfg");
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -6201,20 +6171,6 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_OVERLAY_DIRECTORY,
                MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
                g_defaults.dir.overlay,
-               MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
-
-         CONFIG_DIR(
-               list, list_info,
-               dir_get_ptr(RARCH_DIR_OSK_OVERLAY),
-               dir_get_size(RARCH_DIR_OSK_OVERLAY),
-               MENU_ENUM_LABEL_OSK_OVERLAY_DIRECTORY,
-               MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
-               g_defaults.dir.osk_overlay,
                MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
                &group_info,
                &subgroup_info,

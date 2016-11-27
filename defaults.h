@@ -62,7 +62,6 @@ struct defaults
       char core[PATH_MAX_LENGTH];
       char core_info[PATH_MAX_LENGTH];
       char overlay[PATH_MAX_LENGTH];
-      char osk_overlay[PATH_MAX_LENGTH];
       char port[PATH_MAX_LENGTH];
       char shader[PATH_MAX_LENGTH];
       char savestate[PATH_MAX_LENGTH];

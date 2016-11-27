@@ -1474,8 +1474,6 @@ static void frontend_linux_get_env(int *argc,
                   "shaders", sizeof(g_defaults.dir.shader));
             fill_pathname_join(g_defaults.dir.overlay, app_dir,
                   "overlays", sizeof(g_defaults.dir.overlay));
-            fill_pathname_join(g_defaults.dir.osk_overlay, app_dir,
-                  "overlays", sizeof(g_defaults.dir.osk_overlay));
             fill_pathname_join(g_defaults.dir.core, app_dir,
                   "cores", sizeof(g_defaults.dir.core));
             fill_pathname_join(g_defaults.dir.core_info,
@@ -1726,8 +1724,6 @@ static void frontend_linux_get_env(int *argc,
          "cheats", sizeof(g_defaults.dir.cheats));
    fill_pathname_join(g_defaults.dir.overlay, base_path,
          "overlay", sizeof(g_defaults.dir.overlay));
-   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
-         "overlay", sizeof(g_defaults.dir.osk_overlay));
    fill_pathname_join(g_defaults.dir.core_assets, base_path,
          "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.screenshot, base_path,

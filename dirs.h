@@ -28,8 +28,7 @@ enum rarch_dir_type
    RARCH_DIR_SAVESTATE,
    RARCH_DIR_CURRENT_SAVEFILE,
    RARCH_DIR_CURRENT_SAVESTATE,
-   RARCH_DIR_SYSTEM,
-   RARCH_DIR_OSK_OVERLAY
+   RARCH_DIR_SYSTEM
 };
 
 bool dir_init_shader(void);
