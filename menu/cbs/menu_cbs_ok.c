@@ -854,7 +854,12 @@ static int generic_action_ok_file_load(const char *corepath, const char *fullpat
       enum rarch_core_type action_type, enum content_mode_load content_enum_idx)
 {
    content_ctx_info_t content_info = {0};
-
+   if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL))
+   {
+      runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 200, 100, true);
+      RARCH_LOG(msg_hash_to_str(MSG_FIRMWARE));
+      return 0;
+   }
    if (!task_push_content_load_default(
          corepath, fullpath,
          &content_info,
@@ -1877,7 +1882,6 @@ static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu                 = NULL;
-
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
