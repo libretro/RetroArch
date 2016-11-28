@@ -174,7 +174,7 @@ static bool screenshot_dump(
       const void *frame,
       unsigned width,
       unsigned height,
-      int pitch, bool bgr24, void *userbuf)
+      int pitch, bool bgr24, void *userbuf, bool savestate)
 {
 #ifdef _XBOX1
    d3d_video_t *d3d               = (d3d_video_t*)video_driver_get_ptr(true);
@@ -191,7 +191,7 @@ static bool screenshot_dump(
    state->frame   = frame;
    state->userbuf = userbuf;
 
-   if (false)
+   if (settings->auto_screenshot_filename && !savestate)
       fill_str_dated_filename(state->shotname, path_basename(name_base),
             IMG_EXT, sizeof(state->shotname));
    else
@@ -222,7 +222,7 @@ static bool screenshot_dump(
 }
 
 #if !defined(VITA)
-static bool take_screenshot_viewport(const char *name_base)
+static bool take_screenshot_viewport(const char *name_base, bool savestate)
 {
    char screenshot_path[PATH_MAX_LENGTH];
    const char *screenshot_dir            = NULL;
@@ -257,7 +257,7 @@ static bool take_screenshot_viewport(const char *name_base)
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
    if (!screenshot_dump(name_base, screenshot_dir, buffer, vp.width, vp.height,
-            vp.width * 3, true, buffer))
+            vp.width * 3, true, buffer, savestate))
       goto error;
 
    return true;
@@ -269,7 +269,8 @@ error:
 }
 #endif
 
-static bool take_screenshot_raw(const char *name_base, void *userbuf)
+static bool take_screenshot_raw(const char *name_base, void *userbuf,
+      bool savestate)
 {
    size_t pitch;
    unsigned width, height;
@@ -294,13 +295,13 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf)
     */
    if (!screenshot_dump(name_base, screenshot_dir,
          (const uint8_t*)data + (height - 1) * pitch,
-         width, height, -pitch, false, userbuf))
+         width, height, -pitch, false, userbuf, savestate))
       return false;
 
    return true;
 }
 
-static bool take_screenshot_choice(const char *name_base)
+static bool take_screenshot_choice(const char *name_base, bool savestate)
 {
    settings_t *settings = config_get_ptr();
 
@@ -316,14 +317,14 @@ static bool take_screenshot_choice(const char *name_base)
       if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
          video_driver_cached_frame();
 #if defined(VITA)
-      return take_screenshot_raw(name_base, NULL);
+      return take_screenshot_raw(name_base, NULL, savestate);
 #else
-      return take_screenshot_viewport(name_base);
+      return take_screenshot_viewport(name_base, savestate);
 #endif
    }
 
    if (!video_driver_cached_frame_has_valid_framebuffer())
-      return take_screenshot_raw(name_base, NULL);
+      return take_screenshot_raw(name_base, NULL, savestate);
 
    if (video_driver_supports_read_frame_raw())
    {
@@ -345,7 +346,7 @@ static bool take_screenshot_choice(const char *name_base)
       if (frame_data)
       {
          video_driver_set_cached_frame_ptr(frame_data);
-         if (take_screenshot_raw(name_base, frame_data))
+         if (take_screenshot_raw(name_base, frame_data, savestate))
             ret = true;
       }
 
@@ -364,7 +365,7 @@ bool take_screenshot(void)
 {
    char *name_base            = strdup(path_get(RARCH_PATH_BASENAME));
    bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool             ret       = take_screenshot_choice(name_base);
+   bool             ret       = take_screenshot_choice(name_base, false);
    const char *msg_screenshot = ret
       ? msg_hash_to_str(MSG_TAKING_SCREENSHOT)  :
         msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
@@ -386,7 +387,7 @@ bool take_screenshot(void)
 bool take_savestate_screenshot(const char *name_base)
 {
    bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool             ret       = take_screenshot_choice(name_base);
+   bool             ret       = take_screenshot_choice(name_base, true);
 
    if (is_paused)
    {
