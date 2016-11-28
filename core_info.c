@@ -421,7 +421,7 @@ static bool core_info_list_update_missing_firmware_internal(
       fill_pathname_join(path, systemdir,
             info->firmware[i].path, sizeof(path));
       info->firmware[i].missing = !path_file_exists(path);
-      if (info->firmware[i].missing)
+      if (info->firmware[i].missing && !info->firmware[i].optional)
       {
          runloop_ctl(RUNLOOP_CTL_SET_MISSING_BIOS, NULL);
          RARCH_WARN("Firmware missing: %s\n", info->firmware[i].path);
