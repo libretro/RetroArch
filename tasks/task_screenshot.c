@@ -191,7 +191,7 @@ static bool screenshot_dump(
    state->frame   = frame;
    state->userbuf = userbuf;
 
-   if (settings->auto_screenshot_filename)
+   if (false)
       fill_str_dated_filename(state->shotname, path_basename(name_base),
             IMG_EXT, sizeof(state->shotname));
    else
@@ -373,6 +373,20 @@ bool take_screenshot(void)
    free(name_base);
 
    runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
+
+   if (is_paused)
+   {
+      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+         video_driver_cached_frame();
+   }
+
+   return ret;
+}
+
+bool take_savestate_screenshot(const char *name_base)
+{
+   bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
+   bool             ret       = take_screenshot_choice(name_base);
 
    if (is_paused)
    {

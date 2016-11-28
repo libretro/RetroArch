@@ -146,6 +146,7 @@ bool content_push_to_history_playlist(
 
 /* TODO/FIXME - turn this into actual task */
 bool take_screenshot(void);
+bool take_savestate_screenshot(const char *path);
 
 bool event_load_save_files(void);
 

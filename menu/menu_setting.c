@@ -655,11 +655,21 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
          break;
       case MENU_ACTION_LEFT:
          if (setting->action_left)
-            return setting->action_left(setting, true);
+         {
+            int ret = setting->action_left(setting, false);
+            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+            return ret;
+         }
          break;
       case MENU_ACTION_RIGHT:
          if (setting->action_right)
-            return setting->action_right(setting, false);
+         {
+            int ret = setting->action_right(setting, false);
+            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH, NULL);
+            menu_driver_ctl(RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE, NULL);
+            return ret;
+         }
          break;
       case MENU_ACTION_SELECT:
          if (setting->action_select)

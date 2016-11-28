@@ -56,6 +56,7 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../playlist.h"
+#include "../../runloop.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -837,6 +838,7 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    char             *tmp    = NULL;
    char *scrub_char_pointer = NULL;
    settings_t     *settings = config_get_ptr();
+   global_t         *global = global_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
    playlist_t     *playlist = NULL;
    const char    *core_name = NULL;
@@ -869,6 +871,33 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
          strlcpy(xmb->thumbnail_file_path, entry.label,
                sizeof(xmb->thumbnail_file_path));
          return;
+      }
+   }
+
+   if (string_is_equal(entry.label, "state_slot"))
+   {
+      char path[PATH_MAX_LENGTH] = {0};
+      if (settings->state_slot > 0)
+         snprintf(path, sizeof(path), "%s%d",
+               global->name.savestate, settings->state_slot);
+      else if (settings->state_slot < 0)
+         fill_pathname_join_delim(path,
+               global->name.savestate, "auto", '.', sizeof(path));
+      else
+         strlcpy(path, global->name.savestate, sizeof(path));
+
+      strlcat(path, file_path_str(FILE_PATH_PNG_EXTENSION), sizeof(path));
+
+      if (path_file_exists(path))
+      {
+         strlcpy(xmb->thumbnail_file_path, path,
+               sizeof(xmb->thumbnail_file_path));
+         return;
+      }
+      else
+      {
+         xmb->thumbnail_file_path[0] = '\0';
+         xmb->thumbnail = 0;
       }
    }
 
@@ -974,9 +1003,7 @@ static void xmb_selection_pointer_changed(
       {
          ia = xmb->items.active.alpha;
          iz = xmb->items.active.zoom;
-
-         depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-         if (!string_is_equal(xmb_thumbnails_ident(), "OFF") && depth == 1)
+         if (!string_is_equal(xmb_thumbnails_ident(), "OFF"))
          {
             xmb_update_thumbnail_path(xmb, i);
             xmb_update_thumbnail_image(xmb);
