@@ -3535,8 +3535,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Preset Filename";
       case MSG_INTERFACE:
          return "Interface";
-      case MSG_INTERNAL_MEMORY:
-         return "Internal Memory";
+      case MSG_INTERNAL_STORAGE:
+         return "Internal Storage";
+      case MSG_REMOVABLE_STORAGE:
+         return "Removable Storage";
       case MSG_INVALID_NICKNAME_SIZE:
          return "Invalid nickname size.";
       case MSG_IN_BYTES:

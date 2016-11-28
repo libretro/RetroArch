@@ -1865,8 +1865,12 @@ static int frontend_linux_parse_drive_list(void *data)
          FILE_TYPE_DIRECTORY, 0, 0);
    menu_entries_append_enum(list,
          internal_storage_path,
-         msg_hash_to_str(MSG_INTERNAL_MEMORY),
-         MSG_INTERNAL_MEMORY, FILE_TYPE_DIRECTORY, 0, 0);
+         msg_hash_to_str(MSG_INTERNAL_STORAGE),
+         MSG_INTERNAL_STORAGE, FILE_TYPE_DIRECTORY, 0, 0);
+   menu_entries_append_enum(list,
+         "/storage",
+         msg_hash_to_str(MSG_REMOVABLE_STORAGE),
+         MSG_REMOVABLE_STORAGE, FILE_TYPE_DIRECTORY, 0, 0);
 #endif
 
    menu_entries_append_enum(list, "/", "",

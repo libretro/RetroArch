@@ -1910,8 +1910,10 @@ MSG_HASH(MSG_INPUT_PRESET_FILENAME,
       "Preset Filename")
 MSG_HASH(MSG_INTERFACE,
       "Interface")
-MSG_HASH(MSG_INTERNAL_MEMORY,
-      "Internal Memory")
+MSG_HASH(MSG_INTERNAL_STORAGE,
+      "Internal Storage")
+MSG_HASH(MSG_REMOVABLE_STORAGE,
+      "Removable Storage")
 MSG_HASH(MSG_INVALID_NICKNAME_SIZE,
       "Invalid nickname size.")
 MSG_HASH(MSG_IN_BYTES,

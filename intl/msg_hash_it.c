@@ -2189,8 +2189,10 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Normale";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY:
          return "Presto";
-      case MSG_INTERNAL_MEMORY:
+      case MSG_INTERNAL_STORAGE:
          return "Memoria interna";
+      case MSG_REMOVABLE_STORAGE:
+         return "Removable storage";
       case MSG_EXTERNAL_APPLICATION_DIR:
          return "Directory app esterna";
       case MSG_APPLICATION_DIR:

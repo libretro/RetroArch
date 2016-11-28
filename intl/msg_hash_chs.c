@@ -3488,8 +3488,10 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "Preset Filename";
       case MSG_INTERFACE:
          return "接口";
-      case MSG_INTERNAL_MEMORY:
+      case MSG_INTERNAL_STORAGE:
          return "内部存储";
+      case MSG_REMOVABLE_STORAGE:
+         return "Removable Storage";
       case MSG_INVALID_NICKNAME_SIZE:
          return "Invalid nickname size.";
       case MSG_IN_BYTES:
