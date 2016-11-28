@@ -423,7 +423,7 @@ database_info_handle_t *database_info_dir_init(const char *dir,
       {
          const char *path = db->list->elems[i].data;
 
-         if (path_is_compressed_file(path))
+         if (path_is_compressed_file(path) && !path_contains_compressed_file(path))
          {
             struct string_list *archive_list =
                   file_archive_get_file_list(path, NULL);
