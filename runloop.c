@@ -127,11 +127,24 @@ static bool runloop_core_shutdown_initiated                = false;
 static bool runloop_perfcnt_enable                         = false;
 static bool runloop_overrides_active                       = false;
 static bool runloop_game_options_active                    = false;
+static bool runloop_missing_bios                           = false;
 
 global_t *global_get_ptr(void)
 {
    static struct global g_extern;
    return &g_extern;
+}
+
+void update_firmware_status()
+{
+   core_info_t *core_info    = NULL;
+   settings_t *settings       = config_get_ptr();
+   core_info_ctx_firmware_t firmware_info;
+
+   core_info_get_current_core(&core_info);
+   firmware_info.path         = core_info->path;
+   firmware_info.directory.system = settings->directory.system;
+   core_info_list_update_missing_firmware(&firmware_info);
 }
 
 void runloop_msg_queue_push(const char *msg,
@@ -341,6 +354,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_OVERRIDES_ACTIVE:
          return runloop_overrides_active;
+      case RUNLOOP_CTL_SET_MISSING_BIOS:
+         runloop_missing_bios = true;
+         break;
+      case RUNLOOP_CTL_UNSET_MISSING_BIOS:
+         runloop_missing_bios = false;
+         break;
+      case RUNLOOP_CTL_IS_MISSING_BIOS:
+         return runloop_missing_bios;
       case RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE:
          runloop_game_options_active = true;
          break;
@@ -1109,6 +1130,13 @@ int runloop_iterate(unsigned *sleep_ms)
    settings_t *settings                         = config_get_ptr();
    uint64_t current_input                       = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
+   static char old_core[PATH_MAX_LENGTH]        = "";
+
+   if (!string_is_equal(old_core, path_get(RARCH_PATH_CORE)))
+   {
+      update_firmware_status();
+      strlcpy (old_core, path_get(RARCH_PATH_CORE), sizeof(old_core));
+   }
 
    last_input                                   = current_input;
 

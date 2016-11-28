@@ -1930,6 +1930,8 @@ MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
       "Загружено сохранение из слота #-1 (auto).")
 MSG_HASH(MSG_LOADING,
       "Loading")
+MSG_HASH(MSG_FIRMWARE,
+      "One or more firmware files are missing")
 MSG_HASH(MSG_LOADING_CONTENT_FILE,
       "Загружен файл контента")
 MSG_HASH(MSG_LOADING_HISTORY_FILE,

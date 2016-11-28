@@ -1938,6 +1938,8 @@ MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
       "スロット-1 (自動)から保存状態をロードしました。")
 MSG_HASH(MSG_LOADING,
       "ロード中")
+MSG_HASH(MSG_FIRMWARE,
+      "One or more firmware files are missing")
 MSG_HASH(MSG_LOADING_CONTENT_FILE,
       "コンテンツをロード中")
 MSG_HASH(MSG_LOADING_HISTORY_FILE,

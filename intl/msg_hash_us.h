@@ -1936,6 +1936,8 @@ MSG_HASH(MSG_LOADED_STATE_FROM_SLOT_AUTO,
       "Loaded state from slot #-1 (auto).")
 MSG_HASH(MSG_LOADING,
       "Loading")
+MSG_HASH(MSG_FIRMWARE,
+      "One or more firmware files are missing")
 MSG_HASH(MSG_LOADING_CONTENT_FILE,
       "Loading content file")
 MSG_HASH(MSG_LOADING_HISTORY_FILE,
