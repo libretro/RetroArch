@@ -1886,27 +1886,27 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
 
-char* word_wrap (char* buffer, char* string, int line_width) {
+char* word_wrap(char* buffer, char* string, int line_width) {
    unsigned i = 0;
    int k, counter;
 
-   while(i < strlen( string ) )
+   while(i < strlen(string))
    {
       /* copy string until the end of the line is reached */
-      for ( counter = 1; counter <= line_width; counter++ )
+      for (counter = 1; counter <= line_width; counter++)
       {
          /* check if end of string reached */
-         if ( i == strlen( string ) )
+         if (i == strlen(string))
          {
-            buffer[ i ] = 0;
+            buffer[i] = 0;
             return buffer;
          }
 
-         buffer[ i ] = string[ i ];
+         buffer[i] = string[i];
 
          /* check for newlines embedded in the original input
           * and reset the index */
-         if ( buffer[ i ] == '\n' )
+         if (buffer[i] == '\n')
             counter = 1;
          i++;
       }
@@ -1919,11 +1919,11 @@ char* word_wrap (char* buffer, char* string, int line_width) {
       else
       {
          /* check for nearest whitespace back in string */
-         for ( k = i; k > 0; k--)
+         for (k = i; k > 0; k--)
          {
             if (string[k] == ' ')
             {
-               buffer[ k ] = '\n';
+               buffer[k] = '\n';
                /* set string index back to character after this one */
                i = k + 1;
                break;
@@ -1931,7 +1931,8 @@ char* word_wrap (char* buffer, char* string, int line_width) {
          }
       }
    }
-   buffer[ i ] = 0;
+
+   buffer[i] = 0;
 
    return buffer;
 }
