@@ -1216,7 +1216,7 @@ static int action_ok_playlist_entry_start_content(const char *path,
 
       new_core_path[0] = new_display_name[0] = '\0';
 
-      found_associated_core                  = 
+      found_associated_core                  =
          menu_content_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
@@ -2139,7 +2139,7 @@ static int generic_action_ok_network(const char *path,
       default:
          break;
    }
-   
+
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    command_event(CMD_EVENT_NETWORK_INIT, NULL);
@@ -2342,6 +2342,13 @@ finish:
    {
       RARCH_ERR("Download of '%s' failed: %s\n",
             (transf ? transf->path: "unknown"), err);
+
+      char err_msg[256];
+
+      snprintf(err_msg, sizeof(err_msg), "Download '%s': %s",
+            (transf ? transf->path: "unknown"), err);
+
+      runloop_msg_queue_push(err_msg, 1, 480, true);
    }
 
    if (data)
