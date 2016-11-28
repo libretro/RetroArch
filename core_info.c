@@ -21,12 +21,13 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
-#include <runloop.h>
-#include <verbosity.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "runloop.h"
+#include "verbosity.h"
 
 #include "config.def.h"
 #include "core_info.h"
