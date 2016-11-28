@@ -835,6 +835,7 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
+   unsigned depth;
    char             *tmp    = NULL;
    char *scrub_char_pointer = NULL;
    settings_t     *settings = config_get_ptr();
@@ -860,6 +861,10 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    menu_entry_get(&entry, 0, i, NULL, true);
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
+
+   depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+   if (depth > 1 && !string_is_equal(entry.label, "state_slot"))
+      return;
 
    if (playlist)
    {
