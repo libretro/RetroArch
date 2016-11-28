@@ -1911,7 +1911,7 @@ char* word_wrap (char* buffer, char* string, int line_width) {
          i++;
       }
       /* check for whitespace */
-      if ( isspace( string[ i ] ) )
+      if (string[i] == ' ')
       {
          buffer[i] = '\n';
          i++;
@@ -1921,7 +1921,7 @@ char* word_wrap (char* buffer, char* string, int line_width) {
          /* check for nearest whitespace back in string */
          for ( k = i; k > 0; k--)
          {
-            if ( isspace( string[ k ] ) )
+            if (string[k] == ' ')
             {
                buffer[ k ] = '\n';
                /* set string index back to character after this one */
