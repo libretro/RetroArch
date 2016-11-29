@@ -26,6 +26,9 @@
 #include <errno.h>
 
 #if defined(_WIN32)
+#  define UNICODE
+#  include <tchar.h>
+#  include <wchar.h>
 #  ifdef _MSC_VER
 #    define setmode _setmode
 #  endif

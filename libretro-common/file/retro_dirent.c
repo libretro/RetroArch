@@ -28,11 +28,15 @@
 #include <boolean.h>
 #include <retro_stat.h>
 #include <retro_dirent.h>
+#include <encodings/utf.h>
 
 struct RDIR *retro_opendir(const char *name)
 {
 #if defined(_WIN32)
    char path_buf[1024];
+   wchar_t pathW[1024];
+   size_t path_size = 0;
+   size_t out_size = 0;
 #endif
    struct RDIR *rdir = (struct RDIR*)calloc(1, sizeof(*rdir));
 
@@ -41,7 +45,9 @@ struct RDIR *retro_opendir(const char *name)
 
 #if defined(_WIN32)
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
-   rdir->directory = FindFirstFile(path_buf, &rdir->entry);
+   path_size = strlen(path_buf) + 1;
+   mbstowcs_s(&out_size, pathW, path_size, path_buf, path_size - 1);
+   rdir->directory = FindFirstFile(pathW, &rdir->entry);
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
 #elif defined(_3DS)
@@ -93,7 +99,8 @@ int retro_readdir(struct RDIR *rdir)
 const char *retro_dirent_get_name(struct RDIR *rdir)
 {
 #if defined(_WIN32)
-   return rdir->entry.cFileName;
+   utf16_to_char_string(rdir->entry.cFileName, rdir->path, sizeof(rdir->path));
+   return rdir->path;
 #elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    return rdir->entry.d_name;
 #else

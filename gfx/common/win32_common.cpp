@@ -260,6 +260,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
 {
    char szFilename[1024] = {0};
+   wchar_t wszFilename[1024] = {0};
 
    if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
    {
@@ -268,8 +269,11 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       content_ctx_info_t content_info  = {0};
       core_info_list_t *core_info_list = NULL;
       const core_info_t *core_info     = NULL;
+      size_t file_len = 0;
 
-      DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
+      DragQueryFile((HDROP)wparam, 0, wszFilename, 1024);
+
+      wcstombs_s(&file_len, szFilename, sizeof(szFilename), wszFilename, sizeof(szFilename) - 1);
 
       core_info_get_list(&core_info_list);
 
@@ -510,7 +514,7 @@ bool win32_window_create(void *data, unsigned style,
       unsigned height, bool fullscreen)
 {
 #ifndef _XBOX
-   main_window.hwnd = CreateWindowEx(0, "RetroArch", "RetroArch",
+   main_window.hwnd = CreateWindowEx(0, L"RetroArch", L"RetroArch",
          style,
          fullscreen ? mon_rect->left : g_pos_x,
          fullscreen ? mon_rect->top  : g_pos_y,
@@ -578,6 +582,9 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
 {
 #ifndef _XBOX
    DEVMODE devmode;
+   wchar_t dev_name_wide[1024];
+   size_t dev_name_size = strlen(dev_name) + 1;
+   size_t dev_name_wide_size = 0;
 
    memset(&devmode, 0, sizeof(devmode));
    devmode.dmSize             = sizeof(DEVMODE);
@@ -588,7 +595,10 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
 
    RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
          width, height, refresh, dev_name);
-   return ChangeDisplaySettingsEx(dev_name, &devmode,
+
+   mbstowcs_s(&dev_name_wide_size, dev_name_wide, dev_name_size, dev_name, dev_name_size - 1);
+
+   return ChangeDisplaySettingsEx(dev_name_wide, &devmode,
          NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
 #endif
 }
@@ -679,7 +689,8 @@ bool win32_suppress_screensaver(void *data, bool enable)
 #endif
 }
 
-void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
+/* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
+void win32_set_style(MONITORINFOEXW *current_mon, HMONITOR *hm_to_use,
 	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
 	RECT *rect, RECT *mon_rect, DWORD *style)
 {
@@ -704,10 +715,14 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       }
       else
       {
+	 char dev_name[CCHDEVICENAME] = {0};
+	 size_t name_len = 0;
          *style          = WS_POPUP | WS_VISIBLE;
 
+	 wcstombs_s(&name_len, dev_name, sizeof(dev_name), current_mon->szDevice, sizeof(dev_name) - 1);
+
          if (!win32_monitor_set_fullscreen(*width, *height,
-                  refresh, current_mon->szDevice))
+                  refresh, dev_name))
 			 {}
 
          /* Display settings might have changed, get new coordinates. */
@@ -853,7 +868,7 @@ void win32_window_reset(void)
 void win32_destroy_window(void)
 {
 #ifndef _XBOX
-   UnregisterClass("RetroArch", GetModuleHandle(NULL));
+   UnregisterClass(L"RetroArch", GetModuleHandle(NULL));
 #endif
    main_window.hwnd = NULL;
 }
