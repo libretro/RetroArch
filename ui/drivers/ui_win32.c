@@ -34,6 +34,7 @@
 #define _WIN32_IE 0x0300
 #endif
 
+#include "../../gfx/common/win32_common.h"
 #include <windows.h>
 #include <commdlg.h>
 #include <commctrl.h>
@@ -52,7 +53,6 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../../gfx/common/gl_common.h"
-#include "../../gfx/common/win32_common.h"
 #include "ui_win32.h"
 
 #define SHADER_DLG_WIDTH                  220
@@ -234,6 +234,12 @@ void shader_dlg_params_reload(void)
    for (i = 0; i < (int)shader_info.data->num_parameters; i++)
    {
       shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
+      size_t param_desc_wide_size = sizeof(shader_info.data->parameters[i].desc) * 2;
+      wchar_t param_desc_wide[param_desc_wide_size];
+
+      memset(param_desc_wide, 0, sizeof(param_desc_wide));
+      MultiByteToWideChar(CP_UTF8, 0, shader_info.data->parameters[i].desc, -1, param_desc_wide, sizeof(param_desc_wide) / sizeof(param_desc_wide[0]));
+
 
       if ((shader_info.data->parameters[i].minimum == 0.0)
             && (shader_info.data->parameters[i].maximum 
@@ -249,8 +255,8 @@ void shader_dlg_params_reload(void)
          }
 
          control->type          = SHADER_PARAM_CTRL_CHECKBOX;
-         control->checkbox.hwnd = CreateWindowEx(0, "BUTTON",
-               shader_info.data->parameters[i].desc,
+         control->checkbox.hwnd = CreateWindowEx(0, L"BUTTON",
+               param_desc_wide,
                WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, pos_x, pos_y,
                SHADER_DLG_CTRL_WIDTH, SHADER_DLG_CHECKBOX_HEIGHT,
                g_shader_dlg.window.hwnd, (HMENU)(size_t)i, NULL, NULL);
@@ -267,21 +273,21 @@ void shader_dlg_params_reload(void)
          }
 
          control->type                 = SHADER_PARAM_CTRL_TRACKBAR;
-         control->trackbar.label_title = CreateWindowEx(0, "STATIC",
-               shader_info.data->parameters[i].desc,
+         control->trackbar.label_title = CreateWindowEx(0, L"STATIC",
+               param_desc_wide,
                WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x, pos_y,
                SHADER_DLG_CTRL_WIDTH, SHADER_DLG_LABEL_HEIGHT, g_shader_dlg.window.hwnd,
                (HMENU)(size_t)i, NULL, NULL);
          SendMessage(control->trackbar.label_title, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
          pos_y += SHADER_DLG_LABEL_HEIGHT;
-         control->trackbar.hwnd = CreateWindowEx(0, TRACKBAR_CLASS, "",
+         control->trackbar.hwnd = CreateWindowEx(0, TRACKBAR_CLASS, L"",
                WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_NOTICKS,
                pos_x + SHADER_DLG_TRACKBAR_LABEL_WIDTH, pos_y,
                SHADER_DLG_TRACKBAR_WIDTH, SHADER_DLG_TRACKBAR_HEIGHT,
                g_shader_dlg.window.hwnd, (HMENU)(size_t)i, NULL, NULL);
 
-         control->trackbar.label_val = CreateWindowEx(0, "STATIC", "",
+         control->trackbar.label_val = CreateWindowEx(0, L"STATIC", L"",
                WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x,
                pos_y, SHADER_DLG_TRACKBAR_LABEL_WIDTH, SHADER_DLG_LABEL_HEIGHT,
                g_shader_dlg.window.hwnd, (HMENU)(size_t)i, NULL, NULL);
@@ -299,7 +305,7 @@ void shader_dlg_params_reload(void)
    if (window && g_shader_dlg.separator.hwnd)
       window->destroy(&g_shader_dlg.separator);
 
-   g_shader_dlg.separator.hwnd = CreateWindowEx(0, "STATIC", "",
+   g_shader_dlg.separator.hwnd = CreateWindowEx(0, L"STATIC", L"",
          SS_ETCHEDHORZ | WS_VISIBLE | WS_CHILD, SHADER_DLG_CTRL_X,
          g_shader_dlg.parameters_start_y - SHADER_DLG_CTRL_MARGIN - SHADER_DLG_SEPARATOR_HEIGHT / 2,
          (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_CTRL_WIDTH,
@@ -423,11 +429,16 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 bool win32_window_init(WNDCLASSEX *wndclass,
       bool fullscreen, const char *class_name)
 {
+   wchar_t class_name_wide[1024] = {0};
+
+   if (class_name)
+      MultiByteToWideChar(CP_UTF8, 0, class_name, -1, class_name_wide, sizeof(class_name_wide) / sizeof(class_name_wide[0]));
+
    wndclass->cbSize        = sizeof(WNDCLASSEX);
    wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
    wndclass->hInstance     = GetModuleHandle(NULL);
    wndclass->hCursor       = LoadCursor(NULL, IDC_ARROW);
-   wndclass->lpszClassName = (class_name != NULL) ? class_name : "RetroArch";
+   wndclass->lpszClassName = (class_name != NULL) ? class_name_wide : L"RetroArch";
    wndclass->hIcon         = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
    wndclass->hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
          MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
@@ -482,12 +493,12 @@ bool win32_shader_dlg_init(void)
 
    hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
-   g_shader_dlg.window.hwnd = CreateWindowEx(0, "Shader Dialog", "Shader Parameters",
+   g_shader_dlg.window.hwnd = CreateWindowEx(0, L"Shader Dialog", L"Shader Parameters",
          WS_POPUPWINDOW | WS_CAPTION, 100, 100,
          SHADER_DLG_WIDTH, SHADER_DLG_MIN_HEIGHT, NULL, NULL, NULL, NULL);
 
    pos_y = SHADER_DLG_CTRL_MARGIN;
-   g_shader_dlg.on_top_checkbox.hwnd = CreateWindowEx(0, "BUTTON", "Always on Top",
+   g_shader_dlg.on_top_checkbox.hwnd = CreateWindowEx(0, L"BUTTON", L"Always on Top",
          BS_AUTOCHECKBOX | WS_VISIBLE | WS_CHILD,
          SHADER_DLG_CTRL_X, pos_y, SHADER_DLG_CTRL_WIDTH,
          SHADER_DLG_CHECKBOX_HEIGHT, g_shader_dlg.window.hwnd,

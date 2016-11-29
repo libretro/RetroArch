@@ -17,11 +17,11 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <retro_miscellaneous.h>
 #include <windows.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
-#include <retro_miscellaneous.h>
 #include <dynamic/dylib.h>
 #include <lists/file_list.h>
 #include <file/file_path.h>
