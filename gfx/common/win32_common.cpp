@@ -47,6 +47,8 @@
 extern "C" {
 #endif
 
+#include <encodings/utf.h>
+
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 
 #ifndef _MSC_VER
@@ -269,11 +271,10 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       content_ctx_info_t content_info  = {0};
       core_info_list_t *core_info_list = NULL;
       const core_info_t *core_info     = NULL;
-      size_t file_len = 0;
 
-      DragQueryFile((HDROP)wparam, 0, wszFilename, 1024);
+      DragQueryFile((HDROP)wparam, 0, wszFilename, sizeof(wszFilename) / sizeof(wszFilename[0]));
 
-      wcstombs_s(&file_len, szFilename, sizeof(szFilename), wszFilename, sizeof(szFilename) - 1);
+      utf16_to_char_string((const uint16_t*)wszFilename, szFilename, sizeof(szFilename));
 
       core_info_get_list(&core_info_list);
 
@@ -582,9 +583,7 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
 {
 #ifndef _XBOX
    DEVMODE devmode;
-   wchar_t dev_name_wide[1024];
-   size_t dev_name_size = strlen(dev_name) + 1;
-   size_t dev_name_wide_size = 0;
+   wchar_t dev_name_wide[1024] = {0};
 
    memset(&devmode, 0, sizeof(devmode));
    devmode.dmSize             = sizeof(DEVMODE);
@@ -596,7 +595,7 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
    RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
          width, height, refresh, dev_name);
 
-   mbstowcs_s(&dev_name_wide_size, dev_name_wide, dev_name_size, dev_name, dev_name_size - 1);
+   MultiByteToWideChar(CP_UTF8, 0, dev_name, -1, dev_name_wide, sizeof(dev_name_wide) / sizeof(dev_name_wide[0]));
 
    return ChangeDisplaySettingsEx(dev_name_wide, &devmode,
          NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
@@ -716,10 +715,9 @@ void win32_set_style(MONITORINFOEXW *current_mon, HMONITOR *hm_to_use,
       else
       {
 	 char dev_name[CCHDEVICENAME] = {0};
-	 size_t name_len = 0;
          *style          = WS_POPUP | WS_VISIBLE;
 
-	 wcstombs_s(&name_len, dev_name, sizeof(dev_name), current_mon->szDevice, sizeof(dev_name) - 1);
+         utf16_to_char_string((const uint16_t*)current_mon->szDevice, dev_name, sizeof(dev_name));
 
          if (!win32_monitor_set_fullscreen(*width, *height,
                   refresh, dev_name))

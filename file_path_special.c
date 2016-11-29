@@ -208,8 +208,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #endif
 #ifdef _WIN32
    DWORD ret;
-   wchar_t ws[len];
-   size_t ws_size = 0;
+   wchar_t ws[PATH_MAX_LENGTH] = {0};
 #endif
 #ifdef __HAIKU__
    image_info info;
@@ -221,7 +220,7 @@ void fill_pathname_application_path(char *s, size_t len)
       return;
 
 #ifdef _WIN32
-   mbstowcs_s(&ws_size, ws, len, s, len - 1);
+   MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, sizeof(ws) / sizeof(ws[0]));
 
    ret    = GetModuleFileName(GetModuleHandle(NULL), ws, len - 1);
    s[ret] = '\0';

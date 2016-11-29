@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <retro_miscellaneous.h>
 
 #if defined(_WIN32)
 #ifdef _MSC_VER
@@ -33,9 +34,6 @@
 #include <xtl.h>
 #define INVALID_FILE_ATTRIBUTES -1
 #else
-#define UNICODE
-#include <tchar.h>
-#include <wchar.h>
 #include <io.h>
 #include <fcntl.h>
 #include <direct.h>
@@ -105,11 +103,9 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #elif defined(_WIN32)
    WIN32_FILE_ATTRIBUTE_DATA file_info;
    GET_FILEEX_INFO_LEVELS fInfoLevelId = GetFileExInfoStandard;
-   size_t path_len = strlen(path);
-   wchar_t path_wide[path_len + 1];
-   size_t path_wide_size = 0;
+   wchar_t path_wide[PATH_MAX_LENGTH] = {0};
 
-   mbstowcs_s(&path_wide_size, path_wide, path_len + 1, path, path_len);
+   MultiByteToWideChar(CP_UTF8, 0, path, -1, path_wide, sizeof(path_wide) / sizeof(path_wide[0]));
 
    DWORD ret = GetFileAttributesEx(path_wide, fInfoLevelId, &file_info);
    if (ret == 0)

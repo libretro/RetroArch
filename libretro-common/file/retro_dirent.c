@@ -35,8 +35,6 @@ struct RDIR *retro_opendir(const char *name)
 #if defined(_WIN32)
    char path_buf[1024] = {0};
    wchar_t pathW[1024] = {0};
-   size_t path_size = 0;
-   size_t out_size = 0;
 #endif
    struct RDIR *rdir = (struct RDIR*)calloc(1, sizeof(*rdir));
 
@@ -45,8 +43,7 @@ struct RDIR *retro_opendir(const char *name)
 
 #if defined(_WIN32)
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
-   path_size = strlen(path_buf) + 1;
-   mbstowcs_s(&out_size, pathW, sizeof(pathW) / sizeof(wchar_t), path_buf, utf8len(path_buf));
+   MultiByteToWideChar(CP_UTF8, 0, path_buf, -1, pathW, sizeof(pathW) / sizeof(pathW[0]));
    rdir->directory = FindFirstFile(pathW, &rdir->entry);
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
