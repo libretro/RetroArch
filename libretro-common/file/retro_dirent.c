@@ -33,8 +33,8 @@
 struct RDIR *retro_opendir(const char *name)
 {
 #if defined(_WIN32)
-   char path_buf[1024];
-   wchar_t pathW[1024];
+   char path_buf[1024] = {0};
+   wchar_t pathW[1024] = {0};
    size_t path_size = 0;
    size_t out_size = 0;
 #endif
@@ -46,7 +46,7 @@ struct RDIR *retro_opendir(const char *name)
 #if defined(_WIN32)
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
    path_size = strlen(path_buf) + 1;
-   mbstowcs_s(&out_size, pathW, path_size, path_buf, path_size - 1);
+   mbstowcs_s(&out_size, pathW, sizeof(pathW) / sizeof(wchar_t), path_buf, utf8len(path_buf));
    rdir->directory = FindFirstFile(pathW, &rdir->entry);
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
@@ -99,6 +99,7 @@ int retro_readdir(struct RDIR *rdir)
 const char *retro_dirent_get_name(struct RDIR *rdir)
 {
 #if defined(_WIN32)
+   memset(rdir->path, 0, sizeof(rdir->path));
    utf16_to_char_string(rdir->entry.cFileName, rdir->path, sizeof(rdir->path));
    return rdir->path;
 #elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
