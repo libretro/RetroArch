@@ -858,7 +858,7 @@ static int generic_action_ok_file_load(const char *corepath, const char *fullpat
 
    if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL)
       && !string_is_empty(settings->directory.system)
-      && content_enum_idx == CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU)
+      && content_enum_idx == CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU)
    {
       runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 200, 100, true);
       RARCH_LOG(msg_hash_to_str(MSG_FIRMWARE));
