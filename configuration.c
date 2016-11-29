@@ -806,6 +806,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
    SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index, true, savestate_auto_index, false);
    SETTING_BOOL("savestate_auto_save",          &settings->savestate_auto_save, true, savestate_auto_save, false);
    SETTING_BOOL("savestate_auto_load",          &settings->savestate_auto_load, true, savestate_auto_load, false);
+   SETTING_BOOL("savestate_thumbnail_enable",   &settings->savestate_thumbnail_enable, true, savestate_thumbnail_enable, false);
    SETTING_BOOL("history_list_enable",          &settings->history_list_enable, true, def_history_list_enable, false);
    SETTING_BOOL("game_specific_options",        &settings->game_specific_options, true, default_game_specific_options, false);
    SETTING_BOOL("auto_overrides_enable",        &settings->auto_overrides_enable, true, default_auto_overrides_enable, false);

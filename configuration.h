@@ -428,6 +428,7 @@ typedef struct settings
    bool savestate_auto_index;
    bool savestate_auto_save;
    bool savestate_auto_load;
+   bool savestate_thumbnail_enable;
 
    bool network_cmd_enable;
    unsigned network_cmd_port;

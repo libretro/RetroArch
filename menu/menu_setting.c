@@ -2928,7 +2928,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_SAVING:
          {
             unsigned i;
-            struct bool_entry bool_entries[6];
+            struct bool_entry bool_entries[7];
 
             START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
@@ -2971,6 +2971,12 @@ static bool setting_append_list(
             bool_entries[5].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD;
             bool_entries[5].default_value  = savestate_auto_load;
             bool_entries[5].flags          = SD_FLAG_NONE;
+
+            bool_entries[6].target         = &settings->savestate_thumbnail_enable;
+            bool_entries[6].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE;
+            bool_entries[6].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE;
+            bool_entries[6].default_value  = savestate_thumbnail_enable;
+            bool_entries[6].flags          = SD_FLAG_NONE;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {

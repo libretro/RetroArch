@@ -781,6 +781,8 @@ static const bool savestate_auto_index = false;
 static const bool savestate_auto_save = false;
 static const bool savestate_auto_load = false;
 
+static const bool savestate_thumbnail_enable = false;
+
 /* Slowmotion ratio. */
 static const float slowmotion_ratio = 3.0;
 

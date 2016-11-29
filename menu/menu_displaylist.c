@@ -4610,6 +4610,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,
                PARSE_ONLY_BOOL, false);
+         menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE,
+               PARSE_ONLY_BOOL, false);
 
          info->need_refresh = true;
          info->need_push    = true;

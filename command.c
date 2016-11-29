@@ -1683,7 +1683,8 @@ static void command_event_main_state(unsigned cmd)
       switch (cmd)
       {
          case CMD_EVENT_SAVE_STATE:
-            take_savestate_screenshot(path);
+            if (settings->savestate_thumbnail_enable)
+               take_savestate_screenshot(path);
             content_save_state(path, true, false);
             push_msg = false;
             break;

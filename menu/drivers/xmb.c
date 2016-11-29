@@ -879,7 +879,8 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       }
    }
 
-   if (string_is_equal(entry.label, "state_slot"))
+   if (settings->savestate_thumbnail_enable
+         && string_is_equal(entry.label, "state_slot"))
    {
       char path[PATH_MAX_LENGTH] = {0};
       if (settings->state_slot > 0)
