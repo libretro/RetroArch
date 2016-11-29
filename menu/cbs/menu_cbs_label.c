@@ -55,6 +55,16 @@ static int action_bind_label_internal_memory(
    return 0;
 }
 
+static int action_bind_label_removable_storage(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   strlcpy(s, msg_hash_to_str(MSG_REMOVABLE_STORAGE), len);
+   return 0;
+}
+
 static int action_bind_label_external_application_dir(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -111,6 +121,9 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
             break;
          case MSG_INTERNAL_STORAGE:
             BIND_ACTION_LABEL(cbs, action_bind_label_internal_memory);
+            break;
+         case MSG_REMOVABLE_STORAGE:
+            BIND_ACTION_LABEL(cbs, action_bind_label_removable_storage);
             break;
          case MSG_APPLICATION_DIR:
             BIND_ACTION_LABEL(cbs, action_bind_label_application_dir);
