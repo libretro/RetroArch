@@ -140,11 +140,24 @@ void update_firmware_status()
    core_info_t *core_info    = NULL;
    settings_t *settings       = config_get_ptr();
    core_info_ctx_firmware_t firmware_info;
-
    core_info_get_current_core(&core_info);
-   firmware_info.path         = core_info->path;
-   firmware_info.directory.system = settings->directory.system;
-   core_info_list_update_missing_firmware(&firmware_info);
+
+   if (core_info && settings)
+   {
+      firmware_info.path         = core_info->path;
+      if (!string_is_empty(settings->directory.system))
+         firmware_info.directory.system = settings->directory.system;
+      else
+      {
+         char s[PATH_MAX_LENGTH];
+         strlcpy(s, path_get(RARCH_PATH_CONTENT) ,sizeof(s));
+         path_basedir(s);
+         firmware_info.directory.system = s;
+      }
+      RARCH_LOG("Updating firmware status for: %s on %s\n", core_info->path, 
+         firmware_info.directory.system);
+      core_info_list_update_missing_firmware(&firmware_info);
+   }
 }
 
 void runloop_msg_queue_push(const char *msg,
