@@ -1076,7 +1076,7 @@ static void announce_nat_traversal(netplay_t *netplay)
    {
       if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet4_addr,
          sizeof(struct sockaddr_in),
-         host, PATH_MAX_LENGTH, port, 6, 0) != 0)
+         host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
          return;
 
    }
@@ -1085,7 +1085,7 @@ static void announce_nat_traversal(netplay_t *netplay)
    {
       if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet6_addr,
          sizeof(struct sockaddr_in6),
-         host, PATH_MAX_LENGTH, port, 6, 0) != 0)
+         host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
          return;
 
    }

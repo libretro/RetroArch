@@ -100,7 +100,7 @@ bool natt_open_port(struct natt_status *status, struct sockaddr *addr, socklen_t
       return false;
 
    /* figure out the internal info */
-   if (getnameinfo(addr, addrlen, host, PATH_MAX_LENGTH, port_str, 6, 0) != 0)
+   if (getnameinfo(addr, addrlen, host, PATH_MAX_LENGTH, port_str, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
       return false;
    proto_str = (proto == SOCKET_PROTOCOL_UDP) ? "UDP" : "TCP";
 
