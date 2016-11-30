@@ -1294,7 +1294,7 @@ error:
    return false;
 
 skip:
-   runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 1000, true);
+   runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
    RARCH_LOG(msg_hash_to_str(MSG_FIRMWARE));
 
    return true;
