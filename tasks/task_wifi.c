@@ -72,9 +72,8 @@ static void wifi_scan_callback(void *task_data,
 
 static void task_wifi_scan_handler(retro_task_t *task)
 {
-   wifi_handle_t *state = (wifi_handle_t*)task->state;
-
    driver_wifi_scan();
+    
    task->progress = 100;
    task->title = strdup("Wi-Fi scan complete");
    task->finished = true;
