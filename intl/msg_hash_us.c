@@ -1548,6 +1548,12 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "no checks. This value is only used on the \n"
                "netplay host. \n");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL:
+         snprintf(s, len,
+               "When hosting, attempt to listen for\n"
+               "connections from the public internet, using\n"
+               "UPnP or similar technologies to escape LANs. \n");
+         break;
       case MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES:
          snprintf(s, len,
                "Maximum amount of swapchain images. This \n"

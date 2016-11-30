@@ -799,6 +799,7 @@ static int populate_settings_bool(settings_t *settings, struct config_bool_setti
 #endif
 #ifdef HAVE_NETWORKING
    SETTING_BOOL("netplay_spectator_mode_enable",&settings->netplay.is_spectate, false, false /* TODO */, false);
+   SETTING_BOOL("netplay_nat_traversal",       &settings->netplay.nat_traversal, true, true, false);
 #endif
    SETTING_BOOL("block_sram_overwrite",         &settings->block_sram_overwrite, true, block_sram_overwrite, false);
    SETTING_BOOL("savestate_auto_index",         &settings->savestate_auto_index, true, savestate_auto_index, false);
@@ -921,7 +922,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
 #ifdef HAVE_NETWORKING
    SETTING_INT("netplay_ip_port",              &settings->netplay.port, false, 0 /* TODO */, false);
    SETTING_INT("netplay_delay_frames",         &settings->netplay.sync_frames, true, 16, false);
-   SETTING_INT("netplay_check_frames",         &settings->netplay.check_frames, false, 30, false);
+   SETTING_INT("netplay_check_frames",         &settings->netplay.check_frames, true, 30, false);
 #endif
 #ifdef HAVE_LANGEXTRA
    SETTING_INT("user_language",                &settings->user_language, true, RETRO_LANGUAGE_ENGLISH, false);
