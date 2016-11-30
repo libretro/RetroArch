@@ -149,6 +149,7 @@ IMPORT(AXRegisterFrameCallback);
 IMPORT(AXAcquireMultiVoice);
 IMPORT(AXSetMultiVoiceDeviceMix);
 IMPORT(AXSetMultiVoiceOffsets);
+IMPORT(AXSetMultiVoiceCurrentOffset);
 IMPORT(AXSetMultiVoiceState);
 IMPORT(AXSetMultiVoiceVe);
 IMPORT(AXSetMultiVoiceSrcType);

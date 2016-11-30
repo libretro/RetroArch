@@ -79,9 +79,7 @@ void wiiu_ax_callback(void)
          //buffer underrun, stop playback to let it fill up
          if(ax->written < AX_AUDIO_SAMPLE_MIN)
             AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
-         //make sure to update written value if voice is running
-         if(AXIsMultiVoiceRunning(ax->mvoice))
-            ax->written -= AX_AUDIO_SAMPLE_COUNT;
+         ax->written -= AX_AUDIO_SAMPLE_COUNT;
          OSUninterruptibleSpinLock_Release(&ax->spinlock);
       }
    }
@@ -188,8 +186,10 @@ static bool ax_audio_start(void* data)
 
    //set back to playing on enough buffered data
    if(ax->written > AX_AUDIO_SAMPLE_LOAD)
+   {
+      AXSetMultiVoiceCurrentOffset(ax->mvoice, (ax->pos - ax->written) & AX_AUDIO_COUNT_MASK);
       AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
-
+   }
    return true;
 }
 
