@@ -70,6 +70,7 @@
 #include "../performance_counters.h"
 #include "../core_info.h"
 #include "../wifi/wifi_driver.h"
+#include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
@@ -4893,19 +4894,31 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   0, 0, 0);
          else
          {
-            unsigned i;
             struct string_list *ssid_list = string_list_new();
-            driver_wifi_scan();
             driver_wifi_get_ssids(ssid_list);
 
-            for (i = 0; i < ssid_list->size; i++)
+            if (ssid_list->size == 0)
             {
-               const char *ssid = ssid_list->elems[i].data;
+               task_push_wifi_scan();
+
                menu_entries_append_enum(info->list,
-                     ssid,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
-                     MENU_ENUM_LABEL_CONNECT_WIFI,
-                     MENU_WIFI, 0, 0);
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+                     MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                     0, 0, 0);
+            }
+            else
+            {
+               unsigned i;
+               for (i = 0; i < ssid_list->size; i++)
+               {
+                  const char *ssid = ssid_list->elems[i].data;
+                  menu_entries_append_enum(info->list,
+                        ssid,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+                        MENU_ENUM_LABEL_CONNECT_WIFI,
+                        MENU_WIFI, 0, 0);
+               }
             }
          }
 

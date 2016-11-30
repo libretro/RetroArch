@@ -81,6 +81,9 @@ static void connmanctl_get_ssids(struct string_list* ssids)
    union string_list_elem_attr attr;
    attr.i = RARCH_FILETYPE_UNSET;
 
+   if (!lines)
+      return;
+
    for (i = 0; i < lines->size; i++)
    {
       char ssid[20];
