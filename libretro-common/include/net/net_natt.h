@@ -27,25 +27,25 @@
 #include <net/net_socket.h>
 
 struct natt_status {
-    /** The fdset to be selected upon to check for responses */
-    fd_set fds;
+   /** The fdset to be selected upon to check for responses */
+   fd_set fds;
 
-    /** True if we've resolved an external IPv4 address */
-    bool have_inet4;
+   /** True if we've resolved an external IPv4 address */
+   bool have_inet4;
 
-    /** External IPv4 address */
-    struct sockaddr_in ext_inet4_addr;
+   /** External IPv4 address */
+   struct sockaddr_in ext_inet4_addr;
 
-    /** True if we've resolved an external IPv6 address */
-    bool have_inet6;
+   /** True if we've resolved an external IPv6 address */
+   bool have_inet6;
 
 #ifdef AF_INET6
-    /** External IPv6 address */
-    struct sockaddr_in6 ext_inet6_addr;
+   /** External IPv6 address */
+   struct sockaddr_in6 ext_inet6_addr;
 #endif
 
-    /** Internal status (currently unused) */
-    void *internal;
+   /** Internal status (currently unused) */
+   void *internal;
 };
 
 /**
