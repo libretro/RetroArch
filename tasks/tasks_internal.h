@@ -84,7 +84,7 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
 
 task_retriever_info_t *http_task_get_transfer_list(void);
 
-bool task_push_wifi_scan();
+bool task_push_wifi_scan(void);
 
 #endif
 

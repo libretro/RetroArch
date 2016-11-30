@@ -82,7 +82,7 @@ static void task_wifi_scan_handler(retro_task_t *task)
    return;
 }
 
-bool task_push_wifi_scan()
+bool task_push_wifi_scan(void)
 {
    retro_task_t          *task = (retro_task_t*)calloc(1, sizeof(*task));
    wifi_handle_t *state = (wifi_handle_t*)calloc(1, sizeof(*state));

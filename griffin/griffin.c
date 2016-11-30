@@ -884,6 +884,7 @@ NETPLAY
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
+#include "../tasks/task_wifi.c"
 #endif
 
 /*============================================================
