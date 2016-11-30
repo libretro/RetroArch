@@ -129,6 +129,10 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
 
    port_buf[0] = '\0';
 
+#ifdef AF_INET6
+   if (!server)
+      hints.ai_family = AF_INET6;
+#endif
    hints.ai_socktype = SOCK_STREAM;
    if (!server)
       hints.ai_flags = AI_PASSIVE;
@@ -139,6 +143,16 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
 
    if (!res)
       return false;
+
+   /* If we're serving on IPv6, make sure we accept all connections, including
+    * IPv4 */
+#ifdef AF_INET6
+   if (!server && res->ai_family == AF_INET6)
+   {
+      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) res->ai_addr;
+      sin6->sin6_addr = in6addr_any;
+   }
+#endif
 
    /* If "localhost" is used, it is important to check every possible 
     * address for IPv4/IPv6. */
