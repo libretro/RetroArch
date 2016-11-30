@@ -4888,9 +4888,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
          if (string_is_equal(settings->wifi.driver, "null"))
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+                  MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
                   0, 0, 0);
 #ifdef HAVE_NETWORKING
          else
@@ -4903,9 +4903,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                task_push_wifi_scan();
 
                menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                     MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+                     MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
                      0, 0, 0);
             }
             else
@@ -4924,9 +4924,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
 #else
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-               MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+               MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
                0, 0, 0);
 #endif
 
