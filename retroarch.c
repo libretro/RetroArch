@@ -1011,10 +1011,6 @@ bool retroarch_main_init(int argc, char *argv[])
 {
    bool init_failed = false;
 
-   global_t *global = global_get_ptr();
-   if (global)
-      global->ssid_list = string_list_new();
-
    retroarch_init_state();
 
    if (setjmp(error_sjlj_context) > 0)

@@ -20,7 +20,6 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <retro_common_api.h>
-#include <lists/string_list.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -192,8 +191,6 @@ typedef struct global
       bool flickerfilter_enable;
       bool softfilter_enable;
    } console;
-
-   struct string_list *ssid_list;
 } global_t;
 
 typedef struct runloop_ctx_msg_info

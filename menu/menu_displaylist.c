@@ -69,6 +69,7 @@
 #include "../list_special.h"
 #include "../performance_counters.h"
 #include "../core_info.h"
+#include "../wifi/wifi_driver.h"
 #include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_NETWORKING
@@ -4893,12 +4894,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   0, 0, 0);
          else
          {
-            global_t *global = global_get_ptr();
+            struct string_list *ssid_list = string_list_new();
+            driver_wifi_get_ssids(ssid_list);
 
-            if (!global)
-               break;
-
-            if (global->ssid_list->size == 0)
+            if (ssid_list->size == 0)
             {
                task_push_wifi_scan();
 
@@ -4911,9 +4910,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             else
             {
                unsigned i;
-               for (i = 0; i < global->ssid_list->size; i++)
+               for (i = 0; i < ssid_list->size; i++)
                {
-                  const char *ssid = global->ssid_list->elems[i].data;
+                  const char *ssid = ssid_list->elems[i].data;
                   menu_entries_append_enum(info->list,
                         ssid,
                         msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),

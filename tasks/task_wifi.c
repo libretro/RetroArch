@@ -43,12 +43,11 @@ static void wifi_scan_callback(void *task_data,
    const char *path              = NULL;
    const char *label             = NULL;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-   global_t *global = global_get_ptr();
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
    /* Don't push the results if we left the wifi menu */
-   if (!global || !string_is_equal(label,
+   if (!string_is_equal(label,
          msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST)))
       return;
 
@@ -56,10 +55,13 @@ static void wifi_scan_callback(void *task_data,
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
+   struct string_list *ssid_list = string_list_new();
+   driver_wifi_get_ssids(ssid_list);
+
    unsigned i;
-   for (i = 0; i < global->ssid_list->size; i++)
+   for (i = 0; i < ssid_list->size; i++)
    {
-      const char *ssid = global->ssid_list->elems[i].data;
+      const char *ssid = ssid_list->elems[i].data;
       menu_entries_append_enum(file_list,
             ssid,
             msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
@@ -70,17 +72,12 @@ static void wifi_scan_callback(void *task_data,
 
 static void task_wifi_scan_handler(retro_task_t *task)
 {
-   global_t *global = global_get_ptr();
    wifi_handle_t *state = (wifi_handle_t*)task->state;
 
    driver_wifi_scan();
-   task->progress = 50;
-   task->title = strdup("Parsing SSID list...");
-   driver_wifi_get_ssids(global->ssid_list);
    task->progress = 100;
    task->title = strdup("Wi-Fi scan complete");
    task->finished = true;
-   task->task_data = state;
 
    return;
 }
