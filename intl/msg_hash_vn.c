@@ -355,6 +355,16 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
                "inside the menu and RetroArch won't \n"
                "shutdown.");
          break;
+      case MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE:
+         snprintf(s, len,
+               "Some cores might need \n"
+               "firmware or bios files. \n"
+               " \n"
+               "If this option is disabled, \n"
+               "it will try to load even if such \n"
+               "firmware is missing. \n"
+               "down. \n");
+         break;
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          snprintf(s, len,
                "Go back to the parent thư mục.");
