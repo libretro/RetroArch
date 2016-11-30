@@ -107,7 +107,7 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 
    MultiByteToWideChar(CP_UTF8, 0, path, -1, path_wide, sizeof(path_wide) / sizeof(path_wide[0]));
 
-   DWORD ret = GetFileAttributesEx(path_wide, fInfoLevelId, &file_info);
+   DWORD ret = GetFileAttributesExW(path_wide, fInfoLevelId, &file_info);
    if (ret == 0)
       return false;
 #else

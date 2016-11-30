@@ -29,6 +29,10 @@
 #define WM_MOUSEWHEEL 0x020A
 #endif
 
+#define UNICODE
+#include <tchar.h>
+#include <wchar.h>
+
 #include <dinput.h>
 
 #include <stdlib.h>

@@ -212,20 +212,20 @@ void win32_monitor_from_window(void)
 
 void win32_monitor_get_info(void)
 {
-   MONITORINFOEX current_mon;
+   MONITORINFOEXW current_mon;
 
    memset(&current_mon, 0, sizeof(current_mon));
-   current_mon.cbSize = sizeof(MONITORINFOEX);
+   current_mon.cbSize = sizeof(MONITORINFOEXW);
 
-   GetMonitorInfo(win32_monitor_last, (MONITORINFO*)&current_mon);
-   ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
+   GetMonitorInfoW(win32_monitor_last, (MONITORINFOEXW*)&current_mon);
+   ChangeDisplaySettingsExW(current_mon.szDevice, NULL, NULL, 0, NULL);
 }
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 {
    unsigned i, fs_monitor;
    settings_t *settings = config_get_ptr();
-   MONITORINFOEX *mon   = (MONITORINFOEX*)data;
+   MONITORINFOEXW *mon   = (MONITORINFOEXW*)data;
    HMONITOR *hm_to_use  = (HMONITOR*)hm_data;
 
    if (!win32_monitor_last)
@@ -254,8 +254,8 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    }
 
    memset(mon, 0, sizeof(*mon));
-   mon->cbSize = sizeof(MONITORINFOEX);
-   GetMonitorInfo(*hm_to_use, (MONITORINFO*)mon);
+   mon->cbSize = sizeof(MONITORINFOEXW);
+   GetMonitorInfoW(*hm_to_use, (MONITORINFOEXW*)mon);
 }
 
 /* Get the count of the files dropped */
@@ -264,7 +264,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
    char szFilename[1024] = {0};
    wchar_t wszFilename[1024] = {0};
 
-   if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+   if (DragQueryFileW((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
    {
       /*poll list of current cores */
       size_t list_size;
@@ -272,7 +272,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       core_info_list_t *core_info_list = NULL;
       const core_info_t *core_info     = NULL;
 
-      DragQueryFile((HDROP)wparam, 0, wszFilename, sizeof(wszFilename) / sizeof(wszFilename[0]));
+      DragQueryFileW((HDROP)wparam, 0, wszFilename, sizeof(wszFilename) / sizeof(wszFilename[0]));
 
       utf16_to_char_string((const uint16_t*)wszFilename, szFilename, sizeof(szFilename));
 
@@ -335,7 +335,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       else
       {
          /* Pick one core that could be compatible, ew */
-         if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
+         if(DialogBoxParamW(GetModuleHandleW(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
                   hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
          {
             task_push_content_load_default(
@@ -507,7 +507,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
 
    if (dinput_wgl && dinput_handle_message(dinput_wgl, message, wparam, lparam))
       return 0;
-   return DefWindowProc(hwnd, message, wparam, lparam);
+   return DefWindowProcW(hwnd, message, wparam, lparam);
 }
 
 bool win32_window_create(void *data, unsigned style,
@@ -515,7 +515,7 @@ bool win32_window_create(void *data, unsigned style,
       unsigned height, bool fullscreen)
 {
 #ifndef _XBOX
-   main_window.hwnd = CreateWindowEx(0, L"RetroArch", L"RetroArch",
+   main_window.hwnd = CreateWindowExW(0, L"RetroArch", L"RetroArch",
          style,
          fullscreen ? mon_rect->left : g_pos_x,
          fullscreen ? mon_rect->top  : g_pos_y,
@@ -597,7 +597,7 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
 
    MultiByteToWideChar(CP_UTF8, 0, dev_name, -1, dev_name_wide, sizeof(dev_name_wide) / sizeof(dev_name_wide[0]));
 
-   return ChangeDisplaySettingsEx(dev_name_wide, &devmode,
+   return ChangeDisplaySettingsExW(dev_name_wide, &devmode,
          NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
 #endif
 }
@@ -724,7 +724,7 @@ void win32_set_style(MONITORINFOEXW *current_mon, HMONITOR *hm_to_use,
 			 {}
 
          /* Display settings might have changed, get new coordinates. */
-         GetMonitorInfo(*hm_to_use, (MONITORINFO*)current_mon);
+         GetMonitorInfoW(*hm_to_use, (MONITORINFOEXW*)current_mon);
          *mon_rect = current_mon->rcMonitor;
       }
    }
@@ -755,8 +755,8 @@ void win32_set_window(unsigned *width, unsigned *height,
       {
          RECT rc_temp = {0, 0, (LONG)*height, 0x7FFF};
          SetMenu(main_window.hwnd,
-               LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-         SendMessage(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+               LoadMenuW(GetModuleHandleW(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         SendMessageW(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
          g_resize_height = *height += rc_temp.top + rect->top;
          SetWindowPos(main_window.hwnd, NULL, 0, 0, *width, *height, SWP_NOMOVE);
       }
@@ -782,7 +782,7 @@ bool win32_set_video_mode(void *data,
    MSG msg;
    RECT mon_rect;
    unsigned mon_id;
-   MONITORINFOEX current_mon;
+   MONITORINFOEXW current_mon;
    bool windowed_full;
    RECT rect             = {0};
    HMONITOR hm_to_use    = NULL;
@@ -805,10 +805,10 @@ bool win32_set_video_mode(void *data,
    win32_set_window(&width, &height, fullscreen, windowed_full, &rect);
 
    /* Wait until context is created (or failed to do so ...) */
-   while (!g_inited && !g_quit && GetMessage(&msg, main_window.hwnd, 0, 0))
+   while (!g_inited && !g_quit && GetMessageW(&msg, main_window.hwnd, 0, 0))
    {
       TranslateMessage(&msg);
-      DispatchMessage(&msg);
+      DispatchMessageW(&msg);
    }
 
    if (g_quit)
@@ -866,7 +866,7 @@ void win32_window_reset(void)
 void win32_destroy_window(void)
 {
 #ifndef _XBOX
-   UnregisterClass(L"RetroArch", GetModuleHandle(NULL));
+   UnregisterClassW(L"RetroArch", GetModuleHandleW(NULL));
 #endif
    main_window.hwnd = NULL;
 }

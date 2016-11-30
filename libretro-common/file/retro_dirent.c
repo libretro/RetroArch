@@ -44,7 +44,7 @@ struct RDIR *retro_opendir(const char *name)
 #if defined(_WIN32)
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
    MultiByteToWideChar(CP_UTF8, 0, path_buf, -1, pathW, sizeof(pathW) / sizeof(pathW[0]));
-   rdir->directory = FindFirstFile(pathW, &rdir->entry);
+   rdir->directory = FindFirstFileW(pathW, &rdir->entry);
 #elif defined(VITA) || defined(PSP)
    rdir->directory = sceIoDopen(name);
 #elif defined(_3DS)
@@ -77,7 +77,7 @@ int retro_readdir(struct RDIR *rdir)
 {
 #if defined(_WIN32)
    if(rdir->next)
-      return (FindNextFile(rdir->directory, &rdir->entry) != 0);
+      return (FindNextFileW(rdir->directory, &rdir->entry) != 0);
    else {
       rdir->next = true;
       return (rdir->directory != INVALID_HANDLE_VALUE);
@@ -120,7 +120,7 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
 bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 {
 #if defined(_WIN32)
-   const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)&rdir->entry;
+   const WIN32_FIND_DATAW *entry = (const WIN32_FIND_DATAW*)&rdir->entry;
    return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 #elif defined(PSP) || defined(VITA)
    const SceIoDirent *entry = (const SceIoDirent*)&rdir->entry;
