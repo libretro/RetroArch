@@ -75,7 +75,7 @@ static void task_wifi_scan_handler(retro_task_t *task)
    driver_wifi_scan();
     
    task->progress = 100;
-   task->title = strdup("Wi-Fi scan complete");
+   task->title = strdup(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE));
    task->finished = true;
 
    return;
@@ -96,7 +96,7 @@ bool task_push_wifi_scan(void)
    task->state = state;
    task->handler = task_wifi_scan_handler;
    task->callback = wifi_scan_callback;
-   task->title = strdup("Scanning wireless networks...");
+   task->title = strdup(msg_hash_to_str(MSG_SCANNING_WIRELESS_NETWORKS));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
