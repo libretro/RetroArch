@@ -50,7 +50,11 @@ void natt_init(void)
    int upnperror = 0;
    memset(&urls, 0, sizeof(struct UPNPUrls));
    memset(&data, 0, sizeof(struct IGDdatas));
+#if MINIUPNPC_API_VERSION < 16
    devlist = upnpDiscover(2000, NULL, NULL, 0, 0, &upnperror);
+#else
+   devlist = upnpDiscover(2000, NULL, NULL, 0, 0, 2, &upnperror);
+#endif
    if (devlist)
    {
       dev = devlist;
@@ -63,7 +67,11 @@ void natt_init(void)
       if (!dev)
          dev = devlist;
 
+#if MINIUPNPC_API_VERSION < 16
       descXML = (char *) miniwget(dev->descURL, &descXMLsize, 0);
+#else
+      descXML = (char *) miniwget(dev->descURL, &descXMLsize, 0, NULL);
+#endif
       if (descXML)
       {
          parserootdesc (descXML, descXMLsize, &data);
