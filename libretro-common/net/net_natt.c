@@ -63,7 +63,7 @@ void natt_init(void)
       if (!dev)
          dev = devlist;
 
-      descXML = miniwget(dev->descURL, &descXMLsize, 0);
+      descXML = (char *) miniwget(dev->descURL, &descXMLsize, 0);
       if (descXML)
       {
          parserootdesc (descXML, descXMLsize, &data);
@@ -165,7 +165,7 @@ bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_p
    sprintf(port_str, "%hu", port);
 
    /* get our interfaces */
-   if ((list = calloc(1, sizeof(struct net_ifinfo))) == NULL)
+   if ((list = (struct net_ifinfo *) calloc(1, sizeof(struct net_ifinfo))) == NULL)
        return false;
    if (!net_ifinfo_new(list))
       return false;
