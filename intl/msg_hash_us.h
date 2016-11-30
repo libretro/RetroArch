@@ -23,6 +23,10 @@ MSG_HASH(
       "Got connection from"
       )
 MSG_HASH(
+      MSG_PUBLIC_ADDRESS,
+      "Public address"
+      )
+MSG_HASH(
       MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
       "No arguments supplied and no menu builtin, displaying help..."
       )
@@ -922,6 +926,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "Netplay Spectator Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
       "Netplay TCP/UDP Port")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+      "Netplay NAT Traversal")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
       "Network Commands")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,

@@ -20,6 +20,7 @@
 #include "netplay.h"
 
 #include <net/net_compat.h>
+#include <net/net_natt.h>
 #include <features/features_cpu.h>
 #include <streams/trans_stream.h>
 #include <retro_endianness.h>
@@ -124,6 +125,9 @@ struct netplay
    int fd;
    /* TCP port (if serving) */
    uint16_t tcp_port;
+   /* NAT traversal info (if NAT traversal is used and serving) */
+   bool nat_traversal;
+   struct natt_status nat_traversal_state;
    /* Which port is governed by netplay (other user)? */
    unsigned port;
    bool has_connection;
