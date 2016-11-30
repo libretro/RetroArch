@@ -208,6 +208,9 @@ static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
 
+   if (!di)
+      return;
+
    memset(di->state, 0, sizeof(di->state));
    if (di->keyboard)
    {
