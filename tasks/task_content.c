@@ -1221,6 +1221,8 @@ bool task_push_content_load_default(
       default:
          break;
    }
+
+   RARCH_LOG("MODE: %d\n", mode);
    /* Load content */
    switch (mode)
    {
