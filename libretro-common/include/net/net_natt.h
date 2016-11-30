@@ -27,8 +27,14 @@
 #include <net/net_socket.h>
 
 struct natt_status {
+   /** nfds for select when checking for input */
+   int nfds;
+
    /** The fdset to be selected upon to check for responses */
    fd_set fds;
+
+   /** True if there might be a request outstanding */
+   bool request_outstanding;
 
    /** True if we've resolved an external IPv4 address */
    bool have_inet4;

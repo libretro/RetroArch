@@ -20,6 +20,7 @@
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#include <net/net_natt.h>
 
 #include "netplay_private.h"
 
@@ -335,6 +336,19 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
       if (!netplay_handshake(netplay))
          return false;
       netplay->has_connection = true;
+   }
+
+   {
+      struct natt_status status;
+      natt_init();
+      if (natt_new(&status) && natt_open_port_any(&status, netplay->tcp_port, SOCKET_PROTOCOL_TCP))
+      {
+         fprintf(stderr, "Forwarded to %d!\n", status.ext_inet4_addr.sin_port);
+      }
+      else
+      {
+         fprintf(stderr, "Forwarding failed :(\n");
+      }
    }
 
    return true;

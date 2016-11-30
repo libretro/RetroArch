@@ -23,6 +23,10 @@ MSG_HASH(
       "Got connection from"
       )
 MSG_HASH(
+      MSG_PUBLIC_ADDRESS,
+      "Public address"
+      )
+MSG_HASH(
       MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
       "No arguments supplied and no menu builtin, displaying help..."
       )
