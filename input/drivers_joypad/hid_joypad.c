@@ -38,7 +38,12 @@ static bool hid_joypad_query_pad(unsigned pad)
 
 static void hid_joypad_free(void)
 {
-   generic_hid->free((void*)hid_driver_get_data());
+   if (!generic_hid)
+       return;
+
+   if (generic_hid->free)
+      generic_hid->free((void*)hid_driver_get_data());
+    
    generic_hid = NULL;
 }
 
