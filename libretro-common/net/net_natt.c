@@ -114,7 +114,6 @@ bool natt_open_port(struct natt_status *status, struct sockaddr *addr, socklen_t
       r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port_str,
          port_str, host, "retroarch", proto_str, NULL, "3600");
    }
-   fprintf(stderr, "ERROR: %d\n", r);
    if (r != 0)
       return false;
 
