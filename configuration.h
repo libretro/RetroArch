@@ -440,6 +440,7 @@ typedef struct settings
 #endif
    bool fps_show;
    bool load_dummy_on_core_shutdown;
+   bool check_firmware_before_loading;
 
    bool game_specific_options;
    bool auto_overrides_enable;

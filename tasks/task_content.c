@@ -1037,6 +1037,7 @@ bool task_push_content_load_default(
       void *user_data)
 {
    bool loading_from_menu = false;
+   settings_t *settings   = config_get_ptr();
 
    if (!content_info)
       return false;
@@ -1220,11 +1221,13 @@ bool task_push_content_load_default(
       default:
          break;
    }
-
    /* Load content */
    switch (mode)
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
+         if (!task_load_content(content_info, loading_from_menu, mode))
+            goto error;
+         break;
       case CONTENT_MODE_LOAD_FROM_CLI:
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
@@ -1242,8 +1245,10 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          update_firmware_status();
-         if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL))
-            goto skip;
+         if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL) && 
+               settings->check_firmware_before_loading)
+               goto skip;
+
          if (!task_load_content(content_info, loading_from_menu, mode))
             goto error;
          break;
@@ -1295,7 +1300,7 @@ error:
 
 skip:
    runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 100, 500, true);
-   RARCH_LOG(msg_hash_to_str(MSG_FIRMWARE));
+   RARCH_LOG("Load content blocked. Reason:  %s\n", msg_hash_to_str(MSG_FIRMWARE));
 
    return true;
 }

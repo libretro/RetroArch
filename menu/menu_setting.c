@@ -2712,7 +2712,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_CORE:
          {
             unsigned i;
-            struct bool_entry bool_entries[4];
+            struct bool_entry bool_entries[5];
 
             START_GROUP(list, list_info, &group_info,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS), parent_group);
@@ -2743,11 +2743,17 @@ static bool setting_append_list(
             bool_entries[2].default_value  = true;
             bool_entries[2].flags          = SD_FLAG_ADVANCED;
 
-            bool_entries[3].target         = &settings->video.allow_rotate; 
-            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
-            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
-            bool_entries[3].default_value  = allow_rotate;
+            bool_entries[3].target         = &settings->check_firmware_before_loading;
+            bool_entries[3].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
+            bool_entries[3].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
+            bool_entries[3].default_value  = true;
             bool_entries[3].flags          = SD_FLAG_ADVANCED;
+
+            bool_entries[4].target         = &settings->video.allow_rotate;
+            bool_entries[4].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
+            bool_entries[4].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
+            bool_entries[4].default_value  = allow_rotate;
+            bool_entries[4].flags          = SD_FLAG_ADVANCED;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
             {

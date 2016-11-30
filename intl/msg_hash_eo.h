@@ -2153,6 +2153,10 @@ MSG_HASH(
    "Some cores might have a shutdown feature. If enabled, it will prevent the core from shutting RetroArch down. Instead, it loads a dummy core."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHECK_FOR_MISSING_FIRMWARE,
+   "Check if all the required firmware is present before attempting to load content."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    "Vertical refresh rate of your monitor. Used to calculate a suitable audio input rate. NOTE: This will be ignored if 'Threaded Video' is enabled."
    )
