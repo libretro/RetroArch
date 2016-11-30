@@ -150,6 +150,9 @@ static void cocoa_input_poll(void *data)
 #ifndef IOS
    float   backing_scale_factor = get_backing_scale_factor();
 #endif
+    
+   if (!apple)
+      return;
 
    for (i = 0; i < apple->touch_count; i++)
    {

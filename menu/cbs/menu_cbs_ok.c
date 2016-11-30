@@ -854,7 +854,6 @@ static int generic_action_ok_file_load(const char *corepath, const char *fullpat
       enum rarch_core_type action_type, enum content_mode_load content_enum_idx)
 {
    content_ctx_info_t content_info = {0};
-   settings_t            *settings = config_get_ptr();
 
    if (!task_push_content_load_default(
          corepath, fullpath,
