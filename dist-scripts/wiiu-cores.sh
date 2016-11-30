@@ -29,11 +29,12 @@ gen_meta_xml()
       systemname=`cat $info | lookup "systemname"`
       license=`cat $info | lookup "license"`
       date=`date +%Y%m%d%H%M%S`
+      build_hash=`git rev-parse --short HEAD 2>/dev/null`
       echo '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' > "$1"_meta.xml
       echo '<app version="1">' >> "$1"_meta.xml
       echo '  <name>'$corename'</name>' >> "$1"_meta.xml
       echo '  <coder>'$authors'</coder>' >> "$1"_meta.xml
-      echo '  <version>'$RARCH_VERSION' ('$date')</version>' >> "$1"_meta.xml
+      echo '  <version>'$RARCH_VERSION' r'$build_hash'</version>' >> "$1"_meta.xml
       echo '  <release_date>'$date'</release_date>' >> "$1"_meta.xml
       echo '  <short_description>RetroArch</short_description>' >> "$1"_meta.xml
       echo -e '  <long_description>'$display_name'\n\nSystem: '$systemname'\nLicense: '$license'</long_description>' >> "$1"_meta.xml
