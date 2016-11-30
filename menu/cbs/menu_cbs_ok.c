@@ -856,14 +856,6 @@ static int generic_action_ok_file_load(const char *corepath, const char *fullpat
    content_ctx_info_t content_info = {0};
    settings_t            *settings = config_get_ptr();
 
-   if(runloop_ctl(RUNLOOP_CTL_IS_MISSING_BIOS, NULL)
-      && !string_is_empty(settings->directory.system)
-      && content_enum_idx == CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU)
-   {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_FIRMWARE), 200, 100, true);
-      RARCH_LOG(msg_hash_to_str(MSG_FIRMWARE));
-      return 0;
-   }
    if (!task_push_content_load_default(
          corepath, fullpath,
          &content_info,

@@ -223,6 +223,8 @@ char* runloop_msg_queue_pull(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
+void update_firmware_status();
+
 RETRO_END_DECLS
 
 #endif
