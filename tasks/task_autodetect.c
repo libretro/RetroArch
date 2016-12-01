@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <compat/strl.h>
 #include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -119,7 +120,7 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
 }
 
 static void input_autoconfigure_joypad_add(config_file_t *conf,
-      autoconfig_params_t *params)
+      autoconfig_params_t *params, retro_task_t *task)
 {
    char msg[128];
    char display_name[128];
@@ -154,7 +155,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             string_is_empty(display_name) ? params->name : display_name);
 
       if(!remote_is_bound)
-         runloop_msg_queue_push(msg, 2, 60, false);
+         task->title = strdup(msg);
       remote_is_bound = true;
    }
    else
@@ -165,19 +166,19 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
             params->idx);
 
       if (!block_osd_spam)
-          runloop_msg_queue_push(msg, 2, 60, false);
+         task->title = strdup(msg);
    }
    input_autoconfigure_joypad_reindex_devices();
 }
 
 static int input_autoconfigure_joypad_from_conf(
-      config_file_t *conf, autoconfig_params_t *params)
+      config_file_t *conf, autoconfig_params_t *params, retro_task_t *task)
 {
    int ret = input_autoconfigure_joypad_try_from_conf(conf,
          params);
 
    if (ret)
-      input_autoconfigure_joypad_add(conf, params);
+      input_autoconfigure_joypad_add(conf, params, task);
 
    config_file_free(conf);
 
@@ -185,7 +186,7 @@ static int input_autoconfigure_joypad_from_conf(
 }
 
 static bool input_autoconfigure_joypad_from_conf_dir(
-      autoconfig_params_t *params)
+      autoconfig_params_t *params, retro_task_t *task)
 {
    size_t i;
    char path[PATH_MAX_LENGTH];
@@ -244,7 +245,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
          config_get_config_path(conf, conf_path, sizeof(conf_path));
 
          RARCH_LOG("Autodetect: selected configuration: %s\n", conf_path);
-         input_autoconfigure_joypad_add(conf, params);
+         input_autoconfigure_joypad_add(conf, params, task);
          config_file_free(conf);
          ret = 1;
       }
@@ -260,7 +261,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
 }
 
 static bool input_autoconfigure_joypad_from_conf_internal(
-      autoconfig_params_t *params)
+      autoconfig_params_t *params, retro_task_t *task)
 {
    size_t i;
    settings_t *settings = config_get_ptr();
@@ -270,7 +271,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    {
       config_file_t *conf = config_file_new_from_string(
             input_builtin_autoconfs[i]);
-      if (conf && input_autoconfigure_joypad_from_conf(conf, params))
+      if (conf && input_autoconfigure_joypad_from_conf(conf, params, task))
          return true;
    }
 
@@ -299,16 +300,18 @@ static bool input_autoconfigure_joypad_init(autoconfig_params_t *params)
    return true;
 }
 
-bool input_autoconfigure_connect(autoconfig_params_t *params)
+static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
-   if (!input_autoconfigure_joypad_init(params))
-      return false;
+   autoconfig_params_t *params = task ? (autoconfig_params_t*)task->state : NULL;
+
+   if (!params || !input_autoconfigure_joypad_init(params))
+      return;
 
    if (string_is_empty(params->name))
-      return false;
+      return;
 
-   if (     !input_autoconfigure_joypad_from_conf_dir(params)
-         && !input_autoconfigure_joypad_from_conf_internal(params))
+   if (     !input_autoconfigure_joypad_from_conf_dir(params, task)
+         && !input_autoconfigure_joypad_from_conf_internal(params, task))
    {
       char msg[255];
 
@@ -320,12 +323,14 @@ bool input_autoconfigure_connect(autoconfig_params_t *params)
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
             params->name, (long)params->vid, (long)params->pid,
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
-      runloop_msg_queue_push(msg, 2, 60, false);
+      task->title = strdup(msg);
 
-      return false;
+      return;
    }
 
-   return true;
+   task->finished = true;
+
+   return;
 }
 
 void input_autoconfigure_disconnect(unsigned i, const char *ident)
@@ -340,4 +345,34 @@ void input_autoconfigure_disconnect(unsigned i, const char *ident)
    runloop_msg_queue_push(msg, 2, 60, false);
    RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), 
          msg);
+}
+
+bool input_autoconfigure_connect(autoconfig_params_t *params)
+{
+   retro_task_t         *task = (retro_task_t*)calloc(1, sizeof(*task));
+   autoconfig_params_t *state = (autoconfig_params_t*)calloc(1, sizeof(*state));
+
+   if (!task || !state)
+      goto error;
+
+   strlcpy(state->name, params->name, sizeof(state->name));
+   state->idx = params->idx;
+   state->vid = params->vid;
+   state->pid = params->pid;
+
+   task->type = TASK_TYPE_BLOCKING;
+   task->state = state;
+   task->handler = input_autoconfigure_connect_handler;
+
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+
+   return true;
+
+error:
+   if (state)
+      free(state);
+   if (task)
+      free(task);
+
+   return false;
 }
