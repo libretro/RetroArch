@@ -411,8 +411,9 @@ static bool get_self_input_state(netplay_t *netplay)
 
    if (!netplay->spectate.enabled) /* Spectate sends in its own way */
    {
-      if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, cmdbuf,
-            sizeof(cmdbuf)))
+      if (!netplay_send(&netplay->send_packet_buffer, netplay->fd,
+            netplay->input_packet_buffer,
+            sizeof(netplay->input_packet_buffer)))
       {
          hangup(netplay);
          return false;
@@ -466,7 +467,7 @@ bool netplay_cmd_request_savestate(netplay_t *netplay)
 
 static ssize_t netplay_recva(netplay_t *netplay, void *buf, size_t len)
 {
-   return netplay_recv(&netplay->read_packet_buffer, netplay->fd, buf, len, false);
+   return netplay_recv(&netplay->recv_packet_buffer, netplay->fd, buf, len, false);
 }
 
 static bool netplay_get_cmd(netplay_t *netplay)
@@ -783,6 +784,8 @@ shrt:
    /* No more data, reset and try again */
    netplay_recv_reset(&netplay->recv_packet_buffer);
    return true;
+
+#undef RECV
 }
 
 static int poll_input(netplay_t *netplay, bool block)
