@@ -504,12 +504,19 @@ static void undo_save_state_cb(void *task_data,
 static void task_save_handler_finished(retro_task_t *task,
       save_task_state_t *state)
 {
+   save_task_state_t *task_data = NULL;
+
    task->finished = true;
 
    filestream_close(state->file);
 
    if (!task->error && task->cancelled)
       task->error = strdup("Task canceled");
+
+   task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
+   memcpy(task_data, state, sizeof(*state));
+
+   task->task_data = task_data;
 
    if (state->data)
    {
@@ -971,6 +978,24 @@ error:
 }
 
 /**
+ * save_state_cb:
+ *
+ * Called after the save state is done. Takes a screenshot if needed.
+ **/
+static void save_state_cb(void *task_data,
+                           void *user_data, const char *error)
+{
+   settings_t *settings = config_get_ptr();
+   save_task_state_t *state = (save_task_state_t*)task_data;
+   char               *path = strdup(state->path);
+
+   if (settings->savestate_thumbnail_enable)
+      take_savestate_screenshot(path);
+
+   free(path);
+}
+
+/**
  * task_push_save_state:
  * @path : file path of the save state
  * @data : the save state data to write
@@ -995,6 +1020,7 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    task->type      = TASK_TYPE_BLOCKING;
    task->state     = state;
    task->handler   = task_save_handler;
+   task->callback  = save_state_cb;
    task->title     = strdup(msg_hash_to_str(MSG_SAVING_STATE));
    task->mute      = state->mute;
 

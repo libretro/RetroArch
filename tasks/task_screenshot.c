@@ -212,7 +212,7 @@ static bool screenshot_dump(
    }
 #endif
 
-   task->type    = TASK_TYPE_NONE;
+   task->type    = TASK_TYPE_BLOCKING;
    task->state   = state;
    task->handler = task_screenshot_handler;
    if (!savestate)
