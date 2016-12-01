@@ -86,7 +86,9 @@ static bool hid_joypad_rumble(unsigned pad,
 
 static const char *hid_joypad_name(unsigned pad)
 {
-   return generic_hid->name((void*)hid_driver_get_data(), pad);
+   if (generic_hid && generic_hid->name)
+      return generic_hid->name((void*)hid_driver_get_data(), pad);
+   return NULL;
 }
 
 input_device_driver_t hid_joypad = {
