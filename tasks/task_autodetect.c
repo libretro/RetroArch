@@ -29,7 +29,6 @@
 #include "../configuration.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
-#include "../msg_hash.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 
