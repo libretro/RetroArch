@@ -215,7 +215,8 @@ static bool screenshot_dump(
    task->type    = TASK_TYPE_BLOCKING;
    task->state   = state;
    task->handler = task_screenshot_handler;
-   task->title   = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+   if (!savestate)
+      task->title   = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
    return true;
