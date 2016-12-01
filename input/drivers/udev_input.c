@@ -24,7 +24,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <sys/poll.h>
 #include <sys/epoll.h>
 
 #include <libudev.h>
@@ -42,10 +41,12 @@
 
 #include "../drivers_keyboard/keyboard_event_udev.h"
 #include "../common/linux_common.h"
+#include "../common/udev_common.h"
 
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"
+
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
@@ -226,19 +227,6 @@ static void udev_handle_mouse(void *data,
    }
 }
 
-static bool udev_input_hotplug_available(udev_input_t *udev)
-{
-   struct pollfd fds = {0};
-
-   if (!udev || !udev->monitor)
-      return false;
-
-   fds.fd     = udev_monitor_get_fd(udev->monitor);
-   fds.events = POLLIN;
-
-   return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
-}
-
 static bool add_device(udev_input_t *udev,
       const char *devnode, device_handle_cb cb)
 {
@@ -382,7 +370,7 @@ static void udev_input_poll(void *data)
    udev->mouse_wu  = udev->mouse_wd  = 0;
    udev->mouse_whu = udev->mouse_whd = 0;
 
-   while (udev_input_hotplug_available(udev))
+   while (udev->monitor && udev_hotplug_available(udev->monitor))
       udev_input_handle_hotplug(udev);
 
    ret = epoll_wait(udev->epfd, events, ARRAY_SIZE(events), 0);
