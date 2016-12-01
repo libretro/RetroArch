@@ -49,16 +49,13 @@ typedef struct
    OSSpinLock spinlock;
 } ax_audio_t;
 
-//4096 samples main buffer, 85ms total
-#define AX_AUDIO_COUNT_SHIFT        12u
-#define AX_AUDIO_COUNT              (1u << AX_AUDIO_COUNT_SHIFT)
-#define AX_AUDIO_COUNT_MASK         (AX_AUDIO_COUNT - 1u)
+//3072 samples main buffer, 64ms total
+#define AX_AUDIO_COUNT              3072
 #define AX_AUDIO_SIZE               (AX_AUDIO_COUNT << 1u)
-#define AX_AUDIO_SIZE_MASK          (AX_AUDIO_SIZE - 1u)
 
 #define AX_AUDIO_SAMPLE_COUNT       144 //3ms
-#define AX_AUDIO_SAMPLE_MIN         (AX_AUDIO_SAMPLE_COUNT * 4) //12ms
-#define AX_AUDIO_SAMPLE_LOAD        (AX_AUDIO_SAMPLE_COUNT * 11) //33ms
+#define AX_AUDIO_SAMPLE_MIN         (AX_AUDIO_SAMPLE_COUNT * 3) //9ms
+#define AX_AUDIO_SAMPLE_LOAD        (AX_AUDIO_SAMPLE_COUNT * 10) //30ms
 #define AX_AUDIO_MAX_FREE           (AX_AUDIO_COUNT - (AX_AUDIO_SAMPLE_COUNT * 2))
 #define AX_AUDIO_RATE               48000
 //#define ax_audio_ticks_to_samples(ticks)     (((ticks) * 64) / 82875)
@@ -174,6 +171,15 @@ static bool ax_audio_stop(void* data)
    return true;
 }
 
+static int ax_audio_limit(int in)
+{
+	if(in < 0)
+		in += AX_AUDIO_COUNT;
+	else if(in >= AX_AUDIO_COUNT)
+		in -= AX_AUDIO_COUNT;
+	return in;
+}
+
 static bool ax_audio_start(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
@@ -187,7 +193,7 @@ static bool ax_audio_start(void* data)
    //set back to playing on enough buffered data
    if(ax->written > AX_AUDIO_SAMPLE_LOAD)
    {
-      AXSetMultiVoiceCurrentOffset(ax->mvoice, (ax->pos - ax->written) & AX_AUDIO_COUNT_MASK);
+      AXSetMultiVoiceCurrentOffset(ax->mvoice, ax_audio_limit(ax->pos - ax->written));
       AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
    }
    return true;
@@ -242,8 +248,7 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
       {
          ax->buffer_l[ax->pos] = src[i];
          ax->buffer_r[ax->pos] = src[i + 1];
-         ax->pos++;
-         ax->pos &= AX_AUDIO_COUNT_MASK;
+         ax->pos = ax_audio_limit(ax->pos + 1);
          //wrapped around, make sure to store cache
          if(ax->pos == 0)
          {
