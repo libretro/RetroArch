@@ -160,15 +160,13 @@ static void udev_poll_pad(struct udev_joypad *pad, unsigned p)
    }
 }
 
-static bool udev_hotplug_available(void)
+static INLINE bool udev_hotplug_available(void)
 {
-   struct pollfd fds = {0};
+   struct pollfd fds;
 
-   if (!g_udev_mon)
-      return false;
-
-   fds.fd     = udev_monitor_get_fd(g_udev_mon);
-   fds.events = POLLIN;
+   fds.fd      = udev_monitor_get_fd(g_udev_mon);
+   fds.events  = POLLIN;
+   fds.revents = 0;
 
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
@@ -517,7 +515,7 @@ static void udev_joypad_poll(void)
 {
    unsigned i;
 
-   while (udev_hotplug_available())
+   while (g_udev_mon && udev_hotplug_available())
    {
       struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
       if (dev)
