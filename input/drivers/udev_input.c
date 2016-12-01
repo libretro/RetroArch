@@ -228,7 +228,7 @@ static void udev_handle_mouse(void *data,
    }
 }
 
-static bool add_device(udev_input_t *udev,
+static bool udev_input_add_device(udev_input_t *udev,
       const char *devnode, device_handle_cb cb)
 {
    int fd;
@@ -339,7 +339,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
          cb = udev_handle_mouse;
 
       RARCH_LOG("[udev]: Hotplug add %s: %s.\n", devtype, devnode);
-      add_device(udev, devnode, cb);
+      udev_input_add_device(udev, devnode, cb);
    }
    else if (string_is_equal(action, "remove"))
    {
@@ -592,7 +592,7 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
          int fd = open(devnode, O_RDONLY | O_NONBLOCK);
 
          RARCH_LOG("[udev] Adding device %s as type %s.\n", devnode, type);
-         if (!add_device(udev, devnode, cb))
+         if (!udev_input_add_device(udev, devnode, cb))
             RARCH_ERR("[udev] Failed to open device: %s (%s).\n", devnode, strerror(errno));
          close(fd);
       }
