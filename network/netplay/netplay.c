@@ -1086,6 +1086,7 @@ static void announce_nat_traversal(netplay_t *netplay)
 {
    char msg[512], host[PATH_MAX_LENGTH], port[6];
 
+#ifndef HAVE_SOCKET_LEGACY
    if (netplay->nat_traversal_state.have_inet4)
    {
       if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet4_addr,
@@ -1105,6 +1106,22 @@ static void announce_nat_traversal(netplay_t *netplay)
    }
 #endif
    else return;
+
+#else
+   if (netplay->nat_traversal_state.have_inet4)
+   {
+      strncpy(host,
+         inet_ntoa(netplay->nat_traversal_state.ext_inet4_addr.sin_addr),
+         PATH_MAX_LENGTH);
+      host[PATH_MAX_LENGTH-1] = '\0';
+      snprintf(port, 6, "%hu",
+         ntohs(netplay->nat_traversal_state.ext_inet4_addr.sin_port));
+      port[5] = '\0';
+
+   }
+   else return;
+
+#endif
 
    snprintf(msg, sizeof(msg), "%s: %s:%s\n",
          msg_hash_to_str(MSG_PUBLIC_ADDRESS),
