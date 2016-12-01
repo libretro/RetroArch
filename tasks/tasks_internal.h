@@ -169,7 +169,7 @@ void path_init_savefile_new(void);
 
 bool input_autoconfigure_connect(autoconfig_params_t *params);
 
-void input_autoconfigure_disconnect(unsigned i, const char *ident);
+bool input_autoconfigure_disconnect(unsigned i, const char *ident);
 
 RETRO_END_DECLS
 

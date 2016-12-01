@@ -37,6 +37,11 @@
 
 extern const char* const input_builtin_autoconfs[];
 
+typedef struct autoconfig_disconnect
+{
+   char msg[255];
+} autoconfig_disconnect_t;
+
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
 static void input_autoconfigure_joypad_reindex_devices(void)
@@ -329,22 +334,49 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    }
 
    task->finished = true;
-
-   return;
 }
 
-void input_autoconfigure_disconnect(unsigned i, const char *ident)
+static void input_autoconfigure_disconnect_handler(retro_task_t *task)
+{
+   autoconfig_disconnect_t *params = task ? (autoconfig_disconnect_t*)task->state : NULL;
+
+   task->title    = strdup(params->msg);
+   task->finished = true;
+
+   RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
+}
+
+bool input_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[255];
+   retro_task_t         *task     = (retro_task_t*)calloc(1, sizeof(*task));
+   autoconfig_disconnect_t *state = (autoconfig_disconnect_t*)calloc(1, sizeof(*state));
 
    msg[0] = '\0';
 
    snprintf(msg, sizeof(msg), "%s #%u (%s).", 
          msg_hash_to_str(MSG_DEVICE_DISCONNECTED_FROM_PORT),
          i, ident);
-   runloop_msg_queue_push(msg, 2, 60, false);
-   RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), 
-         msg);
+
+   if (!task || !state)
+      goto error;
+
+   strlcpy(state->msg, msg, sizeof(state->msg));
+
+   task->state   = state;
+   task->handler = input_autoconfigure_disconnect_handler;
+
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
+
+   return true;
+
+error:
+   if (state)
+      free(state);
+   if (task)
+      free(task);
+
+   return false;
 }
 
 bool input_autoconfigure_connect(autoconfig_params_t *params)
