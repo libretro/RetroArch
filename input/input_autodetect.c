@@ -95,10 +95,10 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    /* Check for VID/PID */
    if (     (params->vid == input_vid)
          && (params->pid == input_pid)
-         && params->vid != 0
-         && params->pid != 0
-         && input_vid   != 0
-         && input_pid   != 0)
+         && (params->vid != 0)
+         && (params->pid != 0)
+         && (input_vid   != 0)
+         && (input_pid   != 0))
       score += 3;
 
    /* Check for name match */
