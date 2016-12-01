@@ -322,19 +322,6 @@ error:
    return false;
 }
 
-const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
-{
-   settings_t *settings = config_get_ptr();
-   unsigned joy_idx     = 0;
-
-   if (settings)
-      joy_idx = settings->input.joypad_map[port];
-
-   if (joy_idx < MAX_USERS)
-      return &settings->input.autoconf_binds[joy_idx][id];
-   return NULL;
-}
-
 void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[255];

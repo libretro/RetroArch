@@ -610,7 +610,7 @@ static void setting_get_string_representation_st_bind(void *data,
    index_offset = setting->index_offset;
    keybind      = (const struct retro_keybind*)setting->value.target.keybind;
    auto_bind    = (const struct retro_keybind*)
-      input_get_auto_bind(index_offset, keybind->id);
+      input_config_get_bind_auto(index_offset, keybind->id);
 
    input_config_get_bind_string(s, keybind, auto_bind, len);
 }

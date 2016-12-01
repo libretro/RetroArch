@@ -69,4 +69,6 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
 void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
       const char *axis, struct retro_keybind *bind);
 
+const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
+
 #endif

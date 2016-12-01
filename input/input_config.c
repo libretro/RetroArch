@@ -470,3 +470,16 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
    strlcat(buf, keybuf, size);
 #endif
 }
+
+const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned joy_idx     = 0;
+
+   if (settings)
+      joy_idx = settings->input.joypad_map[port];
+
+   if (joy_idx < MAX_USERS)
+      return &settings->input.autoconf_binds[joy_idx][id];
+   return NULL;
+}
