@@ -34,7 +34,7 @@
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
-static void input_reindex_devices(void)
+static void input_autoconfigure_joypad_reindex_devices(void)
 {
    unsigned i;
    settings_t      *settings = config_get_ptr();
@@ -71,7 +71,7 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
    }
 }
 
-static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
+static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
       autoconfig_params_t *params)
 {
    char ident[256];
@@ -163,13 +163,13 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
       if (!block_osd_spam)
           runloop_msg_queue_push(msg, 2, 60, false);
    }
-   input_reindex_devices();
+   input_autoconfigure_joypad_reindex_devices();
 }
 
 static int input_autoconfigure_joypad_from_conf(
       config_file_t *conf, autoconfig_params_t *params)
 {
-   int ret = input_try_autoconfigure_joypad_from_conf(conf,
+   int ret = input_autoconfigure_joypad_try_from_conf(conf,
          params);
 
    if (ret)
@@ -217,7 +217,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       conf = config_file_new(list->elems[i].data);
 
       if (conf)
-         ret  = input_try_autoconfigure_joypad_from_conf(conf, params);
+         ret  = input_autoconfigure_joypad_try_from_conf(conf, params);
 
       if(ret >= current_best)
       {
@@ -275,7 +275,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
    return false;
 }
 
-static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
+static bool input_autoconfigure_joypad_init(autoconfig_params_t *params)
 {
    size_t i;
    settings_t *settings = config_get_ptr();
@@ -295,13 +295,13 @@ static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
    return true;
 }
 
-bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
+bool input_autoconfigure_joypad(autoconfig_params_t *params)
 {
    char msg[255];
 
    msg[0] = '\0';
 
-   if (!input_config_autoconfigure_joypad_init(params))
+   if (!input_autoconfigure_joypad_init(params))
       goto error;
 
    if (string_is_empty(params->name))
@@ -323,7 +323,7 @@ error:
    return false;
 }
 
-void input_config_autoconfigure_disconnect(unsigned i, const char *ident)
+void input_autoconfigure_disconnect(unsigned i, const char *ident)
 {
    char msg[255];
 

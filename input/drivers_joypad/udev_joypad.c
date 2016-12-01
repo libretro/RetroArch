@@ -290,7 +290,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       settings->input.vid[p] = params.vid;
       strlcpy(settings->input.device_names[p], params.name, sizeof(settings->input.device_names[p]));
       strlcpy(params.driver, udev_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+      input_autoconfigure_joypad(&params);
 
       ret = 1;
    }
@@ -387,7 +387,7 @@ static void udev_joypad_remove_device(const char *path)
    {
       if (udev_pads[i].path && string_is_equal(udev_pads[i].path, path))
       {
-         input_config_autoconfigure_disconnect(i, udev_pads[i].ident);
+         input_autoconfigure_disconnect(i, udev_pads[i].ident);
          udev_free_pad(i);
          break;
       }

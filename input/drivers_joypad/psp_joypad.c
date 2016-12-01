@@ -83,7 +83,7 @@ static void psp_joypad_autodetect_add(unsigned autoconf_pad)
    params.idx = autoconf_pad;
    strlcpy(params.name, psp_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, psp_joypad.ident, sizeof(params.driver));
-   input_config_autoconfigure_joypad(&params);
+   input_autoconfigure_joypad(&params);
 }
 
 static bool psp_joypad_init(void *data)
@@ -190,7 +190,7 @@ static void psp_joypad_poll(void)
          if (old_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED &&
                curr_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED) {
             memset(&actuators[player], 0, sizeof(SceCtrlActuator));
-            input_config_autoconfigure_disconnect(player, psp_joypad.ident);
+            input_autoconfigure_disconnect(player, psp_joypad.ident);
          }
 
          if (old_ctrl_info.port[player + 1] == SCE_CTRL_TYPE_UNPAIRED &&

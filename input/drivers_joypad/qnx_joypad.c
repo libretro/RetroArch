@@ -41,9 +41,10 @@ static bool qnx_joypad_init(void *data)
 
       /* TODO - implement VID/PID? */
       params.idx = autoconf_pad;
-      strlcpy(params.name, qnx_joypad_name(autoconf_pad), sizeof(params.name));
+      strlcpy(params.name,   qnx_joypad_name(autoconf_pad), sizeof(params.name));
       strlcpy(params.driver, qnx_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+
+      input_autoconfigure_joypad(&params);
    }
 
    return true;

@@ -306,7 +306,8 @@ static bool parport_joypad_init(void *data)
             parport_free_pad(pad);
          }
       }
-      input_config_autoconfigure_joypad(&params);
+
+      input_autoconfigure_joypad(&params);
    }
 
    return true;

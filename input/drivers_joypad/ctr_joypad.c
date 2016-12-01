@@ -55,7 +55,8 @@ static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
    params.idx = autoconf_pad;
    strlcpy(params.name, ctr_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, ctr_joypad.ident, sizeof(params.driver));
-   input_config_autoconfigure_joypad(&params);
+
+   input_autoconfigure_joypad(&params);
 }
 
 static bool ctr_joypad_init(void *data)

@@ -164,7 +164,7 @@ static void handle_plugged_pad(void)
             if (linuxraw_pads[idx].fd >= 0)
             {
                if (linuxraw_hotplug)
-                  input_config_autoconfigure_disconnect(idx, linuxraw_pads[idx].ident);
+                  input_autoconfigure_disconnect(idx, linuxraw_pads[idx].ident);
 
                close(linuxraw_pads[idx].fd);
                linuxraw_pads[idx].buttons = 0;
@@ -174,7 +174,8 @@ static void handle_plugged_pad(void)
 
                /* TODO - implement VID/PID? */
                params.idx = idx;
-               input_config_autoconfigure_joypad(&params);
+
+               input_autoconfigure_joypad(&params);
             }
          }
          /* Sometimes, device will be created before access to it is established. */
@@ -193,7 +194,8 @@ static void handle_plugged_pad(void)
                strlcpy(params.name,   linuxraw_pads[idx].ident, sizeof(params.name));
                strlcpy(params.driver, linuxraw_joypad.ident, sizeof(params.driver));
                /* TODO - implement VID/PID? */
-               input_config_autoconfigure_joypad(&params);
+
+               input_autoconfigure_joypad(&params);
             }
          }
       }
@@ -252,11 +254,11 @@ static bool linuxraw_joypad_init(void *data)
          strlcpy(params.driver, "linuxraw", sizeof(params.driver));
 
          /* TODO - implement VID/PID? */
-         input_config_autoconfigure_joypad(&params);
+         input_autoconfigure_joypad(&params);
          linuxraw_poll_pad(pad);
       }
       else
-         input_config_autoconfigure_joypad(&params);
+         input_autoconfigure_joypad(&params);
    }
 
    linuxraw_inotify = inotify_init();

@@ -212,12 +212,15 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
       strlcpy(settings->input.device_names[port],
             name_buf, sizeof(settings->input.device_names[port]));
 
-      params.idx = port;
       strlcpy(params.name, name_buf, sizeof(params.name));
+
+      params.idx = port;
       params.vid = *controller->vid;
       params.pid = *controller->pid;
+
       strlcpy(params.driver, qnx->joypad->ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+
+      input_autoconfigure_joypad(&params);
 
       controller->port = port;
       qnx->port_device[port] = controller;

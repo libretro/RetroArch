@@ -902,7 +902,7 @@ static void handle_hotplug(android_input_data_t *android_data,
       settings->input.vid[*port] = params.vid;
 
       strlcpy(params.driver, android_joypad.ident, sizeof(params.driver));
-      input_config_autoconfigure_joypad(&params);
+      input_autoconfigure_joypad(&params);
    }
 
    if (!string_is_empty(name_buf))

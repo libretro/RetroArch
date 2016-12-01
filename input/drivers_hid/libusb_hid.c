@@ -150,7 +150,7 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
    strlcpy(params.name, device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));
 
-   input_config_autoconfigure_joypad(&params);
+   input_autoconfigure_joypad(&params);
 }
 
 static void libusb_get_description(struct libusb_device *device,
@@ -367,9 +367,9 @@ static int remove_adapter(void *data, struct libusb_device *dev)
    if (adapter->next->device == dev)
    {
       struct libusb_adapter *new_next = NULL;
-      const char *name = (const char*)adapter->next->name;
+      const char                *name = (const char*)adapter->next->name;
 
-      input_config_autoconfigure_disconnect(adapter->slot, name);
+      input_autoconfigure_disconnect(adapter->slot, name);
 
       adapter->next->quitting = true;
       sthread_join(adapter->next->thread);

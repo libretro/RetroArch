@@ -55,7 +55,7 @@ static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
    params.idx = autoconf_pad;
    strlcpy(params.name, xdk_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, xdk_joypad.ident, sizeof(params.driver));
-   input_config_autoconfigure_joypad(&params);
+   input_autoconfigure_joypad(&params);
 }
 
 static bool xdk_joypad_init(void *data)
@@ -162,10 +162,10 @@ static void xdk_joypad_poll(void)
          if(gamepads[port])
             XInputClose(gamepads[port]);
 
-         gamepads[port] = 0;
+         gamepads[port]  = 0;
          pad_state[port] = 0;
 
-         input_config_autoconfigure_disconnect(port, xdk_joypad.ident);
+         input_autoconfigure_disconnect(port, xdk_joypad.ident);
       }
 
       /* handle inserted devices. */
