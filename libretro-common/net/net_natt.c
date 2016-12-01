@@ -175,10 +175,7 @@ bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_p
    if ((list = (struct net_ifinfo *) calloc(1, sizeof(struct net_ifinfo))) == NULL)
        return false;
    if (!net_ifinfo_new(list))
-   {
-      free(list);
       return false;
-   }
 
    /* loop through them */
    for (i = 0; i < list->size; i++)
