@@ -158,7 +158,7 @@ static void handle_hotplug(unsigned port, uint32_t ptype)
       params.idx = port;
       strlcpy(params.name, gx_joypad_name(port), sizeof(params.name));
       strlcpy(params.driver, gx_joypad.ident, sizeof(params.driver));
-      input_autoconfigure_joypad(&params);
+      input_autoconfigure_connect(&params);
    }
 }
 

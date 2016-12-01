@@ -55,7 +55,7 @@ static void xdk_joypad_autodetect_add(unsigned autoconf_pad)
    params.idx = autoconf_pad;
    strlcpy(params.name, xdk_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, xdk_joypad.ident, sizeof(params.driver));
-   input_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
 }
 
 static bool xdk_joypad_init(void *data)

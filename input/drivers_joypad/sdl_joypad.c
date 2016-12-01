@@ -144,13 +144,14 @@ static void sdl_pad_connect(unsigned id)
    product    = guid_ptr[1];
 #endif
 #endif
-   params.idx = id;
-   strlcpy(params.name, sdl_pad_name(id), sizeof(params.name));
-   params.vid = vendor;
-   params.pid = product;
+   strlcpy(params.name,   sdl_pad_name(id), sizeof(params.name));
    strlcpy(params.driver, sdl_joypad.ident, sizeof(params.driver));
 
-   input_autoconfigure_joypad(&params);
+   params.idx = id;
+   params.vid = vendor;
+   params.pid = product;
+
+   input_autoconfigure_connect(&params);
 
    RARCH_LOG("[SDL]: Device #%u (%04x:%04x) connected: %s.\n", id, vendor,
              product, sdl_pad_name(id));

@@ -152,7 +152,7 @@ static void wiiusb_hid_device_add_autodetect(unsigned idx,
    strlcpy(settings->input.device_names[idx], device_name,
 		sizeof(settings->input.device_names[idx]));
 
-   input_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
 }
 
 static void wiiusb_get_description(usb_device_entry *device,

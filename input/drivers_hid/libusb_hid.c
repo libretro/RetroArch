@@ -150,7 +150,7 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
    strlcpy(params.name, device_name, sizeof(params.name));
    strlcpy(params.driver, driver_name, sizeof(params.driver));
 
-   input_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
 }
 
 static void libusb_get_description(struct libusb_device *device,

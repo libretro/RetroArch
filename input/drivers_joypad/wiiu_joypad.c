@@ -63,7 +63,7 @@ static void wiiu_joypad_autodetect_add(unsigned autoconf_pad)
    strlcpy(params.name, wiiu_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, wiiu_joypad.ident, sizeof(params.driver));
 
-   input_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
 }
 
 static bool wiiu_joypad_button(unsigned port_num, uint16_t key)

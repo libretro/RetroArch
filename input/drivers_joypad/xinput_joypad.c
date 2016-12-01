@@ -268,7 +268,7 @@ static bool xinput_joypad_init(void *data)
          params.idx = autoconf_pad;
          strlcpy(params.name, xinput_joypad_name(autoconf_pad), sizeof(params.name));
          strlcpy(params.driver, xinput_joypad.ident, sizeof(params.driver));
-         input_autoconfigure_joypad(&params);
+         input_autoconfigure_connect(&params);
       }
    }
 

@@ -44,7 +44,7 @@ static const char *ctr_joypad_name(unsigned pad)
 
 static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t       *settings = config_get_ptr();
    autoconfig_params_t params = {{0}};
 
    strlcpy(settings->input.device_names[autoconf_pad],
@@ -56,7 +56,7 @@ static void ctr_joypad_autodetect_add(unsigned autoconf_pad)
    strlcpy(params.name, ctr_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, ctr_joypad.ident, sizeof(params.driver));
 
-   input_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
 }
 
 static bool ctr_joypad_init(void *data)

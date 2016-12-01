@@ -295,7 +295,7 @@ static bool input_autoconfigure_joypad_init(autoconfig_params_t *params)
    return true;
 }
 
-bool input_autoconfigure_joypad(autoconfig_params_t *params)
+bool input_autoconfigure_connect(autoconfig_params_t *params)
 {
    char msg[255];
 

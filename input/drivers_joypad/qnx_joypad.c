@@ -44,7 +44,7 @@ static bool qnx_joypad_init(void *data)
       strlcpy(params.name,   qnx_joypad_name(autoconf_pad), sizeof(params.name));
       strlcpy(params.driver, qnx_joypad.ident, sizeof(params.driver));
 
-      input_autoconfigure_joypad(&params);
+      input_autoconfigure_connect(&params);
    }
 
    return true;

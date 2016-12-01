@@ -175,7 +175,7 @@ static void handle_plugged_pad(void)
                /* TODO - implement VID/PID? */
                params.idx = idx;
 
-               input_autoconfigure_joypad(&params);
+               input_autoconfigure_connect(&params);
             }
          }
          /* Sometimes, device will be created before access to it is established. */
@@ -195,7 +195,7 @@ static void handle_plugged_pad(void)
                strlcpy(params.driver, linuxraw_joypad.ident, sizeof(params.driver));
                /* TODO - implement VID/PID? */
 
-               input_autoconfigure_joypad(&params);
+               input_autoconfigure_connect(&params);
             }
          }
       }
@@ -254,11 +254,11 @@ static bool linuxraw_joypad_init(void *data)
          strlcpy(params.driver, "linuxraw", sizeof(params.driver));
 
          /* TODO - implement VID/PID? */
-         input_autoconfigure_joypad(&params);
+         input_autoconfigure_connect(&params);
          linuxraw_poll_pad(pad);
       }
       else
-         input_autoconfigure_joypad(&params);
+         input_autoconfigure_connect(&params);
    }
 
    linuxraw_inotify = inotify_init();

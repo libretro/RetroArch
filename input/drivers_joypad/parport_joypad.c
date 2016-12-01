@@ -307,7 +307,7 @@ static bool parport_joypad_init(void *data)
          }
       }
 
-      input_autoconfigure_joypad(&params);
+      input_autoconfigure_connect(&params);
    }
 
    return true;

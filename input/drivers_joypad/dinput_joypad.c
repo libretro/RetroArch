@@ -277,7 +277,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
       params.vid = dinput_joypad_vid(g_joypad_cnt);
       params.pid = dinput_joypad_pid(g_joypad_cnt);
 
-      input_autoconfigure_joypad(&params);
+      input_autoconfigure_connect(&params);
 
       settings->input.pid[g_joypad_cnt] = params.pid;
       settings->input.vid[g_joypad_cnt] = params.vid;

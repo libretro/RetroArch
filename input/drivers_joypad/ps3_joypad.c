@@ -54,7 +54,7 @@ static void ps3_joypad_autodetect_add(unsigned autoconf_pad)
    strlcpy(params.name, ps3_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, ps3_joypad.ident, sizeof(params.driver));
 
-   input_autoconfigure_joypad(&params);
+   input_autoconfigure_connect(&params);
 }
 
 static bool ps3_joypad_init(void *data)

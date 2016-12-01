@@ -32,7 +32,7 @@ typedef struct autoconfig_params
    int32_t pid;
 } autoconfig_params_t;
 
-bool input_autoconfigure_joypad(autoconfig_params_t *params);
+bool input_autoconfigure_connect(autoconfig_params_t *params);
 
 void input_autoconfigure_disconnect(unsigned i, const char *ident);
 

@@ -83,7 +83,8 @@ static void psp_joypad_autodetect_add(unsigned autoconf_pad)
    params.idx = autoconf_pad;
    strlcpy(params.name, psp_joypad_name(autoconf_pad), sizeof(params.name));
    strlcpy(params.driver, psp_joypad.ident, sizeof(params.driver));
-   input_autoconfigure_joypad(&params);
+
+   input_autoconfigure_connect(&params);
 }
 
 static bool psp_joypad_init(void *data)
