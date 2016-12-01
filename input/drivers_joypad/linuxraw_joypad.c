@@ -228,7 +228,7 @@ static bool linuxraw_joypad_init(void *data)
 {
    unsigned i;
 
-   if (!epoll_new(&linuxraw_epoll, true))
+   if (!epoll_new(&linuxraw_epoll))
       return false;
 
    for (i = 0; i < MAX_USERS; i++)
@@ -292,7 +292,7 @@ static void linuxraw_joypad_destroy(void)
       close(linuxraw_inotify);
    linuxraw_inotify = -1;
 
-   epoll_free(&linuxraw_epoll, true);
+   epoll_free(&linuxraw_epoll);
 
    linuxraw_hotplug = false;
 }

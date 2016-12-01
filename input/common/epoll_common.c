@@ -26,36 +26,21 @@
 
 #include "../../verbosity.h"
 
-static bool epoll_inited;
-static bool epoll_first_inited_is_joypad;
-
-bool epoll_new(int *epoll_fd, bool is_joypad)
+bool epoll_new(int *epoll_fd)
 {
-   if (epoll_inited)
-      return true;
-
    *epoll_fd = epoll_create(32);
    if (*epoll_fd < 0)
       return false;
 
-   epoll_first_inited_is_joypad = is_joypad;
-   epoll_inited = true;
-
    return true;
 }
 
-void epoll_free(int *epoll_fd, bool is_joypad)
+void epoll_free(int *epoll_fd)
 {
-   if (!epoll_inited || (is_joypad && !epoll_first_inited_is_joypad))
-      return;
-
    if (*epoll_fd >= 0)
       close(*epoll_fd);
 
    *epoll_fd = -1;
-
-   epoll_inited                 = false;
-   epoll_first_inited_is_joypad = false;
 }
 
 int epoll_waiting(int *epoll_fd, void *events, int maxevents, int timeout)

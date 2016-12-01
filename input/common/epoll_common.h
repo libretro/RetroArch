@@ -20,9 +20,9 @@
 
 #include <boolean.h>
 
-bool epoll_new(int *epoll_fd, bool is_joypad);
+bool epoll_new(int *epoll_fd);
 
-void epoll_free(int *epoll_fd, bool is_joypad);
+void epoll_free(int *epoll_fd);
 
 int epoll_waiting(int *epoll_fd, void *events, int maxevents, int timeout);
 
