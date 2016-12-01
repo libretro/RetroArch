@@ -113,15 +113,19 @@ bool natt_open_port(struct natt_status *status, struct sockaddr *addr, socklen_t
    proto_str = (proto == SOCKET_PROTOCOL_UDP) ? "UDP" : "TCP";
 
    /* add the port mapping */
+#if MINIUPNPC_API_VERSION >= 16
    r = UPNP_AddAnyPortMapping(urls.controlURL, data.first.servicetype, port_str,
       port_str, host, "retroarch", proto_str, NULL, "3600", ext_port_str);
    if (r == 501 /* Action Failed */)
    {
+#endif
       /* try the older AddPortMapping */
       memcpy(ext_port_str, port_str, 6);
       r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port_str,
          port_str, host, "retroarch", proto_str, NULL, "3600");
+#if MINIUPNPC_API_VERSION >= 16
    }
+#endif
    if (r != 0)
       return false;
 
