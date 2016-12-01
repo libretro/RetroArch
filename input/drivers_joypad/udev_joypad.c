@@ -420,18 +420,11 @@ static void udev_joypad_destroy(void)
    g_udev = NULL;
 }
 
-static void udev_joypad_handle_hotplug(void)
+static void udev_joypad_handle_hotplug(struct udev_device *dev)
 {
-   struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
-   const char *val;
-   const char *action;
-   const char *devnode;
-   if (!dev)
-      return;
-
-   val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
-   action  = udev_device_get_action(dev);
-   devnode = udev_device_get_devnode(dev);
+   const char *val     = udev_device_get_property_value(dev, "ID_INPUT_JOYSTICK");
+   const char *action  = udev_device_get_action(dev);
+   const char *devnode = udev_device_get_devnode(dev);
 
    if (!val || !string_is_equal(val, "1") || !devnode)
       goto end;
@@ -523,8 +516,13 @@ static bool udev_set_rumble(unsigned i, enum retro_rumble_effect effect, uint16_
 static void udev_joypad_poll(void)
 {
    unsigned i;
+
    while (udev_hotplug_available())
-      udev_joypad_handle_hotplug();
+   {
+      struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
+      if (dev)
+         udev_joypad_handle_hotplug(dev);
+   }
 
    for (i = 0; i < MAX_USERS; i++)
       udev_poll_pad(&udev_pads[i], i);
