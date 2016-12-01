@@ -437,7 +437,7 @@ static const bool load_dummy_on_core_shutdown = false;
 #else
 static const bool load_dummy_on_core_shutdown = true;
 #endif
-static const bool check_firmware_before_loading = true;
+static const bool check_firmware_before_loading = false;
 /* Forcibly disable composition.
  * Only valid on Windows Vista/7/8 for now. */
 static const bool disable_composition = false;

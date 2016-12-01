@@ -1086,8 +1086,10 @@ ifeq ($(HAVE_NETWORKING), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_compat.o \
           $(LIBRETRO_COMM_DIR)/net/net_http.o \
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
+	  $(LIBRETRO_COMM_DIR)/net/net_natt.o \
           network/net_http_special.o \
-          tasks/task_http.o
+          tasks/task_http.o \
+          tasks/task_wifi.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
    OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
@@ -1122,6 +1124,10 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += input/input_remote.o \
              cores/libretro-net-retropad/net_retropad_core.o
+   endif
+
+   ifeq ($(HAVE_MINIUPNPC), 1)
+      LIBS += -lminiupnpc
    endif
 endif
 

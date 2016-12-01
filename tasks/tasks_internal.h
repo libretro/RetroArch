@@ -83,6 +83,9 @@ void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
 task_retriever_info_t *http_task_get_transfer_list(void);
+
+bool task_push_wifi_scan(void);
+
 #endif
 
 bool task_push_image_load(const char *fullpath,

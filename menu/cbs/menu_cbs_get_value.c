@@ -475,7 +475,7 @@ static void menu_action_setting_disp_set_label_input_desc(
    keybind = (const struct retro_keybind*)
       &settings->input.binds[inp_desc_user][remap_id];
    auto_bind = (const struct retro_keybind*)
-      input_get_auto_bind(inp_desc_user, remap_id);
+      input_config_get_bind_auto(inp_desc_user, remap_id);
 
    input_config_get_bind_string(descriptor,
       keybind, auto_bind, sizeof(descriptor));

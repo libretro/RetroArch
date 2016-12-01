@@ -23,6 +23,10 @@ MSG_HASH(
       "Got connection from"
       )
 MSG_HASH(
+      MSG_PUBLIC_ADDRESS,
+      "Public address"
+      )
+MSG_HASH(
       MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
       "No arguments supplied and no menu builtin, displaying help..."
       )
@@ -922,6 +926,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
       "Netplay Spectator Enable")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
       "Netplay TCP/UDP Port")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+      "Netplay NAT Traversal")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
       "Network Commands")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
@@ -958,6 +964,8 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
       "No information is available.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_ITEMS,
       "No items.")
+MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+      "No networks found.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
       "No performance counters.")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
@@ -2233,3 +2241,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
       "Database - Filter : Edge Magazine Rating")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
       "Database Info")
+MSG_HASH(MSG_WIFI_SCAN_COMPLETE,
+      "Wi-Fi scan complete.")
+MSG_HASH(MSG_SCANNING_WIRELESS_NETWORKS,
+      "Scanning wireless networks...")

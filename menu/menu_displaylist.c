@@ -70,6 +70,7 @@
 #include "../performance_counters.h"
 #include "../core_info.h"
 #include "../wifi/wifi_driver.h"
+#include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_NETWORKING
 static void print_buf_lines(file_list_t *list, char *buf,
@@ -429,16 +430,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 {
    unsigned k              = 0;
-   net_ifinfo_t      *list =
-      (net_ifinfo_t*)calloc(1, sizeof(*list));
+   net_ifinfo_t      list;
 
-   if (!list)
+   if (!net_ifinfo_new(&list))
       return -1;
 
-   if (!net_ifinfo_new(list))
-      return -1;
-
-   for (k = 0; k < list->size; k++)
+   for (k = 0; k < list.size; k++)
    {
       char tmp[255];
 
@@ -446,12 +443,12 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 
       snprintf(tmp, sizeof(tmp), "%s (%s) : %s\n",
             msg_hash_to_str(MSG_INTERFACE),
-            list->entries[k].name, list->entries[k].host);
+            list.entries[k].name, list.entries[k].host);
       menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_NETWORK_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
-   net_ifinfo_free(list);
+   net_ifinfo_free(&list);
    return 0;
 }
 #endif
@@ -4887,27 +4884,47 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
          if (string_is_equal(settings->wifi.driver, "null"))
             menu_entries_append_enum(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
-                  msg_hash_to_str(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
-                  MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+                  msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+                  MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
                   0, 0, 0);
+#ifdef HAVE_NETWORKING
          else
          {
-            unsigned i;
             struct string_list *ssid_list = string_list_new();
-            driver_wifi_scan();
             driver_wifi_get_ssids(ssid_list);
 
-            for (i = 0; i < ssid_list->size; i++)
+            if (ssid_list->size == 0)
             {
-               const char *ssid = ssid_list->elems[i].data;
+               task_push_wifi_scan();
+
                menu_entries_append_enum(info->list,
-                     ssid,
-                     msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
-                     MENU_ENUM_LABEL_CONNECT_WIFI,
-                     MENU_WIFI, 0, 0);
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+                     MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
+                     0, 0, 0);
+            }
+            else
+            {
+               unsigned i;
+               for (i = 0; i < ssid_list->size; i++)
+               {
+                  const char *ssid = ssid_list->elems[i].data;
+                  menu_entries_append_enum(info->list,
+                        ssid,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_WIFI),
+                        MENU_ENUM_LABEL_CONNECT_WIFI,
+                        MENU_WIFI, 0, 0);
+               }
             }
          }
+#else
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
+               MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
+               0, 0, 0);
+#endif
 
          info->need_refresh = true;
          info->need_push    = true;
@@ -4940,6 +4957,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,
                   MENU_ENUM_LABEL_NETPLAY_CLIENT_SWAP_INPUT,
+                  PARSE_ONLY_BOOL, false) != -1)
+               count++;
+            if (menu_displaylist_parse_settings_enum(menu, info,
+                  MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,
                   PARSE_ONLY_BOOL, false) != -1)
                count++;
             if (menu_displaylist_parse_settings_enum(menu, info,

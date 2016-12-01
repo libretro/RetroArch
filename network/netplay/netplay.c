@@ -63,6 +63,8 @@ static netplay_t *netplay_data = NULL;
 /* Used to avoid recursive netplay calls */
 static bool in_netplay = false;
 
+static void announce_nat_traversal(netplay_t *netplay);
+
 static int init_tcp_connection(const struct addrinfo *res,
       bool server, bool spectate,
       struct sockaddr *other_addr, socklen_t addr_size)
@@ -186,6 +188,22 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    return ret;
 }
 
+static void init_nat_traversal(netplay_t *netplay)
+{
+   natt_init();
+
+   if (!natt_new(&netplay->nat_traversal_state))
+   {
+      netplay->nat_traversal = false;
+      return;
+   }
+
+   natt_open_port_any(&netplay->nat_traversal_state, netplay->tcp_port, SOCKET_PROTOCOL_TCP);
+
+   if (!netplay->nat_traversal_state.request_outstanding)
+      announce_nat_traversal(netplay);
+}
+
 static bool init_ad_socket(netplay_t *netplay, uint16_t port)
 {
    int fd = socket_init((void**)&netplay->addr, port, NULL, SOCKET_TYPE_DATAGRAM);
@@ -215,6 +233,9 @@ static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
 
    if (!init_tcp_socket(netplay, server, port, netplay->spectate.enabled))
       return false;
+
+   if (netplay->is_server && netplay->nat_traversal)
+      init_nat_traversal(netplay);
 
    return true;
 }
@@ -1061,6 +1082,53 @@ void netplay_log_connection(const struct sockaddr_storage *their_addr,
 
 #endif
 
+static void announce_nat_traversal(netplay_t *netplay)
+{
+   char msg[512], host[PATH_MAX_LENGTH], port[6];
+
+#ifndef HAVE_SOCKET_LEGACY
+   if (netplay->nat_traversal_state.have_inet4)
+   {
+      if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet4_addr,
+         sizeof(struct sockaddr_in),
+         host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+         return;
+
+   }
+#ifdef AF_INET6
+   else if (netplay->nat_traversal_state.have_inet6)
+   {
+      if (getnameinfo((const struct sockaddr *) &netplay->nat_traversal_state.ext_inet6_addr,
+         sizeof(struct sockaddr_in6),
+         host, PATH_MAX_LENGTH, port, 6, NI_NUMERICHOST|NI_NUMERICSERV) != 0)
+         return;
+
+   }
+#endif
+   else return;
+
+#else
+   if (netplay->nat_traversal_state.have_inet4)
+   {
+      strncpy(host,
+         inet_ntoa(netplay->nat_traversal_state.ext_inet4_addr.sin_addr),
+         PATH_MAX_LENGTH);
+      host[PATH_MAX_LENGTH-1] = '\0';
+      snprintf(port, 6, "%hu",
+         ntohs(netplay->nat_traversal_state.ext_inet4_addr.sin_port));
+      port[5] = '\0';
+
+   }
+   else return;
+
+#endif
+
+   snprintf(msg, sizeof(msg), "%s: %s:%s\n",
+         msg_hash_to_str(MSG_PUBLIC_ADDRESS),
+         host, port);
+   runloop_msg_queue_push(msg, 1, 180, false);
+   RARCH_LOG("%s\n", msg);
+}
 
 
 bool netplay_try_init_serialization(netplay_t *netplay)
@@ -1180,6 +1248,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
+ * @nat_traversal        : If true, attempt NAT traversal.
  * @nick                 : Nickname of user.
  * @quirks               : Netplay quirks required for this session.
  *
@@ -1188,10 +1257,9 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  *
  * Returns: new netplay handle.
  **/
-netplay_t *netplay_new(const char *server, uint16_t port,
-      unsigned frames, unsigned check_frames,
-      const struct retro_callbacks *cb,
-      bool spectate, const char *nick, uint64_t quirks)
+netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames,
+      unsigned check_frames, const struct retro_callbacks *cb, bool spectate,
+      bool nat_traversal, const char *nick, uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -1203,6 +1271,7 @@ netplay_t *netplay_new(const char *server, uint16_t port,
    netplay->port              = server ? 0 : 1;
    netplay->spectate.enabled  = spectate;
    netplay->is_server         = server == NULL;
+   netplay->nat_traversal     = netplay->is_server ? nat_traversal : false;
    netplay->stall_frames      = frames;
    netplay->check_frames      = check_frames;
    netplay->quirks            = quirks;
@@ -1338,6 +1407,9 @@ void netplay_free(netplay_t *netplay)
       free(netplay->spectate.input);
    }
 
+   if (netplay->nat_traversal)
+      natt_free(&netplay->nat_traversal_state);
+
    if (netplay->buffer)
    {
       for (i = 0; i < netplay->buffer_size; i++)
@@ -1383,11 +1455,26 @@ bool netplay_pre_frame(netplay_t *netplay)
       netplay_try_init_serialization(netplay);
    }
 
-   /* Advertise our server if applicable */
    if (netplay->is_server)
    {
+      /* Advertise our server if applicable */
       if (netplay_ad_fd >= 0 || init_ad_socket(netplay, RARCH_DEFAULT_PORT))
          netplay_ad_server(netplay, netplay_ad_fd);
+
+      /* NAT traversal if applicable */
+      if (netplay->nat_traversal &&
+          netplay->nat_traversal_state.request_outstanding &&
+          !netplay->nat_traversal_state.have_inet4)
+      {
+         struct timeval tmptv = {0};
+         fd_set fds = netplay->nat_traversal_state.fds;
+         if (socket_select(netplay->nat_traversal_state.nfds, &fds, NULL, NULL, &tmptv) > 0)
+            natt_read(&netplay->nat_traversal_state);
+
+         if (!netplay->nat_traversal_state.request_outstanding ||
+             netplay->nat_traversal_state.have_inet4)
+            announce_nat_traversal(netplay);
+      }
    }
 
    if (!netplay->net_cbs->pre_frame(netplay))
@@ -1613,7 +1700,8 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
          netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
          settings->netplay.sync_frames, settings->netplay.check_frames, &cbs,
-         is_spectate, settings->username, quirks);
+         is_spectate, settings->netplay.nat_traversal, settings->username,
+         quirks);
 
    if (netplay_data)
       return true;

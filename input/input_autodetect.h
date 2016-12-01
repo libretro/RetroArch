@@ -32,9 +32,6 @@ typedef struct autoconfig_params
    int32_t pid;
 } autoconfig_params_t;
 
-const struct retro_keybind *input_get_auto_bind(unsigned port,
-      unsigned id);
-
 bool input_config_autoconfigure_joypad(autoconfig_params_t *params);
 
 void input_config_autoconfigure_disconnect(unsigned i, const char *ident);

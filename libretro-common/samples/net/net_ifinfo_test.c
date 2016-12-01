@@ -29,21 +29,17 @@
 int main(int argc, const char *argv[])
 {
    unsigned k              = 0;
-   net_ifinfo_t *list = 
-      (net_ifinfo_t*)calloc(1, sizeof(*list));
+   net_ifinfo_t list;
 
-   if (!list)
+   if (!net_ifinfo_new(&list))
       return -1;
 
-   if (!net_ifinfo_new(list))
-      return -1;
-
-   for (k = 0; k < list->size; k++)
+   for (k = 0; k < list.size; k++)
    {
-      printf("%s:%s\n", list->entries[k].name, list->entries[k].host);
+      printf("%s:%s\n", list.entries[k].name, list.entries[k].host);
    }
 
-   net_ifinfo_free(list);
+   net_ifinfo_free(&list);
 
    return 0;
 }
