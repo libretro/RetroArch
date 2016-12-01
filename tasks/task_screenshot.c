@@ -75,6 +75,7 @@ typedef struct
    int pitch;
    bool bgr24;
    void *userbuf;
+   bool hide_msg;
 } screenshot_task_state_t;
 
 /**
@@ -174,7 +175,8 @@ static bool screenshot_dump(
       const void *frame,
       unsigned width,
       unsigned height,
-      int pitch, bool bgr24, void *userbuf)
+      int pitch, bool bgr24, bool hide_msg,
+      void *userbuf)
 {
 #ifdef _XBOX1
    d3d_video_t *d3d               = (d3d_video_t*)video_driver_get_ptr(true);
@@ -184,12 +186,13 @@ static bool screenshot_dump(
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
 
-   state->bgr24   = bgr24;
-   state->height  = height;
-   state->width   = width;
-   state->pitch   = pitch;
-   state->frame   = frame;
-   state->userbuf = userbuf;
+   state->hide_msg = hide_msg;
+   state->bgr24    = bgr24;
+   state->height   = height;
+   state->width    = width;
+   state->pitch    = pitch;
+   state->frame    = frame;
+   state->userbuf  = userbuf;
 
    if (settings->auto_screenshot_filename)
       fill_str_dated_filename(state->shotname, path_basename(name_base),
@@ -215,14 +218,17 @@ static bool screenshot_dump(
    task->type    = TASK_TYPE_BLOCKING;
    task->state   = state;
    task->handler = task_screenshot_handler;
-   task->title   = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+
+   if (!hide_msg)
+      task->title   = strdup(msg_hash_to_str(MSG_TAKING_SCREENSHOT));
+
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
    return true;
 }
 
 #if !defined(VITA)
-static bool take_screenshot_viewport(const char *name_base)
+static bool take_screenshot_viewport(const char *name_base, bool hide_msg)
 {
    char screenshot_path[PATH_MAX_LENGTH];
    const char *screenshot_dir            = NULL;
@@ -257,7 +263,7 @@ static bool take_screenshot_viewport(const char *name_base)
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
    if (!screenshot_dump(name_base, screenshot_dir, buffer, vp.width, vp.height,
-            vp.width * 3, true, buffer))
+            vp.width * 3, true, hide_msg, buffer))
       goto error;
 
    return true;
@@ -269,7 +275,7 @@ error:
 }
 #endif
 
-static bool take_screenshot_raw(const char *name_base, void *userbuf)
+static bool take_screenshot_raw(const char *name_base, bool hide_msg, void *userbuf)
 {
    size_t pitch;
    unsigned width, height;
@@ -294,13 +300,13 @@ static bool take_screenshot_raw(const char *name_base, void *userbuf)
     */
    if (!screenshot_dump(name_base, screenshot_dir,
          (const uint8_t*)data + (height - 1) * pitch,
-         width, height, -pitch, false, userbuf))
+         width, height, -pitch, false, hide_msg, userbuf))
       return false;
 
    return true;
 }
 
-static bool take_screenshot_choice(const char *name_base)
+static bool take_screenshot_choice(const char *name_base, bool hide_msg)
 {
    settings_t *settings = config_get_ptr();
 
@@ -316,14 +322,14 @@ static bool take_screenshot_choice(const char *name_base)
       if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
          video_driver_cached_frame();
 #if defined(VITA)
-      return take_screenshot_raw(name_base, NULL);
+      return take_screenshot_raw(name_base, hide__msg, NULL);
 #else
-      return take_screenshot_viewport(name_base);
+      return take_screenshot_viewport(name_base, hide_msg);
 #endif
    }
 
    if (!video_driver_cached_frame_has_valid_framebuffer())
-      return take_screenshot_raw(name_base, NULL);
+      return take_screenshot_raw(name_base, hide_msg, NULL);
 
    if (video_driver_supports_read_frame_raw())
    {
@@ -345,7 +351,7 @@ static bool take_screenshot_choice(const char *name_base)
       if (frame_data)
       {
          video_driver_set_cached_frame_ptr(frame_data);
-         if (take_screenshot_raw(name_base, frame_data))
+         if (take_screenshot_raw(name_base, hide_msg, frame_data))
             ret = true;
       }
 
@@ -360,11 +366,11 @@ static bool take_screenshot_choice(const char *name_base)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool take_screenshot(void)
+bool take_screenshot(bool hide_msg)
 {
    char *name_base            = strdup(path_get(RARCH_PATH_BASENAME));
    bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool             ret       = take_screenshot_choice(name_base);
+   bool             ret       = take_screenshot_choice(name_base, hide_msg);
    const char *msg_screenshot = ret
       ? msg_hash_to_str(MSG_TAKING_SCREENSHOT)  :
         msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
