@@ -301,30 +301,31 @@ static bool input_autoconfigure_joypad_init(autoconfig_params_t *params)
 
 bool input_autoconfigure_connect(autoconfig_params_t *params)
 {
-   char msg[255];
-
-   msg[0] = '\0';
-
    if (!input_autoconfigure_joypad_init(params))
-      goto error;
+      return false;
 
    if (string_is_empty(params->name))
-      goto error;
+      return false;
 
-   if (input_autoconfigure_joypad_from_conf_dir(params))
-      return true;
-   if (input_autoconfigure_joypad_from_conf_internal(params))
-      return true;
+   if (     !input_autoconfigure_joypad_from_conf_dir(params)
+         && !input_autoconfigure_joypad_from_conf_internal(params))
+   {
+      char msg[255];
 
-   RARCH_LOG("Autodetect: no profiles found for %s (%d/%d).\n",
-         params->name, params->vid, params->pid);
-   snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
-         params->name, (long)params->vid, (long)params->pid,
-         msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
-   runloop_msg_queue_push(msg, 2, 60, false);
+      msg[0] = '\0';
 
-error:
-   return false;
+      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d).\n",
+            params->name, params->vid, params->pid);
+
+      snprintf(msg, sizeof(msg), "%s (%ld/%ld) %s.",
+            params->name, (long)params->vid, (long)params->pid,
+            msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
+      runloop_msg_queue_push(msg, 2, 60, false);
+
+      return false;
+   }
+
+   return true;
 }
 
 void input_autoconfigure_disconnect(unsigned i, const char *ident)
