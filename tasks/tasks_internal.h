@@ -71,6 +71,15 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
+typedef struct autoconfig_params
+{
+   char  name[255];
+   char  driver[255];
+   char  display_name[255];
+   unsigned idx;
+   int32_t vid;
+   int32_t pid;
+} autoconfig_params_t;
 
 #ifdef HAVE_NETWORKING
 typedef struct
@@ -156,6 +165,10 @@ void path_init_savefile_rtc(void);
 void *savefile_ptr_get(void);
 
 void path_init_savefile_new(void);
+
+bool input_autoconfigure_connect(autoconfig_params_t *params);
+
+void input_autoconfigure_disconnect(unsigned i, const char *ident);
 
 RETRO_END_DECLS
 

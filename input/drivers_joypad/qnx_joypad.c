@@ -15,7 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../configuration.h"
 

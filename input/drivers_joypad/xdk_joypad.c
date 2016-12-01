@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 #include "../../configuration.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 
 static uint64_t pad_state[MAX_PADS];
 static int16_t analog_state[MAX_PADS][2][2];

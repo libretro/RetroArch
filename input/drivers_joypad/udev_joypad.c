@@ -31,7 +31,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 
 #include "../common/udev_common.h"

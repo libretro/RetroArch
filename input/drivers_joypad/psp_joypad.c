@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../configuration.h"
 

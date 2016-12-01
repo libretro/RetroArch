@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* TODO/FIXME - turn this into actual task */
+
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -22,8 +24,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
-#include "input_config.h"
-#include "input_autodetect.h"
+#include "../input/input_config.h"
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -31,6 +32,8 @@
 #include "../msg_hash.h"
 #include "../runloop.h"
 #include "../verbosity.h"
+
+#include "tasks_internal.h"
 
 extern const char* const input_builtin_autoconfs[];
 
@@ -78,12 +81,12 @@ static int input_autoconfigure_joypad_try_from_conf(config_file_t *conf,
 {
    char ident[256];
    char input_driver[32];
-   int tmp_int                        = 0;
-   int                      input_vid = 0;
-   int                      input_pid = 0;
-   int                          score = 0;
+   int tmp_int                = 0;
+   int              input_vid = 0;
+   int              input_pid = 0;
+   int                  score = 0;
 
-   ident[0] = input_driver[0]         = '\0';
+   ident[0] = input_driver[0] = '\0';
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));

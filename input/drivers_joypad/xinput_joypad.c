@@ -35,7 +35,7 @@
 #include "../../config.h"
 #endif
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_config.h"
 
 #include "../../configuration.h"

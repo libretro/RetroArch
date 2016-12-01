@@ -20,7 +20,7 @@
 #include <boolean.h>
 
 #include "../input_joypad_driver.h"
-#include "../input_autodetect.h"
+#include "../tasks/tasks_internal.h"
 #include "../input_keyboard.h"
 #include "../input_config.h"
 #include "../input_keymaps.h"

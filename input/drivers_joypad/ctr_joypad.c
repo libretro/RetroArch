@@ -20,7 +20,9 @@
 
 #include "../input_joypad_driver.h"
 #include "../input_driver.h"
-#include "../input_autodetect.h"
+
+#include "../../tasks/tasks_internal.h"
+
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../configuration.h"

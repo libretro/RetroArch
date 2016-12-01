@@ -31,11 +31,11 @@
 #include <string/stdstring.h>
 
 #include "../common/epoll_common.h"
-#include "../input_autodetect.h"
 #include "../input_driver.h"
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
+#include "../../tasks/tasks_internal.h"
 
 #define NUM_BUTTONS 32
 #define NUM_AXES 32

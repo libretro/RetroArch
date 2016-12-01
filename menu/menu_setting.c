@@ -70,7 +70,7 @@
 #include "../audio/audio_driver.h"
 #include "../audio/audio_resampler_driver.h"
 #include "../input/input_config.h"
-#include "../input/input_autodetect.h"
+#include "../tasks/tasks_internal.h"
 #include "../config.def.h"
 #include "../ui/ui_companion_driver.h"
 #include "../performance_counters.h"

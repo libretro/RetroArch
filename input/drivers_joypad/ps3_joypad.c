@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include <retro_inline.h>
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../configuration.h"
 

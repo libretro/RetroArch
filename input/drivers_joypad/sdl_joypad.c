@@ -22,7 +22,7 @@
 
 #include "../../configuration.h"
 #include "../input_driver.h"
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
 typedef struct _sdl_joypad
