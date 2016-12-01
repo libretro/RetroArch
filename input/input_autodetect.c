@@ -121,7 +121,6 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
    char display_name[128];
    char device_type[128];
    bool block_osd_spam                = false;
-   static bool remote_is_bound        = false;
    settings_t      *settings          = config_get_ptr();
 
    msg[0] = display_name[0] = device_type[0] = '\0';
@@ -145,6 +144,8 @@ static void input_autoconfigure_joypad_add(config_file_t *conf,
 
    if (string_is_equal(device_type, "remote"))
    {
+      static bool remote_is_bound        = false;
+
       snprintf(msg, sizeof(msg), "%s configured.",
             string_is_empty(display_name) ? params->name : display_name);
 
