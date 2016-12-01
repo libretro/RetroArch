@@ -1204,6 +1204,7 @@ static void announce_nat_traversal(netplay_t *netplay)
 bool netplay_try_init_serialization(netplay_t *netplay)
 {
    retro_ctx_serialize_info_t serial_info;
+   size_t packet_buffer_size;
 
    if (netplay->state_size)
       return true;
@@ -1221,6 +1222,14 @@ bool netplay_try_init_serialization(netplay_t *netplay)
 
    /* Once initialized, we no longer exhibit this quirk */
    netplay->quirks &= ~((uint64_t) NETPLAY_QUIRK_INITIALIZATION);
+
+   /* Now we need a different packet buffer size because we actually know our
+    * state size */
+   /* FIXME: Duplication */
+   packet_buffer_size = netplay->state_size + netplay->stall_frames *
+      WORDS_PER_FRAME + (netplay->stall_frames+1)*3;
+   netplay_resize_socket_buffer(&netplay->send_packet_buffer, packet_buffer_size);
+   netplay_resize_socket_buffer(&netplay->recv_packet_buffer, packet_buffer_size);
 
    return true;
 }

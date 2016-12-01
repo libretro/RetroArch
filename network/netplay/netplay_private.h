@@ -280,6 +280,8 @@ bool netplay_lan_ad_server(netplay_t *netplay);
 
 bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size);
 
+bool netplay_resize_socket_buffer(struct socket_buffer *sbuf, size_t newsize);
+
 void netplay_deinit_socket_buffer(struct socket_buffer *sbuf);
 
 void netplay_clear_socket_buffer(struct socket_buffer *sbuf);

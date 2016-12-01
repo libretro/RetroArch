@@ -57,6 +57,40 @@ bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size)
    return true;
 }
 
+bool netplay_resize_socket_buffer(struct socket_buffer *sbuf, size_t newsize)
+{
+   unsigned char *newdata = malloc(newsize);
+   if (newdata == NULL)
+      return false;
+
+    /* Copy in the old data */
+    if (sbuf->end < sbuf->start)
+    {
+       memcpy(newdata, sbuf->data + sbuf->start, sbuf->bufsz - sbuf->start);
+       memcpy(newdata + sbuf->bufsz - sbuf->start, sbuf->data, sbuf->end);
+    }
+    else if (sbuf->end > sbuf->start)
+    {
+       memcpy(newdata, sbuf->data + sbuf->start, sbuf->end - sbuf->start);
+    }
+
+    /* Adjust our read offset */
+    if (sbuf->read < sbuf->start)
+       sbuf->read += sbuf->bufsz - sbuf->start;
+    else
+       sbuf->read -= sbuf->start;
+
+    /* Adjust start and end */
+    sbuf->end = buf_used(sbuf);
+    sbuf->start = 0;
+
+    /* Free the old one and replace it with the new one */
+    free(sbuf->data);
+    sbuf->data = newdata;
+    sbuf->bufsz = newsize;
+    return true;
+}
+
 void netplay_deinit_socket_buffer(struct socket_buffer *sbuf)
 {
    if (sbuf->data)
