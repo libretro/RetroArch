@@ -453,7 +453,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS" */;
+			buildConfigurationList = 96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS10" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -636,7 +636,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -714,7 +714,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -763,7 +763,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -841,7 +841,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -915,7 +915,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -961,7 +961,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -1023,7 +1023,7 @@
 					"../../libretro-common/include",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				ONLY_ACTIVE_ARCH = NO;
@@ -1034,7 +1034,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -1099,7 +1099,7 @@
 					"../../libretro-common/include",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_NO_PIE = YES;
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = (
@@ -1111,7 +1111,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -1160,7 +1160,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -1242,7 +1242,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -1310,7 +1310,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -1379,7 +1379,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -1456,7 +1456,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -1505,7 +1505,7 @@
 					"-DHAVE_NETWORKING",
 					"-DHAVE_AVFOUNDATION",
 					"-DHAVE_GRIFFIN",
-               "-DHAVE_UPDATE_ASSETS",
+					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_LANGEXTRA",
 					"-DHAVE_CHEEVOS",
 					"-DHAVE_IMAGEVIEWER",
@@ -1583,7 +1583,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS" */ = {
+		96AFAE1F16C1D4EA009DE44C /* Build configuration list for PBXProject "RetroArch_iOS10" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				96AFAE5216C1D4EA009DE44C /* Debug */,
