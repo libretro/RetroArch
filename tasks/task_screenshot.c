@@ -191,13 +191,20 @@ static bool screenshot_dump(
    state->frame   = frame;
    state->userbuf = userbuf;
 
-   if (settings->auto_screenshot_filename && !savestate)
-      fill_str_dated_filename(state->shotname, path_basename(name_base),
-            IMG_EXT, sizeof(state->shotname));
+   if (savestate)
+   {
+      snprintf(state->filename, sizeof(state->filename), "%s.png", name_base);
+   }
    else
-      snprintf(state->shotname, sizeof(state->shotname), "%s.png", path_basename(name_base));
+   {
+      if (settings->auto_screenshot_filename)
+         fill_str_dated_filename(state->shotname, path_basename(name_base),
+               IMG_EXT, sizeof(state->shotname));
+      else
+         snprintf(state->shotname, sizeof(state->shotname), "%s.png", path_basename(name_base));
 
-   fill_pathname_join(state->filename, folder, state->shotname, sizeof(state->filename));
+      fill_pathname_join(state->filename, folder, state->shotname, sizeof(state->filename));
+   }
 
 #ifdef _XBOX1
    d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &state->surf);
