@@ -20,7 +20,6 @@
 #include <stdint.h>
 
 #include <boolean.h>
-#include <retro_miscellaneous.h>
 
 typedef struct autoconfig_params
 {
@@ -35,7 +34,5 @@ typedef struct autoconfig_params
 bool input_autoconfigure_connect(autoconfig_params_t *params);
 
 void input_autoconfigure_disconnect(unsigned i, const char *ident);
-
-extern const char* const input_builtin_autoconfs[];
 
 #endif

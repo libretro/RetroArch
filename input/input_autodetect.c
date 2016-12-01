@@ -32,6 +32,8 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
+extern const char* const input_builtin_autoconfs[];
+
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
 static void input_autoconfigure_joypad_reindex_devices(void)
