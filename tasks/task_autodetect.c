@@ -304,11 +304,11 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
    autoconfig_params_t *params = task ? (autoconfig_params_t*)task->state : NULL;
 
-   if (!params || !input_autoconfigure_joypad_init(params))
+   if (!params || !input_autoconfigure_joypad_init(params) || string_is_empty(params->name))
+   {
+      task->finished = true;
       return;
-
-   if (string_is_empty(params->name))
-      return;
+   }
 
    if (     !input_autoconfigure_joypad_from_conf_dir(params, task)
          && !input_autoconfigure_joypad_from_conf_internal(params, task))
@@ -325,6 +325,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
       task->title = strdup(msg);
 
+      task->finished = true;
       return;
    }
 
