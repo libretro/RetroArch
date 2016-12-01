@@ -28,6 +28,7 @@
 #include <sys/epoll.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../common/epoll_common.h"
 #include "../input_autodetect.h"
@@ -179,15 +180,14 @@ static void handle_plugged_pad(void)
          /* Sometimes, device will be created before access to it is established. */
          else if (event->mask & (IN_CREATE | IN_ATTRIB))
          {
-            bool ret;
             char path[PATH_MAX_LENGTH];
 
             path[0] = '\0';
 
             snprintf(path, sizeof(path), "/dev/input/%s", event->name);
-            ret = linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]);
 
-            if (*linuxraw_pads[idx].ident && ret)
+            if (     !string_is_empty(linuxraw_pads[idx].ident) 
+                  && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
             {
                params.idx = idx;
                strlcpy(params.name,   linuxraw_pads[idx].ident, sizeof(params.name));
@@ -347,10 +347,10 @@ static bool linuxraw_joypad_query_pad(unsigned pad)
 
 static const char *linuxraw_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS)
+   if (pad >= MAX_USERS || string_is_empty(linuxraw_pads[pad].ident))
       return NULL;
 
-   return *linuxraw_pads[pad].ident ? linuxraw_pads[pad].ident : NULL;
+   return linuxraw_pads[pad].ident;
 }
 
 input_device_driver_t linuxraw_joypad = {
