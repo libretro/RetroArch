@@ -183,7 +183,7 @@ static int udev_open_joystick(const char *path)
    if (fd < 0)
       return fd;
 
-   if ((ioctl(fd, EVIOCGBIT(0, sizeof(evbit)), evbit) < 0) ||
+   if (  (ioctl(fd, EVIOCGBIT(0,      sizeof(evbit)),  evbit)  < 0) ||
          (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
          (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) < 0))
       goto error;
@@ -387,7 +387,8 @@ static void udev_joypad_remove_device(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if (udev_pads[i].path && string_is_equal(udev_pads[i].path, path))
+      if (     !string_is_empty(udev_pads[i].path)
+            &&  string_is_equal(udev_pads[i].path, path))
       {
          input_autoconfigure_disconnect(i, udev_pads[i].ident);
          udev_free_pad(i);
