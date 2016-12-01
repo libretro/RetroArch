@@ -2417,16 +2417,14 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         if (settings->menu.show_advanced_settings)
-         {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_CORE_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-         }
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_CORE_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+	 settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2444,16 +2442,14 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-         if (settings->menu.show_advanced_settings)
-         {
-            CONFIG_ACTION(
-                  list, list_info,
-                  MENU_ENUM_LABEL_LOGGING_SETTINGS,
-                  MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-         }
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_LOGGING_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
          CONFIG_ACTION(
                list, list_info,
@@ -2511,7 +2507,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#if !defined(RARCH_CONSOLE) && !defined(HAVE_LAKKA)
+#if !defined(RARCH_CONSOLE)
          CONFIG_ACTION(
                list, list_info,
                MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,
@@ -5266,7 +5262,6 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_USER_INTERFACE:
-#ifndef HAVE_LAKKA
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS),
                parent_group);
@@ -5359,7 +5354,6 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
-#endif
          break;
       case SETTINGS_LIST_PLAYLIST:
          START_GROUP(list, list_info, &group_info,
@@ -5371,7 +5365,6 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "History", &group_info, &subgroup_info, parent_group);
 
-#ifndef HAVE_LAKKA
          CONFIG_BOOL(
                list, list_info,
                &settings->history_list_enable,
@@ -5387,7 +5380,6 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE
                );
-#endif
 
          CONFIG_UINT(
                list, list_info,
