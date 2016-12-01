@@ -55,7 +55,8 @@ enum menu_image_type
 {
    MENU_IMAGE_NONE = 0,
    MENU_IMAGE_WALLPAPER,
-   MENU_IMAGE_THUMBNAIL
+   MENU_IMAGE_THUMBNAIL,
+   MENU_IMAGE_SAVESTATE_THUMBNAIL
 };
 
 enum menu_environ_cb
@@ -145,7 +146,9 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_OSK_PTR_AT_POS,
    RARCH_MENU_CTL_BIND_INIT,
    RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH,
-   RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE
+   RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE,
+   RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH,
+   RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE
 };
 
 enum menu_settings_type
@@ -276,6 +279,8 @@ typedef struct menu_ctx_driver
    void (*update_thumbnail_path)(void *data, unsigned i);
    void (*update_thumbnail_image)(void *data);
    int  (*osk_ptr_at_pos)(void *data, int x, int y);
+   void (*update_savestate_thumbnail_path)(void *data, unsigned i);
+   void (*update_savestate_thumbnail_image)(void *data);
 } menu_ctx_driver_t;
 
 typedef struct menu_ctx_load_image

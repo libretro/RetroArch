@@ -1456,6 +1456,7 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
          menu_display_allocate_white_texture();
          break;
       case MENU_IMAGE_THUMBNAIL:
+      case MENU_IMAGE_SAVESTATE_THUMBNAIL:
          break;
    }
 
@@ -1873,4 +1874,6 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    mui_osk_ptr_at_pos,
+   NULL,
+   NULL
 };

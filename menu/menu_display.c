@@ -668,6 +668,22 @@ void menu_display_handle_thumbnail_upload(void *task_data,
    free(user_data);
 }
 
+void menu_display_handle_savestate_thumbnail_upload(void *task_data,
+      void *user_data, const char *err)
+{
+   menu_ctx_load_image_t load_image_info;
+   struct texture_image *img = (struct texture_image*)task_data;
+
+   load_image_info.data = img;
+   load_image_info.type = MENU_IMAGE_SAVESTATE_THUMBNAIL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
+
+   image_texture_free(img);
+   free(img);
+   free(user_data);
+}
+
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err)
 {
