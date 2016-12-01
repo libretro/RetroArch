@@ -280,7 +280,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    pad->fd     = fd;
    pad->path   = strdup(path);
 
-   if (*pad->ident)
+   if (!string_is_empty(pad->ident))
    {
       params.idx = p;
       strlcpy(params.name, pad->ident, sizeof(params.name));
@@ -636,10 +636,10 @@ static bool udev_joypad_query_pad(unsigned pad)
 
 static const char *udev_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS)
+   if (pad >= MAX_USERS || string_is_empty(udev_pads[pad].ident))
       return NULL;
 
-   return *udev_pads[pad].ident ? udev_pads[pad].ident : NULL;
+   return udev_pads[pad].ident;
 }
 
 input_device_driver_t udev_joypad = {
