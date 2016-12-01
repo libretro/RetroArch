@@ -839,11 +839,9 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
-   unsigned depth;
    char             *tmp    = NULL;
    char *scrub_char_pointer = NULL;
    settings_t     *settings = config_get_ptr();
-   global_t         *global = global_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
    playlist_t     *playlist = NULL;
    const char    *core_name = NULL;
@@ -919,13 +917,10 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
-   char             *tmp    = NULL;
-   char *scrub_char_pointer = NULL;
    settings_t     *settings = config_get_ptr();
    global_t         *global = global_get_ptr();
    xmb_handle_t     *xmb    = (xmb_handle_t*)data;
    playlist_t     *playlist = NULL;
-   const char    *core_name = NULL;
 
    if (!xmb)
       return;
