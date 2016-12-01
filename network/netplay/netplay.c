@@ -277,9 +277,9 @@ static void hangup(netplay_t *netplay)
    netplay->stall          = 0;
 }
 
-static bool netplay_info_cb(netplay_t* netplay, unsigned frames)
+static bool netplay_info_cb(netplay_t* netplay, unsigned delay_frames)
 {
-   return netplay->net_cbs->info_cb(netplay, frames);
+   return netplay->net_cbs->info_cb(netplay, delay_frames);
 }
 
 /**
@@ -832,7 +832,7 @@ static bool netplay_poll(void)
 
    /* Read Netplay input, block if we're configured to stall for input every
     * frame */
-   if (netplay_data->stall_frames == 0 &&
+   if (netplay_data->delay_frames == 0 &&
        netplay_data->read_frame_count <= netplay_data->self_frame_count)
       res = poll_input(netplay_data, true);
    else
@@ -856,7 +856,7 @@ static bool netplay_poll(void)
          break;
 
       default: /* not stalling */
-         if (netplay_data->read_frame_count + netplay_data->stall_frames 
+         if (netplay_data->read_frame_count + netplay_data->delay_frames
                <= netplay_data->self_frame_count)
          {
             netplay_data->stall      = RARCH_NETPLAY_STALL_RUNNING_FAST;
@@ -1244,7 +1244,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  * netplay_new:
  * @server               : IP address of server.
  * @port                 : Port of server.
- * @frames               : Amount of lag frames.
+ * @delay_frames         : Amount of delay frames.
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
@@ -1257,7 +1257,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  *
  * Returns: new netplay handle.
  **/
-netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames,
+netplay_t *netplay_new(const char *server, uint16_t port, unsigned delay_frames,
       unsigned check_frames, const struct retro_callbacks *cb, bool spectate,
       bool nat_traversal, const char *nick, uint64_t quirks)
 {
@@ -1272,13 +1272,13 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames,
    netplay->spectate.enabled  = spectate;
    netplay->is_server         = server == NULL;
    netplay->nat_traversal     = netplay->is_server ? nat_traversal : false;
-   netplay->stall_frames      = frames;
+   netplay->delay_frames      = delay_frames;
    netplay->check_frames      = check_frames;
    netplay->quirks            = quirks;
 
    strlcpy(netplay->nick, nick, sizeof(netplay->nick));
 
-   if (!netplay_init_buffers(netplay, frames))
+   if (!netplay_init_buffers(netplay, delay_frames))
    {
       free(netplay);
       return NULL;
@@ -1295,7 +1295,7 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned frames,
       return NULL;
    }
 
-   if(!netplay_info_cb(netplay, frames))
+   if(!netplay_info_cb(netplay, delay_frames))
       goto error;
 
    return netplay;
@@ -1699,7 +1699,7 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
    netplay_data = (netplay_t*)netplay_new(
          netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
-         settings->netplay.sync_frames, settings->netplay.check_frames, &cbs,
+         settings->netplay.delay_frames, settings->netplay.check_frames, &cbs,
          is_spectate, settings->netplay.nat_traversal, settings->username,
          quirks);
 

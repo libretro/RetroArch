@@ -110,7 +110,7 @@ enum netplay_cmd_cfg
    /* input.netplay_client_swap_input */
    NETPLAY_CFG_SWAP_INPUT     = 0x0002, 
 
-   /* netplay.sync_frames */
+   /* netplay.delay_frames */
    NETPLAY_CFG_DELAY_FRAMES   = 0x0004, 
 
    /* For more than 2 players */
@@ -133,7 +133,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
  * netplay_new:
  * @server               : IP address of server.
  * @port                 : Port of server.
- * @frames               : Amount of lag frames.
+ * @delay_frames         : Amount of delay frames.
  * @check_frames         : Frequency with which to check CRCs.
  * @cb                   : Libretro callbacks.
  * @spectate             : If true, enable spectator mode.
@@ -147,7 +147,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
  * Returns: new netplay handle.
  **/
 netplay_t *netplay_new(const char *server,
-      uint16_t port, unsigned frames, unsigned check_frames,
+      uint16_t port, unsigned delay_frames, unsigned check_frames,
       const struct retro_callbacks *cb, bool spectate, bool nat_traversal,
       const char *nick, uint64_t quirks);
 

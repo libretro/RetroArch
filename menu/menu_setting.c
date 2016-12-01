@@ -1717,7 +1717,7 @@ void general_write_handler(void *data)
       case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
 #ifdef HAVE_NETWORKING
          {
-            bool val = (settings->netplay.sync_frames > 0);
+            bool val = (settings->netplay.delay_frames > 0);
             
             if (val)
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_NETPLAY_DELAY_FRAMES, NULL);
@@ -5548,7 +5548,7 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->netplay.sync_frames,
+                  &settings->netplay.delay_frames,
                   MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
                   0,

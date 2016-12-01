@@ -212,7 +212,7 @@ struct netplay
    bool remote_paused;
 
    /* And stalling */
-   uint32_t stall_frames;
+   uint32_t delay_frames;
    int stall;
    retro_time_t stall_time;
 
