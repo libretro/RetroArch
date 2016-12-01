@@ -430,16 +430,12 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 {
    unsigned k              = 0;
-   net_ifinfo_t      *list =
-      (net_ifinfo_t*)calloc(1, sizeof(*list));
+   net_ifinfo_t      list;
 
-   if (!list)
+   if (!net_ifinfo_new(&list))
       return -1;
 
-   if (!net_ifinfo_new(list))
-      return -1;
-
-   for (k = 0; k < list->size; k++)
+   for (k = 0; k < list.size; k++)
    {
       char tmp[255];
 
@@ -447,12 +443,12 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 
       snprintf(tmp, sizeof(tmp), "%s (%s) : %s\n",
             msg_hash_to_str(MSG_INTERFACE),
-            list->entries[k].name, list->entries[k].host);
+            list.entries[k].name, list.entries[k].host);
       menu_entries_append_enum(info->list, tmp, "",
             MENU_ENUM_LABEL_NETWORK_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
-   net_ifinfo_free(list);
+   net_ifinfo_free(&list);
    return 0;
 }
 #endif

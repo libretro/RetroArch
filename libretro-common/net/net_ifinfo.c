@@ -65,7 +65,6 @@ void net_ifinfo_free(net_ifinfo_t *list)
       ptr->host = NULL;
    }
    free(list->entries);
-   free(list);
 }
 
 bool net_ifinfo_new(net_ifinfo_t *list)
@@ -81,6 +80,8 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
 
    rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+
+   memset(list, 0, sizeof(net_ifinfo_t));
 
    if (rv != ERROR_SUCCESS)
       goto error;
@@ -121,6 +122,8 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 #else
    struct ifaddrs *ifa     = NULL;
    struct ifaddrs *ifaddr  = NULL;
+
+   memset(list, 0, sizeof(net_ifinfo_t));
 
    if (getifaddrs(&ifaddr) == -1)
       goto error;
