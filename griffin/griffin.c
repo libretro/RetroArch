@@ -396,6 +396,10 @@ FONTS
 #include "../gfx/drivers_font/ctr_font.c"
 #endif
 
+#if defined(HAVE_CACA)
+#include "../gfx/drivers_font/caca_font.c"
+#endif
+
 
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_font/vulkan_raster_font.c"
@@ -971,6 +975,10 @@ MENU
 
 #ifdef _3DS
 #include "../menu/drivers_display/menu_display_ctr.c"
+#endif
+
+#ifdef HAVE_CACA
+#include "../menu/drivers_display/menu_display_caca.c"
 #endif
 
 #endif

@@ -92,7 +92,8 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_VULKAN,
    MENU_VIDEO_DRIVER_DIRECT3D,
    MENU_VIDEO_DRIVER_VITA2D,
-   MENU_VIDEO_DRIVER_CTR
+   MENU_VIDEO_DRIVER_CTR,
+   MENU_VIDEO_DRIVER_CACA
 };
 
 typedef struct menu_display_ctx_clearcolor
@@ -283,6 +284,7 @@ extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d;
 extern menu_display_ctx_driver_t menu_display_ctx_vita2d;
 extern menu_display_ctx_driver_t menu_display_ctx_ctr;
+extern menu_display_ctx_driver_t menu_display_ctx_caca;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
 RETRO_END_DECLS

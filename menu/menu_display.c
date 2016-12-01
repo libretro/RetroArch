@@ -80,6 +80,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef _3DS
    &menu_display_ctx_ctr,
 #endif
+#ifdef HAVE_CACA
+   &menu_display_ctx_caca,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -133,6 +136,10 @@ static bool menu_display_check_compatibility(
          break;
       case MENU_VIDEO_DRIVER_CTR:
          if (string_is_equal(video_driver, "ctr"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_CACA:
+         if (string_is_equal(video_driver, "caca"))
             return true;
          break;
    }

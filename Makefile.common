@@ -713,6 +713,16 @@ ifeq ($(HAVE_KMS), 1)
    LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
 endif
 
+ifeq ($(HAVE_CACA), 1)
+   DEFINES += -DHAVE_CACA
+   OBJ += gfx/drivers/caca_gfx.o gfx/drivers_font/caca_font.o
+   LIBS += -lcaca
+
+   ifeq ($(HAVE_MENU_COMMON), 1)
+      OBJ += menu/drivers_display/menu_display_caca.o
+   endif
+endif
+
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
    CFLAGS += -I/usr/include/libdrm

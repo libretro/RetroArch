@@ -498,6 +498,9 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
    int16_t ret;
    udev_input_t *udev = (udev_input_t*)data;
 
+   if (!udev)
+      return 0;
+
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
