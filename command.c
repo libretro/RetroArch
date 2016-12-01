@@ -1899,7 +1899,7 @@ bool command_event(enum event_command cmd, void *data)
          settings->state_slot++;
          break;
       case CMD_EVENT_TAKE_SCREENSHOT:
-         if (!take_screenshot(false))
+         if (!take_screenshot())
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:

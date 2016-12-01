@@ -145,7 +145,7 @@ bool content_push_to_history_playlist(
       const char *core_path);
 
 /* TODO/FIXME - turn this into actual task */
-bool take_screenshot(bool hide_msg);
+bool take_screenshot(void);
 
 bool event_load_save_files(void);
 
