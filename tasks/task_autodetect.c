@@ -361,7 +361,6 @@ bool input_autoconfigure_connect(autoconfig_params_t *params)
    state->vid    = params->vid;
    state->pid    = params->pid;
 
-   task->type    = TASK_TYPE_BLOCKING;
    task->state   = state;
    task->handler = input_autoconfigure_connect_handler;
 
