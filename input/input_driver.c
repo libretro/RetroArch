@@ -539,12 +539,12 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
    bool kb_mapping_is_blocked                = current_input->keyboard_mapping_is_blocked &&
          current_input->keyboard_mapping_is_blocked(current_input_data);
 
+   input_driver_block_hotkey = false;
+
    /* Don't block the check to RARCH_ENABLE_HOTKEY
     * unless we're really supposed to. */
    if (kb_mapping_is_blocked)
       input_driver_block_hotkey = true;
-   else
-      input_driver_block_hotkey = false;
 
    /* If we haven't bound anything to this,
     * always allow hotkeys. */
@@ -556,10 +556,8 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
       || (autoconf_bind->joykey  != NO_BTN)
       || (autoconf_bind->joyaxis != AXIS_NONE);
 
-   if (kb_mapping_is_blocked || (use_hotkey_enable && !enable_hotkey))
+   if (use_hotkey_enable && !enable_hotkey)
       input_driver_block_hotkey = true;
-   else
-      input_driver_block_hotkey = false;
 
    /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
     * hotkeys to be bound to same keys as RetroPad. */
