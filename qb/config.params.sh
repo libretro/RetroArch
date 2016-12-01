@@ -1,3 +1,4 @@
+HAVE_CACA=no               # Libcaca support
 HAVE_LIBRETRODB=yes        # Libretrodb support
 HAVE_RGUI=yes              # RGUI menu
 HAVE_MATERIALUI=auto       # MaterialUI menu

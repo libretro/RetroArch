@@ -209,6 +209,7 @@ if [ "$HAVE_DYLIB" = 'no' ] && [ "$HAVE_DYNAMIC" = 'yes' ]; then
 fi
 
 check_pkgconf ALSA alsa
+check_lib CACA -lcaca
 check_header OSS sys/soundcard.h
 check_header OSS_BSD soundcard.h
 check_lib OSS_LIB -lossaudio
