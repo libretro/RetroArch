@@ -171,6 +171,8 @@ bool input_autoconfigure_connect(autoconfig_params_t *params);
 
 bool input_autoconfigure_disconnect(unsigned i, const char *ident);
 
+extern const char* const input_builtin_autoconfs[];
+
 RETRO_END_DECLS
 
 #endif

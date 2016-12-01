@@ -32,8 +32,6 @@
 
 #include "tasks_internal.h"
 
-extern const char* const input_builtin_autoconfs[];
-
 typedef struct autoconfig_disconnect
 {
    char msg[255];
