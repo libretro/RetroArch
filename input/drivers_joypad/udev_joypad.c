@@ -84,8 +84,8 @@ struct udev_joypad
    int32_t pid;
 };
 
-static struct udev *g_udev;
-static struct udev_monitor *g_udev_mon;
+static struct udev *udev_joypad_fd;
+static struct udev_monitor *udev_joypad_mon;
 static struct udev_joypad udev_pads[MAX_USERS];
 
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
@@ -401,12 +401,14 @@ static void udev_joypad_destroy(void)
    for (i = 0; i < MAX_USERS; i++)
       udev_free_pad(i);
 
-   if (g_udev_mon)
-      udev_monitor_unref(g_udev_mon);
-   g_udev_mon = NULL;
-   if (g_udev)
-      udev_unref(g_udev);
-   g_udev = NULL;
+   if (udev_joypad_mon)
+      udev_monitor_unref(udev_joypad_mon);
+
+   if (udev_joypad_fd)
+      udev_unref(udev_joypad_fd);
+
+   udev_joypad_mon = NULL;
+   udev_joypad_fd  = NULL;
 }
 
 static void udev_joypad_handle_hotplug(struct udev_device *dev)
@@ -506,9 +508,9 @@ static void udev_joypad_poll(void)
 {
    unsigned i;
 
-   while (g_udev_mon && udev_hotplug_available(g_udev_mon))
+   while (udev_joypad_mon && udev_hotplug_available(udev_joypad_mon))
    {
-      struct udev_device *dev = udev_monitor_receive_device(g_udev_mon);
+      struct udev_device *dev = udev_monitor_receive_device(udev_joypad_mon);
       if (dev)
          udev_joypad_handle_hotplug(dev);
    }
@@ -529,18 +531,18 @@ static bool udev_joypad_init(void *data)
    for (i = 0; i < MAX_USERS; i++)
       udev_pads[i].fd = -1;
 
-   g_udev = udev_new();
-   if (!g_udev)
+   udev_joypad_fd = udev_new();
+   if (!udev_joypad_fd)
       return false;
 
-   g_udev_mon = udev_monitor_new_from_netlink(g_udev, "udev");
-   if (g_udev_mon)
+   udev_joypad_mon = udev_monitor_new_from_netlink(udev_joypad_fd, "udev");
+   if (udev_joypad_mon)
    {
-      udev_monitor_filter_add_match_subsystem_devtype(g_udev_mon, "input", NULL);
-      udev_monitor_enable_receiving(g_udev_mon);
+      udev_monitor_filter_add_match_subsystem_devtype(udev_joypad_mon, "input", NULL);
+      udev_monitor_enable_receiving(udev_joypad_mon);
    }
 
-   enumerate = udev_enumerate_new(g_udev);
+   enumerate = udev_enumerate_new(udev_joypad_fd);
    if (!enumerate)
       goto error;
 
@@ -551,7 +553,7 @@ static bool udev_joypad_init(void *data)
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
       const char         *name = udev_list_entry_get_name(item);
-      struct udev_device  *dev = udev_device_new_from_syspath(g_udev, name);
+      struct udev_device  *dev = udev_device_new_from_syspath(udev_joypad_fd, name);
       const char      *devnode = udev_device_get_devnode(dev);
 
       if (devnode)
