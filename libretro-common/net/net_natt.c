@@ -163,7 +163,7 @@ bool natt_open_port(struct natt_status *status, struct sockaddr *addr, socklen_t
 
 bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_protocol proto)
 {
-   struct net_ifinfo *list;
+   struct net_ifinfo list;
    bool ret = false;
    size_t i;
    struct addrinfo hints = {0}, *addr;
@@ -172,15 +172,13 @@ bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_p
    sprintf(port_str, "%hu", port);
 
    /* get our interfaces */
-   if ((list = (struct net_ifinfo *) calloc(1, sizeof(struct net_ifinfo))) == NULL)
-       return false;
-   if (!net_ifinfo_new(list))
+   if (!net_ifinfo_new(&list))
       return false;
 
    /* loop through them */
-   for (i = 0; i < list->size; i++)
+   for (i = 0; i < list.size; i++)
    {
-      struct net_ifinfo_entry *entry = list->entries + i;
+      struct net_ifinfo_entry *entry = list.entries + i;
 
       /* ignore localhost */
       if (!strcmp(entry->host, "127.0.0.1") || !strcmp(entry->host, "::1"))
@@ -194,8 +192,7 @@ bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_p
       }
    }
 
-   /* This really shouldn't free list, but does */
-   net_ifinfo_free(list);
+   net_ifinfo_free(&list);
 
    return ret;
 }
