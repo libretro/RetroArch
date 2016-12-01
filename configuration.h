@@ -399,7 +399,7 @@ typedef struct settings
    {
       char server[255];
       unsigned port;
-      unsigned sync_frames;
+      unsigned delay_frames;
       unsigned check_frames;
       bool is_spectate;
       bool swap_input;
