@@ -29,7 +29,7 @@
 
 #include "../../configuration.h"
 #include "../input_joypad_driver.h"
-#include "../input_autodetect.h"
+#include "../tasks/tasks_internal.h"
 
 #define MAX_PADS 8
 

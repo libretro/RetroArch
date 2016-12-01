@@ -25,7 +25,7 @@
 
 #include <compat/strl.h>
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"

@@ -33,7 +33,7 @@
 #include "../../retroarch.h"
 #include "../../configuration.h"
 
-#include "../../input/input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../input/input_config.h"
 
 static bool                  menu_dialog_pending_push   = false;

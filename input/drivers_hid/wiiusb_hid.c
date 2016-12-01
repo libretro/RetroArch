@@ -20,7 +20,7 @@
 
 #include "../input_defines.h"
 #include "../connect/joypad_connection.h"
-#include "../input_autodetect.h"
+#include "../tasks/tasks_internal.h"
 #include "../input_hid_driver.h"
 #include "../../verbosity.h"
 

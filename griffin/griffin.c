@@ -408,7 +408,7 @@ FONTS
 /*============================================================
 INPUT
 ============================================================ */
-#include "../input/input_autodetect.c"
+#include "../tasks/task_autodetect.c"
 #include "../input/input_joypad_driver.c"
 #include "../input/input_config.c"
 #include "../input/input_keymaps.c"

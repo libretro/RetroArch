@@ -183,7 +183,7 @@ OBJ += frontend/frontend.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o \
        managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
-       input/input_autodetect.o \
+       tasks/task_autodetect.o \
 		 input/input_autodetect_builtin.o \
        input/input_joypad_driver.o \
        input/input_config.o \

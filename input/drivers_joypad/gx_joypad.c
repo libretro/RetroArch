@@ -15,14 +15,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../configuration.h"
-#include "../input_autodetect.h"
-
 #include <gccore.h>
 #include <ogc/pad.h>
 #ifdef HW_RVL
 #include <wiiuse/wpad.h>
 #endif
+
+#include "../../configuration.h"
+#include "../../tasks/tasks_internal.h"
 
 #ifdef GEKKO
 #define WPADInit WPAD_Init

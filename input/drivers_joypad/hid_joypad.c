@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../input_autodetect.h"
+#include "../../tasks/tasks_internal.h"
 #include "../input_hid_driver.h"
 #include "../input_driver.h"
 
