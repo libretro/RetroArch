@@ -356,12 +356,13 @@ bool input_autoconfigure_connect(autoconfig_params_t *params)
       goto error;
 
    strlcpy(state->name, params->name, sizeof(state->name));
-   state->idx = params->idx;
-   state->vid = params->vid;
-   state->pid = params->pid;
 
-   task->type = TASK_TYPE_BLOCKING;
-   task->state = state;
+   state->idx    = params->idx;
+   state->vid    = params->vid;
+   state->pid    = params->pid;
+
+   task->type    = TASK_TYPE_BLOCKING;
+   task->state   = state;
    task->handler = input_autoconfigure_connect_handler;
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
