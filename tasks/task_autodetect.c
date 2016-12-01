@@ -14,8 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* TODO/FIXME - turn this into actual task */
-
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
