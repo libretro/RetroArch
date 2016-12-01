@@ -39,10 +39,13 @@ typedef struct
 static void wifi_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
+   unsigned i;
    unsigned menu_type            = 0;
    const char *path              = NULL;
    const char *label             = NULL;
    enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
+   file_list_t *file_list        = NULL;
+   struct string_list *ssid_list = NULL;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
@@ -51,14 +54,13 @@ static void wifi_scan_callback(void *task_data,
          msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST)))
       return;
 
-   file_list_t *file_list = menu_entries_get_selection_buf_ptr(0);
+   file_list = menu_entries_get_selection_buf_ptr(0);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
-   struct string_list *ssid_list = string_list_new();
+   ssid_list = string_list_new();
    driver_wifi_get_ssids(ssid_list);
 
-   unsigned i;
    for (i = 0; i < ssid_list->size; i++)
    {
       const char *ssid = ssid_list->elems[i].data;
