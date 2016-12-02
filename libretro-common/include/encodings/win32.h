@@ -25,9 +25,9 @@
 
 #ifndef _XBOX
 #ifdef _WIN32
-#define UNICODE
+/*#define UNICODE
 #include <tchar.h>
-#include <wchar.h>
+#include <wchar.h>*/
 
 #ifdef __cplusplus
 extern "C" {
