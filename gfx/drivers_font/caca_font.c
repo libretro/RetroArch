@@ -24,7 +24,6 @@
 #endif
 
 #include "../font_driver.h"
-#include "../../runloop.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../common/caca_common.h"
