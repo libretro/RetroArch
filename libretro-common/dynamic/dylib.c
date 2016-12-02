@@ -35,7 +35,7 @@
 #endif
 
 #ifdef _WIN32
-static TCHAR last_dyn_error[512];
+static TCHAR last_dyn_error[512] = {0};
 
 static void set_dl_error(void)
 {

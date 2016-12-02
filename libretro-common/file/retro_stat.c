@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <encodings/win32.h>
 #include <retro_miscellaneous.h>
 
 #if defined(_WIN32)
@@ -103,11 +104,13 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #elif defined(_WIN32)
    WIN32_FILE_ATTRIBUTE_DATA file_info;
    GET_FILEEX_INFO_LEVELS fInfoLevelId = GetFileExInfoStandard;
-   wchar_t path_wide[PATH_MAX_LENGTH] = {0};
+   CHAR_TO_WCHAR_ALLOC(path, path_wide)
 
-   MultiByteToWideChar(CP_UTF8, 0, path, -1, path_wide, sizeof(path_wide) / sizeof(path_wide[0]));
+   DWORD ret = GetFileAttributesEx(path_wide, fInfoLevelId, &file_info);
 
-   DWORD ret = GetFileAttributesExW(path_wide, fInfoLevelId, &file_info);
+   if (path_wide)
+      free(path_wide);
+
    if (ret == 0)
       return false;
 #else
@@ -208,7 +211,7 @@ bool mkdir_norecurse(const char *dir)
 #elif defined(PSP) || defined(_3DS)
    if ((ret == -1) && path_is_directory(dir))
       ret = 0;
-#else 
+#else
    if (ret < 0 && errno == EEXIST && path_is_directory(dir))
       ret = 0;
 #endif
