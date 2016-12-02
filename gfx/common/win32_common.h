@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -18,12 +18,10 @@
 #define WIN32_COMMON_H__
 
 #include <string.h>
+#include <encodings/win32.h>
 
 #ifndef _XBOX
 #define WIN32_LEAN_AND_MEAN
-#define UNICODE
-#include <tchar.h>
-#include <wchar.h>
 #include <windows.h>
 #endif
 
@@ -83,7 +81,7 @@ bool win32_window_create(void *data, unsigned style,
 bool win32_suppress_screensaver(void *data, bool enable);
 
 bool win32_get_metrics(void *data,
-	enum display_metric_types type, float *value);
+        enum display_metric_types type, float *value);
 
 void win32_show_cursor(bool state);
 
