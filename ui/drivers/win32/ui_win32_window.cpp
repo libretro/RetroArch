@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <encodings/win32.h>
+
 #include <windows.h>
 
 #ifdef _MSC_VER
@@ -62,7 +64,7 @@ static void ui_window_win32_set_focused(void *data)
    SetFocus(window->hwnd);
 }
 
-static void ui_window_win32_set_visible(void *data, 
+static void ui_window_win32_set_visible(void *data,
         bool set_visible)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
@@ -72,7 +74,10 @@ static void ui_window_win32_set_visible(void *data,
 static void ui_window_win32_set_title(void *data, char *buf)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   SetWindowText(window->hwnd, buf);
+   CHAR_TO_WCHAR_ALLOC(buf, buf_wide)
+   SetWindowText(window->hwnd, buf_wide);
+   if (buf_wide)
+      free(buf_wide);
 }
 
 void ui_window_win32_set_droppable(void *data, bool droppable)

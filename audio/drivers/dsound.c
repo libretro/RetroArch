@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+
+#include <encodings/win32.h>
 
 #ifndef _XBOX
 #include <windows.h>
@@ -93,7 +95,7 @@ static INLINE bool grab_region(dsound_t *ds, uint32_t write_ptr,
       struct audio_lock *region)
 {
    const char *err = NULL;
-   HRESULT     res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE, 
+   HRESULT     res = IDirectSoundBuffer_Lock(ds->dsb, write_ptr, CHUNK_SIZE,
          &region->chunk1, &region->size1, &region->chunk2, &region->size2, 0);
 
    if (res == DSERR_BUFFERLOST)
@@ -152,7 +154,7 @@ static void dsound_thread(void *data)
       struct audio_lock region;
       DWORD read_ptr, avail, fifo_avail;
       get_positions(ds, &read_ptr, NULL);
-      
+
       avail = write_avail(read_ptr, write_ptr, ds->buffer_size);
 
       EnterCriticalSection(&ds->crit);
@@ -161,12 +163,12 @@ static void dsound_thread(void *data)
 
       if (avail < CHUNK_SIZE || ((fifo_avail < CHUNK_SIZE) && (avail < ds->buffer_size / 2)))
       {
-         /* No space to write, or we don't have data in our fifo, 
+         /* No space to write, or we don't have data in our fifo,
           * but we can wait some time before it underruns ... */
 
 
          /* We could opt for using the notification interface,
-          * but it is not guaranteed to work, so use high 
+          * but it is not guaranteed to work, so use high
           * priority sleeping patterns.
           */
          retro_sleep(1);
@@ -182,7 +184,7 @@ static void dsound_thread(void *data)
 
       if (fifo_avail < CHUNK_SIZE)
       {
-         /* Got space to write, but nothing in FIFO (underrun), 
+         /* Got space to write, but nothing in FIFO (underrun),
           * fill block with silence. */
 
          memset(region.chunk1, 0, region.size1);
@@ -191,7 +193,7 @@ static void dsound_thread(void *data)
          release_region(ds, &region);
          write_ptr = (write_ptr + region.size1 + region.size2) % ds->buffer_size;
       }
-      else 
+      else
       {
          /* All is good. Pull from it and notify FIFO. */
 
@@ -291,11 +293,15 @@ struct dsound_dev
    LPGUID guid;
 };
 
-static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCSTR desc, LPCSTR module, LPVOID context)
+static BOOL CALLBACK enumerate_cb(LPGUID guid, LPCTSTR desc, LPCTSTR module, LPVOID context)
 {
    struct dsound_dev *dev = (struct dsound_dev*)context;
+   WCHAR_TO_CHAR_ALLOC(desc, desc_str)
 
-   RARCH_LOG("\t%u: %s\n", dev->total_count, desc);
+   RARCH_LOG("\t%u: %s\n", dev->total_count, desc_str);
+
+   if (desc_str)
+      free(desc_str);
 
    if (dev->device == dev->total_count)
       dev->guid = guid;

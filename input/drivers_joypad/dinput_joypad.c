@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <encodings/win32.h>
 #include <windowsx.h>
 
 #include <dinput.h>
@@ -75,7 +76,7 @@ static void dinput_joypad_destroy(void)
          IDirectInputDevice8_Unacquire(g_pads[i].joypad);
          IDirectInputDevice8_Release(g_pads[i].joypad);
       }
-      
+
       free(g_pads[i].joy_name);
       g_pads[i].joy_name = NULL;
       free(g_pads[i].joy_friendly_name);
@@ -114,11 +115,11 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    unsigned i, num_raw_devs = 0;
    PRAWINPUTDEVICELIST raw_devs = NULL;
 
-   /* Check for well known XInput device GUIDs, 
+   /* Check for well known XInput device GUIDs,
     * thereby removing the need for the IG_ check.
-    * This lets us skip RAWINPUT for popular devices. 
+    * This lets us skip RAWINPUT for popular devices.
     *
-    * Also, we need to do this for the Valve Streaming Gamepad 
+    * Also, we need to do this for the Valve Streaming Gamepad
     * because it's virtualized and doesn't show up in the device list.  */
 
    for (i = 0; i < ARRAY_SIZE(common_xinput_guids); ++i)
@@ -207,6 +208,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
 #endif
    LPDIRECTINPUTDEVICE8 *pad = NULL;
    settings_t *settings = config_get_ptr();
+   WCHAR_TO_CHAR_ALLOC(inst->tszInstanceName, name)
 
    (void)p;
 
@@ -222,10 +224,13 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    if (FAILED(IDirectInput8_CreateDevice(
                g_dinput_ctx, &inst->guidInstance, pad, NULL)))
 #endif
-   return DIENUM_CONTINUE;
+      return DIENUM_CONTINUE;
 
-   g_pads[g_joypad_cnt].joy_name = strdup(inst->tszProductName);
-   g_pads[g_joypad_cnt].joy_friendly_name = strdup(inst->tszInstanceName);
+   g_pads[g_joypad_cnt].joy_name = strdup(name);
+   g_pads[g_joypad_cnt].joy_friendly_name = strdup(name);
+
+   if (name)
+      free(name);
 
    /* there may be more useful info in the GUID so leave this here for a while */
 #if 0

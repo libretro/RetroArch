@@ -19,6 +19,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <encodings/win32.h>
 
 #ifdef _MSC_VER
 #pragma comment( lib, "comctl32" )
@@ -121,7 +122,7 @@ static void shader_dlg_refresh_trackbar_label(int index)
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   if (floorf(shader_info.data->parameters[index].current) 
+   if (floorf(shader_info.data->parameters[index].current)
          == shader_info.data->parameters[index].current)
       snprintf(val_buffer, sizeof(val_buffer), "%.0f",
             shader_info.data->parameters[index].current);
@@ -152,8 +153,8 @@ static void shader_dlg_params_refresh(void)
       {
          case SHADER_PARAM_CTRL_CHECKBOX:
             {
-               bool checked = 
-                  (shader_info.data->parameters[i].current == 
+               bool checked =
+                  (shader_info.data->parameters[i].current ==
                    shader_info.data->parameters[i].maximum);
                SendMessageW(control->checkbox.hwnd, BM_SETCHECK, checked, 0);
             }
@@ -165,12 +166,12 @@ static void shader_dlg_params_refresh(void)
                   TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
             SendMessageW(control->trackbar.hwnd,
                   TBM_SETRANGEMAX, (WPARAM)TRUE,
-                  (LPARAM)((shader_info.data->parameters[i].maximum - 
-                        shader_info.data->parameters[i].minimum) 
+                  (LPARAM)((shader_info.data->parameters[i].maximum -
+                        shader_info.data->parameters[i].minimum)
                      / shader_info.data->parameters[i].step));
             SendMessageW(control->trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
-                  (LPARAM)((shader_info.data->parameters[i].current - 
-                        shader_info.data->parameters[i].minimum) / 
+                  (LPARAM)((shader_info.data->parameters[i].current -
+                        shader_info.data->parameters[i].minimum) /
                      shader_info.data->parameters[i].step));
             break;
          case SHADER_PARAM_CTRL_NONE:
@@ -233,21 +234,16 @@ void shader_dlg_params_reload(void)
 
    for (i = 0; i < (int)shader_info.data->num_parameters; i++)
    {
-      shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
-      size_t param_desc_wide_size = sizeof(shader_info.data->parameters[i].desc) * 2;
-      wchar_t param_desc_wide[param_desc_wide_size];
-
-      memset(param_desc_wide, 0, sizeof(param_desc_wide));
-      MultiByteToWideChar(CP_UTF8, 0, shader_info.data->parameters[i].desc, -1, param_desc_wide, sizeof(param_desc_wide) / sizeof(param_desc_wide[0]));
-
+      shader_param_ctrl_t *control = &g_shader_dlg.controls[i];
+      CHAR_TO_WCHAR_ALLOC(shader_info.data->parameters[i].desc, param_desc_wide)
 
       if ((shader_info.data->parameters[i].minimum == 0.0)
-            && (shader_info.data->parameters[i].maximum 
-               == (shader_info.data->parameters[i].minimum 
+            && (shader_info.data->parameters[i].maximum
+               == (shader_info.data->parameters[i].minimum
                   + shader_info.data->parameters[i].step)))
       {
-         if ((pos_y + SHADER_DLG_CHECKBOX_HEIGHT 
-                    + SHADER_DLG_CTRL_MARGIN + 20) 
+         if ((pos_y + SHADER_DLG_CHECKBOX_HEIGHT
+                    + SHADER_DLG_CTRL_MARGIN + 20)
                > SHADER_DLG_MAX_HEIGHT)
          {
             pos_y  = g_shader_dlg.parameters_start_y;
@@ -300,6 +296,8 @@ void shader_dlg_params_reload(void)
 
       }
 
+      if (param_desc_wide)
+         free(param_desc_wide);
    }
 
    if (window && g_shader_dlg.separator.hwnd)
@@ -328,7 +326,7 @@ static void shader_dlg_update_on_top_state(void)
    bool on_top = SendMessage(g_shader_dlg.on_top_checkbox.hwnd,
          BM_GETCHECK, 0, 0) == BST_CHECKED;
 
-   SetWindowPos(g_shader_dlg.window.hwnd, on_top 
+   SetWindowPos(g_shader_dlg.window.hwnd, on_top
          ? HWND_TOPMOST : HWND_NOTOPMOST , 0, 0, 0, 0,
          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
@@ -397,10 +395,10 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 
          if (SendMessageW(g_shader_dlg.controls[i].checkbox.hwnd,
                   BM_GETCHECK, 0, 0) == BST_CHECKED)
-            shader_info.data->parameters[i].current = 
+            shader_info.data->parameters[i].current =
                shader_info.data->parameters[i].maximum;
          else
-            shader_info.data->parameters[i].current = 
+            shader_info.data->parameters[i].current =
                shader_info.data->parameters[i].minimum;
 
          break;
@@ -415,7 +413,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
             break;
 
          pos = (int)SendMessageW(g_shader_dlg.controls[i].trackbar.hwnd, TBM_GETPOS, 0, 0);
-         shader_info.data->parameters[i].current = 
+         shader_info.data->parameters[i].current =
             shader_info.data->parameters[i].minimum + pos * shader_info.data->parameters[i].step;
 
          shader_dlg_refresh_trackbar_label(i);
@@ -451,10 +449,10 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    if (!RegisterClassExW(wndclass))
       return false;
 
-   /* This is non-NULL when we want a window for shader dialogs, 
+   /* This is non-NULL when we want a window for shader dialogs,
     * therefore early return here */
    /* TODO/FIXME - this is ugly. Find a better way */
-   if (class_name != NULL) 
+   if (class_name != NULL)
       return true;
 
    if (!win32_shader_dlg_init())
@@ -523,7 +521,7 @@ static bool win32_browser(
       const char *initial_dir)
 {
    bool result = false;
-   const ui_browser_window_t *browser = 
+   const ui_browser_window_t *browser =
       ui_companion_driver_get_browser_window_ptr();
 
    if (browser)
@@ -534,14 +532,17 @@ static bool win32_browser(
       browser_state.title    = strdup(title);
       browser_state.startdir = strdup(initial_dir);
       browser_state.path     = strdup(filename);
-      browser_state.window   = owner;
 
       result = browser->open(&browser_state);
 
-      free(browser_state.filters);
-      free(browser_state.title);
-      free(browser_state.startdir);
-      free(browser_state.path);
+      if (browser_state.filters)
+         free(browser_state.filters);
+      if (browser_state.title)
+         free(browser_state.title);
+      if (browser_state.startdir)
+         free(browser_state.startdir);
+      if (browser_state.path)
+         free(browser_state.path);
    }
 
    return result;
@@ -554,7 +555,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
    bool do_wm_close     = false;
    settings_t *settings = config_get_ptr();
 
-	switch (mode)
+        switch (mode)
    {
       case ID_M_LOAD_CORE:
       case ID_M_LOAD_CONTENT:
@@ -663,7 +664,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             signed idx = -1;
             settings->state_slot = idx;
          }
-         else if (mode >= (ID_M_STATE_INDEX_AUTO+1) 
+         else if (mode >= (ID_M_STATE_INDEX_AUTO+1)
                && mode <= (ID_M_STATE_INDEX_AUTO+10))
          {
             signed idx = (mode - (ID_M_STATE_INDEX_AUTO+1));
@@ -677,7 +678,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 
 	if (do_wm_close)
 		PostMessageW(owner, WM_CLOSE, 0, 0);
-	
+
 	return 0L;
 }
 

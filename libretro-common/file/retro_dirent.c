@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 #include <retro_common.h>
+#include <encodings/win32.h>
 
 #include <boolean.h>
 #include <retro_stat.h>
@@ -97,7 +98,9 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
 {
 #if defined(_WIN32)
    memset(rdir->path, 0, sizeof(rdir->path));
-   utf16_to_char_string(rdir->entry.cFileName, rdir->path, sizeof(rdir->path));
+#ifdef UNICODE
+   utf16_to_char_string((const uint16_t*)rdir->entry.cFileName, rdir->path, sizeof(rdir->path));
+#endif
    return rdir->path;
 #elif defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
    return rdir->entry.d_name;
