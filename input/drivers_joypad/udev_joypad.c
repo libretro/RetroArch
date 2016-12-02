@@ -37,7 +37,6 @@
 #include "../common/udev_common.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 /* Udev/evdev Linux joypad driver.
@@ -311,7 +310,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    return ret;
 }
 
-static void udev_check_device(struct udev_device *dev, const char *path, bool hotplugged)
+static void udev_check_device(struct udev_device *dev, const char *path)
 {
    int ret;
    int pad, fd;
@@ -351,16 +350,6 @@ static void udev_check_device(struct udev_device *dev, const char *path, bool ho
          break;
       case 0:
       default:
-         if (hotplugged)
-         {
-            char msg[255];
-
-            msg[0] = '\0';
-
-            snprintf(msg, sizeof(msg), "Device connected: #%u (%s).", pad, path);
-            runloop_msg_queue_push(msg, 0, 60, false);
-            RARCH_LOG("[udev]: %s\n", msg);
-         }
          break;
    }
 }
@@ -426,7 +415,7 @@ static void udev_joypad_handle_hotplug(struct udev_device *dev)
    if (string_is_equal(action, "add"))
    {
       RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
-      udev_check_device(dev, devnode, true);
+      udev_check_device(dev, devnode);
    }
    else if (string_is_equal(action, "remove"))
    {
@@ -560,7 +549,7 @@ static bool udev_joypad_init(void *data)
       const char      *devnode = udev_device_get_devnode(dev);
 
       if (devnode)
-         udev_check_device(dev, devnode, false);
+         udev_check_device(dev, devnode);
       udev_device_unref(dev);
    }
 

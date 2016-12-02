@@ -33,7 +33,6 @@
 #include "../common/epoll_common.h"
 #include "../input_driver.h"
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -104,17 +103,6 @@ static bool linuxraw_joypad_init_pad(const char *path, struct linuxraw_joypad *p
                JSIOCGNAME(sizeof(settings->input.device_names[0])), pad->ident) >= 0)
       {
          RARCH_LOG("[Device]: Found pad: %s on %s.\n", pad->ident, path);
-
-         if (linuxraw_hotplug)
-         {
-            char msg[512];
-
-            msg[0] = '\0';
-
-            snprintf(msg, sizeof(msg), "Device connected. #%u (%s).",
-                  (unsigned)(pad - linuxraw_pads), pad->ident);
-            runloop_msg_queue_push(msg, 0, 60, false);
-         }
       }
       else
          RARCH_ERR("[Device]: Didn't find ident of %s.\n", path);

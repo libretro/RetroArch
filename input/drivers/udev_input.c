@@ -49,7 +49,6 @@
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 typedef struct udev_input udev_input_t;

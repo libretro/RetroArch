@@ -39,9 +39,7 @@
 #include "../input_config.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
-
 
 /* Check if the definitions do not already exist.
  * Official and mingw xinput headers have different include guards.

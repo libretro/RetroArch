@@ -40,7 +40,6 @@
 
 #include "../configuration.h"
 #include "../msg_hash.h"
-#include "../runloop.h"
 #include "../verbosity.h"
 
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
