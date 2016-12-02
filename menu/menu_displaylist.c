@@ -381,7 +381,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
          {
             if (core_info->firmware[i].desc)
             {
-               snprintf(tmp, sizeof(tmp), "	%s: %s",
+               snprintf(tmp, sizeof(tmp), "(!) %s: %s",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
                      core_info->firmware[i].desc ?
                      core_info->firmware[i].desc : "");
@@ -389,7 +389,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
                      MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                      MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-               snprintf(tmp, sizeof(tmp), "	%s: %s, %s",
+               snprintf(tmp, sizeof(tmp), "(!) %s: %s, %s",
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
                      core_info->firmware[i].missing ?
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING) :
