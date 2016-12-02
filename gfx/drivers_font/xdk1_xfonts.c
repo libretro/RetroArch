@@ -20,6 +20,8 @@
 #include "../../config.h"
 #endif
 
+#include "../drivers/d3d.h"
+
 #include "../font_driver.h"
 #include "../../runloop.h"
 
