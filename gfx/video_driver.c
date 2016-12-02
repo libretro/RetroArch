@@ -1292,7 +1292,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 #ifdef _XBOX1
    CONFIG_UINT(
          list, list_info,
-         &settings->video.swap_interval,
+         &global->console.screen.flicker_filter_index,
          MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
          MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
          0,
