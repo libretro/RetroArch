@@ -408,17 +408,6 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->notes)
    {
-
-/* Disable "Core notes:"
-*
-*        fill_pathname_noext(tmp,
-*            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES),
-*            ": ",
-*            sizeof(tmp));
-*      menu_entries_append_enum(info->list, tmp, "",
-*            MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-*/
-
       for (i = 0; i < core_info->note_list->size; i++)
       {
          strlcpy(tmp,
