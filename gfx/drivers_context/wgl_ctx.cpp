@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -23,10 +23,7 @@
 #define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
 #endif
 
-#define UNICODE
-#include <tchar.h>
-#include <wchar.h>
-
+#include <encodings/win32.h>
 #include <string.h>
 #include <math.h>
 
@@ -146,9 +143,9 @@ static void create_gl_context(HWND hwnd, bool *quit)
    else
    {
       g_hrc = wglCreateContext(g_hdc);
-      
+
       /* We'll create shared context later if not. */
-      if (g_hrc && !core_context && !debug) 
+      if (g_hrc && !core_context && !debug)
       {
          g_hw_hrc = wglCreateContext(g_hdc);
          if (g_hw_hrc)
@@ -190,7 +187,7 @@ static void create_gl_context(HWND hwnd, bool *quit)
          *aptr++ = g_minor;
 
          /* Technically, we don't have core/compat until 3.2.
-          * Version 3.1 is either compat or not depending 
+          * Version 3.1 is either compat or not depending
           * on GL_ARB_compatibility.
           */
          if ((g_major * 1000 + g_minor) >= 3002)
@@ -262,7 +259,7 @@ void create_graphics_context(HWND hwnd, bool *quit)
          GetClientRect(hwnd, &rect);
          HINSTANCE instance = GetModuleHandle(NULL);
          if (!vulkan_surface_create(&g_vk, VULKAN_WSI_WIN32,
-                  &instance, &hwnd, 
+                  &instance, &hwnd,
                   width, height, g_interval))
             *quit = true;
          g_inited = true;
@@ -439,7 +436,7 @@ static void *gfx_ctx_wgl_init(void *video_driver)
 
    if (g_inited)
       return NULL;
-   
+
    win32_window_reset();
    win32_monitor_init();
 
@@ -601,7 +598,7 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 }
 
 static bool gfx_ctx_wgl_get_metrics(void *data,
-	enum display_metric_types type, float *value)
+        enum display_metric_types type, float *value)
 {
    return win32_get_metrics(data, type, value);
 }

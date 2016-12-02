@@ -28,7 +28,17 @@
 #define UNICODE
 #include <tchar.h>
 #include <wchar.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <encodings/utf.h>
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 #endif
 

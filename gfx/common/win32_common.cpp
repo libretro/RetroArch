@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -76,7 +76,7 @@ ui_window_win32_t main_window;
 /* Power Request APIs */
 
 #if !defined(_XBOX) && (_MSC_VER == 1310)
-typedef struct _REASON_CONTEXT 
+typedef struct _REASON_CONTEXT
 {
    ULONG Version;
    DWORD Flags;
@@ -129,7 +129,7 @@ extern "C"
    }
 };
 
-INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message, 
+INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
         WPARAM wParam, LPARAM lParam)
 {
    size_t list_size;
@@ -148,16 +148,16 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
             core_info_list_get_supported_cores(core_info_list,
                   path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
 
-            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
+            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
 
             for (i = 0; i < list_size; i++)
             {
                const core_info_t *info = (const core_info_t*)&core_info[i];
-               SendMessage(hwndList, LB_ADDSTRING, 0, 
-                     (LPARAM)info->display_name); 
+               SendMessage(hwndList, LB_ADDSTRING, 0,
+                     (LPARAM)info->display_name);
             }
-            SetFocus(hwndList); 
-            return TRUE;  
+            SetFocus(hwndList);
+            return TRUE;
          }
 
       case WM_COMMAND:
@@ -168,20 +168,20 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
                EndDialog(hDlg, LOWORD(wParam));
                break;
             case ID_CORELISTBOX:
-               switch (HIWORD(wParam)) 
-               { 
+               switch (HIWORD(wParam))
+               {
                   case LBN_SELCHANGE:
                      {
                         int lbItem;
                         const core_info_t *info = NULL;
-                        HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
-                        lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
+                        HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
+                        lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0);
                         core_info_get_list(&core_info_list);
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
                         info = (const core_info_t*)&core_info[lbItem];
                         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
-                     } 
+                     }
                      break;
                }
                return TRUE;
@@ -336,7 +336,7 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       {
          /* Pick one core that could be compatible, ew */
          if(DialogBoxParamW(GetModuleHandleW(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
-                  hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
+                  hwnd,PickCoreProc,(LPARAM)NULL)==IDOK)
          {
             task_push_content_load_default(
                   NULL, NULL,
@@ -408,7 +408,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          }
          *quit = true;
          break;
-	  case WM_COMMAND:
+          case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
             if (settings->ui.menubar_enable)
@@ -453,7 +453,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
             g_inited              = true;
-            
+
             win32_window.hwnd     = hwnd;
 
             ui_window_win32_set_droppable(&win32_window, true);
@@ -533,7 +533,7 @@ bool win32_window_create(void *data, unsigned style,
 #endif
 
 bool win32_get_metrics(void *data,
-	enum display_metric_types type, float *value)
+        enum display_metric_types type, float *value)
 {
 #ifdef _XBOX
    return false;
@@ -616,7 +616,7 @@ void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #ifndef _XBOX
-   const ui_application_t *application = 
+   const ui_application_t *application =
       ui_companion_driver_get_application_ptr();
    if (application)
       application->process_events();
@@ -696,12 +696,12 @@ void win32_set_style(MONITORINFOEXW *current_mon, HMONITOR *hm_to_use,
 #ifndef _XBOX
    settings_t *settings = config_get_ptr();
 
-   /* Windows only reports the refresh rates for modelines as 
-    * an integer, so video.refresh_rate needs to be rounded. Also, account 
+   /* Windows only reports the refresh rates for modelines as
+    * an integer, so video.refresh_rate needs to be rounded. Also, account
     * for black frame insertion using video.refresh_rate set to half
     * of the display refresh rate, as well as higher vsync swap intervals. */
    float refresh_mod    = settings->video.black_frame_insertion ? 2.0f : 1.0f;
-   unsigned refresh     = roundf(settings->video.refresh_rate 
+   unsigned refresh     = roundf(settings->video.refresh_rate
          * refresh_mod * settings->video.swap_interval);
 
    if (fullscreen)
@@ -714,14 +714,14 @@ void win32_set_style(MONITORINFOEXW *current_mon, HMONITOR *hm_to_use,
       }
       else
       {
-	 char dev_name[CCHDEVICENAME] = {0};
+         char dev_name[CCHDEVICENAME] = {0};
          *style          = WS_POPUP | WS_VISIBLE;
 
          utf16_to_char_string((const uint16_t*)current_mon->szDevice, dev_name, sizeof(dev_name));
 
          if (!win32_monitor_set_fullscreen(*width, *height,
                   refresh, dev_name))
-			 {}
+                         {}
 
          /* Display settings might have changed, get new coordinates. */
          GetMonitorInfoW(*hm_to_use, (MONITORINFOEXW*)current_mon);
@@ -801,7 +801,7 @@ bool win32_set_video_mode(void *data,
 
    if (!win32_window_create(data, style, &mon_rect, width, height, fullscreen))
       return false;
-   
+
    win32_set_window(&width, &height, fullscreen, windowed_full, &rect);
 
    /* Wait until context is created (or failed to do so ...) */
