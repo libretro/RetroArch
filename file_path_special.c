@@ -46,7 +46,6 @@
 #include "file_path_special.h"
 
 #include "paths.h"
-#include "runloop.h"
 #include "verbosity.h"
 
 void fill_pathname_expand_special(char *out_path,
