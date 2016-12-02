@@ -187,7 +187,6 @@ void menu_event_keyboard_set(bool down, enum retro_key key)
 
 unsigned menu_event(uint64_t input, uint64_t trigger_input)
 {
-   unsigned menu_ok_btn, menu_cancel_btn;
    menu_animation_ctx_delta_t delta;
    float delta_time;
    /* Used for key repeat */
@@ -201,18 +200,17 @@ unsigned menu_event(uint64_t input, uint64_t trigger_input)
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = NULL;
    settings_t *settings                    = config_get_ptr();
-   bool ok_current                         = false;
    static bool ok_old                      = false;
-   bool ok_trigger                         = false;
-   
-   menu_ok_btn     = settings->input.menu_swap_ok_cancel_buttons ?
+   unsigned menu_ok_btn                    = settings->input.menu_swap_ok_cancel_buttons ?
       RETRO_DEVICE_ID_JOYPAD_B : RETRO_DEVICE_ID_JOYPAD_A;
-   menu_cancel_btn = settings->input.menu_swap_ok_cancel_buttons ?
+   unsigned menu_cancel_btn                = settings->input.menu_swap_ok_cancel_buttons ?
       RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
+   bool ok_current                         = input & UINT64_C(1) << menu_ok_btn;
 
-   ok_current = input & UINT64_C(1) << menu_ok_btn;
-   ok_trigger = ok_current & ~ok_old;
-   ok_old = ok_current;
+   /* TODO/FIXME - unsafe use of type 'bool' in operation */
+   bool ok_trigger                         = ok_current & ~ok_old;
+
+   ok_old     = ok_current;
 
    if (input)
    {
