@@ -28,7 +28,6 @@
 #include "../widgets/menu_input_bind_dialog.h"
 
 #include "../../verbosity.h"
-#include "../../runloop.h"
 #include "../../content.h"
 #include "../../retroarch.h"
 

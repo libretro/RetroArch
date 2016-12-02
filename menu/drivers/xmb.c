@@ -2531,19 +2531,10 @@ static void xmb_frame(void *data)
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
          width, height, xmb->font);
 
-/* uncomment to print the messages on the XMB status line
-   if (string_is_empty(runloop_msg_queue_pull()))
-   {*/
-      if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
-         xmb_draw_text(xmb, title_msg, xmb->margins.title.left,
-               height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
-               width, height, xmb->font);
-/*   }
-   else
-      xmb_draw_text(xmb, runloop_msg_queue_pull(), xmb->margins.title.left,
-         height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
-         width, height);
-*/
+   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+      xmb_draw_text(xmb, title_msg, xmb->margins.title.left,
+            height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
+            width, height, xmb->font);
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = 0;
