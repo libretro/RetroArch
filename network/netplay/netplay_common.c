@@ -471,6 +471,7 @@ bool netplay_ad_server(netplay_t *netplay, int ad_fd)
          break;
 
       /* Somebody queried, so check that it's valid */
+      addr_size = sizeof(their_addr);
       if (recvfrom(ad_fd, (char*)ad_packet_buffer, AD_PACKET_MAX_SIZE, 0,
                    &their_addr, &addr_size) >= (ssize_t) (2*sizeof(uint32_t)))
       {

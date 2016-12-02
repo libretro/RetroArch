@@ -95,6 +95,8 @@ task_retriever_info_t *http_task_get_transfer_list(void);
 
 bool task_push_wifi_scan(void);
 
+bool task_push_netplay_lan_scan(void);
+
 #endif
 
 bool task_push_image_load(const char *fullpath,
