@@ -177,7 +177,7 @@ typedef struct global
          } resolutions;
 
          unsigned gamma_correction;
-         unsigned char flicker_filter_index;
+         unsigned int flicker_filter_index;
          unsigned char soft_filter_index;
          bool pal_enable;
          bool pal60_enable;
