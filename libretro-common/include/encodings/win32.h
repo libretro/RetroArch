@@ -44,20 +44,20 @@ extern "C" {
 
 #ifdef UNICODE
 #define CHAR_TO_WCHAR_ALLOC(s, ws) \
-   size_t ws##_size = (s[0] ? strlen(s) : 0) + 1; \
+   size_t ws##_size = (NULL != s && s[0] ? strlen(s) : 0) + 1; \
    wchar_t *ws = (wchar_t*)calloc(ws##_size, 2); \
-   if (s[0]) \
+   if (NULL != s && s[0]) \
       MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, ws##_size / sizeof(wchar_t));
 
 #define WCHAR_TO_CHAR_ALLOC(ws, s) \
-   size_t s##_size = ((ws[0] ? wcslen((const wchar_t*)ws) : 0) / 2) + 1; \
+   size_t s##_size = ((NULL != ws && ws[0] ? wcslen((const wchar_t*)ws) : 0) / 2) + 1; \
    char *s = (char*)calloc(s##_size, 1); \
-   if (ws[0]) \
+   if (NULL != ws && ws[0]) \
       utf16_to_char_string((const uint16_t*)ws, s, s##_size);
 
 #else
-#define CHAR_TO_WCHAR_ALLOC(s, ws) char *ws = strdup(s);
-#define WCHAR_TO_CHAR_ALLOC(ws, s) char *s = strdup(ws);
+#define CHAR_TO_WCHAR_ALLOC(s, ws) char *ws = (NULL != s && s[0] ? strdup(s) : NULL);
+#define WCHAR_TO_CHAR_ALLOC(ws, s) char *s = (NULL != ws && ws[0] ? strdup(ws) : NULL);
 #endif
 
 #endif
