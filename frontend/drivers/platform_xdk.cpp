@@ -35,6 +35,7 @@
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
+#include "../../paths.h"
 #ifndef IS_SALAMANDER
 #include "../../retroarch.h"
 #ifdef HAVE_MENU
@@ -1271,7 +1272,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
       snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", path_get(RARCH_PATH_CONTENT));
 
    if (!string_is_empty(path))
-      XLaunchNewImage(path, !string_is_empty(ptr.Data) ? &ptr : NULL);
+      XLaunchNewImage(path, !string_is_empty((const char*)ptr.Data) ? &ptr : NULL);
 #elif defined(_XBOX360)
    char game_path[1024] = {0};
 
