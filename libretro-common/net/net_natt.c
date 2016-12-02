@@ -42,6 +42,7 @@ static struct IGDdatas data;
 
 void natt_init(void)
 {
+#ifndef HAVE_SOCKET_LEGACY
 #if HAVE_MINIUPNPC
    struct UPNPDev * devlist;
    struct UPNPDev * dev;
@@ -81,6 +82,7 @@ void natt_init(void)
       freeUPNPDevlist(devlist);
    }
 #endif
+#endif
 }
 
 bool natt_new(struct natt_status *status)
@@ -96,6 +98,7 @@ void natt_free(struct natt_status *status)
 
 bool natt_open_port(struct natt_status *status, struct sockaddr *addr, socklen_t addrlen, enum socket_protocol proto)
 {
+#ifndef HAVE_SOCKET_LEGACY
 #if HAVE_MINIUPNPC
    char host[PATH_MAX_LENGTH], ext_host[PATH_MAX_LENGTH],
         port_str[6], ext_port_str[6];
@@ -163,10 +166,14 @@ bool natt_open_port(struct natt_status *status, struct sockaddr *addr, socklen_t
 #else
    return false;
 #endif
+#else
+   return false;
+#endif
 }
 
 bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_protocol proto)
 {
+#ifndef HAVE_SOCKET_LEGACY
    struct net_ifinfo list;
    bool ret = false;
    size_t i;
@@ -199,6 +206,10 @@ bool natt_open_port_any(struct natt_status *status, uint16_t port, enum socket_p
    net_ifinfo_free(&list);
 
    return ret;
+
+#else
+   return false;
+#endif
 }
 
 bool natt_read(struct natt_status *status)

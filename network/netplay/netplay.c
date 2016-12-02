@@ -1108,15 +1108,7 @@ static void announce_nat_traversal(netplay_t *netplay)
    else return;
 
 #else
-   if (netplay->nat_traversal_state.have_inet4)
-   {
-      host[0] = '\0';
-      snprintf(port, 6, "%hu",
-         ntohs(netplay->nat_traversal_state.ext_inet4_addr.sin_port));
-      port[5] = '\0';
-
-   }
-   else return;
+   return;
 
 #endif
 
