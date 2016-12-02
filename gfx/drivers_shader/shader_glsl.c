@@ -415,12 +415,7 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
    ssize_t len;
-   int nitems = 0;
-
-   if (!pass)
-      return false;
-
-   nitems = filestream_read_file(path,
+   int nitems = filestream_read_file(path,
          (void**)&pass->source.string.vertex, &len);
 
    if (nitems <= 0 || len <= 0)
@@ -451,17 +446,18 @@ static bool gl_glsl_compile_programs(
        * load the file here, and pretend
        * we were really using XML all along.
        */
-      if (*pass->source.path && !gl_glsl_load_source_path(
-               pass, pass->source.path))
+      if (     !string_is_empty(pass->source.path) 
+            && !gl_glsl_load_source_path(pass, pass->source.path))
       {
          RARCH_ERR("Failed to load GLSL shader: %s.\n",
                pass->source.path);
          return false;
       }
-      *pass->source.path = '\0';
 
-      vertex   = pass->source.string.vertex;
-      fragment = pass->source.string.fragment;
+      *pass->source.path        = '\0';
+
+      vertex                    = pass->source.string.vertex;
+      fragment                  = pass->source.string.fragment;
 
       shader_prog_info.vertex   = vertex;
       shader_prog_info.fragment = fragment;
@@ -561,10 +557,10 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
 
    texture[0] = texture_size[0] = input_size[0] = tex_coord[0] = '\0';
 
-   snprintf(texture, sizeof(texture), "%s%s", base, "Texture");
+   snprintf(texture,      sizeof(texture),      "%s%s", base, "Texture");
    snprintf(texture_size, sizeof(texture_size), "%s%s", base, "TextureSize");
-   snprintf(input_size, sizeof(input_size), "%s%s", base, "InputSize");
-   snprintf(tex_coord, sizeof(tex_coord), "%s%s", base, "TexCoord");
+   snprintf(input_size,   sizeof(input_size),   "%s%s", base, "InputSize");
+   snprintf(tex_coord,    sizeof(tex_coord),    "%s%s", base, "TexCoord");
 
    if (frame->texture < 0)
       frame->texture = gl_glsl_get_uniform(glsl, prog, texture);
@@ -888,7 +884,7 @@ static void *gl_glsl_init(void *data, const char *path)
       retro_ctx_memory_info_t mem_info;
       struct state_tracker_info info = {0};
 
-      mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
+      mem_info.id    = RETRO_MEMORY_SYSTEM_RAM;
 
       core_get_memory(&mem_info);
 
