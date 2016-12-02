@@ -34,7 +34,10 @@
 #include "../driver.h"
 #include "../paths.h"
 #include "../retroarch.h"
+
+#ifndef HAVE_MAIN
 #include "../runloop.h"
+#endif
 
 /**
  * main_exit:

@@ -22,9 +22,10 @@
 #include "../font_driver.h"
 
 #include "../../configuration.h"
-#include "../../runloop.h"
 
+#ifdef HAVE_D3D9
 #include "../include/d3d9/d3dx9core.h"
+#endif
 
 typedef struct
 {
