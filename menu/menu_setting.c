@@ -5599,7 +5599,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->netplay.is_spectate,
+                  &settings->netplay.nat_traversal,
                   MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
                   false,
