@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <dynamic/dylib.h>
+#include <encodings/win32.h>
 
 #ifdef NEED_DYNAMIC
 
@@ -34,7 +35,7 @@
 #endif
 
 #ifdef _WIN32
-static char last_dyn_error[512];
+static TCHAR last_dyn_error[512];
 
 static void set_dl_error(void)
 {
@@ -45,11 +46,16 @@ static void set_dl_error(void)
             NULL,
             err,
             MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-            last_dyn_error,
+            (LPTSTR)last_dyn_error,
             sizeof(last_dyn_error) - 1,
             NULL) == 0)
-      snprintf(last_dyn_error, sizeof(last_dyn_error) - 1,
+   {
+      WCHAR_TO_CHAR_ALLOC(last_dyn_error, last_dyn_error_str)
+      snprintf(last_dyn_error_str, sizeof(last_dyn_error) - 1,
             "unknown error %lu", err);
+      if (last_dyn_error_str)
+         free(last_dyn_error_str);
+   }
 }
 #endif
 
@@ -65,8 +71,12 @@ dylib_t dylib_load(const char *path)
 {
 #ifdef _WIN32
    int prevmode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
-   dylib_t lib  = LoadLibrary(path);
+   dylib_t lib  = NULL;
+   CHAR_TO_WCHAR_ALLOC(path, path_wide)
 
+   lib = LoadLibrary(path_wide);
+
+   free(path_wide);
    SetErrorMode(prevmode);
 
    if (!lib)
