@@ -785,7 +785,7 @@ static void task_load_handler(retro_task_t *task)
                state->path,
                msg_hash_to_str(MSG_SUCCEEDED));
          if (!task->mute)
-            runloop_msg_queue_push(msg, 1, 180, true);
+            task->title = strdup(msg);
       }
       else
       {
@@ -796,7 +796,7 @@ static void task_load_handler(retro_task_t *task)
                   settings->state_slot);
 
          if (!task->mute)
-            runloop_msg_queue_push(msg, 2, 180, true);
+            task->title = strdup(msg);
       }
 
       task_load_handler_finished(task, state);
