@@ -302,7 +302,7 @@ static bool input_autoconfigure_joypad_init(autoconfig_params_t *params)
 
 static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
-   autoconfig_params_t *params = task ? (autoconfig_params_t*)task->state : NULL;
+   autoconfig_params_t *params = (autoconfig_params_t*)task->state;
 
    if (!params || !input_autoconfigure_joypad_init(params) || string_is_empty(params->name))
    {
@@ -334,7 +334,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
-   autoconfig_disconnect_t *params = task ? (autoconfig_disconnect_t*)task->state : NULL;
+   autoconfig_disconnect_t *params = (autoconfig_disconnect_t*)task->state;
 
    task->title    = strdup(params->msg);
    task->finished = true;
