@@ -40,6 +40,10 @@
 #include "../cheevos.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay_discovery.h"
+#endif
+
 #ifdef __linux__
 #include "../frontend/drivers/platform_linux.h"
 #endif
@@ -1560,6 +1564,10 @@ static int menu_displaylist_parse_netplay(
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
          MENU_ENUM_LABEL_NETWORK_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
+         MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 #else
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
@@ -4216,6 +4224,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_UPDATER_SETTINGS_LIST:
       case DISPLAYLIST_WIFI_SETTINGS_LIST:
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
+      case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
       case DISPLAYLIST_LAKKA_SERVICES_LIST:
       case DISPLAYLIST_USER_SETTINGS_LIST:
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
@@ -5011,6 +5020,50 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          info->need_push    = true;
          break;
+      case DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST:
+#ifdef HAVE_NETWORKING
+         {
+            struct netplay_host_list *hosts;
+
+            if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
+               hosts = NULL;
+
+            if (!hosts || hosts->size == 0)
+            {
+               if (!hosts)
+                  task_push_netplay_lan_scan();
+
+               menu_entries_append_enum(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND),
+                     MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
+                     0, 0, 0);
+            }
+            else
+            {
+               size_t i;
+               for (i = 0; i < hosts->size; i++)
+               {
+                  struct netplay_host *host = &hosts->hosts[i];
+                  menu_entries_append_enum(info->list,
+                        host->nick,
+                        msg_hash_to_str(MENU_ENUM_LABEL_CONNECT_NETPLAY_LAN),
+                        MENU_ENUM_LABEL_CONNECT_NETPLAY_LAN,
+                        MENU_NETPLAY_LAN_SCAN, 0, 0);
+               }
+            }
+         }
+#else
+         menu_entries_append_enum(info->list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND),
+               MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
+               0, 0, 0);
+#endif
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_LAKKA_SERVICES_LIST:
          menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_SSH_ENABLE,
@@ -5418,6 +5471,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_ENUM_LABEL_WIFI_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_NETWORK_SETTINGS,   PARSE_ACTION, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_LAKKA_SERVICES,   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings_enum(menu, info,

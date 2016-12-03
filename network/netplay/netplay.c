@@ -30,6 +30,7 @@
 #include <retro_endianness.h>
 
 #include "netplay_private.h"
+#include "netplay_discovery.h"
 
 #include "../../autosave.h"
 #include "../../configuration.h"
@@ -53,9 +54,6 @@ enum
 /* Only used before init_netplay */
 static bool netplay_enabled = false;
 static bool netplay_is_client = false;
-
-/* Used to advertise or request advertisement of Netplay */
-static int netplay_ad_fd = -1;
 
 /* Used while Netplay is running */
 static netplay_t *netplay_data = NULL;
@@ -120,8 +118,8 @@ end:
    return fd;
 }
 
-static bool init_tcp_socket(netplay_t *netplay, const char *server,
-      uint16_t port, bool spectate)
+static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
+      const char *server, uint16_t port, bool spectate)
 {
    char port_buf[16];
    bool ret                        = false;
@@ -131,25 +129,41 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
 
    port_buf[0] = '\0';
 
+   if (!direct_host)
+   {
 #ifdef AF_INET6
-   if (!server)
-      hints.ai_family = AF_INET6;
+      if (!server)
+         hints.ai_family = AF_INET6;
 #endif
-   hints.ai_socktype = SOCK_STREAM;
-   if (!server)
-      hints.ai_flags = AI_PASSIVE;
+      hints.ai_socktype = SOCK_STREAM;
+      if (!server)
+         hints.ai_flags = AI_PASSIVE;
 
-   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
-      return false;
+      snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+      if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
+         return false;
 
-   if (!res)
-      return false;
+      if (!res)
+         return false;
+
+   }
+   else
+   {
+      /* I'll build my own addrinfo! With blackjack and hookers! */
+      struct netplay_host *host = (struct netplay_host *) direct_host;
+      hints.ai_family = host->addr.sa_family;
+      hints.ai_socktype = SOCK_STREAM;
+      hints.ai_protocol = IPPROTO_TCP;
+      hints.ai_addrlen = host->addrlen;
+      hints.ai_addr = &host->addr;
+      res = &hints;
+
+   }
 
    /* If we're serving on IPv6, make sure we accept all connections, including
     * IPv4 */
 #ifdef AF_INET6
-   if (!server && res->ai_family == AF_INET6)
+   if (!direct_host && !server && res->ai_family == AF_INET6)
    {
       struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) res->ai_addr;
       sin6->sin6_addr = in6addr_any;
@@ -164,7 +178,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    {
       int fd = init_tcp_connection(
             tmp_info,
-            server,
+            direct_host || server,
             netplay->spectate.enabled,
             (struct sockaddr*)&netplay->other_addr,
             sizeof(netplay->other_addr));
@@ -179,7 +193,7 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
       tmp_info = tmp_info->ai_next;
    }
 
-   if (res)
+   if (res && !direct_host)
       freeaddrinfo_retro(res);
 
    if (!ret)
@@ -204,34 +218,12 @@ static void init_nat_traversal(netplay_t *netplay)
       announce_nat_traversal(netplay);
 }
 
-static bool init_ad_socket(netplay_t *netplay, uint16_t port)
-{
-   int fd = socket_init((void**)&netplay->addr, port, NULL, SOCKET_TYPE_DATAGRAM);
-
-   if (fd < 0)
-      goto error;
-
-   if (!socket_bind(fd, (void*)netplay->addr))
-   {
-      socket_close(fd);
-      goto error;
-   }
-
-   netplay_ad_fd = fd;
-
-   return true;
-
-error:
-   RARCH_ERR("Failed to initialize netplay advertisement socket.\n");
-   return false;
-}
-
-static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
+static bool init_socket(netplay_t *netplay, void *direct_host, const char *server, uint16_t port)
 {
    if (!network_init())
       return false;
 
-   if (!init_tcp_socket(netplay, server, port, netplay->spectate.enabled))
+   if (!init_tcp_socket(netplay, direct_host, server, port, netplay->spectate.enabled))
       return false;
 
    if (netplay->is_server && netplay->nat_traversal)
@@ -261,7 +253,7 @@ static void hangup(netplay_t *netplay)
    if (netplay->is_server && !netplay->spectate.enabled)
    {
       /* In server mode, make the socket listen for a new connection */
-      if (!init_socket(netplay, NULL, netplay->tcp_port))
+      if (!init_socket(netplay, NULL, NULL, netplay->tcp_port))
       {
          RARCH_WARN("Failed to reinitialize Netplay.\n");
          runloop_msg_queue_push("Failed to reinitialize Netplay.", 0, 480, false);
@@ -1231,6 +1223,7 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
 
 /**
  * netplay_new:
+ * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
  * @port                 : Port of server.
  * @delay_frames         : Amount of delay frames.
@@ -1246,9 +1239,10 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
  *
  * Returns: new netplay handle.
  **/
-netplay_t *netplay_new(const char *server, uint16_t port, unsigned delay_frames,
-      unsigned check_frames, const struct retro_callbacks *cb, bool spectate,
-      bool nat_traversal, const char *nick, uint64_t quirks)
+netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
+      unsigned delay_frames, unsigned check_frames,
+      const struct retro_callbacks *cb, bool spectate, bool nat_traversal,
+      const char *nick, uint64_t quirks)
 {
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    if (!netplay)
@@ -1265,7 +1259,7 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned delay_frames,
    netplay->check_frames      = check_frames;
    netplay->quirks            = quirks;
 
-   strlcpy(netplay->nick, nick, sizeof(netplay->nick));
+   strlcpy(netplay->nick, nick[0] ? nick : RARCH_DEFAULT_NICK, sizeof(netplay->nick));
 
    if (!netplay_init_buffers(netplay, delay_frames))
    {
@@ -1278,7 +1272,7 @@ netplay_t *netplay_new(const char *server, uint16_t port, unsigned delay_frames,
    else
       netplay->net_cbs = netplay_get_cbs_net();
 
-   if (!init_socket(netplay, server, port))
+   if (!init_socket(netplay, direct_host, server, port))
    {
       free(netplay);
       return NULL;
@@ -1446,9 +1440,8 @@ bool netplay_pre_frame(netplay_t *netplay)
 
    if (netplay->is_server)
    {
-      /* Advertise our server if applicable */
-      if (netplay_ad_fd >= 0 || init_ad_socket(netplay, RARCH_DEFAULT_PORT))
-         netplay_ad_server(netplay, netplay_ad_fd);
+      /* Advertise our server */
+      netplay_lan_ad_server(netplay);
 
       /* NAT traversal if applicable */
       if (netplay->nat_traversal &&
@@ -1636,7 +1629,7 @@ void deinit_netplay(void)
  * Returns: true (1) if successful, otherwise false (0).
  **/
 
-bool init_netplay(bool is_spectate, const char *server, unsigned port)
+bool init_netplay(bool is_spectate, void *direct_host, const char *server, unsigned port)
 {
    struct retro_callbacks cbs    = {0};
    settings_t *settings          = config_get_ptr();
@@ -1686,6 +1679,7 @@ bool init_netplay(bool is_spectate, const char *server, unsigned port)
    }
 
    netplay_data = (netplay_t*)netplay_new(
+         netplay_is_client ? direct_host : NULL,
          netplay_is_client ? server : NULL,
          port ? port : RARCH_DEFAULT_PORT,
          settings->netplay.delay_frames, settings->netplay.check_frames, &cbs,

@@ -338,19 +338,6 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
       netplay->has_connection = true;
    }
 
-   {
-      struct natt_status status;
-      natt_init();
-      if (natt_new(&status) && natt_open_port_any(&status, netplay->tcp_port, SOCKET_PROTOCOL_TCP))
-      {
-         fprintf(stderr, "Forwarded to %d!\n", status.ext_inet4_addr.sin_port);
-      }
-      else
-      {
-         fprintf(stderr, "Forwarding failed :(\n");
-      }
-   }
-
    return true;
 }
 

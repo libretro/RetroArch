@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C)      2016 - Gregor Richards
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -36,6 +37,7 @@
 #define WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
 #define MAX_SPECTATORS 16
 #define RARCH_DEFAULT_PORT 55435
+#define RARCH_DEFAULT_NICK "Anonymous"
 
 #define NETPLAY_PROTOCOL_VERSION 3
 
@@ -257,6 +259,8 @@ bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta);
 
 bool netplay_cmd_request_savestate(netplay_t *netplay);
 
-bool netplay_ad_server(netplay_t *netplay, int ad_fd);
+/* DISCOVERY: */
+
+bool netplay_lan_ad_server(netplay_t *netplay);
 
 #endif

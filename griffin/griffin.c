@@ -880,6 +880,7 @@ NETPLAY
 #include "../network/netplay/netplay_net.c"
 #include "../network/netplay/netplay_spectate.c"
 #include "../network/netplay/netplay_common.c"
+#include "../network/netplay/netplay_discovery.c"
 #include "../network/netplay/netplay.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
@@ -889,6 +890,7 @@ NETPLAY
 #include "../libretro-common/net/net_ifinfo.c"
 #endif
 #include "../tasks/task_http.c"
+#include "../tasks/task_netplay_lan_scan.c"
 #include "../tasks/task_wifi.c"
 #endif
 

@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
+ *  Copyright (C)      2016 - Gregor Richards
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -131,6 +132,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
 
 /**
  * netplay_new:
+ * @direct_host          : Netplay host discovered from scanning.
  * @server               : IP address of server.
  * @port                 : Port of server.
  * @delay_frames         : Amount of delay frames.
@@ -146,7 +148,7 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames);
  *
  * Returns: new netplay handle.
  **/
-netplay_t *netplay_new(const char *server,
+netplay_t *netplay_new(void *direct_host, const char *server,
       uint16_t port, unsigned delay_frames, unsigned check_frames,
       const struct retro_callbacks *cb, bool spectate, bool nat_traversal,
       const char *nick, uint64_t quirks);
@@ -222,7 +224,7 @@ bool netplay_disconnect(netplay_t *netplay);
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool init_netplay(bool is_spectate, const char *server, unsigned port);
+bool init_netplay(bool is_spectate, void *direct_host, const char *server, unsigned port);
 
 void deinit_netplay(void);
 

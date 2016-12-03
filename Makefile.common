@@ -1100,6 +1100,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 	  $(LIBRETRO_COMM_DIR)/net/net_natt.o \
           network/net_http_special.o \
           tasks/task_http.o \
+	  tasks/task_netplay_lan_scan.o \
           tasks/task_wifi.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
@@ -1120,6 +1121,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 	OBJ += network/netplay/netplay_net.o \
 			 network/netplay/netplay_spectate.o \
 			 network/netplay/netplay_common.o \
+			 network/netplay/netplay_discovery.o \
 			 network/netplay/netplay.o
 
    # Retro Achievements (also depends on threads)
