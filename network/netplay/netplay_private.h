@@ -117,11 +117,20 @@ struct netplay_callbacks {
    bool (*info_cb)   (netplay_t *netplay, unsigned frames);
 };
 
+enum rarch_netplay_connection_status
+{
+   RARCH_NETPLAY_CONNECTION_NONE = 0,
+   RARCH_NETPLAY_CONNECTION_INIT, /* Waiting for header */
+   RARCH_NETPLAY_CONNECTION_PRE_NICK, /* Waiting for nick */
+   RARCH_NETPLAY_CONNECTION_PRE_SRAM, /* Waiting for SRAM */
+   RARCH_NETPLAY_CONNECTION_PLAYING /* Normal ready state */
+};
+
 enum rarch_netplay_stall_reasons
 {
-    RARCH_NETPLAY_STALL_NONE = 0,
-    RARCH_NETPLAY_STALL_RUNNING_FAST,
-    RARCH_NETPLAY_STALL_NO_CONNECTION
+   RARCH_NETPLAY_STALL_NONE = 0,
+   RARCH_NETPLAY_STALL_RUNNING_FAST,
+   RARCH_NETPLAY_STALL_NO_CONNECTION
 };
 
 struct netplay
@@ -129,6 +138,9 @@ struct netplay
    char nick[32];
    char other_nick[32];
    struct sockaddr_storage other_addr;
+
+   /* Status of our connection */
+   enum rarch_netplay_connection_status status;
 
    struct retro_callbacks cbs;
    /* TCP connection for state sending, etc. Also used for commands */
@@ -140,7 +152,6 @@ struct netplay
    struct natt_status nat_traversal_state;
    /* Which port is governed by netplay (other user)? */
    unsigned port;
-   bool has_connection;
 
    struct delta_frame *buffer;
    size_t buffer_size;

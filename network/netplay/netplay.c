@@ -281,7 +281,7 @@ static void hangup(netplay_t *netplay)
 {
    if (!netplay)
       return;
-   if (!netplay->has_connection)
+   if (netplay->status == RARCH_NETPLAY_CONNECTION_NONE)
       return;
 
    RARCH_WARN("Netplay has disconnected. Will continue without connection ...\n");
@@ -300,7 +300,7 @@ static void hangup(netplay_t *netplay)
       }
    }
 
-   netplay->has_connection = false;
+   netplay->status = RARCH_NETPLAY_CONNECTION_NONE;
 
    /* Reset things that will behave oddly if we get a new connection */
    netplay->remote_paused  = false;
@@ -328,7 +328,7 @@ static bool netplay_should_skip(netplay_t *netplay)
 {
    if (!netplay)
       return false;
-   return netplay->is_replay && netplay->has_connection;
+   return netplay->is_replay && (netplay->status == RARCH_NETPLAY_CONNECTION_PLAYING);
 }
 
 static bool netplay_can_poll(netplay_t *netplay)
@@ -907,7 +907,7 @@ static bool netplay_poll(void)
 {
    int res;
 
-   if (!netplay_data->has_connection)
+   if (netplay_data->status == RARCH_NETPLAY_CONNECTION_NONE)
       return false;
 
    netplay_data->can_poll = false;
@@ -1009,7 +1009,7 @@ static bool netplay_is_alive(void)
 {
    if (!netplay_data)
       return false;
-   return netplay_data->has_connection;
+   return (netplay_data->status == RARCH_NETPLAY_CONNECTION_PLAYING);
 }
 
 static bool netplay_flip_port(netplay_t *netplay, bool port)
@@ -1588,7 +1588,7 @@ bool netplay_pre_frame(netplay_t *netplay)
    if (!netplay->net_cbs->pre_frame(netplay))
       return false;
 
-   return (!netplay->has_connection || 
+   return ((netplay->status != RARCH_NETPLAY_CONNECTION_PLAYING) ||
           (!netplay->stall && !netplay->remote_paused));
 }
 
@@ -1622,7 +1622,8 @@ void netplay_frontend_paused(netplay_t *netplay, bool paused)
       return;
 
    netplay->local_paused = paused;
-   if (netplay->has_connection && !netplay->spectate.enabled)
+   if (netplay->status != RARCH_NETPLAY_CONNECTION_NONE &&
+       !netplay->spectate.enabled)
    {
       netplay_send_raw_cmd(netplay, paused 
             ? NETPLAY_CMD_PAUSE : NETPLAY_CMD_RESUME, NULL, 0);
@@ -1649,7 +1650,7 @@ void netplay_load_savestate(netplay_t *netplay,
    retro_ctx_serialize_info_t tmp_serial_info;
    uint32_t rd, wn;
 
-   if (!netplay->has_connection)
+   if (netplay->status != RARCH_NETPLAY_CONNECTION_PLAYING)
       return;
 
    /* Record it in our own buffer */
@@ -1745,7 +1746,7 @@ void netplay_load_savestate(netplay_t *netplay,
  **/
 bool netplay_disconnect(netplay_t *netplay)
 {
-   if (!netplay || !netplay->has_connection)
+   if (!netplay || (netplay->status == RARCH_NETPLAY_CONNECTION_NONE))
       return true;
    hangup(netplay);
    return true;
