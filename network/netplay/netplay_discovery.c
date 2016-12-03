@@ -133,8 +133,8 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
          ad_packet_buffer.protocol_version = htonl(NETPLAY_PROTOCOL_VERSION);
 
          /* And send it off */
-         sendto(lan_ad_client_fd, &ad_packet_buffer, 2*sizeof(uint32_t), 0,
-            addr->ai_addr, addr->ai_addrlen);
+         sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
+            2*sizeof(uint32_t), 0, addr->ai_addr, addr->ai_addrlen);
          break;
       }
 
