@@ -133,7 +133,10 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
       }
 
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES:
-         return netplay_lan_ad_client();
+         if (!netplay_lan_ad_client())
+            return false;
+         *((struct netplay_host_list **) data) = &discovered_hosts;
+         break;
 
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_CLEAR_RESPONSES:
          discovered_hosts.size = 0;
