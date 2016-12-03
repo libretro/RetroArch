@@ -596,99 +596,6 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
       input_pop_analog_dpad(settings->input.autoconf_binds[i]);
 }
 
-static INLINE bool input_keys_pressed_internal(unsigned i,
-      const struct retro_keybind *binds)
-{
-   if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
-            || !input_driver_block_hotkey))
-   {
-      if (current_input->input_state(current_input_data, &binds,
-            0, RETRO_DEVICE_JOYPAD, 0, i))
-         return true;
-   }
-
-   if (i >= RARCH_FIRST_META_KEY)
-   {
-      if (current_input->meta_key_pressed(current_input_data, i))
-         return true;
-   }
-
-#ifdef HAVE_OVERLAY
-   if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
-      return true;
-#endif
-
-#ifdef HAVE_COMMAND
-   if (input_driver_command)
-   {
-      command_handle_t handle;
-
-      handle.handle = input_driver_command;
-      handle.id     = i;
-
-      if (command_get(&handle))
-         return true;
-   }
-#endif
-
-#ifdef HAVE_NETWORKGAMEPAD
-   if (input_driver_remote)
-   {
-      if (input_remote_key_pressed(i, 0))
-         return true;
-   }
-#endif
-
-   return false;
-}
-
-/**
- * input_keys_pressed:
- *
- * Grab an input sample for this frame.
- *
- * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
- * and you need a bitmask of more than 64 entries, reimplement
- * it to use something like rarch_bits_t.
- *
- * Returns: Input sample containg a mask of all pressed keys.
- */
-uint64_t input_keys_pressed(void)
-{
-   unsigned i;
-   uint64_t                      ret      = 0;
-   settings_t              *settings      = config_get_ptr();
-   const struct retro_keybind *binds      = settings->input.binds[0];
-   const struct retro_keybind *binds_auto = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
-   const struct retro_keybind *normal     = &binds[RARCH_ENABLE_HOTKEY];
-
-   input_driver_block_libretro_input = false;
-   input_driver_block_hotkey         = false;
-
-   /* Don't block the check to RARCH_ENABLE_HOTKEY
-    * unless we're really supposed to. */
-   if (current_input->keyboard_mapping_is_blocked &&
-         current_input->keyboard_mapping_is_blocked(current_input_data))
-      input_driver_block_hotkey = true;
-
-   if (check_input_driver_block_hotkey(normal, binds_auto))
-   {
-      if (current_input->input_state(current_input_data, &binds, 0,
-               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
-         input_driver_block_libretro_input = true;
-      else
-         input_driver_block_hotkey         = true;
-   }
-
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-   {
-      if (input_keys_pressed_internal(i, binds))
-         ret |= (UINT64_C(1) << i);
-   }
-
-   return ret;
-}
-
 static INLINE bool input_menu_keys_pressed_internal(unsigned i)
 {
    settings_t *settings           = config_get_ptr();
@@ -759,6 +666,100 @@ static INLINE bool input_menu_keys_pressed_internal(unsigned i)
    return false;
 }
 
+static INLINE bool input_keys_pressed_internal(unsigned i,
+      const struct retro_keybind *binds)
+{
+   if (((!input_driver_block_libretro_input && ((i < RARCH_FIRST_META_KEY)))
+            || !input_driver_block_hotkey))
+   {
+      if (current_input->input_state(current_input_data, &binds,
+            0, RETRO_DEVICE_JOYPAD, 0, i))
+         return true;
+   }
+
+   if (i >= RARCH_FIRST_META_KEY)
+   {
+      if (current_input->meta_key_pressed(current_input_data, i))
+         return true;
+   }
+
+#ifdef HAVE_OVERLAY
+   if (overlay_ptr && input_overlay_key_pressed(overlay_ptr, i))
+      return true;
+#endif
+
+#ifdef HAVE_COMMAND
+   if (input_driver_command)
+   {
+      command_handle_t handle;
+
+      handle.handle = input_driver_command;
+      handle.id     = i;
+
+      if (command_get(&handle))
+         return true;
+   }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+   if (input_driver_remote)
+   {
+      if (input_remote_key_pressed(i, 0))
+         return true;
+   }
+#endif
+
+   return false;
+}
+
+/**
+ * input_keys_pressed:
+ *
+ * Grab an input sample for this frame.
+ *
+ * TODO: In case RARCH_BIND_LIST_END starts exceeding 64,
+ * and you need a bitmask of more than 64 entries, reimplement
+ * it to use something like rarch_bits_t.
+ *
+ * Returns: Input sample containg a mask of all pressed keys.
+ */
+uint64_t input_keys_pressed(void)
+{
+   unsigned i;
+   uint64_t                      ret      = 0;
+   settings_t              *settings      = config_get_ptr();
+   const struct retro_keybind *binds      = settings->input.binds[0];
+   const struct retro_keybind *binds_auto = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+   const struct retro_keybind *normal     = &binds[RARCH_ENABLE_HOTKEY];
+
+   input_driver_block_libretro_input      = false;
+   input_driver_block_hotkey              = false;
+
+   /* Don't block the check to RARCH_ENABLE_HOTKEY
+    * unless we're really supposed to. */
+   if (current_input->keyboard_mapping_is_blocked &&
+         current_input->keyboard_mapping_is_blocked(current_input_data))
+      input_driver_block_hotkey = true;
+
+   if (check_input_driver_block_hotkey(normal, binds_auto))
+   {
+      if (current_input->input_state(current_input_data, &binds, 0,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_ENABLE_HOTKEY))
+         input_driver_block_libretro_input = true;
+      else
+         input_driver_block_hotkey         = true;
+   }
+
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      if (input_keys_pressed_internal(i, binds))
+         ret |= (UINT64_C(1) << i);
+   }
+
+   return ret;
+}
+
+
 /**
  * input_menu_keys_pressed:
  *
@@ -774,8 +775,8 @@ static INLINE bool input_menu_keys_pressed_internal(unsigned i)
 uint64_t input_menu_keys_pressed(void)
 {
    unsigned i;
-   uint64_t             ret = 0;
-   settings_t     *settings = config_get_ptr();
+   uint64_t             ret                     = 0;
+   settings_t     *settings                     = config_get_ptr();
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    const struct retro_keybind *binds_norm       = NULL;
    const struct retro_keybind *binds_auto       = NULL;
