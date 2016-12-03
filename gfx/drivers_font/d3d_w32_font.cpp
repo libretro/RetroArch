@@ -49,7 +49,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
 #ifdef _MSC_VER  /* MSVC needs w_char* */
       L"Verdana" /* Hardcode FTL */
 #else
-	  "Veranda"
+	  "Verdana"
 #endif
    };
 
