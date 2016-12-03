@@ -188,7 +188,6 @@ bool netplay_lan_ad_server(netplay_t *netplay)
    struct sockaddr their_addr;
    socklen_t addr_size;
    rarch_system_info_t *info = NULL;
-   size_t bufloc;
 
    if (lan_ad_server_fd < 0 && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
        return false;
@@ -268,8 +267,6 @@ bool netplay_lan_ad_client(void)
    struct timeval tmp_tv = {0};
    struct sockaddr their_addr;
    socklen_t addr_size;
-   rarch_system_info_t *info = NULL;
-   size_t bufloc;
 
    if (lan_ad_client_fd < 0)
        return false;
