@@ -10,12 +10,12 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css">
     <!-- Material Design Bootstrap -->
     <link href="//cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.1.1/css/mdb.min.css" rel="stylesheet">
-   
+
    <link href="libretro.css" rel="stylesheet" type="text/css">
    <link rel="shortcut icon" href="media/icon_dark.ico" />
-   
+
 </head>
-<body>   
+<body>
    <!--Navbar-->
    <nav class="navbar navbar-dark bg-primary">
      <div class="container">
@@ -82,14 +82,14 @@
                         <button class="btn btn-primary disabled" id="btnAdd" onclick="document.getElementById('btnRom').click()" disabled>
                            <span class="fa fa-plus" id="icnAdd"></span> Add Content
                         </button>
-                        <button class="btn btn-primary" id="btnClean" onclick="cleanupStorage();" title="Cleanup">
+                        <button class="btn btn-primary tooltip-enable" id="btnClean" onclick="cleanupStorage();" title="Cleanup storage">
                            <span class="fa fa-trash-o" id="icnClean"></span> <span class="sr-only">Cleanup</span>
                         </button>
                         <input class="btn btn-primary disabled" style="display: none" type="file" id="btnRom" name="upload" onclick="document.getElementById('btnAdd').click();" onchange="selectFiles(event.target.files)" multiple />
-                        <button class="btn btn-primary disabled" id="btnMenu" onclick="keyPress(112);" title="Menu toggle" disabled>
+                        <button class="btn btn-primary disabled tooltip-enable" id="btnMenu" onclick="keyPress(112);" title="Menu toggle" disabled>
                            <span class="fa fa-bars" id="btnMenu"></span> <span class="sr-only">Menu</span>
                         </button>
-                        <button class="btn btn-primary disabled" id="btnFullscreen" onclick="Module.requestFullScreen()" title="Fullscreen" disabled>
+                        <button class="btn btn-primary disabled tooltip-enable" id="btnFullscreen" onclick="Module.requestFullScreen()" title="Fullscreen" disabled>
                            <span class="fa fa-desktop" id="icnAdd"></span> <span class="sr-only">Fullscreen</span>
                         </button>
                    </li>
@@ -111,12 +111,12 @@
       <div class="row">
          <div class="col-sm-12 form-group btn-group text-xs-left p-t-2">
             <div class="btn-group" data-toggle="buttons">
-               <label class="btn btn-primary" id="lblLocal" onclick=switchStorage("browser")>
-                  <input type="radio" name="options" id="btnLocal" autocomplete="off" checked>
+               <label class="btn btn-primary tooltip-enable" id="lblLocal" onclick="switchStorage('browser')" title="Store content in your browser's cache. May take up space on disk.">
+                  <input type="radio" name="options" id="btnLocal" autocomplete="off" checked >
                      <span class="fa fa-globe" id="icnLocal"></span> Browser
                   </input>
                  </label>
-                 <label class="btn btn-primary" id="lblDrop" onclick=switchStorage("dropbox")>
+                 <label class="btn btn-primary tooltip-enable" id="lblDrop" onclick="switchStorage('dropbox')" title="Stores content in a folder under Dropbox storage. Requires a Dropbox account.">
                   <input type="radio" name="options" id="btnDrop" autocomplete="off">
                      <span class="fa fa-dropbox" id="icnDrop"></span> Dropbox
                   </input>
