@@ -211,7 +211,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf, size_t l
    ssize_t recvd;
    
    /* Receive whatever we can into the buffer */
-   if (sbuf->end > sbuf->start)
+   if (sbuf->end >= sbuf->start)
    {
       error = false;
       recvd = socket_receive_all_nonblocking(sockfd, &error,
@@ -243,7 +243,7 @@ ssize_t netplay_recv(struct socket_buffer *sbuf, int sockfd, void *buf, size_t l
    }
 
    /* Now copy it into the reader */
-   if (sbuf->end > sbuf->read || (sbuf->bufsz - sbuf->read) >= len)
+   if (sbuf->end >= sbuf->read || (sbuf->bufsz - sbuf->read) >= len)
    {
       size_t unread = buf_unread(sbuf);
       if (len <= unread)

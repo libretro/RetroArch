@@ -413,7 +413,9 @@ static bool get_self_input_state(netplay_t *netplay)
    {
       if (!netplay_send(&netplay->send_packet_buffer, netplay->fd,
             netplay->input_packet_buffer,
-            sizeof(netplay->input_packet_buffer)))
+            sizeof(netplay->input_packet_buffer)) ||
+          !netplay_send_flush(&netplay->send_packet_buffer, netplay->fd,
+            false))
       {
          hangup(netplay);
          return false;
@@ -446,7 +448,8 @@ static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
 
 static bool netplay_cmd_nak(netplay_t *netplay)
 {
-   return netplay_send_raw_cmd(netplay, NETPLAY_CMD_NAK, NULL, 0);
+   netplay_send_raw_cmd(netplay, NETPLAY_CMD_NAK, NULL, 0);
+   return false;
 }
 
 bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta)
@@ -470,7 +473,7 @@ static ssize_t netplay_recva(netplay_t *netplay, void *buf, size_t len)
    return netplay_recv(&netplay->recv_packet_buffer, netplay->fd, buf, len, false);
 }
 
-static bool netplay_get_cmd(netplay_t *netplay)
+static bool netplay_get_cmd(netplay_t *netplay, bool *had_input)
 {
    uint32_t cmd;
    uint32_t flip_frame;
@@ -777,6 +780,8 @@ static bool netplay_get_cmd(netplay_t *netplay)
    }
 
    netplay_recv_flush(&netplay->recv_packet_buffer);
+   if (had_input)
+      *had_input = true;
 
    }
 
@@ -792,54 +797,49 @@ static int poll_input(netplay_t *netplay, bool block)
 {
    bool had_input    = false;
    int max_fd        = netplay->fd + 1;
-   struct timeval tv = {0};
-   tv.tv_sec         = 0;
-   tv.tv_usec        = block ? (RETRY_MS * 1000) : 0;
 
    do
    { 
-      fd_set fds;
-      /* select() does not take pointer to const struct timeval.
-       * Technically possible for select() to modify tmp_tv, so 
-       * we go paranoia mode. */
-      struct timeval tmp_tv = tv;
       had_input = false;
 
       netplay->timeout_cnt++;
 
-      FD_ZERO(&fds);
-      FD_SET(netplay->fd, &fds);
-
-      if (socket_select(max_fd, &fds, NULL, NULL, &tmp_tv) < 0)
-         return -1;
-
-      if (FD_ISSET(netplay->fd, &fds))
+      /* If we're not ready for input, wait until we are.
+       * Could fill the TCP buffer, stalling the other side. */
+      if (netplay_delta_frame_ready(netplay,
+               &netplay->buffer[netplay->read_ptr],
+               netplay->read_frame_count))
       {
-         /* If we're not ready for input, wait until we are. 
-          * Could fill the TCP buffer, stalling the other side. */
-         if (netplay_delta_frame_ready(netplay,
-                  &netplay->buffer[netplay->read_ptr],
-                  netplay->read_frame_count))
+         if (!netplay_get_cmd(netplay, &had_input))
+            return -1;
+      }
+
+      if (block)
+      {
+         /* If we were blocked for input, pass if we have this frame's input */
+         if (netplay->read_frame_count > netplay->self_frame_count)
+            break;
+
+         /* If we're supposed to block but we didn't have enough input, wait for it */
+         if (!had_input)
          {
-            had_input = true;
-            if (!netplay_get_cmd(netplay))
+            fd_set fds;
+            struct timeval tv = {0};
+            tv.tv_usec = RETRY_MS * 1000;
+
+            FD_ZERO(&fds);
+            FD_SET(netplay->fd, &fds);
+
+            if (socket_select(max_fd, &fds, NULL, NULL, &tv) < 0)
+               return -1;
+
+            RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
+                  netplay->self_frame_count, netplay->timeout_cnt, MAX_RETRIES);
+
+            if (netplay->timeout_cnt >= MAX_RETRIES && !netplay->remote_paused)
                return -1;
          }
       }
-
-      /* If we were blocked for input, pass if we have this frame's input */
-      if (block && netplay->read_frame_count > netplay->self_frame_count)
-         break;
-
-      /* If we had input, we might have more */
-      if (had_input || !block)
-         continue;
-
-      RARCH_LOG("Network is stalling at frame %u, count %u of %d ...\n",
-            netplay->self_frame_count, netplay->timeout_cnt, MAX_RETRIES);
-
-      if (netplay->timeout_cnt >= MAX_RETRIES && !netplay->remote_paused)
-         return -1;
    } while (had_input || block);
 
    return 0;
