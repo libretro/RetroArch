@@ -18,10 +18,6 @@
 #ifdef _XBOX
 #include <xtl.h>
 #include <xgraphics.h>
-#else
-#define UNICODE
-#include <tchar.h>
-#include <wchar.h>
 #endif
 
 #include <formats/image.h>

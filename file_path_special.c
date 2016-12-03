@@ -219,10 +219,7 @@ void fill_pathname_application_path(char *s, size_t len)
       return;
 
 #ifdef _WIN32
-   MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, sizeof(ws) / sizeof(ws[0]));
-
-
-   ret    = GetModuleFileNameW(GetModuleHandleW(NULL), ws, sizeof(ws) / sizeof(ws[0]));
+   ret    = GetModuleFileName(GetModuleHandle(NULL), s, len - 1);
    s[ret] = '\0';
 #elif defined(__APPLE__)
    if (bundle)

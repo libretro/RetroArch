@@ -177,7 +177,7 @@ static void frontend_win32_init(void *data)
 {
 	typedef BOOL (WINAPI *isProcessDPIAwareProc)();
 	typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-	HMODULE handle                         = GetModuleHandleW(L"User32.dll");
+	HMODULE handle                         = GetModuleHandle("User32.dll");
 	isProcessDPIAwareProc  isDPIAwareProc  = (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
 	setProcessDPIAwareProc setDPIAwareProc = (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
 
@@ -338,7 +338,7 @@ static void frontend_win32_detach_console(void)
    {
       HWND wnd = GetConsoleWindow();
       FreeConsole();
-      PostMessageW(wnd, WM_CLOSE, 0, 0);
+      PostMessage(wnd, WM_CLOSE, 0, 0);
    }
 #endif
 }

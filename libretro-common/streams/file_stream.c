@@ -26,9 +26,6 @@
 #include <errno.h>
 
 #if defined(_WIN32)
-#  define UNICODE
-#  include <tchar.h>
-#  include <wchar.h>
 #  ifdef _MSC_VER
 #    define setmode _setmode
 #  endif
@@ -77,17 +74,10 @@ struct RFILE
 
 #define HAVE_BUFFERED_IO 1
 
-#ifdef _WIN32
-#define MODE_STR_READ L"r"
-#define MODE_STR_READ_UNBUF L"rb"
-#define MODE_STR_WRITE_UNBUF L"wb"
-#define MODE_STR_WRITE_PLUS L"w+"
-#else
 #define MODE_STR_READ "r"
 #define MODE_STR_READ_UNBUF "rb"
 #define MODE_STR_WRITE_UNBUF "wb"
 #define MODE_STR_WRITE_PLUS "w+"
-#endif
 
 #if defined(HAVE_BUFFERED_IO)
    FILE *fp;
@@ -117,12 +107,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    int            flags = 0;
    int         mode_int = 0;
 #if defined(HAVE_BUFFERED_IO)
-#ifdef _WIN32
-   const wchar_t *mode_str = NULL;
-   wchar_t path_wide[PATH_MAX_LENGTH] = {0};
-#else
    const char *mode_str = NULL;
-#endif
 #endif
    RFILE        *stream = (RFILE*)calloc(1, sizeof(*stream));
 
@@ -213,12 +198,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
-#ifdef _WIN32
-      MultiByteToWideChar(CP_UTF8, 0, path, -1, path_wide, sizeof(path_wide) / sizeof(path_wide[0]));
-      stream->fp = _wfopen(path_wide, mode_str);
-#else
       stream->fp = fopen(path, mode_str);
-#endif
       if (!stream->fp)
          goto error;
    }

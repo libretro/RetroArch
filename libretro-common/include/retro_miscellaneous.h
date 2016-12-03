@@ -47,9 +47,6 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
-#define UNICODE
-#include <tchar.h>
-#include <wchar.h>
 #include <windows.h>
 #elif defined(_WIN32) && defined(_XBOX)
 #include <Xtl.h>

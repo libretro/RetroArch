@@ -155,20 +155,20 @@ static void shader_dlg_params_refresh(void)
                bool checked = 
                   (shader_info.data->parameters[i].current == 
                    shader_info.data->parameters[i].maximum);
-               SendMessageW(control->checkbox.hwnd, BM_SETCHECK, checked, 0);
+               SendMessage(control->checkbox.hwnd, BM_SETCHECK, checked, 0);
             }
             break;
          case SHADER_PARAM_CTRL_TRACKBAR:
             shader_dlg_refresh_trackbar_label(i);
 
-            SendMessageW(control->trackbar.hwnd,
+            SendMessage(control->trackbar.hwnd,
                   TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
-            SendMessageW(control->trackbar.hwnd,
+            SendMessage(control->trackbar.hwnd,
                   TBM_SETRANGEMAX, (WPARAM)TRUE,
                   (LPARAM)((shader_info.data->parameters[i].maximum - 
                         shader_info.data->parameters[i].minimum) 
                      / shader_info.data->parameters[i].step));
-            SendMessageW(control->trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
+            SendMessage(control->trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
                   (LPARAM)((shader_info.data->parameters[i].current - 
                         shader_info.data->parameters[i].minimum) / 
                      shader_info.data->parameters[i].step));
@@ -234,12 +234,6 @@ void shader_dlg_params_reload(void)
    for (i = 0; i < (int)shader_info.data->num_parameters; i++)
    {
       shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
-      size_t param_desc_wide_size = sizeof(shader_info.data->parameters[i].desc) * 2;
-      wchar_t param_desc_wide[param_desc_wide_size];
-
-      memset(param_desc_wide, 0, sizeof(param_desc_wide));
-      MultiByteToWideChar(CP_UTF8, 0, shader_info.data->parameters[i].desc, -1, param_desc_wide, sizeof(param_desc_wide) / sizeof(param_desc_wide[0]));
-
 
       if ((shader_info.data->parameters[i].minimum == 0.0)
             && (shader_info.data->parameters[i].maximum 
@@ -255,12 +249,12 @@ void shader_dlg_params_reload(void)
          }
 
          control->type          = SHADER_PARAM_CTRL_CHECKBOX;
-         control->checkbox.hwnd = CreateWindowExW(0, L"BUTTON",
-               param_desc_wide,
+         control->checkbox.hwnd = CreateWindowEx(0, "BUTTON",
+               shader_info.data->parameters[i].desc,
                WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, pos_x, pos_y,
                SHADER_DLG_CTRL_WIDTH, SHADER_DLG_CHECKBOX_HEIGHT,
                g_shader_dlg.window.hwnd, (HMENU)(size_t)i, NULL, NULL);
-         SendMessageW(control->checkbox.hwnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+         SendMessage(control->checkbox.hwnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
          pos_y += SHADER_DLG_CHECKBOX_HEIGHT + SHADER_DLG_CTRL_MARGIN;
       }
       else
@@ -273,27 +267,27 @@ void shader_dlg_params_reload(void)
          }
 
          control->type                 = SHADER_PARAM_CTRL_TRACKBAR;
-         control->trackbar.label_title = CreateWindowExW(0, L"STATIC",
-               param_desc_wide,
+         control->trackbar.label_title = CreateWindowEx(0, "STATIC",
+               shader_info.data->parameters[i].desc,
                WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x, pos_y,
                SHADER_DLG_CTRL_WIDTH, SHADER_DLG_LABEL_HEIGHT, g_shader_dlg.window.hwnd,
                (HMENU)(size_t)i, NULL, NULL);
-         SendMessageW(control->trackbar.label_title, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+         SendMessage(control->trackbar.label_title, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
          pos_y += SHADER_DLG_LABEL_HEIGHT;
-         control->trackbar.hwnd = CreateWindowExW(0, TRACKBAR_CLASS, L"",
+         control->trackbar.hwnd = CreateWindowEx(0, TRACKBAR_CLASS, "",
                WS_CHILD | WS_VISIBLE | TBS_HORZ | TBS_NOTICKS,
                pos_x + SHADER_DLG_TRACKBAR_LABEL_WIDTH, pos_y,
                SHADER_DLG_TRACKBAR_WIDTH, SHADER_DLG_TRACKBAR_HEIGHT,
                g_shader_dlg.window.hwnd, (HMENU)(size_t)i, NULL, NULL);
 
-         control->trackbar.label_val = CreateWindowExW(0, L"STATIC", L"",
+         control->trackbar.label_val = CreateWindowEx(0, "STATIC", "",
                WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x,
                pos_y, SHADER_DLG_TRACKBAR_LABEL_WIDTH, SHADER_DLG_LABEL_HEIGHT,
                g_shader_dlg.window.hwnd, (HMENU)(size_t)i, NULL, NULL);
-         SendMessageW(control->trackbar.label_val, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+         SendMessage(control->trackbar.label_val, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
-         SendMessageW(control->trackbar.hwnd, TBM_SETBUDDY, (WPARAM)TRUE,
+         SendMessage(control->trackbar.hwnd, TBM_SETBUDDY, (WPARAM)TRUE,
                (LPARAM)control->trackbar.label_val);
 
          pos_y += SHADER_DLG_TRACKBAR_HEIGHT + SHADER_DLG_CTRL_MARGIN;
@@ -305,7 +299,7 @@ void shader_dlg_params_reload(void)
    if (window && g_shader_dlg.separator.hwnd)
       window->destroy(&g_shader_dlg.separator);
 
-   g_shader_dlg.separator.hwnd = CreateWindowExW(0, L"STATIC", L"",
+   g_shader_dlg.separator.hwnd = CreateWindowEx(0, "STATIC", "",
          SS_ETCHEDHORZ | WS_VISIBLE | WS_CHILD, SHADER_DLG_CTRL_X,
          g_shader_dlg.parameters_start_y - SHADER_DLG_CTRL_MARGIN - SHADER_DLG_SEPARATOR_HEIGHT / 2,
          (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_CTRL_WIDTH,
@@ -395,7 +389,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
          if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_CHECKBOX)
             break;
 
-         if (SendMessageW(g_shader_dlg.controls[i].checkbox.hwnd,
+         if (SendMessage(g_shader_dlg.controls[i].checkbox.hwnd,
                   BM_GETCHECK, 0, 0) == BST_CHECKED)
             shader_info.data->parameters[i].current = 
                shader_info.data->parameters[i].maximum;
@@ -406,7 +400,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
          break;
 
       case WM_HSCROLL:
-         i = GetWindowLongW((HWND)lparam, GWL_ID);
+         i = GetWindowLong((HWND)lparam, GWL_ID);
 
          if (i >= GFX_MAX_PARAMETERS)
             break;
@@ -414,7 +408,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
          if (g_shader_dlg.controls[i].type != SHADER_PARAM_CTRL_TRACKBAR)
             break;
 
-         pos = (int)SendMessageW(g_shader_dlg.controls[i].trackbar.hwnd, TBM_GETPOS, 0, 0);
+         pos = (int)SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_GETPOS, 0, 0);
          shader_info.data->parameters[i].current = 
             shader_info.data->parameters[i].minimum + pos * shader_info.data->parameters[i].step;
 
@@ -423,24 +417,19 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 
    }
 
-   return DefWindowProcW(hwnd, message, wparam, lparam);
+   return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
 bool win32_window_init(WNDCLASSEX *wndclass,
       bool fullscreen, const char *class_name)
 {
-   wchar_t class_name_wide[1024] = {0};
-
-   if (class_name)
-      MultiByteToWideChar(CP_UTF8, 0, class_name, -1, class_name_wide, sizeof(class_name_wide) / sizeof(class_name_wide[0]));
-
    wndclass->cbSize        = sizeof(WNDCLASSEX);
    wndclass->style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-   wndclass->hInstance     = GetModuleHandleW(NULL);
-   wndclass->hCursor       = LoadCursorW(NULL, IDC_ARROW);
-   wndclass->lpszClassName = (class_name != NULL) ? class_name_wide : L"RetroArch";
-   wndclass->hIcon         = LoadIconW(GetModuleHandleW(NULL), MAKEINTRESOURCE(IDI_ICON));
-   wndclass->hIconSm       = (HICON)LoadImageW(GetModuleHandleW(NULL),
+   wndclass->hInstance     = GetModuleHandle(NULL);
+   wndclass->hCursor       = LoadCursor(NULL, IDC_ARROW);
+   wndclass->lpszClassName = (class_name != NULL) ? class_name : "RetroArch";
+   wndclass->hIcon         = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON));
+   wndclass->hIconSm       = (HICON)LoadImage(GetModuleHandle(NULL),
          MAKEINTRESOURCE(IDI_ICON), IMAGE_ICON, 16, 16, 0);
    if (!fullscreen)
       wndclass->hbrBackground = (HBRUSH)COLOR_WINDOW;
@@ -448,7 +437,7 @@ bool win32_window_init(WNDCLASSEX *wndclass,
    if (class_name != NULL)
       wndclass->style         |= CS_CLASSDC;
 
-   if (!RegisterClassExW(wndclass))
+   if (!RegisterClassEx(wndclass))
       return false;
 
    /* This is non-NULL when we want a window for shader dialogs, 
@@ -473,7 +462,7 @@ bool win32_shader_dlg_init(void)
 
    if (!inited)
    {
-      WNDCLASSEXW wc_shader_dlg = {0};
+      WNDCLASSEX wc_shader_dlg = {0};
       INITCOMMONCONTROLSEX comm_ctrl_init = {0};
 
       comm_ctrl_init.dwSize = sizeof(comm_ctrl_init);
@@ -493,19 +482,19 @@ bool win32_shader_dlg_init(void)
 
    hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 
-   g_shader_dlg.window.hwnd = CreateWindowExW(0, L"Shader Dialog", L"Shader Parameters",
+   g_shader_dlg.window.hwnd = CreateWindowEx(0, "Shader Dialog", "Shader Parameters",
          WS_POPUPWINDOW | WS_CAPTION, 100, 100,
          SHADER_DLG_WIDTH, SHADER_DLG_MIN_HEIGHT, NULL, NULL, NULL, NULL);
 
    pos_y = SHADER_DLG_CTRL_MARGIN;
-   g_shader_dlg.on_top_checkbox.hwnd = CreateWindowExW(0, L"BUTTON", L"Always on Top",
+   g_shader_dlg.on_top_checkbox.hwnd = CreateWindowEx(0, "BUTTON", "Always on Top",
          BS_AUTOCHECKBOX | WS_VISIBLE | WS_CHILD,
          SHADER_DLG_CTRL_X, pos_y, SHADER_DLG_CTRL_WIDTH,
          SHADER_DLG_CHECKBOX_HEIGHT, g_shader_dlg.window.hwnd,
          (HMENU)SHADER_DLG_CHECKBOX_ONTOP_ID, NULL, NULL);
    pos_y +=  SHADER_DLG_CHECKBOX_HEIGHT + SHADER_DLG_CTRL_MARGIN;
 
-   SendMessageW(g_shader_dlg.on_top_checkbox.hwnd,
+   SendMessage(g_shader_dlg.on_top_checkbox.hwnd,
          WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
    pos_y +=  SHADER_DLG_SEPARATOR_HEIGHT + SHADER_DLG_CTRL_MARGIN;
@@ -676,7 +665,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 		command_event(cmd, NULL);
 
 	if (do_wm_close)
-		PostMessageW(owner, WM_CLOSE, 0, 0);
+		PostMessage(owner, WM_CLOSE, 0, 0);
 	
 	return 0L;
 }

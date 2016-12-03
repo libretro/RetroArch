@@ -103,11 +103,9 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #elif defined(_WIN32)
    WIN32_FILE_ATTRIBUTE_DATA file_info;
    GET_FILEEX_INFO_LEVELS fInfoLevelId = GetFileExInfoStandard;
-   wchar_t path_wide[PATH_MAX_LENGTH] = {0};
 
-   MultiByteToWideChar(CP_UTF8, 0, path, -1, path_wide, sizeof(path_wide) / sizeof(path_wide[0]));
+   DWORD ret = GetFileAttributesEx(path, fInfoLevelId, &file_info);
 
-   DWORD ret = GetFileAttributesExW(path_wide, fInfoLevelId, &file_info);
    if (ret == 0)
       return false;
 #else
