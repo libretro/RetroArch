@@ -25,6 +25,7 @@
 #include <string.h>
 #include <errno.h>
 #include <encodings/win32.h>
+#include <tchar.h>
 #include <retro_miscellaneous.h>
 
 #if defined(_WIN32)
@@ -196,7 +197,16 @@ bool mkdir_norecurse(const char *dir)
 {
    int ret;
 #if defined(_WIN32)
+#ifdef _MSC_VER
+   CHAR_TO_WCHAR_ALLOC(dir, dir_wide)
+
+   ret = _tmkdir(dir_wide);
+
+   if (dir_wide)
+      free(dir_wide);
+#else
    ret = _mkdir(dir);
+#endif
 #elif defined(IOS)
    ret = mkdir(dir, 0755);
 #elif defined(VITA) || defined(PSP)

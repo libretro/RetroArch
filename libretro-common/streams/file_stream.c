@@ -27,6 +27,7 @@
 
 #if defined(_WIN32)
 #include <encodings/win32.h>
+#include <tchar.h>
 #  ifdef _MSC_VER
 #    define setmode _setmode
 #  endif
@@ -210,7 +211,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    {
 #ifdef _WIN32
       CHAR_TO_WCHAR_ALLOC(path, path_wide)
-      stream->fp = _wfopen(path_wide, mode_str);
+      stream->fp = _tfopen(path_wide, mode_str);
 
       if (path_wide)
          free(path_wide);

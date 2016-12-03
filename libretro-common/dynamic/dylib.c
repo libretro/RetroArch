@@ -76,7 +76,9 @@ dylib_t dylib_load(const char *path)
 
    lib = LoadLibrary(path_wide);
 
-   free(path_wide);
+   if (path_wide)
+      free(path_wide);
+
    SetErrorMode(prevmode);
 
    if (!lib)
@@ -84,6 +86,7 @@ dylib_t dylib_load(const char *path)
       set_dl_error();
       return NULL;
    }
+
    last_dyn_error[0] = 0;
 #else
    dylib_t lib = dlopen(path, RTLD_LAZY);
