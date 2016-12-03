@@ -258,6 +258,8 @@ bool netplay_cmd_crc(netplay_t *netplay, struct delta_frame *delta);
 
 bool netplay_cmd_request_savestate(netplay_t *netplay);
 
-bool netplay_ad_server(netplay_t *netplay, int ad_fd);
+/* DISCOVERY: */
+
+bool netplay_lan_ad_server(netplay_t *netplay);
 
 #endif

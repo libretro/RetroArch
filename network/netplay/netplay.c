@@ -54,9 +54,6 @@ enum
 static bool netplay_enabled = false;
 static bool netplay_is_client = false;
 
-/* Used to advertise or request advertisement of Netplay */
-static int netplay_ad_fd = -1;
-
 /* Used while Netplay is running */
 static netplay_t *netplay_data = NULL;
 
@@ -202,28 +199,6 @@ static void init_nat_traversal(netplay_t *netplay)
 
    if (!netplay->nat_traversal_state.request_outstanding)
       announce_nat_traversal(netplay);
-}
-
-static bool init_ad_socket(netplay_t *netplay, uint16_t port)
-{
-   int fd = socket_init((void**)&netplay->addr, port, NULL, SOCKET_TYPE_DATAGRAM);
-
-   if (fd < 0)
-      goto error;
-
-   if (!socket_bind(fd, (void*)netplay->addr))
-   {
-      socket_close(fd);
-      goto error;
-   }
-
-   netplay_ad_fd = fd;
-
-   return true;
-
-error:
-   RARCH_ERR("Failed to initialize netplay advertisement socket.\n");
-   return false;
 }
 
 static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
@@ -1446,9 +1421,8 @@ bool netplay_pre_frame(netplay_t *netplay)
 
    if (netplay->is_server)
    {
-      /* Advertise our server if applicable */
-      if (netplay_ad_fd >= 0 || init_ad_socket(netplay, RARCH_DEFAULT_PORT))
-         netplay_ad_server(netplay, netplay_ad_fd);
+      /* Advertise our server */
+      netplay_lan_ad_server(netplay);
 
       /* NAT traversal if applicable */
       if (netplay->nat_traversal &&
