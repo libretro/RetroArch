@@ -56,50 +56,59 @@ enum netplay_cmd
    /* Failed acknowlegement response */
    NETPLAY_CMD_NAK            = 0x0001, 
 
-   /* Input data */
-   NETPLAY_CMD_INPUT          = 0x0002,
-
-   /* Misc. commands */
-
-   /* Swap inputs between player 1 and player 2 */
-   NETPLAY_CMD_FLIP_PLAYERS   = 0x0003,
-
-   /* Toggle spectate/join mode */
-   NETPLAY_CMD_SPECTATE       = 0x0004, 
-
    /* Gracefully disconnects from host */
-   NETPLAY_CMD_DISCONNECT     = 0x0005, 
+   NETPLAY_CMD_DISCONNECT     = 0x0002,
 
-   /* Sends multiple config requests over, 
-    * See enum netplay_cmd_cfg */
-   NETPLAY_CMD_CFG            = 0x0006, 
+   /* Input data */
+   NETPLAY_CMD_INPUT          = 0x0003,
 
-   /* CMD_CFG streamlines sending multiple
-      configurations. This acknowledges
-      each one individually */
-   NETPLAY_CMD_CFG_ACK        = 0x0007, 
+   /* Initialization commands */
+
+   /* Inform the other side of our nick (must be first command) */
+   NETPLAY_CMD_NICK           = 0x0020,
+
+   /* Send SRAM data (must be second command from server) */
+   NETPLAY_CMD_SRAM           = 0x0021,
+
+   /* Join spectator mode */
+   NETPLAY_CMD_SPECTATE       = 0x0022,
+
+   /* Join play mode */
+   NETPLAY_CMD_PLAY           = 0x0023,
 
    /* Loading and synchronization */
 
    /* Send the CRC hash of a frame's state */
-   NETPLAY_CMD_CRC            = 0x0010,
+   NETPLAY_CMD_CRC            = 0x0040,
 
    /* Request a savestate */
-   NETPLAY_CMD_REQUEST_SAVESTATE = 0x0011,
+   NETPLAY_CMD_REQUEST_SAVESTATE = 0x0041,
 
    /* Send a savestate for the client to load */
-   NETPLAY_CMD_LOAD_SAVESTATE = 0x0012, 
-
-   /* Sends over cheats enabled on client */
-   NETPLAY_CMD_CHEATS         = 0x0013, 
-
-   /* Controlling game playback */
+   NETPLAY_CMD_LOAD_SAVESTATE = 0x0042,
 
    /* Pauses the game, takes no arguments  */
-   NETPLAY_CMD_PAUSE          = 0x0030, 
+   NETPLAY_CMD_PAUSE          = 0x0043,
 
    /* Resumes the game, takes no arguments */
-   NETPLAY_CMD_RESUME         = 0x0031  
+   NETPLAY_CMD_RESUME         = 0x0044,
+
+   /* Sends over cheats enabled on client (unsupported) */
+   NETPLAY_CMD_CHEATS         = 0x0045,
+
+   /* Misc. commands */
+
+   /* Swap inputs between player 1 and player 2 */
+   NETPLAY_CMD_FLIP_PLAYERS   = 0x0060,
+
+   /* Sends multiple config requests over,
+    * See enum netplay_cmd_cfg */
+   NETPLAY_CMD_CFG            = 0x0061,
+
+   /* CMD_CFG streamlines sending multiple
+      configurations. This acknowledges
+      each one individually */
+   NETPLAY_CMD_CFG_ACK        = 0x0062
 };
 
 /* These are the configurations sent by NETPLAY_CMD_CFG. */

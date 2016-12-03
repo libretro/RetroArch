@@ -39,7 +39,7 @@
 #define RARCH_DEFAULT_PORT 55435
 #define RARCH_DEFAULT_NICK "Anonymous"
 
-#define NETPLAY_PROTOCOL_VERSION 3
+#define NETPLAY_PROTOCOL_VERSION 4
 
 #define PREV_PTR(x) ((x) == 0 ? netplay->buffer_size - 1 : (x) - 1)
 #define NEXT_PTR(x) ((x + 1) % netplay->buffer_size)
@@ -269,7 +269,11 @@ bool netplay_get_nickname(netplay_t *netplay, int fd);
 
 bool netplay_send_nickname(netplay_t *netplay, int fd);
 
-bool netplay_handshake(netplay_t *netplay);
+/* Various netplay initialization modes: */
+bool netplay_handshake_init_send(netplay_t *netplay);
+bool netplay_handshake_init(netplay_t *netplay, bool *had_input);
+bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input);
+bool netplay_handshake_pre_sram(netplay_t *netplay, bool *had_input);
 
 uint32_t netplay_impl_magic(void);
 

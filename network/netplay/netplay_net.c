@@ -160,6 +160,17 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
          netplay_clear_socket_buffer(&netplay->send_packet_buffer);
          netplay_clear_socket_buffer(&netplay->recv_packet_buffer);
 
+         /* Set the socket nonblocking */
+         if (!socket_nonblock(netplay->fd))
+         {
+            /* Catastrophe! */
+            return false;
+         }
+
+         netplay_handshake_init_send(netplay);
+         netplay->status = RARCH_NETPLAY_CONNECTION_INIT;
+
+#if 0
          /* Establish the connection */
          if (netplay_handshake(netplay))
          {
@@ -201,6 +212,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
             /* FIXME: Get in a state to accept another client */
 
          }
+#endif
       }
    }
 
@@ -351,9 +363,13 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
 {
    if (!netplay_is_server(netplay))
    {
+#if 0
       if (!netplay_handshake(netplay))
          return false;
       netplay->status = RARCH_NETPLAY_CONNECTION_PLAYING;
+#endif
+      netplay_handshake_init_send(netplay);
+      netplay->status = RARCH_NETPLAY_CONNECTION_INIT;
    }
 
    return true;

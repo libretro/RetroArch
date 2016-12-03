@@ -409,7 +409,8 @@ static bool get_self_input_state(netplay_t *netplay)
    netplay->input_packet_buffer[4] = htonl(state[1]);
    netplay->input_packet_buffer[5] = htonl(state[2]);
 
-   if (!netplay->spectate.enabled) /* Spectate sends in its own way */
+   if (!netplay->spectate.enabled && /* Spectate sends in its own way */
+       netplay->status == RARCH_NETPLAY_CONNECTION_PLAYING)
    {
       if (!netplay_send(&netplay->send_packet_buffer, netplay->fd,
             netplay->input_packet_buffer,
@@ -480,16 +481,28 @@ static bool netplay_get_cmd(netplay_t *netplay, bool *had_input)
    uint32_t cmd_size;
    ssize_t recvd;
 
+   /* We don't handle the initial handshake here */
+   switch (netplay->status)
+   {
+      case RARCH_NETPLAY_CONNECTION_NONE:
+         /* Huh?! */
+         return false;
+      case RARCH_NETPLAY_CONNECTION_INIT:
+         return netplay_handshake_init(netplay, had_input);
+      case RARCH_NETPLAY_CONNECTION_PRE_NICK:
+         return netplay_handshake_pre_nick(netplay, had_input);
+      case RARCH_NETPLAY_CONNECTION_PRE_SRAM:
+         return netplay_handshake_pre_sram(netplay, had_input);
+      default:
+         break;
+   }
+
    /* FIXME: This depends on delta_frame_ready */
 
 #define RECV(buf, sz) \
    recvd = netplay_recva(netplay, (buf), (sz)); \
    if (recvd >= 0 && recvd < (sz)) goto shrt; \
    else if (recvd < 0)
-
-   /* Keep receiving commands until there's no input left */
-   while (true)
-   {
 
    RECV(&cmd, sizeof(cmd))
       return false;
@@ -782,8 +795,7 @@ static bool netplay_get_cmd(netplay_t *netplay, bool *had_input)
    netplay_recv_flush(&netplay->recv_packet_buffer);
    if (had_input)
       *had_input = true;
-
-   }
+   return true;
 
 shrt:
    /* No more data, reset and try again */

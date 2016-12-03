@@ -158,6 +158,332 @@ static bool netplay_endian_mismatch(uint32_t pma, uint32_t pmb)
    return (pma & ebit) != (pmb & ebit);
 }
 
+bool netplay_handshake_init_send(netplay_t *netplay)
+{
+   uint32_t *content_crc_ptr = NULL;
+   uint32_t header[4] = {0};
+
+   content_get_crc(&content_crc_ptr);
+
+   header[0] = htonl(netplay_impl_magic());
+   header[1] = htonl(*content_crc_ptr);
+   header[2] = htonl(netplay_platform_magic());
+   header[3] = htonl(NETPLAY_COMPRESSION_SUPPORTED);
+
+   if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, header,
+         sizeof(header)) ||
+       !netplay_send_flush(&netplay->send_packet_buffer, netplay->fd, false))
+      return false;
+
+   return true;
+}
+
+struct nick_buf_s
+{
+   uint32_t cmd[2];
+   char nick[32];
+};
+
+#define RECV(buf, sz) \
+   recvd = netplay_recv(&netplay->recv_packet_buffer, netplay->fd, (buf), (sz), false); \
+   if (recvd >= 0 && recvd < (sz)) \
+   { \
+      netplay_recv_reset(&netplay->recv_packet_buffer); \
+      return true; \
+   } \
+   else if (recvd < 0)
+
+bool netplay_handshake_init(netplay_t *netplay, bool *had_input)
+{
+   uint32_t header[4] = {0};
+   ssize_t recvd;
+   char msg[512];
+   struct nick_buf_s nick_buf;
+   uint32_t *content_crc_ptr = NULL;
+   uint32_t local_pmagic, remote_pmagic;
+   uint32_t compression;
+
+   msg[0] = '\0';
+
+   RECV(header, sizeof(header))
+   {
+      strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT), sizeof(msg));
+      goto error;
+   }
+
+   if (netplay_impl_magic() != ntohl(header[0]))
+   {
+      strlcpy(msg, "Implementations differ. Make sure you're using exact same "
+         "libretro implementations and RetroArch version.", sizeof(msg));
+      goto error;
+   }
+
+   content_get_crc(&content_crc_ptr);
+   if (*content_crc_ptr != ntohl(header[1]))
+   {
+      strlcpy(msg, msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER), sizeof(msg));
+      goto error;
+   }
+
+   /* We only care about platform magic if our core is quirky */
+   local_pmagic = netplay_platform_magic();
+   remote_pmagic = ntohl(header[2]);
+   if ((netplay->quirks & NETPLAY_QUIRK_ENDIAN_DEPENDENT) &&
+       netplay_endian_mismatch(local_pmagic, remote_pmagic))
+   {
+      RARCH_ERR("Endianness mismatch with an endian-sensitive core.\n");
+      strlcpy(msg, "This core does not support inter-architecture netplay "
+         "between these systems.", sizeof(msg));
+      goto error;
+   }
+   if ((netplay->quirks & NETPLAY_QUIRK_PLATFORM_DEPENDENT) &&
+       (local_pmagic != remote_pmagic))
+   {
+      RARCH_ERR("Platform mismatch with a platform-sensitive core.\n");
+      strlcpy(msg, "This core does not support inter-architecture netplay.",
+         sizeof(msg));
+      goto error;
+   }
+
+   /* Clear any existing compression */
+   if (netplay->compression_stream)
+      netplay->compression_backend->stream_free(netplay->compression_stream);
+   if (netplay->decompression_stream)
+      netplay->decompression_backend->stream_free(netplay->decompression_stream);
+
+   /* Check what compression is supported */
+   compression = ntohl(header[3]);
+   compression &= NETPLAY_COMPRESSION_SUPPORTED;
+   if (compression & NETPLAY_COMPRESSION_ZLIB)
+   {
+      netplay->compression_backend = trans_stream_get_zlib_deflate_backend();
+      if (!netplay->compression_backend)
+         netplay->compression_backend = trans_stream_get_pipe_backend();
+   }
+   else
+   {
+      netplay->compression_backend = trans_stream_get_pipe_backend();
+   }
+   netplay->decompression_backend = netplay->compression_backend->reverse;
+
+   /* Allocate our compression stream */
+   netplay->compression_stream = netplay->compression_backend->stream_new();
+   netplay->decompression_stream = netplay->decompression_backend->stream_new();
+   if (!netplay->compression_stream || !netplay->decompression_stream)
+   {
+      RARCH_ERR("Failed to allocate compression transcoder!\n");
+      return false;
+   }
+
+   /* Send our nick */
+   nick_buf.cmd[0] = htonl(NETPLAY_CMD_NICK);
+   nick_buf.cmd[1] = htonl(sizeof(nick_buf.nick));
+   memset(nick_buf.nick, 0, sizeof(nick_buf.nick));
+   strlcpy(nick_buf.nick, netplay->nick, sizeof(nick_buf.nick));
+   if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, &nick_buf,
+         sizeof(nick_buf)) ||
+       !netplay_send_flush(&netplay->send_packet_buffer, netplay->fd, false))
+      return false;
+
+   /* Move on to the next mode */
+   netplay->status = RARCH_NETPLAY_CONNECTION_PRE_NICK;
+   *had_input = true;
+   netplay_recv_flush(&netplay->recv_packet_buffer);
+   return true;
+
+error:
+   if (msg[0])
+   {
+      RARCH_ERR("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false);
+   }
+   return false;
+}
+
+static void netplay_handshake_ready(netplay_t *netplay)
+{
+   size_t i;
+   char msg[512];
+
+   /* Reset our frame count so it's consistent between server and client */
+   netplay->self_frame_count = netplay->other_frame_count = 0;
+   netplay->read_frame_count = 1;
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      netplay->buffer[i].used = false;
+      if (i == netplay->self_ptr)
+      {
+         netplay_delta_frame_ready(netplay, &netplay->buffer[i], 0);
+         netplay->buffer[i].have_remote = true;
+         netplay->other_ptr = i;
+         netplay->read_ptr = NEXT_PTR(i);
+      }
+      else
+      {
+         netplay->buffer[i].used = false;
+      }
+   }
+
+   if (netplay->is_server)
+   {
+      netplay_log_connection(&netplay->other_addr, 0, netplay->other_nick);
+
+      /* Send them the savestate */
+      if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
+      {
+         netplay->force_send_savestate = true;
+      }
+      else
+      {
+         /* FIXME: Still correct? */
+         /* Because the first frame isn't serialized, we're actually at
+          * frame 1 */
+         netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
+         netplay->self_frame_count = 1;
+      }
+   }
+   else
+   {
+      snprintf(msg, sizeof(msg), "%s: \"%s\"",
+            msg_hash_to_str(MSG_CONNECTED_TO),
+            netplay->other_nick);
+      RARCH_LOG("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false);
+   }
+
+   netplay->status = RARCH_NETPLAY_CONNECTION_PLAYING;
+}
+
+bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input)
+{
+   struct nick_buf_s nick_buf;
+   ssize_t recvd;
+   char msg[512];
+
+   msg[0] = '\0';
+
+   RECV(&nick_buf, sizeof(nick_buf));
+
+   /* Expecting only a nick command */
+   if (recvd < 0 ||
+       ntohl(nick_buf.cmd[0]) != NETPLAY_CMD_NICK ||
+       ntohl(nick_buf.cmd[1]) != sizeof(nick_buf.nick))
+   {
+      if (netplay->is_server)
+         strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT),
+            sizeof(msg));
+      else
+         strlcpy(msg,
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
+            sizeof(msg));
+      RARCH_ERR("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false);
+      return false;
+   }
+
+   strlcpy(netplay->other_nick, nick_buf.nick,
+      (sizeof(netplay->other_nick) < sizeof(nick_buf.nick)) ?
+      sizeof(netplay->other_nick) : sizeof(nick_buf.nick));
+
+   if (netplay->is_server)
+   {
+      /* If we're the server, now we send our SRAM */
+      uint32_t cmd[2];
+      retro_ctx_memory_info_t mem_info;
+
+      mem_info.id = RETRO_MEMORY_SAVE_RAM;
+      core_get_memory(&mem_info);
+
+      cmd[0] = htonl(NETPLAY_CMD_SRAM);
+      cmd[1] = htonl(mem_info.size);
+
+      if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, cmd,
+            sizeof(cmd)))
+         return false;
+      if (!netplay_send(&netplay->send_packet_buffer, netplay->fd,
+            mem_info.data, mem_info.size) ||
+          !netplay_send_flush(&netplay->send_packet_buffer, netplay->fd,
+            false))
+         return false;
+
+      /* Now we're ready! */
+      netplay_handshake_ready(netplay);
+
+   }
+   else
+   {
+      /* Client needs to wait for SRAM */
+      netplay->status = RARCH_NETPLAY_CONNECTION_PRE_SRAM;
+
+   }
+
+   *had_input = true;
+   netplay_recv_flush(&netplay->recv_packet_buffer);
+   return true;
+}
+
+bool netplay_handshake_pre_sram(netplay_t *netplay, bool *had_input)
+{
+   uint32_t cmd[2];
+   uint32_t local_sram_size, remote_sram_size;
+   ssize_t recvd;
+   retro_ctx_memory_info_t mem_info;
+
+   RECV(cmd, sizeof(cmd))
+      return false;
+
+   /* Only expecting an SRAM command */
+   if (ntohl(cmd[0]) != NETPLAY_CMD_SRAM)
+   {
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+      return false;
+   }
+
+   mem_info.id = RETRO_MEMORY_SAVE_RAM;
+   core_get_memory(&mem_info);
+
+   local_sram_size = mem_info.size;
+   remote_sram_size = ntohl(cmd[1]);
+
+   if (local_sram_size != 0 && local_sram_size == remote_sram_size)
+   {
+      RECV(mem_info.data, local_sram_size)
+      {
+         RARCH_ERR("%s\n",
+               msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+         return false;
+      }
+
+   }
+   else if (remote_sram_size != 0)
+   {
+      /* We can't load this, but we still need to get rid of the data */
+      uint32_t quickbuf;
+      while (remote_sram_size > 0)
+      {
+         RECV(&quickbuf, (remote_sram_size > sizeof(uint32_t)) ? sizeof(uint32_t) : remote_sram_size)
+         {
+            RARCH_ERR("%s\n",
+                  msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+            return false;
+         }
+         if (remote_sram_size > sizeof(uint32_t))
+            remote_sram_size -= sizeof(uint32_t);
+         else
+            remote_sram_size = 0;
+      }
+
+   }
+
+   /* We're ready! */
+   netplay_handshake_ready(netplay);
+   *had_input = true;
+   netplay_recv_flush(&netplay->recv_packet_buffer);
+   return true;
+}
+
+#if 0
 bool netplay_handshake(netplay_t *netplay)
 {
    size_t i;
@@ -392,6 +718,7 @@ error:
    }
    return false;
 }
+#endif
 
 bool netplay_is_server(netplay_t* netplay)
 {
