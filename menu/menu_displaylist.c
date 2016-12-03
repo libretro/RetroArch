@@ -5034,9 +5034,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                   task_push_netplay_lan_scan();
 
                menu_entries_append_enum(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
-                     MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
+                     msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND),
+                     MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
                      0, 0, 0);
             }
             else
@@ -5055,9 +5055,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
 #else
          menu_entries_append_enum(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND),
-               msg_hash_to_str(MENU_ENUM_LABEL_NO_NETWORKS_FOUND),
-               MENU_ENUM_LABEL_NO_NETWORKS_FOUND,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND),
+               msg_hash_to_str(MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND),
+               MENU_ENUM_LABEL_NO_NETPLAY_HOSTS_FOUND,
                0, 0, 0);
 #endif
 
