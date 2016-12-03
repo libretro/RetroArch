@@ -19,6 +19,7 @@
 
 #include "netplay_private.h"
 #include <net/net_socket.h>
+#include <compat/strl.h>
 
 #include <encodings/crc32.h>
 
@@ -190,22 +191,21 @@ bool netplay_handshake(netplay_t *netplay)
 
    if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
-      RARCH_ERR("%s\n",
-            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT));
-      return false;
+      strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT), sizeof(msg));
+      goto error;
    }
 
    if (*content_crc_ptr != ntohl(header[0]))
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER));
-      return false;
+      strlcpy(msg, msg_hash_to_str(MSG_CONTENT_CRC32S_DIFFER), sizeof(msg));
+      goto error;
    }
 
    if (netplay_impl_magic() != ntohl(header[1]))
    {
-      RARCH_ERR("Implementations differ, make sure you're using exact same "
-            "libretro implementations and RetroArch version.\n");
-      return false;
+      strlcpy(msg, "Implementations differ. Make sure you're using exact same "
+         "libretro implementations and RetroArch version.", sizeof(msg));
+      goto error;
    }
 
    /* Some cores only report the correct sram size late, so we can't actually
@@ -223,13 +223,17 @@ bool netplay_handshake(netplay_t *netplay)
        netplay_endian_mismatch(local_pmagic, remote_pmagic))
    {
       RARCH_ERR("Endianness mismatch with an endian-sensitive core.\n");
-      return false;
+      strlcpy(msg, "This core does not support inter-architecture netplay "
+         "between these systems.", sizeof(msg));
+      goto error;
    }
    if ((netplay->quirks & NETPLAY_QUIRK_PLATFORM_DEPENDENT) &&
        (local_pmagic != remote_pmagic))
    {
       RARCH_ERR("Platform mismatch with a platform-sensitive core.\n");
-      return false;
+      strlcpy(msg, "This core does not support inter-architecture netplay.",
+         sizeof(msg));
+      goto error;
    }
 
    /* Clear any existing compression */
@@ -267,21 +271,22 @@ bool netplay_handshake(netplay_t *netplay)
    {
       if (!netplay_send_nickname(netplay, netplay->fd))
       {
-         RARCH_ERR("%s\n",
-               msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST));
-         return false;
+         strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_SEND_NICKNAME_TO_HOST),
+            sizeof(msg));
+         goto error;
       }
    }
 
    if (!netplay_get_nickname(netplay, netplay->fd))
    {
       if (is_server)
-         RARCH_ERR("%s\n",
-               msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT));
+         strlcpy(msg, msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT),
+            sizeof(msg));
       else
-         RARCH_ERR("%s\n", 
-               msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST));
-      return false;
+         strlcpy(msg,
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST),
+            sizeof(msg));
+      goto error;
    }
 
    if (is_server)
@@ -378,6 +383,14 @@ bool netplay_handshake(netplay_t *netplay)
    }
 
    return true;
+
+error:
+   if (msg[0])
+   {
+      RARCH_ERR("%s\n", msg);
+      runloop_msg_queue_push(msg, 1, 180, false);
+   }
+   return false;
 }
 
 bool netplay_is_server(netplay_t* netplay)
