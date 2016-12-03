@@ -170,49 +170,6 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
          netplay_handshake_init_send(netplay);
          netplay->status = RARCH_NETPLAY_CONNECTION_INIT;
 
-#if 0
-         /* Establish the connection */
-         if (netplay_handshake(netplay))
-         {
-            netplay->status = RARCH_NETPLAY_CONNECTION_PLAYING;
-
-            /* FIXME: Not the best place for this, needs to happen after initial
-             * connection in get_info */
-            if (!socket_nonblock(netplay->fd))
-            {
-               free(netplay);
-               return NULL;
-            }
-
-            /* Send them the savestate */
-            if (!(netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
-            {
-               netplay->force_send_savestate = true;
-            }
-            else
-            {
-               /* Because the first frame isn't serialized, we're actually at
-                * frame 1 */
-               netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
-               netplay->self_frame_count = 1;
-            }
-
-            /* And expect the current frame from the other side */
-            netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
-            netplay->read_ptr = netplay->other_ptr = netplay->self_ptr;
-
-            /* Unstall if we were waiting for this */
-            if (netplay->stall == RARCH_NETPLAY_STALL_NO_CONNECTION)
-               netplay->stall = 0;
-
-         }
-         else
-         {
-            socket_close(netplay->fd);
-            /* FIXME: Get in a state to accept another client */
-
-         }
-#endif
       }
    }
 
@@ -363,11 +320,6 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
 {
    if (!netplay_is_server(netplay))
    {
-#if 0
-      if (!netplay_handshake(netplay))
-         return false;
-      netplay->status = RARCH_NETPLAY_CONNECTION_PLAYING;
-#endif
       netplay_handshake_init_send(netplay);
       netplay->status = RARCH_NETPLAY_CONNECTION_INIT;
    }
