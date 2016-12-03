@@ -285,7 +285,7 @@ static bool netplay_spectate_info_cb(netplay_t* netplay, unsigned frames)
          return false;
    }
 
-   netplay->status = RARCH_NETPLAY_CONNECTION_PLAYING;
+   netplay->mode = NETPLAY_CONNECTION_PLAYING;
 
    return true;
 }

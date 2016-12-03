@@ -105,13 +105,13 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       }
 
       /* If we can't transmit savestates, we must stall until the client is ready */
-      if (netplay->status != RARCH_NETPLAY_CONNECTION_PLAYING &&
+      if (netplay->mode != NETPLAY_CONNECTION_PLAYING &&
           netplay->self_frame_count > 0 &&
           (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
          netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
    }
 
-   if (netplay->is_server && netplay->status == RARCH_NETPLAY_CONNECTION_NONE)
+   if (netplay->is_server && netplay->mode == NETPLAY_CONNECTION_NONE)
    {
       fd_set fds;
       struct timeval tmp_tv = {0};
@@ -168,7 +168,7 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
          }
 
          netplay_handshake_init_send(netplay);
-         netplay->status = RARCH_NETPLAY_CONNECTION_INIT;
+         netplay->mode = NETPLAY_CONNECTION_INIT;
 
       }
    }
@@ -192,7 +192,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
    netplay->self_frame_count++;
 
    /* Only relevant if we're connected */
-   if (netplay->status != RARCH_NETPLAY_CONNECTION_PLAYING)
+   if (netplay->mode != NETPLAY_CONNECTION_PLAYING)
    {
       netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
       netplay->read_ptr = netplay->other_ptr = netplay->self_ptr;
@@ -321,7 +321,7 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
    if (!netplay_is_server(netplay))
    {
       netplay_handshake_init_send(netplay);
-      netplay->status = RARCH_NETPLAY_CONNECTION_INIT;
+      netplay->mode = NETPLAY_CONNECTION_INIT;
    }
 
    return true;

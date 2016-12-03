@@ -99,17 +99,17 @@ enum netplay_cmd
    /* Inform the other side of our nick (must be first command) */
    NETPLAY_CMD_NICK           = 0x0020,
 
-   /* Send SRAM data (must be second command from server) */
-   NETPLAY_CMD_SRAM           = 0x0021,
-
-   /* Inform client of current frame number (must be third command from server) */
-   NETPLAY_CMD_FRAME          = 0x0022,
+   /* Initial synchronization info (frame, sram, player info) */
+   NETPLAY_CMD_SYNC           = 0x0021,
 
    /* Join spectator mode */
-   NETPLAY_CMD_SPECTATE       = 0x0023,
+   NETPLAY_CMD_SPECTATE       = 0x0022,
 
    /* Join play mode */
-   NETPLAY_CMD_PLAY           = 0x0024,
+   NETPLAY_CMD_PLAY           = 0x0023,
+
+   /* Report player mode */
+   NETPLAY_CMD_MODE           = 0x0024,
 
    /* Loading and synchronization */
 
@@ -162,14 +162,19 @@ enum netplay_cmd_cfg
    NETPLAY_CFG_PLAYER_SLOT    = 0x0008
 };
 
-enum rarch_netplay_connection_status
+enum rarch_netplay_connection_mode
 {
-   RARCH_NETPLAY_CONNECTION_NONE = 0,
-   RARCH_NETPLAY_CONNECTION_INIT, /* Waiting for header */
-   RARCH_NETPLAY_CONNECTION_PRE_NICK, /* Waiting for nick */
-   RARCH_NETPLAY_CONNECTION_PRE_SRAM, /* Waiting for SRAM */
-   RARCH_NETPLAY_CONNECTION_PRE_FRAME, /* Waiting for frame number */
-   RARCH_NETPLAY_CONNECTION_PLAYING /* Normal ready state */
+   NETPLAY_CONNECTION_NONE = 0,
+
+   /* Initialization: */
+   NETPLAY_CONNECTION_INIT, /* Waiting for header */
+   NETPLAY_CONNECTION_PRE_NICK, /* Waiting for nick */
+   NETPLAY_CONNECTION_PRE_SYNC, /* Waiting for sync */
+
+   /* Ready: */
+   NETPLAY_CONNECTION_CONNECTED, /* Modes above this are connected */
+   NETPLAY_CONNECTION_SPECTATING, /* Spectator mode */
+   NETPLAY_CONNECTION_PLAYING /* Normal ready state */
 };
 
 enum rarch_netplay_stall_reason
@@ -225,7 +230,7 @@ struct netplay
    struct sockaddr_storage other_addr;
 
    /* Status of our connection */
-   enum rarch_netplay_connection_status status;
+   enum rarch_netplay_connection_mode mode;
 
    struct retro_callbacks cbs;
    /* TCP connection for state sending, etc. Also used for commands */
@@ -442,8 +447,7 @@ bool netplay_send_nickname(netplay_t *netplay, int fd);
 bool netplay_handshake_init_send(netplay_t *netplay);
 bool netplay_handshake_init(netplay_t *netplay, bool *had_input);
 bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input);
-bool netplay_handshake_pre_sram(netplay_t *netplay, bool *had_input);
-bool netplay_handshake_pre_frame(netplay_t *netplay, bool *had_input);
+bool netplay_handshake_pre_sync(netplay_t *netplay, bool *had_input);
 
 uint32_t netplay_impl_magic(void);
 
