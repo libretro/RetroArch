@@ -2998,6 +2998,7 @@ static int action_ok_wifi(const char *path,
 static int action_ok_netplay_lan_scan(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#ifdef HAVE_NETWORKING
    struct netplay_host_list *hosts;
    struct netplay_host *host;
    bool netplay_was_on = false;
@@ -3026,6 +3027,10 @@ static int action_ok_netplay_lan_scan(const char *path,
       return -1;
 
    return generic_action_ok_command(CMD_EVENT_RESUME);
+
+#else
+   return -1;
+#endif
 }
 
 static int action_ok_content_collection_list(const char *path,
