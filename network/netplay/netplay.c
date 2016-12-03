@@ -1259,7 +1259,7 @@ netplay_t *netplay_new(void *direct_host, const char *server, uint16_t port,
    netplay->check_frames      = check_frames;
    netplay->quirks            = quirks;
 
-   strlcpy(netplay->nick, nick, sizeof(netplay->nick));
+   strlcpy(netplay->nick, nick[0] ? nick : RARCH_DEFAULT_NICK, sizeof(netplay->nick));
 
    if (!netplay_init_buffers(netplay, delay_frames))
    {

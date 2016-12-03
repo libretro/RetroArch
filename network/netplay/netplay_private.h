@@ -37,6 +37,7 @@
 #define WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
 #define MAX_SPECTATORS 16
 #define RARCH_DEFAULT_PORT 55435
+#define RARCH_DEFAULT_NICK "Anonymous"
 
 #define NETPLAY_PROTOCOL_VERSION 3
 

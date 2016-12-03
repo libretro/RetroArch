@@ -39,12 +39,14 @@ static void netplay_lan_scan_callback(void *task_data,
          msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
       return;
 
-   file_list = menu_entries_get_selection_buf_ptr(0);
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
-
    if (netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, (void *) &netplay_hosts))
    {
+      if (netplay_hosts->size > 0)
+      {
+         file_list = menu_entries_get_selection_buf_ptr(0);
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
+      }
+
       for (i = 0; i < netplay_hosts->size; i++)
       {
          struct netplay_host *host = &netplay_hosts->hosts[i];

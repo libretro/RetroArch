@@ -116,11 +116,17 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY:
       {
          struct addrinfo hints = {0}, *addr;
+         int canBroadcast = 1;
 
          /* Get the broadcast address (IPv4 only for now) */
          snprintf(port_str, 6, "%hu", RARCH_DEFAULT_PORT);
          if (getaddrinfo_retro("255.255.255.255", port_str, &hints, &addr) < 0)
             return false;
+
+         /* Make it broadcastable */
+#if defined(SOL_SOCKET) && defined(SO_BROADCAST)
+         setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST, (void *) &canBroadcast, sizeof(canBroadcast));
+#endif
 
          /* Put together the request */
          memcpy((void *) &ad_packet_buffer, "RANQ", 4);
@@ -298,7 +304,7 @@ bool netplay_lan_ad_client(void)
          if (their_addr.sa_family == AF_INET)
          {
             struct sockaddr_in *sin = (struct sockaddr_in *) &their_addr;
-            sin->sin_port = htons(ad_packet_buffer.port);
+            sin->sin_port = htons(ntohl(ad_packet_buffer.port));
 
          }
 #ifdef AF_INET6

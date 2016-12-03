@@ -53,6 +53,7 @@
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
+#include "../../network/netplay/netplay_discovery.h"
 #endif
 
 typedef struct
@@ -752,6 +753,14 @@ int generic_action_ok_displaylist_push(const char *path,
          info_path          = path;
          info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST:
+         info.directory_ptr = idx;
+         info.type          = type;
+         info_path          = path;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
@@ -2927,6 +2936,13 @@ static int action_ok_network_list(const char *path,
          entry_idx, ACTION_OK_DL_NETWORK_SETTINGS_LIST);
 }
 
+static int action_ok_netplay_lan_scan_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_displaylist_push(path, NULL, label, type, idx,
+         entry_idx, ACTION_OK_DL_NETPLAY_LAN_SCAN_SETTINGS_LIST);
+}
+
 static int action_ok_lakka_services(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2977,6 +2993,39 @@ static int action_ok_wifi(const char *path,
    if (!menu_input_dialog_start(&line))
       return -1;
    return 0;
+}
+
+static int action_ok_netplay_lan_scan(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct netplay_host_list *hosts;
+   struct netplay_host *host;
+   bool netplay_was_on = false;
+
+   /* Figure out what host we're connecting to */
+   if (!netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &hosts))
+      return -1;
+   if (entry_idx >= hosts->size)
+      return -1;
+   host = &hosts->hosts[entry_idx];
+
+   /* Enable Netplay client mode */
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
+   {
+      netplay_was_on = true;
+      command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   }
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+
+   /* Enable Netplay */
+   if (!command_event(CMD_EVENT_NETPLAY_INIT, (void *) host))
+      return -1;
+
+   /* And make sure we use its callbacks */
+   if (!netplay_was_on && !core_set_netplay_callbacks())
+      return -1;
+
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int action_ok_content_collection_list(const char *path,
@@ -3829,6 +3878,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NETWORK_SETTINGS:
             BIND_ACTION_OK(cbs, action_ok_network_list);
             break;
+         case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+            BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan_list);
+            break;
          case MENU_ENUM_LABEL_LAKKA_SERVICES:
             BIND_ACTION_OK(cbs, action_ok_lakka_services);
             break;
@@ -4153,6 +4205,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_WIFI:
             BIND_ACTION_OK(cbs, action_ok_wifi);
+            break;
+         case MENU_NETPLAY_LAN_SCAN:
+            BIND_ACTION_OK(cbs, action_ok_netplay_lan_scan);
             break;
          case FILE_TYPE_CURSOR:
             switch (menu_label_hash)
