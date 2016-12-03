@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <encodings/win32.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
@@ -719,14 +720,15 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       }
       else
       {
-         char dev_name[CCHDEVICENAME] = {0};
+	 WCHAR_TO_CHAR_ALLOC(current_mon->szDevice, dev_name)
          *style          = WS_POPUP | WS_VISIBLE;
-
-         utf16_to_char_string((const uint16_t*)current_mon->szDevice, dev_name, sizeof(dev_name));
 
          if (!win32_monitor_set_fullscreen(*width, *height,
                   refresh, dev_name))
                          {}
+
+	 if (dev_name)
+            free(dev_name);
 
          /* Display settings might have changed, get new coordinates. */
          GetMonitorInfo(*hm_to_use, (MONITORINFOEX*)current_mon);

@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <encodings/win32.h>
+#include <tchar.h>
 #include <windowsx.h>
 
 #include <dinput.h>
@@ -152,17 +153,17 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    for (i = 0; i < num_raw_devs; i++)
    {
       RID_DEVICE_INFO rdi;
-      char devName[128]   = {0};
+      TCHAR devName[128]   = {0};
       UINT rdiSize        = sizeof(rdi);
       UINT nameSize       = sizeof(devName);
 
       rdi.cbSize = sizeof (rdi);
 
       if ((raw_devs[i].dwType == RIM_TYPEHID) &&
-          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
+          (GetRawInputDeviceInfo(raw_devs[i].hDevice, RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
           (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId) == ((LONG)product_guid->Data1)) &&
-          (GetRawInputDeviceInfoA(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
-          (strstr(devName, "IG_") != NULL) )
+          (GetRawInputDeviceInfo(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
+          (_tcsstr(devName, TEXT("IG_")) != NULL) )
       {
          free(raw_devs);
          raw_devs = NULL;

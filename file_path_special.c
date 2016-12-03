@@ -15,6 +15,8 @@
 
 
 #ifdef _WIN32
+#include <encodings/win32.h>
+#include <tchar.h>
 #include <direct.h>
 #else
 #include <unistd.h>
@@ -207,9 +209,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #endif
 #ifdef _WIN32
    DWORD ret;
-#ifdef UNICODE
-   wchar_t ws[PATH_MAX_LENGTH] = {0};
-#endif
+   LPTSTR ws = (LPTSTR)calloc(len, sizeof(TCHAR));
 #endif
 #ifdef __HAIKU__
    image_info info;
@@ -218,15 +218,25 @@ void fill_pathname_application_path(char *s, size_t len)
    (void)i;
 
    if (!len)
+   {
+#ifdef _WIN32
+      if (ws)
+         free(ws);
+#endif
       return;
+   }
 
 #ifdef _WIN32
+   ret    = GetModuleFileName(GetModuleHandle(NULL), ws, len - 1);
+   memset(s, 0, len);
 #ifdef UNICODE
-   MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, sizeof(ws) / sizeof(ws[0]));
-   ret    = GetModuleFileNameW(GetModuleHandleW(NULL), ws, sizeof(ws) / sizeof(ws[0]));
+   utf16_to_char_string(ws, s, len);
 #else
-   ret    = GetModuleFileName(GetModuleHandle(NULL), s, len - 1);
+   memcpy(s, ws, len);
 #endif
+
+   if (ws)
+      free(ws);
 
    s[ret] = '\0';
 #elif defined(__APPLE__)

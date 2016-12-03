@@ -76,10 +76,10 @@ struct RFILE
 #define HAVE_BUFFERED_IO 1
 
 #ifdef _WIN32
-#define MODE_STR_READ L"r"
-#define MODE_STR_READ_UNBUF L"rb"
-#define MODE_STR_WRITE_UNBUF L"wb"
-#define MODE_STR_WRITE_PLUS L"w+"
+#define MODE_STR_READ TEXT("r")
+#define MODE_STR_READ_UNBUF TEXT("rb")
+#define MODE_STR_WRITE_UNBUF TEXT("wb")
+#define MODE_STR_WRITE_PLUS TEXT("w+")
 #else
 #define MODE_STR_READ "r"
 #define MODE_STR_READ_UNBUF "rb"
@@ -116,10 +116,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    int         mode_int = 0;
 #if defined(HAVE_BUFFERED_IO)
 #ifdef _WIN32
-   const wchar_t *mode_str = NULL;
-   wchar_t path_wide[PATH_MAX_LENGTH] = {0};
-#else
-   const char *mode_str = NULL;
+   const TCHAR *mode_str = NULL;
 #endif
 #endif
    RFILE        *stream = (RFILE*)calloc(1, sizeof(*stream));
@@ -212,8 +209,11 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
 #ifdef _WIN32
-      MultiByteToWideChar(CP_UTF8, 0, path, -1, path_wide, sizeof(path_wide) / sizeof(path_wide[0]));
+      CHAR_TO_WCHAR_ALLOC(path, path_wide)
       stream->fp = _wfopen(path_wide, mode_str);
+
+      if (path_wide)
+         free(path_wide);
 #else
       stream->fp = fopen(path, mode_str);
 #endif

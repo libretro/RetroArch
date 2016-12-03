@@ -20,6 +20,7 @@
 #include <string.h>
 
 #ifdef _WIN32
+#include <encodings/win32.h>
 #include <direct.h>
 #else
 #include <unistd.h>
