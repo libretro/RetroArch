@@ -118,6 +118,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #if defined(HAVE_BUFFERED_IO)
 #ifdef _WIN32
    const TCHAR *mode_str = NULL;
+#else
+   const char *mode_str = NULL;
 #endif
 #endif
    RFILE        *stream = (RFILE*)calloc(1, sizeof(*stream));

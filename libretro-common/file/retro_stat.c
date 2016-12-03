@@ -197,15 +197,19 @@ bool mkdir_norecurse(const char *dir)
 {
    int ret;
 #if defined(_WIN32)
-#ifdef _MSC_VER
    CHAR_TO_WCHAR_ALLOC(dir, dir_wide)
 
+#ifdef _MSC_VER
    ret = _tmkdir(dir_wide);
+#else
+#ifdef UNICODE
+   ret = _wmkdir(dir_wide);
+#else
+   ret = _mkdir(dir_wide);
+#endif
 
    if (dir_wide)
       free(dir_wide);
-#else
-   ret = _mkdir(dir);
 #endif
 #elif defined(IOS)
    ret = mkdir(dir, 0755);

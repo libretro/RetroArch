@@ -25,9 +25,9 @@
 
 #ifndef _XBOX
 #ifdef _WIN32
-/*#define UNICODE
+#define UNICODE
 #include <tchar.h>
-#include <wchar.h>*/
+#include <wchar.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +47,7 @@ extern "C" {
    size_t ws##_size = (NULL != s && s[0] ? strlen(s) : 0) + 1; \
    wchar_t *ws = (wchar_t*)calloc(ws##_size, 2); \
    if (NULL != s && s[0]) \
-      MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, ws##_size / sizeof(wchar_t));
+      MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, ws##_size);
 
 #define WCHAR_TO_CHAR_ALLOC(ws, s) \
    size_t s##_size = ((NULL != ws && ws[0] ? wcslen((const wchar_t*)ws) : 0) / 2) + 1; \

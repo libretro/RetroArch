@@ -47,7 +47,7 @@ struct RDIR *retro_opendir(const char *name)
 #if defined(_WIN32)
 #ifdef UNICODE
    snprintf(path_buf, sizeof(path_buf), "%s\\*", name);
-   MultiByteToWideChar(CP_UTF8, 0, path_buf, -1, pathW, sizeof(pathW) / sizeof(pathW[0]));
+   MultiByteToWideChar(CP_UTF8, 0, path_buf, -1, pathW, sizeof(pathW));
    rdir->directory = FindFirstFileW(pathW, &rdir->entry);
 #else
    rdir->directory = FindFirstFile(path_buf, &rdir->entry);

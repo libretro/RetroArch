@@ -163,7 +163,15 @@ static bool guid_is_xinput_device(const GUID* product_guid)
           (GetRawInputDeviceInfo(raw_devs[i].hDevice, RIDI_DEVICEINFO, &rdi, &rdiSize) != ((UINT)-1)) &&
           (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId) == ((LONG)product_guid->Data1)) &&
           (GetRawInputDeviceInfo(raw_devs[i].hDevice, RIDI_DEVICENAME, devName, &nameSize) != ((UINT)-1)) &&
+#ifdef _MSC_VER
           (_tcsstr(devName, TEXT("IG_")) != NULL) )
+#else
+#ifdef UNICODE
+          (wcsstr((const wchar_t*)devName, L"IG_") != NULL) )
+#else
+          (strstr(devName, "IG_" != NULL) )
+#endif
+#endif
       {
          free(raw_devs);
          raw_devs = NULL;
