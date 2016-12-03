@@ -288,7 +288,7 @@ bool netplay_lan_ad_client(void)
       addr_size = sizeof(their_addr);
       if (recvfrom(lan_ad_client_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size) >=
-            sizeof(struct ad_packet))
+            (ssize_t) sizeof(struct ad_packet))
       {
          struct netplay_host *host;
 
@@ -327,10 +327,13 @@ bool netplay_lan_ad_client(void)
             else allocated *= 2;
 
             if (discovered_hosts.hosts)
-               new_hosts = realloc(discovered_hosts.hosts, allocated * sizeof(struct netplay_host));
+               new_hosts = (struct netplay_host *)
+                  realloc(discovered_hosts.hosts, allocated * sizeof(struct
+                  netplay_host));
             else
                /* Should be equivalent to realloc, but I don't trust screwy libcs */
-               new_hosts = malloc(allocated * sizeof(struct netplay_host));
+               new_hosts = (struct netplay_host *)
+                  malloc(allocated * sizeof(struct netplay_host));
 
             if (!new_hosts)
                return false;
