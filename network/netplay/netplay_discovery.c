@@ -125,7 +125,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
 
          /* Make it broadcastable */
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
-         setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST, (void *) &canBroadcast, sizeof(canBroadcast));
+         setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST, (const char *) &canBroadcast, sizeof(canBroadcast));
 #endif
 
          /* Put together the request */
