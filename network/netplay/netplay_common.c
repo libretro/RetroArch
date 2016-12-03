@@ -305,24 +305,6 @@ static void netplay_handshake_ready(netplay_t *netplay)
    size_t i;
    char msg[512];
 
-   /* Reset our frame count so it's consistent between server and client */
-   netplay->self_frame_count = netplay->other_frame_count = netplay->read_frame_count = 0;
-   for (i = 0; i < netplay->buffer_size; i++)
-   {
-      if (i == netplay->self_ptr)
-      {
-         struct delta_frame *ptr = &netplay->buffer[i];
-         if (!ptr->used)
-            netplay_delta_frame_ready(netplay, ptr, 0);
-         ptr->frame = 0;
-         netplay->other_ptr = netplay->read_ptr = i;
-      }
-      else
-      {
-         netplay->buffer[i].used = false;
-      }
-   }
-
    if (netplay->is_server)
    {
       netplay_log_connection(&netplay->other_addr, 0, netplay->other_nick);
@@ -382,8 +364,8 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input)
 
    if (netplay->is_server)
    {
-      /* If we're the server, now we send our SRAM */
-      uint32_t cmd[2];
+      /* If we're the server, now we send our SRAM and frame number */
+      uint32_t cmd[3];
       retro_ctx_memory_info_t mem_info;
 
       mem_info.id = RETRO_MEMORY_SAVE_RAM;
@@ -393,10 +375,17 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input)
       cmd[1] = htonl(mem_info.size);
 
       if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, cmd,
-            sizeof(cmd)))
+            2*sizeof(uint32_t)))
          return false;
       if (!netplay_send(&netplay->send_packet_buffer, netplay->fd,
-            mem_info.data, mem_info.size) ||
+            mem_info.data, mem_info.size))
+         return false;
+
+      cmd[0] = htonl(NETPLAY_CMD_FRAME);
+      cmd[1] = htonl(sizeof(uint32_t));
+      cmd[2] = htonl(netplay->self_frame_count);
+      if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, cmd,
+            sizeof(cmd)) ||
           !netplay_send_flush(&netplay->send_packet_buffer, netplay->fd,
             false))
          return false;
@@ -469,6 +458,51 @@ bool netplay_handshake_pre_sram(netplay_t *netplay, bool *had_input)
             remote_sram_size = 0;
       }
 
+   }
+
+   /* Finally, wait for the frame number */
+   netplay->status = RARCH_NETPLAY_CONNECTION_PRE_FRAME;
+   *had_input = true;
+   netplay_recv_flush(&netplay->recv_packet_buffer);
+   return true;
+}
+
+bool netplay_handshake_pre_frame(netplay_t *netplay, bool *had_input)
+{
+   uint32_t cmd[3];
+   ssize_t recvd;
+   size_t i;
+
+   RECV(cmd, sizeof(cmd))
+      return false;
+
+   /* Only expecting an frame command */
+   if (ntohl(cmd[0]) != NETPLAY_CMD_FRAME ||
+       ntohl(cmd[1]) != sizeof(uint32_t))
+   {
+      /* FIXME: Correct error message */
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
+      return false;
+   }
+
+   /* Reset our frame count so it's consistent between server and client */
+   netplay->self_frame_count = netplay->other_frame_count =
+      netplay->read_frame_count = ntohl(cmd[2]);
+   for (i = 0; i < netplay->buffer_size; i++)
+   {
+      if (i == netplay->self_ptr)
+      {
+         struct delta_frame *ptr = &netplay->buffer[i];
+         if (!ptr->used)
+            netplay_delta_frame_ready(netplay, ptr, 0);
+         ptr->frame = netplay->self_frame_count;
+         netplay->other_ptr = netplay->read_ptr = i;
+      }
+      else
+      {
+         netplay->buffer[i].used = false;
+      }
    }
 
    /* We're ready! */

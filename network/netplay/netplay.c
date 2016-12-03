@@ -494,8 +494,10 @@ static bool netplay_get_cmd(netplay_t *netplay, bool *had_input)
          return ret;
       }
       case RARCH_NETPLAY_CONNECTION_PRE_SRAM:
+         return netplay_handshake_pre_sram(netplay, had_input);
+      case RARCH_NETPLAY_CONNECTION_PRE_FRAME:
       {
-         bool ret = netplay_handshake_pre_sram(netplay, had_input);
+         bool ret = netplay_handshake_pre_frame(netplay, had_input);
          send_input(netplay);
          return ret;
       }

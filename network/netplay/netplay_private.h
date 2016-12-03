@@ -102,11 +102,14 @@ enum netplay_cmd
    /* Send SRAM data (must be second command from server) */
    NETPLAY_CMD_SRAM           = 0x0021,
 
+   /* Inform client of current frame number (must be third command from server) */
+   NETPLAY_CMD_FRAME          = 0x0022,
+
    /* Join spectator mode */
-   NETPLAY_CMD_SPECTATE       = 0x0022,
+   NETPLAY_CMD_SPECTATE       = 0x0023,
 
    /* Join play mode */
-   NETPLAY_CMD_PLAY           = 0x0023,
+   NETPLAY_CMD_PLAY           = 0x0024,
 
    /* Loading and synchronization */
 
@@ -165,6 +168,7 @@ enum rarch_netplay_connection_status
    RARCH_NETPLAY_CONNECTION_INIT, /* Waiting for header */
    RARCH_NETPLAY_CONNECTION_PRE_NICK, /* Waiting for nick */
    RARCH_NETPLAY_CONNECTION_PRE_SRAM, /* Waiting for SRAM */
+   RARCH_NETPLAY_CONNECTION_PRE_FRAME, /* Waiting for frame number */
    RARCH_NETPLAY_CONNECTION_PLAYING /* Normal ready state */
 };
 
@@ -439,6 +443,7 @@ bool netplay_handshake_init_send(netplay_t *netplay);
 bool netplay_handshake_init(netplay_t *netplay, bool *had_input);
 bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input);
 bool netplay_handshake_pre_sram(netplay_t *netplay, bool *had_input);
+bool netplay_handshake_pre_frame(netplay_t *netplay, bool *had_input);
 
 uint32_t netplay_impl_magic(void);
 
