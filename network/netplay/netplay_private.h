@@ -78,6 +78,103 @@
 #define NETPLAY_COMPRESSION_SUPPORTED 0
 #endif
 
+enum netplay_cmd
+{
+   /* Basic commands */
+
+   /* Acknowlegement response */
+   NETPLAY_CMD_ACK            = 0x0000,
+
+   /* Failed acknowlegement response */
+   NETPLAY_CMD_NAK            = 0x0001,
+
+   /* Gracefully disconnects from host */
+   NETPLAY_CMD_DISCONNECT     = 0x0002,
+
+   /* Input data */
+   NETPLAY_CMD_INPUT          = 0x0003,
+
+   /* Initialization commands */
+
+   /* Inform the other side of our nick (must be first command) */
+   NETPLAY_CMD_NICK           = 0x0020,
+
+   /* Send SRAM data (must be second command from server) */
+   NETPLAY_CMD_SRAM           = 0x0021,
+
+   /* Join spectator mode */
+   NETPLAY_CMD_SPECTATE       = 0x0022,
+
+   /* Join play mode */
+   NETPLAY_CMD_PLAY           = 0x0023,
+
+   /* Loading and synchronization */
+
+   /* Send the CRC hash of a frame's state */
+   NETPLAY_CMD_CRC            = 0x0040,
+
+   /* Request a savestate */
+   NETPLAY_CMD_REQUEST_SAVESTATE = 0x0041,
+
+   /* Send a savestate for the client to load */
+   NETPLAY_CMD_LOAD_SAVESTATE = 0x0042,
+
+   /* Pauses the game, takes no arguments  */
+   NETPLAY_CMD_PAUSE          = 0x0043,
+
+   /* Resumes the game, takes no arguments */
+   NETPLAY_CMD_RESUME         = 0x0044,
+
+   /* Sends over cheats enabled on client (unsupported) */
+   NETPLAY_CMD_CHEATS         = 0x0045,
+
+   /* Misc. commands */
+
+   /* Swap inputs between player 1 and player 2 */
+   NETPLAY_CMD_FLIP_PLAYERS   = 0x0060,
+
+   /* Sends multiple config requests over,
+    * See enum netplay_cmd_cfg */
+   NETPLAY_CMD_CFG            = 0x0061,
+
+   /* CMD_CFG streamlines sending multiple
+      configurations. This acknowledges
+      each one individually */
+   NETPLAY_CMD_CFG_ACK        = 0x0062
+};
+
+/* These are the configurations sent by NETPLAY_CMD_CFG. */
+enum netplay_cmd_cfg
+{
+   /* Nickname */
+   NETPLAY_CFG_NICK           = 0x0001,
+
+   /* input.netplay_client_swap_input */
+   NETPLAY_CFG_SWAP_INPUT     = 0x0002,
+
+   /* netplay.delay_frames */
+   NETPLAY_CFG_DELAY_FRAMES   = 0x0004,
+
+   /* For more than 2 players */
+   NETPLAY_CFG_PLAYER_SLOT    = 0x0008
+};
+
+enum rarch_netplay_connection_status
+{
+   RARCH_NETPLAY_CONNECTION_NONE = 0,
+   RARCH_NETPLAY_CONNECTION_INIT, /* Waiting for header */
+   RARCH_NETPLAY_CONNECTION_PRE_NICK, /* Waiting for nick */
+   RARCH_NETPLAY_CONNECTION_PRE_SRAM, /* Waiting for SRAM */
+   RARCH_NETPLAY_CONNECTION_PLAYING /* Normal ready state */
+};
+
+enum rarch_netplay_stall_reason
+{
+   RARCH_NETPLAY_STALL_NONE = 0,
+   RARCH_NETPLAY_STALL_RUNNING_FAST,
+   RARCH_NETPLAY_STALL_NO_CONNECTION
+};
+
 struct delta_frame
 {
    bool used; /* a bit derpy, but this is how we know if the delta's been used at all */
@@ -117,22 +214,6 @@ struct netplay_callbacks {
    bool (*info_cb)   (netplay_t *netplay, unsigned frames);
 };
 
-enum rarch_netplay_connection_status
-{
-   RARCH_NETPLAY_CONNECTION_NONE = 0,
-   RARCH_NETPLAY_CONNECTION_INIT, /* Waiting for header */
-   RARCH_NETPLAY_CONNECTION_PRE_NICK, /* Waiting for nick */
-   RARCH_NETPLAY_CONNECTION_PRE_SRAM, /* Waiting for SRAM */
-   RARCH_NETPLAY_CONNECTION_PLAYING /* Normal ready state */
-};
-
-enum rarch_netplay_stall_reasons
-{
-   RARCH_NETPLAY_STALL_NONE = 0,
-   RARCH_NETPLAY_STALL_RUNNING_FAST,
-   RARCH_NETPLAY_STALL_NO_CONNECTION
-};
-
 struct netplay
 {
    char nick[32];
@@ -167,10 +248,10 @@ struct netplay
    size_t zbuffer_size;
 
    /* Pointer where we are now. */
-   size_t self_ptr; 
+   size_t self_ptr;
    /* Points to the last reliable state that self ever had. */
    size_t other_ptr;
-   /* Pointer to where we are reading. 
+   /* Pointer to where we are reading.
     * Generally, other_ptr <= read_ptr <= self_ptr. */
    size_t read_ptr;
    /* A pointer used temporarily for replay. */
@@ -241,7 +322,7 @@ struct netplay
 
    /* And stalling */
    uint32_t delay_frames;
-   int stall;
+   enum rarch_netplay_stall_reason stall;
    retro_time_t stall_time;
 
    /* Frequency with which to check CRCs */
@@ -249,6 +330,90 @@ struct netplay
 
    struct netplay_callbacks* net_cbs;
 };
+
+void input_poll_net(void);
+
+/**
+ * netplay_new:
+ * @direct_host          : Netplay host discovered from scanning.
+ * @server               : IP address of server.
+ * @port                 : Port of server.
+ * @delay_frames         : Amount of delay frames.
+ * @check_frames         : Frequency with which to check CRCs.
+ * @cb                   : Libretro callbacks.
+ * @spectate             : If true, enable spectator mode.
+ * @nat_traversal        : If true, attempt NAT traversal.
+ * @nick                 : Nickname of user.
+ * @quirks               : Netplay quirks.
+ *
+ * Creates a new netplay handle. A NULL host means we're
+ * hosting (user 1).
+ *
+ * Returns: new netplay handle.
+ **/
+netplay_t *netplay_new(void *direct_host, const char *server,
+      uint16_t port, unsigned delay_frames, unsigned check_frames,
+      const struct retro_callbacks *cb, bool spectate, bool nat_traversal,
+      const char *nick, uint64_t quirks);
+
+/**
+ * netplay_free:
+ * @netplay              : pointer to netplay object
+ *
+ * Frees netplay handle.
+ **/
+void netplay_free(netplay_t *handle);
+
+/**
+ * netplay_pre_frame:
+ * @netplay              : pointer to netplay object
+ *
+ * Pre-frame for Netplay.
+ * Call this before running retro_run().
+ *
+ * Returns: true (1) if the frontend is clear to emulate the frame, false (0)
+ * if we're stalled or paused
+ **/
+bool netplay_pre_frame(netplay_t *handle);
+
+/**
+ * netplay_post_frame:
+ * @netplay              : pointer to netplay object
+ *
+ * Post-frame for Netplay.
+ * We check if we have new input and replay from recorded input.
+ * Call this after running retro_run().
+ **/
+void netplay_post_frame(netplay_t *handle);
+
+/**
+ * netplay_frontend_paused
+ * @netplay              : pointer to netplay object
+ * @paused               : true if frontend is paused
+ *
+ * Inform Netplay of the frontend's pause state (paused or otherwise)
+ **/
+void netplay_frontend_paused(netplay_t *netplay, bool paused);
+
+/**
+ * netplay_load_savestate
+ * @netplay              : pointer to netplay object
+ * @serial_info          : the savestate being loaded, NULL means "load it yourself"
+ * @save                 : whether to save the provided serial_info into the frame buffer
+ *
+ * Inform Netplay of a savestate load and send it to the other side
+ **/
+void netplay_load_savestate(netplay_t *netplay, retro_ctx_serialize_info_t *serial_info, bool save);
+
+/**
+ * netplay_disconnect
+ * @netplay              : pointer to netplay object
+ *
+ * Disconnect netplay.
+ *
+ * Returns: true (1) if successful. At present, cannot fail.
+ **/
+bool netplay_disconnect(netplay_t *netplay);
 
 struct netplay_callbacks* netplay_get_cbs_net(void);
 
