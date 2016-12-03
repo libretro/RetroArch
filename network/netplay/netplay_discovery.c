@@ -119,7 +119,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
          int canBroadcast = 1;
 
          /* Get the broadcast address (IPv4 only for now) */
-         snprintf(port_str, 6, "%hu", RARCH_DEFAULT_PORT);
+         snprintf(port_str, 6, "%hu", (unsigned short) RARCH_DEFAULT_PORT);
          if (getaddrinfo_retro("255.255.255.255", port_str, &hints, &addr) < 0)
             return false;
 
