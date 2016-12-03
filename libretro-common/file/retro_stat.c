@@ -25,10 +25,10 @@
 #include <string.h>
 #include <errno.h>
 #include <encodings/win32.h>
-#include <tchar.h>
 #include <retro_miscellaneous.h>
 
 #if defined(_WIN32)
+#include <tchar.h>
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
