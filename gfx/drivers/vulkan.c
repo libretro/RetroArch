@@ -2155,10 +2155,10 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
    vk_t *vk                    = (vk_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
    struct vk_texture *texture = (struct vk_texture*)calloc(1, sizeof(*texture));
-   if (!texture)
+   if (!image || !texture)
       return 0;
 
-   if (!image->pixels)
+   if (!image->pixels || !image->width || !image->height)
    {
       /* Create a dummy texture instead. */
 #define T0 0xff000000u
