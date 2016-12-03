@@ -153,7 +153,7 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
       struct netplay_host *host = (struct netplay_host *) direct_host;
       hints.ai_family = host->addr.sa_family;
       hints.ai_socktype = SOCK_STREAM;
-      hints.ai_protocol = IPPROTO_TCP;
+      hints.ai_protocol = 0;
       hints.ai_addrlen = host->addrlen;
       hints.ai_addr = &host->addr;
       res = &hints;
