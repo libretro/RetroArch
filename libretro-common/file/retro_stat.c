@@ -24,11 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <encodings/win32.h>
 #include <retro_miscellaneous.h>
 
 #if defined(_WIN32)
-#include <tchar.h>
 #ifdef _MSC_VER
 #define setmode _setmode
 #endif
@@ -105,13 +103,11 @@ static bool path_stat(const char *path, enum stat_mode mode, int32_t *size)
 #elif defined(_WIN32)
    WIN32_FILE_ATTRIBUTE_DATA file_info;
    GET_FILEEX_INFO_LEVELS fInfoLevelId = GetFileExInfoStandard;
-   CHAR_TO_WCHAR_ALLOC(path, path_wide)
+   wchar_t path_wide[PATH_MAX_LENGTH] = {0};
 
-   DWORD ret = GetFileAttributesEx(path_wide, fInfoLevelId, &file_info);
+   MultiByteToWideChar(CP_UTF8, 0, path, -1, path_wide, sizeof(path_wide) / sizeof(path_wide[0]));
 
-   if (path_wide)
-      free(path_wide);
-
+   DWORD ret = GetFileAttributesExW(path_wide, fInfoLevelId, &file_info);
    if (ret == 0)
       return false;
 #else
@@ -197,20 +193,7 @@ bool mkdir_norecurse(const char *dir)
 {
    int ret;
 #if defined(_WIN32)
-   CHAR_TO_WCHAR_ALLOC(dir, dir_wide)
-
-#ifdef _MSC_VER
-   ret = _tmkdir(dir_wide);
-#else
-#ifdef UNICODE
-   ret = _wmkdir(dir_wide);
-#else
-   ret = _mkdir(dir_wide);
-#endif
-
-   if (dir_wide)
-      free(dir_wide);
-#endif
+   ret = _mkdir(dir);
 #elif defined(IOS)
    ret = mkdir(dir, 0755);
 #elif defined(VITA) || defined(PSP)
@@ -225,7 +208,7 @@ bool mkdir_norecurse(const char *dir)
 #elif defined(PSP) || defined(_3DS)
    if ((ret == -1) && path_is_directory(dir))
       ret = 0;
-#else
+#else 
    if (ret < 0 && errno == EEXIST && path_is_directory(dir))
       ret = 0;
 #endif

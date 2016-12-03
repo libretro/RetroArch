@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *
+ * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -15,8 +15,6 @@
 
 
 #ifdef _WIN32
-#include <encodings/win32.h>
-#include <tchar.h>
 #include <direct.h>
 #else
 #include <unistd.h>
@@ -125,7 +123,7 @@ void fill_pathname_abbreviate_special(char *out_path,
 
    fill_pathname_application_path(application_dir, sizeof(application_dir));
    path_basedir(application_dir);
-
+   
    for (i = 0; candidates[i]; i++)
    {
       if (!string_is_empty(candidates[i]) && strstr(in_path, candidates[i]) == in_path)
@@ -133,11 +131,11 @@ void fill_pathname_abbreviate_special(char *out_path,
          size_t src_size  = strlcpy(out_path, notations[i], size);
 
          retro_assert(src_size < size);
-
+      
          out_path        += src_size;
          size            -= src_size;
          in_path         += strlen(candidates[i]);
-
+      
          if (!path_char_is_slash(*in_path))
          {
             retro_assert(strlcpy(out_path, path_default_slash(), size) < size);
@@ -209,7 +207,7 @@ void fill_pathname_application_path(char *s, size_t len)
 #endif
 #ifdef _WIN32
    DWORD ret;
-   LPTSTR ws = (LPTSTR)calloc(len, sizeof(TCHAR));
+   wchar_t ws[PATH_MAX_LENGTH] = {0};
 #endif
 #ifdef __HAIKU__
    image_info info;
@@ -218,26 +216,13 @@ void fill_pathname_application_path(char *s, size_t len)
    (void)i;
 
    if (!len)
-   {
-#ifdef _WIN32
-      if (ws)
-         free(ws);
-#endif
       return;
-   }
 
 #ifdef _WIN32
-   ret    = GetModuleFileName(GetModuleHandle(NULL), ws, len - 1);
-   memset(s, 0, len);
-#ifdef UNICODE
-   utf16_to_char_string(ws, s, len);
-#else
-   memcpy(s, ws, len);
-#endif
+   MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, sizeof(ws) / sizeof(ws[0]));
 
-   if (ws)
-      free(ws);
 
+   ret    = GetModuleFileNameW(GetModuleHandleW(NULL), ws, sizeof(ws) / sizeof(ws[0]));
    s[ret] = '\0';
 #elif defined(__APPLE__)
    if (bundle)
@@ -247,7 +232,7 @@ void fill_pathname_application_path(char *s, size_t len)
       CFStringGetCString(bundle_path, s, len, kCFStringEncodingUTF8);
       CFRelease(bundle_path);
       CFRelease(bundle_url);
-
+      
       retro_assert(strlcat(s, "nobin", len) < len);
       return;
    }
@@ -267,7 +252,7 @@ void fill_pathname_application_path(char *s, size_t len)
       char link_path[255];
 
       link_path[0] = *s = '\0';
-      pid       = getpid();
+      pid       = getpid(); 
 
       /* Linux, BSD and Solaris paths. Not standardized. */
       for (i = 0; i < ARRAY_SIZE(exts); i++)
@@ -285,7 +270,7 @@ void fill_pathname_application_path(char *s, size_t len)
          }
       }
    }
-
+   
    RARCH_ERR("Cannot resolve application path! This should not happen.\n");
 #endif
 }
@@ -343,7 +328,7 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
 #ifdef HAVE_ZARCH
          {
             settings_t *settings     = config_get_ptr();
-            fill_pathname_join(s,
+            fill_pathname_join(s, 
                   settings->directory.assets,
                   "zarch",
                   len);

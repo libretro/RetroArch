@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include <string.h>
 
-#include <encodings/win32.h>
 #include <boolean.h>
 #include <retro_inline.h>
 #include <compat/strl.h>

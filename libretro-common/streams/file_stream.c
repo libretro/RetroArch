@@ -26,8 +26,9 @@
 #include <errno.h>
 
 #if defined(_WIN32)
-#include <encodings/win32.h>
-#include <tchar.h>
+#  define UNICODE
+#  include <tchar.h>
+#  include <wchar.h>
 #  ifdef _MSC_VER
 #    define setmode _setmode
 #  endif
@@ -77,10 +78,10 @@ struct RFILE
 #define HAVE_BUFFERED_IO 1
 
 #ifdef _WIN32
-#define MODE_STR_READ TEXT("r")
-#define MODE_STR_READ_UNBUF TEXT("rb")
-#define MODE_STR_WRITE_UNBUF TEXT("wb")
-#define MODE_STR_WRITE_PLUS TEXT("w+")
+#define MODE_STR_READ L"r"
+#define MODE_STR_READ_UNBUF L"rb"
+#define MODE_STR_WRITE_UNBUF L"wb"
+#define MODE_STR_WRITE_PLUS L"w+"
 #else
 #define MODE_STR_READ "r"
 #define MODE_STR_READ_UNBUF "rb"
@@ -117,7 +118,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    int         mode_int = 0;
 #if defined(HAVE_BUFFERED_IO)
 #ifdef _WIN32
-   const TCHAR *mode_str = NULL;
+   const wchar_t *mode_str = NULL;
+   wchar_t path_wide[PATH_MAX_LENGTH] = {0};
 #else
    const char *mode_str = NULL;
 #endif
@@ -212,11 +214,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
 #ifdef _WIN32
-      CHAR_TO_WCHAR_ALLOC(path, path_wide)
-      stream->fp = _tfopen(path_wide, mode_str);
-
-      if (path_wide)
-         free(path_wide);
+      MultiByteToWideChar(CP_UTF8, 0, path, -1, path_wide, sizeof(path_wide) / sizeof(path_wide[0]));
+      stream->fp = _wfopen(path_wide, mode_str);
 #else
       stream->fp = fopen(path, mode_str);
 #endif
@@ -296,7 +295,7 @@ char *filestream_getline(RFILE *stream)
    }
 
    newline[idx] = '\0';
-   return newline;
+   return newline; 
 }
 
 char *filestream_gets(RFILE *stream, char *s, size_t len)
@@ -347,7 +346,7 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 #endif
 
 #ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function is
+   /* Need to check stream->mapped because this function is 
     * called in filestream_open() */
    if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
    {
@@ -417,7 +416,7 @@ ssize_t filestream_tell(RFILE *stream)
       return ftell(stream->fp);
 #endif
 #ifdef HAVE_MMAP
-   /* Need to check stream->mapped because this function
+   /* Need to check stream->mapped because this function 
     * is called in filestream_open() */
    if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
       return stream->mappos;

@@ -35,12 +35,12 @@ extern "C"  {
    #ifndef snprintf
       #define snprintf c99_snprintf_retro__
    #endif
-
+   
    int c99_snprintf_retro__(char *outBuf, size_t size, const char *format, ...);
 #endif
 
 /* Pre-MSVC 2010 compilers don't implement vsnprintf in a cross-platform manner? Not sure about this one. */
-#if _MSC_VER < 1600
+#if _MSC_VER < 1600 
    #include <stdarg.h>
    #include <stdlib.h>
    #ifndef vsnprintf
@@ -53,6 +53,7 @@ extern "C"  {
 }
 #endif
 
+#undef UNICODE /* Do not bother with UNICODE at this time. */
 #include <direct.h>
 #include <stddef.h>
 #include <math.h>

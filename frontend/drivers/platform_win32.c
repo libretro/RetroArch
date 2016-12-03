@@ -40,8 +40,8 @@
 #include "../../runloop.h"
 #include "../../verbosity.h"
 
-/* We only load this library once, so we let it be
- * unloaded at application shutdown, since unloading
+/* We only load this library once, so we let it be 
+ * unloaded at application shutdown, since unloading 
  * it early seems to cause issues on some systems.
  */
 
@@ -71,7 +71,7 @@ static bool gfx_init_dwm(void)
    }
    atexit(gfx_dwm_shutdown);
 
-   HRESULT (WINAPI *mmcss)(BOOL) =
+   HRESULT (WINAPI *mmcss)(BOOL) = 
       (HRESULT (WINAPI*)(BOOL))dylib_proc(dwmlib, "DwmEnableMMCSS");
    if (mmcss)
    {
@@ -94,7 +94,7 @@ static void gfx_set_dwm(void)
    if (settings->video.disable_composition == dwm_composition_disabled)
       return;
 
-   HRESULT (WINAPI *composition_enable)(UINT) =
+   HRESULT (WINAPI *composition_enable)(UINT) = 
       (HRESULT (WINAPI*)(UINT))dylib_proc(dwmlib, "DwmEnableComposition");
    if (!composition_enable)
    {
@@ -177,7 +177,7 @@ static void frontend_win32_init(void *data)
 {
 	typedef BOOL (WINAPI *isProcessDPIAwareProc)();
 	typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-	HMODULE handle                         = GetModuleHandle(TEXT("User32.dll"));
+	HMODULE handle                         = GetModuleHandleW(L"User32.dll");
 	isProcessDPIAwareProc  isDPIAwareProc  = (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
 	setProcessDPIAwareProc setDPIAwareProc = (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
 
@@ -189,13 +189,13 @@ static void frontend_win32_init(void *data)
 				setDPIAwareProc();
 		}
 	}
-
+   
 }
 
 enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
 {
    SYSTEM_POWER_STATUS status;
-        enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+	enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 
 	if (!GetSystemPowerStatus(&status))
 		return ret;
@@ -338,7 +338,7 @@ static void frontend_win32_detach_console(void)
    {
       HWND wnd = GetConsoleWindow();
       FreeConsole();
-      PostMessage(wnd, WM_CLOSE, 0, 0);
+      PostMessageW(wnd, WM_CLOSE, 0, 0);
    }
 #endif
 }

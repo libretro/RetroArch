@@ -29,7 +29,10 @@
 #define WM_MOUSEWHEEL 0x020A
 #endif
 
-#include <encodings/win32.h>
+#define UNICODE
+#include <tchar.h>
+#include <wchar.h>
+
 #include <dinput.h>
 
 #include <stdlib.h>
@@ -45,7 +48,7 @@
 
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "../../tasks/tasks_internal.h"
+#include "../tasks/tasks_internal.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"

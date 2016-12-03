@@ -15,11 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <encodings/win32.h>
-
 #ifdef _XBOX
 #include <xtl.h>
 #include <xgraphics.h>
+#else
+#define UNICODE
+#include <tchar.h>
+#include <wchar.h>
 #endif
 
 #include <formats/image.h>
@@ -153,14 +155,14 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       video_info->input_scale * RARCH_SCALE_BASE;
 
    if (!renderchain_init_first(&d3d->renderchain_driver,
-           &d3d->renderchain_data))
+	   &d3d->renderchain_data))
    {
-           RARCH_ERR("Renderchain could not be initialized.\n");
-           return false;
+	   RARCH_ERR("Renderchain could not be initialized.\n");
+	   return false;
    }
 
    if (!d3d->renderchain_driver || !d3d->renderchain_data)
-           return false;
+	   return false;
 
    if (
          !d3d->renderchain_driver->init(
@@ -185,7 +187,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    for (i = 1; i < d3d->shader.passes; i++)
    {
       d3d->renderchain_driver->convert_geometry(d3d->renderchain_data,
-                    &link_info,
+		    &link_info,
             &out_width, &out_height,
             current_width, current_height, &d3d->final_viewport);
 
@@ -325,8 +327,8 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 
-   if (  !d3d ||
-         !d3d->renderchain_driver ||
+   if (  !d3d || 
+         !d3d->renderchain_driver || 
          !d3d->renderchain_driver->viewport_info)
       return;
 
@@ -362,7 +364,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
       vert[i][7]   = 1.0f;
       vert[i][8]   = overlay->alpha_mod;
    }
-
+   
    d3d_viewport_info(d3d, &vp);
 
    overlay_width   = vp.width;
@@ -500,7 +502,7 @@ void d3d_make_d3dpp(void *data,
 #ifdef _XBOX
    d3dpp->Windowed             = false;
 #else
-   d3dpp->Windowed             = settings->video.windowed_fullscreen
+   d3dpp->Windowed             = settings->video.windowed_fullscreen 
       || !info->fullscreen;
 #endif
    d3dpp->PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
@@ -531,13 +533,13 @@ void d3d_make_d3dpp(void *data,
    d3dpp->BackBufferFormat =
 #ifdef _XBOX360
       global->console.screen.gamma_correction ?
-      (D3DFORMAT)MAKESRGBFMT(info->rgb32 ?
+      (D3DFORMAT)MAKESRGBFMT(info->rgb32 ? 
             D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5) :
 #endif
       info->rgb32 ? D3DFMT_X8R8G8B8 : D3DFMT_LIN_R5G6B5;
 #else
    d3dpp->hDeviceWindow    = win32_get_window();
-   d3dpp->BackBufferFormat = !d3dpp->Windowed ?
+   d3dpp->BackBufferFormat = !d3dpp->Windowed ? 
       D3DFMT_X8R8G8B8 : D3DFMT_UNKNOWN;
 #endif
 
@@ -711,8 +713,8 @@ static void d3d_calculate_rect(void *data,
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
+            /* If the aspect ratios of screen and desired aspect 
+             * ratio are sufficiently equal (floating point stuff), 
              * assume they are actually equal.
              */
          }
@@ -804,7 +806,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 
    video_driver_get_size(&width, &height);
    d3d_set_viewport(d3d,
-           width, height, false, true);
+	   width, height, false, true);
 
 #if defined(_XBOX360)
    strlcpy(settings->path.font, "game:\\media\\Arial_12.xpr",
@@ -1045,7 +1047,7 @@ static bool d3d_construct(d3d_video_t *d3d,
          win_height, info->fullscreen);
 
    win32_set_window(&win_width, &win_height, info->fullscreen,
-           windowed_full, &rect);
+	   windowed_full, &rect);
 #endif
 
 #ifdef HAVE_SHADERS
@@ -1335,7 +1337,7 @@ static bool d3d_overlay_load(void *data,
       image_data;
 
    if (!d3d)
-           return false;
+	   return false;
 
    d3d_free_overlays(d3d);
    d3d->overlays.resize(num_images);
@@ -1540,8 +1542,8 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
 {
    d3d_video_t *d3d   = (d3d_video_t*)data;
 
-   if (  !d3d ||
-         !d3d->renderchain_driver ||
+   if (  !d3d || 
+         !d3d->renderchain_driver || 
          !d3d->renderchain_driver->read_viewport)
       return false;
 
@@ -1601,7 +1603,7 @@ static void d3d_set_menu_texture_frame(void *data,
          || d3d->menu->tex_h != height)
    {
       if (d3d->menu)
-             d3d_texture_free(d3d->menu->tex);
+	     d3d_texture_free(d3d->menu->tex);
 
       d3d->menu->tex = d3d_texture_new(d3d->dev, NULL,
             width, height, 1,
@@ -1684,7 +1686,7 @@ static void video_texture_load_d3d(d3d_video_t *d3d,
       uintptr_t *id)
 {
    *id = (uintptr_t)d3d_texture_new(d3d->dev, NULL,
-         ti->width, ti->height, 1,
+         ti->width, ti->height, 1, 
          0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
          NULL, NULL);
 }
@@ -1737,7 +1739,7 @@ static void d3d_unload_texture(void *data, uintptr_t id)
 {
    LPDIRECT3DTEXTURE texid;
    if (!id)
-           return;
+	   return;
 
    texid = (LPDIRECT3DTEXTURE)id;
    d3d_texture_free(texid);

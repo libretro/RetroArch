@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *
+ * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -18,7 +18,6 @@
 #include "../../config.h"
 #endif
 
-#include <encodings/win32.h>
 #include "../drivers/d3d.h"
 #include "../font_driver.h"
 
@@ -47,7 +46,7 @@ static void *d3dfonts_w32_init_font(void *video_data,
       OUT_TT_PRECIS,
       CLIP_DEFAULT_PRECIS,
       DEFAULT_PITCH,
-      TEXT("Verdana") /* Hardcode FTL */
+      L"Verdana" /* Hardcode FTL */
    };
 
    d3dfonts = (d3dfonts_t*)calloc(1, sizeof(*d3dfonts));

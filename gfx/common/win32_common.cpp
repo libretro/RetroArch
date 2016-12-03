@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *
+ * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <encodings/win32.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
@@ -77,7 +76,7 @@ ui_window_win32_t main_window;
 /* Power Request APIs */
 
 #if !defined(_XBOX) && (_MSC_VER == 1310)
-typedef struct _REASON_CONTEXT
+typedef struct _REASON_CONTEXT 
 {
    ULONG Version;
    DWORD Flags;
@@ -130,7 +129,7 @@ extern "C"
    }
 };
 
-INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
+INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message, 
         WPARAM wParam, LPARAM lParam)
 {
    size_t list_size;
@@ -149,16 +148,16 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
             core_info_list_get_supported_cores(core_info_list,
                   path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
 
-            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
+            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
 
             for (i = 0; i < list_size; i++)
             {
                const core_info_t *info = (const core_info_t*)&core_info[i];
-               SendMessage(hwndList, LB_ADDSTRING, 0,
-                     (LPARAM)info->display_name);
+               SendMessage(hwndList, LB_ADDSTRING, 0, 
+                     (LPARAM)info->display_name); 
             }
-            SetFocus(hwndList);
-            return TRUE;
+            SetFocus(hwndList); 
+            return TRUE;  
          }
 
       case WM_COMMAND:
@@ -169,20 +168,20 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
                EndDialog(hDlg, LOWORD(wParam));
                break;
             case ID_CORELISTBOX:
-               switch (HIWORD(wParam))
-               {
+               switch (HIWORD(wParam)) 
+               { 
                   case LBN_SELCHANGE:
                      {
                         int lbItem;
                         const core_info_t *info = NULL;
-                        HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);
-                        lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0);
+                        HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
+                        lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
                         core_info_get_list(&core_info_list);
                         core_info_list_get_supported_cores(core_info_list,
                               path_get(RARCH_PATH_CONTENT), &core_info, &list_size);
                         info = (const core_info_t*)&core_info[lbItem];
                         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
-                     }
+                     } 
                      break;
                }
                return TRUE;
@@ -213,20 +212,20 @@ void win32_monitor_from_window(void)
 
 void win32_monitor_get_info(void)
 {
-   MONITORINFOEX current_mon;
+   MONITORINFOEXW current_mon;
 
    memset(&current_mon, 0, sizeof(current_mon));
-   current_mon.cbSize = sizeof(MONITORINFOEX);
+   current_mon.cbSize = sizeof(MONITORINFOEXW);
 
-   GetMonitorInfo(win32_monitor_last, (MONITORINFOEX*)&current_mon);
-   ChangeDisplaySettingsEx(current_mon.szDevice, NULL, NULL, 0, NULL);
+   GetMonitorInfoW(win32_monitor_last, (MONITORINFOEXW*)&current_mon);
+   ChangeDisplaySettingsExW(current_mon.szDevice, NULL, NULL, 0, NULL);
 }
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 {
    unsigned i, fs_monitor;
    settings_t *settings = config_get_ptr();
-   MONITORINFOEX *mon   = (MONITORINFOEX*)data;
+   MONITORINFOEXW *mon   = (MONITORINFOEXW*)data;
    HMONITOR *hm_to_use  = (HMONITOR*)hm_data;
 
    if (!win32_monitor_last)
@@ -255,8 +254,8 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    }
 
    memset(mon, 0, sizeof(*mon));
-   mon->cbSize = sizeof(MONITORINFOEX);
-   GetMonitorInfo(*hm_to_use, (MONITORINFOEX*)mon);
+   mon->cbSize = sizeof(MONITORINFOEXW);
+   GetMonitorInfoW(*hm_to_use, (MONITORINFOEXW*)mon);
 }
 
 /* Get the count of the files dropped */
@@ -265,19 +264,18 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
    char szFilename[1024] = {0};
    wchar_t wszFilename[1024] = {0};
 
-   if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+   if (DragQueryFileW((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
    {
       /*poll list of current cores */
       size_t list_size;
       content_ctx_info_t content_info  = {0};
       core_info_list_t *core_info_list = NULL;
       const core_info_t *core_info     = NULL;
-#ifdef UNICODE
+
       DragQueryFileW((HDROP)wparam, 0, wszFilename, sizeof(wszFilename) / sizeof(wszFilename[0]));
+
       utf16_to_char_string((const uint16_t*)wszFilename, szFilename, sizeof(szFilename));
-#else
-      DragQueryFile((HDROP)wparam, 0, szFilename, sizeof(szFilename));
-#endif
+
       core_info_get_list(&core_info_list);
 
 	  if (!core_info_list)
@@ -337,8 +335,8 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       else
       {
          /* Pick one core that could be compatible, ew */
-         if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
-                  hwnd,PickCoreProc,(LPARAM)NULL)==IDOK)
+         if(DialogBoxParamW(GetModuleHandleW(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
+                  hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
          {
             task_push_content_load_default(
                   NULL, NULL,
@@ -410,7 +408,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          }
          *quit = true;
          break;
-          case WM_COMMAND:
+	  case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
             if (settings->ui.menubar_enable)
@@ -455,7 +453,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
             g_inited              = true;
-
+            
             win32_window.hwnd     = hwnd;
 
             ui_window_win32_set_droppable(&win32_window, true);
@@ -509,7 +507,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
 
    if (dinput_wgl && dinput_handle_message(dinput_wgl, message, wparam, lparam))
       return 0;
-   return DefWindowProc(hwnd, message, wparam, lparam);
+   return DefWindowProcW(hwnd, message, wparam, lparam);
 }
 
 bool win32_window_create(void *data, unsigned style,
@@ -517,7 +515,7 @@ bool win32_window_create(void *data, unsigned style,
       unsigned height, bool fullscreen)
 {
 #ifndef _XBOX
-   main_window.hwnd = CreateWindowEx(0, TEXT("RetroArch"), TEXT("RetroArch"),
+   main_window.hwnd = CreateWindowExW(0, L"RetroArch", L"RetroArch",
          style,
          fullscreen ? mon_rect->left : g_pos_x,
          fullscreen ? mon_rect->top  : g_pos_y,
@@ -535,7 +533,7 @@ bool win32_window_create(void *data, unsigned style,
 #endif
 
 bool win32_get_metrics(void *data,
-        enum display_metric_types type, float *value)
+	enum display_metric_types type, float *value)
 {
 #ifdef _XBOX
    return false;
@@ -585,8 +583,7 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
 {
 #ifndef _XBOX
    DEVMODE devmode;
-   unsigned res = 0;
-   CHAR_TO_WCHAR_ALLOC(dev_name, dev_name_wide)
+   wchar_t dev_name_wide[1024] = {0};
 
    memset(&devmode, 0, sizeof(devmode));
    devmode.dmSize             = sizeof(DEVMODE);
@@ -598,13 +595,10 @@ static bool win32_monitor_set_fullscreen(unsigned width, unsigned height,
    RARCH_LOG("Setting fullscreen to %ux%u @ %uHz on device %s.\n",
          width, height, refresh, dev_name);
 
-   res = ChangeDisplaySettingsEx(dev_name_wide, &devmode,
+   MultiByteToWideChar(CP_UTF8, 0, dev_name, -1, dev_name_wide, sizeof(dev_name_wide) / sizeof(dev_name_wide[0]));
+
+   return ChangeDisplaySettingsExW(dev_name_wide, &devmode,
          NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_SUCCESSFUL;
-
-   if (dev_name_wide)
-      free(dev_name_wide);
-
-   return res;
 #endif
 }
 
@@ -622,7 +616,7 @@ void win32_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
 #ifndef _XBOX
-   const ui_application_t *application =
+   const ui_application_t *application = 
       ui_companion_driver_get_application_ptr();
    if (application)
       application->process_events();
@@ -661,7 +655,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
          typedef HANDLE (WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
          typedef BOOL   (WINAPI * PowerSetRequestPtr)(HANDLE PowerRequest,
                POWER_REQUEST_TYPE RequestType);
-         HMODULE kernel32 = GetModuleHandle(TEXT("kernel32.dll"));
+         HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
          PowerCreateRequestPtr powerCreateRequest =
             (PowerCreateRequestPtr)GetProcAddress(kernel32, "PowerCreateRequest");
          PowerSetRequestPtr    powerSetRequest =
@@ -695,19 +689,19 @@ bool win32_suppress_screensaver(void *data, bool enable)
 }
 
 /* FIXME: It should not be necessary to add the W after MONITORINFOEX, but linking fails without it. */
-void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
+void win32_set_style(MONITORINFOEXW *current_mon, HMONITOR *hm_to_use,
 	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
 	RECT *rect, RECT *mon_rect, DWORD *style)
 {
 #ifndef _XBOX
    settings_t *settings = config_get_ptr();
 
-   /* Windows only reports the refresh rates for modelines as
-    * an integer, so video.refresh_rate needs to be rounded. Also, account
+   /* Windows only reports the refresh rates for modelines as 
+    * an integer, so video.refresh_rate needs to be rounded. Also, account 
     * for black frame insertion using video.refresh_rate set to half
     * of the display refresh rate, as well as higher vsync swap intervals. */
    float refresh_mod    = settings->video.black_frame_insertion ? 2.0f : 1.0f;
-   unsigned refresh     = roundf(settings->video.refresh_rate
+   unsigned refresh     = roundf(settings->video.refresh_rate 
          * refresh_mod * settings->video.swap_interval);
 
    if (fullscreen)
@@ -720,18 +714,17 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       }
       else
       {
-	 WCHAR_TO_CHAR_ALLOC(current_mon->szDevice, dev_name)
+	 char dev_name[CCHDEVICENAME] = {0};
          *style          = WS_POPUP | WS_VISIBLE;
+
+         utf16_to_char_string((const uint16_t*)current_mon->szDevice, dev_name, sizeof(dev_name));
 
          if (!win32_monitor_set_fullscreen(*width, *height,
                   refresh, dev_name))
-                         {}
-
-	 if (dev_name)
-            free(dev_name);
+			 {}
 
          /* Display settings might have changed, get new coordinates. */
-         GetMonitorInfo(*hm_to_use, (MONITORINFOEX*)current_mon);
+         GetMonitorInfoW(*hm_to_use, (MONITORINFOEXW*)current_mon);
          *mon_rect = current_mon->rcMonitor;
       }
    }
@@ -762,8 +755,8 @@ void win32_set_window(unsigned *width, unsigned *height,
       {
          RECT rc_temp = {0, 0, (LONG)*height, 0x7FFF};
          SetMenu(main_window.hwnd,
-               LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-         SendMessage(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+               LoadMenuW(GetModuleHandleW(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         SendMessageW(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
          g_resize_height = *height += rc_temp.top + rect->top;
          SetWindowPos(main_window.hwnd, NULL, 0, 0, *width, *height, SWP_NOMOVE);
       }
@@ -789,7 +782,7 @@ bool win32_set_video_mode(void *data,
    MSG msg;
    RECT mon_rect;
    unsigned mon_id;
-   MONITORINFOEX current_mon;
+   MONITORINFOEXW current_mon;
    bool windowed_full;
    RECT rect             = {0};
    HMONITOR hm_to_use    = NULL;
@@ -808,14 +801,14 @@ bool win32_set_video_mode(void *data,
 
    if (!win32_window_create(data, style, &mon_rect, width, height, fullscreen))
       return false;
-
+   
    win32_set_window(&width, &height, fullscreen, windowed_full, &rect);
 
    /* Wait until context is created (or failed to do so ...) */
-   while (!g_inited && !g_quit && GetMessage(&msg, main_window.hwnd, 0, 0))
+   while (!g_inited && !g_quit && GetMessageW(&msg, main_window.hwnd, 0, 0))
    {
       TranslateMessage(&msg);
-      DispatchMessage(&msg);
+      DispatchMessageW(&msg);
    }
 
    if (g_quit)
@@ -873,7 +866,7 @@ void win32_window_reset(void)
 void win32_destroy_window(void)
 {
 #ifndef _XBOX
-   UnregisterClass(TEXT("RetroArch"), GetModuleHandle(NULL));
+   UnregisterClassW(L"RetroArch", GetModuleHandleW(NULL));
 #endif
    main_window.hwnd = NULL;
 }
