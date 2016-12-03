@@ -1223,14 +1223,6 @@ bool netplay_try_init_serialization(netplay_t *netplay)
    /* Once initialized, we no longer exhibit this quirk */
    netplay->quirks &= ~((uint64_t) NETPLAY_QUIRK_INITIALIZATION);
 
-   /* Now we need a different packet buffer size because we actually know our
-    * state size */
-   /* FIXME: Duplication */
-   packet_buffer_size = netplay->state_size + netplay->stall_frames *
-      WORDS_PER_FRAME + (netplay->stall_frames+1)*3;
-   netplay_resize_socket_buffer(&netplay->send_packet_buffer, packet_buffer_size);
-   netplay_resize_socket_buffer(&netplay->recv_packet_buffer, packet_buffer_size);
-
    return true;
 }
 
@@ -1256,6 +1248,28 @@ bool netplay_wait_and_init_serialization(netplay_t *netplay)
    }
 
    return false;
+}
+
+static bool netplay_init_socket_buffers(netplay_t *netplay)
+{
+   /* Make our packet buffer big enough for a save state and frames-many frames
+    * of input data, plus the headers for each of them */
+   size_t packet_buffer_size = netplay->zbuffer_size +
+      netplay->delay_frames * WORDS_PER_FRAME + (netplay->delay_frames+1)*3;
+
+   if (netplay->send_packet_buffer.data)
+   {
+      netplay_deinit_socket_buffer(&netplay->send_packet_buffer);
+      netplay_deinit_socket_buffer(&netplay->recv_packet_buffer);
+      netplay->send_packet_buffer.data = netplay->recv_packet_buffer.data = NULL;
+   }
+
+   if (!netplay_init_socket_buffer(&netplay->send_packet_buffer, packet_buffer_size))
+      return false;
+   if (!netplay_init_socket_buffer(&netplay->recv_packet_buffer, packet_buffer_size))
+      return false;
+
+   return true;
 }
 
 bool netplay_init_serialization(netplay_t *netplay)
@@ -1293,7 +1307,7 @@ bool netplay_init_serialization(netplay_t *netplay)
       return false;
    }
 
-   return true;
+   return netplay_init_socket_buffers(netplay);
 }
 
 static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
@@ -1318,14 +1332,8 @@ static bool netplay_init_buffers(netplay_t *netplay, unsigned frames)
    if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
       netplay_init_serialization(netplay);
 
-   /* Make our packet buffer big enough for a save state and frames-many frames
-    * of input data, plus the headers for each of them */ 
-   packet_buffer_size = netplay->state_size + frames * WORDS_PER_FRAME + (frames+1)*3;
-
-   if (!netplay_init_socket_buffer(&netplay->send_packet_buffer, packet_buffer_size))
-      return false;
-   if (!netplay_init_socket_buffer(&netplay->recv_packet_buffer, packet_buffer_size))
-      return false;
+   if (!netplay->send_packet_buffer.data)
+      netplay_init_socket_buffers(netplay);
 
    return true;
 }
