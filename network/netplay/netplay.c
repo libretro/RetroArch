@@ -46,15 +46,6 @@
 #define HAVE_INET6 1
 #endif
 
-enum
-{
-   CMD_OPT_ALLOWED_IN_SPECTATE_MODE = 0x1,
-   CMD_OPT_REQUIRE_ACK              = 0x2,
-   CMD_OPT_HOST_ONLY                = 0x4,
-   CMD_OPT_CLIENT_ONLY              = 0x8,
-   CMD_OPT_REQUIRE_SYNC             = 0x10
-};
-
 /* Only used before init_netplay */
 static bool netplay_enabled = false;
 static bool netplay_is_client = false;
@@ -338,6 +329,25 @@ static bool netplay_can_poll(netplay_t *netplay)
    return netplay->can_poll;
 }
 
+/* Send the current input state, either immediately after receiving it or after
+ * finishing the initial handshake */
+static void send_input(netplay_t *netplay)
+{
+   if (!netplay->spectate.enabled && /* Spectate sends in its own way */
+       netplay->status == RARCH_NETPLAY_CONNECTION_PLAYING)
+   {
+      netplay->input_packet_buffer[2] = htonl(netplay->self_frame_count);
+      if (!netplay_send(&netplay->send_packet_buffer, netplay->fd,
+            netplay->input_packet_buffer,
+            sizeof(netplay->input_packet_buffer)) ||
+          !netplay_send_flush(&netplay->send_packet_buffer, netplay->fd,
+            false))
+      {
+         hangup(netplay);
+      }
+   }
+}
+
 /**
  * get_self_input_state:
  * @netplay              : pointer to netplay object
@@ -409,19 +419,7 @@ static bool get_self_input_state(netplay_t *netplay)
    netplay->input_packet_buffer[4] = htonl(state[1]);
    netplay->input_packet_buffer[5] = htonl(state[2]);
 
-   if (!netplay->spectate.enabled && /* Spectate sends in its own way */
-       netplay->status == RARCH_NETPLAY_CONNECTION_PLAYING)
-   {
-      if (!netplay_send(&netplay->send_packet_buffer, netplay->fd,
-            netplay->input_packet_buffer,
-            sizeof(netplay->input_packet_buffer)) ||
-          !netplay_send_flush(&netplay->send_packet_buffer, netplay->fd,
-            false))
-      {
-         hangup(netplay);
-         return false;
-      }
-   }
+   send_input(netplay);
 
    memcpy(ptr->self_state, state, sizeof(state));
    ptr->have_local = true;
@@ -490,9 +488,17 @@ static bool netplay_get_cmd(netplay_t *netplay, bool *had_input)
       case RARCH_NETPLAY_CONNECTION_INIT:
          return netplay_handshake_init(netplay, had_input);
       case RARCH_NETPLAY_CONNECTION_PRE_NICK:
-         return netplay_handshake_pre_nick(netplay, had_input);
+      {
+         bool ret = netplay_handshake_pre_nick(netplay, had_input);
+         send_input(netplay);
+         return ret;
+      }
       case RARCH_NETPLAY_CONNECTION_PRE_SRAM:
-         return netplay_handshake_pre_sram(netplay, had_input);
+      {
+         bool ret = netplay_handshake_pre_sram(netplay, had_input);
+         send_input(netplay);
+         return ret;
+      }
       default:
          break;
    }
@@ -1430,7 +1436,6 @@ error:
  * @cmd                    : command to send
  * @data                   : data to send as argument
  * @sz                     : size of data
- * @flags                  : flags of CMD_OPT_*
  * @command_str            : name of action
  * @success_msg            : message to display upon success
  * 
@@ -1438,28 +1443,13 @@ error:
  */
 bool netplay_command(netplay_t* netplay, enum netplay_cmd cmd,
                      void* data, size_t sz,
-                     uint32_t flags,
                      const char* command_str,
                      const char* success_msg)
 {
    char m[256];
    const char* msg         = NULL;
-   bool allowed_spectate   = !!(flags & CMD_OPT_ALLOWED_IN_SPECTATE_MODE);
-   bool host_only          = !!(flags & CMD_OPT_HOST_ONLY);
 
    retro_assert(netplay);
-
-   if (netplay->spectate.enabled && !allowed_spectate)
-   {
-      msg = "Cannot %s in spectate mode.";
-      goto error; 
-   }
-
-   if (host_only && netplay->port == 0)
-   {
-      msg = "Cannot %s as a client.";
-      goto error;
-   }
 
    if (!netplay_send_raw_cmd(netplay, cmd, data, sz))
       goto error;
@@ -1491,7 +1481,6 @@ static void netplay_flip_users(netplay_t *netplay)
    bool            command = netplay_command(
       netplay, NETPLAY_CMD_FLIP_PLAYERS,
       &flip_frame_net, sizeof flip_frame_net,
-      CMD_OPT_HOST_ONLY | CMD_OPT_REQUIRE_SYNC,
       "flip users", "Successfully flipped users.\n");
 
    if(command)

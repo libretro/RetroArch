@@ -306,17 +306,16 @@ static void netplay_handshake_ready(netplay_t *netplay)
    char msg[512];
 
    /* Reset our frame count so it's consistent between server and client */
-   netplay->self_frame_count = netplay->other_frame_count = 0;
-   netplay->read_frame_count = 1;
+   netplay->self_frame_count = netplay->other_frame_count = netplay->read_frame_count = 0;
    for (i = 0; i < netplay->buffer_size; i++)
    {
-      netplay->buffer[i].used = false;
       if (i == netplay->self_ptr)
       {
-         netplay_delta_frame_ready(netplay, &netplay->buffer[i], 0);
-         netplay->buffer[i].have_remote = true;
-         netplay->other_ptr = i;
-         netplay->read_ptr = NEXT_PTR(i);
+         struct delta_frame *ptr = &netplay->buffer[i];
+         if (!ptr->used)
+            netplay_delta_frame_ready(netplay, ptr, 0);
+         ptr->frame = 0;
+         netplay->other_ptr = netplay->read_ptr = i;
       }
       else
       {
