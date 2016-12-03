@@ -240,6 +240,22 @@ bool netplay_lan_ad_server(netplay_t *netplay)
    return true;
 }
 
+#ifdef HAVE_SOCKET_LEGACY
+/* The fact that I need to write this is deeply depressing */
+static int16_t htons_for_morons(int16_t value)
+{
+   union {
+      int32_t l;
+      int16_t s[2];
+   } val;
+   val.l = htonl(value);
+   return val.s[2];
+}
+#ifndef htons
+#define htons htons_for_morons
+#endif
+#endif
+
 bool netplay_lan_ad_client(void)
 {
    fd_set fds;
@@ -277,6 +293,23 @@ bool netplay_lan_ad_client(void)
          /* For this version */
          if (ntohl(ad_packet_buffer.protocol_version) != NETPLAY_PROTOCOL_VERSION)
             continue;
+
+         /* And that we know how to handle it */
+         if (their_addr.sa_family == AF_INET)
+         {
+            struct sockaddr_in *sin = (struct sockaddr_in *) &their_addr;
+            sin->sin_port = htons(ad_packet_buffer.port);
+
+         }
+#ifdef AF_INET6
+         else if (their_addr.sa_family == AF_INET6)
+         {
+            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *) &their_addr;
+            sin6->sin6_port = htons(ad_packet_buffer.port);
+
+         }
+#endif
+         else continue;
 
          /* Allocate space for it */
          if (discovered_hosts.size >= discovered_hosts_allocated)
