@@ -333,14 +333,6 @@ static void netplay_handshake_ready(netplay_t *netplay)
       {
          netplay->force_send_savestate = true;
       }
-      else
-      {
-         /* FIXME: Still correct? */
-         /* Because the first frame isn't serialized, we're actually at
-          * frame 1 */
-         netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
-         netplay->self_frame_count = 1;
-      }
    }
    else
    {
@@ -350,6 +342,10 @@ static void netplay_handshake_ready(netplay_t *netplay)
       RARCH_LOG("%s\n", msg);
       runloop_msg_queue_push(msg, 1, 180, false);
    }
+
+   /* Unstall if we were waiting for this */
+   if (netplay->stall == RARCH_NETPLAY_STALL_NO_CONNECTION)
+       netplay->stall = 0;
 
    netplay->status = RARCH_NETPLAY_CONNECTION_PLAYING;
 }
