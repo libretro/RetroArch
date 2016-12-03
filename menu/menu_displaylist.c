@@ -1564,6 +1564,10 @@ static int menu_displaylist_parse_netplay(
          msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_SETTINGS),
          MENU_ENUM_LABEL_NETWORK_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 
+   menu_entries_append_enum(info->list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS),
+         MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS, MENU_SETTING_GROUP, 0, 0);
 #else
    menu_entries_append_enum(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
