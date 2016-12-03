@@ -493,7 +493,7 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
    cmd      = ntohl(cmd);
 
-   RECV(&cmd_size, sizeof(cmd_size));
+   RECV(&cmd_size, sizeof(cmd_size))
       return false;
 
    cmd_size = ntohl(cmd_size);
