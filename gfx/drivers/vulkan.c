@@ -2158,13 +2158,39 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
    if (!texture)
       return 0;
 
-   *texture = vulkan_create_texture(vk, NULL,
-         image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
-         image->pixels, NULL, VULKAN_TEXTURE_STATIC);
+   if (!image->pixels)
+   {
+      /* Create a dummy texture instead. */
+#define T0 0xff000000u
+#define T1 0xffffffffu
+      static const uint32_t checkerboard[] = {
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+         T0, T1, T0, T1, T0, T1, T0, T1,
+         T1, T0, T1, T0, T1, T0, T1, T0,
+      };
+#undef T0
+#undef T1
+      *texture = vulkan_create_texture(vk, NULL,
+            8, 8, VK_FORMAT_B8G8R8A8_UNORM,
+            checkerboard, NULL, VULKAN_TEXTURE_STATIC);
+      texture->default_smooth = false;
+      texture->mipmap = false;
+   }
+   else
+   {
+      *texture = vulkan_create_texture(vk, NULL,
+            image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
+            image->pixels, NULL, VULKAN_TEXTURE_STATIC);
 
-   texture->default_smooth =
-      filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_LINEAR;
-   texture->mipmap = filter_type == TEXTURE_FILTER_MIPMAP_LINEAR;
+      texture->default_smooth =
+         filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_LINEAR;
+      texture->mipmap = filter_type == TEXTURE_FILTER_MIPMAP_LINEAR;
+   }
 
    return (uintptr_t)texture;
 }
