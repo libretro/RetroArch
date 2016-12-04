@@ -182,6 +182,19 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
 #define inherit_joyaxis(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
 
 /**
+ * input_pop_analog_dpad:
+ * @binds                          : Binds to modify.
+ *
+ * Restores binds temporarily overridden by input_push_analog_dpad().
+ **/
+#define input_pop_analog_dpad(binds) \
+{ \
+   unsigned j; \
+   for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++) \
+      (binds)[j].joyaxis = (binds)[j].orig_joyaxis; \
+}
+
+/**
  * input_push_analog_dpad:
  * @binds                          : Binds to modify.
  * @mode                           : Which analog stick to bind D-Pad to.
@@ -205,6 +218,8 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       x_minus           =  RARCH_ANALOG_LEFT_X_MINUS; \
       y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS; \
    } \
+   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
+      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
    if (!inherit_joyaxis(binds)) \
    { \
       unsigned j = x_plus + 3; \
@@ -212,26 +227,6 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
          (binds)[k].joyaxis = (binds)[j--].joyaxis; \
    } \
-}
-
-#define input_push_analog_dpad_pre(binds) \
-{ \
-   unsigned k; \
-   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
-      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
-}
-
-/**
- * input_pop_analog_dpad:
- * @binds                          : Binds to modify.
- *
- * Restores binds temporarily overridden by input_push_analog_dpad().
- **/
-#define input_pop_analog_dpad(binds) \
-{ \
-   unsigned j; \
-   for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++) \
-      (binds)[j].joyaxis = (binds)[j].orig_joyaxis; \
 }
 
 /**

@@ -513,9 +513,6 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
 
-      input_push_analog_dpad_pre(general_binds);
-      input_push_analog_dpad_pre(auto_binds);
-
       input_push_analog_dpad(general_binds, dpad_mode);
       input_push_analog_dpad(auto_binds,    dpad_mode);
    }
@@ -733,7 +730,6 @@ uint64_t input_menu_keys_pressed(void)
    {
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
 
-      input_push_analog_dpad_pre(auto_binds);
       input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
    }
 

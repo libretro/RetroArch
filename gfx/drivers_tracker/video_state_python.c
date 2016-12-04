@@ -394,9 +394,6 @@ float py_state_get(py_state_t *handle, const char *id,
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
 
-      input_push_analog_dpad_pre(general_binds);
-      input_push_analog_dpad_pre(auto_binds);
-
       input_push_analog_dpad(general_binds, dpad_mode);
       input_push_analog_dpad(auto_binds,    dpad_mode);
    }

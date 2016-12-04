@@ -1247,9 +1247,6 @@ int runloop_iterate(unsigned *sleep_ms)
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
 
-      input_push_analog_dpad_pre(general_binds);
-      input_push_analog_dpad_pre(auto_binds);
-
       input_push_analog_dpad(general_binds, dpad_mode);
       input_push_analog_dpad(auto_binds,    dpad_mode);
    }
