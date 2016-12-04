@@ -49,13 +49,8 @@
  **/
 bool menu_content_playlist_load(menu_content_ctx_playlist_info_t *info)
 {
-   playlist_t *playlist            = NULL;
-   const char *path                = NULL;
-   
-   if (!info)
-      return false;
-
-   playlist = (playlist_t*)info->data;
+   const char *path     = NULL;
+   playlist_t *playlist = (playlist_t*)info->data;
 
    if (!playlist)
       return false;
@@ -102,8 +97,8 @@ error:
 bool menu_content_playlist_find_associated_core(const char *path, char *s, size_t len)
 {
    unsigned j;
-   bool                     ret = false;
-   settings_t *settings         = config_get_ptr();
+   bool                                ret = false;
+   settings_t *settings                    = config_get_ptr();
    struct string_list *existing_core_names = 
       string_split(settings->playlist_names, ";");
    struct string_list *existing_core_paths = 
