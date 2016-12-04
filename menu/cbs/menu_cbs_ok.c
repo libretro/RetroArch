@@ -72,9 +72,9 @@ typedef struct
 
 /* FIXME - Global variables, refactor */
 static char detect_content_path[PATH_MAX_LENGTH];
-unsigned rpl_entry_selection_ptr;
-unsigned rdb_entry_start_game_selection_ptr;
-size_t hack_shader_pass = 0;
+unsigned rpl_entry_selection_ptr                 = 0;
+unsigned rdb_entry_start_game_selection_ptr      = 0;
+size_t                     hack_shader_pass      = 0;
 
 #ifdef HAVE_NETWORKING
 /* HACK - we have to find some way to pass state inbetween
@@ -144,7 +144,7 @@ finish:
 /* defined in menu_cbs_deferred_push */
 static void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
-   bool refresh = false;
+   bool refresh                = false;
    http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
    menu_file_transfer_t *state = (menu_file_transfer_t*)user_data;
 
@@ -989,20 +989,20 @@ static int action_ok_file_load_with_detect_core_collection(const char *path,
 static int action_ok_playlist_entry_collection(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
    char new_core_path[PATH_MAX_LENGTH];
-   enum rarch_core_type action_type = CORE_TYPE_PLAIN;
+   size_t selection                        = 0;
+   size_t selection_ptr                    = 0;
+   enum rarch_core_type action_type        = CORE_TYPE_PLAIN;
    enum content_mode_load content_enum_idx = CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU;
-   size_t selection_ptr             = 0;
-   playlist_t *playlist             = NULL;
-   bool playlist_initialized        = false;
-   const char *entry_path           = NULL;
-   const char *entry_label          = NULL;
-   const char *core_path            = NULL;
-   const char *core_name            = NULL;
-   playlist_t *tmp_playlist         = NULL;
-   menu_handle_t *menu              = NULL;
+   bool playlist_initialized               = false;
+   playlist_t *playlist                    = NULL;
+   const char *entry_path                  = NULL;
+   const char *entry_label                 = NULL;
+   const char *core_path                   = NULL;
+   const char *core_name                   = NULL;
+   playlist_t *tmp_playlist                = NULL;
+   menu_handle_t *menu                     = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -1023,8 +1023,7 @@ static int action_ok_playlist_entry_collection(const char *path,
       playlist_initialized = true;
    }
 
-   playlist   = tmp_playlist;
-
+   playlist      = tmp_playlist;
    selection_ptr = entry_idx;
 
    playlist_get_index(playlist, selection_ptr,
@@ -1046,8 +1045,8 @@ static int action_ok_playlist_entry_collection(const char *path,
 
       new_display_name[0] = '\0';
 
-      core_info.inf  = NULL;
-      core_info.path = new_core_path;
+      core_info.inf       = NULL;
+      core_info.path      = new_core_path;
 
       if (!core_info_find(&core_info, new_core_path))
          found_associated_core = false;
@@ -1183,8 +1182,8 @@ static int action_ok_playlist_entry(const char *path,
 static int action_ok_playlist_entry_start_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
+   size_t selection                 = 0;
    size_t selection_ptr             = 0;
    bool playlist_initialized        = false;
    playlist_t *playlist             = NULL;
