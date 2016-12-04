@@ -2110,8 +2110,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Core label";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Core name";
-      case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Core notes";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
          return "Firmware";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:

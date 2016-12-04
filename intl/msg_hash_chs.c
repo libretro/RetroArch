@@ -2066,8 +2066,6 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "核心标签";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "核心名称";
-      case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "核心说明";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
          return "固件";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:

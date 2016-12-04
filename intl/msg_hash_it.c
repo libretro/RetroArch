@@ -1876,8 +1876,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Estensioni supportate";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
          return "Firmware";
-      case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES:
-         return "Note del core";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE:
          return "Data della build";
       case MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION:
