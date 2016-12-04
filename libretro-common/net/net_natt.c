@@ -36,6 +36,12 @@
 #include <miniupnpc/miniupnpc.h>
 #include <miniupnpc/upnpcommands.h>
 
+#if MINIUPNPC_API_VERSION < 16
+#undef HAVE_MINIUPNPC
+#endif
+#endif
+
+#if HAVE_MINIUPNPC
 static struct UPNPUrls urls;
 static struct IGDdatas data;
 #endif
@@ -51,11 +57,7 @@ void natt_init(void)
    int upnperror = 0;
    memset(&urls, 0, sizeof(struct UPNPUrls));
    memset(&data, 0, sizeof(struct IGDdatas));
-#if MINIUPNPC_API_VERSION < 16
-   devlist = upnpDiscover(2000, NULL, NULL, 0, 0, &upnperror);
-#else
    devlist = upnpDiscover(2000, NULL, NULL, 0, 0, 2, &upnperror);
-#endif
    if (devlist)
    {
       dev = devlist;
@@ -68,11 +70,7 @@ void natt_init(void)
       if (!dev)
          dev = devlist;
 
-#if MINIUPNPC_API_VERSION < 16
-      descXML = (char *) miniwget(dev->descURL, &descXMLsize, 0);
-#else
       descXML = (char *) miniwget(dev->descURL, &descXMLsize, 0, NULL);
-#endif
       if (descXML)
       {
          parserootdesc (descXML, descXMLsize, &data);
@@ -116,19 +114,15 @@ bool natt_open_port(struct natt_status *status, struct sockaddr *addr, socklen_t
    proto_str = (proto == SOCKET_PROTOCOL_UDP) ? "UDP" : "TCP";
 
    /* add the port mapping */
-#if MINIUPNPC_API_VERSION >= 16
    r = UPNP_AddAnyPortMapping(urls.controlURL, data.first.servicetype, port_str,
       port_str, host, "retroarch", proto_str, NULL, "3600", ext_port_str);
    if (r == 501 /* Action Failed */)
    {
-#endif
       /* try the older AddPortMapping */
       memcpy(ext_port_str, port_str, 6);
       r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, port_str,
          port_str, host, "retroarch", proto_str, NULL, "3600");
-#if MINIUPNPC_API_VERSION >= 16
    }
-#endif
    if (r != 0)
       return false;
 
