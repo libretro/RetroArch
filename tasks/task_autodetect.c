@@ -325,10 +325,13 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
             msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED));
       task->title = strdup(msg);
 
+      free(params);
+
       task->finished = true;
       return;
    }
 
+   free(params);
    task->finished = true;
 }
 
@@ -340,6 +343,8 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
    task->finished = true;
 
    RARCH_LOG("%s: %s\n", msg_hash_to_str(MSG_AUTODETECT), params->msg);
+
+   free(params);
 }
 
 bool input_autoconfigure_disconnect(unsigned i, const char *ident)
