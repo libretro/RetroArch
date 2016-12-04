@@ -116,6 +116,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       struct video_shader_pass *pass, unsigned i)
 {
    char tmp_str[PATH_MAX_LENGTH];
+   char tmp_path[PATH_MAX_LENGTH];
    char shader_name[64];
    char filter_name_buf[64];
    char wrap_name_buf[64];
@@ -148,7 +149,16 @@ static bool video_shader_parse_pass(config_file_t *conf,
       return false;
    }
 
-   strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
+   strlcpy(tmp_path, tmp_str, sizeof(tmp_path));
+   path_resolve_realpath(tmp_path, sizeof(tmp_path));
+   RFILE *file = filestream_open(tmp_path, RFILE_MODE_READ_TEXT, -1);
+
+   if (!file)
+      strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
+   else
+      strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
+
+   filestream_close(file);
 
    /* Smooth */
    snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
@@ -323,6 +333,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
    char textures[1024];
    const char *id       = NULL;
    char *save           = NULL;
+   char tmp_path[PATH_MAX_LENGTH];
 
    textures[0] = '\0';
 
@@ -348,6 +359,16 @@ static bool video_shader_parse_textures(config_file_t *conf,
          RARCH_ERR("Cannot find path to texture \"%s\" ...\n", id);
          return false;
       }
+
+      strlcpy(tmp_path, shader->lut[shader->luts].path, sizeof(tmp_path));
+      path_resolve_realpath(tmp_path, sizeof(tmp_path));
+      RFILE *file = filestream_open(tmp_path, RFILE_MODE_READ_TEXT, -1);
+      if (file)
+      {
+         strlcpy(shader->lut[shader->luts].path, 
+            tmp_path, sizeof(shader->lut[shader->luts].path));
+      }
+      filestream_close(file);
 
       strlcpy(shader->lut[shader->luts].id, id,
             sizeof(shader->lut[shader->luts].id));
