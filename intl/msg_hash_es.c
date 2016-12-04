@@ -1616,7 +1616,7 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME:
          return "Nombre del núcleo";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE:
-         return "Firmware";
+         return "Firmware(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES:
          return "Licencia(s)";
       case MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS:
