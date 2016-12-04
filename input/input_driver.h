@@ -179,12 +179,7 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y);
 
-#define input_push_analog_dpad_pre(binds) \
-{ \
-   unsigned k; \
-   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
-      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
-}
+#define inherit_joyaxis(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
 
 /**
  * input_push_analog_dpad:
@@ -196,7 +191,35 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
  *
  * Push analog to D-Pad mappings to binds.
  **/
-void input_push_analog_dpad(struct retro_keybind *binds, enum analog_dpad_mode mode);
+#define input_push_analog_dpad(binds, mode) \
+{ \
+   unsigned k; \
+   unsigned x_plus      =  RARCH_ANALOG_RIGHT_X_PLUS; \
+   unsigned y_plus      =  RARCH_ANALOG_RIGHT_Y_PLUS; \
+   unsigned x_minus     =  RARCH_ANALOG_RIGHT_X_MINUS; \
+   unsigned y_minus     =  RARCH_ANALOG_RIGHT_Y_MINUS; \
+   if ((mode) == ANALOG_DPAD_LSTICK) \
+   { \
+      x_plus            =  RARCH_ANALOG_LEFT_X_PLUS; \
+      y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS; \
+      x_minus           =  RARCH_ANALOG_LEFT_X_MINUS; \
+      y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS; \
+   } \
+   if (!inherit_joyaxis(binds)) \
+   { \
+      unsigned j = x_plus + 3; \
+      /* Inherit joyaxis from analogs. */ \
+      for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
+         (binds)[k].joyaxis = (binds)[j--].joyaxis; \
+   } \
+}
+
+#define input_push_analog_dpad_pre(binds) \
+{ \
+   unsigned k; \
+   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
+      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
+}
 
 /**
  * input_pop_analog_dpad:

@@ -253,46 +253,6 @@ float input_sensor_get_input(unsigned port, unsigned id)
 }
 
 /**
- * input_push_analog_dpad:
- * @binds                          : Binds to modify.
- * @mode                           : Which analog stick to bind D-Pad to.
- *                                   E.g:
- *                                   ANALOG_DPAD_LSTICK
- *                                   ANALOG_DPAD_RSTICK
- *
- * Push analog to D-Pad mappings to binds.
- **/
-void input_push_analog_dpad(struct retro_keybind *binds, enum analog_dpad_mode mode)
-{
-   unsigned i;
-   unsigned x_plus      =  RARCH_ANALOG_RIGHT_X_PLUS;
-   unsigned y_plus      =  RARCH_ANALOG_RIGHT_Y_PLUS;
-   unsigned x_minus     =  RARCH_ANALOG_RIGHT_X_MINUS;
-   unsigned y_minus     =  RARCH_ANALOG_RIGHT_Y_MINUS;
-
-   if (mode == ANALOG_DPAD_LSTICK)
-   {
-      x_plus            =  RARCH_ANALOG_LEFT_X_PLUS;
-      y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS;
-      x_minus           =  RARCH_ANALOG_LEFT_X_MINUS;
-      y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS;
-   }
-
-   if (!(
-            (  binds[x_plus].joyaxis == binds[x_minus].joyaxis) || 
-            (  binds[y_plus].joyaxis == binds[y_minus].joyaxis)
-        )
-      )
-   {
-      unsigned j = x_plus + 3;
-
-      /* Inherit joyaxis from analogs. */
-      for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
-         binds[i].joyaxis = binds[j--].joyaxis;
-   }
-}
-
-/**
  * input_translate_coord_viewport:
  * @mouse_x                        : Pointer X coordinate.
  * @mouse_y                        : Pointer Y coordinate.
