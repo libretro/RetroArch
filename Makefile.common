@@ -870,7 +870,8 @@ ifeq ($(HAVE_VULKAN), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
-   SPIRV_CROSS_SOURCES := $(DEPS_DIR)/SPIRV-Cross/spirv_cross.cpp
+   SPIRV_CROSS_SOURCES := $(DEPS_DIR)/SPIRV-Cross/spirv_cross.cpp \
+								  $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.cpp
    ifneq ($(findstring Win32,$(OS)),)
       # Trivial temporary workaround for MinGW and glslang.
       CXXFLAGS += -fpermissive
