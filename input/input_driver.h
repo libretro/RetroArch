@@ -199,9 +199,9 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
  **/
 #define input_pop_analog_dpad(binds) \
 { \
-   unsigned i; \
-   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++) \
-      (binds)[i].joyaxis = (binds)[i].orig_joyaxis; \
+   unsigned j; \
+   for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++) \
+      (binds)[j].joyaxis = (binds)[j].orig_joyaxis; \
 }
 
 /**
