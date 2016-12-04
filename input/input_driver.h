@@ -197,7 +197,12 @@ void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
  *
  * Restores binds temporarily overridden by input_push_analog_dpad().
  **/
-void input_pop_analog_dpad(struct retro_keybind *binds);
+#define input_pop_analog_dpad(binds) \
+{ \
+   unsigned i; \
+   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++) \
+      (binds)[i].joyaxis = (binds)[i].orig_joyaxis; \
+}
 
 /**
  * input_poll:
