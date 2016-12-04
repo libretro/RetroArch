@@ -113,8 +113,8 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 #endif
 
 static HMONITOR win32_monitor_last;
-static unsigned win32_monitor_count;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
+static unsigned win32_monitor_count              = 0;
 
 extern "C"
 {
