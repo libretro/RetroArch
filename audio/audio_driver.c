@@ -488,9 +488,9 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
+   struct resampler_data src_data;
    static struct retro_perf_counter resampler_proc      = {0};
    static struct retro_perf_counter audio_convert_s16   = {0};
-   struct resampler_data src_data;
    const void *output_data                     = NULL;
    unsigned output_frames                      = 0;
    size_t   output_size                        = sizeof(float);
@@ -502,7 +502,8 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    src_data.output_frames                      = 0;
    src_data.ratio                              = 0.0f;
 
-   recording_push_audio(data, samples);
+   if (recording_data)
+      recording_push_audio(data, samples);
 
    if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
       return true;
