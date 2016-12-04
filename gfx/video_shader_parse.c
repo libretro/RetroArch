@@ -149,7 +149,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    }
 
    strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
-   
+
    /* Smooth */
    snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
 
@@ -842,12 +842,17 @@ void video_shader_write_conf_cgp(config_file_t *conf,
    for (i = 0; i < shader->passes; i++)
    {
       char key[64];
+      char tmp[PATH_MAX_LENGTH];
       const struct video_shader_pass *pass = &shader->pass[i];
 
       key[0] = '\0';
 
       snprintf(key, sizeof(key), "shader%u", i);
-      config_set_string(conf, key, pass->source.path);
+      strlcpy(tmp, pass->source.path, sizeof(tmp));
+
+      if (!path_is_absolute(tmp))
+         path_resolve_realpath(tmp, sizeof(tmp));
+      config_set_string(conf, key, tmp);
 
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
