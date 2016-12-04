@@ -326,16 +326,25 @@ void input_poll(void)
 
    input_driver_turbo_btns.count++;
 
-   for (i = 0; i < settings->input.max_users; i++)
+   if (input_driver_block_libretro_input)
    {
-      libretro_input_binds[i]                 = settings->input.binds[i];
-      binds[i]                                = settings->input.binds[i];
-      input_driver_turbo_btns.frame_enable[i] = 0;
-
-      if (!input_driver_block_libretro_input)
+      for (i = 0; i < settings->input.max_users; i++)
+      {
+         libretro_input_binds[i]                 = settings->input.binds[i];
+         binds[i]                                = settings->input.binds[i];
+         input_driver_turbo_btns.frame_enable[i] = 0;
+      }
+   }
+   else
+   {
+      for (i = 0; i < settings->input.max_users; i++)
+      {
+         libretro_input_binds[i]                 = settings->input.binds[i];
+         binds[i]                                = settings->input.binds[i];
          input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
                current_input_data, binds,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
+      }
    }
 
 #ifdef HAVE_OVERLAY
