@@ -54,10 +54,10 @@ static void wifi_scan_callback(void *task_data,
       return;
 
    file_list = menu_entries_get_selection_buf_ptr(0);
+   ssid_list = string_list_new();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, file_list);
 
-   ssid_list = string_list_new();
    driver_wifi_get_ssids(ssid_list);
 
    for (i = 0; i < ssid_list->size; i++)
@@ -69,6 +69,8 @@ static void wifi_scan_callback(void *task_data,
             MENU_ENUM_LABEL_CONNECT_WIFI,
             MENU_WIFI, 0, 0);
    }
+
+   string_list_free(ssid_list);
 }
 
 static void task_wifi_scan_handler(retro_task_t *task)
@@ -76,7 +78,7 @@ static void task_wifi_scan_handler(retro_task_t *task)
    driver_wifi_scan();
     
    task->progress = 100;
-   task->title = strdup(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE));
+   task->title    = strdup(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE));
    task->finished = true;
 
    return;
@@ -84,20 +86,22 @@ static void task_wifi_scan_handler(retro_task_t *task)
 
 bool task_push_wifi_scan(void)
 {
-   retro_task_t          *task = (retro_task_t*)calloc(1, sizeof(*task));
+   retro_task_t   *task = (retro_task_t *)calloc(1, sizeof(*task));
    wifi_handle_t *state = (wifi_handle_t*)calloc(1, sizeof(*state));
 
    if (!task || !state)
       goto error;
 
-   state->ssid_list = string_list_new();
+   state->ssid_list     = string_list_new();
 
-   /* blocking means no other task can run while this one is running, which is the default */
-   task->type = TASK_TYPE_BLOCKING;
-   task->state = state;
-   task->handler = task_wifi_scan_handler;
-   task->callback = wifi_scan_callback;
-   task->title = strdup(msg_hash_to_str(MSG_SCANNING_WIRELESS_NETWORKS));
+   /* blocking means no other task can run while this one is running, 
+    * which is the default */
+   task->type           = TASK_TYPE_BLOCKING;
+   task->state          = state;
+   task->handler        = task_wifi_scan_handler;
+   task->callback       = wifi_scan_callback;
+   task->title          = strdup(msg_hash_to_str(
+                           MSG_SCANNING_WIRELESS_NETWORKS));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 

@@ -36,10 +36,13 @@ static void netplay_lan_scan_callback(void *task_data,
 
    /* Don't push the results if we left the LAN scan menu */
    if (!string_is_equal(label,
-         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
+         msg_hash_to_str(
+            MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
       return;
 
-   if (netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, (void *) &netplay_hosts))
+   if (netplay_discovery_driver_ctl(
+            RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
+            (void *) &netplay_hosts))
    {
       if (netplay_hosts->size > 0)
       {
@@ -63,8 +66,10 @@ static void task_netplay_lan_scan_handler(retro_task_t *task)
 {
    if (init_netplay_discovery())
    {
-      netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_CLEAR_RESPONSES, NULL);
-      netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY, NULL);
+      netplay_discovery_driver_ctl(
+            RARCH_NETPLAY_DISCOVERY_CTL_LAN_CLEAR_RESPONSES, NULL);
+      netplay_discovery_driver_ctl(
+            RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY, NULL);
    }
 
    task->progress = 100;

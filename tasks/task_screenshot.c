@@ -119,7 +119,8 @@ static void task_screenshot_handler(retro_task_t *task)
       video_frame_convert_to_bgr24(
             scaler,
             state->out_buffer,
-            (const uint8_t*)state->frame + ((int)state->height - 1) * state->pitch,
+            (const uint8_t*)state->frame + ((int)state->height - 1) 
+            * state->pitch,
             state->width, state->height,
             -state->pitch);
    }
@@ -153,7 +154,8 @@ static void task_screenshot_handler(retro_task_t *task)
 
 #ifdef HAVE_IMAGEVIEWER
    if (ret)
-      if (content_push_to_history_playlist(g_defaults.image_history, state->filename,
+      if (content_push_to_history_playlist(g_defaults.image_history,
+               state->filename,
                "imageviewer", "builtin"))
          playlist_write_file(g_defaults.image_history);
 #endif
@@ -201,9 +203,11 @@ static bool screenshot_dump(
          fill_str_dated_filename(state->shotname, path_basename(name_base),
                IMG_EXT, sizeof(state->shotname));
       else
-         snprintf(state->shotname, sizeof(state->shotname), "%s.png", path_basename(name_base));
+         snprintf(state->shotname, sizeof(state->shotname),
+               "%s.png", path_basename(name_base));
 
-      fill_pathname_join(state->filename, folder, state->shotname, sizeof(state->filename));
+      fill_pathname_join(state->filename, folder,
+            state->shotname, sizeof(state->filename));
    }
 
 #ifdef _XBOX1
@@ -264,7 +268,8 @@ static bool take_screenshot_viewport(const char *name_base, bool savestate)
    }
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
-   if (!screenshot_dump(name_base, screenshot_dir, buffer, vp.width, vp.height,
+   if (!screenshot_dump(name_base, screenshot_dir,
+            buffer, vp.width, vp.height,
             vp.width * 3, true, buffer, savestate))
       goto error;
 
