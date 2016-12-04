@@ -286,7 +286,7 @@ bool netplay_handshake_init(netplay_t *netplay, bool *had_input)
       return false;
 
    /* Move on to the next mode */
-   netplay->mode = NETPLAY_CONNECTION_PRE_NICK;
+   netplay->self_mode = NETPLAY_CONNECTION_PRE_NICK;
    *had_input = true;
    netplay_recv_flush(&netplay->recv_packet_buffer);
    return true;
@@ -328,7 +328,7 @@ static void netplay_handshake_ready(netplay_t *netplay)
    if (netplay->stall == RARCH_NETPLAY_STALL_NO_CONNECTION)
        netplay->stall = 0;
 
-   netplay->mode = NETPLAY_CONNECTION_PLAYING;
+   netplay->remote_mode = NETPLAY_CONNECTION_PLAYING;
 }
 
 bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input)
@@ -365,7 +365,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input)
    if (netplay->is_server)
    {
       /* If we're the server, now we send sync info */
-      uint32_t cmd[3];
+      uint32_t cmd[4];
       retro_ctx_memory_info_t mem_info;
 
       mem_info.id = RETRO_MEMORY_SAVE_RAM;
@@ -374,6 +374,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input)
       cmd[0] = htonl(NETPLAY_CMD_SYNC);
       cmd[1] = htonl(sizeof(uint32_t) + mem_info.size);
       cmd[2] = htonl(netplay->self_frame_count);
+      cmd[3] = htonl(1);
 
       if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, cmd,
             sizeof(cmd)))
@@ -397,7 +398,7 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input)
    else
    {
       /* Client needs to wait for sync info */
-      netplay->mode = NETPLAY_CONNECTION_PRE_SYNC;
+      netplay->self_mode = NETPLAY_CONNECTION_PRE_SYNC;
 
    }
 
@@ -410,7 +411,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, bool *had_input)
 {
    uint32_t cmd[2];
    uint32_t local_sram_size, remote_sram_size;
-   uint32_t new_frame_count;
+   uint32_t new_frame_count, self_connection_num;
    size_t i;
    ssize_t recvd;
    retro_ctx_memory_info_t mem_info;
@@ -420,7 +421,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, bool *had_input)
 
    /* Only expecting a sync command */
    if (ntohl(cmd[0]) != NETPLAY_CMD_SYNC ||
-       ntohl(cmd[1]) < sizeof(uint32_t))
+       ntohl(cmd[1]) < 2*sizeof(uint32_t))
    {
       RARCH_ERR("%s\n",
             msg_hash_to_str(MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST));
@@ -431,6 +432,11 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, bool *had_input)
    RECV(&new_frame_count, sizeof(new_frame_count))
       return false;
    new_frame_count = ntohl(new_frame_count);
+
+   /* And the connection number */
+   RECV(&self_connection_num, sizeof(self_connection_num))
+      return false;
+   netplay->self_connection_num = ntohl(self_connection_num);
 
    /* Reset our frame buffer so it's consistent between server and client */
    netplay->self_frame_count = netplay->other_frame_count =
@@ -456,7 +462,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, bool *had_input)
    core_get_memory(&mem_info);
 
    local_sram_size = mem_info.size;
-   remote_sram_size = ntohl(cmd[1]) - sizeof(uint32_t);
+   remote_sram_size = ntohl(cmd[1]) - 2*sizeof(uint32_t);
 
    if (local_sram_size != 0 && local_sram_size == remote_sram_size)
    {
@@ -489,6 +495,7 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, bool *had_input)
    }
 
    /* We're ready! */
+   netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
    netplay_handshake_ready(netplay);
    *had_input = true;
    netplay_recv_flush(&netplay->recv_packet_buffer);

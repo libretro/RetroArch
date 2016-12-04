@@ -229,8 +229,11 @@ struct netplay
    char other_nick[32];
    struct sockaddr_storage other_addr;
 
+   /* Our connection number */
+   uint32_t self_connection_num;
+
    /* Status of our connection */
-   enum rarch_netplay_connection_mode mode;
+   enum rarch_netplay_connection_mode remote_mode, self_mode;
 
    struct retro_callbacks cbs;
    /* TCP connection for state sending, etc. Also used for commands */
