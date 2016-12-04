@@ -376,13 +376,19 @@ bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input)
       cmd[2] = htonl(netplay->self_frame_count);
 
       if (!netplay_send(&netplay->send_packet_buffer, netplay->fd, cmd,
-            sizeof(uint32_t)))
+            sizeof(cmd)))
          return false;
       if (!netplay_send(&netplay->send_packet_buffer, netplay->fd,
             mem_info.data, mem_info.size) ||
           !netplay_send_flush(&netplay->send_packet_buffer, netplay->fd,
             false))
          return false;
+
+      /* They start one frame after us */
+      netplay->other_frame_count = netplay->read_frame_count =
+         netplay->self_frame_count + 1;
+      netplay->other_ptr = netplay->read_ptr =
+         NEXT_PTR(netplay->self_ptr);
 
       /* Now we're ready! */
       netplay_handshake_ready(netplay);
@@ -431,17 +437,17 @@ bool netplay_handshake_pre_sync(netplay_t *netplay, bool *had_input)
       netplay->read_frame_count = new_frame_count;
    for (i = 0; i < netplay->buffer_size; i++)
    {
+      struct delta_frame *ptr = &netplay->buffer[i];
+      ptr->used = false;
+
       if (i == netplay->self_ptr)
       {
-         struct delta_frame *ptr = &netplay->buffer[i];
-         if (!ptr->used)
-            netplay_delta_frame_ready(netplay, ptr, 0);
+         /* Clear out any current data but still use this frame */
+         netplay_delta_frame_ready(netplay, ptr, 0);
          ptr->frame = new_frame_count;
+         ptr->have_local = true;
          netplay->other_ptr = netplay->read_ptr = i;
-      }
-      else
-      {
-         netplay->buffer[i].used = false;
+
       }
    }
 
