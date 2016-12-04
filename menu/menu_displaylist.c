@@ -381,23 +381,18 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
          {
             if (core_info->firmware[i].desc)
             {
-               snprintf(tmp, sizeof(tmp), "(!) %s: %s",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
-                     core_info->firmware[i].desc ?
-                     core_info->firmware[i].desc : "");
-               menu_entries_append_enum(info->list, tmp, "",
-                     MENU_ENUM_LABEL_CORE_INFO_ENTRY,
-                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-               snprintf(tmp, sizeof(tmp), "(!) %s: %s, %s",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATUS),
+               snprintf(tmp, sizeof(tmp), "(!) %s, %s: %s",
                      core_info->firmware[i].missing ?
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING) :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT),
                      core_info->firmware[i].optional ?
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OPTIONAL) :
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REQUIRED)
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REQUIRED),
+                     core_info->firmware[i].desc ?
+                     core_info->firmware[i].desc :
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME)
                      );
+
                menu_entries_append_enum(info->list, tmp, "",
                      MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                      MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
