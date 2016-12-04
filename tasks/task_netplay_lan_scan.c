@@ -25,11 +25,11 @@ static void netplay_lan_scan_callback(void *task_data,
                                void *user_data, const char *error)
 {
    unsigned i;
-   unsigned menu_type            = 0;
-   const char *path              = NULL;
-   const char *label             = NULL;
-   enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
-   file_list_t *file_list        = NULL;
+   unsigned menu_type                      = 0;
+   const char *path                        = NULL;
+   const char *label                       = NULL;
+   enum msg_hash_enums enum_idx            = MSG_UNKNOWN;
+   file_list_t *file_list                  = NULL;
    struct netplay_host_list *netplay_hosts = NULL;
 
    menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
@@ -81,10 +81,10 @@ bool task_push_netplay_lan_scan(void)
    if (!task)
       goto error;
 
-   task->type = TASK_TYPE_BLOCKING;
-   task->handler = task_netplay_lan_scan_handler;
+   task->type     = TASK_TYPE_BLOCKING;
+   task->handler  = task_netplay_lan_scan_handler;
    task->callback = netplay_lan_scan_callback;
-   task->title = strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING));
+   task->title    = strdup(msg_hash_to_str(MSG_NETPLAY_LAN_SCANNING));
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
