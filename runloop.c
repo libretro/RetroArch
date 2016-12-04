@@ -1261,11 +1261,13 @@ int runloop_iterate(unsigned *sleep_ms)
 
    for (i = 0; i < settings->input.max_users; i++)
    {
+      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
       if (!settings->input.analog_dpad_mode[i])
          continue;
 
-      input_pop_analog_dpad(settings->input.binds[i]);
-      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
+      input_pop_analog_dpad(general_binds);
+      input_pop_analog_dpad(auto_binds);
    }
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))

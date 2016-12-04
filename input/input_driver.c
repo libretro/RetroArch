@@ -593,8 +593,11 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 
    for (i = 0; i < settings->input.max_users; i++)
    {
-      input_pop_analog_dpad(settings->input.binds[i]);
-      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
+      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+
+      input_pop_analog_dpad(general_binds);
+      input_pop_analog_dpad(auto_binds);
    }
 }
 
@@ -818,7 +821,10 @@ uint64_t input_menu_keys_pressed(void)
    }
 
    for (i = 0; i < settings->input.max_users; i++)
-      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
+   {
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      input_pop_analog_dpad(auto_binds);
+   }
 
    if (menu_input_dialog_get_display_kb())
       return ret;
