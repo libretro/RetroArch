@@ -319,7 +319,6 @@ const struct retro_keybind *libretro_input_binds[MAX_USERS];
 void input_poll(void)
 {
    size_t i;
-   const struct retro_keybind *binds[MAX_USERS];
    settings_t *settings           = config_get_ptr();
 
    current_input->poll(current_input_data);
@@ -331,16 +330,17 @@ void input_poll(void)
       for (i = 0; i < settings->input.max_users; i++)
       {
          libretro_input_binds[i]                 = settings->input.binds[i];
-         binds[i]                                = settings->input.binds[i];
          input_driver_turbo_btns.frame_enable[i] = 0;
       }
    }
    else
    {
+      const struct retro_keybind *binds[MAX_USERS];
+
       for (i = 0; i < settings->input.max_users; i++)
       {
-         libretro_input_binds[i]                 = settings->input.binds[i];
          binds[i]                                = settings->input.binds[i];
+         libretro_input_binds[i]                 = settings->input.binds[i];
          input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
                current_input_data, binds,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
