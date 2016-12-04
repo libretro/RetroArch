@@ -100,6 +100,11 @@ Description:
     Negative Acknowledgement. If received, the connection is terminated. Sent
     whenever a command is malformed or otherwise not understood.
 
+Command: DISCONNECT
+Payload: None
+Description:
+    Gracefully disconnect. Not used.
+
 Command: INPUT
 Payload:
     {
@@ -107,24 +112,50 @@ Payload:
        joypad input: uint32
        analog 1 input: uint32
        analog 2 input: uint32
-       OPTIONAL state CRC: uint32
     }
 Description:
     Input state for each frame. Netplay must send an INPUT command for every
     frame in order to function at all.
 
-Command: FLIP_PLAYERS
+Command: NICK
+Payload:
+    {
+       nickname: char[32]
+    }
+Description:
+    Send nickname. Mandatory handshake command.
+
+Command: SYNC
+Payload:
+    {
+       connection number: uint32
+       frame number: uint32
+       sram: variable
+    }
+Description:
+    Initial state synchronization. Mandatory handshake command from server to
+    client only. Sent after receiving client's NICK.
+
+Command: SPECTATE
+Payload: None
+Description:
+    Request to enter spectate mode.
+
+Command: PLAY
+Payload: None
+Description:
+    Request to enter player mode.
+
+Command: MODE
 Payload:
     {
        frame number: uint32
+       connection number: uint32
+       player number: uint32 (MAX for spectator mode)
     }
 Description:
-    Flip players at the requested frame.
-
-Command: DISCONNECT
-Payload: None
-Description:
-    Gracefully disconnect. Not used.
+    Inform of a connection mode change (possibly the connection of the
+    receiving client). Only server-to-client.
 
 Command: CRC
 Payload:
@@ -161,3 +192,20 @@ Payload: None
 Command: RESUME
 Payload: None
     Indicates that the core is no longer paused.
+
+Command: CHEATS
+Unused
+
+Command: FLIP_PLAYERS
+Payload:
+    {
+       frame number: uint32
+    }
+Description:
+    Flip players at the requested frame.
+
+Command: CFG
+Unused
+
+Command: CFG_ACK
+Unused
