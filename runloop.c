@@ -1240,12 +1240,14 @@ int runloop_iterate(unsigned *sleep_ms)
    /* Update binds for analog dpad modes. */
    for (i = 0; i < settings->input.max_users; i++)
    {
+      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
       if (!settings->input.analog_dpad_mode[i])
          continue;
 
-      input_push_analog_dpad(settings->input.binds[i],
+      input_push_analog_dpad(general_binds,
             settings->input.analog_dpad_mode[i]);
-      input_push_analog_dpad(settings->input.autoconf_binds[i],
+      input_push_analog_dpad(auto_binds,
             settings->input.analog_dpad_mode[i]);
    }
 

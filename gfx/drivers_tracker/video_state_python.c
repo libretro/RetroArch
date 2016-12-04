@@ -387,9 +387,11 @@ float py_state_get(py_state_t *handle, const char *id,
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      input_push_analog_dpad(settings->input.binds[i],
+      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      input_push_analog_dpad(general_binds,
             settings->input.analog_dpad_mode[i]);
-      input_push_analog_dpad(settings->input.autoconf_binds[i],
+      input_push_analog_dpad(auto_binds,
             settings->input.analog_dpad_mode[i]);
    }
 
@@ -397,8 +399,10 @@ float py_state_get(py_state_t *handle, const char *id,
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      input_pop_analog_dpad(settings->input.binds[i]);
-      input_pop_analog_dpad(settings->input.autoconf_binds[i]);
+      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      input_pop_analog_dpad(general_binds);
+      input_pop_analog_dpad(auto_binds);
    }
 
    if (!ret)

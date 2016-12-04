@@ -574,9 +574,11 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
 
    for (i = 0; i < settings->input.max_users; i++)
    {
-      input_push_analog_dpad(settings->input.binds[i],
+      struct retro_keybind *general_binds = settings->input.binds[i];
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      input_push_analog_dpad(general_binds,
             settings->input.analog_dpad_mode[i]);
-      input_push_analog_dpad(settings->input.autoconf_binds[i],
+      input_push_analog_dpad(auto_binds,
             settings->input.analog_dpad_mode[i]);
    }
 
@@ -790,8 +792,10 @@ uint64_t input_menu_keys_pressed(void)
       return ret;
 
    for (i = 0; i < settings->input.max_users; i++)
-      input_push_analog_dpad(settings->input.autoconf_binds[i],
-            ANALOG_DPAD_LSTICK);
+   {
+      struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+      input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
+   }
 
    input_driver_block_libretro_input = false;
    input_driver_block_hotkey         = false;
