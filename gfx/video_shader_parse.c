@@ -151,14 +151,11 @@ static bool video_shader_parse_pass(config_file_t *conf,
 
    strlcpy(tmp_path, tmp_str, sizeof(tmp_path));
    path_resolve_realpath(tmp_path, sizeof(tmp_path));
-   RFILE *file = filestream_open(tmp_path, RFILE_MODE_READ_TEXT, -1);
 
-   if (!file)
+   if (!path_file_exists(tmp_path))
       strlcpy(pass->source.path, tmp_str, sizeof(pass->source.path));
    else
       strlcpy(pass->source.path, tmp_path, sizeof(pass->source.path));
-
-   filestream_close(file);
 
    /* Smooth */
    snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
@@ -362,13 +359,12 @@ static bool video_shader_parse_textures(config_file_t *conf,
 
       strlcpy(tmp_path, shader->lut[shader->luts].path, sizeof(tmp_path));
       path_resolve_realpath(tmp_path, sizeof(tmp_path));
-      RFILE *file = filestream_open(tmp_path, RFILE_MODE_READ_TEXT, -1);
-      if (file)
+
+      if (path_file_exists(tmp_path))
       {
          strlcpy(shader->lut[shader->luts].path, 
             tmp_path, sizeof(shader->lut[shader->luts].path));
       }
-      filestream_close(file);
 
       strlcpy(shader->lut[shader->luts].id, id,
             sizeof(shader->lut[shader->luts].id));
