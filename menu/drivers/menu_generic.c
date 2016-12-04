@@ -68,14 +68,14 @@ static enum action_iterate_type action_iterate_type(uint32_t hash)
  **/
 int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
-   size_t selection;
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
+   size_t selection               = 0;
    unsigned file_type             = 0;
-   const char *label              = NULL;
    int ret                        = 0;
    uint32_t hash                  = 0;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
+   const char *label              = NULL;
    menu_handle_t *menu            = (menu_handle_t*)data;
 
    menu_entries_get_last_stack(NULL, &label, &file_type, &enum_idx, NULL);
@@ -263,8 +263,8 @@ end:
 bool generic_menu_init_list(void *data)
 {
    menu_displaylist_info_t info = {0};
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf   = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
          msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
