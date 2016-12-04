@@ -262,48 +262,34 @@ float input_sensor_get_input(unsigned port, unsigned id)
  *
  * Push analog to D-Pad mappings to binds.
  **/
-void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode)
+void input_push_analog_dpad(struct retro_keybind *binds, enum analog_dpad_mode mode)
 {
-   unsigned i, j = 0;
-   bool inherit_joyaxis = false;
+   unsigned i;
+   unsigned x_plus      =  RARCH_ANALOG_RIGHT_X_PLUS;
+   unsigned y_plus      =  RARCH_ANALOG_RIGHT_Y_PLUS;
+   unsigned x_minus     =  RARCH_ANALOG_RIGHT_X_MINUS;
+   unsigned y_minus     =  RARCH_ANALOG_RIGHT_Y_MINUS;
 
-   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
-      binds[i].orig_joyaxis = binds[i].joyaxis;
-
-   switch (mode)
+   if (mode == ANALOG_DPAD_LSTICK)
    {
-      case ANALOG_DPAD_LSTICK:
-         /* check if analog left is defined.   *
-          * if plus and minus are equal abort. */
-         if (!((binds[RARCH_ANALOG_LEFT_X_PLUS].joyaxis == 
-               binds[RARCH_ANALOG_LEFT_X_MINUS].joyaxis) || 
-               (binds[RARCH_ANALOG_LEFT_Y_PLUS].joyaxis == 
-               binds[RARCH_ANALOG_LEFT_Y_MINUS].joyaxis)))
-         {
-            j = RARCH_ANALOG_LEFT_X_PLUS + 3;
-            inherit_joyaxis = true;
-         }
-         break;
-      case ANALOG_DPAD_RSTICK:
-         /* check if analog right is defined.  *
-          * if plus and minus are equal abort. */
-         if (!((binds[RARCH_ANALOG_RIGHT_X_PLUS].joyaxis == 
-               binds[RARCH_ANALOG_RIGHT_X_MINUS].joyaxis) || 
-               (binds[RARCH_ANALOG_RIGHT_Y_PLUS].joyaxis == 
-               binds[RARCH_ANALOG_RIGHT_Y_MINUS].joyaxis)))
-         {          
-            j = RARCH_ANALOG_RIGHT_X_PLUS + 3;
-            inherit_joyaxis = true;
-         }
-         break;
+      x_plus            =  RARCH_ANALOG_LEFT_X_PLUS;
+      y_plus            =  RARCH_ANALOG_LEFT_Y_PLUS;
+      x_minus           =  RARCH_ANALOG_LEFT_X_MINUS;
+      y_minus           =  RARCH_ANALOG_LEFT_Y_MINUS;
    }
 
-   if (!inherit_joyaxis)
-      return;
+   if (!(
+            (  binds[x_plus].joyaxis == binds[x_minus].joyaxis) || 
+            (  binds[y_plus].joyaxis == binds[y_minus].joyaxis)
+        )
+      )
+   {
+      unsigned j = x_plus + 3;
 
-   /* Inherit joyaxis from analogs. */
-   for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
-      binds[i].joyaxis = binds[j--].joyaxis;
+      /* Inherit joyaxis from analogs. */
+      for (i = RETRO_DEVICE_ID_JOYPAD_UP; i <= RETRO_DEVICE_ID_JOYPAD_RIGHT; i++)
+         binds[i].joyaxis = binds[j--].joyaxis;
+   }
 }
 
 /**
@@ -562,10 +548,16 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
    {
       struct retro_keybind *general_binds = settings->input.binds[i];
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
-      input_push_analog_dpad(general_binds,
-            settings->input.analog_dpad_mode[i]);
-      input_push_analog_dpad(auto_binds,
-            settings->input.analog_dpad_mode[i]);
+      enum analog_dpad_mode dpad_mode     = settings->input.analog_dpad_mode[i];
+
+      if (dpad_mode == ANALOG_DPAD_NONE)
+         continue;
+
+      input_push_analog_dpad_pre(general_binds);
+      input_push_analog_dpad_pre(auto_binds);
+
+      input_push_analog_dpad(general_binds, dpad_mode);
+      input_push_analog_dpad(auto_binds,    dpad_mode);
    }
 
    if (!input_driver_is_libretro_input_blocked())
@@ -780,6 +772,8 @@ uint64_t input_menu_keys_pressed(void)
    for (i = 0; i < settings->input.max_users; i++)
    {
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
+
+      input_push_analog_dpad_pre(auto_binds);
       input_push_analog_dpad(auto_binds, ANALOG_DPAD_LSTICK);
    }
 

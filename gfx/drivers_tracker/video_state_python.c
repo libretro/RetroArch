@@ -389,10 +389,16 @@ float py_state_get(py_state_t *handle, const char *id,
    {
       struct retro_keybind *general_binds = settings->input.binds[i];
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
-      input_push_analog_dpad(general_binds,
-            settings->input.analog_dpad_mode[i]);
-      input_push_analog_dpad(auto_binds,
-            settings->input.analog_dpad_mode[i]);
+      enum analog_dpad_mode dpad_mode     = settings->input.analog_dpad_mode[i];
+
+      if (dpad_mode == ANALOG_DPAD_NONE)
+         continue;
+
+      input_push_analog_dpad_pre(general_binds);
+      input_push_analog_dpad_pre(auto_binds);
+
+      input_push_analog_dpad(general_binds, dpad_mode);
+      input_push_analog_dpad(auto_binds,    dpad_mode);
    }
 
    ret = PyObject_CallMethod(handle->inst, (char*)id, (char*)"I", frame_count);

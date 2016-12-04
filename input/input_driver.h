@@ -179,6 +179,13 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y);
 
+#define input_push_analog_dpad_pre(binds) \
+{ \
+   unsigned k; \
+   for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++) \
+      (binds)[k].orig_joyaxis = (binds)[k].joyaxis; \
+}
+
 /**
  * input_push_analog_dpad:
  * @binds                          : Binds to modify.
@@ -189,7 +196,7 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
  *
  * Push analog to D-Pad mappings to binds.
  **/
-void input_push_analog_dpad(struct retro_keybind *binds, unsigned mode);
+void input_push_analog_dpad(struct retro_keybind *binds, enum analog_dpad_mode mode);
 
 /**
  * input_pop_analog_dpad:
