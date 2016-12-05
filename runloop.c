@@ -760,7 +760,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
  */
 static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 {
-   settings_t *settings          = config_get_ptr();
    bool time_to_exit             = runloop_shutdown_initiated;
    time_to_exit                  = time_to_exit || quit_key_pressed;
    time_to_exit                  = time_to_exit || !video_driver_is_alive();
@@ -776,24 +775,28 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    if (runloop_exec)
       runloop_exec = false;
 
-   if (runloop_core_shutdown_initiated &&
-         settings && settings->load_dummy_on_core_shutdown)
+   if (runloop_core_shutdown_initiated)
    {
-      content_ctx_info_t content_info = {0};
-      if (!task_push_content_load_default(
-               NULL, NULL,
-               &content_info,
-               CORE_TYPE_DUMMY,
-               CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-               NULL, NULL))
-         return -1;
+      settings_t *settings       = config_get_ptr();
 
-      /* Loads dummy core instead of exiting RetroArch completely.
-       * Aborts core shutdown if invoked. */
-      runloop_shutdown_initiated      = false;
-      runloop_core_shutdown_initiated = false;
+      if (settings->load_dummy_on_core_shutdown)
+      {
+         content_ctx_info_t content_info = {0};
+         if (!task_push_content_load_default(
+                  NULL, NULL,
+                  &content_info,
+                  CORE_TYPE_DUMMY,
+                  CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+                  NULL, NULL))
+            return -1;
 
-      return 1;
+         /* Loads dummy core instead of exiting RetroArch completely.
+          * Aborts core shutdown if invoked. */
+         runloop_shutdown_initiated      = false;
+         runloop_core_shutdown_initiated = false;
+
+         return 1;
+      }
    }
 
    /* Quits out of RetroArch main loop. */
