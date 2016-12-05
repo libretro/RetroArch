@@ -959,11 +959,6 @@ void input_driver_set_hotkey_block(void)
    input_driver_block_hotkey = true;
 }
 
-void input_driver_unset_hotkey_block(void)
-{
-   input_driver_block_hotkey = false;
-}
-
 bool input_driver_is_hotkey_blocked(void)
 {
    return input_driver_block_hotkey;
