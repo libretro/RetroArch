@@ -74,8 +74,8 @@ typedef struct video_pixel_scaler
  * Used by e.g. input drivers which bind to a window.
  * Drivers are responsible for setting these if an input driver
  * could potentially make use of this. */
-static uintptr_t video_driver_display;
-static uintptr_t video_driver_window;
+static uintptr_t video_driver_display                    = 0;
+static uintptr_t video_driver_window                     = 0;
 
 static rarch_softfilter_t *video_driver_state_filter     = NULL;
 static void               *video_driver_state_buffer     = NULL;
