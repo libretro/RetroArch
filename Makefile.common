@@ -890,7 +890,7 @@ ifeq ($(HAVE_VULKAN), 1)
    CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Wno-parentheses -Igfx/include
    CFLAGS  += -Igfx/include
 
-   GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
+   GLSLANG_OBJ     := $(GLSLANG_SOURCES:.cpp=.o)
    SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
 
    OBJ += gfx/drivers/vulkan.o \
