@@ -1233,7 +1233,6 @@ int runloop_iterate(unsigned *sleep_ms)
          return 0;
       case RUNLOOP_STATE_ITERATE:
       case RUNLOOP_STATE_NONE:
-      default:
          break;
    }
 
