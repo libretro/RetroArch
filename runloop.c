@@ -136,6 +136,7 @@ global_t *global_get_ptr(void)
 
 void update_firmware_status(void)
 {
+   char s[PATH_MAX_LENGTH];
    core_info_ctx_firmware_t firmware_info;
 
    core_info_t *core_info     = NULL;
@@ -151,11 +152,11 @@ void update_firmware_status(void)
       firmware_info.directory.system = settings->directory.system;
    else
    {
-      char s[PATH_MAX_LENGTH];
       strlcpy(s, path_get(RARCH_PATH_CONTENT) ,sizeof(s));
       path_basedir(s);
       firmware_info.directory.system = s;
    }
+
    RARCH_LOG("Updating firmware status for: %s on %s\n", core_info->path, 
          firmware_info.directory.system);
    core_info_list_update_missing_firmware(&firmware_info);
