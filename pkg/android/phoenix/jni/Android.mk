@@ -105,6 +105,7 @@ LOCAL_SRC_FILES += $(DEPS_DIR)/glslang/glslang.cpp \
 						 $(DEPS_DIR)/glslang/glslang/OGLCompilersDLL/InitializeDll.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/Link.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/GenericCodeGen/CodeGen.cpp \
+						 $(DEPS_DIR)/glslang/glslang/hlsl/hlslAttributes.cpp \
 						 $(DEPS_DIR)/glslang/glslang/hlsl/hlslGrammar.cpp \
 						 $(DEPS_DIR)/glslang/glslang/hlsl/hlslOpMap.cpp \
 						 $(DEPS_DIR)/glslang/glslang/hlsl/hlslTokenStream.cpp \
@@ -121,9 +122,11 @@ LOCAL_SRC_FILES += $(DEPS_DIR)/glslang/glslang.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/Initialize.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/SymbolTable.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/parseConst.cpp \
+						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/ParseContextBase.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/ParseHelper.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/ShaderLang.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/IntermTraverse.cpp \
+						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/iomapper.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/InfoSink.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/Constant.cpp \
 						 $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/Scan.cpp \
