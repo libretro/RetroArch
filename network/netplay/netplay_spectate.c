@@ -65,15 +65,15 @@ static bool netplay_spectate_pre_frame(netplay_t *netplay)
 
       /* Check for connections */
       FD_ZERO(&fds);
-      FD_SET(netplay->fd, &fds);
-      if (socket_select(netplay->fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+      FD_SET(netplay->listen_fd, &fds);
+      if (socket_select(netplay->listen_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
          return true;
 
-      if (!FD_ISSET(netplay->fd, &fds))
+      if (!FD_ISSET(netplay->listen_fd, &fds))
          return true;
 
       addr_size = sizeof(their_addr);
-      new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
+      new_fd = accept(netplay->listen_fd, (struct sockaddr*)&their_addr, &addr_size);
       if (new_fd < 0)
       {
          RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR));
@@ -278,14 +278,14 @@ static bool netplay_spectate_info_cb(netplay_t* netplay, unsigned frames)
    }
    else
    {
-      if (!netplay_send_nickname(netplay, netplay->fd))
+      if (!netplay_send_nickname(netplay, netplay->connections[0].fd))
          return false;
 
-      if (!netplay_get_nickname(netplay, netplay->fd))
+      if (!netplay_get_nickname(netplay, netplay->connections[0].fd))
          return false;
    }
 
-   netplay->remote_mode = netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
+   netplay->connections[0].mode = netplay->self_mode = NETPLAY_CONNECTION_PLAYING;
 
    return true;
 }

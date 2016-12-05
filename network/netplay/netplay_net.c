@@ -105,41 +105,49 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
       }
 
       /* If we can't transmit savestates, we must stall until the client is ready */
-      if (netplay->remote_mode != NETPLAY_CONNECTION_PLAYING &&
-          netplay->self_frame_count > 0 &&
-          (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)))
+      if (netplay->self_frame_count > 0 &&
+          (netplay->quirks & (NETPLAY_QUIRK_NO_SAVESTATES|NETPLAY_QUIRK_NO_TRANSMISSION)) &&
+          (netplay->connections_size == 0 || !netplay->connections[0].active ||
+           netplay->connections[0].mode < NETPLAY_CONNECTION_CONNECTED))
          netplay->stall = RARCH_NETPLAY_STALL_NO_CONNECTION;
    }
 
-   if (netplay->is_server && netplay->remote_mode == NETPLAY_CONNECTION_NONE)
+   if (netplay->is_server)
    {
       fd_set fds;
       struct timeval tmp_tv = {0};
       int new_fd;
       struct sockaddr_storage their_addr;
       socklen_t addr_size;
+      struct netplay_connection *connection;
+      size_t connection_num;
 
       /* Check for a connection */
       FD_ZERO(&fds);
-      FD_SET(netplay->fd, &fds);
-      if (socket_select(netplay->fd + 1, &fds, NULL, NULL, &tmp_tv) > 0 &&
-          FD_ISSET(netplay->fd, &fds))
+      FD_SET(netplay->listen_fd, &fds);
+      if (socket_select(netplay->listen_fd + 1, &fds, NULL, NULL, &tmp_tv) > 0 &&
+          FD_ISSET(netplay->listen_fd, &fds))
       {
          addr_size = sizeof(their_addr);
-         new_fd = accept(netplay->fd, (struct sockaddr*)&their_addr, &addr_size);
+         new_fd = accept(netplay->listen_fd, (struct sockaddr*)&their_addr, &addr_size);
          if (new_fd < 0)
          {
             RARCH_ERR("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
-            return true;
+            goto process;
          }
 
-         socket_close(netplay->fd);
-         netplay->fd = new_fd;
+         /* Set the socket nonblocking */
+         if (!socket_nonblock(new_fd))
+         {
+            /* Catastrophe! */
+            socket_close(new_fd);
+            goto process;
+         }
 
 #if defined(IPPROTO_TCP) && defined(TCP_NODELAY)
          {
             int flag = 1;
-            if (setsockopt(netplay->fd, IPPROTO_TCP, TCP_NODELAY,
+            if (setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY,
 #ifdef _WIN32
                (const char*)
 #else
@@ -153,26 +161,63 @@ static bool netplay_net_pre_frame(netplay_t *netplay)
 
 #if defined(F_SETFD) && defined(FD_CLOEXEC)
          /* Don't let any inherited processes keep open our port */
-         if (fcntl(netplay->fd, F_SETFD, FD_CLOEXEC) < 0)
+         if (fcntl(new_fd, F_SETFD, FD_CLOEXEC) < 0)
             RARCH_WARN("Cannot set Netplay port to close-on-exec. It may fail to reopen if the client disconnects.\n");
 #endif
 
+         /* Allocate a connection */
+         for (connection_num = 0; connection_num < netplay->connections_size; connection_num++)
+            if (!netplay->connections[connection_num].active) break;
+         if (connection_num == netplay->connections_size)
+         {
+            if (connection_num == 0)
+            {
+               netplay->connections = malloc(sizeof(struct netplay_connection));
+               if (netplay->connections == NULL)
+               {
+                  socket_close(new_fd);
+                  goto process;
+               }
+               netplay->connections_size = 1;
+
+            }
+            else
+            {
+               size_t new_connections_size = netplay->connections_size * 2;
+               struct netplay_connection *new_connections =
+                  realloc(netplay->connections,
+                     new_connections_size*sizeof(struct netplay_connection));
+               if (new_connections == NULL)
+               {
+                  socket_close(new_fd);
+                  goto process;
+               }
+
+               memset(new_connections + netplay->connections_size, 0,
+                  netplay->connections_size * sizeof(struct netplay_connection));
+               netplay->connections = new_connections;
+               netplay->connections_size = new_connections_size;
+
+            }
+         }
+         connection = &netplay->connections[connection_num];
+
+         /* Set it up */
+         memset(connection, 0, sizeof(*connection));
+         connection->active = true;
+         connection->fd = new_fd;
+         connection->mode = NETPLAY_CONNECTION_INIT;
+
+         /* FIXME: Should be per connection */
          netplay_clear_socket_buffer(&netplay->send_packet_buffer);
          netplay_clear_socket_buffer(&netplay->recv_packet_buffer);
 
-         /* Set the socket nonblocking */
-         if (!socket_nonblock(netplay->fd))
-         {
-            /* Catastrophe! */
-            return false;
-         }
-
-         netplay_handshake_init_send(netplay);
-         netplay->remote_mode = NETPLAY_CONNECTION_INIT;
+         netplay_handshake_init_send(netplay, connection);
 
       }
    }
 
+process:
    netplay->can_poll = true;
    input_poll_net();
 
@@ -192,7 +237,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
    netplay->self_frame_count++;
 
    /* Only relevant if we're connected */
-   if (netplay->remote_mode != NETPLAY_CONNECTION_PLAYING)
+   if (!netplay->have_player_connections)
    {
       netplay->read_frame_count = netplay->other_frame_count = netplay->self_frame_count;
       netplay->read_ptr = netplay->other_ptr = netplay->self_ptr;
@@ -320,8 +365,9 @@ static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
 {
    if (!netplay_is_server(netplay))
    {
-      netplay_handshake_init_send(netplay);
-      netplay->remote_mode = netplay->self_mode = NETPLAY_CONNECTION_INIT;
+      netplay_handshake_init_send(netplay, netplay->connections);
+      netplay->connections[0].active = true;
+      netplay->connections[0].mode = netplay->self_mode = NETPLAY_CONNECTION_INIT;
    }
 
    return true;

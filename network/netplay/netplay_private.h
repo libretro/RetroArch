@@ -223,21 +223,40 @@ struct netplay_callbacks {
    bool (*info_cb)   (netplay_t *netplay, unsigned frames);
 };
 
+/* Each connection gets a connection struct */
+struct netplay_connection
+{
+   bool active;
+   int fd;
+   enum rarch_netplay_connection_mode mode;
+   int player;
+};
+
 struct netplay
 {
    char nick[32];
    char other_nick[32];
    struct sockaddr_storage other_addr;
 
+   /* TCP connection for listening (server only) */
+   int listen_fd;
+
    /* Our connection number */
    uint32_t self_connection_num;
 
-   /* Status of our connection */
-   enum rarch_netplay_connection_mode remote_mode, self_mode;
+   /* Our mode and status */
+   enum rarch_netplay_connection_mode self_mode;
+
+   /* All of our connections */
+   struct netplay_connection *connections;
+   size_t connections_size;
+   struct netplay_connection one_connection; /* Client only */
+
+   /* True if any of our connections are players (i.e., we actually need to do
+    * netplay) */
+   bool have_player_connections;
 
    struct retro_callbacks cbs;
-   /* TCP connection for state sending, etc. Also used for commands */
-   int fd;
    /* TCP port (if serving) */
    uint16_t tcp_port;
    /* NAT traversal info (if NAT traversal is used and serving) */
@@ -447,10 +466,10 @@ bool netplay_get_nickname(netplay_t *netplay, int fd);
 bool netplay_send_nickname(netplay_t *netplay, int fd);
 
 /* Various netplay initialization modes: */
-bool netplay_handshake_init_send(netplay_t *netplay);
-bool netplay_handshake_init(netplay_t *netplay, bool *had_input);
-bool netplay_handshake_pre_nick(netplay_t *netplay, bool *had_input);
-bool netplay_handshake_pre_sync(netplay_t *netplay, bool *had_input);
+bool netplay_handshake_init_send(netplay_t *netplay, struct netplay_connection *connection);
+bool netplay_handshake_init(netplay_t *netplay, struct netplay_connection *connection, bool *had_input);
+bool netplay_handshake_pre_nick(netplay_t *netplay, struct netplay_connection *connection, bool *had_input);
+bool netplay_handshake_pre_sync(netplay_t *netplay, struct netplay_connection *connection, bool *had_input);
 
 uint32_t netplay_impl_magic(void);
 
