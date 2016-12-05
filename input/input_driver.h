@@ -330,8 +330,6 @@ bool input_driver_ungrab_mouse(void);
 
 bool input_driver_is_data_ptr_same(void *data);
 
-extern const struct retro_keybind *libretro_input_binds[MAX_USERS];
-
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
 extern input_driver_t input_dinput;

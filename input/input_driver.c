@@ -306,7 +306,7 @@ bool input_translate_coord_viewport(
    return true;
 }
 
-const struct retro_keybind *libretro_input_binds[MAX_USERS];
+static const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
 /**
  * input_poll:
@@ -322,26 +322,18 @@ void input_poll(void)
 
    input_driver_turbo_btns.count++;
 
-   if (input_driver_block_libretro_input)
+   for (i = 0; i < settings->input.max_users; i++)
    {
-      for (i = 0; i < settings->input.max_users; i++)
-      {
-         libretro_input_binds[i]                 = settings->input.binds[i];
-         input_driver_turbo_btns.frame_enable[i] = 0;
-      }
+      libretro_input_binds[i]                 = settings->input.binds[i];
+      input_driver_turbo_btns.frame_enable[i] = 0;
    }
-   else
-   {
-      const struct retro_keybind *binds[MAX_USERS];
 
+   if (!input_driver_block_libretro_input)
+   {
       for (i = 0; i < settings->input.max_users; i++)
-      {
-         binds[i]                                = settings->input.binds[i];
-         libretro_input_binds[i]                 = settings->input.binds[i];
          input_driver_turbo_btns.frame_enable[i] = current_input->input_state(
-               current_input_data, binds,
+               current_input_data, libretro_input_binds,
                i, RETRO_DEVICE_JOYPAD, 0, RARCH_TURBO_ENABLE);
-      }
    }
 
 #ifdef HAVE_OVERLAY
