@@ -758,50 +758,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
  * d) Video driver no longer alive.
  * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
  */
-static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
-{
-   bool time_to_exit             = runloop_shutdown_initiated;
-   time_to_exit                  = time_to_exit || quit_key_pressed;
-   time_to_exit                  = time_to_exit || !video_driver_is_alive();
-   time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
-   time_to_exit                  = time_to_exit || (runloop_max_frames && 
-                                   (*(video_driver_get_frame_count_ptr()) 
-                                    >= runloop_max_frames));
-   time_to_exit                  = time_to_exit || runloop_exec;
-
-   if (!time_to_exit)
-      return 1;
-
-   if (runloop_exec)
-      runloop_exec = false;
-
-   if (runloop_core_shutdown_initiated)
-   {
-      settings_t *settings       = config_get_ptr();
-
-      if (settings->load_dummy_on_core_shutdown)
-      {
-         content_ctx_info_t content_info = {0};
-         if (!task_push_content_load_default(
-                  NULL, NULL,
-                  &content_info,
-                  CORE_TYPE_DUMMY,
-                  CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-                  NULL, NULL))
-            return -1;
-
-         /* Loads dummy core instead of exiting RetroArch completely.
-          * Aborts core shutdown if invoked. */
-         runloop_shutdown_initiated      = false;
-         runloop_core_shutdown_initiated = false;
-
-         return 1;
-      }
-   }
-
-   /* Quits out of RetroArch main loop. */
-   return -1;
-}
+#define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !video_driver_is_alive() || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL) || (runloop_max_frames && (*(video_driver_get_frame_count_ptr()) >= runloop_max_frames)) || runloop_exec)
 
 static enum runloop_state runloop_check_state(
       settings_t *settings,
@@ -872,38 +829,59 @@ static enum runloop_state runloop_check_state(
    }
 #endif
 
-   if (runloop_iterate_time_to_exit(
-            runloop_cmd_press(trigger_input, RARCH_QUIT_KEY)) != 1)
-      return RUNLOOP_STATE_QUIT;
+   if (time_to_exit(runloop_cmd_press(trigger_input, RARCH_QUIT_KEY)))
+   {
+      if (runloop_exec)
+         runloop_exec = false;
 
-      #ifdef HAVE_MENU
-         if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-         {
-            menu_ctx_iterate_t iter;
-            core_poll();
+      if (runloop_core_shutdown_initiated && settings->load_dummy_on_core_shutdown)
+      {
+         content_ctx_info_t content_info = {0};
+         if (!task_push_content_load_default(
+                  NULL, NULL,
+                  &content_info,
+                  CORE_TYPE_DUMMY,
+                  CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+                  NULL, NULL))
+            return -1;
 
-            {
-               enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
-               bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
+         /* Loads dummy core instead of exiting RetroArch completely.
+          * Aborts core shutdown if invoked. */
+         runloop_shutdown_initiated      = false;
+         runloop_core_shutdown_initiated = false;
+      }
+      else
+         return RUNLOOP_STATE_QUIT;
+   }
 
-               focused                 = focused && !ui_companion_is_on_foreground();
+#ifdef HAVE_MENU
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
+   {
+      menu_ctx_iterate_t iter;
+      core_poll();
 
-               iter.action             = action;
+      {
+         enum menu_action action = (enum menu_action)menu_event(current_input, trigger_input);
+         bool focused            = settings->pause_nonactive ? video_driver_is_focused() : true;
 
-               if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
-                  rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+         focused                 = focused && !ui_companion_is_on_foreground();
 
-               if (focused || !runloop_idle)
-                  menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+         iter.action             = action;
 
-               if (!focused)
-                  return RUNLOOP_STATE_SLEEP;
+         if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
-               if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
-                  return RUNLOOP_STATE_QUIT;
-            }
-         }
-      #endif
+         if (focused || !runloop_idle)
+            menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+
+         if (!focused)
+            return RUNLOOP_STATE_SLEEP;
+
+         if (action == MENU_ACTION_QUIT && !menu_driver_is_binding_state())
+            return RUNLOOP_STATE_QUIT;
+      }
+   }
+#endif
 
    if (runloop_idle)
       return RUNLOOP_STATE_SLEEP;
