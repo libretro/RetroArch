@@ -1092,10 +1092,10 @@ static void *gl_cg_init(void *data, const char *path)
 
    gl_cg_compile_program(
          cg,
-         VIDEO_SHADER_MENU_SEC,
-         &cg->prg[VIDEO_SHADER_MENU_SEC],
+         VIDEO_SHADER_MENU_2,
+         &cg->prg[VIDEO_SHADER_MENU_2],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_SEC);
+   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_2);
 
    shader_prog_info.combined = stock_xmb_snow;
    shader_prog_info.is_file  = false;

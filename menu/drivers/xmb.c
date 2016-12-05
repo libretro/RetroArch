@@ -2383,7 +2383,7 @@ static void xmb_draw_bg(
 
       menu_display_draw_gradient(&draw);
 
-      draw.pipeline.id = VIDEO_SHADER_MENU_SEC;
+      draw.pipeline.id = VIDEO_SHADER_MENU_2;
 
       switch (settings->menu.xmb.shader_pipeline)
       {

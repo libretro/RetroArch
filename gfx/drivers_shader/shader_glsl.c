@@ -955,11 +955,11 @@ static void *gl_glsl_init(void *data, const char *path)
 
    gl_glsl_compile_program(
          glsl,
-         VIDEO_SHADER_MENU_SEC,
-         &glsl->prg[VIDEO_SHADER_MENU_SEC],
+         VIDEO_SHADER_MENU_2,
+         &glsl->prg[VIDEO_SHADER_MENU_2],
          &shader_prog_info);
-   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_SEC].id,
-         &glsl->uniforms[VIDEO_SHADER_MENU_SEC]);
+   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_2].id,
+         &glsl->uniforms[VIDEO_SHADER_MENU_2]);
 
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
