@@ -2195,7 +2195,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_AUDIO_REINIT:
          {
-            int flags = DRIVER_AUDIO;
+            int flags = DRIVER_AUDIO_MASK;
             driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
             driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
          }
