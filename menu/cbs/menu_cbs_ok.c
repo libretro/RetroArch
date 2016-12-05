@@ -1075,7 +1075,6 @@ static int action_ok_playlist_entry_collection(const char *path,
             new_display_name,
             entry_crc32,
             db_name);
-      playlist_write_file(tmp_playlist);
    }
    else
    {
@@ -1163,7 +1162,6 @@ static int action_ok_playlist_entry(const char *path,
             new_display_name,
             entry_crc32,
             db_name);
-      playlist_write_file(tmp_playlist);
    }
 
    playlist_info.data = playlist;
@@ -1266,7 +1264,6 @@ static int action_ok_playlist_entry_start_content(const char *path,
             new_display_name,
             entry_crc32,
             db_name);
-      playlist_write_file(tmp_playlist);
    }
 
    playlist_info.data = playlist;
@@ -1866,8 +1863,6 @@ static int action_ok_core_deferred_set(const char *path,
          path , core_display_name,
          entry_crc32,
          db_name);
-
-   playlist_write_file(playlist);
 
    menu_entries_pop_stack(&selection, 0, 1);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
