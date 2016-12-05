@@ -1144,14 +1144,13 @@ int runloop_iterate(unsigned *sleep_ms)
    uint64_t current_input                       = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
    static char old_core[PATH_MAX_LENGTH]        = "";
+   last_input                                   = current_input;
 
    if (!string_is_equal(old_core, path_get(RARCH_PATH_CORE)))
    {
       update_firmware_status();
       strlcpy (old_core, path_get(RARCH_PATH_CORE), sizeof(old_core));
    }
-
-   last_input                                   = current_input;
 
    if (runloop_frame_time_last_enable)
    {
