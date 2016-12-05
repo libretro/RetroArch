@@ -459,12 +459,12 @@ static int16_t udev_analog_pressed(const struct retro_keybind *binds, unsigned i
 static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned idx, unsigned id, bool screen)
 {
-   bool inside   = false;
+   bool inside              = false;
+   struct video_viewport vp = {0};
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
-   bool valid    = input_translate_coord_viewport(udev->mouse_x, udev->mouse_y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y);
 
-   if (!valid)
+   if (!(input_translate_coord_viewport_wrap(&vp, udev->mouse_x, udev->mouse_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    if (screen)
@@ -520,11 +520,10 @@ static int16_t udev_input_state(void *data, const struct retro_keybind **binds,
 
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         if (idx != 0)
-            return 0;
-         return udev_pointer_state(udev, idx, id,
-               device == RARCH_DEVICE_POINTER_SCREEN);
-
+         if (idx == 0)
+            return udev_pointer_state(udev, idx, id,
+                  device == RARCH_DEVICE_POINTER_SCREEN);
+         break;
       case RETRO_DEVICE_LIGHTGUN:
          return udev_lightgun_state(udev, id);
    }

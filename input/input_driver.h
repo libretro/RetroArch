@@ -160,6 +160,9 @@ bool input_sensor_set_state(unsigned port,
 
 float input_sensor_get_input(unsigned port, unsigned id);
 
+#define input_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
+   (video_driver_get_viewport_info(vp) ? input_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
+
 /**
  * input_translate_coord_viewport:
  * @mouse_x                        : Pointer X coordinate.
@@ -175,7 +178,9 @@ float input_sensor_get_input(unsigned port, unsigned id);
  * Returns: true (1) if successful, false if video driver doesn't support
  * viewport info.
  **/
-bool input_translate_coord_viewport(int mouse_x, int mouse_y,
+bool input_translate_coord_viewport(
+      void *data,
+      int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
       int16_t *res_screen_y);
 

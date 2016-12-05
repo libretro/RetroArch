@@ -156,11 +156,13 @@ static void cocoa_input_poll(void *data)
 
    for (i = 0; i < apple->touch_count; i++)
    {
+      struct video_viewport vp = {0};
 #ifndef IOS
       apple->touches[i].screen_x *= backing_scale_factor;
       apple->touches[i].screen_y *= backing_scale_factor;
 #endif
-      input_translate_coord_viewport(
+      input_translate_coord_viewport_wrap(
+            &vp,
             apple->touches[i].screen_x,
             apple->touches[i].screen_y,
             &apple->touches[i].fixed_x,

@@ -525,15 +525,17 @@ static INLINE int android_input_poll_event_type_motion(
    }
    else
    {
-      float x, y;
       int pointer_max = MIN(AMotionEvent_getPointerCount(event), MAX_TOUCH);
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
-         x = AMotionEvent_getX(event, motion_ptr);
-         y = AMotionEvent_getY(event, motion_ptr);
+         struct video_viewport vp = {0};
+         float x = AMotionEvent_getX(event, motion_ptr);
+         float y = AMotionEvent_getY(event, motion_ptr);
 
-         input_translate_coord_viewport(x, y,
+         input_translate_coord_viewport_wrap(
+               &vp,
+               x, y,
                &android_data->pointer[motion_ptr].x,
                &android_data->pointer[motion_ptr].y,
                &android_data->pointer[motion_ptr].full_x,

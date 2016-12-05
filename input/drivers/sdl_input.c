@@ -172,16 +172,12 @@ static int16_t sdl_mouse_device_state(sdl_input_t *sdl, unsigned id)
 static int16_t sdl_pointer_device_state(sdl_input_t *sdl,
       unsigned idx, unsigned id, bool screen)
 {
-   bool valid, inside;
+   bool inside              = false;
+   struct video_viewport vp = {0};
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
 
-   if (idx != 0)
-      return 0;
-
-   valid = input_translate_coord_viewport(sdl->mouse_abs_x, sdl->mouse_abs_y,
-         &res_x, &res_y, &res_screen_x, &res_screen_y);
-
-   if (!valid)
+   if (!(input_translate_coord_viewport_wrap(&vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
+         &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 
    if (screen)
@@ -247,7 +243,9 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
          return sdl_mouse_device_state(data, id);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         return sdl_pointer_device_state(data, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
+         if (idx == 0)
+            return sdl_pointer_device_state(data, idx, id, device == RARCH_DEVICE_POINTER_SCREEN);
+         break;
       case RETRO_DEVICE_KEYBOARD:
          return sdl_keyboard_device_state(data, id);
       case RETRO_DEVICE_LIGHTGUN:

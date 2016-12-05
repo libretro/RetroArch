@@ -267,44 +267,41 @@ float input_sensor_get_input(unsigned port, unsigned id)
  * Returns: true (1) if successful, false if video driver doesn't support
  * viewport info.
  **/
-bool input_translate_coord_viewport(int mouse_x, int mouse_y,
-      int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
-      int16_t *res_screen_y)
+bool input_translate_coord_viewport(
+      void *data,
+      int mouse_x,           int mouse_y,
+      int16_t *res_x,        int16_t *res_y,
+      int16_t *res_screen_x, int16_t *res_screen_y)
 {
    int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
-   int norm_full_vp_width, norm_full_vp_height;
-   struct video_viewport vp = {0};
-
-   if (!video_driver_get_viewport_info(&vp))
-      return false;
-
-   norm_full_vp_width  = (int)vp.full_width;
-   norm_full_vp_height = (int)vp.full_height;
+   struct video_viewport *vp = (struct video_viewport*)data;
+   int norm_full_vp_width    = (int)vp->full_width;
+   int norm_full_vp_height   = (int)vp->full_height;
 
    if (norm_full_vp_width <= 0 || norm_full_vp_height <= 0)
       return false;
 
-   scaled_screen_x = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
-   scaled_screen_y = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
+   scaled_screen_x     = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
+   scaled_screen_y     = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
    if (scaled_screen_x < -0x7fff || scaled_screen_x > 0x7fff)
-      scaled_screen_x = -0x8000; /* OOB */
+      scaled_screen_x  = -0x8000; /* OOB */
    if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
-      scaled_screen_y = -0x8000; /* OOB */
+      scaled_screen_y  = -0x8000; /* OOB */
 
-   mouse_x -= vp.x;
-   mouse_y -= vp.y;
+   mouse_x           -= vp->x;
+   mouse_y           -= vp->y;
 
-   scaled_x = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
-   scaled_y = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
+   scaled_x           = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
+   scaled_y           = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
    if (scaled_x < -0x7fff || scaled_x > 0x7fff)
-      scaled_x = -0x8000; /* OOB */
+      scaled_x        = -0x8000; /* OOB */
    if (scaled_y < -0x7fff || scaled_y > 0x7fff)
-      scaled_y = -0x8000; /* OOB */
+      scaled_y        = -0x8000; /* OOB */
 
-   *res_x = scaled_x;
-   *res_y = scaled_y;
-   *res_screen_x = scaled_screen_x;
-   *res_screen_y = scaled_screen_y;
+   *res_x             = scaled_x;
+   *res_y             = scaled_y;
+   *res_screen_x      = scaled_screen_x;
+   *res_screen_y      = scaled_screen_y;
 
    return true;
 }
