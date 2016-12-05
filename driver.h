@@ -45,9 +45,7 @@ enum
    DRIVER_LOCATION,
    DRIVER_MENU,
    DRIVERS_VIDEO_INPUT,
-   DRIVER_WIFI,
-   DRIVER_RECORDING,
-   DRIVER_LAST,
+   DRIVER_WIFI
 };
 
 enum
@@ -59,8 +57,7 @@ enum
    DRIVER_LOCATION_MASK     = 1 << DRIVER_LOCATION,
    DRIVER_MENU_MASK         = 1 << DRIVER_MENU,
    DRIVERS_VIDEO_INPUT_MASK = 1 << DRIVERS_VIDEO_INPUT,
-   DRIVER_WIFI_MASK         = 1 << DRIVER_WIFI,
-   DRIVER_RECORDING_MASK    = 1 << DRIVER_RECORDING
+   DRIVER_WIFI_MASK         = 1 << DRIVER_WIFI
 };
 
 enum driver_ctl_state
@@ -124,8 +121,6 @@ typedef struct driver_ctx_info
 } driver_ctx_info_t;
 
 bool driver_ctl(enum driver_ctl_state state, void *data);
-
-extern void *drivers_data[DRIVER_LAST+1];
 
 RETRO_END_DECLS
 

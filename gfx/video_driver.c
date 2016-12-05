@@ -1114,7 +1114,7 @@ static bool video_driver_frame_filter(const void *data,
          data, width, height, pitch);
    performance_counter_stop(&softfilter_process);
 
-   if (settings->video.post_filter_record && drivers_data[DRIVER_RECORDING])
+   if (settings->video.post_filter_record && recording_data)
       recording_dump_frame(video_driver_state_buffer,
             *output_width, *output_height, *output_pitch);
 
@@ -1147,7 +1147,7 @@ bool video_driver_cached_frame(void)
    void *recording  = recording_driver_get_data_ptr();
 
    /* Cannot allow recording when pushing duped frames. */
-   drivers_data[DRIVER_RECORDING]   = NULL;
+   recording_data   = NULL;
 
    /* Not 100% safe, since the library might have
     * freed the memory, but no known implementations do this.
@@ -1161,7 +1161,7 @@ bool video_driver_cached_frame(void)
 
    core_frame(&info);
 
-   drivers_data[DRIVER_RECORDING] = recording;
+   recording_data   = recording;
 
    return true;
 }
@@ -2091,7 +2091,7 @@ void video_driver_frame(const void *data, unsigned width,
           || !settings->video.post_filter_record 
           || !data
           || video_driver_record_gpu_buffer
-         ) && drivers_data[DRIVER_RECORDING]
+         ) && recording_data
       )
       recording_dump_frame(data, width, height, pitch);
 

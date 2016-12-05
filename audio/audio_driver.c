@@ -502,7 +502,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    src_data.output_frames                      = 0;
    src_data.ratio                              = 0.0f;
 
-   if (drivers_data[DRIVER_RECORDING])
+   if (recording_data)
       recording_push_audio(data, samples);
 
    if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
