@@ -25,9 +25,9 @@
 #include "config.h"
 #endif
 
-enum
+enum video_driver_enum
 {
-   VIDEO_GL = 0,
+   VIDEO_GL                 = 0,
    VIDEO_VULKAN,
    VIDEO_DRM,
    VIDEO_XVIDEO,
@@ -43,13 +43,16 @@ enum
    VIDEO_CTR,
    VIDEO_D3D9,
    VIDEO_VG,
-   VIDEO_NULL,
    VIDEO_OMAP,
    VIDEO_EXYNOS,
    VIDEO_SUNXI,
    VIDEO_DISPMANX,
+   VIDEO_NULL,
+};
 
-   AUDIO_RSOUND,
+enum audio_driver_enum
+{
+   AUDIO_RSOUND             = VIDEO_NULL + 1,
    AUDIO_OSS,
    AUDIO_ALSA,
    AUDIO_ALSATHREAD,
@@ -72,12 +75,19 @@ enum
    AUDIO_PSP,
    AUDIO_CTR,
    AUDIO_NULL,
+};
 
-   AUDIO_RESAMPLER_CC,
+enum audio_resampler_driver_enum
+{
+   AUDIO_RESAMPLER_CC       = AUDIO_NULL + 1,
    AUDIO_RESAMPLER_SINC,
    AUDIO_RESAMPLER_NEAREST,
+   AUDIO_RESAMPLER_NULL
+};
 
-   INPUT_ANDROID,
+enum input_driver_enum
+{
+   INPUT_ANDROID            = AUDIO_RESAMPLER_NULL + 1,
    INPUT_SDL,
    INPUT_SDL2,
    INPUT_X,
@@ -96,8 +106,11 @@ enum
    INPUT_QNX,
    INPUT_RWEBINPUT,
    INPUT_NULL,
+};
 
-   JOYPAD_PS3,
+enum joypad_driver_enum
+{
+   JOYPAD_PS3               = INPUT_NULL + 1,
    JOYPAD_XINPUT,
    JOYPAD_GX,
    JOYPAD_WIIU,
@@ -112,30 +125,49 @@ enum
    JOYPAD_HID,
    JOYPAD_QNX,
    JOYPAD_NULL,
+};
 
-   CAMERA_V4L2,
+enum camera_driver_enum
+{
+   CAMERA_V4L2              = JOYPAD_NULL + 1,
    CAMERA_RWEBCAM,
    CAMERA_ANDROID,
    CAMERA_AVFOUNDATION,
    CAMERA_NULL,
+};
 
-   WIFI_CONNMANCTL,
+enum wifi_driver_enum
+{
+   WIFI_CONNMANCTL          = CAMERA_NULL + 1,
    WIFI_NULL,
+};
 
-   LOCATION_ANDROID,
+enum location_driver_enum
+{
+   LOCATION_ANDROID         = WIFI_NULL + 1,
    LOCATION_CORELOCATION,
    LOCATION_NULL,
+};
 
-   OSK_PS3,
+enum osk_driver_enum
+{
+   OSK_PS3                  = LOCATION_NULL + 1,
    OSK_NULL,
+};
 
-   MENU_RGUI,
+enum menu_driver_enum
+{
+   MENU_RGUI                = OSK_NULL + 1,
    MENU_XUI,
    MENU_MATERIALUI,
    MENU_XMB,
    MENU_NUKLEAR,
+   MENU_NULL
+};
 
-   RECORD_FFMPEG,
+enum record_driver_enum
+{
+   RECORD_FFMPEG            = MENU_NULL + 1,
    RECORD_NULL
 };
 
@@ -351,8 +383,10 @@ enum
 #define MENU_DEFAULT_DRIVER MENU_MATERIALUI
 #elif defined(HAVE_XMB)
 #define MENU_DEFAULT_DRIVER MENU_XMB
-#else
+#elif defined(HAVE_RGUI)
 #define MENU_DEFAULT_DRIVER MENU_RGUI
+#else
+#define MENU_DEFAULT_DRIVER MENU_NULL
 #endif
 
 #if defined(XENON) || defined(_XBOX360) || defined(__CELLOS_LV2__)

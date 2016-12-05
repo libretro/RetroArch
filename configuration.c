@@ -158,7 +158,9 @@ bool config_init(void)
  **/
 const char *config_get_default_audio(void)
 {
-   switch (AUDIO_DEFAULT_DRIVER)
+   enum audio_driver_enum default_driver = AUDIO_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case AUDIO_RSOUND:
          return "rsound";
@@ -206,7 +208,9 @@ const char *config_get_default_audio(void)
          return "csnd";
       case AUDIO_RWEBAUDIO:
          return "rwebaudio";
-      default:
+      case AUDIO_JACK:
+         return "jack";
+      case AUDIO_NULL:
          break;
    }
 
@@ -215,11 +219,13 @@ const char *config_get_default_audio(void)
 
 const char *config_get_default_record(void)
 {
-   switch (RECORD_DEFAULT_DRIVER)
+   enum record_driver_enum default_driver = RECORD_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case RECORD_FFMPEG:
          return "ffmpeg";
-      default:
+      case RECORD_NULL:
          break;
    }
 
@@ -235,7 +241,9 @@ const char *config_get_default_record(void)
  **/
 const char *config_get_default_audio_resampler(void)
 {
-   switch (AUDIO_DEFAULT_RESAMPLER_DRIVER)
+   enum audio_resampler_driver_enum default_driver = AUDIO_DEFAULT_RESAMPLER_DRIVER;
+
+   switch (default_driver)
    {
       case AUDIO_RESAMPLER_CC:
          return "cc";
@@ -243,7 +251,7 @@ const char *config_get_default_audio_resampler(void)
          return "sinc";
       case AUDIO_RESAMPLER_NEAREST:
          return "nearest";
-      default:
+      case AUDIO_RESAMPLER_NULL:
          break;
    }
 
@@ -259,7 +267,9 @@ const char *config_get_default_audio_resampler(void)
  **/
 const char *config_get_default_video(void)
 {
-   switch (VIDEO_DEFAULT_DRIVER)
+   enum video_driver_enum default_driver = VIDEO_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case VIDEO_GL:
          return "gl";
@@ -300,7 +310,7 @@ const char *config_get_default_video(void)
          return "dispmanx";
       case VIDEO_SUNXI:
          return "sunxi";
-      default:
+      case VIDEO_NULL:
          break;
    }
 
@@ -316,7 +326,9 @@ const char *config_get_default_video(void)
  **/
 const char *config_get_default_input(void)
 {
-   switch (INPUT_DEFAULT_DRIVER)
+   enum input_driver_enum default_driver = INPUT_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case INPUT_ANDROID:
          return "android";
@@ -358,8 +370,8 @@ const char *config_get_default_input(void)
       	 return "qnx_input";
       case INPUT_RWEBINPUT:
       	 return "rwebinput";
-      default:
-         break;
+      case INPUT_NULL:
+          break;
    }
 
    return "null";
@@ -374,7 +386,9 @@ const char *config_get_default_input(void)
  **/
 const char *config_get_default_joypad(void)
 {
-   switch (JOYPAD_DEFAULT_DRIVER)
+   enum joypad_driver_enum default_driver = JOYPAD_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case JOYPAD_PS3:
          return "ps3";
@@ -412,7 +426,7 @@ const char *config_get_default_joypad(void)
          return "hid";
       case JOYPAD_QNX:
          return "qnx";
-      default:
+      case JOYPAD_NULL:
          break;
    }
 
@@ -429,7 +443,9 @@ const char *config_get_default_joypad(void)
  **/
 const char *config_get_default_camera(void)
 {
-   switch (CAMERA_DEFAULT_DRIVER)
+   enum camera_driver_enum default_driver = CAMERA_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case CAMERA_V4L2:
          return "video4linux2";
@@ -439,7 +455,7 @@ const char *config_get_default_camera(void)
          return "android";
       case CAMERA_AVFOUNDATION:
          return "avfoundation";
-      default:
+      case CAMERA_NULL:
          break;
    }
 
@@ -455,11 +471,13 @@ const char *config_get_default_camera(void)
  **/
 const char *config_get_default_wifi(void)
 {
-   switch (WIFI_DEFAULT_DRIVER)
+   enum wifi_driver_enum default_driver = WIFI_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case WIFI_CONNMANCTL:
          return "connmanctl";
-      default:
+      case WIFI_NULL:
          break;
    }
 
@@ -475,13 +493,15 @@ const char *config_get_default_wifi(void)
  **/
 const char *config_get_default_location(void)
 {
-   switch (LOCATION_DEFAULT_DRIVER)
+   enum location_driver_enum default_driver = LOCATION_DEFAULT_DRIVER;
+
+   switch (default_driver)
    {
       case LOCATION_ANDROID:
          return "android";
       case LOCATION_CORELOCATION:
          return "corelocation";
-      default:
+      case LOCATION_NULL:
          break;
    }
 
@@ -498,10 +518,12 @@ const char *config_get_default_location(void)
  **/
 const char *config_get_default_menu(void)
 {
+   enum menu_driver_enum default_driver = MENU_DEFAULT_DRIVER;
+
    if (!string_is_empty(g_defaults.settings.menu))
       return g_defaults.settings.menu;
 
-   switch (MENU_DEFAULT_DRIVER)
+   switch (default_driver)
    {
       case MENU_RGUI:
          return "rgui";
@@ -513,7 +535,7 @@ const char *config_get_default_menu(void)
          return "xmb";
       case MENU_NUKLEAR:
          return "nuklear";
-      default:
+      case MENU_NULL:
          break;
    }
 
