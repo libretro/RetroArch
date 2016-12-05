@@ -100,6 +100,15 @@ static int init_tcp_connection(const struct addrinfo *res,
    }
    else
    {
+#if defined(AF_INET6) && defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
+      /* Make sure we accept connections on both IPv6 and IPv4 */
+      int on = 0;
+      if (res->ai_family == AF_INET6)
+      {
+         if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)) < 0)
+            RARCH_WARN("Failed to listen on both IPv6 and IPv4\n");
+      }
+#endif
       if (  !socket_bind(fd, (void*)res) || 
             listen(fd, spectate ? MAX_SPECTATORS : 1) < 0)
       {
@@ -132,6 +141,7 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
    if (!direct_host)
    {
 #ifdef AF_INET6
+      /* Default to hosting on IPv6 and IPv4 */
       if (!server)
          hints.ai_family = AF_INET6;
 #endif
@@ -141,7 +151,19 @@ static bool init_tcp_socket(netplay_t *netplay, void *direct_host,
 
       snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
       if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
+      {
+#ifdef AF_INET6
+         if (!server)
+         {
+            /* Didn't work with IPv6, try wildcard */
+            hints.ai_family = 0;
+            if (getaddrinfo_retro(server, port_buf, &hints, &res) < 0)
+               return false;
+         }
+         else
+#endif
          return false;
+      }
 
       if (!res)
          return false;
