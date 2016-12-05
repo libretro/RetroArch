@@ -225,6 +225,11 @@ static void menu_action_setting_disp_set_label_pipeline(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON), len);
          break;
+      case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW), len);
+         break;
       case XMB_SHADER_PIPELINE_SNOW:
          strlcpy(s,
                msg_hash_to_str(

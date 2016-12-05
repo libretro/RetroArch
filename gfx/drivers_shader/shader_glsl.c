@@ -124,6 +124,7 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/modern_pipeline_snow.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
 #include "../drivers/gl_shaders/pipeline_snow.glsl.frag.h"
+#include "../drivers/gl_shaders/pipeline_snow_simple.glsl.frag.h"
 #if !defined(HAVE_OPENGLES)
 #include "../drivers/gl_shaders/legacy_pipeline_snow.glsl.vert.h"
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
@@ -966,7 +967,7 @@ static void *gl_glsl_init(void *data, const char *path)
 #else
    shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
 #endif
-   shader_prog_info.fragment = stock_fragment_xmb_snow;
+   shader_prog_info.fragment = stock_fragment_xmb_simple_snow;
 
    gl_glsl_compile_program(
          glsl,
@@ -975,6 +976,21 @@ static void *gl_glsl_init(void *data, const char *path)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_3].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_3]);
+
+#if defined(HAVE_OPENGLES)
+   shader_prog_info.vertex   = stock_vertex_xmb_snow_modern;
+#else
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_snow_modern : stock_vertex_xmb_snow_legacy;
+#endif
+   shader_prog_info.fragment = stock_fragment_xmb_snow;
+
+   gl_glsl_compile_program(
+         glsl,
+         VIDEO_SHADER_MENU_4,
+         &glsl->prg[VIDEO_SHADER_MENU_4],
+         &shader_prog_info);
+   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_4].id,
+         &glsl->uniforms[VIDEO_SHADER_MENU_4]);
 #endif
 
    gl_glsl_reset_attrib(glsl);

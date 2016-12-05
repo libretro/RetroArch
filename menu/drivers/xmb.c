@@ -2390,8 +2390,11 @@ static void xmb_draw_bg(
          case XMB_SHADER_PIPELINE_RIBBON:
             draw.pipeline.id  = VIDEO_SHADER_MENU;
             break;
-         case XMB_SHADER_PIPELINE_SNOW:
+         case XMB_SHADER_PIPELINE_SIMPLE_SNOW:
             draw.pipeline.id  = VIDEO_SHADER_MENU_3;
+            break;
+         case XMB_SHADER_PIPELINE_SNOW:
+            draw.pipeline.id  = VIDEO_SHADER_MENU_4;
             break;
          default:
             break;

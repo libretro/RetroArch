@@ -1140,3 +1140,11 @@ MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_EDGE_MAGAZINE_RATING,
       "database_cursor_list_edge_magazine_rating")
 MSG_HASH(MENU_ENUM_LABEL_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
       "database_info")
+MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_RIBBON,
+      "shader_pipeline_ribbon")
+MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
+      "shader_pipeline_ribbon_simplified")
+MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_SIMPLE_SNOW,
+      "shader_pipeline_simple_snow")
+MSG_HASH(MENU_ENUM_LABEL_SHADER_PIPELINE_SNOW,
+      "shader_pipeline_snow")
