@@ -1139,7 +1139,6 @@ int runloop_iterate(unsigned *sleep_ms)
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
    static uint64_t last_input                   = 0;
-   enum runloop_state runloop_status            = RUNLOOP_STATE_NONE;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
@@ -1201,30 +1200,37 @@ int runloop_iterate(unsigned *sleep_ms)
       runloop_frame_time.callback(delta);
    }
 
-   runloop_status = runloop_check_state(settings, current_input,
-         old_input, sleep_ms);
-
-   switch (runloop_status)
+   switch ((enum runloop_state)
+         runloop_check_state(
+            settings, current_input,
+            old_input, sleep_ms))
    {
       case RUNLOOP_STATE_QUIT:
          frame_limit_last_time = 0.0;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_SLEEP:
+         core_poll();
+#ifdef HAVE_NETWORKING
+         /* FIXME: This is an ugly way to tell Netplay this... */
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+         *sleep_ms = 10;
+         return 1;
       case RUNLOOP_STATE_END:
+         core_poll();
+#ifdef HAVE_NETWORKING
+         /* FIXME: This is an ugly way to tell Netplay this... */
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+         goto end;
       case RUNLOOP_STATE_MENU_ITERATE:
          core_poll();
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
-         if (runloop_status == RUNLOOP_STATE_SLEEP)
-            *sleep_ms = 10;
-         if (runloop_status == RUNLOOP_STATE_END)
-            goto end;
-         if (runloop_status == RUNLOOP_STATE_MENU_ITERATE)
-            return 0;
-         return 1;
+         return 0;
       case RUNLOOP_STATE_ITERATE:
       case RUNLOOP_STATE_NONE:
       default:
