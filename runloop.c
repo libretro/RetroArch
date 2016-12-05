@@ -21,7 +21,6 @@
 #include <math.h>
 
 #include <compat/strl.h>
-#include <retro_inline.h>
 #include <retro_assert.h>
 #include <file/file_path.h>
 #include <queues/message_queue.h>
@@ -899,7 +898,8 @@ static enum runloop_state runloop_check_state(
          }
       }
    }
-   else if ((!menu_event_keyboard_is_set(RETROK_F1) && runloop_cmd_menu_press(current_input, old_input, trigger_input)) ||
+   else if ((!menu_event_keyboard_is_set(RETROK_F1) && 
+            runloop_cmd_menu_press(current_input, old_input, trigger_input)) ||
          rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
@@ -961,7 +961,8 @@ static enum runloop_state runloop_check_state(
     * unpause the libretro core. */
 
    /* FRAMEADVANCE will set us into pause mode. */
-   pause_pressed |= !runloop_paused && runloop_cmd_triggered(trigger_input, RARCH_FRAMEADVANCE);
+   pause_pressed |= !runloop_paused 
+      && runloop_cmd_triggered(trigger_input, RARCH_FRAMEADVANCE);
 
    if (focused && pause_pressed)
       command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
@@ -1073,9 +1074,11 @@ static enum runloop_state runloop_check_state(
       }
 
       if (state_manager_frame_is_reversed())
-         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 2, 30, true);
       else
-         runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_SLOW_MOTION), 2, 30, true);
    }
 
    if (runloop_cmd_triggered(trigger_input, RARCH_MOVIE_RECORD_TOGGLE))
@@ -1123,7 +1126,9 @@ int runloop_iterate(unsigned *sleep_ms)
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
-   uint64_t current_input                       = menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? input_menu_keys_pressed() : input_keys_pressed();
+   uint64_t current_input                       = menu_driver_ctl(
+         RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
+      input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
    static char old_core[PATH_MAX_LENGTH]        = "";
    last_input                                   = current_input;
