@@ -1183,7 +1183,7 @@ int runloop_iterate(unsigned *sleep_ms)
       retro_time_t delta       = current - runloop_frame_time_last;
       bool is_locked_fps       = (runloop_paused ||
                                   input_driver_is_nonblock_state()) |
-                                  !!recording_driver_get_data_ptr();
+                                  !!recording_data;
 
 
       if (!runloop_frame_time_last || is_locked_fps)
