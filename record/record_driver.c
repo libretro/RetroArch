@@ -52,7 +52,6 @@ static bool recording_enable                   = false;
 static bool recording_use_output_dir           = false;
 
 static const record_driver_t *recording_driver = NULL;
-void *recording_data                           = NULL;
 
 /**
  * record_driver_find_ident:
@@ -244,22 +243,22 @@ void recording_dump_frame(const void *data, unsigned width,
       ffemu_data.is_dupe = !data;
 
    if (recording_driver && recording_driver->push_video)
-      recording_driver->push_video(recording_data, &ffemu_data);
+      recording_driver->push_video(drivers_data[DRIVER_RECORDING], &ffemu_data);
 }
 
 bool recording_deinit(void)
 {
-   if (!recording_data || !recording_driver)
+   if (!drivers_data[DRIVER_RECORDING] || !recording_driver)
       return false;
 
    if (recording_driver->finalize)
-      recording_driver->finalize(recording_data);
+      recording_driver->finalize(drivers_data[DRIVER_RECORDING]);
 
    if (recording_driver->free)
-      recording_driver->free(recording_data);
+      recording_driver->free(drivers_data[DRIVER_RECORDING]);
 
-   recording_data            = NULL;
-   recording_driver          = NULL;
+   drivers_data[DRIVER_RECORDING] = NULL;
+   recording_driver               = NULL;
 
    command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
 
@@ -284,7 +283,7 @@ void recording_push_audio(const int16_t *data, size_t samples)
    ffemu_data.frames                  = samples / 2;
 
    if (recording_driver && recording_driver->push_audio)
-      recording_driver->push_audio(recording_data, &ffemu_data);
+      recording_driver->push_audio(drivers_data[DRIVER_RECORDING], &ffemu_data);
 }
 
 /**
@@ -426,7 +425,7 @@ bool recording_init(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   if (!record_driver_init_first(&recording_driver, &recording_data, &params))
+   if (!record_driver_init_first(&recording_driver, &drivers_data[DRIVER_RECORDING], &params))
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
       command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
@@ -439,17 +438,17 @@ bool recording_init(void)
 
 void *recording_driver_get_data_ptr(void)
 {
-   return recording_data;
+   return drivers_data[DRIVER_RECORDING];
 }
 
 void recording_driver_clear_data_ptr(void)
 {
-   recording_data = NULL;
+   drivers_data[DRIVER_RECORDING] = NULL;
 }
 
 void recording_driver_set_data_ptr(void *data)
 {
-   recording_data = data;
+   drivers_data[DRIVER_RECORDING] = data;
 }
 
 bool *recording_driver_get_use_output_dir_ptr(void)

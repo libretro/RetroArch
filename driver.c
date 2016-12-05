@@ -52,6 +52,8 @@
 #define HASH_RECORD_DRIVER             0x144cd2cfU
 #define HASH_WIFI_DRIVER               0x64d7d17fU
 
+void *drivers_data[DRIVER_LAST+1];
+
 /**
  * find_driver_nonempty:
  * @label              : string of driver type to be found.
