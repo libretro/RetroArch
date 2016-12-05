@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <compat/strl.h>
 #include <net/net_compat.h>
 
 #include "../../runloop.h"
@@ -125,7 +126,8 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
 
          /* Make it broadcastable */
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
-         setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST, (const char *) &canBroadcast, sizeof(canBroadcast));
+         if (setsockopt(lan_ad_client_fd, SOL_SOCKET, SO_BROADCAST, (const char *) &canBroadcast, sizeof(canBroadcast)) < 0)
+             RARCH_WARN("Failed to set netplay discovery port to broadcast.\n");
 #endif
 
          /* Put together the request */
@@ -133,8 +135,12 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
          ad_packet_buffer.protocol_version = htonl(NETPLAY_PROTOCOL_VERSION);
 
          /* And send it off */
-         sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
-            2*sizeof(uint32_t), 0, addr->ai_addr, addr->ai_addrlen);
+         if (sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
+            2*sizeof(uint32_t), 0, addr->ai_addr, addr->ai_addrlen) <
+            2*sizeof(uint32_t))
+            RARCH_WARN("Failed to send netplay discovery response.\n");
+
+         freeaddrinfo_retro(addr);
          break;
       }
 
@@ -225,14 +231,14 @@ bool netplay_lan_ad_server(netplay_t *netplay)
          ad_packet_buffer.protocol_version =
             htonl(NETPLAY_PROTOCOL_VERSION);
          ad_packet_buffer.port = htonl(netplay->tcp_port);
-         strncpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
+         strlcpy(ad_packet_buffer.retroarch_version, PACKAGE_VERSION,
             NETPLAY_HOST_STR_LEN);
-         strncpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
+         strlcpy(ad_packet_buffer.nick, netplay->nick, NETPLAY_HOST_STR_LEN);
          if (info)
          {
-            strncpy(ad_packet_buffer.core, info->info.library_name,
+            strlcpy(ad_packet_buffer.core, info->info.library_name,
                NETPLAY_HOST_STR_LEN);
-            strncpy(ad_packet_buffer.core_version, info->info.library_version,
+            strlcpy(ad_packet_buffer.core_version, info->info.library_version,
                NETPLAY_HOST_STR_LEN);
          }
 
@@ -346,11 +352,11 @@ bool netplay_lan_ad_client(void)
          memset(host, 0, sizeof(struct netplay_host));
          host->addr = their_addr;
          host->addrlen = addr_size;
-         strncpy(host->nick, ad_packet_buffer.nick, NETPLAY_HOST_STR_LEN);
-         strncpy(host->core, ad_packet_buffer.core, NETPLAY_HOST_STR_LEN);
-         strncpy(host->core_version, ad_packet_buffer.core_version,
+         strlcpy(host->nick, ad_packet_buffer.nick, NETPLAY_HOST_STR_LEN);
+         strlcpy(host->core, ad_packet_buffer.core, NETPLAY_HOST_STR_LEN);
+         strlcpy(host->core_version, ad_packet_buffer.core_version,
             NETPLAY_HOST_STR_LEN);
-         strncpy(host->content, ad_packet_buffer.content,
+         strlcpy(host->content, ad_packet_buffer.content,
             NETPLAY_HOST_STR_LEN);
          host->nick[NETPLAY_HOST_STR_LEN-1] =
             host->core[NETPLAY_HOST_STR_LEN-1] =

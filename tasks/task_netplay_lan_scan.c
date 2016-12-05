@@ -84,7 +84,7 @@ bool task_push_netplay_lan_scan(void)
    retro_task_t *task = (retro_task_t*)calloc(1, sizeof(*task));
 
    if (!task)
-      goto error;
+      return false;
 
    task->type     = TASK_TYPE_BLOCKING;
    task->handler  = task_netplay_lan_scan_handler;
@@ -94,10 +94,4 @@ bool task_push_netplay_lan_scan(void)
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, task);
 
    return true;
-
-error:
-   if (task)
-      free(task);
-
-   return false;
 }
