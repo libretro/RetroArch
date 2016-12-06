@@ -672,6 +672,9 @@ uint64_t input_keys_pressed(void)
    const struct retro_keybind *binds_auto = &settings->input.autoconf_binds[0][RARCH_ENABLE_HOTKEY];
    const struct retro_keybind *normal     = &binds[RARCH_ENABLE_HOTKEY];
 
+   const struct retro_keybind *focus_binds_auto = &settings->input.autoconf_binds[0][RARCH_GAME_FOCUS_TOGGLE];
+   const struct retro_keybind *focus_normal     = &binds[RARCH_GAME_FOCUS_TOGGLE];
+
    input_driver_block_libretro_input      = false;
    input_driver_block_hotkey              = false;
 
@@ -688,6 +691,14 @@ uint64_t input_keys_pressed(void)
          input_driver_block_libretro_input = true;
       else
          input_driver_block_hotkey         = true;
+   }
+
+   /* Allows rarch_focus_toggle hotkey to still work even tough every hotkey is blocked */
+   if (check_input_driver_block_hotkey(focus_normal, focus_binds_auto))
+   {
+      if (current_input->input_state(current_input_data, &binds, 0,
+               RETRO_DEVICE_JOYPAD, 0, RARCH_GAME_FOCUS_TOGGLE))
+         input_driver_block_hotkey = false;
    }
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
@@ -952,6 +963,11 @@ void input_driver_unset_flushing_input(void)
 bool input_driver_is_flushing_input(void)
 {
    return input_driver_flushing_input;
+}
+
+void input_driver_unset_hotkey_block(void)
+{
+   input_driver_block_hotkey = true;
 }
 
 void input_driver_set_hotkey_block(void)

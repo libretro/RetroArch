@@ -146,6 +146,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                   "the window to allow relative mouse input to \n"
                   "work better.");
             break;
+         case RARCH_GAME_FOCUS_TOGGLE:
+             snprintf(s, len,
+                   "Toggles game focus.\n"
+                   " \n"
+                   "When a game has focus, RetroArch will both disable \n"
+                   "hotkeys and keep/warp the mouse pointer inside the window.");
+             break;
          case RARCH_MENU_TOGGLE:
             snprintf(s, len, "Toggles menu.");
             break;
@@ -1069,6 +1076,13 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "mouse, and keeps the mouse pointer inside \n"
                "the window to allow relative mouse input to \n"
                "work better.");
+         break;
+      case MENU_ENUM_LABEL_GAME_FOCUS_TOGGLE:
+         snprintf(s, len,
+               "Toggles game focus.\n"
+               " \n"
+               "When a game has focus, RetroArch will both disable \n"
+               "hotkeys and keep/warp the mouse pointer inside the window.");
          break;
       case MENU_ENUM_LABEL_DISK_NEXT:
          snprintf(s, len,

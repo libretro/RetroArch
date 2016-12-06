@@ -292,6 +292,8 @@ void input_driver_unset_flushing_input(void);
 
 bool input_driver_is_flushing_input(void);
 
+void input_driver_unset_hotkey_block(void);
+
 void input_driver_set_hotkey_block(void);
 
 bool input_driver_is_hotkey_blocked(void);
