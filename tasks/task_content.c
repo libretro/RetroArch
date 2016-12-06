@@ -73,6 +73,7 @@
 #include "tasks_internal.h"
 
 #include "../command.h"
+#include "../core_info.h"
 #include "../content.h"
 #include "../configuration.h"
 #include "../defaults.h"
@@ -1025,6 +1026,34 @@ static bool command_event_cmd_exec(const char *data,
 #endif
 
    return true;
+}
+
+static void update_firmware_status(void)
+{
+   char s[PATH_MAX_LENGTH];
+   core_info_ctx_firmware_t firmware_info;
+
+   core_info_t *core_info     = NULL;
+   settings_t *settings       = config_get_ptr();
+
+   core_info_get_current_core(&core_info);
+
+   if (!core_info || !settings)
+      return;
+
+   firmware_info.path         = core_info->path;
+   if (!string_is_empty(settings->directory.system))
+      firmware_info.directory.system = settings->directory.system;
+   else
+   {
+      strlcpy(s, path_get(RARCH_PATH_CONTENT) ,sizeof(s));
+      path_basedir(s);
+      firmware_info.directory.system = s;
+   }
+
+   RARCH_LOG("Updating firmware status for: %s on %s\n", core_info->path, 
+         firmware_info.directory.system);
+   core_info_list_update_missing_firmware(&firmware_info);
 }
 
 bool task_push_content_load_default(
