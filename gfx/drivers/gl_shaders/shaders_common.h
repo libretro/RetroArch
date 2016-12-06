@@ -3,8 +3,25 @@
 
 #if defined(HAVE_OPENGLES)
 #define CG(src)   "" #src
-#define GLSL(src) "precision highp float;\n" #src
-#define GLSL_330(src)   "#version 330 es\nprecision highp float;\n"   #src
+#define GLSL(src) "#ifdef GL_ES\n" \
+                  "  #ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
+                  "    precision highp float;\n" \
+                  "  #else\n" \
+                  "    precision mediump float;\n" \
+                  "  #endif\n" \
+                  "#else\n" \
+                  "  precision mediump float;\n" \
+                  "#endif\n" #src
+#define GLSL_330(src) "#version 330 es\n" \
+                  "#ifdef GL_ES\n" \
+                  "  #ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
+                  "    precision highp float;\n" \
+                  "  #else\n" \
+                  "    precision mediump float;\n" \
+                  "  #endif\n" \
+                  "#else\n" \
+                  "  precision mediump float;\n" \
+                  "#endif\n" #src
 #else
 #define CG(src)   "" #src
 #define GLSL(src) "" #src
