@@ -316,6 +316,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
             XWarpPointer(x11->display, None,
                   x11->win, 0, 0, 0, 0,
                   mid_w, mid_h);
+            XSync(x11->display, False);
          }
          x11->mouse_last_x = mid_w;
          x11->mouse_last_y = mid_h;
