@@ -2499,7 +2499,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
-            printf("FUCK\n");
             static bool game_focus_state  = false;
             long int mode = (long int)data;
             
