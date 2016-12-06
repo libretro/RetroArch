@@ -3,8 +3,8 @@
 
 #if defined(HAVE_OPENGLES)
 #define CG(src)   "" #src
-#define GLSL(src) "precision mediump float;\n" #src
-#define GLSL_330(src)   "#version 330 es\nprecision mediump float;\n"   #src
+#define GLSL(src) "precision highp float;\n" #src
+#define GLSL_330(src)   "#version 330 es\nprecision highp float;\n"   #src
 #else
 #define CG(src)   "" #src
 #define GLSL(src) "" #src
