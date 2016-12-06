@@ -608,7 +608,7 @@ static void task_save_handler(retro_task_t *task)
       }
 
       if (!task->mute)
-         runloop_msg_queue_push(msg, 2, 180, true);
+         task->title = strdup(msg);
 
       task_save_handler_finished(task, state);
 
