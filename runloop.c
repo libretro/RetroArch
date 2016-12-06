@@ -888,6 +888,9 @@ static enum runloop_state runloop_check_state(
    if (runloop_idle)
       return RUNLOOP_STATE_SLEEP;
 
+   if (runloop_cmd_triggered(trigger_input, RARCH_GAME_FOCUS_TOGGLE))
+      command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, NULL);
+
 #ifdef HAVE_MENU
    if (menu_event_keyboard_is_set(RETROK_F1) == 1)
    {
