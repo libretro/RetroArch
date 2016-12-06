@@ -1865,9 +1865,6 @@ static int cheevos_login(retro_time_t *timeout)
 
    runloop_msg_queue_push("Retro Achievements login error.",
          0, 5 * 60, false);
-   runloop_msg_queue_push(
-         "Please make sure your account information is correct.",
-         0, 5 * 60, false);
    RARCH_ERR("CHEEVOS error getting user token.\n");
    return -1;
 }
