@@ -28,6 +28,10 @@
 #include "input_keyboard.h"
 #include "input_remapping.h"
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
 #include "../configuration.h"
 #include "../driver.h"
 #include "../retroarch.h"
@@ -666,7 +670,8 @@ static INLINE bool input_keys_pressed_internal(unsigned i,
 uint64_t input_keys_pressed(
       uint64_t old_input,
       uint64_t *last_input,
-      uint64_t *trigger_input)
+      uint64_t *trigger_input,
+      bool runloop_paused)
 {
    unsigned i;
    uint64_t                      ret      = 0;
@@ -712,6 +717,23 @@ uint64_t input_keys_pressed(
 
    *trigger_input = ret & ~old_input;
    *last_input    = ret;
+
+   if (input_driver_flushing_input)
+   {
+      input_driver_flushing_input = false;
+
+      if (ret)
+      {
+         ret = 0;
+
+         /* If core was paused before entering menu, evoke
+          * pause toggle to wake it up. */
+         if (runloop_paused)
+            BIT64_SET(ret, RARCH_PAUSE_TOGGLE);
+         input_driver_flushing_input = true;
+      }
+   }
+
    return ret;
 }
 
@@ -731,7 +753,8 @@ uint64_t input_keys_pressed(
 uint64_t input_menu_keys_pressed(
       uint64_t old_input,
       uint64_t *last_input,
-      uint64_t *trigger_input)
+      uint64_t *trigger_input,
+      bool runloop_paused)
 {
    unsigned i;
    uint64_t             ret                     = 0;
@@ -851,6 +874,28 @@ uint64_t input_menu_keys_pressed(
 end:
    *trigger_input = ret & ~old_input;
    *last_input    = ret;
+
+   if (input_driver_flushing_input)
+   {
+      input_driver_flushing_input = false;
+
+      if (ret)
+      {
+         ret = 0;
+
+         /* If core was paused before entering menu, evoke
+          * pause toggle to wake it up. */
+         if (runloop_paused)
+            BIT64_SET(ret, RARCH_PAUSE_TOGGLE);
+         input_driver_flushing_input = true;
+      }
+   }
+
+#ifdef HAVE_MENU
+   if (menu_driver_is_binding_state())
+      *trigger_input = 0;
+#endif
+
    return ret;
 }
 

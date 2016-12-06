@@ -759,24 +759,6 @@ static enum runloop_state runloop_check_state(
    bool focused                     = true;
    bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
 
-   if (input_driver_is_flushing_input())
-   {
-      input_driver_unset_flushing_input();
-      if (current_input)
-      {
-         current_input = 0;
-
-         /* If core was paused before entering menu, evoke
-          * pause toggle to wake it up. */
-         if (runloop_paused)
-            BIT64_SET(current_input, RARCH_PAUSE_TOGGLE);
-         input_driver_set_flushing_input();
-      }
-   }
-
-   if (menu_driver_is_binding_state())
-      trigger_input = 0;
-
    if (runloop_cmd_triggered(trigger_input, RARCH_OVERLAY_NEXT))
       command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
 
@@ -1113,8 +1095,8 @@ int runloop_iterate(unsigned *sleep_ms)
    uint64_t old_input                           = last_input;
    uint64_t current_input                       = 
       menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
-      input_menu_keys_pressed(old_input, &last_input, &trigger_input) : 
-      input_keys_pressed     (old_input, &last_input, &trigger_input);
+      input_menu_keys_pressed(old_input, &last_input, &trigger_input, runloop_paused) : 
+      input_keys_pressed     (old_input, &last_input, &trigger_input, runloop_paused);
 
    if (runloop_frame_time.callback)
    {

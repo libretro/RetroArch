@@ -259,12 +259,14 @@ int16_t input_state(unsigned port, unsigned device,
 uint64_t input_keys_pressed(
       uint64_t old_input,
       uint64_t *last_input,
-      uint64_t *trigger_input);
+      uint64_t *trigger_input,
+      bool runloop_paused);
 
 uint64_t input_menu_keys_pressed(
       uint64_t old_input,
       uint64_t *last_input,
-      uint64_t *trigger_input);
+      uint64_t *trigger_input,
+      bool runloop_paused);
 
 void *input_driver_get_data(void);
 
