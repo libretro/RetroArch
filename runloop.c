@@ -746,6 +746,7 @@ static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
       uint64_t old_input,
+      uint64_t trigger_input,
       unsigned *sleep_ms)
 {
    static bool old_focus            = true;
@@ -756,7 +757,6 @@ static enum runloop_state runloop_check_state(
    bool tmp                         = false;
 #endif
    bool focused                     = true;
-   uint64_t trigger_input           = current_input & ~old_input;
    bool pause_pressed               = runloop_cmd_triggered(trigger_input, RARCH_PAUSE_TOGGLE);
 
    if (input_driver_is_flushing_input())
@@ -1094,7 +1094,6 @@ static enum runloop_state runloop_check_state(
    return RUNLOOP_STATE_ITERATE;
 }
 
-
 /**
  * runloop_iterate:
  *
@@ -1114,6 +1113,7 @@ int runloop_iterate(unsigned *sleep_ms)
          RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
       input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
+   uint64_t trigger_input                       = current_input & ~old_input;
    last_input                                   = current_input;
 
    if (runloop_frame_time.callback)
@@ -1144,8 +1144,11 @@ int runloop_iterate(unsigned *sleep_ms)
 
    switch ((enum runloop_state)
          runloop_check_state(
-            settings, current_input,
-            old_input, sleep_ms))
+            settings,
+            current_input,
+            old_input,
+            trigger_input,
+            sleep_ms))
    {
       case RUNLOOP_STATE_QUIT:
          frame_limit_last_time = 0.0;
