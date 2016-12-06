@@ -371,14 +371,12 @@ static bool take_screenshot_choice(const char *name_base, bool savestate)
 
 bool take_screenshot(const char *name_base, bool silence)
 {
-   bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool             ret       = take_screenshot_choice(name_base, silence);
+   bool ret = take_screenshot_choice(name_base, silence);
 
-   if (is_paused)
-   {
-      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (     runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL)
+         && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL)
+      )
          video_driver_cached_frame();
-   }
 
    return ret;
 }
