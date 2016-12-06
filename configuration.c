@@ -944,7 +944,7 @@ static int populate_settings_int(settings_t *settings, struct config_int_setting
    SETTING_INT("aspect_ratio_index",           &settings->video.aspect_ratio_idx, true, aspect_ratio_idx, false);
    SETTING_INT("state_slot",                   (unsigned*)&settings->state_slot, false, 0 /* TODO */, false);
 #ifdef HAVE_NETWORKING
-   SETTING_INT("netplay_ip_port",              &settings->netplay.port, false, 0 /* TODO */, false);
+   SETTING_INT("netplay_ip_port",              &settings->netplay.port,         true, RARCH_DEFAULT_PORT, false);
    SETTING_INT("netplay_delay_frames",         &settings->netplay.delay_frames, true, 16, false);
    SETTING_INT("netplay_check_frames",         &settings->netplay.check_frames, true, 30, false);
 #endif
