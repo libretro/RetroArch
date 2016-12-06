@@ -1107,14 +1107,14 @@ int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
+   uint64_t trigger_input                       = 0;
    static uint64_t last_input                   = 0;
    settings_t *settings                         = config_get_ptr();
-   uint64_t current_input                       = menu_driver_ctl(
-         RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
-      input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
-   uint64_t trigger_input                       = current_input & ~old_input;
-   last_input                                   = current_input;
+   uint64_t current_input                       = 
+      menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
+      input_menu_keys_pressed(old_input, &last_input, &trigger_input) : 
+      input_keys_pressed     (old_input, &last_input, &trigger_input);
 
    if (runloop_frame_time.callback)
    {

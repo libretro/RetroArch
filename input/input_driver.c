@@ -663,7 +663,10 @@ static INLINE bool input_keys_pressed_internal(unsigned i,
  *
  * Returns: Input sample containg a mask of all pressed keys.
  */
-uint64_t input_keys_pressed(void)
+uint64_t input_keys_pressed(
+      uint64_t old_input,
+      uint64_t *last_input,
+      uint64_t *trigger_input)
 {
    unsigned i;
    uint64_t                      ret      = 0;
@@ -707,6 +710,8 @@ uint64_t input_keys_pressed(void)
          ret |= (UINT64_C(1) << i);
    }
 
+   *trigger_input = ret & ~old_input;
+   *last_input    = ret;
    return ret;
 }
 
@@ -723,7 +728,10 @@ uint64_t input_keys_pressed(void)
  *
  * Returns: Input sample containg a mask of all pressed keys.
  */
-uint64_t input_menu_keys_pressed(void)
+uint64_t input_menu_keys_pressed(
+      uint64_t old_input,
+      uint64_t *last_input,
+      uint64_t *trigger_input)
 {
    unsigned i;
    uint64_t             ret                     = 0;
@@ -733,7 +741,7 @@ uint64_t input_menu_keys_pressed(void)
    const struct retro_keybind *binds_auto       = NULL;
 
    if (!current_input || !current_input_data)
-      return ret;
+      goto end;
 
    for (i = 0; i < settings->input.max_users; i++)
    {
@@ -776,7 +784,7 @@ uint64_t input_menu_keys_pressed(void)
    }
 
    if (menu_input_dialog_get_display_kb())
-      return ret;
+      goto end;
 
    if (current_input->input_state(current_input_data, binds, 0,
       RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN))
@@ -840,6 +848,9 @@ uint64_t input_menu_keys_pressed(void)
       RETRO_DEVICE_KEYBOARD, 0, settings->input.binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key ))
       BIT64_SET(ret, RARCH_FULLSCREEN_TOGGLE_KEY);
 
+end:
+   *trigger_input = ret & ~old_input;
+   *last_input    = ret;
    return ret;
 }
 

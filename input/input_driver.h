@@ -256,9 +256,15 @@ void input_poll(void);
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id);
 
-uint64_t input_keys_pressed(void);
+uint64_t input_keys_pressed(
+      uint64_t old_input,
+      uint64_t *last_input,
+      uint64_t *trigger_input);
 
-uint64_t input_menu_keys_pressed(void);
+uint64_t input_menu_keys_pressed(
+      uint64_t old_input,
+      uint64_t *last_input,
+      uint64_t *trigger_input);
 
 void *input_driver_get_data(void);
 
