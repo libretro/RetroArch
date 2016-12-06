@@ -205,7 +205,7 @@ static void menu_display_d3d_draw_pipeline(void *data)
    switch (draw->pipeline.id)
    {
       case VIDEO_SHADER_MENU:
-      case VIDEO_SHADER_MENU_SEC:
+      case VIDEO_SHADER_MENU_2:
       case VIDEO_SHADER_MENU_3:
          shader_info.data                = NULL;
          shader_info.idx                 = draw->pipeline.id;
