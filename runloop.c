@@ -115,8 +115,6 @@ static unsigned runloop_pending_windowed_scale             = 0;
 static retro_usec_t runloop_frame_time_last                = 0;
 static unsigned runloop_max_frames                         = false;
 static bool runloop_force_nonblock                         = false;
-static bool runloop_frame_time_last_enable                 = false;
-static bool runloop_set_frame_limit                        = false;
 static bool runloop_paused                                 = false;
 static bool runloop_idle                                   = false;
 static bool runloop_exec                                   = false;
@@ -127,6 +125,8 @@ static bool runloop_perfcnt_enable                         = false;
 static bool runloop_overrides_active                       = false;
 static bool runloop_game_options_active                    = false;
 static bool runloop_missing_bios                           = false;
+static retro_time_t frame_limit_minimum_time               = 0.0;
+static retro_time_t frame_limit_last_time                  = 0.0;
 
 global_t *global_get_ptr(void)
 {
@@ -359,7 +359,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
-         runloop_frame_time_last_enable = true;
+         runloop_frame_time_last        = 0;
          break;
       case RUNLOOP_CTL_SET_OVERRIDES_ACTIVE:
          runloop_overrides_active = true;
@@ -386,7 +386,18 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE:
          return runloop_game_options_active;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
-         runloop_set_frame_limit = true;
+         {
+            settings_t *settings       = config_get_ptr();
+            struct retro_system_av_info *av_info =
+               video_viewport_get_system_av_info();
+            float fastforward_ratio              =
+               (settings->fastforward_ratio == 0.0f)
+               ? 1.0f : settings->fastforward_ratio;
+
+            frame_limit_last_time    = cpu_features_get_time_usec();
+            frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
+                  / (av_info->timing.fps * fastforward_ratio));
+         }
          break;
       case RUNLOOP_CTL_GET_PERFCNT:
          {
@@ -454,8 +465,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_idle                      = false;
          runloop_paused                    = false;
          runloop_slowmotion                = false;
-         runloop_frame_time_last_enable    = false;
-         runloop_set_frame_limit           = false;
          runloop_overrides_active          = false;
          runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
          break;
@@ -1129,35 +1138,12 @@ int runloop_iterate(unsigned *sleep_ms)
    unsigned i;
    retro_time_t current, target, to_sleep_ms;
    static uint64_t last_input                   = 0;
-   static retro_time_t frame_limit_minimum_time = 0.0;
-   static retro_time_t frame_limit_last_time    = 0.0;
    settings_t *settings                         = config_get_ptr();
    uint64_t current_input                       = menu_driver_ctl(
          RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
       input_menu_keys_pressed() : input_keys_pressed();
    uint64_t old_input                           = last_input;
    last_input                                   = current_input;
-
-   if (runloop_frame_time_last_enable)
-   {
-      runloop_frame_time_last        = 0;
-      runloop_frame_time_last_enable = false;
-   }
-
-   if (runloop_set_frame_limit)
-   {
-      struct retro_system_av_info *av_info =
-         video_viewport_get_system_av_info();
-      float fastforward_ratio              =
-         (settings->fastforward_ratio == 0.0f)
-         ? 1.0f : settings->fastforward_ratio;
-
-      frame_limit_last_time    = cpu_features_get_time_usec();
-      frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f
-            / (av_info->timing.fps * fastforward_ratio));
-
-      runloop_set_frame_limit = false;
-   }
 
    if (runloop_frame_time.callback)
    {
