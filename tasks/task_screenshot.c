@@ -369,38 +369,10 @@ static bool take_screenshot_choice(const char *name_base, bool savestate)
    return false;
 }
 
-/**
- * take_screenshot:
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool take_screenshot(void)
-{
-   char *name_base            = strdup(path_get(RARCH_PATH_BASENAME));
-   bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool             ret       = take_screenshot_choice(name_base, false);
-   const char *msg_screenshot = ret
-      ? msg_hash_to_str(MSG_TAKING_SCREENSHOT)  :
-        msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
-   const char *msg            = msg_screenshot;
-
-   free(name_base);
-
-   runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
-
-   if (is_paused)
-   {
-      if (!runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
-         video_driver_cached_frame();
-   }
-
-   return ret;
-}
-
-bool take_savestate_screenshot(const char *name_base)
+bool take_screenshot(const char *name_base, bool silence)
 {
    bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool             ret       = take_screenshot_choice(name_base, true);
+   bool             ret       = take_screenshot_choice(name_base, silence);
 
    if (is_paused)
    {

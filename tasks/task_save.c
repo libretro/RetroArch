@@ -990,7 +990,7 @@ static void save_state_cb(void *task_data,
    char               *path = strdup(state->path);
 
    if (settings->savestate_thumbnail_enable)
-      take_savestate_screenshot(path);
+      take_screenshot(path, true);
 
    free(path);
 }
