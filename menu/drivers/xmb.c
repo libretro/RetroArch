@@ -839,6 +839,7 @@ end:
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
    menu_entry_t entry;
+   char tmp_new[PATH_MAX_LENGTH];
    char             *tmp    = NULL;
    char *scrub_char_pointer = NULL;
    settings_t     *settings = config_get_ptr();
@@ -893,21 +894,14 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
    tmp = strdup(entry.path);
    
    while((scrub_char_pointer = strpbrk(tmp, "&*/:`<>?\\|")))
-   {
       *scrub_char_pointer = '_';
-   }
 
    /* Look for thumbnail file with this scrubbed filename */
-   if (tmp)
-   {
-      char tmp_new[PATH_MAX_LENGTH];
+   tmp_new[0] = '\0';
 
-      tmp_new[0] = '\0';
-
-      fill_pathname_join(tmp_new, xmb->thumbnail_file_path, tmp, sizeof(tmp_new));
-      strlcpy(xmb->thumbnail_file_path, tmp_new, sizeof(xmb->thumbnail_file_path));
-      free(tmp);
-   }
+   fill_pathname_join(tmp_new, xmb->thumbnail_file_path, tmp, sizeof(tmp_new));
+   strlcpy(xmb->thumbnail_file_path, tmp_new, sizeof(xmb->thumbnail_file_path));
+   free(tmp);
 
    strlcat(xmb->thumbnail_file_path,
          file_path_str(FILE_PATH_PNG_EXTENSION),
