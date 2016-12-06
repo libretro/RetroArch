@@ -760,6 +760,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
  */
 #define time_to_exit(quit_key_pressed) (runloop_shutdown_initiated || quit_key_pressed || !video_driver_is_alive() || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL) || (runloop_max_frames && (*(video_driver_get_frame_count_ptr()) >= runloop_max_frames)) || runloop_exec)
 
+#define runloop_check_cheevos() (settings->cheevos.enable && cheevos_loaded && (!cheats_are_enabled && !cheats_were_enabled))
+
 static enum runloop_state runloop_check_state(
       settings_t *settings,
       uint64_t current_input,
@@ -1244,7 +1246,8 @@ int runloop_iterate(unsigned *sleep_ms)
    core_run();
 
 #ifdef HAVE_CHEEVOS
-   cheevos_test();
+   if (runloop_check_cheevos())
+      cheevos_test();
 #endif
 
    for (i = 0; i < settings->input.max_users; i++)

@@ -273,7 +273,6 @@ typedef struct
 
 typedef struct
 {
-   int  loaded;
    int  console_id;
    bool core_supports;
 
@@ -285,9 +284,9 @@ typedef struct
    retro_ctx_memory_info_t meminfo[4];
 } cheevos_locals_t;
 
+
 static cheevos_locals_t cheevos_locals =
 {
-   0,
    0,
    true,
    {NULL, 0},
@@ -295,8 +294,9 @@ static cheevos_locals_t cheevos_locals =
    {0}
 };
 
-static int cheats_are_enabled  = 0;
-static int cheats_were_enabled = 0;
+bool cheevos_loaded     = false;
+int cheats_are_enabled  = 0;
+int cheats_were_enabled = 0;
 
 /*****************************************************************************
 Supporting functions.
@@ -2558,7 +2558,7 @@ bool cheevos_load(const void *data)
 
    url[0]                = '\0';
 
-   cheevos_locals.loaded = 0;
+   cheevos_loaded        = 0;
 
    /* Just return OK if the core doesn't support cheevos, or info is NULL. */
    if (!cheevos_locals.core_supports || !info)
@@ -2676,7 +2676,7 @@ found:
       {
          cheevos_deactivate_unlocks(game_id, &timeout);
          free((void*)json);
-         cheevos_locals.loaded = 1;
+         cheevos_loaded = true;
 
          cheevos_make_playing_url(game_id, url, sizeof(url));
          task_push_http_transfer(url, true, NULL,
@@ -2698,17 +2698,13 @@ void cheevos_reset_game(void)
    const cheevo_t *end = cheevo + cheevos_locals.core.count;
 
    for (; cheevo < end; cheevo++)
-   {
       cheevo->last = 1;
-   }
 
    cheevo = cheevos_locals.unofficial.cheevos;
    end    = cheevo + cheevos_locals.unofficial.count;
 
    for (; cheevo < end; cheevo++)
-   {
       cheevo->last = 1;
-   }
 }
 
 void cheevos_populate_menu(void *data, bool hardcore)
@@ -2840,13 +2836,13 @@ bool cheevos_apply_cheats(bool *data_bool)
 
 bool cheevos_unload(void)
 {
-   if (!cheevos_locals.loaded)
+   if (!cheevos_loaded)
       return false;
 
    cheevos_free_cheevo_set(&cheevos_locals.core);
    cheevos_free_cheevo_set(&cheevos_locals.unofficial);
 
-   cheevos_locals.loaded = 0;
+   cheevos_loaded = false;
 
    return true;
 }
@@ -2876,28 +2872,18 @@ bool cheevos_toggle_hardcore_mode(void)
    return true;
 }
 
-bool cheevos_test(void)
+void cheevos_test(void)
 {
-   if (!cheevos_locals.loaded)
-      return false;
+   settings_t *settings = config_get_ptr();
 
-   if (!cheats_are_enabled && !cheats_were_enabled)
-   {
-      settings_t *settings = config_get_ptr();
-      if (!settings->cheevos.enable)
-         return false;
+   cheevos_test_cheevo_set(&cheevos_locals.core);
 
-      cheevos_test_cheevo_set(&cheevos_locals.core);
-
-      if (settings->cheevos.test_unofficial)
-         cheevos_test_cheevo_set(&cheevos_locals.unofficial);
+   if (settings->cheevos.test_unofficial)
+      cheevos_test_cheevo_set(&cheevos_locals.unofficial);
 
 #if 0
-      cheevos_test_leaderboards();
+   cheevos_test_leaderboards();
 #endif
-   }
-
-   return true;
 }
 
 bool cheevos_set_cheats(void)
