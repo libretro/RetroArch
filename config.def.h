@@ -798,6 +798,10 @@ static const unsigned autosave_interval = 0;
  * user 1 rather than user 2. */
 static const bool netplay_client_swap_input = true;
 
+static const unsigned netplay_delay_frames = 16;
+
+static const unsigned netplay_check_frames = 30;
+
 /* On save state load, block SRAM from being overwritten.
  * This could potentially lead to buggy games. */
 static const bool block_sram_overwrite = false;
