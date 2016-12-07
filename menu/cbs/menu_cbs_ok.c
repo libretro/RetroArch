@@ -2307,7 +2307,7 @@ static void cb_generic_download(void *task_data,
 
    if (!filestream_write_file(output_path, data->data, data->len))
    {
-      err = "Write failed.";
+      err = msg_hash_to_str(MSG_WRITE_FAILED);
       goto finish;
    }
 
