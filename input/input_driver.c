@@ -465,7 +465,7 @@ void state_tracker_update_input(uint16_t *input1, uint16_t *input2)
       input_push_analog_dpad(auto_binds,    dpad_mode);
    }
 
-   if (!input_driver_is_libretro_input_blocked())
+   if (!input_driver_block_libretro_input)
    {
       for (i = 4; i < 16; i++)
       {
@@ -959,11 +959,6 @@ void input_driver_set_flushing_input(void)
    input_driver_flushing_input = true;
 }
 
-bool input_driver_is_flushing_input(void)
-{
-   return input_driver_flushing_input;
-}
-
 void input_driver_unset_hotkey_block(void)
 {
    input_driver_block_hotkey = true;
@@ -972,11 +967,6 @@ void input_driver_unset_hotkey_block(void)
 void input_driver_set_hotkey_block(void)
 {
    input_driver_block_hotkey = true;
-}
-
-bool input_driver_is_hotkey_blocked(void)
-{
-   return input_driver_block_hotkey;
 }
 
 void input_driver_set_libretro_input_blocked(void)
