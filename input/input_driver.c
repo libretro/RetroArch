@@ -959,11 +959,6 @@ void input_driver_set_flushing_input(void)
    input_driver_flushing_input = true;
 }
 
-void input_driver_unset_flushing_input(void)
-{
-   input_driver_flushing_input = false;
-}
-
 bool input_driver_is_flushing_input(void)
 {
    return input_driver_flushing_input;
