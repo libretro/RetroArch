@@ -367,8 +367,9 @@ void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 }
 
 void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
-      LPDIRECT3DTEXTURE tex)
+      void *tex_data)
 {
+   LPDIRECT3DTEXTURE tex = (LPDIRECT3DTEXTURE)tex_data;
 #if defined(_XBOX1)
    D3DDevice_SetTexture(sampler, tex);
 #elif defined(_XBOX360)
