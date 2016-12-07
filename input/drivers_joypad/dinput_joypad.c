@@ -107,7 +107,7 @@ static BOOL CALLBACK enum_axes_cb(const DIDEVICEOBJECTINSTANCE *inst, void *p)
    return DIENUM_CONTINUE;
 }
 
-
+#ifdef HAVE_XINPUT
 /* Based on SDL2's implementation. */
 static bool guid_is_xinput_device(const GUID* product_guid)
 {
@@ -173,6 +173,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    raw_devs = NULL;
    return false;
 }
+#endif
 
 static const char *dinput_joypad_name(unsigned pad)
 {
@@ -269,10 +270,17 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
             dinput_joypad_name(g_joypad_cnt),
             sizeof(settings->input.device_names[g_joypad_cnt]));
 
+      strlcpy(params.name,
+            dinput_joypad_name(g_joypad_cnt),
+            sizeof(params.name));
+      strlcpy(params.display_name,
+            dinput_joypad_friendly_name(g_joypad_cnt),
+            sizeof(params.driver));
+      strlcpy(params.driver,
+            dinput_joypad.ident,
+            sizeof(params.driver));
+
       params.idx = g_joypad_cnt;
-      strlcpy(params.name, dinput_joypad_name(g_joypad_cnt), sizeof(params.name));
-      strlcpy(params.display_name, dinput_joypad_friendly_name(g_joypad_cnt), sizeof(params.driver));
-      strlcpy(params.driver, dinput_joypad.ident, sizeof(params.driver));
       params.vid = dinput_joypad_vid(g_joypad_cnt);
       params.pid = dinput_joypad_pid(g_joypad_cnt);
 
