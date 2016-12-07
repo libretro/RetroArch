@@ -1094,8 +1094,10 @@ int runloop_iterate(unsigned *sleep_ms)
    settings_t *settings                         = config_get_ptr();
    uint64_t old_input                           = last_input;
    uint64_t current_input                       = 
+#ifdef HAVE_MENU
       menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) ? 
       input_menu_keys_pressed(old_input, &last_input, &trigger_input, runloop_paused) : 
+#endif
       input_keys_pressed     (old_input, &last_input, &trigger_input, runloop_paused);
 
    if (runloop_frame_time.callback)
