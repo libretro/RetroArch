@@ -807,7 +807,7 @@ static enum runloop_state runloop_check_state(
                   CORE_TYPE_DUMMY,
                   CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
                   NULL, NULL))
-            return -1;
+            return RUNLOOP_STATE_QUIT;
 
          /* Loads dummy core instead of exiting RetroArch completely.
           * Aborts core shutdown if invoked. */
@@ -1177,7 +1177,7 @@ int runloop_iterate(unsigned *sleep_ms)
    {
       struct retro_keybind *general_binds = settings->input.binds[i];
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
-      enum analog_dpad_mode dpad_mode     = settings->input.analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
@@ -1201,7 +1201,7 @@ int runloop_iterate(unsigned *sleep_ms)
    {
       struct retro_keybind *general_binds = settings->input.binds[i];
       struct retro_keybind *auto_binds    = settings->input.autoconf_binds[i];
-      enum analog_dpad_mode dpad_mode     = settings->input.analog_dpad_mode[i];
+      enum analog_dpad_mode dpad_mode     = (enum analog_dpad_mode)settings->input.analog_dpad_mode[i];
 
       if (dpad_mode == ANALOG_DPAD_NONE)
          continue;
