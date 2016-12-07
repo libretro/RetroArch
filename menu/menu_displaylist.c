@@ -3912,7 +3912,7 @@ static bool menu_displaylist_push_internal(
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
-      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->exts, FILE_PATH_LPL_EXTENSION_NO_DOT, sizeof(info->exts));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -3925,7 +3925,7 @@ static bool menu_displaylist_push_internal(
    {
       menu_displaylist_reset_filebrowser();
       info->type = 42;
-      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->exts, FILE_PATH_LPL_EXTENSION_NO_DOT, sizeof(info->exts));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -3939,7 +3939,7 @@ static bool menu_displaylist_push_internal(
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
-      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->exts, FILE_PATH_LPL_EXTENSION_NO_DOT, sizeof(info->exts));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
@@ -3972,7 +3972,7 @@ static bool menu_displaylist_push_internal(
 
       menu_displaylist_reset_filebrowser();
       info->type = 42;
-      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->exts, FILE_PATH_LPL_EXTENSION_NO_DOT, sizeof(info->exts));
       strlcpy(info->label,
             msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
             sizeof(info->label));
