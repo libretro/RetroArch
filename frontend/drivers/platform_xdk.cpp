@@ -22,6 +22,7 @@
 #include <xgraphics.h>
 
 #include <file/file_path.h>
+#include <compat/strl.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
