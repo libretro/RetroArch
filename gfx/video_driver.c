@@ -1307,31 +1307,24 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 }
 
 
-static void video_driver_lock(void)
-{
 #ifdef HAVE_THREADS
-   if (!display_lock)
-      return;
-   slock_lock(display_lock);
-#endif
-}
+#define video_driver_lock() \
+   if (display_lock) \
+      slock_lock(display_lock)
 
-static void video_driver_unlock(void)
-{
-#ifdef HAVE_THREADS
-   if (!display_lock)
-      return;
-   slock_unlock(display_lock);
-#endif
-}
+#define video_driver_unlock() \
+   if (display_lock) \
+      slock_unlock(display_lock)
 
-static void video_driver_lock_free(void)
-{
-#ifdef HAVE_THREADS
-   slock_free(display_lock);
-   display_lock = NULL;
+#define video_driver_lock_free() \
+   slock_free(display_lock); \
+   display_lock = NULL
+
+#else
+#define video_driver_lock()      ((void)0)
+#define video_driver_unlock()    ((void)0)
+#define video_driver_lock_free() ((void)0)
 #endif
-}
 
 static void video_driver_lock_new(void)
 {
