@@ -36,6 +36,7 @@
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
+#incldue "../../file_path_special.h"
 #include "../../paths.h"
 #ifndef IS_SALAMANDER
 #include "../../retroarch.h"
