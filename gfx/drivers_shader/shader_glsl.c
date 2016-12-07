@@ -125,12 +125,10 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
 #include "../drivers/gl_shaders/pipeline_snow.glsl.frag.h"
 #include "../drivers/gl_shaders/pipeline_snow_simple.glsl.frag.h"
-#if !defined(HAVE_OPENGLES)
 #include "../drivers/gl_shaders/legacy_pipeline_snow.glsl.vert.h"
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
-#endif
 #endif
 
 typedef struct glsl_shader_data
@@ -934,13 +932,8 @@ static void *gl_glsl_init(void *data, const char *path)
    }
 
 #ifdef HAVE_SHADERPIPELINE
-#if defined(HAVE_OPENGLES)
-   shader_prog_info.vertex   = stock_vertex_xmb_ribbon_simple_legacy;
-   shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
-#else
    shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
    shader_prog_info.fragment = stock_fragment_xmb;
-#endif
    shader_prog_info.is_file  = false;
 
    gl_glsl_compile_program(

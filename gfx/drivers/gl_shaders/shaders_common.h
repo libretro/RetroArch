@@ -3,7 +3,8 @@
 
 #if defined(HAVE_OPENGLES)
 #define CG(src)   "" #src
-#define GLSL(src) "#ifdef GL_ES\n" \
+#define GLSL(src) "#extension GL_OES_standard_derivatives : enable\n" \
+                  "#ifdef GL_ES\n" \
                   "  #ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
                   "    precision highp float;\n" \
                   "  #else\n" \
