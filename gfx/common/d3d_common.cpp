@@ -18,7 +18,9 @@
 
 #include "d3d_common.h"
 
+#ifdef HAVE_D3D9
 #include "../include/d3d9/d3dx9tex.h"
+#endif
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
