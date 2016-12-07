@@ -463,9 +463,13 @@ static bool playlist_read_file(
          if (!filestream_gets(file, buf[i], sizeof(buf[i])))
             goto end;
 
-         last = strrchr(buf[i], '\n');
-         if (last)
+         /* Read playlist entry regardless
+          * of Windows or Unix line endings
+         */
+         if(last = strrchr(buf[i], '\r'))
             *last = '\0';
+         else if(last = strrchr(buf[i], '\n'))
+            *last = '\0';	
       }
 
       entry = &playlist->entries[playlist->size];
