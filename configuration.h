@@ -273,7 +273,7 @@ typedef struct settings
       int pid[MAX_USERS];
 
       unsigned libretro_device[MAX_USERS];
-      enum analog_dpad_mode analog_dpad_mode[MAX_USERS];
+      unsigned analog_dpad_mode[MAX_USERS];
 
       bool remap_binds_enable;
       float axis_threshold;
