@@ -174,14 +174,6 @@ void runloop_msg_queue_push(const char *msg,
 #endif
 }
 
-char* runloop_msg_queue_pull(void)
-{
-   runloop_ctx_msg_info_t msg_info;
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &msg_info);
-
-   return strdup(msg_info.msg);
-}
-
 #ifdef HAVE_MENU
 static bool runloop_cmd_get_state_menu_toggle_button_combo(
       settings_t *settings,

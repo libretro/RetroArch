@@ -219,8 +219,6 @@ int runloop_iterate(unsigned *sleep_ms);
 void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
 
-char* runloop_msg_queue_pull(void);
-
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
 RETRO_END_DECLS
