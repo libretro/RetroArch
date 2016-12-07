@@ -17,6 +17,9 @@
 #include <string.h>
 #include <retro_inline.h>
 #include "render_chain_driver.h"
+
+#include "../../video_shader_driver.h"
+
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
 
