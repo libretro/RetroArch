@@ -468,7 +468,6 @@ static bool playlist_read_file(
           */
           if(last = strrchr(buf[i], '\r'))
              *last = '\0';
-             *last = '\0';
           else if(last = strrchr(buf[i], '\n'))
              *last = '\0';	
       }
