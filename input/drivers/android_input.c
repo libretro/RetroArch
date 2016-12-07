@@ -533,7 +533,7 @@ static INLINE int android_input_poll_event_type_motion(
          float x = AMotionEvent_getX(event, motion_ptr);
          float y = AMotionEvent_getY(event, motion_ptr);
 
-         input_translate_coord_viewport_wrap(
+         video_driver_translate_coord_viewport_wrap(
                &vp,
                x, y,
                &android_data->pointer[motion_ptr].x,

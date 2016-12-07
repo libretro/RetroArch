@@ -463,7 +463,7 @@ static int16_t udev_pointer_state(udev_input_t *udev,
    struct video_viewport vp = {0};
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
 
-   if (!(input_translate_coord_viewport_wrap(&vp, udev->mouse_x, udev->mouse_y,
+   if (!(video_driver_translate_coord_viewport_wrap(&vp, udev->mouse_x, udev->mouse_y,
          &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 

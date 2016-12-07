@@ -168,7 +168,7 @@ static int16_t x_pointer_state(x11_input_t *x11,
    struct video_viewport vp = {0};
    int16_t res_x = 0, res_y = 0, res_screen_x = 0, res_screen_y = 0;
 
-   if (!(input_translate_coord_viewport_wrap(&vp, x11->mouse_x, x11->mouse_y,
+   if (!(video_driver_translate_coord_viewport_wrap(&vp, x11->mouse_x, x11->mouse_y,
          &res_x, &res_y, &res_screen_x, &res_screen_y)))
       return 0;
 

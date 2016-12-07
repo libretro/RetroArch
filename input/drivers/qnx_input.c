@@ -427,7 +427,8 @@ static void qnx_process_touch_event(
 
                qnx->pointer[i].contact_id = contact_id;
 
-               input_translate_coord_viewport_wrap(&vp,
+               video_driver_translate_coord_viewport_wrap(
+                     &vp,
                      pos[0], pos[1],
                      &qnx->pointer[i].x, &qnx->pointer[i].y,
                      &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
@@ -506,7 +507,7 @@ static void qnx_process_touch_event(
                   pos[1] = gl->full_y;
 #endif
 
-               input_translate_coord_viewport_wrap(&vp,
+               video_driver_translate_coord_viewport_wrap(&vp,
                      pos[0], pos[1],
                      &qnx->pointer[i].x, &qnx->pointer[i].y,
                      &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);

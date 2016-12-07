@@ -2172,3 +2172,57 @@ bool video_driver_texture_unload(uintptr_t *id)
    *id = 0;
    return true;
 }
+
+/**
+ * video_driver_translate_coord_viewport:
+ * @mouse_x                        : Pointer X coordinate.
+ * @mouse_y                        : Pointer Y coordinate.
+ * @res_x                          : Scaled  X coordinate.
+ * @res_y                          : Scaled  Y coordinate.
+ * @res_screen_x                   : Scaled screen X coordinate.
+ * @res_screen_y                   : Scaled screen Y coordinate.
+ *
+ * Translates pointer [X,Y] coordinates into scaled screen
+ * coordinates based on viewport info.
+ *
+ * Returns: true (1) if successful, false if video driver doesn't support
+ * viewport info.
+ **/
+bool video_driver_translate_coord_viewport(
+      void *data,
+      int mouse_x,           int mouse_y,
+      int16_t *res_x,        int16_t *res_y,
+      int16_t *res_screen_x, int16_t *res_screen_y)
+{
+   int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
+   struct video_viewport *vp = (struct video_viewport*)data;
+   int norm_full_vp_width    = (int)vp->full_width;
+   int norm_full_vp_height   = (int)vp->full_height;
+
+   if (norm_full_vp_width <= 0 || norm_full_vp_height <= 0)
+      return false;
+
+   scaled_screen_x     = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
+   scaled_screen_y     = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
+   if (scaled_screen_x < -0x7fff || scaled_screen_x > 0x7fff)
+      scaled_screen_x  = -0x8000; /* OOB */
+   if (scaled_screen_y < -0x7fff || scaled_screen_y > 0x7fff)
+      scaled_screen_y  = -0x8000; /* OOB */
+
+   mouse_x           -= vp->x;
+   mouse_y           -= vp->y;
+
+   scaled_x           = (2 * mouse_x * 0x7fff) / norm_full_vp_width  - 0x7fff;
+   scaled_y           = (2 * mouse_y * 0x7fff) / norm_full_vp_height - 0x7fff;
+   if (scaled_x < -0x7fff || scaled_x > 0x7fff)
+      scaled_x        = -0x8000; /* OOB */
+   if (scaled_y < -0x7fff || scaled_y > 0x7fff)
+      scaled_y        = -0x8000; /* OOB */
+
+   *res_x             = scaled_x;
+   *res_y             = scaled_y;
+   *res_screen_x      = scaled_screen_x;
+   *res_screen_y      = scaled_screen_y;
+
+   return true;
+}
