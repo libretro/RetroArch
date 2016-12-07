@@ -27,6 +27,7 @@
 #include "../../config.h"
 #endif
 
+#include "../../gfx/video_driver.h"
 #include "../../configuration.h"
 #include "../input_joypad_driver.h"
 #include "../tasks/tasks_internal.h"

@@ -35,6 +35,7 @@
 
 #include "../../frontend/drivers/platform_linux.h"
 #include "../input_config.h"
+#include "../../gfx/video_driver.h"
 #include "../input_joypad_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "../../tasks/tasks_internal.h"

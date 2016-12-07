@@ -40,6 +40,7 @@
 #include <string/stdstring.h>
 
 #include "../drivers_keyboard/keyboard_event_udev.h"
+#include "../../gfx/video_driver.h"
 #include "../common/linux_common.h"
 #include "../common/udev_common.h"
 #include "../common/epoll_common.h"
