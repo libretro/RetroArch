@@ -51,6 +51,7 @@
 #include "../../performance_counters.h"
 
 #include "../../defines/d3d_defines.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
