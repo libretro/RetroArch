@@ -1576,7 +1576,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    strlcpy(info.path,
          settings->directory.playlist,
          sizeof(info.path));
-   strlcpy(info.exts, "lpl", sizeof(info.exts));
+   strlcpy(info.exts, FILE_PATH_LPL_EXTENSION_NO_DOT, sizeof(info.exts));
 
    if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
    {
