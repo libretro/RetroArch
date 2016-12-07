@@ -42,6 +42,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 #endif
+#include "../../verbosity.h"
 
 #ifdef _XBOX360
 
