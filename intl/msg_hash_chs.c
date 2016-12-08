@@ -3242,6 +3242,10 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "启用或者禁止蓝牙。";
       case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
          return "程序将在退出时保存修改到配置文件。";
+      case MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS:
+         return "Change default settings for configuration, content override, core override, and remap files.";
+      case MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST:
+         return "Load, save, new.";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "CPU拥有的核心总数。";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:

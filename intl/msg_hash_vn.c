@@ -2077,9 +2077,9 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS:
          return "Configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
-         return "Save Configuration On Exit";
+         return "Save Configuration on Exit";
       case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Ask For Confirmation On Exit";
+         return "Ask for Confirmation on Exit";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Collections";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:
@@ -2221,7 +2221,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Frontend Counters";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
-         return "Tải Content-specific core options automatically";
+         return "Tải Content-Specific Core Options Automatically";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
          return "Create game-options file";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
@@ -3287,6 +3287,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Bật/tắt bluetooth.";
       case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
          return "Lưu cấu hình khi thoát retroarch.";
+      case MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS:
+         return "Change default settings for configuration, content override, core override, and remap files.";
+      case MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST:
+         return "Load, save, new.";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "Số lượng lõi của CPU.";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:

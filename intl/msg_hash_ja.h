@@ -269,7 +269,7 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
-      "情報" 
+      "情報"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
@@ -1658,6 +1658,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
       "Bluetoothを有効する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
       "終了時に設定を自動的に保存する。")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+      "Change default settings for configuration, content override, core override, and remap files.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+      "Load, save, new.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,
       "CPUのコア数")
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,

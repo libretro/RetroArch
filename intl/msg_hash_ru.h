@@ -393,11 +393,11 @@ MSG_HASH(
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-      "Save Configuration On Exit"
+      "Save Configuration on Exit"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT,
-      "Ask For Confirmation On Exit"
+      "Ask for Confirmation on Exit"
       )
 MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
@@ -543,7 +543,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
 MSG_HASH(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
       "Frontend Counters")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-      "Load Content-specific core options automatically")
+      "Load Content-Specific Core Options Automatically")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE,
       "Create game-options file")
 MSG_HASH(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE,
@@ -1650,6 +1650,10 @@ MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
       "Enable or disable bluetooth.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
       "Saves changes to configuration file on exit.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+      "Change default settings for configuration, content override, core override, and remap files.")
+MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+      "Load, save, new.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,
       "Amount of cores that the CPU has.")
 MSG_HASH(MENU_ENUM_SUBLABEL_FPS_SHOW,

@@ -84,6 +84,8 @@ default_sublabel_macro(action_bind_sublabel_video_hard_sync,               MENU_
 default_sublabel_macro(action_bind_sublabel_video_hard_sync_frames,        MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES)
 default_sublabel_macro(action_bind_sublabel_video_threaded,                MENU_ENUM_SUBLABEL_VIDEO_THREADED)
 default_sublabel_macro(action_bind_sublabel_config_save_on_exit,           MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT)
+default_sublabel_macro(action_bind_sublabel_configuration_settings_list,   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS)
+default_sublabel_macro(action_bind_sublabel_configurations_list_list,      MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST)
 default_sublabel_macro(action_bind_sublabel_video_shared_context,          MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT)
 default_sublabel_macro(action_bind_sublabel_audio_latency,                 MENU_ENUM_SUBLABEL_AUDIO_LATENCY)
 default_sublabel_macro(action_bind_sublabel_audio_rate_control_delta,      MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA)
@@ -222,6 +224,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_config_save_on_exit);
+            break;
+         case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_configuration_settings_list);
+            break;
+         case MENU_ENUM_LABEL_CONFIGURATIONS_LIST:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_configurations_list_list);
             break;
          case MENU_ENUM_LABEL_VIDEO_THREADED:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_threaded);
