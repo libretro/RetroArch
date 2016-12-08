@@ -1600,6 +1600,10 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Shows current core inside menu.");
          break;
+      case MENU_ENUM_LABEL_HELP_ENABLE:
+         snprintf(s, len,
+               "Shows Help inside menu.");
+         break;
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
          snprintf(s, len,
                "Enables Netplay in host (server) mode.");
@@ -2226,8 +2230,10 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Create game-options file";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
          return "Game-options file";
+      case MENU_ENUM_LABEL_VALUE_HELP_ENABLE:
+         return "Trợ giúp trình đơn hiển thị";
       case MENU_ENUM_LABEL_VALUE_HELP:
-         return "help";
+         return "Cứu giúp";
       case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          return "Audio/Video Troubleshooting";
       case MENU_ENUM_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:

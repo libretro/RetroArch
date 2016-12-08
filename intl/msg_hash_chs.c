@@ -1570,6 +1570,10 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Shows current core inside menu.");
          break;
+      case MENU_ENUM_LABEL_HELP_ENABLE:
+         snprintf(s, len,
+               "Shows Help inside menu.");
+         break;
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
          snprintf(s, len,
                "Enables Netplay in host (server) mode.");
@@ -2182,6 +2186,8 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "创建游戏选项文件";
       case MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
          return "游戏选项文件";
+      case MENU_ENUM_LABEL_VALUE_HELP_ENABLE:
+         return "显示帮助菜单";
       case MENU_ENUM_LABEL_VALUE_HELP:
          return "帮助";
       case MENU_ENUM_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:

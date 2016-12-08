@@ -1166,6 +1166,8 @@ const char *msg_hash_to_str_pt(enum msg_hash_enums msg)
          return "Definições do Limitador de Quadros";
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Contadores do Frontend";
+      case MENU_ENUM_LABEL_VALUE_HELP_ENABLE:
+         return "Mostrar Nome dos Ajuda";
       case MENU_ENUM_LABEL_VALUE_HELP:
          return "Ajuda";
       case MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE:

@@ -1730,6 +1730,8 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Spegni";
       case MENU_ENUM_LABEL_VALUE_REBOOT:
          return "Riavvia";
+      case MENU_ENUM_LABEL_VALUE_HELP_ENABLE:
+         return "Mostra nome dei Aiuto";
       case MENU_ENUM_LABEL_VALUE_HELP:
          return "Aiuto";
       case MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG:

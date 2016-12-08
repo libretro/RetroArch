@@ -232,6 +232,8 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Frame Throttle Settings";
       case MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS:
          return "Liczniki frontendu";
+      case MENU_ENUM_LABEL_VALUE_HELP_ENABLE:
+         return "Wyświetlacz Menu Pomoc";
       case MENU_ENUM_LABEL_VALUE_HELP:
          return "Pooc";
       case MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE:
