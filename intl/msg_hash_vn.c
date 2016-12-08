@@ -3288,7 +3288,7 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS:
          return "Change default settings for configuration, content override, core override, and remap files.";
       case MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST:
-         return "Load, save, new.";
+         return "Manage and create configuration files.";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
          return "Số lượng lõi của CPU.";
       case MENU_ENUM_SUBLABEL_FPS_SHOW:
