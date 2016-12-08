@@ -2078,8 +2078,6 @@ const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
          return "Configuration";
       case MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
          return "Save Configuration on Exit";
-      case MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT:
-         return "Ask for Confirmation on Exit";
       case MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST:
          return "Collections";
       case MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY:

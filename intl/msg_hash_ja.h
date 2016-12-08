@@ -396,10 +396,6 @@ MSG_HASH(
       "終了前に設定を自動保存"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT,
-      "終了前に確認"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
       "コレクション"
       )

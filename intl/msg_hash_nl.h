@@ -396,10 +396,6 @@ MSG_HASH(
       "Configuratie Opslaan Tijdens Afsluiten"
       )
 MSG_HASH(
-      MENU_ENUM_LABEL_VALUE_CONFIRM_ON_EXIT,
-      "Ask for Confirmation on Exit"
-      )
-MSG_HASH(
       MENU_ENUM_LABEL_VALUE_CONTENT_COLLECTION_LIST,
       "Collecties"
       )

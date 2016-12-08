@@ -966,9 +966,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
 #endif
                );
          break;
-      case MENU_ENUM_LABEL_CONFIRM_ON_EXIT:
-         snprintf(s, len, "你确定要退出吗？");
-         break;
       case MENU_ENUM_LABEL_SHOW_HIDDEN_FILES:
          snprintf(s, len, "显示隐藏文件和文件夹。");
          break;
