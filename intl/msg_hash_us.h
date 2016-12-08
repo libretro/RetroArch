@@ -1669,7 +1669,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
       "Saves changes to configuration file on exit.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-      "Change default settings for configuration, content override, core override, and remap files.")
+      "Change default settings for configuration files.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
       "Manage and create configuration files.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,

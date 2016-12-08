@@ -1655,7 +1655,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
       "終了時に設定を自動的に保存する。")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-      "Change default settings for configuration, content override, core override, and remap files.")
+      "Change default settings for configuration files.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
       "Manage and create configuration files.")
 MSG_HASH(MENU_ENUM_SUBLABEL_CPU_CORES,

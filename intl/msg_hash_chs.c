@@ -3240,7 +3240,7 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
       case MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT:
          return "程序将在退出时保存修改到配置文件。";
       case MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS:
-         return "Change default settings for configuration, content override, core override, and remap files.";
+         return "Change default settings for configuration files.";
       case MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST:
          return "Manage and create configuration files.";
       case MENU_ENUM_SUBLABEL_CPU_CORES:
