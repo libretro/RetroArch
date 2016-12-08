@@ -1758,8 +1758,6 @@ const char *msg_hash_to_str_es(enum msg_hash_enums msg)
          return "Carpeta de autoconfiguración de dispositivo de entrada";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "Controlador de joypad";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Preajuste de teclado superpuesto";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
          return "Chino (Simplificado)";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL:

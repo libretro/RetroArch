@@ -565,10 +565,6 @@ int menu_hash_get_help_chs_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Amount of seconds to wait until proceeding \n"
                "to the next bind.");
          break;
-      case MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET:
-         snprintf(s, len,
-               "Path to onscreen keyboard overlay.");
-         break;
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
          snprintf(s, len,
                "Overlay scale.");
@@ -2403,8 +2399,6 @@ const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
          return "输入设备自动配置目录";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "手柄驱动";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "键盘覆层预设";
       case MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES:
          return "Lakka 服务";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:

@@ -1806,8 +1806,6 @@ const char *msg_hash_to_str_it(enum msg_hash_enums msg)
          return "Latenza audio (ms)";
       case MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE:
          return "Dispositivo audio";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Preimpostato Overlay Tastiera";
       case MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY:
          return "Opacità Overlay";
       case MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER:

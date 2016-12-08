@@ -592,10 +592,6 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                "Amount of seconds to wait until proceeding \n"
                "to the next bind.");
          break;
-      case MENU_ENUM_LABEL_KEYBOARD_OVERLAY_PRESET:
-         snprintf(s, len,
-               "Path to onscreen keyboard overlay.");
-         break;
       case MENU_ENUM_LABEL_OVERLAY_SCALE:
          snprintf(s, len,
                "Overlay scale.");

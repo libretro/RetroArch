@@ -274,8 +274,6 @@ const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
          return "Katalog autokonfiguracji kontrolerów gier";
       case MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER:
          return "Kontroler gamepadów";
-      case MENU_ENUM_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET:
-         return "Preset klawiatury ekranowej";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED:
          return "chińśki (Uproszczony)";
       case MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL:
