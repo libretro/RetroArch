@@ -1610,6 +1610,10 @@ int menu_hash_get_help_jp_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Setting related to Netplay.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+         snprintf(s, len,
+               "Search for and connect to netplay hosts on the local network.");
+         break;
       case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER:
          snprintf(s, len,
                "Dynamically load a new wallpaper \n"

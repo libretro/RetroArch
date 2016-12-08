@@ -1612,6 +1612,10 @@ int menu_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
          snprintf(s, len,
                "Disconnects an active Netplay connection.");
          break;
+      case MENU_ENUM_LABEL_NETPLAY_LAN_SCAN_SETTINGS:
+         snprintf(s, len,
+               "Search for and connect to netplay hosts on the local network.");
+         break;
       case MENU_ENUM_LABEL_NETPLAY_SETTINGS:
          snprintf(s, len,
                "Setting related to Netplay.");
