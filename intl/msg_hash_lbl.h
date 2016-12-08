@@ -149,7 +149,8 @@ MSG_HASH(MENU_ENUM_LABEL_COLLECTION,
 MSG_HASH(MENU_ENUM_LABEL_CONFIGURATIONS,
       "configurations")
 MSG_HASH(MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,
-      "configuration_settings")
+      "Determines how configuration files \n"
+      "are loaded and prioritized.")
 MSG_HASH(MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,
       "config_save_on_exit")
 MSG_HASH(MENU_ENUM_LABEL_CONNECT_WIFI,
