@@ -969,8 +969,8 @@ int menu_hash_get_help_vn_enum(enum msg_hash_enums msg, char *s, size_t len)
          break;
       case MENU_ENUM_LABEL_CONFIGURATION_SETTINGS:
          snprintf(s, len,
-               "Determines how configuration files are \n"
-               "loaded and prioritized.");
+               "Determines how configuration files \n"
+               "are loaded and prioritized.");
          break;
       case MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT:
          snprintf(s, len,
