@@ -606,7 +606,12 @@ static void gl_init_textures_reference(gl_t *gl, unsigned i,
    if (gl->egl_images)
       return;
 
-   glTexImage2D(GL_TEXTURE_2D,
+#ifndef HAVE_OPENGLES2
+   if (gl_check_capability(GL_CAPS_TEX_STORAGE))
+      glTexStorage2D(GL_TEXTURE_2D, 1, internal_fmt, gl->tex_w, gl->tex_h);
+   else
+#endif
+      glTexImage2D(GL_TEXTURE_2D,
          0, internal_fmt, gl->tex_w, gl->tex_h, 0, texture_type,
          texture_fmt, gl->empty_buf ? gl->empty_buf : NULL);
 #endif

@@ -306,6 +306,15 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          return true;
 #endif
          break;
+      case GL_CAPS_TEX_STORAGE:
+#ifdef HAVE_OPENGLES
+         if (major >= 3)
+            return true;
+#else
+         if (gl_query_extension("ARB_texture_storage"))
+            return true;
+#endif
+         break;
       case GL_CAPS_NONE:
       default:
          break;
